@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -53,6 +55,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -61,6 +64,18 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class CountsComputerTest
 {
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pcRule = new PageCacheRule();
+    private final TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( pcRule ).around( fsRule ).around( testDir );
+
+    private FileSystemAbstraction fs;
+    private File dir;
+    private GraphDatabaseBuilder dbBuilder;
+    private PageCache pageCache;
+
     @Test
     public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
     {
@@ -260,24 +275,13 @@ public class CountsComputerTest
         }
     }
 
-    @Rule
-    public PageCacheRule pcRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
-
-    private FileSystemAbstraction fs;
-    private File dir;
-    private GraphDatabaseBuilder dbBuilder;
-    private PageCache pageCache;
-
     @Before
     public void setup()
     {
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
     }
 
@@ -308,7 +312,7 @@ public class CountsComputerTest
     private CountsTracker createCountsTracker()
     {
         return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                Config.empty(), new File( dir, COUNTS_STORE_BASE ) );
+                Config.defaults(), new File( dir, COUNTS_STORE_BASE ) );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
@@ -324,7 +328,8 @@ public class CountsComputerTest
             int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer(
-                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
+                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId,
+                    NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
             CountsTracker countsTracker = createCountsTracker();
             life.add( countsTracker.setInitializer( countsComputer ) );
         }

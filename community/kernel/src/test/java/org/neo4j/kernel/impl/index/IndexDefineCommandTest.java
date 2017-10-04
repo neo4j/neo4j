@@ -58,7 +58,7 @@ public class IndexDefineCommandTest
             idc.getOrAssignKeyId( "dropThatOverflows" );
             fail( "IndexDefineCommand should not allow more than " + count + " indexes per transaction" );
         }
-        catch( IllegalStateException e )
+        catch ( IllegalStateException e )
         {
             // wonderful
         }
@@ -68,7 +68,7 @@ public class IndexDefineCommandTest
             idc.getOrAssignIndexNameId( "dropThatOverflows" );
             fail( "IndexDefineCommand should not allow more than " + count + " keys per transaction" );
         }
-        catch( IllegalStateException e )
+        catch ( IllegalStateException e )
         {
             // wonderful
         }

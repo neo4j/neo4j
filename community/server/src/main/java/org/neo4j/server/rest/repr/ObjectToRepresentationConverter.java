@@ -50,27 +50,37 @@ public class ObjectToRepresentationConverter
         return getSingleRepresentation( data );
     }
 
+    private ObjectToRepresentationConverter()
+    {
+    }
+
     public static MappingRepresentation getMapRepresentation( Map data )
     {
 
         return new MapRepresentation( data );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     static Representation getIteratorRepresentation( Iterator data )
     {
-        final FirstItemIterable<Representation> results = new FirstItemIterable<>(new IteratorWrapper<Representation, Object>(data) {
-            @Override
-            protected Representation underlyingObjectToObject(Object value) {
-                if ( value instanceof Iterable )
+        final FirstItemIterable<Representation> results =
+                new FirstItemIterable<>( new IteratorWrapper<Representation,Object>( data )
                 {
-                    FirstItemIterable<Representation> nested = convertValuesToRepresentations( (Iterable) value );
-                    return new ListRepresentation( getType( nested ), nested );
-                } else {
-                    return getSingleRepresentation( value );
-                }
-            }
-        });
+                    @Override
+                    protected Representation underlyingObjectToObject( Object value )
+                    {
+                        if ( value instanceof Iterable )
+                        {
+                            FirstItemIterable<Representation> nested =
+                                    convertValuesToRepresentations( (Iterable) value );
+                            return new ListRepresentation( getType( nested ), nested );
+                        }
+                        else
+                        {
+                            return getSingleRepresentation( value );
+                        }
+                    }
+                } );
         return new ListRepresentation( getType( results ), results );
     }
 
@@ -80,21 +90,26 @@ public class ObjectToRepresentationConverter
         return new ServerListRepresentation( getType( results ), results );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
     {
-        return new FirstItemIterable<>(new IterableWrapper<Representation,Object>(data) {
+        return new FirstItemIterable<>( new IterableWrapper<Representation,Object>( data )
+        {
             @Override
-            protected Representation underlyingObjectToObject(Object value) {
-               return convert(value);
+            protected Representation underlyingObjectToObject( Object value )
+            {
+                return convert( value );
             }
-        });
+        } );
     }
 
     static RepresentationType getType( FirstItemIterable<Representation> representations )
     {
         Representation  representation = representations.getFirst();
-        if ( representation == null ) return RepresentationType.STRING;
+        if ( representation == null )
+        {
+            return RepresentationType.STRING;
+        }
         return representation.getRepresentationType();
     }
 

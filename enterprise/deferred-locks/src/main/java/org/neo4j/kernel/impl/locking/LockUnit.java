@@ -24,7 +24,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 /**
  * Description of a lock that was deferred to commit time.
  */
-public class LockUnit implements Comparable<LockUnit>
+public class LockUnit implements Comparable<LockUnit>, ActiveLock
 {
     private final ResourceType resourceType;
     private final long resourceId;
@@ -35,6 +35,12 @@ public class LockUnit implements Comparable<LockUnit>
         this.resourceType = resourceType;
         this.resourceId = resourceId;
         this.exclusive = exclusive;
+    }
+
+    @Override
+    public String mode()
+    {
+        return exclusive ? EXCLUSIVE_MODE : SHARED_MODE;
     }
 
     public ResourceType resourceType()

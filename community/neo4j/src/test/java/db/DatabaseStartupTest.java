@@ -28,8 +28,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
@@ -40,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_upgrade;
 
 public class DatabaseStartupTest
 {
@@ -61,9 +63,10 @@ public class DatabaseStartupTest
         db.shutdown();
 
         // mess up the version in the metadatastore
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ))
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, new File(storeDir, MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
@@ -78,8 +81,9 @@ public class DatabaseStartupTest
             // then
             assertTrue( ex.getCause() instanceof LifecycleException );
             assertTrue( ex.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException );
-            assertEquals( "Failed to start Neo4j with an older data store version. To enable automatic upgrade, " +
-                          "please set configuration parameter \"dbms.allow_format_migration=true\"",
+            assertEquals( "Neo4j cannot be started because the database files require upgrading and upgrades are " +
+                            "disabled in the configuration. Please set '" + allow_upgrade.name() + "' to 'true' in your " +
+                            "configuration file and try again.",
                     ex.getCause().getCause().getMessage());
         }
     }
@@ -100,9 +104,10 @@ public class DatabaseStartupTest
 
         // mess up the version in the metadatastore
         String badStoreVersion = "bad";
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, new File(storeDir, MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
@@ -110,7 +115,7 @@ public class DatabaseStartupTest
         try
         {
             new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                    .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" ).newGraphDatabase();
+                    .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newGraphDatabase();
             fail( "It should have failed." );
         }
         catch ( RuntimeException ex )

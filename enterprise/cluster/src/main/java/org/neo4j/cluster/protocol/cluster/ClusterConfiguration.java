@@ -75,7 +75,7 @@ public class ClusterConfiguration
 
     public ClusterConfiguration( ClusterConfiguration copy )
     {
-        this(copy, copy.log);
+        this( copy, copy.log );
     }
 
     private ClusterConfiguration( ClusterConfiguration copy, Log log )
@@ -197,9 +197,8 @@ public class ClusterConfiguration
 
     public Iterable<String> getRolesOf( final InstanceId node )
     {
-        return Iterables.map( Map.Entry::getKey, Iterables.filter( item -> {
-            return item.getValue().equals( node );
-        }, roles.entrySet() ) );
+        return Iterables.map( Map.Entry::getKey, Iterables.filter( item -> item.getValue().equals( node ),
+                roles.entrySet() ) );
     }
 
     public URI getUriForId( InstanceId node )
@@ -256,12 +255,7 @@ public class ClusterConfiguration
         {
             return false;
         }
-        if ( !roles.equals( that.roles ) )
-        {
-            return false;
-        }
-
-        return true;
+        return roles.equals( that.roles );
     }
 
     @Override

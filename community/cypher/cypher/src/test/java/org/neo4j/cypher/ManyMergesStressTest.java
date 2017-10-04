@@ -40,7 +40,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.String.format;
 
-@Ignore("Too costly to run by default but useful for testing resource clean up and indexing")
+@Ignore( "Too costly to run by default but useful for testing resource clean up and indexing" )
 public class ManyMergesStressTest
 {
     private Random random = new Random();
@@ -84,7 +84,7 @@ public class ManyMergesStressTest
             tx.success();
         }
 
-        for( int count = 0; count < TRIES; count++ )
+        for ( int count = 0; count < TRIES; count++ )
         {
             Pair<String, String> stringPair = getRandomName();
             String ident = stringPair.first();

@@ -23,14 +23,18 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -38,17 +42,19 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionHookException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -80,47 +86,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *   - the #release() method releases resources acquired in #initialize() or during the transaction's life time
      */
 
-    /**
-     * It is not allowed for the same transaction to perform database writes as well as schema writes.
-     * This enum tracks the current write state of the transaction, allowing it to transition from
-     * no writes (NONE) to data writes (DATA) or schema writes (SCHEMA), but it cannot transition between
-     * DATA and SCHEMA without throwing an InvalidTransactionTypeKernelException. Note that this behavior
-     * is orthogonal to the SecurityContext which manages what the transaction or statement is allowed to do
-     * based on authorization.
-     */
-    private enum TransactionWriteState
-    {
-        NONE,
-        DATA
-                {
-                    @Override
-                    TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform schema updates in a transaction that has performed data updates." );
-                    }
-                },
-        SCHEMA
-                {
-                    @Override
-                    TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform data updates in a transaction that has performed schema updates." );
-                    }
-                };
-
-        TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
-        {
-            return DATA;
-        }
-
-        TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
-        {
-            return SCHEMA;
-        }
-    }
-
     // default values for not committed tx id and tx commit time
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
@@ -129,34 +94,36 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationContainer operationContainer;
+    private final StatementOperationParts statementOperations;
     private final StorageEngine storageEngine;
-    private final TransactionTracer tracer;
+    private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
-    private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
+    private final Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
+    private final PageCursorTracerSupplier cursorTracerSupplier;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TransactionState txState;
-    private LegacyIndexTransactionState legacyIndexTransactionState;
+    private ExplicitIndexTransactionState explicitIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
-    private StatementOperationParts currentTransactionOperations;
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
-    private volatile boolean closing, closed;
-    private boolean failure, success;
+    private volatile boolean closing;
+    private volatile boolean closed;
+    private boolean failure;
+    private boolean success;
     private volatile Status terminationReason;
     private long startTimeMillis;
     private long timeoutMillis;
@@ -178,7 +145,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationContainer operationContainer,
+    public KernelTransactionImplementation( StatementOperationParts statementOperations,
                                             SchemaWriteGuard schemaWriteGuard,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
@@ -186,14 +153,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
+                                            Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
-                                            TransactionTracer tracer,
+                                            TransactionTracer transactionTracer,
+                                            LockTracer lockTracer,
+                                            PageCursorTracerSupplier cursorTracerSupplier,
                                             StorageEngine storageEngine,
                                             AccessCapability accessCapability )
     {
-        this.operationContainer = operationContainer;
+        this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -202,13 +171,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storeLayer = storageEngine.storeReadLayer();
         this.storageEngine = storageEngine;
-        this.legacyIndexTxStateSupplier = legacyIndexTxStateSupplier;
+        this.explicitIndexTxStateSupplier = explicitIndexTxStateSupplier;
         this.pool = pool;
         this.clock = clock;
-        this.tracer = tracer;
+        this.transactionTracer = transactionTracer;
+        this.cursorTracerSupplier = cursorTracerSupplier;
         this.storageStatement = storeLayer.newStatement();
-        this.currentStatement = new KernelStatement( this, this, storageStatement, procedures, accessCapability );
-        this.userMetaData = Collections.emptyMap();
+        this.currentStatement = new KernelStatement( this, this, storageStatement,
+                procedures, accessCapability, lockTracer, statementOperations );
+        this.userMetaData = new HashMap<>();
     }
 
     /**
@@ -221,19 +192,23 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.type = type;
         this.statementLocks = statementLocks;
         this.terminationReason = null;
-        this.closing = closed = failure = success = beforeHookInvoked = false;
+        this.closing = false;
+        this. closed = false;
+        this.beforeHookInvoked = false;
+        this.failure = false;
+        this.success = false;
+        this.beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.millis();
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
-        this.transactionEvent = tracer.beginTransaction();
+        this.transactionEvent = transactionTracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
-        this.currentTransactionOperations = timeoutMillis > 0 ? operationContainer.guardedParts() : operationContainer.nonGuarderParts();
-        this.currentStatement.initialize( statementLocks, currentTransactionOperations );
+        this.currentStatement.initialize( statementLocks, cursorTracerSupplier.get() );
         return this;
     }
 
@@ -266,6 +241,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.success = true;
     }
 
+    boolean isSuccess()
+    {
+        return success;
+    }
+
     @Override
     public void failure()
     {
@@ -273,9 +253,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Status getReasonIfTerminated()
+    public Optional<Status> getReasonIfTerminated()
     {
-        return terminationReason;
+        return Optional.ofNullable( terminationReason );
     }
 
     boolean markForTermination( long expectedReuseCount, Status reason )
@@ -405,10 +385,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public LegacyIndexTransactionState legacyIndexTxState()
+    public ExplicitIndexTransactionState explicitIndexTxState()
     {
-        return legacyIndexTransactionState != null ? legacyIndexTransactionState :
-            (legacyIndexTransactionState = legacyIndexTxStateSupplier.get());
+        return explicitIndexTransactionState != null ? explicitIndexTransactionState :
+               (explicitIndexTransactionState = explicitIndexTxStateSupplier.get());
     }
 
     @Override
@@ -421,7 +401,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         closed = true;
+        notifyListeners( txId );
         closeCurrentStatementIfAny();
+    }
+
+    private void notifyListeners( long txId )
+    {
         for ( CloseListener closeListener : closeListeners )
         {
             closeListener.notify( txId );
@@ -451,12 +436,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasChanges()
     {
-        return hasTxStateWithChanges() || hasLegacyIndexChanges();
+        return hasTxStateWithChanges() || hasExplicitIndexChanges();
     }
 
-    private boolean hasLegacyIndexChanges()
+    private boolean hasExplicitIndexChanges()
     {
-        return legacyIndexTransactionState != null && legacyIndexTransactionState.hasChanges();
+        return explicitIndexTransactionState != null && explicitIndexTransactionState.hasChanges();
     }
 
     private boolean hasDataChanges()
@@ -469,7 +454,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         assertTransactionNotClosing();
-        closeCurrentStatementIfAny();
         closing = true;
         try
         {
@@ -492,7 +476,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 closing = false;
                 transactionEvent.setSuccess( success );
                 transactionEvent.setFailure( failure );
-                transactionEvent.setTransactionType( writeState.name() );
+                transactionEvent.setTransactionWriteState( writeState.name() );
                 transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
                 transactionEvent.close();
             }
@@ -501,6 +485,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 release();
             }
         }
+    }
+
+    public boolean isClosing()
+    {
+        return closing;
     }
 
     /**
@@ -563,7 +552,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( hasChanges() )
             {
                 // grab all optimistic locks now, locks can't be deferred any further
-                statementLocks.prepareForCommit();
+                statementLocks.prepareForCommit( currentStatement.lockTracer() );
                 // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
                 Locks.Client commitLocks = statementLocks.pessimistic();
 
@@ -575,9 +564,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         storageStatement,
                         commitLocks,
                         lastTransactionIdWhenStarted );
-                if ( hasLegacyIndexChanges() )
+                if ( hasExplicitIndexChanges() )
                 {
-                    legacyIndexTransactionState.extractCommands( extractedCommands );
+                    explicitIndexTransactionState.extractCommands( extractedCommands );
                 }
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
@@ -612,10 +601,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             success = true;
             return txId;
         }
-        catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+        catch ( ConstraintValidationException | CreateConstraintFailureException e )
         {
             throw new ConstraintViolationTransactionFailureException(
-                    e.getUserMessage( new KeyReadTokenNameLookup( currentTransactionOperations.keyReadOperations() ) ), e );
+                    e.getUserMessage( new KeyReadTokenNameLookup( statementOperations.keyReadOperations() ) ), e );
         }
         finally
         {
@@ -659,12 +648,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                                throws ConstraintValidationException
                         {
                             storeLayer.releaseRelationship( id );
                         }
                     } );
                 }
-                catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+                catch ( ConstraintValidationException | CreateConstraintFailureException e )
                 {
                     throw new IllegalStateException(
                             "Releasing locks during rollback should perform no constraints checking.", e );
@@ -725,10 +715,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             type = null;
             securityContext = null;
             transactionEvent = null;
-            legacyIndexTransactionState = null;
+            explicitIndexTransactionState = null;
             txState = null;
             hooksState = null;
-            currentTransactionOperations = null;
             closeListeners.clear();
             reuseCount++;
             userMetaData = Collections.emptyMap();
@@ -749,7 +738,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return !closed && !isTerminated();
     }
 
-    private boolean isTerminated()
+    @Override
+    public boolean isTerminated()
     {
         return terminationReason != null;
     }
@@ -816,5 +806,60 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void dispose()
     {
         storageStatement.close();
+    }
+
+    /**
+     * This method will be invoked by concurrent threads for inspecting the locks held by this transaction.
+     * <p>
+     * The fact that {@link #statementLocks} is a volatile fields, grants us enough of a read barrier to get a good
+     * enough snapshot of the lock state (as long as the underlying methods give us such guarantees).
+     *
+     * @return the locks held by this transaction.
+     */
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        StatementLocks locks = this.statementLocks;
+        return locks == null ? Stream.empty() : locks.activeLocks();
+    }
+
+    /**
+     * It is not allowed for the same transaction to perform database writes as well as schema writes.
+     * This enum tracks the current write transactionStatus of the transaction, allowing it to transition from
+     * no writes (NONE) to data writes (DATA) or schema writes (SCHEMA), but it cannot transition between
+     * DATA and SCHEMA without throwing an InvalidTransactionTypeKernelException. Note that this behavior
+     * is orthogonal to the SecurityContext which manages what the transaction or statement is allowed to do
+     * based on authorization.
+     */
+    private enum TransactionWriteState
+    {
+        NONE,
+        DATA
+                {
+                    @Override
+                    TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
+                    {
+                        throw new InvalidTransactionTypeKernelException(
+                                "Cannot perform schema updates in a transaction that has performed data updates." );
+                    }
+                },
+        SCHEMA
+                {
+                    @Override
+                    TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
+                    {
+                        throw new InvalidTransactionTypeKernelException(
+                                "Cannot perform data updates in a transaction that has performed schema updates." );
+                    }
+                };
+
+        TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
+        {
+            return DATA;
+        }
+
+        TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
+        {
+            return SCHEMA;
+        }
     }
 }

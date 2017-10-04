@@ -59,8 +59,8 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
         {
             totalDepth.set( currentSide(), branch.length() );
         }
-        if ( (stopDescentOnResult && metadata.getNumberOfPathsReturned() > 0) ||
-                totalDepth.get() > maxDepth+1 )
+        if ( (stopDescentOnResult && (metadata.getNumberOfPathsReturned() > 0)) ||
+                (totalDepth.get() > (maxDepth + 1)) )
         {
             nextSelector();
             return null;
@@ -69,7 +69,7 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
         if ( branch != null )
         {
             previousDepth.set( branch.length() );
-            state.branch =branch;
+            state.branch = branch;
         }
         BranchSelector otherSelector = nextSelector();
         Entry otherState = getStateForCurrentSelector();
@@ -81,7 +81,14 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
         }
 
         otherBranch = otherSelector.next( metadata );
-        return otherBranch != null ? otherBranch : branch;
+        if ( otherBranch != null )
+        {
+            return otherBranch;
+        }
+        else
+        {
+            return branch;
+        }
     }
 
     static class Entry
@@ -112,7 +119,7 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
 
         int get()
         {
-            return out+in;
+            return out + in;
         }
     }
 }

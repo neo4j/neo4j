@@ -23,15 +23,14 @@ import org.apache.lucene.document.Document;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 /**
  * An {@link IndexPopulator} used to create, populate and mark as online a Lucene schema index.
@@ -61,15 +60,14 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
+        assert updatesForCorrectIndex( updates );
         // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
         // That is why we create a lazy Iterator and then Iterable
-        Iterator<Document> documents = updates.stream()
+        writer.addDocuments( updates.size(), () -> updates.stream()
                 .map( LuceneIndexPopulator::updateAsDocument )
-                .iterator();
-
-        writer.addDocuments( () -> documents );
+                .iterator() );
     }
 
     @Override
@@ -94,8 +92,20 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         luceneIndex.markAsFailed( failure );
     }
 
-    private static Document updateAsDocument( NodePropertyUpdate update )
+    private boolean updatesForCorrectIndex( Collection<? extends IndexEntryUpdate<?>> updates )
     {
-        return LuceneDocumentStructure.documentRepresentingProperty( update.getNodeId(), update.getValueAfter() );
+        for ( IndexEntryUpdate<?> update : updates )
+        {
+            if ( !update.indexKey().schema().equals( luceneIndex.getDescriptor().schema() ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static Document updateAsDocument( IndexEntryUpdate<?> update )
+    {
+        return LuceneDocumentStructure.documentRepresentingProperties( update.getEntityId(), update.values() );
     }
 }

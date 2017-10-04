@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
@@ -37,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.metrics.source.causalclustering.CatchUpMetrics;
 import org.neo4j.metrics.source.causalclustering.CoreMetrics;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -125,12 +127,13 @@ public class CoreEdgeMetricsIT
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        assertEventually( "tx pull requests received eventually accurate", () -> {
+        assertEventually( "tx pull requests received eventually accurate", () ->
+        {
             long total = 0;
             for ( final File homeDir : cluster.coreMembers().stream().map( CoreClusterMember::homeDir ).collect( Collectors.toList()) )
             {
                 File metricsDir = new File( homeDir, "metrics" );
-                total += readLongValue( metricsCsv( metricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) );
+                total += readLongValue( metricsCsv( metricsDir, CatchUpMetrics.TX_PULL_REQUESTS_RECEIVED ) );
             }
             return total;
         }, greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );

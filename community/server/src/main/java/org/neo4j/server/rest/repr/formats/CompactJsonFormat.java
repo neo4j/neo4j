@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -99,7 +98,7 @@ public class CompactJsonFormat extends RepresentationFormat
         };
         private final String key;
 
-        private MappingTemplate( String key )
+        MappingTemplate( String key )
         {
             this.key = key;
         }
@@ -108,7 +107,9 @@ public class CompactJsonFormat extends RepresentationFormat
         static
         {
             for ( MappingTemplate template : values() )
+            {
                 TEMPLATES.put( template.key, template );
+            }
         }
 
         abstract String render( Map<String, Object> data );
@@ -118,7 +119,7 @@ public class CompactJsonFormat extends RepresentationFormat
     {
         private final MappingTemplate template;
 
-        public CompactJsonWriter( MappingTemplate template )
+        CompactJsonWriter( MappingTemplate template )
         {
             super( new HashMap<String, Object>(), true );
             this.template = template;
@@ -198,7 +199,10 @@ public class CompactJsonFormat extends RepresentationFormat
     @Override
     public Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException
     {
-        if ( empty( input ) ) return DefaultFormat.validateKeys( Collections.<String,Object>emptyMap(), requiredKeys );
+        if ( empty( input ) )
+        {
+            return DefaultFormat.validateKeys( Collections.emptyMap(), requiredKeys );
+        }
         try
         {
             return DefaultFormat.validateKeys( JsonHelper.jsonToMap( stripByteOrderMark( input ) ), requiredKeys );
@@ -219,7 +223,10 @@ public class CompactJsonFormat extends RepresentationFormat
     @Override
     public Object readValue( String input ) throws BadInputException
     {
-        if ( empty( input ) ) return Collections.emptyMap();
+        if ( empty( input ) )
+        {
+            return Collections.emptyMap();
+        }
         try
         {
             return assertSupportedPropertyValue( readJson( stripByteOrderMark( input ) ) );

@@ -21,13 +21,11 @@ package org.neo4j.kernel;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -37,10 +35,10 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
@@ -51,7 +49,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -62,10 +59,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class NeoStoreDataSourceTest
@@ -90,9 +85,11 @@ public class NeoStoreDataSourceTest
         {
             DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
                     NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependency( databaseHealth );
 
             theDataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
-                    stringMap(), databaseHealth );
+                    dependencies );
 
             databaseHealth.panic( new Throwable() );
 
@@ -102,7 +99,7 @@ public class NeoStoreDataSourceTest
         }
         finally
         {
-            if ( theDataSource!= null )
+            if ( theDataSource != null )
             {
                 theDataSource.stop();
                 theDataSource.shutdown();
@@ -114,7 +111,7 @@ public class NeoStoreDataSourceTest
     public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws IOException
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap() );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
 
         ds.init();
         ds.start();
@@ -129,12 +126,9 @@ public class NeoStoreDataSourceTest
     @Test
     public void flushOfThePageCacheOnShutdownHappensIfTheDbIsHealthy() throws IOException
     {
-        DatabaseHealth health = mock( DatabaseHealth.class );
-        when( health.isHealthy() ).thenReturn( true );
-
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap(), health );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
 
         ds.init();
         ds.start();
@@ -150,10 +144,11 @@ public class NeoStoreDataSourceTest
     {
         DatabaseHealth health = mock( DatabaseHealth.class );
         when( health.isHealthy() ).thenReturn( false );
-
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap(), health );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( health );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, dependencies );
 
         ds.init();
         ds.start();
@@ -183,7 +178,8 @@ public class NeoStoreDataSourceTest
     public void shouldLogCorrectTransactionLogDiagnosticsForTransactionsInOldestLog() throws Exception
     {
         // GIVEN
-        long logVersion = 2, prevLogLastTxId = 45;
+        long logVersion = 2;
+        long prevLogLastTxId = 45;
         NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
                 logWithTransactions( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -201,7 +197,8 @@ public class NeoStoreDataSourceTest
     public void shouldLogCorrectTransactionLogDiagnosticsForTransactionsInSecondOldestLog() throws Exception
     {
         // GIVEN
-        long logVersion = 2, prevLogLastTxId = 45;
+        long logVersion = 2;
+        long prevLogLastTxId = 45;
         NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
                 logWithTransactionsInNextToOldestLog( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -218,7 +215,7 @@ public class NeoStoreDataSourceTest
     @Test
     public void logModuleSetUpError() throws Exception
     {
-        Config config = new Config( stringMap(), GraphDatabaseSettings.class );
+        Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory ).create( any( File.class ), anyLong(), anyBoolean() );
@@ -228,10 +225,11 @@ public class NeoStoreDataSourceTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
 
-        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), idGeneratorFactory,
-                idTypeConfigurationProvider,
-                pageCache, config.getParams(), mock( DatabaseHealth.class ), logService );
+        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(),
+                pageCache, dependencies );
 
         try
         {
@@ -260,7 +258,9 @@ public class NeoStoreDataSourceTest
         IOException ex = new IOException( "boom!" );
         doThrow( ex ).when( databaseHealth )
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
-        NeoStoreDataSource dataSource = dsRule.getDataSource( storeDir, fs, pageCache, emptyMap(), databaseHealth );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( databaseHealth );
+        NeoStoreDataSource dataSource = dsRule.getDataSource( storeDir, fs, pageCache, dependencies );
         dataSource.start();
 
         try
@@ -274,23 +274,6 @@ public class NeoStoreDataSourceTest
             // Then
             assertEquals( ex, e.getCause() );
         }
-    }
-
-    @Test
-    public void checkTransactionStatsWhenStopDataSource() throws IOException
-    {
-        NeoStoreDataSource dataSource =
-                dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs ), emptyMap() );
-        TransactionStats transactionMonitor = dsRule.getTransactionMonitor();
-        dataSource.start();
-
-        Mockito.verifyZeroInteractions(transactionMonitor);
-
-        dataSource.stop();
-        verify( transactionMonitor, times( 2 ) ).getNumberOfTerminatedTransactions();
-        verify( transactionMonitor, times( 2 ) ).getNumberOfRolledBackTransactions();
-        verify( transactionMonitor, times( 2 ) ).getNumberOfStartedTransactions();
-        verify( transactionMonitor, times( 2 ) ).getNumberOfCommittedTransactions();
     }
 
     private NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( PhysicalLogFiles files )

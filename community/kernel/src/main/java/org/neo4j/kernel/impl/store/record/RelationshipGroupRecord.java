@@ -200,19 +200,21 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         if ( !super.equals( o ) )
-        { return false; }
+        {
+            return false;
+        }
         RelationshipGroupRecord that = (RelationshipGroupRecord) o;
-        return type == that.type &&
-               next == that.next &&
-               firstOut == that.firstOut &&
-               firstIn == that.firstIn &&
-               firstLoop == that.firstLoop &&
-               owningNode == that.owningNode;
-               // don't compare prev since it's not persisted
+        return type == that.type && next == that.next && firstOut == that.firstOut && firstIn == that.firstIn &&
+                firstLoop == that.firstLoop && owningNode == that.owningNode;
+        // don't compare prev since it's not persisted
     }
 
     @Override

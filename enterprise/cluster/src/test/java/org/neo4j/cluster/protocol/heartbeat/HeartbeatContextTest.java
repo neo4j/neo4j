@@ -194,7 +194,7 @@ public class HeartbeatContextTest
         assertTrue( toTest.isFailed( suspect ) );
 
         // Assume the other guy started receiving heartbeats first
-        toTest.suspicions( newSuspiciousBastard, Collections.<InstanceId>emptySet() );
+        toTest.suspicions( newSuspiciousBastard, Collections.emptySet() );
         assertFalse( toTest.isFailed( suspect ) );
     }
 
@@ -230,7 +230,7 @@ public class HeartbeatContextTest
     {
         // Given
         InstanceId notInCluster = new InstanceId( -1 ); // backup, for example
-        toTest.suspicions( notInCluster, Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable( instanceIds[1] ) ) );
+        toTest.suspicions( notInCluster, Iterables.asSet( Iterables.iterable( instanceIds[1] ) ) );
 
         // When
         List<InstanceId> suspicions = toTest.getSuspicionsOf( instanceIds[1] );

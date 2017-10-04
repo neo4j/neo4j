@@ -32,6 +32,10 @@ import java.util.List;
  */
 public class ProcessUtil
 {
+    private ProcessUtil()
+    {
+    }
+
     /**
      * Get the path to the {@code java} executable that is running this Java program.
      * <p>

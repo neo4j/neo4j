@@ -19,9 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -29,9 +26,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -46,13 +46,12 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -70,7 +69,7 @@ public class DefaultUdcInformationCollectorTest
 
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
-            Config.empty(), null,
+            Config.defaults(), null,
             new StubIdGeneratorFactory(), mock( StartupStatistics.class ), usageData );
 
     @Test
@@ -144,11 +143,11 @@ public class DefaultUdcInformationCollectorTest
 
         // When & Then
         String userAgents = collector.getUdcParams().get( UdcConstants.USER_AGENTS );
-        if( !(userAgents.equals( "SteveBrookClient/1.0,MayorClient/1.0" )
-           || userAgents.equals( "MayorClient/1.0,SteveBrookClient/1.0" )))
+        if ( !(userAgents.equals( "SteveBrookClient/1.0,MayorClient/1.0" ) ||
+                userAgents.equals( "MayorClient/1.0,SteveBrookClient/1.0" )) )
         {
-            fail("Expected \"SteveBrookClient/1.0,MayorClient/1.0\" or \"MayorClient/1.0,SteveBrookClient/1.0\", " +
-                 "got \""+userAgents+"\"");
+            fail( "Expected \"SteveBrookClient/1.0,MayorClient/1.0\" or \"MayorClient/1.0,SteveBrookClient/1.0\", " +
+                    "got \"" + userAgents + "\"" );
         }
     }
 
@@ -170,7 +169,7 @@ public class DefaultUdcInformationCollectorTest
         dataSourceManager.start();
 
         UdcInformationCollector collector = new DefaultUdcInformationCollector(
-                Config.empty(),
+                Config.defaults(),
                 dataSourceManager,
                 new StubIdGeneratorFactory(),
                 mock(StartupStatistics.class),
@@ -202,7 +201,7 @@ public class DefaultUdcInformationCollectorTest
     private Set<StoreFileMetadata> toMeta( File... files )
     {
         return Arrays.stream( files )
-                .map( file -> new StoreFileMetadata( file, Optional.empty(), RecordFormat.NO_RECORD_SIZE ) )
+                .map( file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE ) )
                 .collect( Collectors.toCollection( HashSet::new ) );
     }
 
@@ -226,13 +225,13 @@ public class DefaultUdcInformationCollectorTest
         }
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+        public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
         {
             return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
         {
             return get( idType );
         }

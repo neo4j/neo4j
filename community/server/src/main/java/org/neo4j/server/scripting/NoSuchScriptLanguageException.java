@@ -23,6 +23,6 @@ public class NoSuchScriptLanguageException extends RuntimeException
 {
     public NoSuchScriptLanguageException( String msg )
     {
-        super(msg);
+        super( msg );
     }
 }

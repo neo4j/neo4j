@@ -21,7 +21,7 @@ package org.neo4j.cursor;
 
 public class CursorValue<T>
 {
-    private boolean valid = false;
+    private boolean valid;
     private T t;
 
     public void set( T newT )
@@ -32,7 +32,7 @@ public class CursorValue<T>
 
     public T get()
     {
-        if( valid )
+        if ( valid )
         {
             return t;
         }

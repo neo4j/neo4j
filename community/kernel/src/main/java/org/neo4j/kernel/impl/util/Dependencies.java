@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 
-@SuppressWarnings( "rawtypes" )
+@SuppressWarnings( "unchecked" )
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
     private final Supplier<DependencyResolver> parent;
@@ -53,25 +53,27 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     {
         List<?> options = typeDependencies.get( type );
 
-        if (options != null)
+        if ( options != null )
         {
             return selector.select( type, (Iterable<T>) options);
         }
 
         // Try parent
-        if (parent != null)
+        if ( parent != null )
         {
             DependencyResolver dependencyResolver = parent.get();
 
-            if (dependencyResolver !=null)
+            if ( dependencyResolver != null )
+            {
                 return dependencyResolver.resolveDependency( type, selector );
+            }
         }
 
         // Out of options
         throw new UnsatisfiedDependencyException( type );
     }
 
-    public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
+    public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector )
     {
         return () -> resolveDependency( type, selector );
     }
@@ -85,11 +87,11 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     public <T> T satisfyDependency( T dependency )
     {
         // File this object under all its possible types
-        Class type = dependency.getClass();
+        Class<?> type = dependency.getClass();
         do
         {
             List<Object> deps = (List<Object>) typeDependencies.get( type );
-            if (deps == null)
+            if ( deps == null )
             {
                 deps = new ArrayList<>(  );
                 typeDependencies.put(type, deps);
@@ -97,16 +99,17 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
             deps.add( dependency );
 
             // Add as all interfaces
-            Class[] interfaces = type.getInterfaces();
+            Class<?>[] interfaces = type.getInterfaces();
             addInterfaces(interfaces, dependency);
 
             type = type.getSuperclass();
-        } while (type != null);
+        }
+        while ( type != null );
 
         return dependency;
     }
 
-    public void satisfyDependencies(Object... dependencies)
+    public void satisfyDependencies( Object... dependencies )
     {
         for ( Object dependency : dependencies )
         {
@@ -114,12 +117,12 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         }
     }
 
-    private <T> void addInterfaces( Class[] interfaces, T dependency )
+    private <T> void addInterfaces( Class<?>[] interfaces, T dependency )
     {
-        for ( Class type : interfaces )
+        for ( Class<?> type : interfaces )
         {
             List<Object> deps = (List<Object>) typeDependencies.get( type );
-            if (deps == null)
+            if ( deps == null )
             {
                 deps = new ArrayList<>(  );
                 typeDependencies.put(type, deps);

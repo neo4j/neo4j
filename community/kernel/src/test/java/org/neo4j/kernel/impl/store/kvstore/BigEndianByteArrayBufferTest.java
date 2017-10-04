@@ -115,7 +115,9 @@ public class BigEndianByteArrayBufferTest
     public void shouldCompareByteArrays() throws Exception
     {
         // given
-        Matcher<Integer> LESS_THAN = lessThan( 0 ), GREATER_THAN = greaterThan( 0 ), EQUAL_TO = equalTo( 0 );
+        Matcher<Integer> LESS_THAN = lessThan( 0 );
+        Matcher<Integer> GREATER_THAN = greaterThan( 0 );
+        Matcher<Integer> EQUAL_TO = equalTo( 0 );
 
         // then
         assertCompare( new byte[0], EQUAL_TO, new byte[0] );

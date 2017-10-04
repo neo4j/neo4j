@@ -58,6 +58,6 @@ public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
     @SafeVarargs
     public ClassGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... victims )
     {
-        super(delegate, victims);
+        super( delegate, victims );
     }
 }

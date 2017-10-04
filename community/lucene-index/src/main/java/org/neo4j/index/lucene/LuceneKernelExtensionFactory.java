@@ -19,7 +19,8 @@
  */
 package org.neo4j.index.lucene;
 
-import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
+import org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -27,8 +28,16 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 
+/**
+ * @deprecated removed in 4.0
+ */
+@Deprecated
 public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneKernelExtensionFactory.Dependencies>
 {
+    /**
+     * @deprecated removed in 4.0
+     */
+    @Deprecated
     public interface Dependencies
     {
         Config getConfig();
@@ -36,8 +45,14 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
         IndexProviders getIndexProviders();
 
         IndexConfigStore getIndexStore();
+
+        FileSystemAbstraction fileSystem();
     }
 
+    /**
+     * @deprecated removed in 4.0
+     */
+    @Deprecated
     public LuceneKernelExtensionFactory()
     {
         super( LuceneIndexImplementation.SERVICE_NAME );
@@ -50,7 +65,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
                 context.storeDir(),
                 dependencies.getConfig(),
                 dependencies::getIndexStore,
-                context.fileSystem(),
+                dependencies.fileSystem(),
                 dependencies.getIndexProviders(),
                 context.databaseInfo().operationalMode );
     }

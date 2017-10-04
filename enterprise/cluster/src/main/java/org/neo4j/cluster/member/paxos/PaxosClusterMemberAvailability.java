@@ -61,14 +61,10 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.log = logProvider.getLog( getClass() );
 
-        bindingListener = new BindingListener()
+        bindingListener = me ->
         {
-            @Override
-            public void listeningAt( URI me )
-            {
-                serverClusterId = me;
-                PaxosClusterMemberAvailability.this.log.info( "Listening at:" + me );
-            }
+            serverClusterId = me;
+            PaxosClusterMemberAvailability.this.log.info( "Listening at:" + me );
         };
     }
 

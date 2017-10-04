@@ -87,10 +87,14 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     {
         if ( record.inUse() )
         {
-            long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & 0x700000000L) >> 31;
-            long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & 0x700000000L) >> 28;
-            long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & 0x700000000L) >> 31;
-            long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & 0x700000000L) >> 28;
+            long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
+                           (record.getNext() & 0x700000000L) >> 31;
+            long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
+                              (record.getFirstOut() & 0x700000000L) >> 28;
+            long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
+                             (record.getFirstIn() & 0x700000000L) >> 31;
+            long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
+                               (record.getFirstLoop() & 0x700000000L) >> 28;
 
             // [    ,   x] in use
             // [    ,xxx ] high next id bits

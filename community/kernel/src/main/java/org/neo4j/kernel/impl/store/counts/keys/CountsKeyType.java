@@ -21,7 +21,11 @@ package org.neo4j.kernel.impl.store.counts.keys;
 
 public enum CountsKeyType
 {
-    EMPTY ( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_STATISTICS( 4 ), INDEX_SAMPLE( 5 );
+    EMPTY( 0 ),
+    ENTITY_NODE( 2 ),
+    ENTITY_RELATIONSHIP( 3 ),
+    INDEX_STATISTICS( 4 ),
+    INDEX_SAMPLE( 5 );
 
     public final byte code;
 
@@ -30,10 +34,10 @@ public enum CountsKeyType
         this.code = (byte) code;
     }
 
-    public static CountsKeyType value(byte val)
+    public static CountsKeyType value( byte val )
     {
-        switch (val){
-
+        switch ( val )
+        {
         case 2:
             return CountsKeyType.ENTITY_NODE;
         case 3:
@@ -43,7 +47,7 @@ public enum CountsKeyType
         case 5:
             return CountsKeyType.INDEX_SAMPLE;
         default:
-            throw new IllegalArgumentException("Parsed key type from count store deserialization of unknown type.");
+            throw new IllegalArgumentException( "Parsed key type from count store deserialization of unknown type." );
         }
     }
 }

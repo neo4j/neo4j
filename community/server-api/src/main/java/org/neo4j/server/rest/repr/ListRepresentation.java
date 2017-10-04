@@ -68,8 +68,10 @@ public class ListRepresentation extends Representation
         finally
         {
             // Make sure we exhaust this iterator in case it has an internal close mechanism
-            while (contentIterator.hasNext())
+            while ( contentIterator.hasNext() )
+            {
                 contentIterator.next();
+            }
         }
     }
 
@@ -118,45 +120,38 @@ public class ListRepresentation extends Representation
 
     public static ListRepresentation numbers( final long... values )
     {
-        return new ListRepresentation( RepresentationType.LONG, new Iterable<ValueRepresentation>()
-        {
-            @Override
-            public Iterator<ValueRepresentation> iterator()
-            {
-                return new PrefetchingIterator<ValueRepresentation>()
+        return new ListRepresentation( RepresentationType.LONG, (Iterable<ValueRepresentation>) () ->
+                new PrefetchingIterator<ValueRepresentation>()
                 {
-                    int pos = 0;
+                    int pos;
 
                     @Override
                     protected ValueRepresentation fetchNextOrNull()
                     {
-                        if ( pos >= values.length ) return null;
+                        if ( pos >= values.length )
+                        {
+                            return null;
+                        }
                         return ValueRepresentation.number( values[pos++] );
                     }
-                };
-            }
-        } );
+                } );
     }
 
     public static ListRepresentation numbers( final double[] values )
     {
         return new ListRepresentation( RepresentationType.DOUBLE,
-                new Iterable<ValueRepresentation>()
+                (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<ValueRepresentation>()
                 {
-                    @Override
-                    public Iterator<ValueRepresentation> iterator()
-                    {
-                        return new PrefetchingIterator<ValueRepresentation>()
-                        {
-                            int pos = 0;
+                    int pos;
 
-                            @Override
-                            protected ValueRepresentation fetchNextOrNull()
-                            {
-                                if ( pos >= values.length ) return null;
-                                return ValueRepresentation.number( values[pos++] );
-                            }
-                        };
+                    @Override
+                    protected ValueRepresentation fetchNextOrNull()
+                    {
+                        if ( pos >= values.length )
+                        {
+                            return null;
+                        }
+                        return ValueRepresentation.number( values[pos++] );
                     }
                 } );
     }

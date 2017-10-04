@@ -19,21 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongPredicate;
 
+import org.neo4j.concurrent.AsyncApply;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
-import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
-import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
 
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
@@ -51,13 +48,10 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     // max processors for this step, zero means unlimited, or rather config.maxNumberOfProcessors()
     private final int maxProcessors;
     private final Configuration config;
-    private final LongPredicate catchUp = queueSizeThreshold -> queuedBatches.get() <= queueSizeThreshold;
-    protected final AtomicLong begunBatches = new AtomicLong();
 
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
-    private final ParkStrategy park = new ParkStrategy.Park( 1, MILLISECONDS );
 
     protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors,
             StatsProvider... additionalStatsProviders )
@@ -71,36 +65,31 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public void start( int orderingGuarantees )
     {
         super.start( orderingGuarantees );
-        this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, theoreticalMaxProcessors(),
+        this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, config.maxNumberOfProcessors(),
                 DEFAULT_PARK_STRATEGY, name(), Sender::new );
-    }
-
-    private int theoreticalMaxProcessors()
-    {
-        return maxProcessors == 0 ? config.maxNumberOfProcessors() : maxProcessors;
     }
 
     @Override
     public long receive( final long ticket, final T batch )
     {
         // Don't go too far ahead
-        long idleTime = await( catchUp, executor.processors( 0 ), healthChecker, park );
         incrementQueue();
-        executor.submit( sender -> {
+        long nanoTime = nanoTime();
+        executor.submit( sender ->
+        {
             assertHealthy();
             sender.initialize( ticket );
             try
             {
-                begunBatches.incrementAndGet();
-                long startTime1 = nanoTime();
+                long startTime = nanoTime();
                 process( batch, sender );
                 if ( downstream == null )
                 {
-                    // No batches were emmitted so we couldn't track done batches in that way.
+                    // No batches were emitted so we couldn't track done batches in that way.
                     // We can see that we're the last step so increment here instead
                     doneBatches.incrementAndGet();
                 }
-                totalProcessingTime.add( nanoTime() - startTime1 - sender.sendTime );
+                totalProcessingTime.add( nanoTime() - startTime - sender.sendTime );
 
                 decrementQueue();
                 checkNotifyEndDownstream();
@@ -110,7 +99,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
                 issuePanic( e );
             }
         } );
-        return idleTime;
+        return nanoTime() - nanoTime;
     }
 
     private void decrementQueue()
@@ -134,7 +123,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             long lastBatchEnd = lastBatchEndTime.get();
             if ( lastBatchEnd != 0 )
             {
-                upstreamIdleTime.addAndGet( currentTimeMillis()-lastBatchEnd );
+                upstreamIdleTime.add( currentTimeMillis() - lastBatchEnd );
             }
         }
     }
@@ -166,20 +155,52 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     }
 
     @SuppressWarnings( "unchecked" )
-    private void sendDownstream( long ticket, Object batch )
+    private AsyncApply sendDownstream( long ticket, Object batch, AsyncApply downstreamAsync )
     {
         if ( guarantees( ORDER_SEND_DOWNSTREAM ) )
         {
-            await( rightDoneTicket, ticket, healthChecker, park );
+            AsyncApply async = downstreamWorkSync.applyAsync( new SendDownstream( ticket, batch, downstreamIdleTime ) );
+            if ( downstreamAsync != null )
+            {
+                try
+                {
+                    downstreamAsync.await();
+                    async.await();
+                    return null;
+                }
+                catch ( ExecutionException e )
+                {
+                    issuePanic( e.getCause() );
+                }
+            }
+            else
+            {
+                return async;
+            }
         }
-        downstreamIdleTime.addAndGet( downstream.receive( ticket, batch ) );
-        doneBatches.incrementAndGet();
+        else
+        {
+            downstreamIdleTime.add( downstream.receive( ticket, batch ) );
+            doneBatches.incrementAndGet();
+        }
+        return null;
     }
 
     @Override
     protected void done()
     {
         lastCallForEmittingOutstandingBatches( new Sender() );
+        if ( downstreamWorkSync != null )
+        {
+            try
+            {
+                downstreamWorkSync.apply( new SendDownstream( -1, null, downstreamIdleTime ) );
+            }
+            catch ( ExecutionException e )
+            {
+                issuePanic( e.getCause() );
+            }
+        }
         super.done();
     }
 
@@ -191,6 +212,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     {
         private long sendTime;
         private long ticket;
+        private AsyncApply downstreamAsync;
 
         @Override
         public void send( Object batch )
@@ -198,11 +220,11 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             long time = nanoTime();
             try
             {
-                sendDownstream( ticket, batch );
+                downstreamAsync = sendDownstream( ticket, batch, downstreamAsync );
             }
             finally
             {
-                sendTime += (nanoTime() - time);
+                sendTime += nanoTime() - time;
             }
         }
 

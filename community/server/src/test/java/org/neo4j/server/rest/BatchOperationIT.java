@@ -66,7 +66,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
                  "image::batch-request-api.png[]" )
     @SuppressWarnings( "unchecked" )
     @Test
-    @Graph("Joe knows John")
+    @Graph( "Joe knows John" )
     public void shouldPerformMultipleOperations() throws Exception
     {
         long idJoe = data.get().get( "Joe" ).getId();
@@ -126,8 +126,8 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         assertEquals(3, secondPostResult.get("id"));
 
         // Should contain "from"
-        assertEquals("/node/"+idJoe+"/properties", putResult.get("from"));
-        assertEquals("/node/"+idJoe, getResult.get("from"));
+        assertEquals("/node/" + idJoe + "/properties", putResult.get("from"));
+        assertEquals("/node/" + idJoe, getResult.get("from"));
         assertEquals("/node", firstPostResult.get("from"));
         assertEquals("/node", secondPostResult.get("from"));
 
@@ -216,7 +216,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
 
     private String batchUri()
     {
-        return getDataUri()+"batch";
+        return getDataUri() + "batch";
     }
 
     @Test
@@ -306,11 +306,11 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
         assertEquals(500, response.getStatus());
-        assertEquals(originalNodeCount, countNodes());
+        assertEquals( originalNodeCount, countNodes() );
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldHandleUnicodeGetCorrectly() throws Exception
     {
         String asianText = "\u4f8b\u5b50";
@@ -375,12 +375,12 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         Map<String, Object> result = JsonHelper.jsonToMap(entity);
         String exception = (String) result.get("exception");
         assertThat(exception, is("BatchOperationFailedException"));
-        String innerException = (String) ((Map) JsonHelper.jsonToMap((String) result.get("message"))).get("exception");
+        String innerException = (String) JsonHelper.jsonToMap((String) result.get("message")).get("exception");
         assertThat(innerException, is("CypherTypeException"));
     }
 
     @Test
-    @Graph("Peter likes Jazz")
+    @Graph( "Peter likes Jazz" )
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
             UniformInterfaceException, JSONException, JsonParseException
     {
@@ -394,7 +394,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         .array()
             .object()
                 .key("method") .value("PUT")
-                .key("to")     .value("/node/"+gnode.getId()+"/properties")
+                .key("to")     .value("/node/" + gnode.getId() + "/properties")
                 .key("body")
                     .object()
                         .key("name").value(name)
@@ -412,7 +412,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         .array()
             .object()
                 .key("method") .value("GET")
-                .key("to")     .value("/node/"+gnode.getId()+"/properties/name")
+                .key("to")     .value("/node/" + gnode.getId() + "/properties/name")
             .endObject()
         .endArray()
         .toString();
@@ -713,45 +713,44 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     @Test
     public void shouldFailWhenUsingPeriodicCommitViaNewTxEndpoint() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
+        ServerTestUtils.withCSVFile( 1, url ->
         {
-            @Override
-            public void execute( String url ) throws Exception
-            {
-                // Given
-                String jsonString = new PrettyJSON()
-                        .array()
-                        .object()
-                        .key( "method" ).value("POST")
-                        .key( "to" ).value("/transaction/commit")
-                        .key( "body" ).object()
-                        .key("statements").array()
-                        .object().key( "statement" ).value( "USING PERIODIC COMMIT LOAD CSV FROM '" + url + "' AS line CREATE ()" ).endObject()
-                        .endArray()
-                        .endObject()
-                        .endObject()
-                        .endArray()
-                        .toString();
+            // Given
+            String jsonString = new PrettyJSON()
+                    .array()
+                    .object()
+                    .key( "method" ).value("POST")
+                    .key( "to" ).value("/transaction/commit")
+                    .key( "body" ).object()
+                    .key("statements").array()
+                    .object()
+                    .key( "statement" )
+                    .value( "USING PERIODIC COMMIT LOAD CSV FROM '" + url + "' AS line CREATE ()" )
+                    .endObject()
+                    .endArray()
+                    .endObject()
+                    .endObject()
+                    .endArray()
+                    .toString();
 
-                // When
-                JsonNode result = JsonHelper.jsonNode(gen.get()
-                        .expectedStatus(200)
-                        .payload(jsonString)
-                        .post(batchUri())
-                        .entity());
+            // When
+            JsonNode result = JsonHelper.jsonNode(gen.get()
+                    .expectedStatus(200)
+                    .payload(jsonString)
+                    .post(batchUri())
+                    .entity());
 
-                // Then
-                JsonNode results = result.get(0).get("body").get("results");
-                JsonNode errors = result.get(0).get("body").get("errors");
+            // Then
+            JsonNode results = result.get(0).get("body").get("results");
+            JsonNode errors = result.get(0).get("body").get("errors");
 
-                assertTrue( "Results not an array", results.isArray() );
-                assertEquals( 0, results.size() );
-                assertTrue( "Errors not an array", errors.isArray() );
-                assertEquals( 1, errors.size() );
+            assertTrue( "Results not an array", results.isArray() );
+            assertEquals( 0, results.size() );
+            assertTrue( "Errors not an array", errors.isArray() );
+            assertEquals( 1, errors.size() );
 
-                String errorCode = errors.get(0).get("code").getTextValue();
-                assertEquals( "Neo.ClientError.Statement.SemanticError", errorCode );
-            }
+            String errorCode = errors.get(0).get("code").getTextValue();
+            assertEquals( "Neo.ClientError.Statement.SemanticError", errorCode );
         } );
     }
 
@@ -760,7 +759,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         try ( Transaction tx = graphdb().beginTx() )
         {
             int count = 0;
-            for(Node node : graphdb().getAllNodes())
+            for ( Node node : graphdb().getAllNodes() )
             {
                 count++;
             }

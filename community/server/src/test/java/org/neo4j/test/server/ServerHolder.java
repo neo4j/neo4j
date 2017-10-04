@@ -33,24 +33,41 @@ final class ServerHolder extends Thread
 
     static synchronized NeoServer allocate() throws IOException
     {
-        if ( allocation != null ) throw allocation;
-        if ( server == null ) server = startServer();
+        if ( allocation != null )
+        {
+            throw allocation;
+        }
+        if ( server == null )
+        {
+            server = startServer();
+        }
         allocation = new AssertionError( "The server was allocated from here but not released properly" );
         return server;
     }
 
     static synchronized void release( NeoServer server )
     {
-        if ( server == null ) return;
+        if ( server == null )
+        {
+            return;
+        }
         if ( server != ServerHolder.server )
+        {
             throw new AssertionError( "trying to suspend a server not allocated from here" );
-        if ( allocation == null ) throw new AssertionError( "releasing the server although it is not allocated" );
+        }
+        if ( allocation == null )
+        {
+            throw new AssertionError( "releasing the server although it is not allocated" );
+        }
         allocation = null;
     }
 
     static synchronized void ensureNotRunning()
     {
-        if ( allocation != null ) throw allocation;
+        if ( allocation != null )
+        {
+            throw allocation;
+        }
         shutdown();
     }
 
@@ -71,7 +88,10 @@ final class ServerHolder extends Thread
         allocation = null;
         try
         {
-            if ( server != null ) server.stop();
+            if ( server != null )
+            {
+                server.stop();
+            }
         }
         finally
         {

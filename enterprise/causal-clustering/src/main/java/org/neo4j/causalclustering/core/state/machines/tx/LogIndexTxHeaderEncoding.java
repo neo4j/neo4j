@@ -24,6 +24,10 @@ package org.neo4j.causalclustering.core.state.machines.tx;
  */
 public class LogIndexTxHeaderEncoding
 {
+    private LogIndexTxHeaderEncoding()
+    {
+    }
+
     public static byte[] encodeLogIndexAsTxHeader( long logIndex )
     {
         byte[] b = new byte[Long.BYTES];

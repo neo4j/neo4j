@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
 
 /**
@@ -126,4 +127,14 @@ public interface TestServerBuilder
      * @return this builder instance
      */
     TestServerBuilder withFunction( Class<?> functionClass );
+
+    /**
+     * Configure the server to load the specified aggregation function definition class. The class should contain one or more
+     * methods annotated with {@link UserAggregationFunction}, these will become available to call through
+     * cypher.
+     *
+     * @param functionClass a class containing one or more function definitions
+     * @return this builder instance
+     */
+    TestServerBuilder withAggregationFunction( Class<?> functionClass );
 }

@@ -82,9 +82,9 @@ interface RaftMembershipStateMachineEventHandler
         }
 
         @Override
-        public void onExit() {};
+        public void onExit() {}
 
         @Override
-        public void onEntry() {};
+        public void onEntry() {}
     }
 }

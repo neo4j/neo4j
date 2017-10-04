@@ -35,31 +35,31 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 public interface RecordAccess
 {
-    RecordReference<DynamicRecord> schema( final long id );
+    RecordReference<DynamicRecord> schema( long id );
 
-    RecordReference<NodeRecord> node( final long id );
+    RecordReference<NodeRecord> node( long id );
 
-    RecordReference<RelationshipRecord> relationship( final long id );
+    RecordReference<RelationshipRecord> relationship( long id );
 
-    RecordReference<PropertyRecord> property( final long id );
+    RecordReference<PropertyRecord> property( long id );
 
-    RecordReference<RelationshipTypeTokenRecord> relationshipType( final int id );
+    RecordReference<RelationshipTypeTokenRecord> relationshipType( int id );
 
-    RecordReference<PropertyKeyTokenRecord> propertyKey( final int id );
+    RecordReference<PropertyKeyTokenRecord> propertyKey( int id );
 
-    RecordReference<DynamicRecord> string( final long id );
+    RecordReference<DynamicRecord> string( long id );
 
-    RecordReference<DynamicRecord> array( final long id );
+    RecordReference<DynamicRecord> array( long id );
 
-    RecordReference<DynamicRecord> relationshipTypeName( final int id );
+    RecordReference<DynamicRecord> relationshipTypeName( int id );
 
-    RecordReference<DynamicRecord> nodeLabels( final long id );
+    RecordReference<DynamicRecord> nodeLabels( long id );
 
-    RecordReference<LabelTokenRecord> label( final int id );
+    RecordReference<LabelTokenRecord> label( int id );
 
-    RecordReference<DynamicRecord> labelName( final int id );
+    RecordReference<DynamicRecord> labelName( int id );
 
-    RecordReference<DynamicRecord> propertyKeyName( final int id );
+    RecordReference<DynamicRecord> propertyKeyName( int id );
 
     RecordReference<NeoStoreRecord> graph();
 

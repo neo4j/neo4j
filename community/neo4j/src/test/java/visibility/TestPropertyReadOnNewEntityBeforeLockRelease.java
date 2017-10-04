@@ -35,10 +35,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.RepeatRule;
-import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.test.rule.RepeatRule.Repeat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

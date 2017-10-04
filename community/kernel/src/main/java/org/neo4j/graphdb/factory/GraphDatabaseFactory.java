@@ -21,9 +21,11 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
@@ -32,10 +34,17 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 /**
- * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
+ * Creates a {@link org.neo4j.graphdb.GraphDatabaseService} with Community Edition features.
  * <p>
  * Use {@link #newEmbeddedDatabase(File)} or
  * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
+ * <p>
+ * <strong>Note:</strong> If you are using the Enterprise Edition of Neo4j in embedded mode, you have to create your
+ * database with the <a href="EnterpriseGraphDatabaseFactory.html">{@code EnterpriseGraphDatabaseFactory}</a>
+ * to enable the Enterprise Edition features, or the
+ * <a href="HighlyAvailableGraphDatabaseFactory.html">{@code HighlyAvailableGraphDatabaseFactory}</a> for the
+ * Enterprise and High-Availability features. There is no factory for the Causal Clustering features, because it is
+ * currently not possible to run a causal cluster in embedded mode.
  */
 public class GraphDatabaseFactory
 {
@@ -83,10 +92,20 @@ public class GraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
             final File storeDir, final GraphDatabaseFactoryState state )
     {
-        return config -> {
-            config.put( "unsupported.dbms.ephemeral", "false" );
-            GraphDatabaseFacadeFactory.Dependencies dependencies = state.databaseDependencies();
-            return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
+        return new GraphDatabaseBuilder.DatabaseCreator()
+        {
+            @Override
+            public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.defaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( @Nonnull Config config )
+            {
+                config.augment( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" );
+                return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir, config, state.databaseDependencies() );
+            }
         };
     }
 
@@ -95,7 +114,24 @@ public class GraphDatabaseFactory
         // Let the default configuration pass through.
     }
 
-    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    /**
+     * See {@link #newDatabase(File, Config, GraphDatabaseFacadeFactory.Dependencies)} instead.
+     */
+    @Deprecated
+    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> settings,
+                                                GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        return newDatabase( storeDir, Config.defaults( settings ), dependencies );
+    }
+
+    protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
+                                                        GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
+    }
+
+    protected GraphDatabaseService newDatabase( File storeDir, Config config,
+                                                GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 .newFacade( storeDir, config, dependencies );

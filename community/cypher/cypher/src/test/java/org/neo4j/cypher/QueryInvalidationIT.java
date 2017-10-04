@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.cypher.internal.compiler.v3_1.CypherCacheHitMonitor;
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Query;
+import org.neo4j.cypher.internal.compatibility.v3_4.CypherCacheHitMonitor;
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Query;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -90,7 +90,7 @@ public class QueryInvalidationIT
         // GIVEN
         Config config = db.getConfigCopy();
         double divergenceThreshold = config.get( GraphDatabaseSettings.query_statistics_divergence_threshold );
-        long replanInterval = config.get( GraphDatabaseSettings.cypher_min_replan_interval );
+        long replanInterval = config.get( GraphDatabaseSettings.cypher_min_replan_interval ).toMillis();
 
         TestMonitor monitor = new TestMonitor();
         db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
@@ -143,7 +143,7 @@ public class QueryInvalidationIT
     {
         for ( long userId = startingUserId; userId < numUsers + startingUserId; userId++ )
         {
-            db.execute( "CREATE (newUser:User {userId: {userId}})", singletonMap( "userId", (Object) userId ) );
+            db.execute( "CREATE (newUser:User {userId: {userId}})", singletonMap( "userId", userId ) );
         }
         Map<String,Object> params = new HashMap<>();
         for ( int i = 0; i < numConnections; i++ )
@@ -158,13 +158,13 @@ public class QueryInvalidationIT
             params.put( "user1", user1 );
             params.put( "user2", user2 );
             db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
-                        "CREATE UNIQUE (user1) -[:FRIEND]- (user2)", params );
+                        "MERGE (user1) -[:FRIEND]- (user2)", params );
         }
     }
 
     private void executeDistantFriendsCountQuery( int userId )
     {
-        Map<String,Object> params = singletonMap( "userId", (Object) (long) randomInt( userId ) );
+        Map<String,Object> params = singletonMap( "userId", (long) randomInt( userId ) );
 
         try ( Result result = db.execute(
                 "MATCH (user:User { userId: {userId} } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " +

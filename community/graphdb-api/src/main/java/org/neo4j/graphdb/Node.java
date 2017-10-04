@@ -270,14 +270,14 @@ public interface Node extends Entity
      * will be returned.
      * @return relationship types which this node has one more relationships for.
      */
-    public Iterable<RelationshipType> getRelationshipTypes();
+    Iterable<RelationshipType> getRelationshipTypes();
 
     /**
      * Returns the number of relationships connected to this node regardless of
      * direction or type. This operation is always O(1).
      * @return the number of relationships connected to this node.
      */
-    public int getDegree();
+    int getDegree();
 
     /**
      * Returns the number of relationships of a given {@code type} connected to this node.
@@ -285,7 +285,7 @@ public interface Node extends Entity
      * @param type the type of relationships to get the degree for
      * @return the number of relationships of a given {@code type} connected to this node.
      */
-    public int getDegree( RelationshipType type );
+    int getDegree( RelationshipType type );
 
     /**
      * Returns the number of relationships of a given {@code direction} connected to this node.
@@ -293,7 +293,7 @@ public interface Node extends Entity
      * @param direction the direction of the relationships
      * @return the number of relationships of a given {@code direction} for this node.
      */
-    public int getDegree( Direction direction );
+    int getDegree( Direction direction );
 
     /**
      * Returns the number of relationships of a given {@code type} and {@code direction}
@@ -304,7 +304,7 @@ public interface Node extends Entity
      * @return the number of relationships of a given {@code type} and {@code direction}
      * for this node.
      */
-    public int getDegree( RelationshipType type, Direction direction );
+    int getDegree( RelationshipType type, Direction direction );
 
     /**
      * Adds a {@link Label} to this node. If this node doesn't already have

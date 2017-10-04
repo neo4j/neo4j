@@ -306,14 +306,14 @@ public final class ParseUtil
         return (List<T>) list;
     }
 
-    private static void assertType(Object obj, Type type)
+    private static void assertType( Object obj, Type type )
     {
-        if (obj == null)
+        if ( obj == null )
         {
             return;
         }
         //Since type erasure has already happened here we cannot verify ParameterizedType
-        if (type instanceof Class<?>)
+        if ( type instanceof Class<?> )
         {
             Class<?> clazz = (Class<?>) type;
             if ( !clazz.isAssignableFrom( obj.getClass() ) )

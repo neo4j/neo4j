@@ -41,16 +41,24 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.responseMessage;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 
+@SuppressWarnings( "unchecked" )
 public class TransportTestUtil
 {
+    private TransportTestUtil()
+    {
+    }
+
     public static byte[] dechunk( byte[] chunked ) throws IOException
     {
         ByteBuffer in = ByteBuffer.wrap( chunked );
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while(in.hasRemaining())
+        while ( in.hasRemaining() )
         {
             int chunkSize = in.getShort();
-            if( chunkSize == 0) continue;
+            if ( chunkSize == 0 )
+            {
+                continue;
+            }
 
             byte[] chunk = new byte[chunkSize];
             in.get( chunk );
@@ -215,7 +223,8 @@ public class TransportTestUtil
             @Override
             protected boolean matchesSafely( TransportConnection connection )
             {
-                Supplier<Boolean> condition = () -> {
+                Supplier<Boolean> condition = () ->
+                {
                     try
                     {
                         connection.send( new byte[]{0,0});

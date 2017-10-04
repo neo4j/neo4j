@@ -51,7 +51,7 @@ public class PackedOutputArray implements PackOutput
     @Override
     public PackOutput writeBytes( ByteBuffer buffer ) throws IOException
     {
-        while(buffer.remaining() > 0)
+        while ( buffer.remaining() > 0 )
         {
             data.writeByte( buffer.get() );
         }
@@ -93,7 +93,8 @@ public class PackedOutputArray implements PackOutput
         return this;
     }
 
-    public byte[] bytes() {
+    public byte[] bytes()
+    {
         return raw.toByteArray();
     }
 

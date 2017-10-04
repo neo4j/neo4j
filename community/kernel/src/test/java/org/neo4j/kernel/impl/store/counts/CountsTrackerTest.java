@@ -24,13 +24,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -49,6 +47,7 @@ import org.neo4j.test.rule.Resources;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -60,7 +59,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.function.Predicates.all;
 import static org.neo4j.kernel.impl.util.DebugUtil.classNameContains;
 import static org.neo4j.kernel.impl.util.DebugUtil.methodIs;
@@ -87,18 +85,19 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldBeAbleToWriteDataToCountsTracker() throws Exception
     {
         // given
         CountsTracker tracker = resourceManager.managed( newTracker() );
+        long indexId = 0;
         CountsOracle oracle = new CountsOracle();
         {
             CountsOracle.Node a = oracle.node( 1 );
             CountsOracle.Node b = oracle.node( 1 );
             oracle.relationship( a, 1, b );
-            oracle.indexSampling( 1, 1, 2, 2 );
-            oracle.indexUpdatesAndSize( 1, 1, 10, 2 );
+            oracle.indexSampling( indexId, 2, 2 );
+            oracle.indexUpdatesAndSize( indexId, 10, 2 );
         }
 
         // when
@@ -116,11 +115,11 @@ public class CountsTrackerTest
         // when
         try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( 1, 1, 2 );
+            updater.incrementIndexUpdates( indexId, 2 );
         }
 
         // then
-        oracle.indexUpdatesAndSize( 1, 1, 12, 2 );
+        oracle.indexUpdatesAndSize( indexId, 12, 2 );
         oracle.verify( tracker );
 
         // when
@@ -156,7 +155,8 @@ public class CountsTrackerTest
     {
         // given
         CountsOracle oracle = someData();
-        int firstTx = 2, secondTx = 3;
+        int firstTx = 2;
+        int secondTx = 3;
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker() );
@@ -195,7 +195,8 @@ public class CountsTrackerTest
     {
         // given
         CountsOracle oracle = someData();
-        final int firstTransaction = 2, secondTransaction = 3;
+        final int firstTransaction = 2;
+        int secondTransaction = 3;
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker() );
@@ -218,7 +219,7 @@ public class CountsTrackerTest
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
                     resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
-                    Config.empty(), resourceManager.testPath() )
+                    Config.defaults(), resourceManager.testPath() )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -227,7 +228,8 @@ public class CountsTrackerTest
                     return super.include( countsKey, value );
                 }
             } );
-            Future<Void> task = threading.execute( (ThrowingFunction<CountsTracker,Void,RuntimeException>) t -> {
+            Future<Void> task = threading.execute( t ->
+            {
                 try
                 {
                     delta.update( t, secondTransaction );
@@ -264,7 +266,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldNotRotateIfNoDataChanges() throws Exception
     {
         // given
@@ -279,7 +281,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldRotateOnDataChangesEvenIfTransactionIsUnchanged() throws Exception
     {
         // given
@@ -287,7 +289,7 @@ public class CountsTrackerTest
         File before = tracker.currentFile();
         try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( 7, 8, 100 );
+            updater.incrementIndexUpdates( 7, 100 );
         }
 
         // when
@@ -298,7 +300,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldSupportTransactionsAppliedOutOfOrderOnRotation() throws Exception
     {
         // given
@@ -313,7 +315,8 @@ public class CountsTrackerTest
         }
 
         // when
-        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, thread -> {
+        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, thread ->
+        {
             switch ( thread.getState() )
             {
             case BLOCKED:
@@ -351,12 +354,13 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldNotEndUpInBrokenStateAfterRotationFailure() throws Exception
     {
         // GIVEN
         FakeClock clock = Clocks.fakeClock();
-        CountsTracker tracker = resourceManager.managed( newTracker( clock ) );
+        CallTrackingClock callTrackingClock = new CallTrackingClock( clock );
+        CountsTracker tracker = resourceManager.managed( newTracker( callTrackingClock ) );
         int labelId = 1;
         try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
         {
@@ -366,12 +370,16 @@ public class CountsTrackerTest
         // WHEN
         Predicate<Thread> arrived = thread ->
             stackTraceContains( thread, all( classNameContains( "Rotation" ), methodIs( "rotate" ) ) );
-        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 100, MILLISECONDS );
+        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 1, SECONDS );
         try ( CountsAccessor.Updater tx = tracker.apply( 3 ).get() )
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2
         }
-        clock.forward( Config.empty().get( GraphDatabaseSettings.counts_store_rotation_timeout ) * 2, MILLISECONDS );
+        while ( callTrackingClock.callsToNanos() == 0 )
+        {
+            Thread.sleep( 10 );
+        }
+        clock.forward( Config.defaults().get( GraphDatabaseSettings.counts_store_rotation_timeout ).toMillis() * 2, MILLISECONDS );
         try
         {
             rotation.get();
@@ -402,13 +410,13 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
-        return newTracker( Clocks.systemClock() );
+        return newTracker( Clocks.nanoClock() );
     }
 
-    private CountsTracker newTracker( Clock clock )
+    private CountsTracker newTracker( SystemNanoClock clock )
     {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
-                resourceManager.pageCache(), Config.empty(), resourceManager.testPath(), clock )
+                resourceManager.pageCache(), Config.defaults(), resourceManager.testPath(), clock )
                 .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override
@@ -435,8 +443,9 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
-        oracle.indexUpdatesAndSize( 1, 2, 0L, 50L );
-        oracle.indexSampling( 1, 2, 25L, 50L );
+        long indexId = 2;
+        oracle.indexUpdatesAndSize( indexId, 0L, 50L );
+        oracle.indexSampling( indexId, 25L, 50L );
         return oracle;
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.rule;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -26,15 +27,14 @@ import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.FileUtils.MaybeWindowsMemoryMappedFileReleaseProblem;
-import org.neo4j.test.Digests;
 
 import static java.lang.String.format;
 
@@ -58,11 +58,13 @@ import static java.lang.String.format;
  */
 public class TestDirectory implements TestRule
 {
+    public static final String DATABASE_DIRECTORY = "graph-db";
+
     private final FileSystemAbstraction fileSystem;
     private File testClassBaseFolder;
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
-    private File testDirectory = null;
+    private File testDirectory;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
     {
@@ -160,12 +162,12 @@ public class TestDirectory implements TestRule
 
     public File graphDbDir()
     {
-        return directory( "graph-db" );
+        return directory( DATABASE_DIRECTORY );
     }
 
     public File makeGraphDbDir() throws IOException
     {
-        return cleanDirectory( "graph-db" );
+        return cleanDirectory( DATABASE_DIRECTORY );
     }
 
     public void cleanup() throws IOException
@@ -195,25 +197,33 @@ public class TestDirectory implements TestRule
         return dir;
     }
 
-    private void complete( boolean success )
+    private void complete( boolean success ) throws IOException
     {
-        if ( success && testDirectory != null && !keepDirectoryAfterSuccessfulTest )
+        try
         {
-            try
+            if ( success && testDirectory != null && !keepDirectoryAfterSuccessfulTest )
             {
-                fileSystem.deleteRecursively( testDirectory );
+                try
+                {
+                    fileSystem.deleteRecursively( testDirectory );
+                }
+                catch ( MaybeWindowsMemoryMappedFileReleaseProblem fme )
+                {
+                    System.err.println(
+                            "Failed to delete test directory, " + "maybe due to Windows memory-mapped file problem: " +
+                                    fme.getMessage() );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
-            catch ( MaybeWindowsMemoryMappedFileReleaseProblem fme )
-            {
-                System.err.println( "Failed to delete test directory, " +
-                                    "maybe due to Windows memory-mapped file problem: " + fme.getMessage() );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            testDirectory = null;
         }
-        testDirectory = null;
+        finally
+        {
+            fileSystem.close();
+        }
     }
 
     private File directoryForDescription( Description description ) throws IOException
@@ -232,7 +242,7 @@ public class TestDirectory implements TestRule
 
     public File prepareDirectoryForTest( String test ) throws IOException
     {
-        String dir = Digests.md5Hex( test );
+        String dir = DigestUtils.md5Hex( test );
         evaluateClassBaseTestFolder();
         register( test, dir );
         return cleanDirectory( dir );
@@ -240,9 +250,9 @@ public class TestDirectory implements TestRule
 
     private void evaluateClassBaseTestFolder( )
     {
-        if (owningTest == null)
+        if ( owningTest == null )
         {
-            throw new IllegalStateException(" Test owning class is not defined" );
+            throw new IllegalStateException( " Test owning class is not defined" );
         }
         try
         {
@@ -283,9 +293,10 @@ public class TestDirectory implements TestRule
 
     private void register( String test, String dir )
     {
-        try
+        try ( PrintStream printStream =
+                    new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ), true ) ) )
         {
-            FileUtils.writeToFile( new File( ensureBase(), ".register" ), format( "%s=%s\n", dir, test ), true );
+            printStream.println( format( "%s=%s\n", dir, test ) );
         }
         catch ( IOException e )
         {

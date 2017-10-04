@@ -263,6 +263,13 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
                       "-Dbasedir=`"$($Neo4jServer.Home)`"", `
                       '-Dfile.encoding=UTF-8')
 
+      # Determine user configured heap size.
+      $HeapSize = Get-Neo4jEnv 'HEAP_SIZE'
+      if ($HeapSize -ne $null) {
+        $ShellArgs += "-Xmx$HeapSize"
+        $ShellArgs += "-Xms$HeapSize"
+      }
+
       # Add the starting class
       $ShellArgs += @($StartingClass)
     }

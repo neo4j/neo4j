@@ -20,8 +20,8 @@
 package org.neo4j.function;
 
 /**
- * Represents a function that accepts an int-valued argument and produces a result. This is the int-consuming primitive specialization for {@link
- * ThrowingFunction}.
+ * Represents a function that accepts an int-valued argument and produces a result.
+ * This is the int-consuming primitive specialization for {@link ThrowingFunction}.
  *
  * @param <R> the type of the result of the function
  * @param <E> the type of exception that may be thrown from the function

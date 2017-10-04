@@ -27,6 +27,7 @@ public class LocalVariable extends Expression
 
     LocalVariable( TypeReference type, String name, int index )
     {
+        super( type );
         this.type = type;
         this.name = name;
         this.index = index;

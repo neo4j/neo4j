@@ -25,5 +25,5 @@ package org.neo4j.cluster.statemachine;
  */
 public interface StateTransitionListener
 {
-    void stateTransition(StateTransition transition);
+    void stateTransition( StateTransition transition );
 }

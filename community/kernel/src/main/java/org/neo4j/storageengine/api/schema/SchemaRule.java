@@ -20,52 +20,103 @@
 package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaComputer;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule
+public abstract class SchemaRule implements SchemaDescriptor.Supplier
 {
+    protected final long id;
+    protected final String name;
+
+    protected SchemaRule( long id )
+    {
+        this( id, null );
+    }
+
+    protected SchemaRule( long id, String name )
+    {
+        this.id = id;
+        this.name = name == null ? generateName( id, getClass() ) : checkName( name );
+    }
+
+    private String checkName( String name )
+    {
+        int length = name.length();
+        if ( length == 0 )
+        {
+            throw new IllegalArgumentException( "Schema rule name cannot be the empty string" );
+        }
+        for ( int i = 0; i < length; i++ )
+        {
+            char ch = name.charAt( i );
+            if ( ch == '\0' )
+            {
+                throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
+            }
+        }
+        return name;
+    }
+
     /**
      * The persistence id for this rule.
      */
-    long getId();
-
-    /**
-     * @return id of label to which this schema rule has been attached
-     * @throws IllegalStateException when this rule has kind {@link Kind#RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT}
-     */
-    int getLabel();
-
-    /**
-     * @return id of relationship type to which this schema rule has been attached
-     * @throws IllegalStateException when this rule has kind different from
-     * {@link Kind#RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT}
-     */
-    int getRelationshipType();
-
-    /**
-     * @return the kind of this schema rule
-     */
-    Kind getKind();
-
-    enum Kind
+    public final long getId()
     {
-        INDEX_RULE( true, false ),
-        CONSTRAINT_INDEX_RULE( true, true ),
-        UNIQUENESS_CONSTRAINT( false, true ),
-        NODE_PROPERTY_EXISTENCE_CONSTRAINT( false, true ),
-        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( false, true );
+        return this.id;
+    }
+
+    /**
+     * @return The (possibly user supplied) name of this schema rule.
+     */
+    public final String getName()
+    {
+        return name;
+    }
+
+    public abstract byte[] serialize();
+
+    public static String generateName( long id, Class<? extends SchemaRule> type )
+    {
+        if ( type == IndexRule.class )
+        {
+            return "index_" + id;
+        }
+        if ( type == ConstraintRule.class )
+        {
+            return "constraint_" + id;
+        }
+        return "schema_" + id;
+    }
+
+    /**
+     * This enum is used for the legacy schema store, and should not be extended.
+     * @see org.neo4j.kernel.impl.store.record.SchemaRuleSerialization for the new (de)serialisation code instead.
+     */
+    @Deprecated
+    public enum Kind
+    {
+        INDEX_RULE( "Index" ),
+        CONSTRAINT_INDEX_RULE( "Constraint index" ),
+        UNIQUENESS_CONSTRAINT( "Uniqueness constraint" ),
+        NODE_PROPERTY_EXISTENCE_CONSTRAINT( "Node property existence constraint" ),
+        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( "Relationship property existence constraint" );
 
         private static final Kind[] ALL = values();
 
-        private final boolean isIndex;
-        private final boolean isConstraint;
+        private final String userString;
 
-        private Kind( boolean isIndex, boolean isConstraint )
+        Kind( String userString )
         {
-            this.isIndex = isIndex;
-            this.isConstraint = isConstraint;
+            this.userString = userString;
         }
 
         public byte id()
@@ -73,23 +124,61 @@ public interface SchemaRule
             return (byte) (ordinal() + 1);
         }
 
-        public boolean isConstraint()
+        public String userString()
         {
-            return isConstraint;
-        }
-
-        public boolean isIndex()
-        {
-            return isIndex;
+            return userString;
         }
 
         public static Kind forId( byte id ) throws MalformedSchemaRuleException
         {
             if ( id >= 1 && id <= ALL.length )
             {
-                return values()[id-1];
+                return values()[id - 1];
             }
             throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
         }
+
+        public static Kind map( IndexDescriptor descriptor )
+        {
+            switch ( descriptor.type() )
+            {
+            case GENERAL:
+                return INDEX_RULE;
+            case UNIQUE:
+                return CONSTRAINT_INDEX_RULE;
+            default:
+                throw new IllegalStateException(
+                        "Cannot map descriptor type to legacy schema rule: " + descriptor.type() );
+            }
+        }
+
+        public static Kind map( ConstraintDescriptor descriptor )
+        {
+            switch ( descriptor.type() )
+            {
+            case UNIQUE:
+                return UNIQUENESS_CONSTRAINT;
+            case EXISTS:
+                return descriptor.schema().computeWith( existenceKindMapper );
+            default:
+                throw new IllegalStateException(
+                        "Cannot map descriptor type to legacy schema rule: " + descriptor.type() );
+            }
+        }
+
+        private static SchemaComputer<Kind> existenceKindMapper = new SchemaComputer<Kind>()
+        {
+            @Override
+            public Kind computeSpecific( LabelSchemaDescriptor schema )
+            {
+                return NODE_PROPERTY_EXISTENCE_CONSTRAINT;
+            }
+
+            @Override
+            public Kind computeSpecific( RelationTypeSchemaDescriptor schema )
+            {
+                return RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
+            }
+        };
     }
 }

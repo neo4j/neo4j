@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.stream.Stream;
+
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
  * {@link #optimistic() optimistic} and {@link #pessimistic() pessimistic} locks.
@@ -45,7 +47,7 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public void prepareForCommit()
+    public void prepareForCommit( LockTracer lockTracer )
     {
         // Locks where grabbed eagerly by client so no need to prepare
     }
@@ -60,5 +62,17 @@ public class SimpleStatementLocks implements StatementLocks
     public void close()
     {
         client.close();
+    }
+
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        return client.activeLocks();
+    }
+
+    @Override
+    public long activeLockCount()
+    {
+        return client.activeLockCount();
     }
 }

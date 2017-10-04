@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.MathUtil;
+
 /**
  * Instances describe single execution steps in a Cypher query execution plan
  *
@@ -94,5 +96,29 @@ public interface ExecutionPlanDescription
          * @return number of database hits (potential disk accesses) caused by executing the associated execution step
          */
         long getDbHits();
+
+        /**
+         * @return number of page cache hits caused by executing the associated execution step
+         */
+        default long getPageCacheHits()
+        {
+            return 0;
+        }
+
+        /**
+         * @return number of page cache misses caused by executing the associated execution step
+         */
+        default long getPageCacheMisses()
+        {
+            return 0;
+        }
+
+        /**
+         * @return the ratio of page cache hits to total number of lookups or {@link Double#NaN} if no data is available
+         */
+        default double getPageCacheHitRatio()
+        {
+            return MathUtil.portion( getPageCacheHits(), getPageCacheMisses() );
+        }
     }
 }

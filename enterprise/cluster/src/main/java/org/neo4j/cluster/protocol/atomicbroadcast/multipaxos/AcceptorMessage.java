@@ -76,12 +76,7 @@ public enum AcceptorMessage
 
             PrepareState that = (PrepareState) o;
 
-            if ( ballot != that.ballot )
-            {
-                return false;
-            }
-
-            return true;
+            return ballot == that.ballot;
         }
 
         @Override
@@ -133,12 +128,7 @@ public enum AcceptorMessage
             {
                 return false;
             }
-            if ( value != null ? !value.equals( that.value ) : that.value != null )
-            {
-                return false;
-            }
-
-            return true;
+            return value != null ? value.equals( that.value ) : that.value == null;
         }
 
         @Override
@@ -153,11 +143,12 @@ public enum AcceptorMessage
         public String toString()
         {
             Object toStringValue = value;
-            if (toStringValue instanceof Payload )
+            if ( toStringValue instanceof Payload )
             {
                 try
                 {
-                    toStringValue = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ).receive( (Payload) toStringValue);
+                    toStringValue = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() )
+                                    .receive( (Payload) toStringValue );
                 }
                 catch ( Throwable e )
                 {

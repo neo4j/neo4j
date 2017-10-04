@@ -27,10 +27,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -52,12 +54,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
@@ -76,7 +75,8 @@ public class CheckPointerIntegrationTest
     {
         fs = fsRule.get();
         fs.deleteRecursively( storeDir );
-        builder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( storeDir );
+        builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabaseBuilder( storeDir );
     }
 
     @Test
@@ -139,7 +139,7 @@ public class CheckPointerIntegrationTest
         try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( 0, LOG_HEADER_SIZE ) ) )
         {
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-            LogEntry entry = null;
+            LogEntry entry;
             while ( (entry = logEntryReader.readLogEntry( reader )) != null )
             {
                 if ( entry instanceof CheckPoint )
@@ -239,7 +239,7 @@ public class CheckPointerIntegrationTest
         private final FileSystemAbstraction fileSystem;
         private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
 
-        public CheckPointCollector( File directory, FileSystemAbstraction fileSystem )
+        CheckPointCollector( File directory, FileSystemAbstraction fileSystem )
         {
             this.fileSystem = fileSystem;
             this.logFiles = new PhysicalLogFiles( directory, fileSystem );
@@ -258,7 +258,7 @@ public class CheckPointerIntegrationTest
                     break;
                 }
 
-                ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+                ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
 
                 try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
                 {
@@ -267,7 +267,7 @@ public class CheckPointerIntegrationTest
                         LogEntry entry = cursor.get();
                         if ( entry instanceof CheckPoint )
                         {
-                            checkPoints.add( entry.<CheckPoint>as() );
+                            checkPoints.add( entry.as() );
                         }
                     }
                 }

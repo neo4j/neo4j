@@ -40,7 +40,6 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -54,8 +53,10 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
@@ -67,6 +68,10 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -75,11 +80,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -89,17 +89,19 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 
 public class ImportToolTest
 {
+    private static final int MAX_LABEL_ID = 4;
     private static final int RELATIONSHIP_COUNT = 10_000;
     private static final int NODE_COUNT = 100;
     private static final IntPredicate TRUE = i -> true;
 
     @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
     @Rule
     public final RandomRule random = new RandomRule();
     @Rule
@@ -200,9 +202,9 @@ public class ImportToolTest
             assertEquals( 4097, nodeCount );
 
             tx.success();
-            ResourceIterator<Node> nodes = dbRule.findNodes( DynamicLabel.label( "FIRST 4096" ) );
+            ResourceIterator<Node> nodes = dbRule.findNodes( label( "FIRST 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
-            nodes = dbRule.findNodes( DynamicLabel.label( "SECOND 4096" ) );
+            nodes = dbRule.findNodes( label( "SECOND 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
         }
     }
@@ -395,20 +397,13 @@ public class ImportToolTest
 
         // THEN
         // Expected value for integer types
-        String iExpected = "[";
-        for ( String value : values )
-        {
-            iExpected += value.trim() + ", ";
-        }
-        iExpected = iExpected.substring( 0, iExpected.length() - 2 ) + "]";
+        String iExpected = joinStringArray( values );
 
         // Expected value for floating point types
-        String fExpected = "[";
-        for ( String value : values )
-        {
-            fExpected += Double.valueOf( value.trim() ) + ", ";
-        }
-        fExpected = fExpected.substring( 0, fExpected.length() - 2 ) + "]";
+        String fExpected = Arrays.stream( values ).map( String::trim )
+                                                  .map( Double::valueOf )
+                                                  .map( String::valueOf )
+                                                  .collect( joining( ", ", "[", "]")  );
 
         int nodeCount = 0;
         try ( Transaction tx = dbRule.beginTx() )
@@ -474,12 +469,7 @@ public class ImportToolTest
         importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
-        String expected = "[";
-        for ( String value : values )
-        {
-            expected += value.trim() + ", ";
-        }
-        expected = expected.substring( 0, expected.length() - 2 ) + "]";
+        String expected = joinStringArray( values );
 
         int nodeCount = 0;
         try ( Transaction tx = dbRule.beginTx() )
@@ -521,25 +511,9 @@ public class ImportToolTest
         // GIVEN
         // Faster to do all successful in one import than in N separate tests
         String[] values =
-                new String[]{ "true", "  true", "true   ", "  true  ", " false ", "false ", " false", "bla bla",
-                        " truebutnotreally  " };
-
-        String expected = "[";
-        for ( String value : values )
-        {
-            if ( value.contains( "bla" ) )
-            {
-                expected += "false, ";
-            }
-            else if ( value.contains( "notreally" ) )
-            {
-                expected += "false]";
-            }
-            else
-            {
-                expected += value.trim() + ", ";
-            }
-        }
+                new String[]{ "true", "  true", "true   ", "  true  ", " false ", "false ", " false", "false ",
+                        " false" };
+        String expected = joinStringArray( values );
 
         File data = writeArrayCsv( new String[]{ "b:boolean[]" }, values );
 
@@ -680,7 +654,8 @@ public class ImportToolTest
 
         // THEN
         verifyData(
-                node -> {
+                node ->
+                {
                     if ( node.getId() < NODE_COUNT / 2 )
                     {
                         assertNodeHasLabels( node, firstLabels );
@@ -690,7 +665,8 @@ public class ImportToolTest
                         assertNodeHasLabels( node, secondLabels );
                     }
                 },
-                relationship -> {
+                relationship ->
+                {
                     if ( relationship.getId() < RELATIONSHIP_COUNT / 2 )
                     {
                         assertEquals( firstType, relationship.getType().name() );
@@ -866,6 +842,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
+            // there should not be duplicates of any node
             Iterator<Node> nodes = db.getAllNodes().iterator();
             Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
             while ( expectedIds.hasNext() )
@@ -874,6 +851,20 @@ public class ImportToolTest
                 assertEquals( expectedIds.next(), nodes.next().getProperty( "id" ) );
             }
             assertFalse( nodes.hasNext() );
+
+            // also all nodes in the label index should exist
+            for ( int i = 0; i < MAX_LABEL_ID; i++ )
+            {
+                Label label = label( labelName( i ) );
+                try ( ResourceIterator<Node> nodesByLabel = db.findNodes( label ) )
+                {
+                    while ( nodesByLabel.hasNext() )
+                    {
+                        assertTrue( nodesByLabel.next().hasLabel( label ) );
+                    }
+                }
+            }
+
             tx.success();
         }
         finally
@@ -1008,6 +999,7 @@ public class ImportToolTest
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", nodeData.getAbsolutePath(),
                     "--bad", bad.getAbsolutePath(),
+                    "--stacktrace", // trying to find flaky test origin
                     "--skip-bad-relationships", "false",
                     "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                        relationshipData2.getAbsolutePath() );
@@ -1036,10 +1028,11 @@ public class ImportToolTest
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
-        verifyData( node -> {
+        verifyData( node ->
+        {
             assertTrue( node.hasLabel( label1 ) );
             assertTrue( node.hasLabel( label2 ) );
-        }, Validators.<Relationship>emptyValidator() );
+        }, Validators.emptyValidator() );
     }
 
     @Test
@@ -1255,6 +1248,7 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                    "--skip-bad-relationships", "false",
                     "--relationships", relationshipData( true, config, relationshipDataLines,
                             TRUE, true ).getAbsolutePath() );
             fail( " Should fail during import." );
@@ -1263,6 +1257,14 @@ public class ImportToolTest
         {
             // EXPECT
             assertTrue( suppressOutput.getErrorVoice().containsMessage( message ) );
+        }
+
+        for ( StoreType storeType : StoreType.values() )
+        {
+            if ( storeType.isRecordStore() )
+            {
+                new File( dbRule.getStoreDirFile(), DEFAULT_NAME + storeType.getStoreName() ).delete();
+            }
         }
     }
 
@@ -1653,12 +1655,67 @@ public class ImportToolTest
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--db-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
 
         // THEN
         NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        int headerSize = StandardV3_0.RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+    }
+
+    @Test
+    public void useProvidedAdditionalConfig() throws Exception
+    {
+        // GIVEN
+        int arrayBlockSize = 10;
+        int stringBlockSize = 12;
+        File dbConfig = file( "neo4j.properties" );
+        store( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+        List<String> nodeIds = nodeIds();
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
+
+        // THEN
+        NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+    }
+
+    @Test
+    public void combineProvidedDbAndAdditionalConfig() throws Exception
+    {
+        // GIVEN
+        int arrayBlockSize = 10;
+        int stringBlockSize = 12;
+        File dbConfig = file( "neo4j.properties" );
+        File additionalConfig = file( "additional.properties" );
+        store( stringMap(
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+        store( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ) ), additionalConfig );
+        List<String> nodeIds = nodeIds();
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--db-config", dbConfig.getAbsolutePath(),
+                "--additional-config", additionalConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
+
+        // THEN
+        NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
         assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
         assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
     }
@@ -1712,7 +1769,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertNotNull( db.findNode( Label.label( labelName ), "name", "abc\"def\\\"ghi" ) );
+            assertNotNull( db.findNode( label( labelName ), "name", "abc\"def\\\"ghi" ) );
         }
     }
 
@@ -1787,6 +1844,94 @@ public class ImportToolTest
                 "--max-memory", "100M" );
     }
 
+    @Test
+    public void shouldTreatRelationshipWithMissingStartOrEndIdOrTypeAsBadRelationship() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c" );
+        Configuration config = Configuration.COMMAS;
+        File nodeData = nodeData( true, config, nodeIds, TRUE );
+
+        List<RelationshipDataLine> relationships = Arrays.asList(
+                relationship( "a", null, "TYPE" ),
+                relationship( null, "b", "TYPE" ),
+                relationship( "a", "b", null ) );
+
+        File relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
+        File bad = badFile();
+
+        // WHEN importing data where some relationships refer to missing nodes
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeData.getAbsolutePath(),
+                "--bad", bad.getAbsolutePath(),
+                "--skip-bad-relationships", "true",
+                "--relationships", relationshipData.getAbsolutePath() );
+
+        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        assertEquals( badContents, 3, occurencesOf( badContents, "is missing data" ) );
+    }
+
+    @Test
+    public void shouldKeepStoreFilesAfterFailedImport() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+
+        // WHEN data file contains more columns than header file
+        int extraColumns = 3;
+        String storeDir = dbRule.getStoreDirAbsolutePath();
+        try
+        {
+            importTool(
+                    "--into", storeDir,
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() );
+            fail( "Should have thrown exception" );
+        }
+        catch ( InputException e )
+        {
+            // THEN the store files should be there
+            for ( StoreType storeType : StoreType.values() )
+            {
+                if ( storeType.isRecordStore() )
+                {
+                    assertTrue( new File( storeDir, MetaDataStore.DEFAULT_NAME + storeType.getStoreName() ).exists() );
+                }
+            }
+
+            List<String> errorLines = suppressOutput.getErrorVoice().lines();
+            assertContains( errorLines, "Starting a database on these store files will likely fail or observe inconsistent records" );
+        }
+    }
+
+    private void assertContains( List<String> errorLines, String string )
+    {
+        for ( String line : errorLines )
+        {
+            if ( line.contains( string ) )
+            {
+                return;
+            }
+        }
+        fail( "Expected error lines " + join( errorLines.toArray( new String[errorLines.size()] ), format( "%n" ) ) +
+                " to have at least one line containing the string '" + string + "'" );
+    }
+
+    private static int occurencesOf( String text, String lookFor )
+    {
+        int index = -1;
+        int count = -1;
+        do
+        {
+            count++;
+            index = text.indexOf( lookFor, index + 1 );
+        }
+        while ( index != -1 );
+        return count;
+    }
+
     private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException
     {
         File data = file( fileName( "whitespace.csv" ) );
@@ -1826,6 +1971,11 @@ public class ImportToolTest
         return data;
     }
 
+    private String joinStringArray( String[] values )
+    {
+        return Arrays.stream( values ).map( String::trim ).collect( joining( ", ", "[", "]" ) );
+    }
+
     private File data( String... lines ) throws Exception
     {
         File file = file( fileName( "data.csv" ) );
@@ -1844,7 +1994,7 @@ public class ImportToolTest
         return node -> node.getProperty( "id", "" ).equals( id );
     }
 
-    protected void assertNodeHasLabels( Node node, String[] names )
+    private void assertNodeHasLabels( Node node, String[] names )
     {
         for ( String name : names )
         {
@@ -1855,7 +2005,7 @@ public class ImportToolTest
 
     private void verifyData()
     {
-        verifyData( Validators.<Node>emptyValidator(), Validators.<Relationship>emptyValidator() );
+        verifyData( Validators.emptyValidator(), Validators.emptyValidator() );
     }
 
     private void verifyData(
@@ -1865,7 +2015,8 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            int nodeCount = 0, relationshipCount = 0;
+            int nodeCount = 0;
+            int relationshipCount = 0;
             for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
@@ -2052,9 +2203,14 @@ public class ImportToolTest
             {
                 builder.append( arrayDelimiter );
             }
-            builder.append( "LABEL_" + random.nextInt( 4 ) );
+            builder.append( labelName( random.nextInt( MAX_LABEL_ID ) ) );
         }
         return builder.toString();
+    }
+
+    private String labelName( int number )
+    {
+        return "LABEL_" + number;
     }
 
     private String randomName()
@@ -2204,14 +2360,19 @@ public class ImportToolTest
             RelationshipDataLine entry = data.next();
             if ( linePredicate.test( i ) )
             {
-                writer.println( entry.startNodeId +
-                                delimiter + entry.endNodeId +
-                                (specifyType ? (delimiter + entry.type) : "") +
+                writer.println( nullSafeString( entry.startNodeId ) +
+                                delimiter + nullSafeString( entry.endNodeId ) +
+                                (specifyType ? (delimiter + nullSafeString( entry.type )) : "") +
                                 delimiter + currentTimeMillis() +
                                 delimiter + (entry.name != null ? entry.name : "")
                 );
             }
         }
+    }
+
+    private static String nullSafeString( String endNodeId )
+    {
+        return endNodeId != null ? endNodeId : "";
     }
 
     private Iterator<RelationshipDataLine> randomRelationships( final List<String> nodeIds )
@@ -2230,7 +2391,7 @@ public class ImportToolTest
         };
     }
 
-    public static void assertExceptionContains( Exception e, String message, Class<? extends Exception> type )
+    static void assertExceptionContains( Exception e, String message, Class<? extends Exception> type )
             throws Exception
     {
         if ( !contains( e, message, type ) )
@@ -2250,7 +2411,7 @@ public class ImportToolTest
         return line -> line >= startingAt && line < endingAt;
     }
 
-    public static void importTool( String... arguments ) throws IOException
+    static void importTool( String... arguments ) throws IOException
     {
         ImportTool.main( arguments, true );
     }

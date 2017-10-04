@@ -31,11 +31,13 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -62,24 +64,26 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{new ArrayList<>(), new ArrayList<>()} ) ) );
+        commit();
     }
 
     @Test
     public void testLabelIndex() throws Throwable
     {
         // Given there is label with index and a constraint
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-        long nodeId = ops.nodeCreate();
-        int labelId = ops.labelGetOrCreateForName( "Person" );
-        ops.nodeAddLabel( nodeId, labelId );
-        int propertyIdName = ops.propertyKeyGetOrCreateForName( "name" );
-        int propertyIdAge = ops.propertyKeyGetOrCreateForName( "age" );
-        ops.nodeSetProperty( nodeId, DefinedProperty.stringProperty( propertyIdName, "Emil" ) );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
+        statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
+        int propertyIdName = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
+        int propertyIdAge = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "age" );
+        statement.dataWriteOperations()
+                .nodeSetProperty( nodeId, propertyIdName, Values.of( "Emil" ) );
         commit();
 
         SchemaWriteOperations schemaOps = schemaWriteOperationsInNewTransaction();
-        schemaOps.indexCreate( labelId, propertyIdName );
-        schemaOps.uniquePropertyConstraintCreate( labelId, propertyIdAge );
+        schemaOps.indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdName ) );
+        schemaOps.uniquePropertyConstraintCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdAge ) );
         commit();
 
         // When
@@ -94,25 +98,27 @@ public class SchemaProcedureIT extends KernelIntegrationTest
             ArrayList<Node> nodes = (ArrayList<Node>) next[0];
             assertTrue( nodes.size() == 1 );
             assertThat( nodes.get( 0 ).getLabels(), contains( equalTo( Label.label( "Person" ) ) ) );
-            assertEquals( nodes.get( 0 ).getAllProperties().get( "name" ), new String( "Person" ) );
-            assertEquals( nodes.get( 0 ).getAllProperties().get( "indexes" ), Arrays.asList( "name" ) );
-            assertEquals( nodes.get( 0 ).getAllProperties().get( "constraints" ),
-                    Arrays.asList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ) );
+            assertEquals( new String( "Person" ), nodes.get( 0 ).getAllProperties().get( "name" ) );
+            assertEquals( Arrays.asList( "name" ), nodes.get( 0 ).getAllProperties().get( "indexes" ) );
+            assertEquals( Arrays.asList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ),
+                    nodes.get( 0 ).getAllProperties().get( "constraints" ) );
         }
+        commit();
     }
 
     @Test
     public void testRelationShip() throws Throwable
     {
         // Given there ar
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-        long nodeIdPerson = ops.nodeCreate();
-        int labelIdPerson = ops.labelGetOrCreateForName( "Person" );
-        ops.nodeAddLabel( nodeIdPerson, labelIdPerson );
-        long nodeIdLocation = ops.nodeCreate();
-        int labelIdLocation = ops.labelGetOrCreateForName( "Location" );
-        ops.nodeAddLabel( nodeIdLocation, labelIdLocation );
-        ops.relationshipCreate( ops.relationshipTypeGetOrCreateForName( "LIVES_IN" ), nodeIdPerson, nodeIdLocation );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeIdPerson = statement.dataWriteOperations().nodeCreate();
+        int labelIdPerson = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
+        statement.dataWriteOperations().nodeAddLabel( nodeIdPerson, labelIdPerson );
+        long nodeIdLocation = statement.dataWriteOperations().nodeCreate();
+        int labelIdLocation = statement.tokenWriteOperations().labelGetOrCreateForName( "Location" );
+        statement.dataWriteOperations().nodeAddLabel( nodeIdLocation, labelIdLocation );
+        int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "LIVES_IN" );
+        statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeIdPerson, nodeIdLocation );
         commit();
 
         // When
@@ -132,5 +138,6 @@ public class SchemaProcedureIT extends KernelIntegrationTest
             assertThat( relationships.get( 0 ).getEndNode().getLabels(),
                     contains( equalTo( Label.label( "Location" ) ) ) );
         }
+        commit();
     }
 }

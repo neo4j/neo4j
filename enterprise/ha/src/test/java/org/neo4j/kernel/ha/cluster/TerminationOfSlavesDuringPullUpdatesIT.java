@@ -54,7 +54,7 @@ import static org.hamcrest.collection.IsIn.isIn;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
 @RunWith( Parameterized.class )
@@ -77,58 +77,58 @@ public class TerminationOfSlavesDuringPullUpdatesIT
     @Parameters( name = "{1}" )
     public static Iterable<Object> data()
     {
-        return Arrays.<Object>asList( new Object[][]
-        {
-                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                        "NodeStringProperty[allProps]"},
-                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                        "NodeStringProperty[singleProp]"},
-                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                        "NodeStringProperty[varArgsProp]"},
+        return Arrays.asList( new Object[][]
+                {
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                                "NodeStringProperty[allProps]"},
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                                "NodeStringProperty[singleProp]"},
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                                "NodeStringProperty[varArgsProp]"},
 
-                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                        "RelationshipStringProperty[allProps]"},
-                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                        "RelationshipStringProperty[singleProp]"},
-                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                        "RelationshipStringProperty[varArgsProp]"},
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                                "RelationshipStringProperty[allProps]"},
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                                "RelationshipStringProperty[singleProp]"},
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                                "RelationshipStringProperty[varArgsProp]"},
 
-                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                        "NodeArrayProperty[allProps]"},
-                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                        "NodeArrayProperty[singleProp]"},
-                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                        "NodeArrayProperty[varArgsProp]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                                "NodeArrayProperty[allProps]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                                "NodeArrayProperty[singleProp]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                                "NodeArrayProperty[varArgsProp]"},
 
-                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                        "RelationshipArrayProperty[allProps]"},
-                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                        "RelationshipArrayProperty[singleProp]"},
-                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
-                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                        "RelationshipArrayProperty[varArgsProp]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                                "RelationshipArrayProperty[allProps]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                                "RelationshipArrayProperty[singleProp]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                                "RelationshipArrayProperty[varArgsProp]"},
 
-                {new PropertyKeyActions( 'a', 'b', true ), "NodePropertyKeys"},
+                        {new PropertyKeyActions( 'a', 'b', true ), "NodePropertyKeys"},
 
-                {new PropertyKeyActions( 'a', 'b', false ), "RelationshipPropertyKeys"},
-        } );
+                        {new PropertyKeyActions( 'a', 'b', false ), "RelationshipPropertyKeys"},
+                } );
     }
 
     @Test
     public void slavesTerminateOrReadConsistentDataWhenApplyingBatchLargerThanSafeZone() throws Throwable
     {
-        long safeZone = TimeUnit.MILLISECONDS.toMillis( 0 );
+        long safeZone = TimeUnit.MILLISECONDS.toSeconds( 0 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
         final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -162,7 +162,7 @@ public class TerminationOfSlavesDuringPullUpdatesIT
     @Test
     public void slavesDontTerminateAndReadConsistentDataWhenApplyingBatchSmallerThanSafeZone() throws Throwable
     {
-        long safeZone = TimeUnit.MINUTES.toMillis( 1 );
+        long safeZone = TimeUnit.MINUTES.toSeconds( 1 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
         final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -195,25 +195,21 @@ public class TerminationOfSlavesDuringPullUpdatesIT
     private Runnable readContestant( final ReadContestantActions action, final long entityId,
             final HighlyAvailableGraphDatabase slave, final AtomicBoolean end )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            while ( !end.get() )
             {
-                while ( !end.get() )
+                try ( Transaction tx = slave.beginTx() )
                 {
-                    try ( Transaction tx = slave.beginTx() )
+                    for ( int i = 0; i < 10; i++ )
                     {
-                        for ( int i = 0; i < 10; i++ )
-                        {
-                            action.verifyProperties( slave, entityId );
-                        }
+                        action.verifyProperties( slave, entityId );
+                    }
 
-                        tx.success();
-                    }
-                    catch ( TransactionTerminatedException | TransientTransactionFailureException ignored )
-                    {
-                    }
+                    tx.success();
+                }
+                catch ( TransactionTerminatedException | TransientTransactionFailureException ignored )
+                {
                 }
             }
         };
@@ -221,27 +217,23 @@ public class TerminationOfSlavesDuringPullUpdatesIT
 
     private Runnable pullUpdatesContestant( final HighlyAvailableGraphDatabase slave, final AtomicBoolean end )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    Random rnd = new Random();
-                    Thread.sleep( rnd.nextInt( 100 ) );
-                    slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                finally
-                {
-                    end.set( true );
-                }
-
+                Random rnd = new Random();
+                Thread.sleep( rnd.nextInt( 100 ) );
+                slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
             }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+            finally
+            {
+                end.set( true );
+            }
+
         };
     }
 

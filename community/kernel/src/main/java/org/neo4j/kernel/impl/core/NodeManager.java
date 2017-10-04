@@ -153,7 +153,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
                 throw new NotFoundException( e );
             }
         }
-    };
+    }
 
     private class GraphPropertiesActionsImpl implements GraphPropertiesProxy.GraphPropertiesActions
     {
@@ -174,5 +174,5 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         {
             return threadToTransactionBridge.get();
         }
-    };
+    }
 }

@@ -32,6 +32,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -82,7 +83,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnRelationshipCreate() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -138,7 +140,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelAdd() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode();
@@ -167,7 +170,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelRemove() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -196,7 +200,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelAddAndRelationshipCreate() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -226,7 +231,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
@@ -258,7 +264,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelAddAndRelationshipDelete() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
@@ -290,7 +297,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ), label( "Bar" ) );
@@ -320,7 +328,8 @@ public class CompositeCountsTest
     public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -365,7 +374,7 @@ public class CompositeCountsTest
         private final String message;
         private final long count;
 
-        public MatchingRelationships( String message, long count )
+        MatchingRelationships( String message, long count )
         {
             this.message = message;
             this.count = count;
@@ -384,45 +393,50 @@ public class CompositeCountsTest
      */
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
-        ReadOperations read = statementSupplier.get().readOperations();
-        int startId, typeId, endId;
-        // start
-        if ( start == null )
+        try ( Statement statement = statementSupplier.get() )
         {
-            startId = ReadOperations.ANY_LABEL;
-        }
-        else
-        {
-            if ( ReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+            ReadOperations read = statement.readOperations();
+            int startId;
+            int typeId;
+            int endId;
+            // start
+            if ( start == null )
             {
-                return 0;
+                startId = ReadOperations.ANY_LABEL;
             }
-        }
-        // type
-        if ( type == null )
-        {
-            typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
-        }
-        else
-        {
-            if ( ReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+            else
             {
-                return 0;
+                if ( KeyReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+                {
+                    return 0;
+                }
             }
-        }
-        // end
-        if ( end == null )
-        {
-            endId = ReadOperations.ANY_LABEL;
-        }
-        else
-        {
-            if ( ReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+            // type
+            if ( type == null )
             {
-                return 0;
+                typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
             }
+            else
+            {
+                if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+                {
+                    return 0;
+                }
+            }
+            // end
+            if ( end == null )
+            {
+                endId = ReadOperations.ANY_LABEL;
+            }
+            else
+            {
+                if ( KeyReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+                {
+                    return 0;
+                }
+            }
+            return read.countsForRelationship( startId, typeId, endId );
         }
-        return read.countsForRelationship( startId, typeId, endId );
     }
 
     private Supplier<Statement> statementSupplier;

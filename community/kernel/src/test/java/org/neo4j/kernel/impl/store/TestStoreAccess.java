@@ -31,6 +31,8 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -44,19 +46,23 @@ public class TestStoreAccess
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private final Monitors monitors = new Monitors();
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test
-    public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
+    public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Throwable
     {
-        EphemeralFileSystemAbstraction snapshot = produceUncleanStore();
-        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
-        File messages = new File( storeDir, "debug.log" );
-        snapshot.deleteFile( messages );
+        try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore() )
+        {
+            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            File messages = new File( storeDir, "debug.log" );
+            snapshot.deleteFile( messages );
 
-        PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-        new StoreAccess( snapshot, pageCache, storeDir ).initialize().close();
-        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            PageCache pageCache = pageCacheRule.getPageCache( snapshot );
+            new StoreAccess( snapshot, pageCache, storeDir ).initialize().close();
+            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+        }
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
@@ -76,6 +82,7 @@ public class TestStoreAccess
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        return new RecoveryRequiredChecker( fileSystem, pageCache ).isRecoveryRequiredAt( storeDir );
+
+        return new RecoveryRequiredChecker( fileSystem, pageCache, monitors ).isRecoveryRequiredAt( storeDir );
     }
 }

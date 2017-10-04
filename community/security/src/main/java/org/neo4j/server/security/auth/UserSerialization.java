@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.HexString;
 
@@ -58,11 +60,13 @@ public class UserSerialization extends FileRepositorySerializer<User>
                 .withName( parts[0] )
                 .withCredentials( deserializeCredentials( parts[1], lineNumber ) );
 
-        for ( String flag : parts[2].split( ",", -1 ))
+        for ( String flag : parts[2].split( ",", -1 ) )
         {
             String trimmed = flag.trim();
-            if (!trimmed.isEmpty())
+            if ( !trimmed.isEmpty() )
+            {
                 b = b.withFlag( trimmed );
+            }
         }
 
         return  b.build();

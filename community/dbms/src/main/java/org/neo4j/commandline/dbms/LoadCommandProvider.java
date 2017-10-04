@@ -20,8 +20,10 @@
 package org.neo4j.commandline.dbms;
 
 import java.nio.file.Path;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Loader;
@@ -34,12 +36,14 @@ public class LoadCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public Arguments allArguments()
     {
         return LoadCommand.arguments();
     }
 
     @Override
+    @Nonnull
     public String description()
     {
         return "Load a database from an archive. <archive-path> must be an archive created with the dump " +
@@ -49,12 +53,21 @@ public class LoadCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public String summary()
     {
         return "Load a database from an archive created with the dump command.";
     }
 
     @Override
+    @Nonnull
+    public AdminCommandSection commandSection()
+    {
+        return OfflineBackupCommandSection.instance();
+    }
+
+    @Override
+    @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         return new LoadCommand( homeDir, configDir, new Loader() );

@@ -63,6 +63,7 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 public class RaftMachine implements LeaderLocator, CoreMetaData
 {
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
     private RenewableTimeoutService.RenewableTimeout heartbeatTimer;
 
     public enum Timeouts implements RenewableTimeoutService.TimeoutName
@@ -112,13 +113,19 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         this.refuseToBecomeLeader = refuseToBecomeLeader;
         this.clock = clock;
 
+        this.inFlightMap = inFlightMap;
         this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightMap,
                 logProvider );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
     }
 
-    public synchronized void startTimers()
+    /**
+     * This should be called after the major recovery operations are complete. Before this is called
+     * this instance cannot become a leader (the timers are disabled) and entries will not be cached
+     * in the in-flight map, because the application process is not running and ready to consume them.
+     */
+    public synchronized void postRecoveryActions()
     {
         if ( !refuseToBecomeLeader )
         {
@@ -128,6 +135,8 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
             heartbeatTimer = renewableTimeoutService.create( Timeouts.HEARTBEAT, heartbeatInterval, 0,
                     renewing( () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) ) );
         }
+
+        inFlightMap.enable();
     }
 
     public synchronized void stopTimers()

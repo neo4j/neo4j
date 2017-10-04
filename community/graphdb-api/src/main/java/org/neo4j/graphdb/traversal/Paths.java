@@ -34,6 +34,11 @@ import org.neo4j.graphdb.Relationship;
  */
 public class Paths
 {
+
+    private Paths()
+    {
+    }
+
     /**
      * Provides hooks to help build a string representation of a {@link org.neo4j.graphdb.Path}.
      * @param <T> the type of {@link org.neo4j.graphdb.Path}.
@@ -79,7 +84,8 @@ public class Paths
         public String relationshipRepresentation( Path path,
                                                   Node from, Relationship relationship )
         {
-            String prefix = "--", suffix = "--";
+            String prefix = "--";
+            String suffix = "--";
             if ( from.equals( relationship.getEndNode() ) )
             {
                 prefix = "<--";
@@ -112,8 +118,9 @@ public class Paths
             result.append( builder.relationshipRepresentation( path, current, rel ) );
             current = rel.getOtherNode( current );
         }
-        if ( null != current ) {
-            result.append(builder.nodeRepresentation(path, current));
+        if ( null != current )
+        {
+            result.append( builder.nodeRepresentation( path, current ) );
         }
         return result.toString();
     }
@@ -197,7 +204,7 @@ public class Paths
             public String nodeRepresentation( T path, Node node )
             {
                 String representation = representation( node );
-                return "(" + ( nodeId ? node.getId(): "" ) +
+                return "(" + (nodeId ? node.getId() : "" ) +
                        ( nodeId && !representation.equals( "" ) ? "," : "" ) +
                        representation + ")";
             }
@@ -229,7 +236,7 @@ public class Paths
                 {
                     builder.append( "<" );
                 }
-                builder.append( "--[" + ( relId ? relationship.getId(): "" ) );
+                builder.append( "--[" + (relId ? relationship.getId() : "") );
                 String representation = representation( relationship );
                 if ( relId && !representation.equals( "" ) )
                 {

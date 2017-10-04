@@ -27,13 +27,16 @@ import org.junit.rules.ExpectedException;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
+import java.util.Map;
 
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.PortBindException;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 
-import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class NettyServerTest
 {
@@ -45,16 +48,19 @@ public class NettyServerTest
     {
         // Given an occupied port
         int port = 16000;
-        try(ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ))
+        try ( ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ) )
         {
             final ListenSocketAddress address = new ListenSocketAddress( "localhost", port );
 
             // Expect
             exception.expect( PortBindException.class );
-            exception.expectMessage( "Address localhost:16000 is already in use" );
 
             // When
-            new NettyServer( new NamedThreadFactory( "mythreads" ), asList( protocolOnAddress( address ) ) ).start();
+            Map<BoltConnector,NettyServer.ProtocolInitializer> initializersMap =
+                    genericMap( new BoltConnector( "test" ), protocolOnAddress( address ) );
+            new NettyServer( new NamedThreadFactory( "mythreads" ), initializersMap,
+                    new ConnectorPortRegister() ).start();
+
         }
     }
 

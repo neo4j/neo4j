@@ -21,6 +21,8 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.graphdb.TransientFailureException;
@@ -32,8 +34,11 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -130,5 +135,22 @@ public class TopLevelTransactionTest
             assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
             assertSame( error, e.getCause() );
         }
+    }
+
+    @Test
+    public void shouldReturnTerminationReason()
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
+                .thenReturn( Optional.of( Status.Transaction.Terminated ) );
+
+        TopLevelTransaction tx = new TopLevelTransaction( kernelTransaction, new ThreadToStatementContextBridge() );
+
+        Optional<Status> terminationReason1 = tx.terminationReason();
+        Optional<Status> terminationReason2 = tx.terminationReason();
+
+        assertFalse( terminationReason1.isPresent() );
+        assertTrue( terminationReason2.isPresent() );
+        assertEquals( Status.Transaction.Terminated, terminationReason2.get() );
     }
 }

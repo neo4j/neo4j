@@ -30,8 +30,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURREN
 
 public class LogEntryStart extends AbstractLogEntry
 {
-    public static final byte[] EMPTY_ADDITIONAL_ARRAY = new byte[]{};
-
     private final int masterId;
     private final int authorId;
     private final long timeWritten;
@@ -74,11 +72,6 @@ public class LogEntryStart extends AbstractLogEntry
         return startPosition;
     }
 
-    public void setStartPosition( LogPosition position )
-    {
-        this.startPosition = position;
-    }
-
     public long getTimeWritten()
     {
         return timeWritten;
@@ -101,7 +94,7 @@ public class LogEntryStart extends AbstractLogEntry
     {
         // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
         long lowBits = Arrays.hashCode( additionalHeader );
-        long highBits = masterId*37 + authorId;
+        long highBits = masterId * 37 + authorId;
         return (highBits << 32) | (lowBits & 0xFFFFFFFFL);
     }
 
@@ -137,6 +130,7 @@ public class LogEntryStart extends AbstractLogEntry
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     public <T extends LogEntry> T as()
     {
         return (T) this;

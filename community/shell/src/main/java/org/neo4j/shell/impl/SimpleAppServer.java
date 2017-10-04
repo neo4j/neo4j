@@ -212,7 +212,7 @@ public abstract class SimpleAppServer implements ShellServer
 
     public TabCompletion tabComplete( String partOfLine, Session session )
     {
-        return new TabCompletion( Collections.<String>emptyList(), 0 );
+        return new TabCompletion( Collections.emptyList(), 0 );
     }
 
     @Override

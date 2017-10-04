@@ -22,7 +22,9 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.values.virtual.MapValue;
 
 
 /**
@@ -41,6 +43,13 @@ public interface QueryRegistryOperations
     void setMetaData( Map<String,Object> data );
 
     /**
+     * Gets associated meta data.
+     *
+     * @return the meta data
+     */
+    Map<String,Object> getMetaData();
+
+    /**
      * List of all currently running stream in this transaction. An user can have multiple stream running
      * simultaneously on the same transaction.
      */
@@ -50,7 +59,7 @@ public interface QueryRegistryOperations
      * Registers a query, and creates the ExecutingQuery object for it.
      */
     ExecutingQuery startQueryExecution(
-        QuerySource descriptor, String queryText, Map<String, Object> queryParameters
+        ClientConnectionInfo descriptor, String queryText, MapValue queryParameters
     );
 
     /**

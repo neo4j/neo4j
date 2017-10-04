@@ -37,7 +37,7 @@ public abstract class ValueType
     private static final Map<Class<?>,ValueType> byClass = new HashMap<>();
     private static final Map<Byte,ValueType> byId = new HashMap<>();
     private static ValueType stringType;
-    private static byte next = 0;
+    private static byte next;
     static
     {
         add( new ValueType( Boolean.TYPE, Boolean.class )

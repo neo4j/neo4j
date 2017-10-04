@@ -29,12 +29,12 @@ public class JarLoaderSupplier implements Supplier<EmbeddedJarLoader>
 {
     private String[] jarPaths;
 
-    public static JarLoaderSupplier of(String... jarPaths)
+    public static JarLoaderSupplier of( String... jarPaths )
     {
         return new JarLoaderSupplier( jarPaths );
     }
 
-    private JarLoaderSupplier(String... jarPaths)
+    private JarLoaderSupplier( String... jarPaths )
     {
         this.jarPaths = jarPaths;
     }

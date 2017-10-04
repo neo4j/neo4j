@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 import org.junit.Test;
 
 import org.neo4j.causalclustering.core.replication.DirectReplicator;
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -47,8 +48,9 @@ public class CommitProcessStateMachineCollaborationTest
 
         int finalLockSessionId = 24;
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-        ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
-                lockState( finalLockSessionId ), 16, NullLogProvider.getInstance() );
+        ReplicatedTransactionStateMachine stateMachine =
+                new ReplicatedTransactionStateMachine( mock( CommandIndexTracker.class ),
+                        lockState( finalLockSessionId ), 16, NullLogProvider.getInstance() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         DirectReplicator<ReplicatedTransaction> replicator = new DirectReplicator<>( stateMachine );

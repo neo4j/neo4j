@@ -125,8 +125,7 @@ public class PathRepresentationTest
         Relationship cb = relationship( 18, c, "HATES", b );
         Relationship cd = relationship( 19, c, "KNOWS", d );
 
-        return new PathRepresentation<Path>(
-                path( a, link( ab, b ), link( cb, c ), link( cd, d ) ));
+        return new PathRepresentation<Path>( path( a, link( ab, b ), link( cb, c ), link( cd, d ) ) );
     }
 
     public static void verifySerialisation( Map<String, Object> pathrep )
@@ -141,7 +140,8 @@ public class PathRepresentationTest
         assertTrue( nodes instanceof List );
         List nodeList = (List) nodes;
         assertEquals( length + 1, nodeList.size() );
-        for ( Object node : nodeList ) {
+        for ( Object node : nodeList )
+        {
             assertUriMatches( NODE_URI_PATTERN, node.toString() );
         }
 
@@ -149,7 +149,8 @@ public class PathRepresentationTest
         assertTrue( rels instanceof List );
         List relList = (List) rels;
         assertEquals( length, relList.size() );
-        for ( Object rel : relList ) {
+        for ( Object rel : relList )
+        {
             assertUriMatches( RELATIONSHIP_URI_PATTERN, rel.toString() );
         }
 

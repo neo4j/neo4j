@@ -32,7 +32,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CommunityCommitProcessFactoryTest
 {
@@ -41,7 +40,7 @@ public class CommunityCommitProcessFactoryTest
     {
         CommunityCommitProcessFactory factory = new CommunityCommitProcessFactory();
 
-        Config config = new Config( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.read_only, "true" );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
                 mock( StorageEngine.class ), config );
@@ -55,7 +54,7 @@ public class CommunityCommitProcessFactoryTest
         CommunityCommitProcessFactory factory = new CommunityCommitProcessFactory();
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), Config.empty() );
+                mock( StorageEngine.class ), Config.defaults() );
 
         assertThat( commitProcess, instanceOf( TransactionRepresentationCommitProcess.class ) );
     }

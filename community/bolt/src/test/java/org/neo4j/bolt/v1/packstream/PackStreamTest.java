@@ -66,14 +66,14 @@ public class PackStreamTest
         private final WritableByteChannel writable;
         private final PackStream.Packer packer;
 
-        public Machine()
+        Machine()
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );
             this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable ) );
         }
 
-        public Machine( int bufferSize )
+        Machine( int bufferSize )
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );
@@ -345,6 +345,23 @@ public class PackStreamTest
             String value = newUnpacker( machine.output() ).unpackString();
             assertThat( value, equalTo( string ) );
         }
+    }
+
+    @Test
+    public void testCanPackAndUnpackBytes() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+        byte[] abcdefghij = "ABCDEFGHIJ".getBytes();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.pack( abcdefghij );
+        packer.flush();
+
+        // Then
+        byte[] value = newUnpacker( machine.output() ).unpackBytes();
+        assertThat( value, equalTo( abcdefghij ) );
     }
 
     @Test
@@ -769,7 +786,7 @@ public class PackStreamTest
         {
             packer.pack( (String) value );
         }
-        else if ( value instanceof Long || value instanceof Integer)
+        else if ( value instanceof Long || value instanceof Integer )
         {
             packer.pack( ((Number) value).longValue() );
         }

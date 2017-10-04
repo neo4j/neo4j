@@ -1,0 +1,41 @@
+Neo4j
+Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
+in this notice as "Neo Technology")
+   [http://neotechnology.com]
+
+This product includes software ("Software") developed by Neo Technology.
+
+The software ("Software") is developed and owned by Network Engine
+for Objects in Lund AB (referred to in this notice as "Neo Technology").
+If you have executed an End User Software License and Services Agreement,
+an OEM Software License and Support Services Agreement, or another
+commercial license agreement (including an Evaluation Agreement) with
+Neo Technology or one of its affiliates (each, a "Commercial Agreement"),
+you may use the Software solely pursuant to the terms of the relevant
+Commercial Agreement.
+
+If you have not executed a Commercial Agreement with Neo Technology, the
+Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html), included
+in the LICENSE.txt file.
+
+Full license texts are found in LICENSES.txt.
+
+Third-party licenses
+--------------------
+
+Apache Software License, Version 2.0
+  Apache Commons Compress
+  Apache Commons Lang
+  Apache Commons Text
+  Lucene codecs
+  Lucene Common Analyzers
+  Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
+  Netty/All-in-One
+
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+

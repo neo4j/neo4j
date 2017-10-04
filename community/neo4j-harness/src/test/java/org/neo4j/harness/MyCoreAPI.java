@@ -20,7 +20,6 @@
 package org.neo4j.harness;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -46,13 +45,12 @@ public class MyCoreAPI
     public long makeNode( String label ) throws ProcedureException
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() );
+                Statement statement = this.txBridge.get() )
         {
-            Statement statement = this.txBridge.get();
-            DataWriteOperations writeOps = statement.dataWriteOperations();
-            long nodeId = writeOps.nodeCreate();
-            int labelId = writeOps.labelGetOrCreateForName( label );
-            writeOps.nodeAddLabel( nodeId, labelId );
+            long nodeId = statement.dataWriteOperations().nodeCreate();
+            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label );
+            statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
             result = nodeId;
             tx.success();
         }
@@ -68,9 +66,9 @@ public class MyCoreAPI
     public long countNodes()
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() );
+                Statement statement = this.txBridge.get() )
         {
-            Statement statement = this.txBridge.get();
             result = statement.readOperations().countsForNode( -1 );
             tx.success();
         }

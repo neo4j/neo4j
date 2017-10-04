@@ -86,23 +86,24 @@ public class ClusterClientModule
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging ) );
 
         TimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
-                new FixedTimeoutStrategy( config.get( ClusterSettings.default_timeout ) ) )
-                .timeout( HeartbeatMessage.sendHeartbeat, config.get( ClusterSettings.heartbeat_interval ) )
-                .timeout( HeartbeatMessage.timed_out, config.get( ClusterSettings.heartbeat_timeout ) )
-                .timeout( AtomicBroadcastMessage.broadcastTimeout, config.get( ClusterSettings.broadcast_timeout ) )
-                .timeout( LearnerMessage.learnTimedout, config.get( ClusterSettings.learn_timeout ) )
-                .timeout( ProposerMessage.phase1Timeout, config.get( ClusterSettings.phase1_timeout ) )
-                .timeout( ProposerMessage.phase2Timeout, config.get( ClusterSettings.phase2_timeout ) )
-                .timeout( ClusterMessage.joiningTimeout, config.get( ClusterSettings.join_timeout ) )
-                .timeout( ClusterMessage.configurationTimeout, config.get( ClusterSettings.configuration_timeout ) )
-                .timeout( ClusterMessage.leaveTimedout, config.get( ClusterSettings.leave_timeout ) )
-                .timeout( ElectionMessage.electionTimeout, config.get( ClusterSettings.election_timeout ) );
+                new FixedTimeoutStrategy( config.get( ClusterSettings.default_timeout ).toMillis() ) )
+                .timeout( HeartbeatMessage.sendHeartbeat, config.get( ClusterSettings.heartbeat_interval ).toMillis() )
+                .timeout( HeartbeatMessage.timed_out, config.get( ClusterSettings.heartbeat_timeout ).toMillis() )
+                .timeout( AtomicBroadcastMessage.broadcastTimeout, config.get( ClusterSettings.broadcast_timeout ).toMillis() )
+                .timeout( LearnerMessage.learnTimedout, config.get( ClusterSettings.learn_timeout ).toMillis() )
+                .timeout( ProposerMessage.phase1Timeout, config.get( ClusterSettings.phase1_timeout ).toMillis() )
+                .timeout( ProposerMessage.phase2Timeout, config.get( ClusterSettings.phase2_timeout ).toMillis() )
+                .timeout( ClusterMessage.joiningTimeout, config.get( ClusterSettings.join_timeout ).toMillis() )
+                .timeout( ClusterMessage.configurationTimeout, config.get( ClusterSettings.configuration_timeout ).toMillis() )
+                .timeout( ClusterMessage.leaveTimedout, config.get( ClusterSettings.leave_timeout ).toMillis() )
+                .timeout( ElectionMessage.electionTimeout, config.get( ClusterSettings.election_timeout ).toMillis() );
 
         MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory(
                 new ClusterConfiguration( config.get( ClusterSettings.cluster_name ), logging ),
                 logging, monitors.newMonitor( StateMachines.Monitor.class ) );
 
-        NetworkReceiver receiver = dependencies.satisfyDependency( new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
+        NetworkReceiver receiver = dependencies.satisfyDependency(
+                new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
                 new NetworkReceiver.Configuration()
         {
             @Override
@@ -129,7 +130,7 @@ public class ClusterClientModule
 
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
-            private volatile StateTransitionLogger logger = null;
+            private volatile StateTransitionLogger logger;
 
             @Override
             public void listeningAt( URI me )
@@ -188,7 +189,7 @@ public class ClusterClientModule
         life.add( receiver );
 
         // Timeout timer - triggers every 10 ms
-        life.add( new TimeoutTrigger(server, monitors) );
+        life.add( new TimeoutTrigger( server, monitors ) );
 
         life.add( new ClusterJoin( new ClusterJoin.Configuration()
         {
@@ -213,7 +214,7 @@ public class ClusterClientModule
             @Override
             public long getClusterJoinTimeout()
             {
-                return config.get( ClusterSettings.join_timeout );
+                return config.get( ClusterSettings.join_timeout ).toMillis();
             }
         }, server, logService ) );
 
@@ -228,7 +229,7 @@ public class ClusterClientModule
         private ScheduledExecutorService scheduler;
         private ScheduledFuture<?> tickFuture;
 
-        public TimeoutTrigger( ProtocolServer server, Monitors monitors )
+        TimeoutTrigger( ProtocolServer server, Monitors monitors )
         {
             this.server = server;
             this.monitors = monitors;
@@ -246,7 +247,8 @@ public class ClusterClientModule
             scheduler = Executors.newSingleThreadScheduledExecutor(
                     daemon( "timeout-clusterClient", monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 
-            tickFuture = scheduler.scheduleWithFixedDelay( () -> {
+            tickFuture = scheduler.scheduleWithFixedDelay( () ->
+            {
                 long now = System.currentTimeMillis();
 
                 server.getTimeouts().tick( now );

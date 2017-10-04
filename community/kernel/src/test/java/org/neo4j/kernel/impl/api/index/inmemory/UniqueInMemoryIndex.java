@@ -24,33 +24,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 class UniqueInMemoryIndex extends InMemoryIndex
 {
-    private final int propertyKeyId;
+    private final LabelSchemaDescriptor schema;
 
-    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = new PrimitiveLongVisitor<RuntimeException>()
+    UniqueInMemoryIndex( LabelSchemaDescriptor schema )
     {
-        @Override
-        public boolean visited( long nodeId )
-        {
-            UniqueInMemoryIndex.this.remove( nodeId );
-            return false;
-        }
-    };
-
-    public UniqueInMemoryIndex( int propertyKeyId )
-    {
-        this.propertyKeyId = propertyKeyId;
+        this.schema = schema;
     }
 
     @Override
@@ -59,37 +50,37 @@ class UniqueInMemoryIndex extends InMemoryIndex
         return new UniquePropertyIndexUpdater()
         {
             @Override
-            protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
+            protected void flushUpdates( Iterable<IndexEntryUpdate<?>> updates )
                     throws IOException, IndexEntryConflictException
             {
-                for ( NodePropertyUpdate update : updates )
+                for ( IndexEntryUpdate<?> update : updates )
                 {
-                    switch ( update.getUpdateMode() )
+                    switch ( update.updateMode() )
                     {
                         case CHANGED:
+                            UniqueInMemoryIndex.this.remove( update.getEntityId(), update.beforeValues() );
+                            break;
                         case REMOVED:
-                            UniqueInMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                            UniqueInMemoryIndex.this.remove( update.getEntityId(), update.values() );
+                            break;
                         default:
                             break;
                     }
                 }
-                for ( NodePropertyUpdate update : updates )
+                for ( IndexEntryUpdate<?> update : updates )
                 {
-                    switch ( update.getUpdateMode() )
+                    switch ( update.updateMode() )
                     {
                         case ADDED:
+                            add( update.getEntityId(), update.values(), IndexUpdateMode.ONLINE == mode );
+                            break;
                         case CHANGED:
-                            add( update.getNodeId(), update.getValueAfter(), IndexUpdateMode.ONLINE == mode );
+                            add( update.getEntityId(), update.values(), IndexUpdateMode.ONLINE == mode );
+                            break;
                         default:
                             break;
                     }
                 }
-            }
-
-            @Override
-            public void remove( PrimitiveLongSet nodeIds )
-            {
-                nodeIds.visitKeys( removeFromIndex );
             }
         };
     }
@@ -100,32 +91,85 @@ class UniqueInMemoryIndex extends InMemoryIndex
     {
         try
         {
-            indexData.iterateAll( new InMemoryIndexImplementation.IndexEntryIterator()
+            if ( schema.getPropertyIds().length == 1 )
             {
-                @Override
-                public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
-                {
-                    Map<Object,Long> entries = new HashMap<>();
-                    for ( long nodeId : nodeIds )
-                    {
-                        final Object value = accessor.getProperty( nodeId, propertyKeyId ).value();
-                        if ( entries.containsKey( value ) )
-                        {
-                            long existingNodeId = entries.get( value );
-                            throw new PreexistingIndexEntryConflictException( value, existingNodeId, nodeId );
-                        }
-                        entries.put( value, nodeId );
-                    }
-                }
-            } );
+                indexData.iterateAll( new SinglePropertyValidator( accessor ) );
+            }
+            else
+            {
+                indexData.iterateAll( new MultiPropertyValidator( accessor ) );
+            }
         }
-        catch ( PreexistingIndexEntryConflictException e )
+        catch ( IndexEntryConflictException e )
         {
             throw e;
         }
         catch ( Exception e )
         {
             throw new RuntimeException( e );
+        }
+    }
+
+    private class SinglePropertyValidator implements InMemoryIndexImplementation.IndexEntryIterator
+    {
+        private final PropertyAccessor accessor;
+
+        SinglePropertyValidator( PropertyAccessor accessor )
+        {
+            this.accessor = accessor;
+        }
+
+        @Override
+        public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
+        {
+            Map<Object,Long> entries = new HashMap<>();
+            for ( long nodeId : nodeIds )
+            {
+                final Value value = accessor.getPropertyValue( nodeId, schema.getPropertyId() );
+                if ( entries.containsKey( value ) )
+                {
+                    long existingNodeId = entries.get( value );
+                    throw new IndexEntryConflictException( existingNodeId, nodeId, ValueTuple.of( value ) );
+                }
+                entries.put( value, nodeId );
+            }
+        }
+    }
+
+    private class MultiPropertyValidator implements InMemoryIndexImplementation.IndexEntryIterator
+    {
+        private final PropertyAccessor accessor;
+
+        MultiPropertyValidator( PropertyAccessor accessor )
+        {
+            this.accessor = accessor;
+        }
+
+        @Override
+        public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
+        {
+            Map<ValueTuple,Long> entries = new HashMap<>();
+            for ( long nodeId : nodeIds )
+            {
+                final ValueTuple values = getValues( nodeId );
+                if ( entries.containsKey( values ) )
+                {
+                    long existingNodeId = entries.get( values );
+                    throw new IndexEntryConflictException( existingNodeId, nodeId, values );
+                }
+                entries.put( values, nodeId );
+            }
+        }
+
+        ValueTuple getValues( long nodeId ) throws EntityNotFoundException
+        {
+            int[] propertyIds = schema.getPropertyIds();
+            Value[] values = new Value[propertyIds.length];
+            for ( int i = 0; i < values.length; i++ )
+            {
+                values[i] = accessor.getPropertyValue( nodeId, propertyIds[i] );
+            }
+            return ValueTuple.of( values );
         }
     }
 }

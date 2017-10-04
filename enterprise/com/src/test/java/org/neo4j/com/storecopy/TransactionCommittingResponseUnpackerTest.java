@@ -140,7 +140,7 @@ public class TransactionCommittingResponseUnpackerTest
 
     private static class DummyObligationResponse extends TransactionObligationResponse<Object>
     {
-        public DummyObligationResponse( long obligationTxId )
+        DummyObligationResponse( long obligationTxId )
         {
             super( new Object(), StoreId.DEFAULT, obligationTxId, ResourceReleaser.NO_OP );
         }
@@ -154,12 +154,12 @@ public class TransactionCommittingResponseUnpackerTest
         private final int txCount;
         private final long batchLength;
 
-        public DummyTransactionResponse( long startingAtTxId, int txCount )
+        DummyTransactionResponse( long startingAtTxId, int txCount )
         {
             this( startingAtTxId, txCount, UNDEFINED_BATCH_LENGTH );
         }
 
-        public DummyTransactionResponse( long startingAtTxId, int txCount, long batchLength )
+        DummyTransactionResponse( long startingAtTxId, int txCount, long batchLength )
         {
             super( new Object(), StoreId.DEFAULT, mock( TransactionStream.class ), ResourceReleaser.NO_OP );
             this.startingAtTxId = startingAtTxId;

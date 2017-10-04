@@ -24,11 +24,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
@@ -37,26 +35,24 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
@@ -70,8 +66,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
@@ -86,7 +80,7 @@ class RebuildFromLogs
 
     private final FileSystemAbstraction fs;
 
-    public RebuildFromLogs( FileSystemAbstraction fs )
+    RebuildFromLogs( FileSystemAbstraction fs )
     {
         this.fs = fs;
     }
@@ -110,7 +104,8 @@ class RebuildFromLogs
             System.exit( -1 );
             return;
         }
-        File source = new File( args[0] ), target = new File( args[1] );
+        File source = new File( args[0] );
+        File target = new File( args[1] );
         if ( !source.isDirectory() )
         {
             printUsage( source + " is not a directory" );
@@ -137,7 +132,10 @@ class RebuildFromLogs
             }
         }
 
-        new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            new RebuildFromLogs( fileSystem ).rebuild( source, target, txId );
+        }
     }
 
     private static boolean directoryContainsDb( Path path )
@@ -169,25 +167,33 @@ class RebuildFromLogs
                 progress = ProgressMonitorFactory.textual( System.err );
             }
             progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
+
+            long lastTxId;
             try ( TransactionApplier applier = new TransactionApplier( fs, target, pageCache ) )
             {
-                long lastTxId = applier.applyTransactionsFrom( source, txId );
-                // set last tx id in neostore otherwise the db is not usable
-                MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
-                        MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
+                lastTxId = applier.applyTransactionsFrom( source, txId );
             }
 
-            try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
-            {
-                checker.checkConsistency();
-            }
+            // set last tx id in neostore otherwise the db is not usable
+            MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
+                    MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
+
+            checkConsistency( target, pageCache );
+        }
+    }
+
+    void checkConsistency( File target, PageCache pageCache ) throws Exception, InconsistentStoreException
+    {
+        try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
+        {
+            checker.checkConsistency();
         }
     }
 
     private long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion ) throws IOException
     {
-        ReadableLogChannel logChannel = new ReadAheadLogChannel(
-                PhysicalLogFile.openForVersion( logFiles, fs, highestVersion, false ), NO_MORE_CHANNELS );
+        PhysicalLogVersionedStoreChannel channel = openForVersion( logFiles, fs, highestVersion, false );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel );
 
         long lastTransactionId = -1;
 
@@ -225,7 +231,7 @@ class RebuildFromLogs
         TransactionApplier( FileSystemAbstraction fs, File dbDirectory, PageCache pageCache )
         {
             this.fs = fs;
-            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
+            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache );
             this.commitProcess = graphdb.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         }
 
@@ -238,7 +244,7 @@ class RebuildFromLogs
             ReadableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
             long txId = BASE_TX_ID;
             TransactionQueue queue = new TransactionQueue( 10_000,
-                    (tx, last) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );
+                    ( tx, last ) -> commitProcess.commit( tx, NULL, EXTERNAL ) );
             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                     new PhysicalTransactionCursor<>( channel, entryReader ) )
@@ -269,16 +275,15 @@ class RebuildFromLogs
     {
         private final GraphDatabaseAPI graphdb;
         private final LabelScanStore labelScanStore;
-        private final Config tuningConfiguration =
-                new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        private final SchemaIndexProvider indexes;
+        private final Config tuningConfiguration = Config.defaults();
+        private final SchemaIndexProviderMap indexes;
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )
         {
-            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
+            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.labelScanStore = resolver.resolveDependency( LabelScanStore.class );
-            this.indexes = resolver.resolveDependency( SchemaIndexProvider.class );
+            this.indexes = resolver.resolveDependency( SchemaIndexProviderMap.class );
         }
 
         private void checkConsistency() throws ConsistencyCheckIncompleteException, InconsistentStoreException
@@ -295,6 +300,7 @@ class RebuildFromLogs
             {
                 throw new InconsistentStoreException( summaryStatistics );
             }
+
         }
 
         @Override
@@ -304,10 +310,9 @@ class RebuildFromLogs
         }
     }
 
-    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache, Map<String,String> config )
+    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
-        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config )
-                .newGraphDatabase();
+        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).newGraphDatabase();
     }
 }

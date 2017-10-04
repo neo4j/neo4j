@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -29,9 +29,8 @@ Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons Lang
+  Apache Commons Text
   Caffeine cache
-  Commons BeanUtils
-  Commons Digester
   Commons IO
   Commons Lang
   Commons Logging
@@ -61,7 +60,10 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ASM Analysis
   ASM Core
+  ASM Tree
+  ASM Util
   JLine
   Scala Compiler
 

@@ -22,22 +22,23 @@ package org.neo4j.bolt.testing;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
-import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.function.ThrowingAction;
-import org.neo4j.function.ThrowingBiConsumer;
-import org.neo4j.kernel.api.exceptions.Status;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.runtime.StatementProcessor;
+import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.function.ThrowingAction;
+import org.neo4j.function.ThrowingBiConsumer;
+import org.neo4j.helpers.ValueUtils;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
+
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
@@ -45,9 +46,14 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.READY;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class BoltMatchers
 {
+    private BoltMatchers()
+    {
+    }
+
     public static Matcher<RecordedBoltResponse> succeeded()
     {
         return new BaseMatcher<RecordedBoltResponse>()
@@ -67,7 +73,7 @@ public class BoltMatchers
         };
     }
 
-    public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final Object value )
+    public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final AnyValue value )
     {
         return new BaseMatcher<RecordedBoltResponse>()
         {
@@ -76,14 +82,15 @@ public class BoltMatchers
             {
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
                 return response.message() == SUCCESS &&
-                        response.hasMetadata( key ) &&
-                        response.metadata( key ).equals( value );
+                       response.hasMetadata( key ) &&
+                       response.metadata( key ).equals( value );
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendValue( SUCCESS ).appendText( format( " with metadata %s = %s", key, value.toString() ) );
+                description.appendValue( SUCCESS )
+                        .appendText( format( " with metadata %s = %s", key, value.toString() ) );
             }
         };
     }
@@ -92,13 +99,16 @@ public class BoltMatchers
     {
         return new BaseMatcher<RecordedBoltResponse>()
         {
+            private AnyValue[] anyValues = Arrays.stream( values ).map( ValueUtils::of ).toArray( AnyValue[]::new );
+
             @Override
             public boolean matches( final Object item )
             {
+
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
-                Record[] records = response.records();
+                QueryResult.Record[] records = response.records();
                 return response.message() == SUCCESS &&
-                        Arrays.equals( records[0].fields(), values );
+                       Arrays.equals( records[0].fields(), anyValues );
             }
 
             @Override
@@ -118,14 +128,15 @@ public class BoltMatchers
             {
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
                 return response.message() == SUCCESS &&
-                        response.hasMetadata( key ) &&
-                        pattern.matcher( response.metadata( key ).toString() ).matches();
+                       response.hasMetadata( key ) &&
+                       pattern.matcher( ((TextValue) response.metadata( key )).stringValue() ).matches();
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendValue( SUCCESS ).appendText( format( " with metadata %s ~ %s", key, pattern.toString() ) );
+                description.appendValue( SUCCESS )
+                        .appendText( format( " with metadata %s ~ %s", key, pattern.toString() ) );
             }
         };
     }
@@ -158,14 +169,15 @@ public class BoltMatchers
             {
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
                 return response.message() == FAILURE &&
-                        response.hasMetadata( "code" ) &&
-                        response.metadata( "code" ).equals( status.code().serialize() );
+                       response.hasMetadata( "code" ) &&
+                       response.metadata( "code" ).equals( stringValue( status.code().serialize() ) );
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendValue( FAILURE ).appendText( format( " with status code %s", status.code().serialize() ) );
+                description.appendValue( FAILURE )
+                        .appendText( format( " with status code %s", status.code().serialize() ) );
             }
         };
     }
@@ -290,7 +302,7 @@ public class BoltMatchers
     }
 
     public static void verifyOneResponse( BoltStateMachine.State initialState,
-                                          ThrowingBiConsumer<BoltStateMachine, BoltResponseRecorder, BoltConnectionFatality> transition )
+            ThrowingBiConsumer<BoltStateMachine,BoltResponseRecorder,BoltConnectionFatality> transition )
             throws AuthenticationException, BoltConnectionFatality
     {
         BoltStateMachine machine = newMachine( initialState );

@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport2, RegularPlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_1.Foldable.FoldableAny
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp._
+import org.neo4j.cypher.internal.util.v3_4.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, RegularPlannerQuery}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.scalacheck.Gen
 
 import scala.util.Random
@@ -71,9 +72,9 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
       }
 
       queryGraphSolver = solver
-    }.planFor(cypherQuery)
+    }.getLogicalPlanFor(cypherQuery)
 
-    semanticPlan.plan
+    semanticPlan._2
   }
 
 

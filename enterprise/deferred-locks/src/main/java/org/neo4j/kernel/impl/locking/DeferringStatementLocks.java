@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.stream.Stream;
+
 /**
  * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
  * locks using {@link DeferringLockClient}.
@@ -47,9 +49,9 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public void prepareForCommit()
+    public void prepareForCommit( LockTracer lockTracer )
     {
-        implicit.acquireDeferredLocks();
+        implicit.acquireDeferredLocks( lockTracer );
     }
 
     @Override
@@ -62,5 +64,17 @@ public class DeferringStatementLocks implements StatementLocks
     public void close()
     {
         implicit.close();
+    }
+
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        return Stream.concat( explicit.activeLocks(), implicit.activeLocks() );
+    }
+
+    @Override
+    public long activeLockCount()
+    {
+        return explicit.activeLockCount() + implicit.activeLockCount();
     }
 }

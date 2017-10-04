@@ -20,12 +20,9 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import java.io.IOException;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,9 +32,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.function.UncaughtCheckedException;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.Statement;
@@ -47,24 +44,20 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.function.ThrowingFunction.catchThrown;
@@ -77,7 +70,6 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( "unused" )
 public class EnterpriseBuiltInDbmsProcedures
 {
-    private static Clock clock = Clocks.systemClock();
     private static final int HARD_CHAR_LIMIT = 2048;
 
     @Context
@@ -109,6 +101,17 @@ public class EnterpriseBuiltInDbmsProcedures
         try ( Statement statement = getCurrentTx().acquireStatement() )
         {
             statement.queryRegistration().setMetaData( data );
+        }
+    }
+
+    @Description( "Provides attached transaction metadata." )
+    @Procedure( name = "dbms.getTXMetaData", mode = DBMS )
+    public Stream<MetadataResult> getTXMetaData()
+    {
+        securityContext.assertCredentialsNotExpired();
+        try ( Statement statement = getCurrentTx().acquireStatement() )
+        {
+            return Stream.of( statement.queryRegistration().getMetaData() ).map( MetadataResult::new );
         }
     }
 
@@ -174,12 +177,12 @@ public class EnterpriseBuiltInDbmsProcedures
      */
 
     @Description( "List all user functions in the DBMS." )
-    @Procedure(name = "dbms.functions", mode = DBMS)
+    @Procedure( name = "dbms.functions", mode = DBMS )
     public Stream<FunctionResult> listFunctions()
     {
         securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( FunctionResult::new );
     }
 
@@ -195,7 +198,7 @@ public class EnterpriseBuiltInDbmsProcedures
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
-            roles = Stream.of( "admin", "reader", "publisher", "architect" ).collect( toList() );
+            roles = Stream.of( "admin", "reader", "editor", "publisher", "architect" ).collect( toList() );
             roles.addAll( Arrays.asList( signature.allowed() ) );
         }
     }
@@ -207,7 +210,7 @@ public class EnterpriseBuiltInDbmsProcedures
         securityContext.assertCredentialsNotExpired();
         Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
         return procedures.getAllProcedures().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
     }
 
@@ -241,6 +244,7 @@ public class EnterpriseBuiltInDbmsProcedures
                 else
                 {
                     roles.add( "reader" );
+                    roles.add( "editor" );
                     roles.add( "publisher" );
                     roles.add( "architect" );
                     roles.add( "admin" );
@@ -251,6 +255,7 @@ public class EnterpriseBuiltInDbmsProcedures
             case READ:
                 roles.add( "reader" );
             case WRITE:
+                roles.add( "editor" );
                 roles.add( "publisher" );
             case SCHEMA:
                 roles.add( "architect" );
@@ -262,8 +267,22 @@ public class EnterpriseBuiltInDbmsProcedures
 
         private boolean isAdminProcedure( String procedureName )
         {
-            return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName );
+            return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
+                   name.equals( "dbms.listConfig" ) ||
+                   name.equals( "dbms.setConfigValue" );
         }
+    }
+
+    @Description( "Updates a given setting value. Passing an empty value will result in removing the configured value " +
+            "and falling back to the default value. Changes will not persist and will be lost if the server is restarted." )
+    @Procedure( name = "dbms.setConfigValue", mode = DBMS )
+    public void setConfigValue( @Name( "setting" ) String setting, @Name( "value" ) String value )
+    {
+        securityContext.assertCredentialsNotExpired();
+        assertAdmin();
+
+        Config config = resolver.resolveDependency( Config.class );
+        config.updateDynamicSetting( setting, value ); // throws if something goes wrong
     }
 
     /*
@@ -275,12 +294,33 @@ public class EnterpriseBuiltInDbmsProcedures
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
+        NodeManager nodeManager = resolver.resolveDependency( NodeManager.class );
         try
         {
             return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
-                .filter( query -> isAdminOrSelf( query.username() ) )
-                .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
+                    .filter( query -> isAdminOrSelf( query.username() ) )
+                    .map( catchThrown( InvalidArgumentsException.class,
+                            query -> new QueryStatusResult( query, nodeManager ) ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
+    }
+
+    @Description( "List the active lock requests granted for the transaction executing the query with the given query id." )
+    @Procedure( name = "dbms.listActiveLocks", mode = DBMS )
+    public Stream<ActiveLocksQueryResult> listActiveLocks( @Name( "queryId" ) String queryId )
+            throws InvalidArgumentsException
+    {
+        securityContext.assertCredentialsNotExpired();
+        try
+        {
+            long id = fromExternalString( queryId ).kernelQueryId();
+            return getActiveTransactions( tx -> executingQueriesWithId( id, tx ) )
+                    .flatMap( this::getActiveLocksForQuery );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -291,21 +331,21 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
-            throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
         try
         {
             long queryId = fromExternalString( idText ).kernelQueryId();
 
-            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) );
-
-            return executingQueries
-                .stream()
-                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
-         }
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> querys = getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) ).collect( toSet() );
+            boolean killQueryVerbose = resolver.resolveDependency( Config.class ).get( GraphDatabaseSettings.kill_query_verbose );
+            if ( killQueryVerbose && querys.isEmpty() )
+            {
+                return Stream.<QueryTerminationResult>builder().add( new QueryFailedTerminationResult( fromExternalString( idText ) ) ).build();
+            }
+            return querys.stream().map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+        }
         catch ( UncaughtCheckedException uncaught )
         {
             throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
@@ -315,24 +355,29 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
-    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
-            throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
         try
         {
-            Set<Long> queryIds = idTexts
-                .stream()
-                .map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) )
-                .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
-                .collect( toSet() );
 
-            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
+            Set<Long> queryIds = idTexts.stream().map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) ).map(
+                    catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) ).collect( toSet() );
 
-            return executingQueries
-                .stream()
-                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+            Set<QueryTerminationResult> terminatedQuerys = getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) ).map(
+                    catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) ).collect( toSet() );
+            boolean killQueryVerbose = resolver.resolveDependency( Config.class ).get( GraphDatabaseSettings.kill_query_verbose );
+            if ( killQueryVerbose && terminatedQuerys.size() != idTexts.size() )
+            {
+                for ( String id : idTexts )
+                {
+                    if ( !terminatedQuerys.stream().anyMatch( query -> query.queryId.equals( id ) ) )
+                    {
+                        terminatedQuerys.add( new QueryFailedTerminationResult( fromExternalString( id ) ) );
+                    }
+                }
+            }
+            return terminatedQuerys.stream();
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -341,14 +386,13 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private <T> Set<Pair<KernelTransactionHandle, T>> getActiveTransactions(
+    private <T> Stream<Pair<KernelTransactionHandle, T>> getActiveTransactions(
             Function<KernelTransactionHandle,Stream<T>> selector
     )
     {
         return getActiveTransactions( graph.getDependencyResolver() )
             .stream()
-            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
-            .collect( toSet() );
+            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) );
     }
 
     private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )
@@ -369,6 +413,19 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
             return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.username() );
+        }
+        else
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+    }
+
+    private Stream<ActiveLocksQueryResult> getActiveLocksForQuery( Pair<KernelTransactionHandle, ExecutingQuery> pair )
+    {
+        ExecutingQuery query = pair.other();
+        if ( isAdminOrSelf( query.username() ) )
+        {
+            return pair.first().activeLocks().map( ActiveLocksQueryResult::new );
         }
         else
         {
@@ -401,8 +458,11 @@ public class EnterpriseBuiltInDbmsProcedures
     {
         Long killCount = getBoltConnectionTracker( dependencyResolver )
             .getActiveConnections( username )
-            .stream()
-            .map( conn -> { conn.terminate(); return true; } )
+            .stream().map( conn ->
+                {
+                    conn.terminate();
+                    return true;
+                } )
             .count();
         return Stream.of( new ConnectionResult( username, killCount ) );
     }
@@ -463,70 +523,25 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private QueryStatusResult queryStatusResult( ExecutingQuery q )
-            throws InvalidArgumentsException
-    {
-        return new QueryStatusResult(
-                ofInternalId( q.internalQueryId() ),
-                q.username(),
-                q.queryText(),
-                q.queryParameters(),
-                q.startTime(),
-                clock.instant().minusMillis( q.startTime() ).toEpochMilli(),
-                q.querySource(),
-                q.metaData()
-        );
-    }
-
-    public static class QueryStatusResult
-    {
-        public static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
-        public final String queryId;
-        public final String username;
-        public final String query;
-        public final Map<String,Object> parameters;
-        public final String startTime;
-        public final String elapsedTime;
-        public final String connectionDetails;
-        public final Map<String,Object> metaData;
-
-        QueryStatusResult(
-                QueryId queryId,
-                String username,
-                String query,
-                Map<String,Object> parameters,
-                long startTime,
-                long elapsedTime,
-                QuerySource querySource,
-                Map<String,Object> txMetaData
-        ) {
-            this.queryId = queryId.toString();
-            this.username = username;
-            this.query = query;
-            this.parameters = parameters;
-            this.startTime = formatTime( startTime );
-            this.elapsedTime = formatInterval( elapsedTime );
-            this.connectionDetails = querySource.toString();
-            this.metaData = txMetaData;
-        }
-
-        private static String formatTime( final long startTime )
-        {
-            return OffsetDateTime
-                    .ofInstant( Instant.ofEpochMilli( startTime ), UTC_ZONE_ID)
-                    .format( ISO_OFFSET_DATE_TIME );
-        }
-    }
-
     public static class QueryTerminationResult
     {
         public final String queryId;
         public final String username;
+        public String message = "Query found";
 
         public QueryTerminationResult( QueryId queryId, String username )
         {
             this.queryId = queryId.toString();
             this.username = username;
+        }
+    }
+
+    public static class QueryFailedTerminationResult extends QueryTerminationResult
+    {
+        public QueryFailedTerminationResult( QueryId queryId )
+        {
+            super( queryId, "n/a" );
+            super.message = "No Query found with this id";
         }
     }
 
@@ -566,12 +581,13 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private static String formatInterval( final long l )
+    public static class MetadataResult
     {
-        final long hr = MILLISECONDS.toHours( l );
-        final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
-        final long sec = MILLISECONDS.toSeconds( l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) );
-        final long ms = l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) - SECONDS.toMillis( sec );
-        return String.format( "%02d:%02d:%02d.%03d", hr, min, sec, ms );
+        public final Map<String,Object> metadata;
+
+        MetadataResult( Map<String,Object> metadata )
+        {
+            this.metadata = metadata;
+        }
     }
 }

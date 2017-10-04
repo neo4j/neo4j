@@ -61,14 +61,14 @@ public enum ClusterState
                     {
                         case addClusterListener:
                         {
-                            context.addClusterListener( message.<ClusterListener>getPayload() );
+                            context.addClusterListener( message.getPayload() );
 
                             break;
                         }
 
                         case removeClusterListener:
                         {
-                            context.removeClusterListener( message.<ClusterListener>getPayload() );
+                            context.removeClusterListener( message.getPayload() );
 
                             break;
                         }
@@ -84,11 +84,12 @@ public enum ClusterState
                         case join:
                         {
                             // Send configuration request to all instances
-                            Object[] args = message.<Object[]>getPayload();
+                            Object[] args = message.getPayload();
                             String name = (String) args[0];
                             URI[] clusterInstanceUris = (URI[]) args[1];
-                            context.joining( name, Iterables.<URI,URI>iterable( clusterInstanceUris ) );
-                            context.getLog( getClass() ).info( "Trying to join with DISCOVERY header " + context.generateDiscoveryHeader() );
+                            context.joining( name, Iterables.iterable( clusterInstanceUris ) );
+                            context.getLog( getClass() )
+                                    .info( "Trying to join with DISCOVERY header " + context.generateDiscoveryHeader() );
 
                             for ( URI potentialClusterInstanceUri : clusterInstanceUris )
                             {
@@ -392,7 +393,8 @@ public enum ClusterState
                                 context.cancelTimeout( "join" );
 
                                 context.joined();
-                                outgoing.offer( message.copyHeadersTo( internal( ClusterMessage.joinResponse, context.getConfiguration() ) ) );
+                                outgoing.offer( message.copyHeadersTo(
+                                        internal( ClusterMessage.joinResponse, context.getConfiguration() ) ) );
                                 return entered;
                             }
                             else
@@ -454,14 +456,14 @@ public enum ClusterState
                     {
                         case addClusterListener:
                         {
-                            context.addClusterListener( message.<ClusterListener>getPayload() );
+                            context.addClusterListener( message.getPayload() );
 
                             break;
                         }
 
                         case removeClusterListener:
                         {
-                            context.removeClusterListener( message.<ClusterListener>getPayload() );
+                            context.removeClusterListener( message.getPayload() );
 
                             break;
                         }
@@ -488,7 +490,7 @@ public enum ClusterState
 
                             if ( somethingIsWrong )
                             {
-                                if(otherInstanceJoiningWithSameId)
+                                if ( otherInstanceJoiningWithSameId )
                                 {
                                     context.getLog( ClusterState.class ).info( format( "Denying entry to instance %s" +
                                             " because another instance is currently joining with the same id.",

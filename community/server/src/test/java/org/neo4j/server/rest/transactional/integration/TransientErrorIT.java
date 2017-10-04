@@ -66,15 +66,8 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
         long tx2 = extractTxId( firstInTx2 );
 
         // tx1 attempts to take a write lock on node2
-        Future<HTTP.Response> future = otherThread.execute( new OtherThreadExecutor.WorkerCommand<Void,HTTP.Response>()
-        {
-            @Override
-            public HTTP.Response doWork( Void state ) throws Exception
-            {
-                return POST( txUri( tx1 ), quotedJson(
-                        "{'statements': [{'statement': 'MATCH (n {prop : 2}) SET n.prop = 5'}]}" ) );
-            }
-        } );
+        Future<HTTP.Response> future = otherThread.execute( state -> POST( txUri( tx1 ), quotedJson(
+                "{'statements': [{'statement': 'MATCH (n {prop : 2}) SET n.prop = 5'}]}" ) ) );
 
         // tx2 attempts to take a write lock on node1
         HTTP.Response secondInTx2 = POST( txUri( tx2 ), quotedJson(

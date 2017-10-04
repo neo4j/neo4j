@@ -29,6 +29,10 @@ import java.util.StringTokenizer;
 
 public class TextUtil
 {
+    private TextUtil()
+    {
+    }
+
     public static String templateString( String templateString,
             Map<String, ? extends Object> data )
     {
@@ -93,7 +97,7 @@ public class TextUtil
     public static String lastWordOrQuoteOf( String text, boolean preserveQuotation )
     {
         String[] quoteParts = text.split( "\"" );
-        String lastPart = quoteParts[quoteParts.length-1];
+        String lastPart = quoteParts[quoteParts.length - 1];
         boolean isWithinQuotes = quoteParts.length % 2 == 0;
         String lastWord = null;
         if ( isWithinQuotes )
@@ -101,13 +105,13 @@ public class TextUtil
             lastWord = lastPart;
             if ( preserveQuotation )
             {
-                lastWord = "\"" + lastWord + (text.endsWith( "\"" ) ? "\"" : "" );
+                lastWord = "\"" + lastWord + (text.endsWith( "\"" ) ? "\"" : "");
             }
         }
         else
         {
             String[] lastPartParts = splitAndKeepEscapedSpaces( lastPart, preserveQuotation );
-            lastWord = lastPartParts[lastPartParts.length-1];
+            lastWord = lastPartParts[lastPartParts.length - 1];
         }
         return lastWord;
     }
@@ -121,7 +125,7 @@ public class TextUtil
             char ch = string.charAt( i );
             if ( ch == ' ' )
             {
-                boolean isGluedSpace = i > 0 && string.charAt( i-1 ) == '\\';
+                boolean isGluedSpace = i > 0 && string.charAt( i - 1 ) == '\\';
                 if ( !isGluedSpace )
                 {
                     result.add( current.toString() );
@@ -145,14 +149,23 @@ public class TextUtil
     public static String multiplyString( String string, int times )
     {
         StringBuilder result = new StringBuilder();
-        for ( int i = 0; i < times; i++ ) result.append( string );
+        for ( int i = 0; i < times; i++ )
+        {
+            result.append( string );
+        }
         return result.toString();
     }
 
     public static String removeSpaces( String command )
     {
-        while ( command.length() > 0 && command.charAt( 0 ) == ' ' ) command = command.substring( 1 );
-        while ( command.length() > 0 && command.charAt( command.length()-1 ) == ' ' ) command = command.substring( 0, command.length()-1 );
+        while ( command.length() > 0 && command.charAt( 0 ) == ' ' )
+        {
+            command = command.substring( 1 );
+        }
+        while ( command.length() > 0 && command.charAt( command.length() - 1 ) == ' ' )
+        {
+            command = command.substring( 0, command.length() - 1 );
+        }
         return command;
     }
 
@@ -219,7 +232,7 @@ public class TextUtil
         {
             if ( string.startsWith( "\"" ) && string.endsWith( "\"" ) )
             {
-                return string.substring( 1, string.length()-1 );
+                return string.substring( 1, string.length() - 1 );
             }
         }
         return string;

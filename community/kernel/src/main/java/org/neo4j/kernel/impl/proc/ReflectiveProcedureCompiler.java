@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -34,12 +36,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.FailedLoadAggregatedFunction;
+import org.neo4j.kernel.api.proc.FailedLoadFunction;
+import org.neo4j.kernel.api.proc.FailedLoadProcedure;
 import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
@@ -50,37 +57,43 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserAggregationFunction;
+import org.neo4j.procedure.UserAggregationResult;
+import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 
 /**
  * Handles converting a class into one or more callable {@link CallableProcedure}.
  */
-public class ReflectiveProcedureCompiler
+class ReflectiveProcedureCompiler
 {
     private final MethodHandles.Lookup lookup = MethodHandles.lookup();
     private final OutputMappers outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
-    private final FieldInjections fieldInjections;
+    private final FieldInjections safeFieldInjections;
+    private final FieldInjections allFieldInjections;
     private final Log log;
     private final TypeMappers typeMappers;
-    private final ProcedureAllowedConfig config;
+    private final ProcedureConfig config;
 
-    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log,
-            ProcedureAllowedConfig config )
+    ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry safeComponents,
+            ComponentRegistry allComponents, Log log, ProcedureConfig config )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
         outputMappers = new OutputMappers( typeMappers );
-        this.fieldInjections = new FieldInjections( components );
+        this.safeFieldInjections = new FieldInjections( safeComponents );
+        this.allFieldInjections = new FieldInjections( allComponents );
         this.log = log;
         this.typeMappers = typeMappers;
         this.config = config;
     }
 
-    public List<CallableUserFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
+    List<CallableUserFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
     {
         try
         {
@@ -98,9 +111,20 @@ public class ReflectiveProcedureCompiler
             ArrayList<CallableUserFunction> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                out.add( compileFunction( fcnDefinition, constructor, method ) );
+                String valueName = method.getAnnotation( UserFunction.class ).value();
+                String definedName = method.getAnnotation( UserFunction.class ).name();
+                QualifiedName procName = extractName( fcnDefinition, method, valueName, definedName );
+                if ( config.isWhitelisted( procName.toString() ) )
+                {
+                    out.add( compileFunction( fcnDefinition, constructor, method,procName ) );
+                }
+                else
+                {
+                    log.warn( String.format( "The function '%s' is not on the whitelist and won't be loaded.",
+                            procName.toString() ) );
+                }
             }
-            out.sort( ( a, b ) -> a.signature().name().toString().compareTo( b.signature().name().toString() ) );
+            out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
         }
         catch ( KernelException e )
@@ -114,7 +138,55 @@ public class ReflectiveProcedureCompiler
         }
     }
 
-    public List<CallableProcedure> compileProcedure( Class<?> procDefinition ) throws KernelException
+    List<CallableUserAggregationFunction> compileAggregationFunction( Class<?> fcnDefinition ) throws KernelException
+    {
+        try
+        {
+            List<Method> methods = Arrays.stream( fcnDefinition.getDeclaredMethods() )
+                    .filter( m -> m.isAnnotationPresent( UserAggregationFunction.class ) )
+                    .collect( Collectors.toList() );
+
+            if ( methods.isEmpty() )
+            {
+                return emptyList();
+            }
+
+            MethodHandle constructor = constructor( fcnDefinition );
+
+            ArrayList<CallableUserAggregationFunction> out = new ArrayList<>( methods.size() );
+            for ( Method method : methods )
+            {
+                String valueName = method.getAnnotation( UserAggregationFunction.class ).value();
+                String definedName = method.getAnnotation( UserAggregationFunction.class ).name();
+                QualifiedName funcName = extractName( fcnDefinition, method, valueName, definedName );
+
+                if ( config.isWhitelisted( funcName.toString() ) )
+                {
+                    out.add( compileAggregationFunction( fcnDefinition, constructor, method, funcName ) );
+                }
+                else
+                {
+                    log.warn( String.format( "The function '%s' is not on the whitelist and won't be loaded.",
+                            funcName.toString() ) );
+                }
+
+            }
+            out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
+            return out;
+        }
+        catch ( KernelException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
+                    "Failed to compile function defined in `%s`: %s", fcnDefinition.getSimpleName(), e.getMessage() );
+        }
+    }
+
+    List<CallableProcedure> compileProcedure( Class<?> procDefinition, Optional<String> warning,
+            boolean fullAccess ) throws KernelException
     {
         try
         {
@@ -132,9 +204,21 @@ public class ReflectiveProcedureCompiler
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                out.add( compileProcedure( procDefinition, constructor, method ) );
+                String valueName = method.getAnnotation( Procedure.class ).value();
+                String definedName = method.getAnnotation( Procedure.class ).name();
+                QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
+
+                if ( fullAccess || config.isWhitelisted( procName.toString() ) )
+                {
+                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess, procName ) );
+                }
+                else
+                {
+                    log.warn( String.format( "The procedure '%s' is not on the whitelist and won't be loaded.",
+                            procName.toString() ) );
+                }
             }
-            out.sort( ( a, b ) -> a.signature().name().toString().compareTo( b.signature().name().toString() ) );
+            out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
         }
         catch ( KernelException e )
@@ -148,17 +232,14 @@ public class ReflectiveProcedureCompiler
         }
     }
 
-    private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method )
+    private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
+            Optional<String> warning, boolean fullAccess, QualifiedName procName  )
             throws ProcedureException, IllegalAccessException
     {
-        String valueName = method.getAnnotation( Procedure.class ).value();
-        String definedName = method.getAnnotation( Procedure.class ).name();
-        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
+        MethodHandle procedureMethod = lookup.unreflect( method );
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
-        MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
@@ -179,44 +260,197 @@ public class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
-        ProcedureSignature signature =
-                new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, config.rolesFor( procName.toString() ), description );
+        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
+        if ( !fullAccess && !config.fullAccessFor( procName.toString() ) )
+        {
+            try
+            {
+                setters = safeFieldInjections.setters( procDefinition );
+            }
+            catch ( ComponentInjectionException e )
+            {
+                description = describeAndLogLoadFailure( procName );
+                ProcedureSignature signature =
+                        new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
+                                Optional.empty(), new String[0], description, warning );
+                return new FailedLoadProcedure( signature );
+            }
+        }
 
+        ProcedureSignature signature =
+                new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
+                        config.rolesFor( procName.toString() ), description, warning );
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
-    private ReflectiveUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method )
+    private Optional<String> describeAndLogLoadFailure( QualifiedName name )
+    {
+        String nameStr = name.toString();
+        Optional<String> description = Optional.of(
+                nameStr + " is unavailable because it is sandboxed and has dependencies outside of the sandbox. " +
+                "Sandboxing is controlled by the " + procedure_unrestricted.name() + " setting. " +
+                "Only unrestrict procedures you can trust with access to database internals." );
+        log.warn( description.get() );
+        return description;
+    }
+
+    private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method,
+            QualifiedName procName )
             throws ProcedureException, IllegalAccessException
     {
-        String valueName = method.getAnnotation( UserFunction.class ).value();
-        String definedName = method.getAnnotation( UserFunction.class ).name();
-        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
 
-        if (procName.namespace() == null || procName.namespace().length == 0)
+        if ( procName.namespace() == null || procName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
-                    procName.name() );
+                    "It is not allowed to define functions in the root namespace please use a namespace, " +
+                            "e.g. `@UserFunction(\"org.example.com.%s\")", procName.name() );
         }
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
         MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
-
         Optional<String> description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
-
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName );
+
+        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
+        if ( !config.fullAccessFor( procName.toString() ) )
+        {
+            try
+            {
+                setters = safeFieldInjections.setters( procDefinition );
+            }
+            catch ( ComponentInjectionException e )
+            {
+                description = describeAndLogLoadFailure( procName );
+                UserFunctionSignature signature =
+                        new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
+                                config.rolesFor( procName.toString() ), description );
+                return new FailedLoadFunction( signature );
+            }
+        }
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( procName.toString() ), description );
 
         return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
+    }
+
+    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
+            Method method, QualifiedName funcName ) throws ProcedureException, IllegalAccessException
+    {
+        if ( funcName.namespace() == null || funcName.namespace().length == 0 )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "It is not allowed to define functions in the root namespace please use a namespace, " +
+                            "e.g. `@UserFunction(\"org.example.com.%s\")", funcName.name() );
+        }
+
+        //find update and result method
+        Method update = null;
+        Method result = null;
+        Class<?> aggregator = method.getReturnType();
+        for ( Method m : aggregator.getDeclaredMethods() )
+        {
+            if ( m.isAnnotationPresent( UserAggregationUpdate.class ) )
+            {
+                if ( update != null )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                            "Class '%s' contains multiple methods annotated with '@%s'.", aggregator.getSimpleName(),
+                            UserAggregationUpdate.class.getSimpleName() );
+                }
+                update = m;
+
+            }
+            if ( m.isAnnotationPresent( UserAggregationResult.class ) )
+            {
+                if ( result != null )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                            "Class '%s' contains multiple methods annotated with '@%s'.", aggregator.getSimpleName(),
+                            UserAggregationResult.class.getSimpleName() );
+                }
+                result = m;
+            }
+        }
+        if ( result == null || update == null )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Class '%s' must contain methods annotated with both '@%s' as well as '@%s'.",
+                    aggregator.getSimpleName(), UserAggregationResult.class.getSimpleName(),
+                    UserAggregationUpdate.class.getSimpleName() );
+        }
+        if ( update.getReturnType() != void.class )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Update method '%s' in %s has type '%s' but must have return type 'void'.", update.getName(),
+                    aggregator.getSimpleName(), update.getReturnType().getSimpleName() );
+
+        }
+        if ( !Modifier.isPublic( method.getModifiers() ) )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation method '%s' in %s must be public.", method.getName(), definition.getSimpleName() );
+        }
+        if ( !Modifier.isPublic( aggregator.getModifiers() ) )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation class '%s' must be public.", aggregator.getSimpleName() );
+        }
+        if ( !Modifier.isPublic( update.getModifiers() ) )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation update method '%s' in %s must be public.", update.getName(),
+                    aggregator.getSimpleName() );
+        }
+        if ( !Modifier.isPublic( result.getModifiers() ) )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation result method '%s' in %s must be public.", result.getName(),
+                    aggregator.getSimpleName() );
+        }
+
+        List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( update );
+        Class<?> returnType = result.getReturnType();
+        TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
+        MethodHandle creator = lookup.unreflect( method );
+        MethodHandle updateMethod = lookup.unreflect( update );
+        MethodHandle resultMethod = lookup.unreflect( result );
+
+        Optional<String> description = description( method );
+        UserAggregationFunction function = method.getAnnotation( UserAggregationFunction.class );
+
+        Optional<String> deprecated = deprecated( method, function::deprecatedBy,
+                "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName );
+
+        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( definition );
+        if ( !config.fullAccessFor( funcName.toString() ) )
+        {
+            try
+            {
+                setters = safeFieldInjections.setters( definition );
+            }
+            catch ( ComponentInjectionException e )
+            {
+                description = describeAndLogLoadFailure( funcName );
+                UserFunctionSignature signature =
+                        new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
+                                config.rolesFor( funcName.toString() ), description );
+
+                return new FailedLoadAggregatedFunction( signature );
+            }
+        }
+
+        UserFunctionSignature signature =
+                new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
+                        config.rolesFor( funcName.toString() ), description );
+
+        return new ReflectiveUserAggregationFunction( signature, constructor, creator, updateMethod, resultMethod,
+                valueConverter, setters );
     }
 
     private Optional<String> deprecated( Method method, Supplier<String> supplier, String warning )
@@ -265,7 +499,7 @@ public class ReflectiveProcedureCompiler
 
     private QualifiedName extractName( Class<?> procDefinition, Method m, String valueName, String definedName )
     {
-        String procName = (definedName.trim().isEmpty() ? valueName : definedName);
+        String procName = definedName.trim().isEmpty() ? valueName : definedName;
         if ( procName.trim().length() > 0 )
         {
             String[] split = procName.split( "\\." );
@@ -288,15 +522,11 @@ public class ReflectiveProcedureCompiler
 
     private abstract static class ReflectiveBase
     {
-        protected final MethodHandle constructor;
-        protected final MethodHandle procedureMethod;
-        protected final List<FieldInjections.FieldSetter> fieldSetters;
 
-        protected ReflectiveBase( MethodHandle constructor, MethodHandle procedureMethod,
-                List<FieldInjections.FieldSetter> fieldSetters )
+        final List<FieldInjections.FieldSetter> fieldSetters;
+
+        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters )
         {
-            this.constructor = constructor;
-            this.procedureMethod = procedureMethod;
             this.fieldSetters = fieldSetters;
         }
 
@@ -319,14 +549,18 @@ public class ReflectiveProcedureCompiler
 
     private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
     {
-        protected final ProcedureSignature signature;
+        private final ProcedureSignature signature;
         private final OutputMapper outputMapper;
+        private final MethodHandle constructor;
+        private final MethodHandle procedureMethod;
 
-        public ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
+        ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, OutputMapper outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( constructor, procedureMethod, fieldSetters );
+            super( fieldSetters );
+            this.constructor = constructor;
+            this.procedureMethod = procedureMethod;
             this.signature = signature;
             this.outputMapper = outputMapper;
         }
@@ -450,12 +684,16 @@ public class ReflectiveProcedureCompiler
 
         private final TypeMappers.NeoValueConverter valueConverter;
         private final UserFunctionSignature signature;
+        private final MethodHandle constructor;
+        private final MethodHandle udfMethod;
 
-        public ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
+        ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( constructor, procedureMethod, fieldSetters );
+            super( fieldSetters );
+            this.constructor = constructor;
+            this.udfMethod = procedureMethod;
             this.signature = signature;
             this.valueConverter = outputMapper;
         }
@@ -490,7 +728,7 @@ public class ReflectiveProcedureCompiler
                 // Call the method
                 Object[] args = args( numberOfDeclaredArguments, cls, input );
 
-                Object rs = procedureMethod.invokeWithArguments( args );
+                Object rs = udfMethod.invokeWithArguments( args );
 
                 return valueConverter.toNeoValue( rs );
             }
@@ -505,6 +743,131 @@ public class ReflectiveProcedureCompiler
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                             "Failed to invoke function `%s`: %s", signature.name(), "Caused by: " + throwable );
+                }
+            }
+        }
+    }
+
+    private static class ReflectiveUserAggregationFunction extends ReflectiveBase implements
+            CallableUserAggregationFunction
+    {
+
+        private final TypeMappers.NeoValueConverter valueConverter;
+        private final UserFunctionSignature signature;
+        private final MethodHandle constructor;
+        private final MethodHandle creator;
+        private final MethodHandle updateMethod;
+        private final MethodHandle resultMethod;
+
+        ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
+                MethodHandle creator, MethodHandle updateMethod, MethodHandle resultMethod,
+                TypeMappers.NeoValueConverter outputMapper,
+                List<FieldInjections.FieldSetter> fieldSetters )
+        {
+            super( fieldSetters );
+            this.constructor = constructor;
+            this.creator = creator;
+            this.updateMethod = updateMethod;
+            this.resultMethod = resultMethod;
+            this.signature = signature;
+            this.valueConverter = outputMapper;
+        }
+
+        @Override
+        public UserFunctionSignature signature()
+        {
+            return signature;
+        }
+
+        @Override
+        public Aggregator create( Context ctx ) throws ProcedureException
+        {
+            // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
+            // instances local to
+            // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
+            try
+            {
+
+                Object cls = constructor.invoke();
+                //API injection
+                inject( ctx, cls );
+                Object aggregator = creator.invoke( cls );
+
+                return new Aggregator()
+                {
+                    @Override
+                    public void update( Object[] input ) throws ProcedureException
+                    {
+                        try
+                        {
+                            int numberOfDeclaredArguments = signature.inputSignature().size();
+                            if ( numberOfDeclaredArguments != input.length )
+                            {
+                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                                        "Function `%s` takes %d arguments but %d was provided.",
+                                        signature.name(),
+                                        numberOfDeclaredArguments, input.length );
+                            }
+                            // Call the method
+                            Object[] args = args( numberOfDeclaredArguments, aggregator, input );
+
+                            updateMethod.invokeWithArguments( args );
+                        }
+                        catch ( Throwable throwable )
+                        {
+                            if ( throwable instanceof Status.HasStatus )
+                            {
+                                throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                                        throwable.getMessage() );
+                            }
+                            else
+                            {
+                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                                        "Failed to invoke function `%s`: %s", signature.name(),
+                                        "Caused by: " + throwable );
+                            }
+                        }
+                    }
+
+                    @Override
+                    public Object result() throws ProcedureException
+                    {
+                        try
+                        {
+                            return valueConverter.toNeoValue( resultMethod.invoke(aggregator) );
+                        }
+                        catch ( Throwable throwable )
+                        {
+                            if ( throwable instanceof Status.HasStatus )
+                            {
+                                throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                                        throwable.getMessage() );
+                            }
+                            else
+                            {
+                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                                        "Failed to invoke function `%s`: %s", signature.name(),
+                                        "Caused by: " + throwable );
+                            }
+                        }
+
+                    }
+
+                };
+
+            }
+            catch ( Throwable throwable )
+            {
+                if ( throwable instanceof Status.HasStatus )
+                {
+                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                            throwable.getMessage() );
+                }
+                else
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                            "Failed to invoke function `%s`: %s", signature.name(),
+                            "Caused by: " + throwable );
                 }
             }
         }

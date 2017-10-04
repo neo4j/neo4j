@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -46,9 +45,8 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCu
         this.instanceCache = instanceCache;
     }
 
-    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator, AssertOpen assertOpen )
+    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator )
     {
-        initialize( assertOpen );
         this.iterator = iterator;
         return this;
     }

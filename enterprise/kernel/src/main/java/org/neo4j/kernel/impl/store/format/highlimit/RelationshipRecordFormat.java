@@ -92,14 +92,14 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
 
     private static final long TWO_BIT_FIXED_REFERENCE_BIT_MASK = 0x300000000L;
 
-    public RelationshipRecordFormat()
+    RelationshipRecordFormat()
     {
         this( RECORD_SIZE );
     }
 
     RelationshipRecordFormat( int recordSize )
     {
-        super( fixedRecordSize( recordSize ), 0 );
+        super( fixedRecordSize( recordSize ), 0, HighLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -112,7 +112,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     protected void doReadInternal(
             RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte, boolean inUse )
     {
-        if (record.isUseFixedReferences())
+        if ( record.isUseFixedReferences() )
         {
             int type = cursor.getShort() & 0xFFFF;
             // read record in fixed reference format
@@ -123,7 +123,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
         {
             int typeLowWord = cursor.getShort() & 0xFFFF;
             int typeHighWord = cursor.getByte() & 0xFF;
-            int type = ((typeHighWord << Short.SIZE) | typeLowWord);
+            int type = (typeHighWord << Short.SIZE) | typeLowWord;
             long recordId = record.getId();
             record.initialize( inUse,
                     decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),
@@ -169,7 +169,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     protected void doWriteInternal( RelationshipRecord record, PageCursor cursor )
             throws IOException
     {
-        if (record.isUseFixedReferences())
+        if ( record.isUseFixedReferences() )
         {
             // write record in fixed reference format
             writeFixedReferencesRecord( record, cursor );

@@ -74,9 +74,9 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 public class HalfAppliedConstraintRecoveryIT
 {
     private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> REAPPLY =
-            (db,txs) -> apply( db, txs.subList( txs.size() - 1, txs.size() ) );
+            ( db, txs ) -> apply( db, txs.subList( txs.size() - 1, txs.size() ) );
     private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> RECREATE =
-            (db,txs) -> createConstraint( db );
+            ( db, txs ) -> createConstraint( db );
 
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";

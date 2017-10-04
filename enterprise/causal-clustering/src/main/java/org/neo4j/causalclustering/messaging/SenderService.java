@@ -28,11 +28,12 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.Future;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -53,23 +54,19 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
     private NioEventLoopGroup eventLoopGroup;
-    private int maxQueueSize;
 
-    public SenderService( ChannelInitializer<SocketChannel> channelInitializer,
-            LogProvider logProvider,
-            Monitors monitors,
-            int maxQueueSize )
+    public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors )
     {
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
-        this.maxQueueSize = maxQueueSize;
         this.nonBlockingChannels = new NonBlockingChannels();
     }
 
     @Override
-    public void send( AdvertisedSocketAddress to, Message message )
+    public void send( AdvertisedSocketAddress to, Message message, boolean block )
     {
+        Future<Void> future;
         serviceLock.readLock().lock();
         try
         {
@@ -78,11 +75,16 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 return;
             }
 
-            channel( to ).send( message );
+            future = channel( to ).send( message );
         }
         finally
         {
             serviceLock.readLock().unlock();
+        }
+
+        if ( block )
+        {
+            future.awaitUninterruptibly();
         }
     }
 
@@ -93,7 +95,8 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( nonBlockingChannel == null )
         {
-            nonBlockingChannel = new NonBlockingChannel( bootstrap, to, log, monitor, maxQueueSize ) ;
+            nonBlockingChannel = new NonBlockingChannel( bootstrap, eventLoopGroup.next(), to, log );
+            nonBlockingChannel.start();
             NonBlockingChannel existingNonBlockingChannel = nonBlockingChannels.putIfAbsent( to, nonBlockingChannel );
 
             if ( existingNonBlockingChannel != null )

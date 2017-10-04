@@ -130,7 +130,8 @@ class SettingsDialog extends JDialog
 
     private JButton createCommandPromptButton()
     {
-        return Components.createTextButton( ellipsis( "Command Prompt" ), e -> {
+        return Components.createTextButton( ellipsis( "Command Prompt" ), e ->
+        {
             try
             {
                 model.launchCommandPrompt();
@@ -153,7 +154,7 @@ class SettingsDialog extends JDialog
                 return model.getDatabaseConfigurationFile();
             }
 
-            @SuppressWarnings("ResultOfMethodCallIgnored")
+            @SuppressWarnings( "ResultOfMethodCallIgnored" )
             @Override
             protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
             {

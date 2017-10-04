@@ -46,7 +46,7 @@ public class UrlFormFormatTest
         Map<String, Object> map = format.readMap( "var=A" );
 
         assertThat( map.size(), is( 1 ) );
-        assertThat( (String) map.get( "var" ), is( "A" ) );
+        assertThat( map.get( "var" ), is( "A" ) );
     }
 
     @Test

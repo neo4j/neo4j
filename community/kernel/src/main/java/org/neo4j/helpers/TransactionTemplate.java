@@ -125,7 +125,8 @@ public class TransactionTemplate
 
     public void execute( final Consumer<Transaction> txConsumer )
     {
-        execute( transaction -> {
+        execute( transaction ->
+        {
             txConsumer.accept( transaction );
             return null;
         } );
@@ -171,15 +172,15 @@ public class TransactionTemplate
 
         if ( txEx instanceof TransactionFailureException )
         {
-            throw ((TransactionFailureException) txEx);
+            throw (TransactionFailureException) txEx;
         }
         else if ( txEx instanceof Error )
         {
-            throw ((Error) txEx);
+            throw (Error) txEx;
         }
         else if ( txEx instanceof RuntimeException )
         {
-            throw ((RuntimeException) txEx);
+            throw (RuntimeException) txEx;
         }
         else
         {

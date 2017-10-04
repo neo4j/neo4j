@@ -58,7 +58,10 @@ public class Mknode extends TransactionProvidingApp
         Node node = db.createNode( parseLabels( parser ) );
 
         setProperties( node, parser.option( "np", null ) );
-        if ( parser.options().containsKey( "cd" ) ) cdTo( session, node );
+        if ( parser.options().containsKey( "cd" ) )
+        {
+            cdTo( session, node );
+        }
         if ( parser.options().containsKey( "v" ) )
         {
             out.println( "Node " + getDisplayName( getServer(), session, node, false ) + " created" );

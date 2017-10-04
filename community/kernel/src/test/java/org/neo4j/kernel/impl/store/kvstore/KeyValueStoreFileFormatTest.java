@@ -36,8 +36,9 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.ResourceRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -55,7 +56,7 @@ public class KeyValueStoreFileFormatTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
-    public final PageCacheRule pages = new PageCacheRule();
+    public final ConfigurablePageCacheRule pages = new ConfigurablePageCacheRule();
     @Rule
     public final ResourceRule<File> storeFile = testPath();
 
@@ -372,25 +373,14 @@ public class KeyValueStoreFileFormatTest
             throws IOException
     {
         final List<Bytes> values = new ArrayList<>();
-        boolean result = file.scan( new SearchKey()
+        boolean result = file.scan( key -> key.putInt( key.size() - 4, min ), ( key, value ) ->
         {
-            @Override
-            public void searchKey( WritableBuffer key )
+            if ( key.getInt( key.size() - 4 ) <= max )
             {
-                key.putInt( key.size() - 4, min );
+                values.add( new Bytes( value.get( 0, new byte[value.size()] ) ) );
+                return true;
             }
-        }, new KeyValueVisitor()
-        {
-            @Override
-            public boolean visit( ReadableBuffer key, ReadableBuffer value )
-            {
-                if ( key.getInt( key.size() - 4 ) <= max )
-                {
-                    values.add( new Bytes( value.get( 0, new byte[value.size()] ) ) );
-                    return true;
-                }
-                return false;
-            }
+            return false;
         } );
         return Pair.of( result, values );
     }
@@ -470,7 +460,7 @@ public class KeyValueStoreFileFormatTest
     {
         class Visitor implements KeyValueVisitor
         {
-            int visited = 0;
+            int visited;
 
             @Override
             public boolean visit( ReadableBuffer key, ReadableBuffer value )
@@ -495,21 +485,17 @@ public class KeyValueStoreFileFormatTest
     static KeyValueVisitor expectData( final Data expected )
     {
         expected.index = 0; // reset the visitor
-        return new KeyValueVisitor()
+        return ( key, value ) ->
         {
-            @Override
-            public boolean visit( ReadableBuffer key, ReadableBuffer value )
+            byte[] expectedKey = new byte[key.size()];
+            byte[] expectedValue = new byte[value.size()];
+            if ( !expected.visit( new BigEndianByteArrayBuffer( expectedKey ),
+                    new BigEndianByteArrayBuffer( expectedValue ) ) )
             {
-                byte[] expectedKey = new byte[key.size()];
-                byte[] expectedValue = new byte[value.size()];
-                if ( !expected.visit( new BigEndianByteArrayBuffer( expectedKey ),
-                        new BigEndianByteArrayBuffer( expectedValue ) ) )
-                {
-                    return false;
-                }
-                assertEqualContent( expectedKey, key );
-                return true;
+                return false;
             }
+            assertEqualContent( expectedKey, key );
+            return true;
         };
     }
 
@@ -528,7 +514,7 @@ public class KeyValueStoreFileFormatTest
     {
         private final Map<String,HeaderField<byte[]>> headerFields = new HashMap<>();
 
-        public Format( String... defaultHeaderFields )
+        Format( String... defaultHeaderFields )
         {
             this( StubCollector.headerFields( defaultHeaderFields ) );
         }
@@ -558,9 +544,11 @@ public class KeyValueStoreFileFormatTest
                 DataProvider data )
                 throws IOException
         {
+            PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config().withPageSize( pageSize );
+            PageCache pageCache = pages.getPageCache( fs.get(), pageCacheConfig, Config.defaults( config ) );
             return createStore( fs.get(),
-                    pages.getPageCache( fs.get(), PageCacheTracer.NULL, pageSize, new Config( config ) ),
-                    storeFile.get(), 16, 16, headers( headers ), data );
+                    pageCache, storeFile.get(), 16, 16,
+                    headers( headers ), data );
         }
 
         private Headers headers( Map<String,byte[]> headers )
@@ -654,7 +642,8 @@ public class KeyValueStoreFileFormatTest
             return new DataEntry( key, value );
         }
 
-        final byte[] key, value;
+        final byte[] key;
+        byte[] value;
 
         DataEntry( byte[] key, byte[] value )
         {

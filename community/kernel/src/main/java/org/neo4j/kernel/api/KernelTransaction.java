@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Optional;
+
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -76,7 +78,8 @@ import org.neo4j.kernel.impl.api.Kernel;
  */
 public interface KernelTransaction extends AutoCloseable
 {
-    enum Type {
+    enum Type
+    {
         implicit,
         explicit
     }
@@ -146,9 +149,14 @@ public interface KernelTransaction extends AutoCloseable
     SecurityContext securityContext();
 
     /**
-     * @return {@code true} if {@link #markForTermination(Status)} has been invoked, otherwise {@code false}.
+     * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
      */
-    Status getReasonIfTerminated();
+    Optional<Status> getReasonIfTerminated();
+
+    /**
+     * @return true if transaction was terminated, otherwise false
+     */
+    boolean isTerminated();
 
     /**
      * Marks this transaction for termination, such that it cannot commit successfully and will try to be

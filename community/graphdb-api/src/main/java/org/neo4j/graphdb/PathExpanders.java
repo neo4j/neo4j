@@ -39,7 +39,7 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very permissive {@link PathExpander} that follows any type in any direction
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> allTypesAndDirections()
     {
         return StandardExpander.DEFAULT;
@@ -52,7 +52,7 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very permissive {@link PathExpander} that follows {@code type} relationships in any direction
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> forType( RelationshipType type )
     {
         return StandardExpander.create( type, Direction.BOTH );
@@ -65,7 +65,7 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very permissive {@link PathExpander} that follows any type in {@code direction}
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> forDirection( Direction direction )
     {
         return StandardExpander.create( direction );
@@ -79,7 +79,7 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very restricted {@link PathExpander} that follows {@code type} in {@code direction}
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> forTypeAndDirection( RelationshipType type, Direction direction )
     {
         return StandardExpander.create( type, direction );
@@ -96,7 +96,7 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very restricted {@link PathExpander} that follows only the {@code type}/{@code direction} pairs that you list
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> forTypesAndDirections( RelationshipType type1, Direction direction1,
                                                                      RelationshipType type2, Direction direction2,
                                                                      Object... more )

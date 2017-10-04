@@ -19,37 +19,42 @@
  */
 package org.neo4j.server;
 
+import sun.misc.Signal;
+
 import java.io.File;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ClientConnectorSettings;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
+import static org.neo4j.commandline.Util.neo4jVersion;
 
 public abstract class ServerBootstrapper implements Bootstrapper
 {
     public static final int OK = 0;
     public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
+    private static final String SIGTERM = "TERM";
+    private static final String SIGINT = "INT";
 
-    private NeoServer server;
+    private volatile NeoServer server;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     // in case we have errors loading/validating the configuration log to stdout
@@ -60,6 +65,12 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
 
+        if ( args.version() )
+        {
+            System.out.println( "neo4j " + neo4jVersion() );
+            return 0;
+        }
+
         if ( args.homeDir() == null )
         {
             throw new ServerStartupException( "Argument --home-dir is required and was not provided." );
@@ -69,28 +80,35 @@ public abstract class ServerBootstrapper implements Bootstrapper
     }
 
     @Override
-    @SafeVarargs
-    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
     {
+        addShutdownHook();
+        installSignalHandler();
         try
         {
-            Config config = createConfig( homeDir, configFile, configOverrides );
+            // Create config file from arguments
+            Config config = Config.builder()
+                    .withFile( configFile )
+                    .withSettings( configOverrides )
+                    .withHome(homeDir)
+                    .withValidators( configurationValidators() )
+                    .withServerDefaults().build();
 
             LogProvider userLogProvider = setupLogging( config );
             dependencies = dependencies.userLogProvider( userLogProvider );
             log = userLogProvider.getLog( getClass() );
             config.setLogger( log );
 
-            serverAddress = ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE )
-                    .map( ( connector ) -> config.get( connector.address ).toString() )
+            serverAddress =  config.httpConnectors().stream()
+                    .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
+                    .findFirst()
+                    .map( connector -> config.get( connector.listen_address ).toString() )
                     .orElse( serverAddress );
 
             checkCompatibility();
 
             server = createNeoServer( config, dependencies, userLogProvider );
             server.start();
-
-            addShutdownHook();
 
             return OK;
         }
@@ -148,7 +166,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
     protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
                                                   LogProvider userLogProvider );
 
-    protected abstract Iterable<Class<?>> settingsClasses( Map<String, String> settings );
+    @Nonnull
+    protected abstract Collection<ConfigurationValidator> configurationValidators();
 
     private static LogProvider setupLogging( Config config )
     {
@@ -162,9 +181,38 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return userLogProvider;
     }
 
-    private Config createConfig( File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
+    // Exit gracefully if possible
+    private void installSignalHandler()
     {
-        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, configOverrides );
+        try
+        {
+            /*
+             * We want to interrupt the main thread which has start()ed lifecycle instances that may be blocked
+             * somewhere. If we don't do that, then the JVM will hang on the final join() for non daemon threads.
+             */
+            Thread t = Thread.currentThread();
+            log.debug( "Installing signal handler to interrupt thread named " + t.getName() );
+            // SIGTERM is invoked when system service is stopped
+            Signal.handle( new Signal( SIGTERM ), signal ->
+            {
+                t.interrupt();
+                System.exit( 0 );
+            } );
+        }
+        catch ( Throwable e )
+        {
+            log.warn( "Unable to install signal handler. Exit code may not be 0 on graceful shutdown.", e );
+        }
+        try
+        {
+            // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
+            Signal.handle( new Signal( SIGINT ), signal -> System.exit( 0 ) );
+        }
+        catch ( Throwable e )
+        {
+            // Happens on IBM JDK with IllegalArgumentException: Signal already used by VM: INT
+            log.warn( "Unable to install signal handler. Exit code may not be 0 on graceful shutdown.", e );
+        }
     }
 
     private void addShutdownHook()

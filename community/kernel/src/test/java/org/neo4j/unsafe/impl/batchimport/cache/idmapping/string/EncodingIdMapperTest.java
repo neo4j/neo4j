@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -42,8 +41,8 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -83,12 +82,12 @@ public class EncodingIdMapperTest
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();
-        data.add( new Object[] {1} );
-        data.add( new Object[] {2} );
-        int bySystem = Runtime.getRuntime().availableProcessors()-1;
+        data.add( new Object[]{1} );
+        data.add( new Object[]{2} );
+        int bySystem = Runtime.getRuntime().availableProcessors() - 1;
         if ( bySystem > 2 )
         {
-            data.add( new Object[] {bySystem} );
+            data.add( new Object[]{bySystem} );
         }
         return data;
     }
@@ -251,7 +250,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
-        final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
+        final List<Object> idList = Arrays.asList( "10", "9", "10" );
         InputIterable<Object> ids = wrap( "source", idList );
 
         Group group = new Group.Adapter( GLOBAL.id(), "global" );
@@ -371,7 +370,8 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Groups groups = new Groups();
-        Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
+        Group firstGroup = groups.getOrCreate( "first" );
+        Group secondGroup = groups.getOrCreate( "second" );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
             int id = 0;
@@ -399,7 +399,9 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "8", "9", "10" ) );
         Groups groups = new Groups();
-        Group firstGroup, secondGroup, thirdGroup;
+        Group firstGroup;
+        Group secondGroup;
+        Group thirdGroup;
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
             int id = 0;
@@ -451,51 +453,45 @@ public class EncodingIdMapperTest
         // GIVEN
         final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
         IdMapper mapper = mapper( encoder, Radix.LONG, NO_MONITOR );
-        final int idsPerGroup = 20, groups = 5;
+        final int idsPerGroup = 20;
+        int groups = 5;
         final AtomicReference<Group> group = new AtomicReference<>();
-        InputIterable<Object> ids = SimpleInputIteratorWrapper.wrap( "source", new Iterable<Object>()
+        InputIterable<Object> ids = SimpleInputIteratorWrapper.wrap( "source", () -> new PrefetchingIterator<Object>()
         {
+            private int i;
+
             @Override
-            public Iterator<Object> iterator()
+            protected Object fetchNextOrNull()
             {
-                return new PrefetchingIterator<Object>()
+                // Change group every <idsPerGroup> id
+                if ( i % idsPerGroup == 0 )
                 {
-                    private int i;
-
-                    @Override
-                    protected Object fetchNextOrNull()
+                    int groupId = i / idsPerGroup;
+                    if ( groupId == groups )
                     {
-                        // Change group every <idsPerGroup> id
-                        if ( i % idsPerGroup == 0 )
-                        {
-                            int groupId = i / idsPerGroup;
-                            if ( groupId == groups )
-                            {
-                                return null;
-                            }
-                            group.set( new Group.Adapter( groupId, "Group " + groupId ) );
-                        }
-                        try
-                        {
-                            // Let the first 10% in each group be accidental collisions with each other
-                            // i.e. all first 10% in each group collides with all other first 10% in each group
-                            if ( i % idsPerGroup < 2 )
-                            {   // Let these colliding values encode into the same eId as well,
-                                // so that they are definitely marked as collisions
-                                encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 1234567 ) );
-                                return Long.valueOf( i % idsPerGroup );
-                            }
-
-                            // The other 90% will be accidental collisions for something else
-                            encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456-group.get().id() ) );
-                            return Long.valueOf( i );
-                        }
-                        finally
-                        {
-                            i++;
-                        }
+                        return null;
                     }
-                };
+                    group.set( new Group.Adapter( groupId, "Group " + groupId ) );
+                }
+                try
+                {
+                    // Let the first 10% in each group be accidental collisions with each other
+                    // i.e. all first 10% in each group collides with all other first 10% in each group
+                    if ( i % idsPerGroup < 2 )
+                    {   // Let these colliding values encode into the same eId as well,
+                        // so that they are definitely marked as collisions
+                        encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 1234567 ) );
+                        return Long.valueOf( i % idsPerGroup );
+                    }
+
+                    // The other 90% will be accidental collisions for something else
+                    encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456 - group.get().id() ) );
+                    return Long.valueOf( i );
+                }
+                finally
+                {
+                    i++;
+                }
             }
         } );
 
@@ -558,9 +554,9 @@ public class EncodingIdMapperTest
         List<Object> ids = new ArrayList<>();
         for ( int run = 0; run < 2; run++ )
         {
-            for ( long i = 0; i < high/2; i++ )
+            for ( long i = 0; i < high / 2; i++ )
             {
-                ids.add( (high-(i+1) ) );
+                ids.add( high - (i + 1) );
                 ids.add( i );
             }
         }
@@ -622,16 +618,10 @@ public class EncodingIdMapperTest
                 1_000, processors, comparator );
     }
 
-    private static final TrackerFactory RANDOM_TRACKER_FACTORY = new TrackerFactory()
-    {
-        @Override
-        public Tracker create( NumberArrayFactory arrayFactory, long size )
-        {
-            return System.currentTimeMillis() % 2 == 0
+    private static final TrackerFactory RANDOM_TRACKER_FACTORY =
+            ( arrayFactory, size ) -> System.currentTimeMillis() % 2 == 0
                     ? new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) )
                     : new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) );
-        }
-    };
 
     private class ValueGenerator implements InputIterable<Object>
     {
@@ -685,7 +675,7 @@ public class EncodingIdMapperTest
         }
     }
 
-    private static enum ValueType
+    private enum ValueType
     {
         LONGS
         {
@@ -704,14 +694,7 @@ public class EncodingIdMapperTest
             @Override
             Factory<Object> data( final Random random )
             {
-                return new Factory<Object>()
-                {
-                    @Override
-                    public Object newInstance()
-                    {
-                        return random.nextInt( 1_000_000_000 );
-                    }
-                };
+                return () -> random.nextInt( 1_000_000_000 );
             }
         },
         LONGS_AS_STRINGS
@@ -731,14 +714,7 @@ public class EncodingIdMapperTest
             @Override
             Factory<Object> data( final Random random )
             {
-                return new Factory<Object>()
-                {
-                    @Override
-                    public Object newInstance()
-                    {
-                        return String.valueOf( random.nextInt( 1_000_000_000 ) );
-                    }
-                };
+                return () -> String.valueOf( random.nextInt( 1_000_000_000 ) );
             }
         },
         VERY_LONG_STRINGS
@@ -842,7 +818,7 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public int badEntries()
+        public long badEntries()
         {
             throw new UnsupportedOperationException();
         }

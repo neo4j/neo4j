@@ -28,12 +28,15 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
-import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.storable.Value;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
@@ -47,12 +50,12 @@ public class PartitionedIndexReader implements IndexReader
     private final List<SimpleIndexReader> indexReaders;
 
     public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers,
-            IndexConfiguration indexConfiguration,
+            IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
     {
         this( partitionSearchers.stream()
-                .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, indexConfiguration,
+                .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, descriptor,
                         samplingConfig, taskCoordinator ) )
                 .collect( Collectors.toList() ) );
     }
@@ -63,53 +66,55 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator seek( Object value )
+    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        return partitionedOperation( reader -> reader.seek( value ) );
+        try
+        {
+            return partitionedOperation( reader -> innerQuery( reader, predicates ) );
+        }
+        catch ( InnerException e )
+        {
+            throw e.getCause();
+        }
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
     {
-        return partitionedOperation( reader -> reader.rangeSeekByNumberInclusive( lower, upper ) );
+        return false;
+    }
+
+    private PrimitiveLongIterator innerQuery( IndexReader reader, IndexQuery[] predicates )
+    {
+        try
+        {
+            return reader.query( predicates );
+        }
+        catch ( IndexNotApplicableKernelException e )
+        {
+            throw new InnerException( e );
+        }
+    }
+
+    private static final class InnerException extends RuntimeException
+    {
+        private InnerException( IndexNotApplicableKernelException e )
+        {
+            super( e );
+        }
+
+        @Override
+        public synchronized IndexNotApplicableKernelException getCause()
+        {
+            return (IndexNotApplicableKernelException) super.getCause();
+        }
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper,
-            boolean includeUpper )
-    {
-        return partitionedOperation( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-    {
-        return partitionedOperation( reader -> reader.rangeSeekByPrefix( prefix ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator scan()
-    {
-        return partitionedOperation( SimpleIndexReader::scan );
-    }
-
-    @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
-    {
-        return partitionedOperation( reader -> reader. containsString( exactTerm ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
-    {
-        return partitionedOperation( reader -> reader.endsWith( suffix ) );
-    }
-
-    @Override
-    public long countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
         return indexReaders.parallelStream()
-                .mapToLong( reader -> reader.countIndexedNodes( nodeId, propertyValue ) )
+                .mapToLong( reader -> reader.countIndexedNodes( nodeId, propertyValues ) )
                 .sum();
     }
 

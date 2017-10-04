@@ -28,11 +28,17 @@ public interface ResponseUnpacker
      */
     void unpackResponse( Response<?> response, TxHandler txHandler ) throws Exception;
 
-    ResponseUnpacker NO_OP_RESPONSE_UNPACKER = ( response, txHandler ) -> { /* Do nothing */ };
+    ResponseUnpacker NO_OP_RESPONSE_UNPACKER = ( response, txHandler ) ->
+    {
+        /* Do nothing */
+    };
 
     interface TxHandler
     {
-        TxHandler NO_OP_TX_HANDLER = transactionId -> { /* Do nothing */ };
+        TxHandler NO_OP_TX_HANDLER = transactionId ->
+        {
+            /* Do nothing */
+        };
 
         void accept( long transactionId );
     }

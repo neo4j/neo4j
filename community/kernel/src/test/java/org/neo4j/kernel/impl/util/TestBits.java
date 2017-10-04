@@ -52,7 +52,7 @@ public class TestBits
     public void doubleAsBytes() throws Exception
     {
         double[] array1 = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
-        Bits bits = Bits.bits( array1.length*8 );
+        Bits bits = Bits.bits( array1.length * 8 );
         for ( double value : array1 )
         {
             bits.put( Double.doubleToRawLongBits( value ) );

@@ -49,18 +49,21 @@ public class LogRotationImpl implements LogRotation
          * doing force (think batching of writes), such that it can't see a bad state of the writer
          * even when rotating underlying channels.
          */
-        synchronized ( logFile )
+        if ( logFile.rotationNeeded() )
         {
-            if ( logFile.rotationNeeded() )
+            synchronized ( logFile )
             {
-                try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
+                if ( logFile.rotationNeeded() )
                 {
-                    doRotate();
+                    try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
+                    {
+                        doRotate();
+                    }
+                    return true;
                 }
-                return true;
             }
-            return false;
         }
+        return false;
     }
 
     /**

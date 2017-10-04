@@ -48,12 +48,12 @@ public class Neo4jError
 
     private Neo4jError( Status status, String message, boolean fatal )
     {
-        this(status, message, null, fatal );
+        this( status, message, null, fatal );
     }
 
     private Neo4jError( Status status, Throwable cause, boolean fatal )
     {
-        this(status, status.code().description(), cause, fatal );
+        this( status, status.code().description(), cause, fatal );
     }
 
     public Status status()
@@ -154,7 +154,7 @@ public class Neo4jError
 
     private static Neo4jError fromThrowable( Throwable any, boolean isFatal )
     {
-        for( Throwable cause = any; cause != null; cause = cause.getCause() )
+        for ( Throwable cause = any; cause != null; cause = cause.getCause() )
         {
             if ( cause instanceof Status.HasStatus )
             {
@@ -164,11 +164,11 @@ public class Neo4jError
             {
                 return new Neo4jError( Status.General.DatabaseUnavailable, cause, isFatal );
             }
-            if (cause instanceof OutOfMemoryError)
+            if ( cause instanceof OutOfMemoryError )
             {
                 return new Neo4jError( Status.General.OutOfMemoryError, cause, isFatal );
             }
-            if (cause instanceof StackOverflowError)
+            if ( cause instanceof StackOverflowError )
             {
                 return new Neo4jError( Status.General.StackOverFlowError, cause, isFatal );
             }
@@ -194,7 +194,7 @@ public class Neo4jError
     {
         assert errors.size() >= 1;
 
-        if (errors.size() == 1)
+        if ( errors.size() == 1 )
         {
             return errors.get( 0 );
         }
@@ -202,9 +202,10 @@ public class Neo4jError
         {
             Neo4jError first = errors.get( 0 );
             Status combinedStatus = first.status;
-            StringBuilder combinedMessage = new StringBuilder( String.format("The following errors has occurred:%n%n" ));
+            StringBuilder combinedMessage =
+                    new StringBuilder( String.format( "The following errors has occurred:%n%n" ) );
             combinedMessage.append( first.message );
-            for (int i = 1; i < errors.size(); i++)
+            for ( int i = 1; i < errors.size(); i++ )
             {
                 Neo4jError error = errors.get( i );
                 combinedStatus = error.status == combinedStatus ? error.status : Status.General.UnknownError;

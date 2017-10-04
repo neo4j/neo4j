@@ -19,7 +19,6 @@
  */
 package org.neo4j.metrics;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,8 +34,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -69,7 +70,8 @@ import static org.neo4j.metrics.MetricsTestHelper.readLongValueAndAssert;
 public class MetricsKernelExtensionFactoryIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withSharedSetting( GraphDatabaseSettings.record_id_batch_size, "1" );
 
     private HighlyAvailableGraphDatabase db;
     private File outputPath;
@@ -85,7 +87,8 @@ public class MetricsKernelExtensionFactoryIT
                 cypher_min_replan_interval.name(), "0m",
                 csvPath.name(), outputPath.getAbsolutePath(),
                 check_point_interval_time.name(), "100ms",
-                graphiteInterval.name(), "1s"
+                graphiteInterval.name(), "1s",
+                OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE
         );
         db = clusterRule.withSharedConfig( config ).withCluster( clusterOfSize( 1 ) ).startCluster().getMaster();
         addNodes( 1 ); // to make sure creation of label and property key tokens do not mess up with assertions in tests
@@ -152,7 +155,7 @@ public class MetricsKernelExtensionFactoryIT
         // GIVEN
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
+            db.execute( "match (n:Label {name: 'Pontus'}) return n.name" ).close();
             tx.success();
         }
 
@@ -164,7 +167,7 @@ public class MetricsKernelExtensionFactoryIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
+                db.execute( "match (n:Label {name: 'Pontus'}) return n.name" ).close();
                 tx.success();
             }
             addNodes( 1 );
@@ -200,7 +203,7 @@ public class MetricsKernelExtensionFactoryIT
         // wait for the file to be written before shutting down the cluster
         File metricFile = metricsCsv( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION );
 
-        long result = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
+        long result = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= 0 );
 
         // THEN
         assertThat( result, greaterThanOrEqualTo( 0L ) );
@@ -234,6 +237,7 @@ public class MetricsKernelExtensionFactoryIT
                 builder.setConfig( MetricsSettings.neoEnabled, Settings.TRUE ).setConfig( csvEnabled, Settings.TRUE )
                         .setConfig( csvPath, outputPath.getAbsolutePath() )
                         .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "null" ) // key point!
+                        .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                         .newGraphDatabase();
         try ( Transaction tx = nullTracerDatabase.beginTx() )
         {

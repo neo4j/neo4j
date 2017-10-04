@@ -189,7 +189,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         storeFile = null;
     }
 
+    @Override
+    protected void checkAndLoadStorage( boolean createIfNotExists )
+    {
+        super.checkAndLoadStorage( createIfNotExists );
+        initHighId();
+    }
+
     // Only for initialization and recovery, so we don't need to lock the records
+
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId, long checksum, long commitTimestamp, long byteOffset, long logVersion )
@@ -205,7 +213,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
     }
-
     /**
      * Writes a record in a neostore file.
      * This method only works for neostore files of the current version.
@@ -229,25 +236,19 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 if ( cursor.next() )
                 {
                     // We're overwriting a record, get the previous value
-                    long record;
-                    byte inUse;
-                    do
+                    cursor.setOffset( offset );
+                    byte inUse = cursor.getByte();
+                    long record = cursor.getLong();
+
+                    if ( inUse == Record.IN_USE.byteValue() )
                     {
-                        cursor.setOffset( offset );
-                        inUse = cursor.getByte();
-                        record = cursor.getLong();
-
-                        if ( inUse == Record.IN_USE.byteValue() )
-                        {
-                            previousValue = record;
-                        }
-
-                        // Write the value
-                        cursor.setOffset( offset );
-                        cursor.putByte( Record.IN_USE.byteValue() );
-                        cursor.putLong( value );
+                        previousValue = record;
                     }
-                    while ( cursor.shouldRetry() );
+
+                    // Write the value
+                    cursor.setOffset( offset );
+                    cursor.putByte( Record.IN_USE.byteValue() );
+                    cursor.putLong( value );
                     if ( cursor.checkAndClearBoundsFlag() )
                     {
                         MetaDataRecord neoStoreRecord = new MetaDataRecord();
@@ -259,6 +260,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             }
         }
         return previousValue;
+    }
+
+    private void initHighId()
+    {
+        Position[] values = Position.values();
+        long highestPossibleId = values[values.length - 1].id;
+        setHighestPossibleIdInUse( highestPossibleId );
     }
 
     private static int offset( Position position )
@@ -419,6 +427,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return versionField;
     }
 
+    @Override
     public void setCurrentLogVersion( long version )
     {
         synchronized ( logVersionLock )
@@ -467,15 +476,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void incrementVersion( PageCursor cursor ) throws IOException
     {
+        if ( !cursor.isWriteLocked() )
+        {
+            throw new IllegalArgumentException( "Cannot increment log version on page cursor that is not write-locked" );
+        }
         // offsets plus one to skip the inUse byte
         int offset = (Position.LOG_VERSION.id * getRecordSize()) + 1;
-        long value;
-        do
-        {
-            value = cursor.getLong( offset ) + 1;
-            cursor.putLong( offset, value );
-        }
-        while ( cursor.shouldRetry() );
+        long value = cursor.getLong( offset ) + 1;
+        cursor.putLong( offset, value );
         checkForDecodingErrors( cursor, Position.LOG_VERSION.id, NORMAL );
         versionField = value;
     }
@@ -593,7 +601,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_READ_LOCK, element -> {
+        scanAllFields( PF_SHARED_READ_LOCK, element ->
+        {
             readAllFields( element );
             return false;
         } );
@@ -616,31 +625,22 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void setRecord( Position position, long value )
     {
-        long id = position.id;
-
-        // We need to do a little special handling of high id in neostore since it's not updated in the same
-        // way as other stores. Other stores always gets updates via commands where records are updated and
-        // the one making the update can also track the high id in the event of recovery.
-        // Here methods can be called directly, for example setLatestConstraintIntroducingTx where it's
-        // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
-        setHighestPossibleIdInUse( id );
-
         MetaDataRecord record = new MetaDataRecord();
         record.initialize( true, value );
-        record.setId( id );
+        record.setId( position.id );
         updateRecord( record );
     }
 
     private void setRecord( PageCursor cursor, Position position, long value ) throws IOException
     {
-        int offset = offsetForId( position.id );
-        do
+        if ( !cursor.isWriteLocked() )
         {
-            cursor.setOffset( offset );
-            cursor.putByte( Record.IN_USE.byteValue() );
-            cursor.putLong( value );
+            throw new IllegalArgumentException( "Cannot write record without a page cursor that is write-locked" );
         }
-        while ( cursor.shouldRetry() );
+        int offset = offsetForId( position.id );
+        cursor.setOffset( offset );
+        cursor.putByte( Record.IN_USE.byteValue() );
+        cursor.putLong( value );
         checkForDecodingErrors( cursor, position.id, NORMAL );
     }
 
@@ -858,7 +858,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     public void logRecords( final Logger msgLog )
     {
-        scanAllFields( PF_SHARED_READ_LOCK, cursor -> {
+        scanAllFields( PF_SHARED_READ_LOCK, cursor ->
+        {
             for ( Position position : Position.values() )
             {
                 long value;

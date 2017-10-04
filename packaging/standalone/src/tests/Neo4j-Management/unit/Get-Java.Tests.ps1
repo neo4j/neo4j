@@ -295,6 +295,30 @@ InModuleScope Neo4j-Management {
       }
     }
 
+    Context "Utility Invoke - Should set heap size from environment variable" {
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '99.99' -ServerType 'Community'
+      Mock Get-Neo4jEnv { '666m' } -ParameterFilter { $Name -eq 'HEAP_SIZE' }
+
+      $result = Get-Java -ForUtility -StartingClass 'someclass' -Neo4jServer $serverObject -ErrorAction Stop
+      $resultArgs = ($result.args -join ' ')
+
+      It "should have jars from bin" {
+        $resultArgs | Should Match ([regex]::Escape('bin1.jar"'))
+      }
+      It "should have jars from lib" {
+        $resultArgs | Should Match ([regex]::Escape('lib1.jar"'))
+      }
+      It "should have correct Starting Class" {
+        $resultArgs | Should Match ([regex]::Escape(' someclass'))
+      }
+      It "should have correct initial heap" {
+        $resultArgs | Should Match ([regex]::Escape('-Xms666m'))
+      }
+      It "should have correct maximum heap" {
+        $resultArgs | Should Match ([regex]::Escape('-Xmx666m'))
+      }
+    }
+
 	Context "Server Invoke - Should handle paths with spaces" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
 	    -RootDir 'TestDrive:\Neo4j Home' `

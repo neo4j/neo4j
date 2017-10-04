@@ -19,24 +19,36 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import org.neo4j.helpers.Args;
+
 import static java.lang.String.format;
+
+import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class AdminTool
 {
-    public static void main( String[] args )
+
+    static final int STATUS_SUCCESS = 0;
+    public static final int STATUS_ERROR = 1;
+
+    public static void main( String[] args ) throws IOException
     {
         Path homeDir = Paths.get( System.getenv().getOrDefault( "NEO4J_HOME", "" ) );
         Path configDir = Paths.get( System.getenv().getOrDefault( "NEO4J_CONF", "" ) );
         boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
 
-        new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), new RealOutsideWorld(),
-                debug ).execute( homeDir, configDir, args );
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        {
+            new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), outsideWorld,
+                    debug ).execute( homeDir, configDir, args );
+        }
     }
 
     public static final String scriptName = "neo4j-admin";
@@ -65,6 +77,14 @@ public class AdminTool
                 badUsage( "you must provide a command" );
                 return;
             }
+
+            if ( Args.parse( args ).has( "version") )
+            {
+                outsideWorld.stdOutLine( "neo4j-admin " + neo4jVersion() );
+                success();
+                return;
+            }
+
             String name = args[0];
             String[] commandArgs = Arrays.copyOfRange( args, 1, args.length );
 
@@ -86,19 +106,34 @@ public class AdminTool
                 return;
             }
 
-            AdminCommand command = provider.create( homeDir, configDir, outsideWorld );
-            try
+            if ( provider == null )
             {
-                command.execute( commandArgs );
-                success();
+                badUsage( format( "unrecognized command: %s", name ) );
+                return;
             }
-            catch ( IncorrectUsage e )
+
+            if ( Args.parse( commandArgs ).has( "help" ) )
             {
-                badUsage( provider, e );
+                outsideWorld.stdErrLine( "unknown argument: --help" );
+                usage.printUsageForCommand( commandLocator.findProvider( name ), outsideWorld::stdErrLine );
+                failure();
             }
-            catch ( CommandFailed e )
+            else
             {
-                commandFailed( e );
+                AdminCommand command = provider.create( homeDir, configDir, outsideWorld );
+                try
+                {
+                    command.execute( commandArgs );
+                    success();
+                }
+                catch ( IncorrectUsage e )
+                {
+                    badUsage( provider, e );
+                }
+                catch ( CommandFailed e )
+                {
+                    commandFailed( e );
+                }
             }
         }
         catch ( RuntimeException e )
@@ -134,7 +169,7 @@ public class AdminTool
 
     private void commandFailed( CommandFailed e )
     {
-        failure( "command failed", e );
+        failure( "command failed", e, e.code() );
     }
 
     private void failure()
@@ -144,21 +179,26 @@ public class AdminTool
 
     private void failure( String message, Exception e )
     {
+        failure( message, e, STATUS_ERROR );
+    }
+
+    private void failure( String message, Exception e, int code )
+    {
         if ( debug )
         {
             outsideWorld.printStacktrace( e );
         }
-        failure( format( "%s: %s", message, e.getMessage() ) );
+        failure( format( "%s: %s", message, e.getMessage() ), code );
     }
 
-    private void failure( String message )
+    private void failure( String message, int code )
     {
         outsideWorld.stdErrLine( message );
-        outsideWorld.exit( 1 );
+        outsideWorld.exit( code );
     }
 
     private void success()
     {
-        outsideWorld.exit( 0 );
+        outsideWorld.exit( STATUS_SUCCESS );
     }
 }

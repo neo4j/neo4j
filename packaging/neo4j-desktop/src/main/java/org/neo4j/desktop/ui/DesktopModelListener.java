@@ -25,8 +25,9 @@ import org.neo4j.desktop.model.DesktopModel;
  * Listeners interested in changes to the DesktopModel.
  *
  */
-public interface DesktopModelListener {
+public interface DesktopModelListener
+{
 
-    public void desktopModelChanged(DesktopModel model);
+    void desktopModelChanged( DesktopModel model );
 
 }

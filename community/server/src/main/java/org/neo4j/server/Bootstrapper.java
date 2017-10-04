@@ -20,13 +20,12 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.Map;
 import java.util.Optional;
-
-import org.neo4j.helpers.collection.Pair;
 
 public interface Bootstrapper
 {
-    int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides );
+    int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides );
 
     int stop();
 }

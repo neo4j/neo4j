@@ -52,19 +52,14 @@ public class Utils
     public static String assembleClassPathFromPackage( File directory )
     {
         List<File> jarFiles = new ArrayList<File>();
-        FileFilter jarFilter = new FileFilter()
-        {
-            @Override
-            public boolean accept( File file )
-            {
-                return file.isFile() && file.getName().endsWith( ".jar" );
-            }
-        };
+        FileFilter jarFilter = file -> file.isFile() && file.getName().endsWith( ".jar" );
         gatherFiles( jarFiles, directory, jarFilter );
 
         StringBuilder classpath = new StringBuilder();
         for ( File file : jarFiles )
+        {
             classpath.append( classpath.length() > 0 ? File.pathSeparator : "" ).append( file.getAbsolutePath() );
+        }
         return classpath.toString();
     }
 
@@ -73,9 +68,13 @@ public class Utils
         for ( File file : directory.listFiles() )
         {
             if ( file.isDirectory() )
+            {
                 gatherFiles( jarFiles, file, filter );
+            }
             else if ( filter.accept( file ) )
+            {
                 jarFiles.add( file );
+            }
         }
     }
 

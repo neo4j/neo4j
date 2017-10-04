@@ -37,11 +37,11 @@ public class InMemoryAcceptorInstanceStore
 
     public InMemoryAcceptorInstanceStore()
     {
-        this(new HashMap<InstanceId, AcceptorInstance>(), new ArrayBlockingQueue<InstanceId>( 1000 ), -1);
+        this( new HashMap<>(), new ArrayBlockingQueue<>( 1000 ), -1 );
     }
 
-    private InMemoryAcceptorInstanceStore(Map<InstanceId, AcceptorInstance> instances,
-            BlockingQueue<InstanceId> currentInstances, long lastDeliveredInstanceId)
+    private InMemoryAcceptorInstanceStore( Map<InstanceId,AcceptorInstance> instances,
+            BlockingQueue<InstanceId> currentInstances, long lastDeliveredInstanceId )
     {
         this.instances = instances;
         this.lastDeliveredInstanceId = lastDeliveredInstanceId;
@@ -58,7 +58,7 @@ public class InMemoryAcceptorInstanceStore
             instances.put( instanceId, instance );
 
             // Make sure we only keep a maximum number of instances, to not run out of memory
-            if (!currentInstances.offer( instanceId ))
+            if ( !currentInstances.offer( instanceId ) )
             {
                 instances.remove( currentInstances.poll() );
                 currentInstances.offer( instanceId );
@@ -94,9 +94,9 @@ public class InMemoryAcceptorInstanceStore
 
     public InMemoryAcceptorInstanceStore snapshot()
     {
-        return new InMemoryAcceptorInstanceStore( new HashMap<>(instances),
-                new ArrayBlockingQueue<>( currentInstances.size()+currentInstances.remainingCapacity(), false, currentInstances ),
-                lastDeliveredInstanceId );
+        return new InMemoryAcceptorInstanceStore( new HashMap<>( instances ),
+                new ArrayBlockingQueue<>( currentInstances.size() + currentInstances.remainingCapacity(), false,
+                        currentInstances ), lastDeliveredInstanceId );
     }
 
     @Override
@@ -117,12 +117,7 @@ public class InMemoryAcceptorInstanceStore
         {
             return false;
         }
-        if ( !instances.equals( that.instances ) )
-        {
-            return false;
-        }
-
-        return true;
+        return instances.equals( that.instances );
     }
 
     @Override

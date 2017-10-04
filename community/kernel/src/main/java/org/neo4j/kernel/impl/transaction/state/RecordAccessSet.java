@@ -32,21 +32,21 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface RecordAccessSet
 {
-    RecordAccess<Long, NodeRecord, Void> getNodeRecords();
+    RecordAccess<NodeRecord, Void> getNodeRecords();
 
-    RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords();
+    RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords();
 
-    RecordAccess<Long, RelationshipRecord, Void> getRelRecords();
+    RecordAccess<RelationshipRecord, Void> getRelRecords();
 
-    RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords();
+    RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords();
 
-    RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges();
+    RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges();
 
-    RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges();
+    RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges();
 
-    RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges();
+    RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges();
 
-    RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
+    RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
 
     boolean hasChanges();
 

@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.UserFunction;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -46,7 +45,7 @@ public class MethodSignatureCompilerTest
     {
         public String name;
 
-        public MyOutputRecord( String name )
+        MyOutputRecord( String name )
         {
             this.name = name;
         }
@@ -60,36 +59,21 @@ public class MethodSignatureCompilerTest
     public static class ClassWithProcedureWithSimpleArgs
     {
         @Procedure
-        public Stream<MyOutputRecord> echo( @Name("name") String in)
+        public Stream<MyOutputRecord> echo( @Name( "name" ) String in )
         {
             return Stream.of( new MyOutputRecord( in ));
         }
 
         @Procedure
-        public Stream<MyOutputRecord> echoWithoutAnnotations( @Name("name")String in1, String in2)
+        public Stream<MyOutputRecord> echoWithoutAnnotations( @Name( "name" ) String in1, String in2 )
         {
             return Stream.of( new MyOutputRecord( in1 + in2 ));
         }
 
         @Procedure
-        public Stream<MyOutputRecord> echoWithInvalidType( @Name("name") UnmappableRecord in)
+        public Stream<MyOutputRecord> echoWithInvalidType( @Name( "name" ) UnmappableRecord in )
         {
             return Stream.of( new MyOutputRecord( "echo" ));
-        }
-    }
-
-    public static class ClassWithFunctionWithSimpleArgs
-    {
-        @UserFunction
-        public String echo( @Name("in") String in)
-        {
-            return in;
-        }
-
-        @UserFunction
-        public String echoWithInvalidType( @Name("in") UnmappableRecord in)
-        {
-            return "echo";
         }
     }
 
@@ -101,7 +85,7 @@ public class MethodSignatureCompilerTest
         List<FieldSignature> signature = new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
 
         // THen
-        assertThat(signature, contains( new FieldSignature("name", Neo4jTypes.NTString)));
+        assertThat(signature, contains( FieldSignature.inputField( "name", Neo4jTypes.NTString ) ));
     }
 
     @Test
@@ -131,7 +115,7 @@ public class MethodSignatureCompilerTest
                                  "For your reference, known types are:" ));
 
         // When
-        new MethodSignatureCompiler(new TypeMappers()).signatureFor( echo );
+        new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
     }
 
     @Test
@@ -147,6 +131,6 @@ public class MethodSignatureCompilerTest
                                  "Please add the annotation, recompile the class and try again." ));
 
         // When
-        new MethodSignatureCompiler(new TypeMappers()).signatureFor( echo );
+        new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
     }
 }

@@ -38,20 +38,20 @@ public class IntKeyLongValueTable extends IntArrayBasedKeyTable<long[]>
     protected void internalPut( int actualIndex, long key, long[] valueHolder )
     {
         table[actualIndex] = (int)key; // we know that key is an int
-        putLong( actualIndex+1, valueHolder[0] );
+        putLong( actualIndex + 1, valueHolder[0] );
     }
 
     @Override
     public long[] value( int index )
     {
-        singleValue[0] = getLong( index( index )+1 );
+        singleValue[0] = getLong( index( index ) + 1 );
         return singleValue;
     }
 
     @Override
     public long[] putValue( int index, long[] value )
     {
-        singleValue[0] = putLong( index( index )+1, value[0] );
+        singleValue[0] = putLong( index( index ) + 1, value[0] );
         return singleValue;
     }
 

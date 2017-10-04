@@ -26,11 +26,7 @@ public interface TransactionStream
 {
     void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception;
 
-    public static final TransactionStream EMPTY = new TransactionStream()
+    TransactionStream EMPTY = visitor ->
     {
-        @Override
-        public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
-        {
-        }
     };
 }

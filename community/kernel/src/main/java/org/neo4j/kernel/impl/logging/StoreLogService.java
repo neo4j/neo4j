@@ -29,30 +29,31 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {
-    public static final String INTERNAL_LOG_NAME = "debug.log";
-
     public static class Builder
     {
         private LogProvider userLogProvider = NullLogProvider.getInstance();
         private Executor rotationExecutor;
-        private long internalLogRotationThreshold = 0L;
-        private long internalLogRotationDelay = 0L;
-        private int maxInternalLogArchives = 0;
-        private Consumer<LogProvider> rotationListener = (logProvider) -> {};
+        private long internalLogRotationThreshold;
+        private long internalLogRotationDelay;
+        private int maxInternalLogArchives;
+        private Consumer<LogProvider> rotationListener = logProvider ->
+        {
+        };
         private Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
+        private File debugLog;
 
         private Builder()
         {
@@ -99,12 +100,21 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File logsDir ) throws IOException
+        public Builder withInternalLog( File logFile ) throws IOException
         {
-            return new StoreLogService(
-                    userLogProvider,
-                    fileSystem, new File( logsDir, INTERNAL_LOG_NAME ), logLevels, defaultLevel,
-                    internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
+            this.debugLog = logFile;
+            return this;
+        }
+
+        public StoreLogService build( FileSystemAbstraction fileSystem ) throws IOException
+        {
+            if ( debugLog == null )
+            {
+                throw new IllegalArgumentException( "Debug log can't be null; set its value using `withInternalLog`" );
+            }
+            return new StoreLogService( userLogProvider, fileSystem, debugLog, logLevels, defaultLevel,
+                    internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor,
+                    rotationListener );
         }
     }
 
@@ -113,14 +123,16 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         return new Builder().withUserLogProvider( userLogProvider );
     }
 
-    public static Builder withRotation( long internalLogRotationThreshold, long internalLogRotationDelay, int maxInternalLogArchives, JobScheduler jobScheduler )
+    public static Builder withRotation( long internalLogRotationThreshold, long internalLogRotationDelay,
+            int maxInternalLogArchives, JobScheduler jobScheduler )
     {
-        return new Builder().withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, jobScheduler );
+        return new Builder().withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
+                        jobScheduler );
     }
 
-    public static StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    public static Builder withInternalLog( File logFile ) throws IOException
     {
-        return new Builder().inLogsDirectory( fileSystem, storeDir );
+        return new Builder().withInternalLog( logFile );
     }
 
     private final Closeable closeable;

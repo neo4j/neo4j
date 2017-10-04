@@ -690,10 +690,10 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     public Response setNodeProperty( long
             nodeId, String key, String body )
     {
-        try (Transaction transaction = graph.beginTx())
+        try ( Transaction transaction = graph.beginTx() )
         {
             Response response = restfulGraphDatabase.setNodeProperty( nodeId, key, body );
-            if (response.getStatus() < 300)
+            if ( response.getStatus() < 300 )
             {
                 transaction.success();
             }

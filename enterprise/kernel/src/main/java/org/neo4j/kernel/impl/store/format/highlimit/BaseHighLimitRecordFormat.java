@@ -97,9 +97,9 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
     static final int HEADER_BIT_FIXED_REFERENCE = 0b0000_0100;
 
-    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
+    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize, int maxIdBits )
     {
-        super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
+        super( recordSize, recordHeaderSize, IN_USE_BIT, maxIdBits );
     }
 
     public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize )

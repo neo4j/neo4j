@@ -40,7 +40,7 @@ public class RandomAdversary extends AbstractAdversary
         assert 0 <= errorRate && errorRate < 1.0 :
                 "Expected error rate in [0.0; 1.0[ but was " + errorRate;
         assert mischiefRate + errorRate + failureRate < 1.0 :
-                "Expected error rate + failure rate in [0.0; 1.0[ but was " +
+                "Expected mischief rate + error rate + failure rate in [0.0; 1.0[ but was " +
                         (mischiefRate + errorRate + failureRate);
 
         this.mischiefRate = mischiefRate;

@@ -122,7 +122,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         }
     };
 
-    public CountsBuilderDecorator( StoreAccess storeAccess )
+    CountsBuilderDecorator( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
@@ -196,7 +196,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         private final Predicate<NodeRecord> countUpdateCondition;
         private final OwningRecordCheck<NodeRecord,NodeConsistencyReport> inner;
 
-        public NodeCounts( RecordStore<NodeRecord> nodeStore, MultiSet<CountsKey> counts,
+        NodeCounts( RecordStore<NodeRecord> nodeStore, MultiSet<CountsKey> counts,
                 Predicate<NodeRecord> countUpdateCondition, OwningRecordCheck<NodeRecord,NodeConsistencyReport> inner )
         {
             this.nodeStore = nodeStore;
@@ -247,9 +247,9 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         private final Predicate<RelationshipRecord> countUpdateCondition;
         private final OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner;
 
-        public RelationshipCounts( StoreAccess storeAccess, MultiSet<CountsKey> counts,
-                                   Predicate<RelationshipRecord> countUpdateCondition,
-                                   OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner )
+        RelationshipCounts( StoreAccess storeAccess, MultiSet<CountsKey> counts,
+                Predicate<RelationshipRecord> countUpdateCondition,
+                OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner )
         {
             this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
             this.counts = counts;
@@ -273,8 +273,9 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                 if ( record.inUse() )
                 {
                     CacheAccess.Client cacheAccess = records.cacheAccess().client();
-                    Set<Long> firstNodeLabels = null, secondNodeLabels = null;
-                    long firstLabelsField = cacheAccess.getFromCache( record.getFirstNode(), 1 );
+                    Set<Long> firstNodeLabels;
+                    Set<Long> secondNodeLabels;
+                    long firstLabelsField = cacheAccess.getFromCache( record.getFirstNode(), SLOT_LABEL_FIELD );
                     if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( firstLabelsField ) )
                     {
                         firstNodeLabels = labelsFor( nodeStore, engine, records, record.getFirstNode() );
@@ -283,7 +284,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                     {
                         firstNodeLabels = NodeLabelReader.getListOfLabels( firstLabelsField );
                     }
-                    long secondLabelsField = cacheAccess.getFromCache( record.getSecondNode(), 1 );
+                    long secondLabelsField = cacheAccess.getFromCache( record.getSecondNode(), SLOT_LABEL_FIELD );
                     if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( secondLabelsField ) )
                     {
                         secondNodeLabels = labelsFor( nodeStore, engine, records, record.getSecondNode() );
@@ -338,7 +339,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         // The same thread updates this every time, the TaskExecutor. Other threads read it
         private volatile int stage = -1;
 
-        public MultiPassAvoidanceCondition( int activeStage )
+        MultiPassAvoidanceCondition( int activeStage )
         {
             this.activeStage = activeStage;
         }

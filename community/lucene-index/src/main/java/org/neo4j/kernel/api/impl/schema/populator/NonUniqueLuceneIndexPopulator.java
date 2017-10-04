@@ -24,8 +24,8 @@ import java.io.IOException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -46,14 +46,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     {
         super( luceneIndex );
         this.samplingConfig = samplingConfig;
-    }
-
-    @Override
-    public void configureSampling( boolean onlineSampling )
-    {
-        this.updateSampling = onlineSampling;
-        this.sampler = onlineSampling ? createDefaultSampler()
-                                         : new DirectNonUniqueIndexSampler( luceneIndex );
+        this.sampler = createDefaultSampler();
     }
 
     @Override
@@ -65,37 +58,23 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
     {
-        checkSampler();
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }
 
     @Override
-    public void includeSample( NodePropertyUpdate update )
+    public void includeSample( IndexEntryUpdate<?> update )
     {
-        if ( updateSampling )
-        {
-            checkSampler();
-            sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
-        }
+        sampler.include( LuceneDocumentStructure.encodedStringValuesForSampling( update.values() ) );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        checkSampler();
         return sampler.result();
     }
 
     private DefaultNonUniqueIndexSampler createDefaultSampler()
     {
         return new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
-    }
-
-    private void checkSampler()
-    {
-        if ( sampler == null )
-        {
-            throw new IllegalStateException( "Please configure populator sampler before using it." );
-        }
     }
 }

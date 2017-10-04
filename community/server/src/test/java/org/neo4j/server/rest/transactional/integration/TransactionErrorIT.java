@@ -84,7 +84,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     @Test
     public void begin_and_execute_periodic_commit_that_fails() throws Exception
     {
@@ -110,11 +110,11 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
 
             JsonNode message = response.get( "errors" ).get( 0 ).get( "message" );
             assertTrue("Expected LOAD CSV line number information",
-                    message
-                            .toString()
-                            .contains("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate."));
+                    message.toString().contains("on line 3. Possibly the last row committed during import is line 2. " +
+                            "Note that this information might not be accurate."));
         }
-        finally {
+        finally
+        {
             file.delete();
         }
     }

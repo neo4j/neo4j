@@ -46,6 +46,11 @@ public interface PageCacheCounters
      long unpins();
 
     /**
+     * @return The number of page cache hits so far.
+     */
+    long hits();
+
+    /**
      * @return The number of page flushes observed thus far.
      */
     long flushes();
@@ -74,4 +79,9 @@ public interface PageCacheCounters
      * @return The number of page evictions that have thrown exceptions thus far.
      */
     long evictionExceptions();
+
+    /**
+     * @return The cache hit ratio observed thus far.
+     */
+    double hitRatio();
 }

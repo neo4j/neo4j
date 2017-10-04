@@ -54,14 +54,9 @@ public class TestMultiPruneEvaluators extends TraversalTestBase
     @Test
     public void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
-        Evaluator lessThanThreeRels = new Evaluator()
-        {
-            public Evaluation evaluate( Path path )
-            {
-                return count( path.endNode().getRelationships( Direction.OUTGOING ).iterator() ) < 3 ?
+        Evaluator lessThanThreeRels =
+                path -> count( path.endNode().getRelationships( Direction.OUTGOING ).iterator() ) < 3 ?
                         Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
-            }
-        };
 
         TraversalDescription description = getGraphDb().traversalDescription().evaluator( Evaluators.all() )
                 .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );

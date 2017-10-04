@@ -31,6 +31,8 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
+import org.neo4j.procedure.UserFunction;
+import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
@@ -53,7 +55,9 @@ public class UserFunctionVisitorTest
         Elements elements = compilationRule.getElements();
 
         elementTestUtils = new ElementTestUtils( compilationRule );
-        visitor = new UserFunctionVisitor( types, elements, new TypeMirrorUtils( types, elements ) );
+        final TypeMirrorUtils typeMirrorUtils = new TypeMirrorUtils( types, elements );
+        visitor = new UserFunctionVisitor( new FunctionVisitor<>( UserFunction.class, types, elements, typeMirrorUtils,
+                function -> CustomNameExtractor.getName( function::name, function::value ), false ) );
     }
 
     @Test
@@ -99,7 +103,8 @@ public class UserFunctionVisitorTest
 
         assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getElement,
                 CompilationMessage::getContents ).contains( tuple( Diagnostic.Kind.ERROR, function,
-                "Unsupported return type <void> of function defined in <org.neo4j.tooling.procedure.visitors.examples.UserFunctionsExamples#wrongReturnType>." ) );
+                "Unsupported return type <void> of function defined in " +
+                        "<org.neo4j.tooling.procedure.visitors.examples.UserFunctionsExamples#wrongReturnType>." ) );
     }
 
     @Test

@@ -30,6 +30,10 @@ import static java.lang.Runtime.getRuntime;
  */
 public class ExecutionSupervisors
 {
+    private ExecutionSupervisors()
+    {
+    }
+
     /**
      * Using an {@link ExecutionMonitors#invisible() invisible} monitor.
      * @see #superviseDynamicExecution(ExecutionMonitor, Stage)
@@ -98,8 +102,7 @@ public class ExecutionSupervisors
      */
     public static ExecutionMonitor withDynamicProcessorAssignment( ExecutionMonitor monitor, Configuration config )
     {
-        DynamicProcessorAssigner dynamicProcessorAssigner = new DynamicProcessorAssigner( config,
-                min( config.maxNumberOfProcessors(), getRuntime().availableProcessors() ) );
+        DynamicProcessorAssigner dynamicProcessorAssigner = new DynamicProcessorAssigner( config );
         return new MultiExecutionMonitor( monitor, dynamicProcessorAssigner );
     }
 }

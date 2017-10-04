@@ -45,16 +45,17 @@ import static org.neo4j.com.Protocol.LONG_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readBoolean;
 import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 public class HaRequestType210 extends AbstractHaRequestTypes
 {
-    public HaRequestType210( LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
+    public HaRequestType210(
+            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader,
+            ObjectSerializer<LockResult> lockResultObjectSerializer )
     {
         registerAllocateIds();
         registerCreateRelationshipType();
-        registerAcquireExclusiveLock();
-        registerAcquireSharedLock();
+        registerAcquireExclusiveLock( lockResultObjectSerializer );
+        registerAcquireSharedLock( lockResultObjectSerializer );
         registerCommit( entryReader );
         registerPullUpdates();
         registerEndLockSession();
@@ -95,7 +96,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
         register( Type.CREATE_RELATIONSHIP_TYPE, createRelationshipTypeTarget, INTEGER_SERIALIZER );
     }
 
-    private void registerAcquireExclusiveLock()
+    private void registerAcquireExclusiveLock( ObjectSerializer<LockResult> lockResultObjectSerializer )
     {
         register( Type.ACQUIRE_EXCLUSIVE_LOCK, new AquireLockCall()
         {
@@ -105,10 +106,10 @@ public class HaRequestType210 extends AbstractHaRequestTypes
             {
                 return master.acquireExclusiveLock( context, type, ids );
             }
-        }, LOCK_SERIALIZER, true );
+        }, lockResultObjectSerializer, true );
     }
 
-    private void registerAcquireSharedLock()
+    private void registerAcquireSharedLock( ObjectSerializer<LockResult> lockResultObjectSerializer )
     {
         register( Type.ACQUIRE_SHARED_LOCK, new AquireLockCall()
         {
@@ -118,7 +119,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
             {
                 return master.acquireSharedLock( context, type, ids );
             }
-        }, LOCK_SERIALIZER, true );
+        }, lockResultObjectSerializer, true );
     }
 
     private void registerCommit( LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
@@ -127,7 +128,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
         {
             readString( input ); // Always neostorexadatasource
 
-            TransactionRepresentation tx = null;
+            TransactionRepresentation tx;
             try
             {
                 Deserializer<TransactionRepresentation> deserializer =

@@ -48,13 +48,13 @@ import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
-import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.ListSnapshot;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
@@ -91,7 +91,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
             JobScheduler jobScheduler, UserRepository initialUserRepository,
-            UserRepository defaultAdminRepository)
+            UserRepository defaultAdminRepository )
     {
         this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
                 jobScheduler, initialUserRepository, defaultAdminRepository );
@@ -222,7 +222,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                 if ( initialUserRepository.numberOfUsers() > 0 )
                 {
                     User initUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
-                    if (initUser != null)
+                    if ( initUser != null )
                     {
                         userRepository.update( neo4j, initUser );
                     }

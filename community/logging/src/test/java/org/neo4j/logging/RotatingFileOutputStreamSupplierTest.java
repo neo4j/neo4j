@@ -580,7 +580,7 @@ public class RotatingFileOutputStreamSupplierTest
 
         }
 
-        void withLock(Callable callable) throws Exception
+        void withLock( Callable callable ) throws Exception
         {
             synchronized ( lock )
             {

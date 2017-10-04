@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,9 +26,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.LongStream;
+
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -80,7 +80,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class NodeStoreTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
 
@@ -155,11 +155,12 @@ public class NodeStoreTest
         nodeStore = newNodeStore( fs );
 
         // -- a record with the msb carrying a negative value
-        long nodeId = 0, labels = 0x8000000001L;
+        long nodeId = 0;
+        long labels = 0x8000000001L;
         NodeRecord record =
                 new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
         record.setInUse( true );
-        record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
+        record.setLabelField( labels, Collections.emptyList() );
         nodeStore.updateRecord( record );
 
         // WHEN
@@ -178,7 +179,7 @@ public class NodeStoreTest
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
 
         // WHEN
-        record.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
+        record.setLabelField( 0, Collections.emptyList() );
 
         // THEN
         assertTrue( record.isLight() );
@@ -249,15 +250,11 @@ public class NodeStoreTest
         // ...WHEN we now have an interesting set of node records, and we
         // visit each and remove that node from our nextRelSet...
 
-        Visitor<NodeRecord,IOException> scanner = new Visitor<NodeRecord,IOException>()
+        Visitor<NodeRecord,IOException> scanner = record ->
         {
-            @Override
-            public boolean visit( NodeRecord record ) throws IOException
-            {
-                // ...THEN we should observe that no nextRel is ever removed twice...
-                assertTrue( nextRelSet.remove( record.getNextRel() ) );
-                return false;
-            }
+            // ...THEN we should observe that no nextRel is ever removed twice...
+            assertTrue( nextRelSet.remove( record.getNextRel() ) );
+            return false;
         };
         nodeStore.scanAllRecords( scanner );
 
@@ -269,7 +266,7 @@ public class NodeStoreTest
     public void shouldCloseStoreFileOnFailureToOpen() throws Exception
     {
         // GIVEN
-        final AtomicBoolean fired = new AtomicBoolean();
+        final MutableBoolean fired = new MutableBoolean();
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( efs.get() )
         {
             @Override
@@ -280,14 +277,8 @@ public class NodeStoreTest
                     @Override
                     public int read( ByteBuffer dst ) throws IOException
                     {
-                        Exception stack = new Exception();
-                        if ( containsStackTraceElement( stack, item -> item.getMethodName().equals( "initGenerator" ) ) &&
-                             !containsStackTraceElement( stack, item -> item.getMethodName().equals( "createNodeStore" ) ) )
-                        {
-                            fired.set( true );
-                            throw new IOException( "Proving a point here" );
-                        }
-                        return super.read( dst );
+                        fired.setValue( true );
+                        throw new IOException( "Proving a point here" );
                     }
                 };
             }
@@ -303,23 +294,8 @@ public class NodeStoreTest
         {
             // THEN
             assertTrue( contains( e, IOException.class ) );
-            assertTrue( fired.get() );
+            assertTrue( fired.booleanValue() );
         }
-    }
-
-    private static boolean containsStackTraceElement( Throwable cause,
-            final Predicate<StackTraceElement> predicate )
-    {
-        return contains( cause, item -> {
-            for ( StackTraceElement element : item.getStackTrace() )
-            {
-                if ( predicate.test( element ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        } );
     }
 
     @Test
@@ -399,12 +375,12 @@ public class NodeStoreTest
         {
             @Override
             protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-                    boolean aggressiveReuse, long highId )
+                    boolean aggressiveReuse, Supplier<Long> highId )
             {
                 return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, highId ) );
             }
         } );
-        StoreFactory factory = new StoreFactory( storeDir, Config.empty(), idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory( storeDir, Config.defaults(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

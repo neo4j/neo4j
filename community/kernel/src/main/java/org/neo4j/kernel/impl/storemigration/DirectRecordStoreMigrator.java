@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.ArrayUtil.contains;
@@ -58,10 +58,10 @@ public class DirectRecordStoreMigrator
     }
 
     public void migrate( File fromStoreDir, RecordFormats fromFormat, File toStoreDir, RecordFormats toFormat,
-            MigrationProgressMonitor.Section progressMonitor, StoreType[] types, StoreType... additionalTypesToOpen )
+            ProgressReporter progressReporter, StoreType[] types, StoreType... additionalTypesToOpen )
     {
         StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );
-        progressMonitor.start( storesToOpen.length );
+        progressReporter.start( storesToOpen.length );
 
         try (
                 NeoStores fromStores = new StoreFactory( fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
@@ -77,7 +77,7 @@ public class DirectRecordStoreMigrator
                 if ( type.isRecordStore() )
                 {
                     migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ) );
-                    progressMonitor.progress( 1 );
+                    progressReporter.progress( 1 );
                 }
             }
         }
@@ -107,7 +107,7 @@ public class DirectRecordStoreMigrator
      */
     private Config withPersistedStoreHeadersAsConfigFrom( NeoStores legacyStores, StoreType[] types )
     {
-        Map<String,String> config = new HashMap<>( this.config.getParams() );
+        Map<String,String> config = new HashMap<>();
         if ( contains( types, StoreType.RELATIONSHIP_GROUP ) )
         {
             config.put( GraphDatabaseSettings.dense_node_threshold.name(),
@@ -125,6 +125,7 @@ public class DirectRecordStoreMigrator
             config.put( GraphDatabaseSettings.label_block_size.name(),
                     String.valueOf( legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() ) );
         }
-        return new Config( config );
+        this.config.augment( config );
+        return this.config;
     }
 }

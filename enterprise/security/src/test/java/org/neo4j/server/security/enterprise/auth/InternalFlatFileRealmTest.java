@@ -39,17 +39,17 @@ import java.util.List;
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.ListSnapshot;
-import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -353,10 +353,10 @@ public class InternalFlatFileRealmTest
 
     private class TestRealm extends InternalFlatFileRealm
     {
-        private boolean authenticationFlag = false;
-        private boolean authorizationFlag = false;
+        private boolean authenticationFlag;
+        private boolean authorizationFlag;
 
-        public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
+        TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
                 AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler,
                 UserRepository initialUserRepository, UserRepository defaultAdminRepository )
         {
@@ -381,7 +381,7 @@ public class InternalFlatFileRealmTest
         @Override
         public String getName()
         {
-            return "TestRealm wrapping "+ super.getName();
+            return "TestRealm wrapping " + super.getName();
         }
 
         @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -26,23 +27,22 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
@@ -65,12 +65,10 @@ public class HighLimitStoreMigrationTest
     @Test
     public void migrateHighLimit3_0StoreFiles() throws IOException
     {
-        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
 
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.empty(), NullLogService.getInstance(),
-                                                    schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance() );
 
         File storeDir = new File( testDirectory.graphDbDir(), "storeDir" );
         File migrationDir = new File( testDirectory.graphDbDir(), "migrationDir" );
@@ -79,12 +77,13 @@ public class HighLimitStoreMigrationTest
 
         prepareNeoStoreFile( fileSystem, storeDir, HighLimitV3_0_0.STORE_VERSION, pageCache );
 
-        MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
+        ProgressReporter progressMonitor = mock( ProgressReporter.class );
 
         migrator.migrate( storeDir, migrationDir, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
 
         int newStoreFilesCount = fileSystem.listFiles( migrationDir ).length;
-        assertEquals( "Store should be migrated and new store files should be created.", 17, newStoreFilesCount );
+        assertThat( "Store should be migrated and new store files should be created.",
+                newStoreFilesCount, Matchers.greaterThanOrEqualTo( StoreType.values().length ) );
     }
 
     private File prepareNeoStoreFile( FileSystemAbstraction fileSystem, File storeDir, String storeVersion,
@@ -103,5 +102,4 @@ public class HighLimitStoreMigrationTest
         fileSystem.create( neoStoreFile ).close();
         return neoStoreFile;
     }
-
 }

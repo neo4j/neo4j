@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -37,7 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -49,7 +50,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class ConvertNonCausalClusteringStoreIT
 {
     @Rule
@@ -60,34 +61,35 @@ public class ConvertNonCausalClusteringStoreIT
     @Parameterized.Parameter()
     public String recordFormat;
 
-    @Parameterized.Parameters(name = "Record format {0}")
+    @Parameterized.Parameters( name = "Record format {0}" )
     public static Collection<Object> data()
     {
-        return Arrays.asList( new Object[]{
-                StandardV3_0.NAME, HighLimit.NAME
-        } );
+        return Arrays.asList( new Object[]{Standard.LATEST_NAME, HighLimit.NAME} );
     }
 
     @Test
     public void shouldReplicateTransactionToCoreMembers() throws Throwable
     {
         // given
-        File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
+        File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db-" + recordFormat );
         int classicNodeCount = 1024;
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, fileSystem, classicNodeCount, recordFormat );
+        File classicNeo4jStore = createNeoStore( dbDir, classicNodeCount );
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
-        for ( CoreClusterMember core : cluster.coreMembers() )
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            fileSystem.copyRecursively( classicNeo4jStore, core.storeDir() );
+            for ( CoreClusterMember core : cluster.coreMembers() )
+            {
+                fileSystem.copyRecursively( classicNeo4jStore, core.storeDir() );
+            }
         }
 
         cluster.start();
 
         // when
-        cluster.coreTx( (coreDB, tx) -> {
+        cluster.coreTx( ( coreDB, tx ) ->
+        {
             Node node = coreDB.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -102,7 +104,7 @@ public class ConvertNonCausalClusteringStoreIT
 
             try ( Transaction tx = db.beginTx() )
             {
-                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
+                ThrowingSupplier<Long,Exception> nodeCount = () -> count( db.getAllNodes() );
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
@@ -113,6 +115,14 @@ public class ConvertNonCausalClusteringStoreIT
 
                 tx.success();
             }
+        }
+    }
+
+    private File createNeoStore( File dbDir, int classicNodeCount ) throws IOException
+    {
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            return createClassicNeo4jStore( dbDir, fileSystem, classicNodeCount, recordFormat );
         }
     }
 }

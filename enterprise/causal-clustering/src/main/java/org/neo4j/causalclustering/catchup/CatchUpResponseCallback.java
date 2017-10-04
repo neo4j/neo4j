@@ -44,5 +44,5 @@ public interface CatchUpResponseCallback<T>
 
     void onGetStoreIdResponse( CompletableFuture<T> signal, GetStoreIdResponse response );
 
-    void onCoreSnapshot(CompletableFuture<T> signal, CoreSnapshot coreSnapshot );
+    void onCoreSnapshot( CompletableFuture<T> signal, CoreSnapshot coreSnapshot );
 }

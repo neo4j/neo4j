@@ -24,14 +24,21 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
@@ -40,7 +47,7 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
  * Manages server authentication and authorization.
  * <p>
  * Through the BasicAuthManager you can create, update and delete userRepository, and authenticate using credentials.
- * <p>>
+ * <p>
  * NOTE: AuthManager will manage the lifecycle of the given UserRepository,
  *       so the given UserRepository should not be added to another LifeSupport.
  * </p>
@@ -62,9 +69,9 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     public BasicAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, Clock clock,
-            UserRepository initialUserRepository )
+            UserRepository initialUserRepository, Config config )
     {
-        this( userRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), initialUserRepository );
+        this( userRepository, passwordPolicy, createAuthenticationStrategy( clock, config ), initialUserRepository );
     }
 
     @Override
@@ -202,7 +209,8 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
                     .withRequiredPasswordChange( requirePasswordChange )
                     .build();
             userRepository.update( existingUser, updatedUser );
-        } catch ( ConcurrentModificationException e )
+        }
+        catch ( ConcurrentModificationException e )
         {
             // try again
             setUserPassword( username, password, requirePasswordChange );
@@ -238,5 +246,11 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         {
             throw invalidToken( ", scheme '" + scheme + "' is not supported." );
         }
+    }
+
+    private static AuthenticationStrategy createAuthenticationStrategy( Clock clock, Config config )
+    {
+        int maxFailedAttempts = config.get( GraphDatabaseSettings.auth_max_failed_attempts );
+        return new RateLimitedAuthenticationStrategy( clock, maxFailedAttempts );
     }
 }

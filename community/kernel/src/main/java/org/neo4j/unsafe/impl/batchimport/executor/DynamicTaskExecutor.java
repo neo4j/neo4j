@@ -56,7 +56,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             ParkStrategy parkStrategy, String processorThreadNamePrefix )
     {
         this( initialProcessorCount, maxProcessorCount, maxQueueSize, parkStrategy, processorThreadNamePrefix,
-                Suppliers.<LOCAL>singleton( null ) );
+                Suppliers.singleton( null ) );
     }
 
     public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
@@ -130,7 +130,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             {   // Then just stay here and try
                 assertHealthy();
             }
-            notifyProcessors();
         }
         catch ( InterruptedException e )
         {
@@ -145,14 +144,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         if ( panic != null )
         {
             throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
-        }
-    }
-
-    private void notifyProcessors()
-    {
-        for ( Processor processor : processors )
-        {
-            parkStrategy.unpark( processor );
         }
     }
 
@@ -204,12 +195,8 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         parkStrategy.park( Thread.currentThread() );
     }
 
-    private static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = new UncaughtExceptionHandler()
-    {
-        @Override
-        public void uncaughtException( Thread t, Throwable e )
-        {   // Don't print about it
-        }
+    private static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = ( t, e ) ->
+    {   // Don't print about it
     };
 
     private class Processor extends Thread
@@ -232,7 +219,17 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             final LOCAL threadLocalState = initialLocalState.get();
             while ( !shutDown && !processorShutDown )
             {
-                Task<LOCAL> task = queue.poll();
+                Task<LOCAL> task;
+                try
+                {
+                    task = queue.poll( 10, MILLISECONDS );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                    break;
+                }
+
                 if ( task != null )
                 {
                     try
@@ -245,14 +242,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                         close();
                         throw launderedException( e );
                     }
-                }
-                else
-                {
-                    if ( processorShutDown )
-                    {
-                        break;
-                    }
-                    parkAWhile();
                 }
             }
         }

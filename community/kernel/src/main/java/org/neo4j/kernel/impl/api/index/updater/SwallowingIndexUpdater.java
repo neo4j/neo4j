@@ -21,21 +21,16 @@ package org.neo4j.kernel.impl.api.index.updater;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public final class SwallowingIndexUpdater implements IndexUpdater
 {
     public static final IndexUpdater INSTANCE = new SwallowingIndexUpdater();
 
-    public SwallowingIndexUpdater()
-    {
-    }
-
     @Override
-    public void process( NodePropertyUpdate update )
+    public void process( IndexEntryUpdate<?> update )
     {
         // intentionally swallow this update
     }
@@ -44,11 +39,5 @@ public final class SwallowingIndexUpdater implements IndexUpdater
     public void close() throws IOException, IndexEntryConflictException
     {
         // nothing to close
-    }
-
-    @Override
-    public void remove( PrimitiveLongSet nodeIds )
-    {
-        // intentionally swallow these removals
     }
 }

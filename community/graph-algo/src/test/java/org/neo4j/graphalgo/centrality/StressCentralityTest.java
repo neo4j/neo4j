@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import static org.junit.Assert.assertTrue;
+import common.Neo4jAlgoTestCase;
+import org.junit.Test;
 
 import java.util.Set;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.centrality.StressCentrality;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
@@ -32,21 +32,14 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertTrue;
 
 public class StressCentralityTest extends Neo4jAlgoTestCase
 {
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                            Direction direction )
-                {
-                    return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
@@ -110,9 +103,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
 
     class StressTest extends StressCentrality<Double>
     {
-        public StressTest(
-            SingleSourceShortestPath<Double> singleSourceShortestPath,
-            Set<Node> nodeSet )
+        StressTest( SingleSourceShortestPath<Double> singleSourceShortestPath, Set<Node> nodeSet )
         {
             super( singleSourceShortestPath, nodeSet );
         }

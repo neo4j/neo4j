@@ -19,11 +19,14 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import java.util.function.IntPredicate;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
@@ -69,21 +72,9 @@ public interface StorageStatement extends AutoCloseable
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
      * @param nodeId id of node to get cursor for.
-     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch.
      * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
      */
-    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, AssertOpen assertOpen );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
-     * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
-     * to place the cursor over the first item and then more calls to move the cursor through the selection.
-     *
-     * @param nodeIds ids of nodes to get cursor for.
-     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
-     * @return a {@link Cursor} over {@link NodeItem} for the given node ids.
-     */
-    Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIds, AssertOpen assertOpen );
+    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
@@ -92,11 +83,9 @@ public interface StorageStatement extends AutoCloseable
      * through the selection.
      *
      * @param relationshipId id of relationship to get cursor for.
-     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
      * @return a {@link Cursor} over {@link RelationshipItem} for the given {@code relationshipId}.
      */
-    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId,
-            AssertOpen assertOpen );
+    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
@@ -104,33 +93,30 @@ public interface StorageStatement extends AutoCloseable
      * will have to be made to place the cursor over the first item and then more calls to move the cursor
      * through the selection.
      *
-     * @param relationshipIds ids of relationships to get cursor for.
-     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
-     * @return a {@link Cursor} over {@link RelationshipItem} for the given relationship ids.
+     * @param isDense if the node is dense
+     * @param nodeId the id of the node where to start traversing the relationships
+     * @param relationshipId the id of the first relationship in the chain
+     * @param direction the direction of the relationship wrt the node
+     * @param relTypeFilter the allowed types (it allows all types if unspecified)
+     * @return a {@link Cursor} over {@link RelationshipItem} for traversing the relationships associated to the node.
      */
-    Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator relationshipIds,
+    Cursor<RelationshipItem> acquireNodeRelationshipCursor(  boolean isDense, long nodeId, long relationshipId,
+            Direction direction, IntPredicate relTypeFilter );
+
+    /**
+     -     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
+     -     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
+     -     * will have to be made to place the cursor over the first item and then more calls to move the cursor
+     -     * through the selection.
+     -     *
+     -     * @return a {@link Cursor} over all stored relationships.
+     -     */
+    Cursor<RelationshipItem> relationshipsGetAllCursor();
+
+    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, AssertOpen assertOpen );
+
+    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock,
             AssertOpen assertOpen );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
-     * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
-     * to place the cursor over the first item and then more calls to move the cursor through the selection.
-     *
-     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
-     * @return {@link Cursor} over all stored nodes.
-     */
-    Cursor<NodeItem> nodesGetAllCursor( AssertOpen assertOpen );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
-     * @return a {@link Cursor} over all stored relationships.
-     */
-    Cursor<RelationshipItem> relationshipsGetAllCursor( AssertOpen assertOpen );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.
@@ -164,4 +150,29 @@ public interface StorageStatement extends AutoCloseable
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Access to low level record cursors
+     *
+     * @return record cursors
+     */
+    RecordCursors recordCursors();
+
+    /**
+     * Reserves a node id for future use to store a node. The reason for it being exposed here is that
+     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
+     * This will likely change in the future though.
+     *
+     * @return a reserved node id for future use.
+     */
+    long reserveNode();
+
+    /**
+     * Reserves a relationship id for future use to store a relationship. The reason for it being exposed here is that
+     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
+     * This will likely change in the future though.
+     *
+     * @return a reserved relationship id for future use.
+     */
+    long reserveRelationship();
 }

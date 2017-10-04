@@ -19,12 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -32,9 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
-import org.junit.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class FileNamesTest
 {
@@ -105,19 +106,19 @@ public class FileNamesTest
         filesPresent.add( fileNames.getForVersion( 1 ) ); // should be included
         filesPresent.add( fileNames.getForVersion( 10 ) ); // should be included
         filesPresent.add( fileNames.getForVersion( 11 ) ); // should be included
-        filesPresent.add( new File(base, FileNames.BASE_FILE_NAME + "01" ) ); // should be ignored
-        filesPresent.add( new File(base, FileNames.BASE_FILE_NAME + "001" ) ); // should be ignored
-        filesPresent.add( new File(base, FileNames.BASE_FILE_NAME ) ); // should be ignored
-        filesPresent.add( new File(base, FileNames.BASE_FILE_NAME + "-1" ) ); // should be ignored
-        filesPresent.add( new File(base, FileNames.BASE_FILE_NAME + "1a" ) ); // should be ignored
-        filesPresent.add( new File(base, FileNames.BASE_FILE_NAME + "a1" ) ); // should be ignored
-        filesPresent.add( new File(base, FileNames.BASE_FILE_NAME + "ab" ) ); // should be ignored
+        filesPresent.add( new File( base, FileNames.BASE_FILE_NAME + "01" ) ); // should be ignored
+        filesPresent.add( new File( base, FileNames.BASE_FILE_NAME + "001" ) ); // should be ignored
+        filesPresent.add( new File( base, FileNames.BASE_FILE_NAME ) ); // should be ignored
+        filesPresent.add( new File( base, FileNames.BASE_FILE_NAME + "-1" ) ); // should be ignored
+        filesPresent.add( new File( base, FileNames.BASE_FILE_NAME + "1a" ) ); // should be ignored
+        filesPresent.add( new File( base, FileNames.BASE_FILE_NAME + "a1" ) ); // should be ignored
+        filesPresent.add( new File( base, FileNames.BASE_FILE_NAME + "ab" ) ); // should be ignored
 
         when( fsa.listFiles( base ) ).thenReturn( filesPresent.toArray( new File[]{} ) );
 
         // When
         // asked for the contents of the directory
-        SortedMap<Long, File> allFiles = fileNames.getAllFiles( fsa, log );
+        SortedMap<Long,File> allFiles = fileNames.getAllFiles( fsa, log );
 
         // Then
         // only valid things should be returned

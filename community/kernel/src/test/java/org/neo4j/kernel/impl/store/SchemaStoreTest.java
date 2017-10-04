@@ -28,14 +28,18 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.RecordSerializer;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.PageCacheRule;
@@ -49,7 +53,8 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 public class SchemaStoreTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private Config config;
@@ -62,7 +67,7 @@ public class SchemaStoreTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        config = Config.empty();
+        config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), NullLogProvider.getInstance() );
@@ -76,44 +81,75 @@ public class SchemaStoreTest
         neoStores.close();
     }
 
-    private long storeRule( SchemaRule rule )
-    {
-        Collection<DynamicRecord> records = store.allocateFrom( rule );
-        for ( DynamicRecord record : records )
-        {
-            store.updateRecord( record );
-        }
-        return Iterables.first( records ).getId();
-    }
-
     @Test
-    public void serializationAndDeserialization() throws Exception
+    public void storeAndLoadSchemaRule() throws Exception
     {
         // GIVEN
-        int propertyKey = 4;
-        int labelId = 1;
-        IndexRule indexRule = IndexRule.indexRule( store.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
+        IndexRule indexRule = IndexRule.indexRule( store.nextId(),
+                IndexDescriptorFactory.forLabel( 1, 4 ), PROVIDER_DESCRIPTOR );
 
         // WHEN
-        byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
-        IndexRule readIndexRule = (IndexRule) AbstractSchemaRule.deserialize( indexRule.getId(), wrap( serialized ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
+                indexRule.getId(), wrap( indexRule.serialize() ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
-        assertEquals( indexRule.getKind(), readIndexRule.getKind() );
-        assertEquals( indexRule.getLabel(), readIndexRule.getLabel() );
-        assertEquals( indexRule.getPropertyKey(), readIndexRule.getPropertyKey() );
+        assertEquals( indexRule.schema(), readIndexRule.schema() );
+        assertEquals( indexRule.getIndexDescriptor(), readIndexRule.getIndexDescriptor() );
         assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
     }
 
     @Test
-    public void storeAndLoadAllShortRules() throws Exception
+    public void storeAndLoadCompositeSchemaRule() throws Exception
     {
         // GIVEN
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                IndexRule.indexRule( store.nextId(), 0, 5, PROVIDER_DESCRIPTOR ),
-                IndexRule.indexRule( store.nextId(), 1, 6, PROVIDER_DESCRIPTOR ),
-                IndexRule.indexRule( store.nextId(), 1, 7, PROVIDER_DESCRIPTOR ) );
+        int[] propertyIds = {4, 5, 6, 7};
+        IndexRule indexRule = IndexRule.indexRule( store.nextId(),
+                IndexDescriptorFactory.forLabel( 2, propertyIds ), PROVIDER_DESCRIPTOR );
+
+        // WHEN
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
+                indexRule.getId(), wrap( indexRule.serialize() ) );
+
+        // THEN
+        assertEquals( indexRule.getId(), readIndexRule.getId() );
+        assertEquals( indexRule.schema(), readIndexRule.schema() );
+        assertEquals( indexRule.getIndexDescriptor(), readIndexRule.getIndexDescriptor() );
+        assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
+    }
+
+    @Test
+    public void storeAndLoad_Big_CompositeSchemaRule() throws Exception
+    {
+        // GIVEN
+        IndexRule indexRule = IndexRule.indexRule( store.nextId(),
+                IndexDescriptorFactory.forLabel( 2, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
+
+        // WHEN
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
+                indexRule.getId(), wrap( indexRule.serialize() ) );
+
+        // THEN
+        assertEquals( indexRule.getId(), readIndexRule.getId() );
+        assertEquals( indexRule.schema(), readIndexRule.schema() );
+        assertEquals( indexRule.getIndexDescriptor(), readIndexRule.getIndexDescriptor() );
+        assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
+    }
+
+    @Test
+    public void storeAndLoadAllRules() throws Exception
+    {
+        // GIVEN
+        long indexId = store.nextId();
+        long constraintId = store.nextId();
+        Collection<SchemaRule> rules = Arrays.asList(
+                uniqueIndexRule( indexId, constraintId, PROVIDER_DESCRIPTOR, 2, 5, 3 ),
+                constraintUniqueRule( constraintId, indexId, 2, 5, 3 ),
+                indexRule( store.nextId(), PROVIDER_DESCRIPTOR, 0, 5 ),
+                indexRule( store.nextId(), PROVIDER_DESCRIPTOR, 1, 6, 10, 99 ),
+                constraintExistsRule( store.nextId(), 5, 1 )
+            );
+
         for ( SchemaRule rule : rules )
         {
             storeRule( rule );
@@ -126,44 +162,38 @@ public class SchemaStoreTest
         assertEquals( rules, readRules );
     }
 
-//    TODO ENABLE WHEN MULTIPLE PROPERTY KEYS PER INDEX RULE IS SUPPORTED
-//    @Test
-//    public void storeAndLoadSingleLongRule() throws Exception
-//    {
-//        // GIVEN
-//
-//        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( createLongIndexRule( 0, 50 ) );
-//        for ( SchemaRule rule : rules )
-//            storeRule( rule );
-//
-//        // WHEN
-//        Collection<SchemaRule> readRules = asCollection( store.loadAll() );
-//
-//        // THEN
-//        assertEquals( rules, readRules );
-//    }
-//
-//    @Test
-//    public void storeAndLoadAllLongRules() throws Exception
-//    {
-//        // GIVEN
-//        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-//                createLongIndexRule( 0, 100 ), createLongIndexRule( 1, 6 ), createLongIndexRule( 2, 50 ) );
-//        for ( SchemaRule rule : rules )
-//            storeRule( rule );
-//
-//        // WHEN
-//        Collection<SchemaRule> readRules = asCollection( store.loadAll() );
-//
-//        // THEN
-//        assertEquals( rules, readRules );
-//    }
-//
-//    private IndexRule createLongIndexRule( long label, int numberOfPropertyKeys )
-//    {
-//        long[] propertyKeys = new long[numberOfPropertyKeys];
-//        for ( int i = 0; i < propertyKeys.length; i++ )
-//            propertyKeys[i] = i;
-//        return new IndexRule( store.nextId(), label, POPULATING, propertyKeys );
-//    }
+    private long storeRule( SchemaRule rule )
+    {
+        Collection<DynamicRecord> records = store.allocateFrom( rule );
+        for ( DynamicRecord record : records )
+        {
+            store.updateRecord( record );
+        }
+        return Iterables.first( records ).getId();
+    }
+
+    private IndexRule indexRule( long ruleId, SchemaIndexProvider.Descriptor descriptor,
+            int labelId, int... propertyIds )
+    {
+        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyIds ), descriptor );
+    }
+
+    private IndexRule uniqueIndexRule( long ruleId, long owningConstraint,
+            SchemaIndexProvider.Descriptor descriptor, int labelId, int... propertyIds )
+    {
+        return IndexRule.constraintIndexRule( ruleId,
+                IndexDescriptorFactory.uniqueForLabel( labelId, propertyIds ), descriptor, owningConstraint );
+    }
+
+    private ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
+    {
+        return ConstraintRule.constraintRule( ruleId,
+                ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ), ownedIndexId );
+    }
+
+    private ConstraintRule constraintExistsRule( long ruleId, int labelId, int... propertyIds )
+    {
+        return ConstraintRule.constraintRule( ruleId,
+                ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ) );
+    }
 }

@@ -31,5 +31,5 @@ public enum LifecycleStatus
     STOPPING,
     STOPPED,
     SHUTTING_DOWN,
-    SHUTDOWN;
+    SHUTDOWN
 }

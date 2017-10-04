@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.kernel;
 
+import java.io.File;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.Collections;
@@ -55,8 +56,9 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.helpers.collection.ResourceIterableWrapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -149,6 +151,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public Long createNodeId()
+    {
+        return readOnly();
+    }
+
+    @Override
     public Node createNode( Label... labels )
     {
         return readOnly();
@@ -185,27 +193,23 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {
-        return new ResourceIterable<Relationship>()
+        return () ->
         {
-            @Override
-            public ResourceIterator<Relationship> iterator()
+            final ResourceIterator<Relationship> iterator = actual.getAllRelationships().iterator();
+            return new PrefetchingResourceIterator<Relationship>()
             {
-                final ResourceIterator<Relationship> iterator = actual.getAllRelationships().iterator();
-                return new PrefetchingResourceIterator<Relationship>()
+                @Override
+                protected Relationship fetchNextOrNull()
                 {
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        return new ReadOnlyRelationshipProxy( iterator.next() );
-                    }
+                    return new ReadOnlyRelationshipProxy( iterator.next() );
+                }
 
-                    @Override
-                    public void close()
-                    {
-                        iterator.close();
-                    }
-                };
-            }
+                @Override
+                public void close()
+                {
+                    iterator.close();
+                }
+            };
         };
     }
 
@@ -640,12 +644,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         return () -> nodes.iterator().map( ReadOnlyNodeProxy::new );
     }
 
-    public Iterable<Relationship> relationships( Iterable<Relationship> relationships )
+    public ResourceIterable<Relationship> relationships( Iterable<Relationship> relationships )
     {
-        return new IterableWrapper<Relationship, Relationship>( relationships )
+        return new ResourceIterableWrapper<Relationship,Relationship>( Iterables.asResourceIterable( relationships ) )
         {
             @Override
-            protected Relationship underlyingObjectToObject( Relationship relationship )
+            protected Relationship map( Relationship relationship )
             {
                 return new ReadOnlyRelationshipProxy( relationship );
             }
@@ -729,13 +733,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public String setConfiguration( Index<? extends PropertyContainer> index, String key,
                                     String value )
     {
-        throw new IllegalStateException("Database is in read-only mode");
+        throw new IllegalStateException( "Database is in read-only mode" );
     }
 
     @Override
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
-        throw new IllegalStateException("Database is in read-only mode");
+        throw new IllegalStateException( "Database is in read-only mode" );
     }
 
     @Override
@@ -971,7 +975,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     {
         private final Schema actual;
 
-        public ReadOnlySchemaProxy( Schema actual )
+        ReadOnlySchemaProxy( Schema actual )
         {
 
             this.actual = actual;
@@ -1057,7 +1061,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public String getStoreDir()
+    public File getStoreDir()
     {
         return actual.getStoreDir();
     }

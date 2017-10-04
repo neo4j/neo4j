@@ -21,24 +21,22 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.storable.ValueTuple;
 
 /**
  * This interface contains the methods for reading transaction state from the transaction state.
@@ -46,7 +44,7 @@ import org.neo4j.storageengine.api.StorageProperty;
  */
 public interface ReadableTransactionState
 {
-    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException, CreateConstraintFailureException;
+    void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
 
     boolean hasChanges();
 
@@ -91,7 +89,7 @@ public interface ReadableTransactionState
 
     boolean nodeModifiedInThisTx( long nodeId );
 
-    PrimitiveIntIterator nodeRelationshipTypes( long nodeId );
+    PrimitiveIntSet nodeRelationshipTypes( long nodeId );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction );
 
@@ -112,28 +110,23 @@ public interface ReadableTransactionState
 
     ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( int labelId );
-
     ReadableDiffSets<IndexDescriptor> indexChanges();
-
-    ReadableDiffSets<IndexDescriptor> constraintIndexChanges();
 
     Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
-    ReadableDiffSets<PropertyConstraint> constraintsChanges();
+    ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
-    ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabel( int labelId );
+    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId );
 
-    ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabelAndProperty( int labelId, int propertyKey );
+    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor );
 
-    ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipType( int relTypeId );
+    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
 
-    ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipTypeAndProperty( int relTypeId,
-            int propertyKey );
+    Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    Long indexCreatedForConstraint( UniquenessConstraint constraint );
+    ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor index );
 
-    ReadableDiffSets<Long> indexUpdatesForScanOrSeek( IndexDescriptor index, Object value );
+    ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
     ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
                                                              Number lower, boolean includeLower,
@@ -158,21 +151,15 @@ public interface ReadableTransactionState
             PropertyContainerState propertyContainerState,
             int propertyKeyId );
 
-    Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState );
-
-    public Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId );
+    PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
 
-    Cursor<RelationshipItem> augmentIteratorRelationshipCursor( Cursor<RelationshipItem> cursor,
-            RelationshipIterator iterator );
+    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
+            Direction direction );
 
-    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
-            NodeState nodeState,
-            Direction direction,
-            int[] relTypes );
-
-    Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor );
+    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
+            Direction direction, int[] relTypes );
 
     Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 
@@ -186,4 +173,5 @@ public interface ReadableTransactionState
      * The same applies to schema changes, such as creating and dropping indexes and constraints.
      */
     boolean hasDataChanges();
+
 }

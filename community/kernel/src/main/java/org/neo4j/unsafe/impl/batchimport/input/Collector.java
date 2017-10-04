@@ -31,9 +31,9 @@ public interface Collector extends AutoCloseable
 
     void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource );
 
-    void collectExtraColumns( final String source, final long row, final String value );
+    void collectExtraColumns( String source, long row, String value );
 
-    int badEntries();
+    long badEntries();
 
     /**
      * @return iterator of node ids that were found to be duplicates of already imported nodes.

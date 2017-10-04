@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.util.Collections;
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
+import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -69,7 +69,7 @@ public class CompactJsonIT extends AbstractRestFunctionalTestBase
         long knowsRelationshipId = helper.createRelationship( "KNOWS", thomasAnderson, trinity );
         thomasAndersonLovesTrinity = helper.createRelationship( "LOVES", thomasAnderson, trinity );
         helper.setRelationshipProperties( thomasAndersonLovesTrinity,
-                Collections.singletonMap( "strength", (Object) 100 ) );
+                Collections.singletonMap( "strength", 100 ) );
         helper.createRelationship( "KNOWS", thomasAnderson, tank );
         helper.createRelationship( "KNOWS", trinity, tank );
 
@@ -85,13 +85,14 @@ public class CompactJsonIT extends AbstractRestFunctionalTestBase
     private long createAndIndexNode( String name )
     {
         long id = helper.createNode();
-        helper.setNodeProperties( id, Collections.singletonMap( "name", (Object) name ) );
+        helper.setNodeProperties( id, Collections.singletonMap( "name", name ) );
         helper.addNodeToIndex( "node", "name", name, id );
         return id;
     }
 
     @Test
-    public void shouldGetThomasAndersonDirectly() {
+    public void shouldGetThomasAndersonDirectly()
+    {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(thomasAnderson), CompactJsonFormat.MEDIA_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity();

@@ -278,7 +278,7 @@ public class TimedRepositoryTest
 
     private static class NonStoppableCleaner implements Runnable
     {
-        private volatile boolean stop = false;
+        private volatile boolean stop;
         private final TimedRepository<Object,Long> timedRepository;
 
         NonStoppableCleaner( TimedRepository<Object,Long> timedRepository )
@@ -289,7 +289,7 @@ public class TimedRepositoryTest
         @Override
         public void run()
         {
-            while (!stop)
+            while ( !stop )
             {
                 timedRepository.run();
             }
@@ -321,7 +321,7 @@ public class TimedRepositoryTest
             reaperLatch.countDown();
         }
 
-        public void await(String message, long timeout, TimeUnit timeUnit) throws InterruptedException
+        public void await( String message, long timeout, TimeUnit timeUnit ) throws InterruptedException
         {
             if ( !reaperLatch.await( timeout, timeUnit ) )
             {

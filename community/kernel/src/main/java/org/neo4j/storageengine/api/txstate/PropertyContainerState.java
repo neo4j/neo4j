@@ -21,8 +21,10 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.StorageProperty;
+
+import static java.util.Collections.emptyIterator;
 
 /**
  * Represents the property changes to a {@link NodeState node} or {@link RelationshipState relationship}:
@@ -44,13 +46,13 @@ public interface PropertyContainerState
 
     Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator );
 
-    void accept( Visitor visitor ) throws ConstraintValidationKernelException;
+    void accept( Visitor visitor ) throws ConstraintValidationException;
 
     interface Visitor
     {
         void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
                 Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationKernelException;
+                Iterator<Integer> removed ) throws ConstraintValidationException;
     }
 
     boolean hasChanges();
@@ -60,4 +62,68 @@ public interface PropertyContainerState
     StorageProperty getAddedProperty( int propertyKeyId );
 
     boolean isPropertyRemoved( int propertyKeyId );
+
+    PropertyContainerState EMPTY = new EmptyPropertyContainerState();
+
+    class EmptyPropertyContainerState implements PropertyContainerState
+    {
+        @Override
+        public Iterator<StorageProperty> addedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> changedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<Integer> removedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> addedAndChangedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
+        {
+            return iterator;
+        }
+
+        @Override
+        public void accept( Visitor visitor ) throws ConstraintValidationException
+        {
+        }
+
+        @Override
+        public boolean hasChanges()
+        {
+            return false;
+        }
+
+        @Override
+        public StorageProperty getChangedProperty( int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public StorageProperty getAddedProperty( int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isPropertyRemoved( int propertyKeyId )
+        {
+            return false;
+        }
+    }
 }

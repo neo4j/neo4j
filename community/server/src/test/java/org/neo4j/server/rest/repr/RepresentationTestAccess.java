@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.rest.repr.formats.ListWrappingWriter;
@@ -33,6 +32,10 @@ import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 public class RepresentationTestAccess
 {
     private static final URI BASE_URI = URI.create( "http://neo4j.org/" );
+
+    private RepresentationTestAccess()
+    {
+    }
 
     public static Object serialize( Representation repr )
     {
@@ -92,8 +95,10 @@ public class RepresentationTestAccess
     {
         int lastSlash = nodeUri.lastIndexOf( '/' );
         if ( lastSlash == -1 )
+        {
             throw new IllegalArgumentException( "'" + nodeUri + "' isn't a node URI" );
-        return Long.parseLong( nodeUri.substring( lastSlash+1 ) );
+        }
+        return Long.parseLong( nodeUri.substring( lastSlash + 1 ) );
     }
 
     private static class StringFormat extends RepresentationFormat

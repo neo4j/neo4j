@@ -98,9 +98,9 @@ public class MultiReadableTest
 
         // we will transition to the new reader in the call below
         reader.read( buffer, buffer.front() );
-        assertEquals( 23+15, reader.position() );
+        assertEquals( 23 + 15, reader.position() );
         reader.read( buffer, buffer.front() );
-        assertEquals( 23+30, reader.position() );
+        assertEquals( 23 + 30, reader.position() );
         reader.read( buffer, buffer.front() );
         assertFalse( buffer.hasAvailable() );
     }

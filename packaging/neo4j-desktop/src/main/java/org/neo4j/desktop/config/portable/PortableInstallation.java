@@ -61,7 +61,8 @@ public abstract class PortableInstallation implements Installation
         for ( File file : locations )
         {
             File candidateFile = file.getAbsoluteFile();
-            if ( candidateFile.exists() && candidateFile.isDirectory() && candidateFile.canWrite() ) {
+            if ( candidateFile.exists() && candidateFile.isDirectory() && candidateFile.canWrite() )
+            {
                 result = candidateFile;
                 break;
             }
@@ -132,7 +133,7 @@ public abstract class PortableInstallation implements Installation
 
     private static class PathAlreadyExistException extends RuntimeException
     {
-        public PathAlreadyExistException( File path, String description )
+        PathAlreadyExistException( File path, String description )
         {
             super( format( "%s already exists but is not a %s.", description, path.getAbsolutePath() ) );
         }
@@ -140,7 +141,7 @@ public abstract class PortableInstallation implements Installation
 
     private static class CannotMakeDirectory extends RuntimeException
     {
-        public CannotMakeDirectory( File path, String description )
+        CannotMakeDirectory( File path, String description )
         {
             super( format( "Could not make %s %s", description, path.getAbsolutePath() ) );
         }
@@ -149,7 +150,7 @@ public abstract class PortableInstallation implements Installation
     private static class CannotFindInstallationDirectory extends RuntimeException
     {
 
-        public CannotFindInstallationDirectory( Exception cause )
+        CannotFindInstallationDirectory( Exception cause )
         {
             super( cause );
         }

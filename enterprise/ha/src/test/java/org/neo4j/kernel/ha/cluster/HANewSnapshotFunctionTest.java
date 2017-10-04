@@ -49,7 +49,7 @@ public class HANewSnapshotFunctionTest
         events.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<>();
+        Iterable<MemberIsAvailable> result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -77,7 +77,7 @@ public class HANewSnapshotFunctionTest
         expected.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<>();
+        Iterable<MemberIsAvailable> result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -103,7 +103,7 @@ public class HANewSnapshotFunctionTest
         expected.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<>();
+        Iterable<MemberIsAvailable> result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -129,7 +129,7 @@ public class HANewSnapshotFunctionTest
         expected.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<>();
+        Iterable<MemberIsAvailable> result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -203,7 +203,7 @@ public class HANewSnapshotFunctionTest
         expected.add( roleForId( OnlineBackupKernelExtension.BACKUP, 1 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<>();
+        Iterable<MemberIsAvailable> result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -215,8 +215,8 @@ public class HANewSnapshotFunctionTest
 
     private MemberIsAvailable roleForId( String role, int id )
     {
-        return new MemberIsAvailable( role, new InstanceId( id ),
-                URI.create( "cluster://"+id ), URI.create( "ha://"+id ), StoreId.DEFAULT );
+        return new MemberIsAvailable( role, new InstanceId( id ), URI.create( "cluster://" + id ),
+                URI.create( "ha://" + id ), StoreId.DEFAULT );
     }
 
     private void eventsMatch( Iterable<MemberIsAvailable> result, List<MemberIsAvailable> expected )

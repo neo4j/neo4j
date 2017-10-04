@@ -97,7 +97,7 @@ public enum Reference
     private void encode( long absoluteReference, boolean positive, PageCursor source ) throws IOException
     {
         // use big-endianness, most significant byte written first, since it contains encoding information
-        int shift = (numberOfBytes-1) << 3;
+        int shift = (numberOfBytes - 1) << 3;
         byte signBit = (byte) ((positive ? 0 : 1) << (headerShift - 1));
 
         // first (most significant) byte

@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -33,7 +32,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -79,7 +77,7 @@ public class StageExecution implements StageControl
 
     public long getExecutionTime()
     {
-        return currentTimeMillis()-startTime;
+        return currentTimeMillis() - startTime;
     }
 
     public String getStageName()
@@ -108,50 +106,39 @@ public class StageExecution implements StageControl
     public Iterable<Pair<Step<?>,Float>> stepsOrderedBy( final Key stat, final boolean trueForAscending )
     {
         final List<Step<?>> steps = new ArrayList<>( pipeline );
-        Collections.sort( steps, new Comparator<Step<?>>()
+        Collections.sort( steps, ( o1, o2 ) ->
         {
-            @Override
-            public int compare( Step<?> o1, Step<?> o2 )
-            {
-                Long stat1 = o1.stats().stat( stat ).asLong();
-                Long stat2 = o2.stats().stat( stat ).asLong();
-                return trueForAscending
-                        ? stat1.compareTo( stat2 )
-                        : stat2.compareTo( stat1 );
-            }
+            Long stat1 = o1.stats().stat( stat ).asLong();
+            Long stat2 = o2.stats().stat( stat ).asLong();
+            return trueForAscending
+                    ? stat1.compareTo( stat2 )
+                    : stat2.compareTo( stat1 );
         } );
 
-        return new Iterable<Pair<Step<?>,Float>>()
+        return () -> new PrefetchingIterator<Pair<Step<?>,Float>>()
         {
+            private final Iterator<Step<?>> source = steps.iterator();
+            private Step<?> next = source.hasNext() ? source.next() : null;
+
             @Override
-            public Iterator<Pair<Step<?>,Float>> iterator()
+            protected Pair<Step<?>,Float> fetchNextOrNull()
             {
-                return new PrefetchingIterator<Pair<Step<?>,Float>>()
+                if ( next == null )
                 {
-                    private final Iterator<Step<?>> source = steps.iterator();
-                    private Step<?> next = source.hasNext() ? source.next() : null;
+                    return null;
+                }
 
-                    @Override
-                    protected Pair<Step<?>,Float> fetchNextOrNull()
-                    {
-                        if ( next == null )
-                        {
-                            return null;
-                        }
+                Step<?> current = next;
+                next = source.hasNext() ? source.next() : null;
+                float factor = next != null
+                        ? (float) stat( current, stat ) / (float) stat( next, stat )
+                        : 1.0f;
+                return Pair.of( current, factor );
+            }
 
-                        Step<?> current = next;
-                        next = source.hasNext() ? source.next() : null;
-                        float factor = next != null
-                                ? (float) stat( current, stat ) / (float) stat( next, stat )
-                                : 1.0f;
-                        return Pair.<Step<?>, Float> of( current, factor );
-                    }
-
-                    private long stat( Step<?> step, Key stat )
-                    {
-                        return step.stats().stat( stat ).asLong();
-                    }
-                };
+            private long stat( Step<?> step, Key stat12 )
+            {
+                return step.stats().stat( stat12 ).asLong();
             }
         };
     }
@@ -174,7 +161,10 @@ public class StageExecution implements StageControl
         }
         else
         {
-            panic.addSuppressed( cause );
+            if ( !panic.equals( cause ) )
+            {
+                panic.addSuppressed( cause );
+            }
         }
     }
 

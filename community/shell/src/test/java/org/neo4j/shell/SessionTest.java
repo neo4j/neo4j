@@ -19,10 +19,10 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class SessionTest
 {
@@ -34,7 +34,7 @@ public class SessionTest
         session = new Session( 1 );
     }
 
-    @Test(expected = ShellException.class)
+    @Test( expected = ShellException.class )
     public void cannotSetInvalidVariableName() throws ShellException
     {
         session.set( "foo bar", 42 );
@@ -46,7 +46,7 @@ public class SessionTest
         session.set( "_foobar", 42 );
     }
 
-    @Test(expected = ShellException.class)
+    @Test( expected = ShellException.class )
     public void cannotGetInvalidVariableName() throws ShellException
     {
         session.get( "foo bar" );
@@ -59,7 +59,7 @@ public class SessionTest
         assertEquals( 42, session.get( "_foobar" ));
     }
 
-    @Test(expected = ShellException.class)
+    @Test( expected = ShellException.class )
     public void cannotRemoveInvalidVariableName() throws ShellException
     {
         session.remove( "foo bar" );

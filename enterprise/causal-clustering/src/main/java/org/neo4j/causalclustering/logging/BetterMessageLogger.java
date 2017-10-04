@@ -32,7 +32,7 @@ import static java.lang.String.valueOf;
 public class BetterMessageLogger<MEMBER> extends LifecycleAdapter implements MessageLogger<MEMBER>
 {
     private final PrintWriter printWriter;
-    private DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+    private DateFormat dateFormat = new SimpleDateFormat( "HH:mm:ss.SSS" );
 
     public BetterMessageLogger( MEMBER myself, PrintWriter printWriter )
     {

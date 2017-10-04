@@ -21,17 +21,20 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.DocumentedDefaultValue;
+import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
-import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.web.JettyThreadCalculator;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
@@ -40,49 +43,54 @@ import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.max;
-import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
-@Description("Settings used by the server configuration")
-public interface ServerSettings
+@Description( "Settings used by the server configuration" )
+public class ServerSettings implements LoadableConfig
 {
-    @Description("Maximum request header size")
+    @Description( "Maximum request header size" )
     @Internal
-    Setting<Integer> maximum_request_header_size =
+    public static final Setting<Integer> maximum_request_header_size =
             setting( "unsupported.dbms.max_http_request_header_size", INTEGER, "20480" );
 
-    @Description("Maximum response header size")
+    @Description( "Maximum response header size" )
     @Internal
-    Setting<Integer> maximum_response_header_size =
+    public static final Setting<Integer> maximum_response_header_size =
             setting( "unsupported.dbms.max_http_response_header_size", INTEGER, "20480" );
 
-    @Description("Comma-seperated list of custom security rules for Neo4j to use.")
-    Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
+    @Description( "Comma-seperated list of custom security rules for Neo4j to use." )
+    public static final Setting<List<String>> security_rules =
+            setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
     @Description( "Number of Neo4j worker threads, your OS might enforce a lower limit than the maximum value " +
             "specified here." )
-    Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count", INTEGER,
-            "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
-            range( 1, JettyThreadCalculator.MAX_THREADS ) );
+    @DocumentedDefaultValue( "Number of available processors (max 500)." )
+    public static final Setting<Integer> webserver_max_threads = buildSetting( "dbms.threads.worker_count", INTEGER,
+            "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ) ).constraint(
+            range( 1, JettyThreadCalculator.MAX_THREADS ) ).build();
 
     @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time. " +
             "Please use dbms.transaction.timeout instead." )
     @Internal
     @Deprecated
-    Setting<Long> webserver_limit_execution_time = setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
+    public static final Setting<Duration> webserver_limit_execution_time = setting( "unsupported.dbms" +
+            ".executiontime_limit.time", DURATION, NO_DEFAULT );
 
     @Internal
-    Setting<List<String>> console_module_engines = setting(
+    public static final Setting<List<String>> console_module_engines = setting(
             "unsupported.dbms.console_module.engines", STRING_LIST, "SHELL" );
 
-    @Description("Comma-separated list of <classname>=<mount point> for unmanaged extensions.")
-    Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "dbms.unmanaged_extension_classes",
+    @Description( "Comma-separated list of <classname>=<mount point> for unmanaged extensions." )
+    public static final Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "dbms.unmanaged_extension_classes",
             new Function<String, List<ThirdPartyJaxRsPackage>>()
             {
                 @Override
@@ -122,75 +130,91 @@ public interface ServerSettings
             },
             EMPTY );
 
-    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections. Certificate files must be named _neo4j.cert_ and _neo4j.key_" )
-    Setting<File> certificates_directory = BoltKernelExtension.Settings.certificates_directory;
+    @Description( "Enable HTTP request logging." )
+    public static final Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );
 
-    @Internal
-    @Description("Path to the X.509 public certificate to be used by Neo4j for TLS connections")
-    Setting<File> tls_certificate_file = BoltKernelExtension.Settings.tls_certificate_file;
+    @Description( "Path to HTTP request log." )
+    public static final Setting<File> http_log_path =
+            derivedSetting( "dbms.logs.http.path", logs_directory, logs -> new File( logs, "http.log" ),
+                    PATH );
 
-    @Internal
-    @Description("Path to the X.509 private key to be used by Neo4j for TLS connections")
-    Setting<File> tls_key_file = BoltKernelExtension.Settings.tls_key_file;
+    @Description( "Number of HTTP logs to keep." )
+    public static final Setting<Integer> http_logging_rotation_keep_number =
+            setting( "dbms.logs.http.rotation.keep_number", INTEGER, "5" );
 
-    @Description("Enable HTTP request logging.")
-    Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );
+    @Description( "Size of each HTTP log that is kept." )
+    public static final Setting<Long> http_logging_rotation_size = buildSetting( "dbms.logs.http.rotation.size", BYTES,
+            "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
 
-    @Description("Number of HTTP logs to keep.")
-    Setting<Integer> http_logging_rotation_keep_number = setting("dbms.logs.http.rotation.keep_number", INTEGER, "5");
+    @SuppressWarnings( "unused" ) // used only in the startup scripts
+    @Description( "Enable GC Logging" )
+    public static final Setting<Boolean> gc_logging_enabled = setting( "dbms.logs.gc.enabled", BOOLEAN, FALSE);
 
-    @Description("Size of each HTTP log that is kept.")
-    Setting<Long> http_logging_rotation_size = setting("dbms.logs.http.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
-
-    @SuppressWarnings("unused") // used only in the startup scripts
-    @Description("Enable GC Logging")
-    Setting<Boolean> gc_logging_enabled = setting("dbms.logs.gc.enabled", BOOLEAN, FALSE);
-
-    @SuppressWarnings("unused") // used only in the startup scripts
-    @Description("GC Logging Options")
-    Setting<String> gc_logging_options = setting("dbms.logs.gc.options", STRING, "" +
+    @SuppressWarnings( "unused" ) // used only in the startup scripts
+    @Description( "GC Logging Options" )
+    public static final Setting<String> gc_logging_options = setting( "dbms.logs.gc.options", STRING, "" +
             "-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime " +
-            "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution");
+            "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution" );
 
-    @SuppressWarnings("unused") // used only in the startup scripts
-    @Description("Number of GC logs to keep.")
-    Setting<Integer> gc_logging_rotation_keep_number = setting("dbms.logs.gc.rotation.keep_number", INTEGER, "5");
+    @SuppressWarnings( "unused" ) // used only in the startup scripts
+    @Description( "Number of GC logs to keep." )
+    public static final Setting<Integer> gc_logging_rotation_keep_number =
+            setting( "dbms.logs.gc.rotation.keep_number", INTEGER, "5" );
 
-    @SuppressWarnings("unused") // used only in the startup scripts
-    @Description("Size of each GC log that is kept.")
-    Setting<Long> gc_logging_rotation_size = setting("dbms.logs.gc.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+    @SuppressWarnings( "unused" ) // used only in the startup scripts
+    @Description( "Size of each GC log that is kept." )
+    public static final Setting<Long> gc_logging_rotation_size = buildSetting( "dbms.logs.gc.rotation.size", BYTES,
+            "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
 
-    @SuppressWarnings("unused") // used only in the startup scripts
-    @Description("Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it is" +
-            " running in the background. The pidfile is created when starting neo4j and removed when stopping it." +
-            " It may be placed on an in-memory filesystem such as tmpfs.")
-    Setting<File> run_directory = pathSetting( "dbms.directories.run", "run" );
+    @SuppressWarnings( "unused" ) // used only in the startup scripts
+    @Description( "Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it " +
+            "is running in the background. The pidfile is created when starting neo4j and removed when stopping it." +
+            " It may be placed on an in-memory filesystem such as tmpfs." )
+    public static final Setting<File> run_directory = pathSetting( "dbms.directories.run", "run" );
 
-    @SuppressWarnings("unused") // used only in the startup scripts
-    @Description("Path of the lib directory")
-    Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
+    @SuppressWarnings( "unused" ) // used only in the startup scripts
+    @Description( "Path of the lib directory" )
+    public static final Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
-    @Description("Timeout for idle transactions in the REST endpoint.")
-    Setting<Long> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout", DURATION, "60s" );
+    @Description( "Timeout for idle transactions in the REST endpoint." )
+    public static final Setting<Duration> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout",
+            DURATION, "60s" );
+
+    @SuppressWarnings( "unused" ) // accessed from the browser
+    @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
+                  "commands with semi-colon." )
+    public static final Setting<String> browser_postConnectCmd = setting( "browser.post_connect_cmd", STRING, "" );
+
+    @SuppressWarnings( "unused" ) // accessed from the browser
+    @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
+    public static final Setting<String> browser_remoteContentHostnameWhitelist =
+            setting( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost");
+
+    @Description( "SSL policy name." )
+    public static final Setting<String> ssl_policy = setting( "https.ssl_policy", STRING, LEGACY_POLICY_NAME );
 
     @Internal
-    Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );
+    public static final Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );
 
     @Internal
-    Setting<URI> management_api_path = setting( "unsupported.dbms.uris.management",
+    public static final Setting<URI> management_api_path = setting( "unsupported.dbms.uris.management",
             NORMALIZED_RELATIVE_URI, "/db/manage" );
 
     @Internal
-    Setting<URI> browser_path = setting( "unsupported.dbms.uris.browser", Settings.URI, "/browser/" );
+    public static final Setting<URI> browser_path = setting( "unsupported.dbms.uris.browser", Settings.URI, "/browser/" );
 
     @Internal
-    Setting<Boolean> script_sandboxing_enabled = setting("unsupported.dbms.security.script_sandboxing_enabled",
-            BOOLEAN, TRUE );
+    public static final Setting<Boolean> script_sandboxing_enabled =
+            setting( "unsupported.dbms.security.script_sandboxing_enabled", BOOLEAN, TRUE );
 
     @Internal
-    Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
+    public static final Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
             FALSE );
 
     @Internal
-    Setting<Boolean> console_module_enabled = setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
+    public static final Setting<Boolean> console_module_enabled =
+            setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
+
+    @Internal
+    public static final Setting<Boolean> jmx_module_enabled = setting( "unsupported.dbms.jmx_module.enabled", BOOLEAN, TRUE );
 }

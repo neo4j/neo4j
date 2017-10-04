@@ -44,7 +44,6 @@ import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
@@ -84,7 +83,7 @@ public class Fixture
                             .commitListener( waiter )
                             .build();
 
-            rafts.add( new RaftFixture(raftMachine, raftLog) );
+            rafts.add( new RaftFixture( raftMachine, raftLog ) );
         }
     }
 
@@ -105,9 +104,9 @@ public class Fixture
     {
         for ( RaftFixture raft : rafts )
         {
-            raft.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
-            raft.raftMachine().installCoreState( new RaftCoreState( new MembershipEntry( 0, members  ) ) );
-            raft.raftMachine.startTimers();
+            raft.raftLog().append( new RaftLogEntry( 0, new MemberIdSet( asSet( members ) ) ) );
+            raft.raftMachine().installCoreState( new RaftCoreState( new MembershipEntry( 0, members ) ) );
+            raft.raftMachine.postRecoveryActions();
         }
         net.start();
         awaitBootstrapped();
@@ -156,7 +155,8 @@ public class Fixture
 
     private void awaitBootstrapped() throws InterruptedException, TimeoutException
     {
-        Predicates.await( () -> {
+        Predicates.await( () ->
+        {
             for ( BootstrapWaiter bootstrapWaiter : bootstrapWaiters )
             {
                 if ( !bootstrapWaiter.bootstrapped.get() )
@@ -174,7 +174,7 @@ public class Fixture
         private final RaftMachine raftMachine;
         private final InMemoryRaftLog raftLog;
 
-        public RaftFixture( RaftMachine raftMachine, InMemoryRaftLog raftLog )
+        RaftFixture( RaftMachine raftMachine, InMemoryRaftLog raftLog )
         {
             this.raftMachine = raftMachine;
             this.raftLog = raftLog;

@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.reader;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,10 +33,13 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +50,7 @@ import static org.mockito.Mockito.when;
 public class PartitionedIndexReaderTest
 {
 
-    private IndexConfiguration indexConfiguration = IndexConfiguration.NON_UNIQUE;
+    private IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 0, 1 );
     @Mock
     private IndexSamplingConfig samplingConfig;
     @Mock
@@ -78,67 +81,72 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void seekOverAllPartitions()
+    public void seekOverAllPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.ExactPredicate query = IndexQuery.exact( 1, "Test" );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.seek( "Test" ) );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
     @Test
-    public void rangeSeekByNumberOverPartitions()
+    public void rangeSeekByNumberOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.NumberRangePredicate query = IndexQuery.range( 1, 1, true, 2, true );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
         PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.rangeSeekByNumberInclusive( 1, 2 ) );
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
     @Test
-    public void rangeSeekByStringOverPartitions()
+    public void rangeSeekByStringOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.StringRangePredicate query = IndexQuery.range( 1, "a", false, "b", true );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
         PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.rangeSeekByString( "a", false, "b", true ) );
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
     @Test
-    public void rangeSeekByPrefixOverPartitions()
+    public void rangeSeekByPrefixOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1, "prefix" );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.rangeSeekByPrefix( "prefix") );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
     @Test
-    public void scanOverPartitions()
+    public void scanOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.scan() ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.scan() ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.scan() ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.ExistsPredicate query = IndexQuery.exists( 1 );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.scan() );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -146,11 +154,11 @@ public class PartitionedIndexReaderTest
     public void countNodesOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.countIndexedNodes(1, "a") ).thenReturn( 1L );
-        when( indexReader2.countIndexedNodes(1, "a") ).thenReturn( 2L );
-        when( indexReader3.countIndexedNodes(1, "a") ).thenReturn( 3L );
+        when( indexReader1.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 1L );
+        when( indexReader2.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 2L );
+        when( indexReader3.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 3L );
 
-        assertEquals( 6, indexReader.countIndexedNodes( 1, "a" ) );
+        assertEquals( 6, indexReader.countIndexedNodes( 1, Values.of( "a" ) ) );
     }
 
     @Test
@@ -185,8 +193,7 @@ public class PartitionedIndexReaderTest
 
     private PartitionedIndexReader createPartitionedReader()
     {
-        return new PartitionedIndexReader( getPartitionSearchers(), indexConfiguration, samplingConfig,
-                taskCoordinator );
+        return new PartitionedIndexReader( getPartitionSearchers(), indexDescriptor, samplingConfig, taskCoordinator );
     }
 
     private List<PartitionSearcher> getPartitionSearchers()

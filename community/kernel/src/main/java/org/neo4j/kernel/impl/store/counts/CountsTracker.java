@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,6 +46,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
@@ -71,26 +71,27 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * The pattern of immutable store files, and rotation strategy, et.c. is defined in the
  * {@code kvstore}-package, see {@link org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile} for a good entry point.
  */
-@Rotation(value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT})
+@Rotation( value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT} )
 public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         implements CountsVisitor.Visitable, CountsAccessor
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
-                                          'S', 't', 'o', 'r', 'e', /**/0, 1, 'V'};
-    @SuppressWarnings("unchecked")
+                                          'S', 't', 'o', 'r', 'e', /**/0, 2, 'V'};
+    @SuppressWarnings( "unchecked" )
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
-    public static final String LEFT = ".a", RIGHT = ".b";
+    public static final String LEFT = ".a";
+    public static final String RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
             File baseFile )
     {
-        this( logProvider, fs, pages, config, baseFile, Clocks.systemClock() );
+        this( logProvider, fs, pages, config, baseFile, Clocks.nanoClock() );
     }
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
-            File baseFile, Clock clock )
+                          File baseFile, SystemNanoClock clock )
     {
         super( fs, pages, baseFile, new RotationMonitor()
         {
@@ -123,7 +124,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
         }, new RotationTimerFactory( clock,
-                config.get( counts_store_rotation_timeout ) ), 16, 16, HEADER_FIELDS );
+                config.get( counts_store_rotation_timeout ).toMillis() ), 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
@@ -190,21 +191,20 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     }
 
     @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId,
-                                                            Register.DoubleLongRegister target )
+    public Register.DoubleLongRegister indexUpdatesAndSize( long indexId, Register.DoubleLongRegister target )
     {
-        return get( indexStatisticsKey( labelId, propertyKeyId ), target );
+        return get( indexStatisticsKey( indexId ), target );
     }
 
     @Override
-    public Register.DoubleLongRegister indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    public Register.DoubleLongRegister indexSample( long indexId, Register.DoubleLongRegister target )
     {
-        return get( indexSampleKey( labelId, propertyKeyId ), target );
+        return get( indexSampleKey( indexId ), target );
     }
 
     public Optional<CountsAccessor.Updater> apply( long txId )
     {
-        return updater( txId ).<CountsAccessor.Updater>map( CountsUpdater::new );
+        return updater( txId ).map( CountsUpdater::new );
     }
 
     public CountsAccessor.IndexStatsUpdater updateIndexCounts()
@@ -297,7 +297,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     {
         private final CountsVisitor visitor;
 
-        public DelegatingVisitor( CountsVisitor visitor )
+        DelegatingVisitor( CountsVisitor visitor )
         {
             this.visitor = visitor;
         }
@@ -309,7 +309,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
             return true;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public void visitMetadata( File path, Headers headers, int entryCount )
         {

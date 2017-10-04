@@ -22,11 +22,14 @@ package org.neo4j.cypher
 import java.io.{File, FileOutputStream}
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -58,7 +61,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
       intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
     } finally {
       graph.shutdown()
-      new File("target/test-data/impermanent-db").deleteAll()
+      new File("target/test-data/test-impermanent-db").deleteAll()
     }
   }
 
@@ -96,10 +99,11 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
   }
 
   private def createDbWithFailedIndex: GraphDatabaseService = {
-    val storeDir = new File("target/test-data/impermanent-db")
+    val storeDir = new File("target/test-data/test-impermanent-db")
     storeDir.deleteAll()
+    graph.shutdown()
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
-    eengine = new ExecutionEngine(graph)
+    eengine = createEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
     val tx = graph.getGraphDatabaseService.beginTx()
@@ -109,14 +113,17 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     } finally {
       tx.close()
     }
+
+    val indexDirectory = NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure( storeDir )
+        .forProvider( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR ).directoryForIndex( 1 )
     graph.shutdown()
 
-    val stream = new FileOutputStream("target/test-data/impermanent-db/schema/index/lucene/1/failure-message")
+    val stream = new FileOutputStream( new File( indexDirectory, "failure-message" ) )
     stream.write(65)
     stream.close()
 
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
-    eengine = new ExecutionEngine(graph)
+    eengine = createEngine(graph)
     graph.getGraphDatabaseService
   }
 }

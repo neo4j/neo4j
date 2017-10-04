@@ -19,11 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.QueryStatistics
-import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_1
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_1.{CompiledRuntimeName, CostBasedPlannerName}
-import org.neo4j.kernel.api.ExecutingQuery
+import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
@@ -44,8 +41,7 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
 
         override def endFailure(query: ExecutingQuery, throwable: Throwable){}
       }
-      val r = new ExecutionResultWrapperFor3_1(actual, CostBasedPlannerName.default, CompiledRuntimeName)
-      apply(r.queryStatistics())
+      apply(actual.queryStatistics())
     }
   }
 
@@ -60,8 +56,10 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
                    labelsRemoved: Int = 0,
                    indexesAdded: Int = 0,
                    indexesRemoved: Int = 0,
-                   constraintsAdded: Int = 0,
-                   constraintsRemoved: Int = 0
+                   uniqueConstraintsAdded: Int = 0,
+                   uniqueConstraintsRemoved: Int = 0,
+                   existenceConstraintsAdded: Int = 0,
+                   existenceConstraintsRemoved: Int = 0
   ) = {
     assertStatsResult(
       nodesCreated,
@@ -73,8 +71,10 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
       labelsRemoved,
       indexesAdded,
       indexesRemoved,
-      constraintsAdded,
-      constraintsRemoved
+      uniqueConstraintsAdded,
+      uniqueConstraintsRemoved,
+      existenceConstraintsAdded,
+      existenceConstraintsRemoved
     )(result)
   }
 
@@ -88,8 +88,10 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
                         labelsRemoved: Int = 0,
                         indexesAdded: Int = 0,
                         indexesRemoved: Int = 0,
-                        constraintsAdded: Int = 0,
-                        constraintsRemoved: Int = 0
+                        uniqueConstraintsAdded: Int = 0,
+                        uniqueConstraintsRemoved: Int = 0,
+                        existenceConstraintsAdded: Int = 0,
+                        existenceConstraintsRemoved: Int = 0
                        ): QueryStatisticsAssertions =
     QueryStatistics(
       nodesCreated,
@@ -101,7 +103,9 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
       labelsRemoved,
       indexesAdded,
       indexesRemoved,
-      constraintsAdded,
-      constraintsRemoved
+      uniqueConstraintsAdded,
+      uniqueConstraintsRemoved,
+      existenceConstraintsAdded,
+      existenceConstraintsRemoved
     )
 }

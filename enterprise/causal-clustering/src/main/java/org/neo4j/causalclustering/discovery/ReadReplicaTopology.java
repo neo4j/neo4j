@@ -19,22 +19,32 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Set;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 
-import static java.util.Collections.emptySet;
+import org.neo4j.causalclustering.identity.MemberId;
 
-public class ReadReplicaTopology
+import static java.util.Collections.emptyMap;
+
+public class ReadReplicaTopology implements Topology<ReadReplicaInfo>
 {
-    static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptySet() );
+    static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
 
-    private final Set<ReadReplicaAddresses> readReplicaMembers;
+    private final Map<MemberId,ReadReplicaInfo> readReplicaMembers;
 
-    public ReadReplicaTopology( Set<ReadReplicaAddresses> readReplicaMembers )
+    public ReadReplicaTopology( Map<MemberId,ReadReplicaInfo> readReplicaMembers )
     {
         this.readReplicaMembers = readReplicaMembers;
     }
 
-    public Set<ReadReplicaAddresses> members()
+    public Collection<ReadReplicaInfo> allMemberInfo()
+    {
+        return readReplicaMembers.values();
+    }
+
+    @Override
+    public Map<MemberId, ReadReplicaInfo> members()
     {
         return readReplicaMembers;
     }
@@ -42,6 +52,11 @@ public class ReadReplicaTopology
     @Override
     public String toString()
     {
-        return String.format( "ReadReplicaTopology{readReplicas=%s}", readReplicaMembers );
+        return String.format( "{readReplicas=%s}", readReplicaMembers );
+    }
+
+    public Optional<MemberId> anyReadReplicaMemberId()
+    {
+        return readReplicaMembers.keySet().stream().findAny();
     }
 }

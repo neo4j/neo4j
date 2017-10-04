@@ -37,7 +37,7 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
 {
     private final EntryUpdater<CountsKey> updater;
 
-    public CountsUpdater( EntryUpdater<CountsKey> updater )
+    CountsUpdater( EntryUpdater<CountsKey> updater )
     {
         this.updater = updater;
     }
@@ -94,14 +94,14 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
      *  u - number of updates
      *  s - size of index
      * </pre>
-     * For key format, see {@link KeyFormat#visitIndexStatistics(int, int, long, long)}
+     * For key format, see {@link KeyFormat#visitIndexStatistics(long, long, long)}
      */
     @Override
-    public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size )
+    public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
     {
         try
         {
-            updater.apply( indexStatisticsKey( labelId, propertyKeyId ), new Write( updates, size ) );
+            updater.apply( indexStatisticsKey( indexId ), new Write( updates, size ) );
         }
         catch ( IOException e )
         {
@@ -117,14 +117,14 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
      *  u - number of unique values
      *  s - size of index
      * </pre>
-     * For key format, see {@link KeyFormat#visitIndexSample(int, int, long, long)}
+     * For key format, see {@link KeyFormat#visitIndexSample(long, long, long)}
      */
     @Override
-    public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    public void replaceIndexSample( long indexId, long unique, long size )
     {
         try
         {
-            updater.apply( indexSampleKey( labelId, propertyKeyId ), new Write( unique, size ) );
+            updater.apply( indexSampleKey( indexId ), new Write( unique, size ) );
         }
         catch ( IOException e )
         {
@@ -133,15 +133,15 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
     }
 
     /**
-     * For key format, see {@link KeyFormat#visitIndexStatistics(int, int, long, long)}
-     * For value format, see {@link CountsUpdater#replaceIndexUpdateAndSize(int, int, long, long)}
+     * For key format, see {@link KeyFormat#visitIndexStatistics(long, long, long)}
+     * For value format, see {@link CountsUpdater#replaceIndexUpdateAndSize(long, long, long)}
      */
     @Override
-    public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
+    public void incrementIndexUpdates( long indexId, long delta )
     {
         try
         {
-            updater.apply( indexStatisticsKey( labelId, propertyKeyId ), incrementFirstBy( delta ) );
+            updater.apply( indexStatisticsKey( indexId ), incrementFirstBy( delta ) );
         }
         catch ( IOException e )
         {

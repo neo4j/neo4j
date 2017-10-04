@@ -41,7 +41,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseSt
 public interface ClusterContext
     extends LoggingContext, TimeoutsContext, ConfigurationContext
 {
-    public static final int NO_ELECTOR_VERSION = -1;
+    int NO_ELECTOR_VERSION = -1;
 
     // Cluster API
     void addClusterListener( ClusterListener listener );
@@ -53,23 +53,23 @@ public interface ClusterContext
 
     void joining( String name, Iterable<URI> instanceList );
 
-    void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles );
+    void acquiredConfiguration( Map<InstanceId, URI> memberList, Map<String, InstanceId> roles );
 
     void joined();
 
     void left();
 
-    void joined( final InstanceId instanceId, final URI atURI );
+    void joined( InstanceId instanceId, URI atURI );
 
-    void left( final InstanceId node );
+    void left( InstanceId node );
 
     @Deprecated
-    void elected( final String roleName, final InstanceId instanceId );
+    void elected( String roleName, InstanceId instanceId );
 
     void elected( String roleWon, InstanceId winner, InstanceId elector, long version );
 
     @Deprecated
-    void unelected( final String roleName, final InstanceId instanceId );
+    void unelected( String roleName, InstanceId instanceId );
 
     void unelected( String roleLost, InstanceId loser, InstanceId elector, long version );
 

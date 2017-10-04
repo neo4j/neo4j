@@ -27,20 +27,21 @@ import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
 /**
  * Read only schema index
  */
 public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<LuceneSchemaIndex> implements SchemaIndex
 {
-    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration indexConfig,
+    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, ReadOnlyIndexPartitionFactory readOnlyIndexPartitionFactory )
     {
-        super( new LuceneSchemaIndex( indexStorage, indexConfig, samplingConfig, readOnlyIndexPartitionFactory ) );
+        super( new LuceneSchemaIndex( indexStorage, descriptor, samplingConfig, readOnlyIndexPartitionFactory ) );
     }
 
     @Override
@@ -55,24 +56,30 @@ public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<L
         return luceneIndex.getIndexReader();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
-            throws IOException, IndexEntryConflictException
+    public IndexDescriptor getDescriptor()
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId );
+        return luceneIndex.getDescriptor();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId, updatedPropertyValues );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
+            throws IOException, IndexEntryConflictException
+    {
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedValueTuples );
     }
 
     /**

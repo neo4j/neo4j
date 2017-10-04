@@ -25,14 +25,19 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
  * Serves as executor of transactions, i.e. the visit... methods and will invoke the other lifecycle methods like {@link
- * BatchTransactionApplier#startTx(TransactionToApply, LockGroup)}, {@link TransactionApplier#close()} ()} a.s.o
+ * BatchTransactionApplier#startTx(CommandsToApply, LockGroup)}, {@link TransactionApplier#close()} ()} a.s.o
  * correctly. Note that {@link BatchTransactionApplier#close()} is also called at the end.
  */
 public class CommandHandlerContract
 {
+    private CommandHandlerContract()
+    {
+    }
+
     @FunctionalInterface
     public interface ApplyFunction
     {

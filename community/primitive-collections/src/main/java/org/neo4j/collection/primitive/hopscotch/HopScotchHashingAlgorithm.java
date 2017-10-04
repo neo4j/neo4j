@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.hashing.HashFunction;
+
 import static java.lang.Long.numberOfLeadingZeros;
 import static java.lang.Long.numberOfTrailingZeros;
 
@@ -62,6 +64,10 @@ public class HopScotchHashingAlgorithm
      */
     public static final int DEFAULT_H = 32;
 
+    private HopScotchHashingAlgorithm()
+    {
+    }
+
     public static <VALUE> VALUE get( Table<VALUE> table, Monitor monitor, HashFunction hashFunction, long key )
     {
         int tableMask = table.mask();
@@ -76,12 +82,12 @@ public class HopScotchHashingAlgorithm
         long hopBits = table.hopBits( index );
         while ( hopBits > 0 )
         {
-            int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits )+1, tableMask );
+            int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits ) + 1, tableMask );
             if ( table.key( hopIndex ) == key )
             {   // There it is
                 return table.value( hopIndex );
             }
-            hopBits &= hopBits-1;
+            hopBits &= hopBits - 1;
         }
 
         return null;
@@ -104,14 +110,14 @@ public class HopScotchHashingAlgorithm
         while ( hopBits > 0 )
         {
             int hd = numberOfTrailingZeros( hopBits );
-            int hopIndex = nextIndex( index, hd+1, tableMask );
+            int hopIndex = nextIndex( index, hd + 1, tableMask );
             if ( table.key( hopIndex ) == key )
             {   // there it is
                 freedIndex = hopIndex;
                 result = table.remove( hopIndex );
                 table.removeHopBit( index, hd );
             }
-            hopBits &= hopBits-1;
+            hopBits &= hopBits - 1;
         }
 
         // reversed hop-scotching, i.e. pull in the most distant neighbor, iteratively as long as the
@@ -121,8 +127,8 @@ public class HopScotchHashingAlgorithm
             long freedHopBits = table.hopBits( freedIndex );
             if ( freedHopBits > 0 )
             {   // It's got a neighbor, go ahead and move it here
-                int hd = 63-numberOfLeadingZeros( freedHopBits );
-                int candidateIndex = nextIndex( freedIndex, hd+1, tableMask );
+                int hd = 63 - numberOfLeadingZeros( freedHopBits );
+                int candidateIndex = nextIndex( freedIndex, hd + 1, tableMask );
                 // move key/value
                 long candidateKey = table.move( candidateIndex, freedIndex );
                 // remove that hop bit, since that one is no longer a neighbor, it's "the one" at the index
@@ -163,12 +169,12 @@ public class HopScotchHashingAlgorithm
             long hopBits = table.hopBits( index );
             while ( hopBits > 0 )
             {
-                int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits )+1, tableMask );
+                int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits ) + 1, tableMask );
                 if ( table.key( hopIndex ) == key )
                 {
                     return table.putValue( hopIndex, value );
                 }
-                hopBits &= hopBits-1;
+                hopBits &= hopBits - 1;
             }
         }
 
@@ -217,7 +223,7 @@ public class HopScotchHashingAlgorithm
         {   // grab a closer index and see which of its neighbors is OK to move further away,
             // so that there will be a free space to place the new value. I.e. move the free space closer
             // and some close neighbors a bit further away (although never outside its neighborhood)
-            int neighborIndex = nextIndex( freeIndex, -(h-1), tableMask ); // hopscotch hashing says to try h-1 entries closer
+            int neighborIndex = nextIndex( freeIndex, -(h - 1), tableMask ); // hopscotch hashing says to try h-1 entries closer
 
             boolean swapped = false;
             for ( int d = 0; d < (h >> 1) && !swapped; d++ )
@@ -227,16 +233,16 @@ public class HopScotchHashingAlgorithm
                 while ( neighborHopBits > 0 && !swapped )
                 {
                     int hd = numberOfTrailingZeros( neighborHopBits );
-                    if ( hd+d >= h-1 )
+                    if ( hd + d >= h - 1 )
                     {   // that would be too far
                         break;
                     }
-                    neighborHopBits &= neighborHopBits-1;
-                    int candidateIndex = nextIndex( neighborIndex, hd+1, tableMask );
+                    neighborHopBits &= neighborHopBits - 1;
+                    int candidateIndex = nextIndex( neighborIndex, hd + 1, tableMask );
 
                     // OK, here's a neighbor, let's examine it's neighbors (candidates to move)
                     //  - move the candidate entry (incl. updating its hop bits) to the free index
-                    int distance = (freeIndex-candidateIndex)&tableMask;
+                    int distance = (freeIndex - candidateIndex) & tableMask;
                     long candidateKey = table.move( candidateIndex, freeIndex );
                     //  - update the neighbor entry with the move of the candidate entry
                     table.moveHopBit( neighborIndex, hd, distance );
@@ -269,12 +275,12 @@ public class HopScotchHashingAlgorithm
 
     private static int nextIndex( int index, int delta, int mask )
     {
-        return (index+delta)&mask;
+        return (index + delta) & mask;
     }
 
     private static int indexOf( HashFunction hashFunction, long key, int tableMask )
     {
-        return hashFunction.hash( key ) & tableMask;
+        return hashFunction.hashSingleValueToInt( key ) & tableMask;
     }
 
     private static <VALUE> void growTable( Table<VALUE> oldTable, Monitor monitor,
@@ -328,7 +334,7 @@ public class HopScotchHashingAlgorithm
 
         boolean pulledToFreeIndex( int intendedIndex, long newHopBits, long key, int fromIndex, int toIndex );
 
-        public abstract static class Adapter implements Monitor
+        abstract class Adapter implements Monitor
         {
             @Override
             public boolean placedAtFreedIndex( int intendedIndex, long newHopBits, long key, int actualIndex )
@@ -370,50 +376,17 @@ public class HopScotchHashingAlgorithm
         }
     }
 
-    public static final Monitor NO_MONITOR = new Monitor.Adapter() { /*No additional logic*/ };
-
-    public interface HashFunction
+    public static final Monitor NO_MONITOR = new Monitor.Adapter()
     {
-        int hash( long value );
-    }
-
-    /**
-     * Same hash function as that used by the standard library hash collections. It generates a hash by splitting the
-     * input value into segments, and then re-distributing those segments, so the end result is effectively a striped
-     * and then jumbled version of the input data. For randomly distributed keys, this has a good chance at generating
-     * an even hash distribution over the full hash space.
-     *
-     * It performs exceptionally poorly for sequences of numbers, as the sequence increments all end up in the same
-     * stripe, generating hash values that will end up in the same buckets in collections.
-     */
-    public static final HashFunction JUL_HASHING = new HashFunction()
-    {
-        @Override
-        public int hash( long value )
-        {
-            int h = (int) ((value >>> 32) ^ value);
-            h ^= (h >>> 20) ^ (h >>> 12);
-            return h ^ (h >>> 7) ^ (h >>> 4);
-        }
+        /*No additional logic*/
     };
 
     /**
-     * The default hash function is based on a pseudo-random number generator, which uses the input value as a seed
-     * to the generator. This is very fast, and performs well for most input data. However, it is not guaranteed to
-     * generate a superb distribution, only a "decent" one.
+     * The default hash function for primitive collections. This hash function is quite fast but has mediocre
+     * statistics.
+     * @see org.neo4j.hashing.HashFunction#xorShift32()
      */
-    public static final HashFunction DEFAULT_HASHING = new HashFunction()
-    {
-        @Override
-        public int hash( long value )
-        {
-            value ^= (value << 21);
-            value ^= (value >>> 35);
-            value ^= (value << 4);
-
-            return (int) ((value >>> 32) ^ value);
-        }
-    };
+    static final HashFunction DEFAULT_HASHING = HashFunction.xorShift32();
 
     public interface ResizeMonitor<VALUE>
     {

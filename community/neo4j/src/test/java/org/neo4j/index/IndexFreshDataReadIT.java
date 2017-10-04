@@ -86,7 +86,7 @@ public class IndexFreshDataReadIT
     {
         private final String name;
 
-        CreateNamedNodeTask(String name)
+        CreateNamedNodeTask( String name )
         {
             this.name = name;
         }

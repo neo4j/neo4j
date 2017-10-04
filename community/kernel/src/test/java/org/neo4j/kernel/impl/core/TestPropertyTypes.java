@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestPropertyTypes extends AbstractNeo4jTestCase
 {
-    private Node node1 = null;
+    private Node node1;
 
     @Before
     public void createInitialNode()

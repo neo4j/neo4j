@@ -19,30 +19,35 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import java.io.PrintStream;
 
 public class UnsatisfiedDependencyStrategies
 {
+    private UnsatisfiedDependencyStrategies()
+    {
+    }
+
     public static UnsatisfiedDependencyStrategy fail()
     {
-        return new UnsatisfiedDependencyStrategy()
+        return ( kernelExtensionFactory, e ) ->
         {
-            @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
-            {
-                throw e;
-            }
+            throw e;
         };
     }
 
     public static UnsatisfiedDependencyStrategy ignore()
     {
-        return new UnsatisfiedDependencyStrategy()
+        return ( kernelExtensionFactory, e ) ->
+        {   // just ignore
+        };
+    }
+
+    // Perhaps not used, but very useful for debugging kernel extension loading problems
+    public static UnsatisfiedDependencyStrategy print( PrintStream out )
+    {
+        return ( kernelExtensionFactory, e ) ->
         {
-            @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
-            {
-            }
+            out.println( kernelExtensionFactory + " missing dep " + e );
         };
     }
 }

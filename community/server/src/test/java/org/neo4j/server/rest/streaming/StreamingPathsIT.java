@@ -26,7 +26,8 @@ import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 public class StreamingPathsIT extends PathsIT
 {
     @Override
-    public RESTRequestGenerator gen() {
+    public RESTRequestGenerator gen()
+    {
         return super.gen().withHeader(StreamingJsonFormat.STREAM_HEADER, "true");
     }
 }

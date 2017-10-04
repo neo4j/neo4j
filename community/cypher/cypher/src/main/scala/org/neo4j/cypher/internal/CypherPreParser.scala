@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_1.parser.Base
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.parser.Base
 import org.parboiled.scala._
 
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
@@ -38,10 +38,10 @@ case object CypherPreParser extends Parser with Base {
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
-  def Cypher = rule("CYPHER options") {
+  def Cypher: Rule1[ConfigurationOptions] = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption | RuntimeOption | StrategyOption, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
@@ -52,26 +52,31 @@ case object CypherPreParser extends Parser with Base {
     | option("planner", "dp") ~ push(DPPlannerOption)
   )
 
-  def RuntimeOption = rule("runtime option")(
-        option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
-      | option("runtime", "compiledExperimentalFeatureNotSupportedForProductionUse") ~ push(CompiledRuntimeOption)
+  def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(
+    option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
+      | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
+      | option("runtime", "slotted") ~ push(SlottedRuntimeOption)
   )
 
-  def StrategyOption = rule("strategy option")(
+  def StrategyOption: Rule1[UpdateStrategyOption] = rule("strategy option")(
     option("updateStrategy", "eager") ~ push(EagerOption)
   )
 
-  def VersionNumber = rule("Version") {
+  def VersionNumber: Rule1[VersionOption] = rule("Version") {
     group(Digits ~ "." ~ Digits) ~> VersionOption
   }
 
-  def Digits = oneOrMore("0" - "9")
+  def DebugFlag: Rule1[DebugOption] = rule("debug option") {
+    keyword("debug") ~~ "=" ~~ SymbolicNameString ~~> DebugOption
+  }
 
-  def Profile = keyword("PROFILE") ~ push(ProfileOption)
+  def Digits: Rule0 = oneOrMore("0" - "9")
 
-  def Explain = keyword("EXPLAIN") ~ push(ExplainOption)
+  def Profile: Rule1[ExecutionModePreParserOption] = keyword("PROFILE") ~ push(ProfileOption)
+
+  def Explain: Rule1[ExecutionModePreParserOption] = keyword("EXPLAIN") ~ push(ExplainOption)
 
   def option(key: String, value: String): Rule0 = {
-    keyword(key) ~ WS ~ "=" ~ WS ~keyword(value)
+    keyword(key) ~~ "=" ~~ keyword(value)
   }
 }

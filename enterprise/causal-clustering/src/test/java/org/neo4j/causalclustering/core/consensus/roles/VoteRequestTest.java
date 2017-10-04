@@ -45,11 +45,12 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 /**
  * Most behaviour for handling vote requests is identical for all roles.
  */
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class VoteRequestTest
 {
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection data() {
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection data()
+    {
         return asList( Role.values() );
     }
 

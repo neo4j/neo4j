@@ -23,48 +23,29 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.log.FilteringIOCursor;
-import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
-import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.tools.dump.TransactionLogAnalyzer.Monitor;
 import org.neo4j.tools.dump.inconsistency.ReportInconsistencies;
-import org.neo4j.tools.dump.log.TransactionLogEntryCursor;
-
 import static java.util.TimeZone.getTimeZone;
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 /**
  * Tool to represent logical logs in readable format for further analysis.
@@ -87,79 +68,35 @@ public class DumpLogicalLog
             Predicate<LogEntry[]> filter, Function<LogEntry,String> serializer,
             InvalidLogEntryHandler invalidLogEntryHandler ) throws IOException
     {
-        File file = new File( filenameOrDirectory );
-        printFile( file, out );
-        File firstFile;
-        LogVersionBridge bridge;
-        if ( file.isDirectory() )
+        TransactionLogAnalyzer.analyze( fileSystem, new File( filenameOrDirectory ), invalidLogEntryHandler, new Monitor()
         {
-            // Use natural log version bridging if a directory is supplied
-            final PhysicalLogFiles logFiles = new PhysicalLogFiles( file, fileSystem );
-            bridge = new ReaderLogVersionBridge( fileSystem, logFiles )
+            @Override
+            public void logFile( File file, long logVersion )
             {
-                @Override
-                public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
+                out.println( "=== " + file.getAbsolutePath() + " ===" );
+            }
+
+            @Override
+            public void transaction( LogEntry[] transactionEntries )
+            {
+                if ( filter == null || filter.test( transactionEntries ) )
                 {
-                    LogVersionedStoreChannel next = super.next( channel );
-                    if ( next != channel )
+                    for ( LogEntry entry : transactionEntries )
                     {
-                        printFile( logFiles.getLogFileForVersion( next.getVersion() ), out );
+                        out.println( serializer.apply( entry ) );
                     }
-                    return next;
-                }
-            };
-            firstFile = logFiles.getLogFileForVersion( logFiles.getLowestLogVersion() );
-        }
-        else
-        {
-            // Use no bridging, simple reading this single log file if a file is supplied
-            firstFile = file;
-            bridge = NO_MORE_CHANNELS;
-        }
-
-        StoreChannel fileChannel = fileSystem.open( firstFile, "r" );
-        ByteBuffer buffer = ByteBuffer.allocateDirect( LOG_HEADER_SIZE );
-
-        LogHeader logHeader;
-        try
-        {
-            logHeader = readLogHeader( buffer, fileChannel, false, firstFile );
-        }
-        catch ( IOException ex )
-        {
-            out.println( "Unable to read timestamp information, no records in logical log." );
-            out.println( ex.getMessage() );
-            fileChannel.close();
-            throw ex;
-        }
-        out.println( "Logical log format: " + logHeader.logFormatVersion + " version: " + logHeader.logVersion +
-                " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
-
-        PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
-                fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-        ReadableClosablePositionAwareChannel logChannel = new ReadAheadLogChannel( channel, bridge,
-                DEFAULT_READ_AHEAD_SIZE );
-        LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
-
-        IOCursor<LogEntry> entryCursor = new LogEntryCursor( entryReader, logChannel );
-        TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
-        try ( IOCursor<LogEntry[]> cursor = filter == null ? transactionCursor
-                                                           : new FilteringIOCursor<>( transactionCursor, filter ) )
-        {
-            while ( cursor.next() )
-            {
-                for ( LogEntry entry : cursor.get() )
-                {
-                    out.println( serializer.apply( entry ) );
                 }
             }
-        }
-    }
 
-    private static void printFile( File file, PrintStream out )
-    {
-        out.println( "=== " + file.getAbsolutePath() + " ===" );
+            @Override
+            public void checkpoint( CheckPoint checkpoint, LogPosition checkpointEntryPosition )
+            {
+                if ( filter == null || filter.test( new LogEntry[] {checkpoint} ) )
+                {
+                    out.println( serializer.apply( checkpoint ) );
+                }
+            }
+        } );
     }
 
     private static class TransactionRegexCriteria implements Predicate<LogEntry[]>
@@ -190,7 +127,7 @@ public class DumpLogicalLog
     public static class ConsistencyCheckOutputCriteria implements Predicate<LogEntry[]>, Function<LogEntry,String>
     {
         private final TimeZone timeZone;
-        private ReportInconsistencies inconsistencies;
+        private final ReportInconsistencies inconsistencies;
 
         public ConsistencyCheckOutputCriteria( String ccFile, TimeZone timeZone ) throws IOException
         {
@@ -286,12 +223,13 @@ public class DumpLogicalLog
         Predicate<LogEntry[]> filter = parseFilter( arguments, timeZone );
         Function<LogEntry,String> serializer = parseSerializer( filter, timeZone );
         Function<PrintStream,InvalidLogEntryHandler> invalidLogEntryHandler = parseInvalidLogEntryHandler( arguments );
-        try ( Printer printer = getPrinter( arguments ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              Printer printer = getPrinter( arguments ) )
         {
             for ( String fileAsString : arguments.orphans() )
             {
                 PrintStream out = printer.getFor( fileAsString );
-                new DumpLogicalLog( new DefaultFileSystemAbstraction() ).dump( fileAsString, out, filter, serializer,
+                new DumpLogicalLog( fileSystem ).dump( fileAsString, out, filter, serializer,
                         invalidLogEntryHandler.apply( out ) );
             }
         }
@@ -301,7 +239,7 @@ public class DumpLogicalLog
     {
         if ( arguments.getBoolean( LENIENT ) )
         {
-            return out -> new LenientInvalidLogEntryHandler( out );
+            return LenientInvalidLogEntryHandler::new;
         }
         return out -> InvalidLogEntryHandler.STRICT;
     }

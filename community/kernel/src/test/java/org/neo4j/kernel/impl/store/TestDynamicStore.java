@@ -33,9 +33,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -50,7 +48,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class TestDynamicStore
 {
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
@@ -85,7 +83,7 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
+        return Config.defaults();
     }
 
     @Test

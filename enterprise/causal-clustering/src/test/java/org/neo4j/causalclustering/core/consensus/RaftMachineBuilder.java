@@ -62,7 +62,7 @@ public class RaftMachineBuilder
             getInstance() );
 
     private Inbound<RaftMessages.RaftMessage> inbound = handler -> {};
-    private Outbound<MemberId, RaftMessages.RaftMessage> outbound = ( to, message ) -> {};
+    private Outbound<MemberId, RaftMessages.RaftMessage> outbound = ( to, message, block ) -> {};
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clocks.systemClock();
@@ -78,14 +78,13 @@ public class RaftMachineBuilder
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
     private CommitListener commitListener = commitIndex -> {};
-    private final InFlightMap<RaftLogEntry> inFlightMap;
+    private InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
 
     public RaftMachineBuilder( MemberId member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
         this.member = member;
         this.expectedClusterSize = expectedClusterSize;
         this.memberSetBuilder = memberSetBuilder;
-        inFlightMap = new InFlightMap<>();
     }
 
     public RaftMachine build()
@@ -101,7 +100,8 @@ public class RaftMachineBuilder
         RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
                 membershipManager, logShipping, inFlightMap, false, monitors, clock );
-        inbound.registerHandler( ( incomingMessage ) -> {
+        inbound.registerHandler( incomingMessage ->
+        {
             try
             {
                 ConsensusOutcome outcome = raft.handle( incomingMessage );
@@ -158,6 +158,12 @@ public class RaftMachineBuilder
     public RaftMachineBuilder raftLog( RaftLog raftLog )
     {
         this.raftLog = raftLog;
+        return this;
+    }
+
+    public RaftMachineBuilder inFlightMap( InFlightMap<RaftLogEntry> inFlightMap )
+    {
+        this.inFlightMap = inFlightMap;
         return this;
     }
 

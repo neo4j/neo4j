@@ -26,40 +26,23 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 class TraversalBranchImpl implements TraversalBranch
 {
-    private static final Iterator<Relationship> PRUNED_ITERATOR = new Iterator<Relationship>()
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return false;
-        }
-
-        @Override
-        public Relationship next()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
-    };
-
     final TraversalBranch parent;
     private final Relationship howIGotHere;
     private final Node source;
-    private Iterator<Relationship> relationships;
+    private ResourceIterator<Relationship> relationships;
     // high bit here [cidd,dddd][dddd,dddd][dddd,dddd][dddd,dddd]
     private int depthAndEvaluationBits;
     private int expandedCount;
@@ -105,14 +88,13 @@ class TraversalBranchImpl implements TraversalBranch
         }
         else
         {
-            relationships = PRUNED_ITERATOR;
+            resetRelationships();
         }
     }
 
-    protected Iterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
+    protected ResourceIterator expandRelationshipsWithoutChecks( PathExpander expander )
     {
-        Iterable<Relationship> iterable = expander.expand( this, BranchState.NO_STATE );
-        return iterable.iterator();
+        return asResourceIterator( expander.expand( this, BranchState.NO_STATE ).iterator() );
     }
 
     protected boolean hasExpandedRelationships()
@@ -125,14 +107,19 @@ class TraversalBranchImpl implements TraversalBranch
         setEvaluation( context.evaluate( this, null ) );
     }
 
+    @Override
     public void initialize( final PathExpander expander, TraversalContext metadata )
     {
         evaluate( metadata );
-        expandRelationships( expander );
     }
 
+    @Override
     public TraversalBranch next( PathExpander expander, TraversalContext context )
     {
+        if ( relationships == null )
+        {
+            expandRelationships( expander );
+        }
         while ( relationships.hasNext() )
         {
             Relationship relationship = relationships.next();
@@ -156,8 +143,7 @@ class TraversalBranchImpl implements TraversalBranch
                 context.unnecessaryRelationshipTraversed();
             }
         }
-        // Just to help GC
-        relationships = PRUNED_ITERATOR;
+        resetRelationships();
         return null;
     }
 
@@ -169,19 +155,31 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public void prune()
     {
-        relationships = PRUNED_ITERATOR;
+        resetRelationships();
     }
 
+    private void resetRelationships()
+    {
+        if ( relationships != null )
+        {
+            relationships.close();
+        }
+        relationships = Iterators.emptyResourceIterator();
+    }
+
+    @Override
     public int length()
     {
-        return depthAndEvaluationBits&0x3FFFFFFF;
+        return depthAndEvaluationBits & 0x3FFFFFFF;
     }
 
+    @Override
     public TraversalBranch parent()
     {
         return this.parent;
     }
 
+    @Override
     public int expanded()
     {
         return expandedCount;
@@ -205,6 +203,7 @@ class TraversalBranchImpl implements TraversalBranch
         setEvaluation( Evaluation.of( includes() & eval.includes(), continues() & eval.continues() ) );
     }
 
+    @Override
     public Node startNode()
     {
         return findStartBranch().endNode();
@@ -220,16 +219,19 @@ class TraversalBranchImpl implements TraversalBranch
         return branch;
     }
 
+    @Override
     public Node endNode()
     {
         return source;
     }
 
+    @Override
     public Relationship lastRelationship()
     {
         return howIGotHere;
     }
 
+    @Override
     public Iterable<Relationship> relationships()
     {
         LinkedList<Relationship> relationships = new LinkedList<Relationship>();
@@ -245,32 +247,26 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
-        return new Iterable<Relationship>()
+        return () -> new PrefetchingIterator<Relationship>()
         {
-            @Override
-            public Iterator<Relationship> iterator()
-            {
-                return new PrefetchingIterator<Relationship>()
-                {
-                    private TraversalBranch branch = TraversalBranchImpl.this;
+            private TraversalBranch branch = TraversalBranchImpl.this;
 
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        try
-                        {
-                            return branch != null ? branch.lastRelationship() : null;
-                        }
-                        finally
-                        {
-                            branch = branch != null ? branch.parent() : null;
-                        }
-                    }
-                };
+            @Override
+            protected Relationship fetchNextOrNull()
+            {
+                try
+                {
+                    return branch != null ? branch.lastRelationship() : null;
+                }
+                finally
+                {
+                    branch = branch != null ? branch.parent() : null;
+                }
             }
         };
     }
 
+    @Override
     public Iterable<Node> nodes()
     {
         LinkedList<Node> nodes = new LinkedList<Node>();
@@ -287,32 +283,26 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return new Iterable<Node>()
+        return () -> new PrefetchingIterator<Node>()
         {
-            @Override
-            public Iterator<Node> iterator()
-            {
-                return new PrefetchingIterator<Node>()
-                {
-                    private TraversalBranch branch = TraversalBranchImpl.this;
+            private TraversalBranch branch = TraversalBranchImpl.this;
 
-                    @Override
-                    protected Node fetchNextOrNull()
-                    {
-                        try
-                        {
-                            return branch.length() >= 0 ? branch.endNode() : null;
-                        }
-                        finally
-                        {
-                            branch = branch.parent();
-                        }
-                    }
-                };
+            @Override
+            protected Node fetchNextOrNull()
+            {
+                try
+                {
+                    return branch.length() >= 0 ? branch.endNode() : null;
+                }
+                finally
+                {
+                    branch = branch.parent();
+                }
             }
         };
     }
 
+    @Override
     public Iterator<PropertyContainer> iterator()
     {
         LinkedList<PropertyContainer> entities = new LinkedList<PropertyContainer>();
@@ -335,7 +325,7 @@ class TraversalBranchImpl implements TraversalBranch
         while ( branch.length() > 0 )
         {
             Relationship relationship = branch.lastRelationship();
-            hashCode = 31*hashCode + relationship.hashCode();
+            hashCode = 31 * hashCode + relationship.hashCode();
             branch = branch.parent();
         }
         if ( hashCode == 1 )
@@ -348,7 +338,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj == this)
+        if ( obj == this )
         {
             return true;
         }

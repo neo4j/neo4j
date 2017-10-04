@@ -57,55 +57,62 @@ public class CypherResultRepresentation extends MappingRepresentation
         serializer.putList( "columns", columns );
         serializer.putList( "data", resultRepresentation );
 
-        if (statsRepresentation != null)
+        if ( statsRepresentation != null )
+        {
             serializer.putMapping( "stats", statsRepresentation );
-        if (plan != null)
+        }
+        if ( plan != null )
+        {
             serializer.putMapping( "plan", plan );
+        }
     }
 
     private ListRepresentation createResultRepresentation( Result executionResult )
     {
         final List<String> columns = executionResult.columns();
         Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<>( loop( executionResult ) );
-        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner) {
+        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>( inner )
+        {
 
             @Override
-            protected Representation underlyingObjectToObject(final Map<String, Object> row) {
-                return new ListRepresentation("row",
-                 new IterableWrapper<Representation,String>(columns) {
+            protected Representation underlyingObjectToObject( final Map<String,Object> row )
+            {
+                return new ListRepresentation( "row", new IterableWrapper<Representation,String>( columns )
+                {
 
-                     @Override
-                     protected Representation underlyingObjectToObject(String column) {
-                         return getRepresentation( row.get( column ) );
-                     }
-                 });
+                    @Override
+                    protected Representation underlyingObjectToObject( String column )
+                    {
+                        return getRepresentation( row.get( column ) );
+                    }
+                } );
             }
-        });
+        } );
     }
 
     private Representation getRepresentation( Object r )
     {
-        if( r == null )
+        if ( r == null )
         {
             return ValueRepresentation.string( null );
         }
 
         if ( r instanceof Path )
         {
-            return new PathRepresentation<>((Path) r );
+            return new PathRepresentation<>( (Path) r );
         }
 
-        if(r instanceof Iterable)
+        if ( r instanceof Iterable )
         {
             return handleIterable( (Iterable) r );
         }
 
-        if ( r instanceof Node)
+        if ( r instanceof Node )
         {
             return new NodeRepresentation( (Node) r );
         }
 
-        if ( r instanceof Relationship)
+        if ( r instanceof Relationship )
         {
             return new RelationshipRepresentation( (Relationship) r );
         }
@@ -113,7 +120,8 @@ public class CypherResultRepresentation extends MappingRepresentation
         return REPRESENTATION_DISPATCHER.dispatch( r, "" );
     }
 
-    private Representation handleIterable( Iterable data ) {
+    private Representation handleIterable( Iterable data )
+    {
         final List<Representation> results = new ArrayList<>();
         for ( final Object value : data )
         {
@@ -128,7 +136,9 @@ public class CypherResultRepresentation extends MappingRepresentation
     private RepresentationType getType( List<Representation> representations )
     {
         if ( representations == null || representations.isEmpty() )
+        {
             return RepresentationType.STRING;
+        }
         return representations.get( 0 ).getRepresentationType();
     }
 

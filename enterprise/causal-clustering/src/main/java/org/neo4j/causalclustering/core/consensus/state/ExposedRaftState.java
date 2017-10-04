@@ -25,6 +25,8 @@ import org.neo4j.causalclustering.identity.MemberId;
 
 public interface ExposedRaftState
 {
+    long lastLogIndexBeforeWeBecameLeader();
+
     long leaderCommit();
 
     long commitIndex();

@@ -26,6 +26,7 @@ import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Context;
@@ -33,11 +34,11 @@ import org.neo4j.procedure.Context;
 /**
  * Injects annotated fields with appropriate values.
  */
-public class FieldInjections
+class FieldInjections
 {
     private final ComponentRegistry components;
 
-    public FieldInjections( ComponentRegistry components )
+    FieldInjections( ComponentRegistry components )
     {
         this.components = components;
     }
@@ -45,13 +46,13 @@ public class FieldInjections
     /**
      * On calling apply, injects the `value` for the field `field` on the provided `object`.
      */
-    public static class FieldSetter
+    static class FieldSetter
     {
         private final Field field;
         private final MethodHandle setter;
         private final ComponentRegistry.Provider<?> provider;
 
-        public FieldSetter( Field field, MethodHandle setter, ComponentRegistry.Provider<?> provider )
+        FieldSetter( Field field, MethodHandle setter, ComponentRegistry.Provider<?> provider )
         {
             this.field = field;
             this.setter = setter;
@@ -79,7 +80,7 @@ public class FieldInjections
      * @return A list of `FieldSetters`
      * @throws ProcedureException if the type of the injected field does not match what has been registered.
      */
-    public List<FieldSetter> setters( Class<?> cls ) throws ProcedureException
+    List<FieldSetter> setters( Class<?> cls ) throws ProcedureException
     {
         List<FieldSetter> setters = new LinkedList<>();
         Class<?> currentClass = cls;
@@ -89,13 +90,13 @@ public class FieldInjections
             for ( Field field : currentClass.getDeclaredFields() )
             {
                 //ignore synthetic fields
-                if (field.isSynthetic())
+                if ( field.isSynthetic() )
                 {
                     continue;
                 }
                 if ( Modifier.isStatic( field.getModifiers() ) )
                 {
-                    if( field.isAnnotationPresent( Context.class ))
+                    if ( field.isAnnotationPresent( Context.class ) )
                     {
                         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                                  "The field `%s` in the class named `%s` is annotated as a @Context field,%n" +
@@ -109,7 +110,8 @@ public class FieldInjections
                 assertValidForInjection( cls, field );
                 setters.add( createInjector( cls, field ) );
             }
-        } while( (currentClass = currentClass.getSuperclass()) != null );
+        }
+        while ( (currentClass = currentClass.getSuperclass()) != null );
 
         return setters;
     }
@@ -119,12 +121,12 @@ public class FieldInjections
         try
         {
             ComponentRegistry.Provider<?> provider = components.providerFor( field.getType() );
-            if( provider == null )
+            if ( provider == null )
             {
-                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                throw new ComponentInjectionException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to set up injection for procedure `%s`, the field `%s` " +
                         "has type `%s` which is not a known injectable component.",
-                        cls.getSimpleName(), field.getName(), field.getType());
+                            cls.getSimpleName(), field.getName(), field.getType() );
             }
 
             MethodHandle setter = MethodHandles.lookup().unreflectSetter( field );
@@ -140,19 +142,19 @@ public class FieldInjections
 
     private void assertValidForInjection( Class<?> cls, Field field ) throws ProcedureException
     {
-        if( !field.isAnnotationPresent( Context.class ) )
+        if ( !field.isAnnotationPresent( Context.class ) )
         {
             throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
-                    "Field `%s` on `%s` is not annotated as a @"+Context.class.getSimpleName()+" and is not static. " +
-                    "If you want to store state along with your procedure, please use a static field.",
+                    "Field `%s` on `%s` is not annotated as a @" + Context.class.getSimpleName() +
+                            " and is not static. If you want to store state along with your procedure," +
+                            " please use a static field.",
                     field.getName(), cls.getSimpleName() );
         }
 
-        if( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
+        if ( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
         {
-            throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
-                    "Field `%s` on `%s` must be non-final and public.",
-                    field.getName(), cls.getSimpleName() );
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Field `%s` on `%s` must be non-final and public.", field.getName(), cls.getSimpleName() );
 
         }
     }

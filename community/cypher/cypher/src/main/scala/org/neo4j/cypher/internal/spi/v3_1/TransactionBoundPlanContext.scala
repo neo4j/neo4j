@@ -30,32 +30,32 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor,
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, symbols}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.constraints.{UniquenessConstraint => KernelUniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
-import org.neo4j.kernel.api.index.{InternalIndexState, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: InternalNotificationLogger)
+class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext with SchemaDescriptorTranslation {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+    val labelId = getLabelId(labelName)
+    val propertyKeyId = getPropertyKeyId(propertyKey)
 
-    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   }
 
   def hasIndexRule(labelName: String): Boolean = {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    val labelId = getLabelId(labelName)
 
     val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
@@ -64,15 +64,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: I
   }
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+    val labelId = getLabelId(labelName)
+    val propertyKeyId = getPropertyKeyId(propertyKey)
 
-    // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    Some(tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    val schema = tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
+
+    if (schema.`type`() == KernelIndexDescriptor.Type.UNIQUE) getOnlineIndex(schema)
+    else None
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
-    try { f } catch { case _: SchemaKernelException => None }
+    try { f } catch { case _: KernelException => None }
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
@@ -80,33 +82,37 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: I
       case _                         => None
     }
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = evalOrNone {
+    val labelId = getLabelId(labelName)
+    val propertyKeyId = getPropertyKeyId(propertyKey)
 
     import scala.collection.JavaConverters._
-    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
-      case unique: KernelUniquenessConstraint => UniquenessConstraint(labelId, propertyKeyId)
+    tc.statement.readOperations().constraintsGetForSchema(
+      SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
+    ).asScala.collectFirst {
+      case constraint: ConstraintDescriptor if constraint.enforcesUniqueness() =>
+        SchemaTypes.UniquenessConstraint(labelId, propertyKeyId)
     }
-  } catch {
-    case _: KernelException => None
   }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).hasNext
+    try {
+      val labelId = getLabelId(labelName)
+      val propId = getPropertyKeyId(propertyKey)
+      tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propId)).hasNext
+    } catch {
+      case _: KernelException => false
+    }
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!tc.statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String)  {
-    if (!tc.statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }

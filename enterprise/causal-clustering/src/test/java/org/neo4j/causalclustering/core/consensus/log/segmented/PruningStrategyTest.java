@@ -53,8 +53,9 @@ abstract class PruningStrategyTest
     @Before
     public void mockSegmentVisitor()
     {
-        doAnswer( invocation -> {
-            Visitor<SegmentFile,RuntimeException> visitor = (Visitor) invocation.getArguments()[0];
+        doAnswer( invocation ->
+        {
+            Visitor<SegmentFile,RuntimeException> visitor = invocation.getArgument( 0 );
             ListIterator<SegmentFile> itr = files.listIterator( files.size() );
             boolean terminate = false;
             while ( itr.hasPrevious() && !terminate )

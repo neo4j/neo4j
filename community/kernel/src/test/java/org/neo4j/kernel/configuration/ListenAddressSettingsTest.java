@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.Map;
+
 import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
@@ -41,28 +43,12 @@ public class ListenAddressSettingsTest
     public void shouldParseExplicitSettingValueWhenProvided() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_listen_address.name(), "server1.example.com" ) );
-        config.augment( stringMap( listen_address_setting.name(), "server1.internal:4000" ) );
+        Map<String,String> config = stringMap(
+                GraphDatabaseSettings.default_listen_address.name(), "server1.example.com",
+                listen_address_setting.name(), "server1.internal:4000" );
 
         // when
-        ListenSocketAddress listenSocketAddress = config.get( listen_address_setting );
-
-        // then
-        assertEquals( "server1.internal", listenSocketAddress.getHostname() );
-        assertEquals( 4000, listenSocketAddress.getPort() );
-    }
-
-    @Test
-    public void shouldFallbackToLegacySettingWhenOnlyValueProvided() throws Exception
-    {
-        // given
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_listen_address.name(), "server1.example.com" ) );
-        config.augment( stringMap( legacy_address_setting.name(), "server1.internal:4000" ) );
-
-        // when
-        ListenSocketAddress listenSocketAddress = config.get( listen_address_setting );
+        ListenSocketAddress listenSocketAddress = listen_address_setting.apply( config::get );
 
         // then
         assertEquals( "server1.internal", listenSocketAddress.getHostname() );
@@ -73,11 +59,11 @@ public class ListenAddressSettingsTest
     public void shouldCombineDefaultHostnameWithSettingSpecificPortWhenNoValueProvided() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_listen_address.name(), "server1.example.com" ) );
+        Map<String,String> config = stringMap(
+                GraphDatabaseSettings.default_listen_address.name(), "server1.example.com" );
 
         // when
-        ListenSocketAddress listenSocketAddress = config.get( listen_address_setting );
+        ListenSocketAddress listenSocketAddress = listen_address_setting.apply( config::get );
 
         // then
         assertEquals( "server1.example.com", listenSocketAddress.getHostname() );
@@ -88,12 +74,12 @@ public class ListenAddressSettingsTest
     public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_listen_address.name(), "server1.example.com" ) );
-        config.augment( stringMap( listen_address_setting.name(), ":4000" ) );
+        Map<String,String> config = stringMap(
+                GraphDatabaseSettings.default_listen_address.name(), "server1.example.com",
+                listen_address_setting.name(), ":4000" );
 
         // when
-        ListenSocketAddress listenSocketAddress = config.get( listen_address_setting );
+        ListenSocketAddress listenSocketAddress = listen_address_setting.apply( config::get );
 
         // then
         assertEquals( "server1.example.com", listenSocketAddress.getHostname() );

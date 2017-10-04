@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.core.consensus.vote;
 
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.identity.MemberId;
 
 public class VoteRequestBuilder
 {
     private long term = -1;
-    private MemberId from = null;
+    private MemberId from;
     private MemberId candidate;
     private long lastLogIndex;
     private long lastLogTerm;

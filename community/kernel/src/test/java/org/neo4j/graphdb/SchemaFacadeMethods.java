@@ -145,4 +145,8 @@ public class SchemaFacadeMethods
         AWAIT_INDEX_ONLINE,
         AWAIT_INDEXES_ONLINE
     ) );
+
+    private SchemaFacadeMethods()
+    {
+    }
 }

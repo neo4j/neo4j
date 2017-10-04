@@ -69,7 +69,8 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     }
 
     @Override
-    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain ) throws IOException, ServletException
+    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain )
+            throws IOException, ServletException
     {
         validateRequestType( servletRequest );
         validateResponseType( servletResponse );
@@ -192,7 +193,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                             "code", Status.Security.AuthProviderTimeout.code().serialize(),
                             "message", "An auth provider request timed out." ) ) ) );
 
-    private static final ThrowingConsumer<HttpServletResponse, IOException> invalidAuthToken( final String message )
+    private static ThrowingConsumer<HttpServletResponse, IOException> invalidAuthToken( final String message )
     {
         return error( 401,
                 map( "errors", singletonList( map(
@@ -220,14 +221,18 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     private static ThrowingConsumer<HttpServletResponse, IOException> requestAuthentication(
             HttpServletRequest req, ThrowingConsumer<HttpServletResponse, IOException> responseGen )
     {
-        if( "true".equals( req.getHeader( "X-Ajax-Browser-Auth" ) ) )
+        if ( "true".equals( req.getHeader( "X-Ajax-Browser-Auth" ) ) )
         {
-            return (res) -> {
+            return res ->
+            {
                 responseGen.accept( res );
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
             };
-        } else {
-            return (res) -> {
+        }
+        else
+        {
+            return res ->
+            {
                 responseGen.accept( res );
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"" );
             };
@@ -262,7 +267,8 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         if ( header == null )
         {
             return null;
-        } else
+        }
+        else
         {
             return AuthorizationHeaders.decode( header );
         }

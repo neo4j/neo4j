@@ -3,22 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Communication Package</name>
   <packaging>jar</packaging>
-
-  <properties>
-    <short-name>com</short-name>
-    <version-package>com.impl</version-package>
-    <bundle.namespace>org.neo4j.com</bundle.namespace>
-    <docs-plugin.skip>true</docs-plugin.skip>
-  </properties>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -45,21 +37,6 @@
       </comments>
     </license>
   </licenses>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>
@@ -108,6 +85,10 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>

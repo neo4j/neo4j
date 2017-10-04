@@ -29,6 +29,18 @@ public class ReplicatedTransaction implements CoreReplicatedContent
 {
     private final byte[] txBytes;
 
+    @Override
+    public boolean hasSize()
+    {
+        return true;
+    }
+
+    @Override
+    public long size()
+    {
+        return txBytes.length;
+    }
+
     public ReplicatedTransaction( byte[] txBytes )
     {
         this.txBytes = txBytes;
@@ -49,9 +61,13 @@ public class ReplicatedTransaction implements CoreReplicatedContent
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         ReplicatedTransaction that = (ReplicatedTransaction) o;
         return Arrays.equals( txBytes, that.txBytes );
     }

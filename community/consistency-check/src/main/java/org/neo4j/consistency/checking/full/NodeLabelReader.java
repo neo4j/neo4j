@@ -46,6 +46,10 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class NodeLabelReader
 {
+    private NodeLabelReader()
+    {
+    }
+
     public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> Set<Long> getListOfLabels(
             NodeRecord nodeRecord, RecordAccess records, CheckerEngine<RECORD, REPORT> engine )
     {

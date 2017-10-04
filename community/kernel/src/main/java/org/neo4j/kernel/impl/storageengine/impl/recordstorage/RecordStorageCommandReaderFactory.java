@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_10;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
@@ -40,13 +37,8 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
     public RecordStorageCommandReaderFactory()
     {
         readers = new CommandReader[11]; // pessimistic size
-        readers[-LogEntryVersion.V2_0.byteCode()] = new PhysicalLogCommandReaderV2_0();
-        readers[-LogEntryVersion.V2_1.byteCode()] = new PhysicalLogCommandReaderV2_1();
-        readers[-LogEntryVersion.V2_2.byteCode()] = new PhysicalLogCommandReaderV2_2();
-        readers[-LogEntryVersion.V2_2_4.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
         readers[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
         readers[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0();
-        readers[-LogEntryVersion.V2_2_10.byteCode()] = new PhysicalLogCommandReaderV2_2_10();
         readers[-LogEntryVersion.V2_3_5.byteCode()] = new PhysicalLogCommandReaderV2_2_10();
         readers[-LogEntryVersion.V3_0_2.byteCode()] = new PhysicalLogCommandReaderV3_0_2();
         // The 3_0_10 version bump is only to prevent mixed-version clusters; format is otherwise backwards compatible.
@@ -54,11 +46,12 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
 
         // A little extra safety check so that we got 'em all
         LogEntryVersion[] versions = LogEntryVersion.values();
-        for ( int i = 0; i < versions.length; i++ )
+        for ( LogEntryVersion version : versions )
         {
-            if ( versions[i] == null )
+            CommandReader versionReader = readers[abs( version.byteCode() )];
+            if ( versionReader == null )
             {
-                throw new IllegalStateException( "Version " + versions[i] + " not handled" );
+                throw new IllegalStateException( "Version " + version + " not handled" );
             }
         }
     }

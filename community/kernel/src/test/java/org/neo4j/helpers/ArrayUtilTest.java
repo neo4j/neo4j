@@ -149,4 +149,43 @@ public class ArrayUtilTest
         // THEN
         assertArrayEquals( new Integer[] {0, 1, 2, 3, 4, 5}, all );
     }
+
+    @Test
+    public void shouldReverseEvenCount() throws Exception
+    {
+        // given
+        Integer[] array = new Integer[] {0, 1, 2, 3, 4, 5};
+
+        // when
+        ArrayUtil.reverse( array );
+
+        // then
+        assertArrayEquals( new Integer[] {5, 4, 3, 2, 1, 0}, array );
+    }
+
+    @Test
+    public void shouldReverseUnevenCount() throws Exception
+    {
+        // given
+        Integer[] array = new Integer[] {0, 1, 2, 3, 4};
+
+        // when
+        ArrayUtil.reverse( array );
+
+        // then
+        assertArrayEquals( new Integer[] {4, 3, 2, 1, 0}, array );
+    }
+
+    @Test
+    public void shouldReverseEmptyArray() throws Exception
+    {
+        // given
+        Integer[] array = new Integer[] {};
+
+        // when
+        ArrayUtil.reverse( array );
+
+        // then
+        assertArrayEquals( new Integer[] {}, array );
+    }
 }

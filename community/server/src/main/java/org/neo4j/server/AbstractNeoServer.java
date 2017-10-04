@@ -19,14 +19,11 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.commons.configuration.Configuration;
-import org.bouncycastle.operator.OperatorCreationException;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
-import java.security.GeneralSecurityException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,30 +32,30 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import org.neo4j.bolt.security.ssl.Certificates;
-import org.neo4j.bolt.security.ssl.KeyStoreFactory;
-import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ClientConnectorSettings;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
@@ -80,19 +77,19 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.security.auth.UserManagerSupplier;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
+import static org.neo4j.scheduler.JobScheduler.Groups.serverTransactionTimeout;
+import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
@@ -105,7 +102,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private static final long MINIMUM_TIMEOUT = 1000L;
     /**
      * We add a second to the timeout if the user configures a 1-second timeout.
-     *
+     * <p>
      * This ensures the expiry time displayed to the user is always at least 1 second, even after it is rounded down.
      */
     private static final long ROUNDING_SECOND = 1000L;
@@ -126,21 +123,25 @@ public abstract class AbstractNeoServer implements NeoServer
     private final Config config;
     private final LifeSupport life = new LifeSupport();
     private final ListenSocketAddress httpListenAddress;
-    private final AdvertisedSocketAddress httpAdvertisedAddress;
     private final Optional<ListenSocketAddress> httpsListenAddress;
-    private final Optional<AdvertisedSocketAddress> httpsAdvertisedAddress;
+    private AdvertisedSocketAddress httpAdvertisedAddress;
+    private Optional<AdvertisedSocketAddress> httpsAdvertisedAddress;
 
     protected Database database;
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
     protected Supplier<UserManagerSupplier> userManagerSupplier;
-    protected Optional<KeyStoreInformation> keyStoreInfo;
+    protected Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private DatabaseActions databaseActions;
     private TransactionFacade transactionFacade;
-    private TransactionHandleRegistry transactionRegistry;
 
-    private boolean initialized = false;
+    private TransactionHandleRegistry transactionRegistry;
+    private boolean initialized;
+    private LifecycleAdapter serverComponents;
+    protected ConnectorPortRegister connectorPortRegister;
+    private HttpConnector httpConnector;
+    private Optional<HttpConnector> httpsConnector;
 
     protected abstract Iterable<ServerModule> createServerModules();
 
@@ -156,16 +157,21 @@ public abstract class AbstractNeoServer implements NeoServer
         this.log = logProvider.getLog( getClass() );
         log.info( NEO4J_IS_STARTING_MESSAGE );
 
-        HttpConnector httpConnector = ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE )
-                .orElseThrow( () ->
+        List<HttpConnector> httpConnectors = config.enabledHttpConnectors();
+
+        httpConnector = httpConnectors.stream()
+                .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
+                .findFirst().orElseThrow( () ->
                         new IllegalArgumentException( "An HTTP connector must be configured to run the server" ) );
+
         httpListenAddress = config.get( httpConnector.listen_address );
         httpAdvertisedAddress = config.get( httpConnector.advertised_address );
 
-        Optional<HttpConnector> httpsConnector =
-                ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.TLS );
-        httpsListenAddress = httpsConnector.map( (connector) -> config.get( connector.listen_address ) );
-        httpsAdvertisedAddress = httpsConnector.map( (connector) -> config.get( connector.advertised_address ) );
+        httpsConnector = httpConnectors.stream()
+                .filter( c -> Encryption.TLS.equals( c.encryptionLevel() ) )
+                .findFirst();
+        httpsListenAddress = httpsConnector.map( connector -> config.get( connector.listen_address ) );
+        httpsAdvertisedAddress = httpsConnector.map( connector -> config.get( connector.advertised_address ) );
     }
 
     @Override
@@ -176,19 +182,21 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
+        this.database =
+                life.add( dependencyResolver.satisfyDependency( dbFactory.newDatabase( config, dependencies ) ) );
 
         this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
         this.userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
-
+        this.sslPolicyFactorySupplier = dependencyResolver.provideDependency( SslPolicyLoader.class );
         this.webServer = createWebServer();
-
-        this.keyStoreInfo = createKeyStore();
 
         for ( ServerModule moduleClass : createServerModules() )
         {
             registerModule( moduleClass );
         }
+
+        serverComponents = new ServerComponentsLifecycleAdapter();
+        life.add( serverComponents );
 
         this.initialized = true;
     }
@@ -201,26 +209,6 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             life.start();
 
-            DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
-
-            Log diagnosticsLog = diagnosticsManager.getTargetLog();
-            diagnosticsLog.info( "--- SERVER STARTED START ---" );
-
-            databaseActions = createDatabaseActions();
-
-            transactionFacade = createTransactionalActions();
-
-            cypherExecutor = new CypherExecutor( database, logProvider );
-
-            configureWebServer();
-
-            cypherExecutor.start();
-
-            startModules();
-
-            startWebServer();
-
-            diagnosticsLog.info( "--- SERVER STARTED END ---" );
         }
         catch ( Throwable t )
         {
@@ -249,12 +237,13 @@ public abstract class AbstractNeoServer implements NeoServer
         final Clock clock = Clocks.systemClock();
 
         transactionRegistry =
-            new TransactionHandleRegistry( clock, timeoutMillis, logProvider );
+                new TransactionHandleRegistry( clock, timeoutMillis, logProvider );
 
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
 
-        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, () -> {
+        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, () ->
+        {
             long maxAge = clock.millis() - timeoutMillis;
             transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
         }, runEvery, MILLISECONDS );
@@ -263,7 +252,8 @@ public abstract class AbstractNeoServer implements NeoServer
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
                 dependencyResolver.resolveDependency( QueryExecutionEngine.class ),
-                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ), transactionRegistry, logProvider
+                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ), transactionRegistry,
+                logProvider
         );
     }
 
@@ -274,7 +264,7 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private long getTransactionTimeoutMillis()
     {
-        final long timeout = config.get( ServerSettings.transaction_idle_timeout );
+        final long timeout = config.get( ServerSettings.transaction_idle_timeout ).toMillis();
         return Math.max( timeout, MINIMUM_TIMEOUT + ROUNDING_SECOND );
     }
 
@@ -305,9 +295,6 @@ public abstract class AbstractNeoServer implements NeoServer
         return config;
     }
 
-    // TODO: Once WebServer is fully implementing LifeCycle,
-    // it should manage all but static (eg. unchangeable during runtime)
-    // configuration itself.
     private void configureWebServer() throws Exception
     {
         webServer.setAddress( httpListenAddress );
@@ -315,9 +302,12 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setMaxThreads( config.get( ServerSettings.webserver_max_threads ) );
         webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
-        if ( keyStoreInfo.isPresent() )
+
+        String sslPolicyName = config.get( ServerSettings.ssl_policy );
+        if ( sslPolicyName != null )
         {
-            webServer.setHttpsCertificateInformation( keyStoreInfo.get() );
+            SslPolicy sslPolicy = sslPolicyFactorySupplier.get().getPolicy( sslPolicyName );
+            webServer.setSslPolicy( sslPolicy );
         }
     }
 
@@ -327,6 +317,12 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             setUpHttpLogging();
             webServer.start();
+            InetSocketAddress localHttpAddress = webServer.getLocalHttpAddress();
+            connectorPortRegister.register( httpConnector.key(), localHttpAddress );
+            httpsConnector.ifPresent( connector -> connectorPortRegister.register( connector.key(), webServer
+                    .getLocalHttpsAddress() ) );
+            checkHttpAdvertisedAddress( localHttpAddress );
+            checkHttpsAdvertisedAddress();
             log.info( "Remote interface available at %s", baseUri() );
         }
         catch ( Exception e )
@@ -336,15 +332,37 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private void setUpHttpLogging() throws IOException {
+    private void checkHttpsAdvertisedAddress()
+    {
+        httpsAdvertisedAddress.ifPresent( address ->
+        {
+            if ( address.getPort() == 0 )
+            {
+                InetSocketAddress localHttpsAddress = webServer.getLocalHttpsAddress();
+                httpsAdvertisedAddress = Optional
+                        .of( new AdvertisedSocketAddress( localHttpsAddress.getHostString(), localHttpsAddress.getPort() ) );
+            }
+        } );
+    }
+
+    private void checkHttpAdvertisedAddress( InetSocketAddress localHttpAddress )
+    {
+        if ( httpAdvertisedAddress.getPort() == 0 )
+        {
+            httpAdvertisedAddress = new AdvertisedSocketAddress( localHttpAddress.getHostString(), localHttpAddress.getPort() );
+        }
+    }
+
+    private void setUpHttpLogging() throws IOException
+    {
         if ( !getConfig().get( http_logging_enabled ) )
         {
             return;
         }
 
         AsyncRequestLog requestLog = new AsyncRequestLog(
-                new DefaultFileSystemAbstraction(),
-                new File( config.get( GraphDatabaseSettings.logs_directory ), "http.log" ).toString(),
+                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                config.get( http_log_path ).toString(),
                 config.get( http_logging_rotation_size ),
                 config.get( http_logging_rotation_keep_number ) );
         webServer.setRequestLog( requestLog );
@@ -365,69 +383,10 @@ public abstract class AbstractNeoServer implements NeoServer
         return DEFAULT_URI_WHITELIST;
     }
 
-    protected Optional<KeyStoreInformation> createKeyStore()
-    {
-        if ( httpsIsEnabled() )
-        {
-            File privateKeyPath = config.get( ServerSettings.tls_key_file ).getAbsoluteFile();
-            File certificatePath = config.get( ServerSettings.tls_certificate_file ).getAbsoluteFile();
-
-            try
-            {
-                // If neither file is specified
-                if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
-                {
-                    //noinspection deprecation
-                    log.info( "No SSL certificate found, generating a self-signed certificate.." );
-                    Certificates certFactory = new Certificates();
-                    certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, httpListenAddress.getHostname() );
-                }
-
-                // Make sure both files were there, or were generated
-                if ( !certificatePath.exists() )
-                {
-                    throw new ServerStartupException(
-                            String.format(
-                                    "TLS private key found, but missing certificate at '%s'. Cannot start server without certificate.",
-
-                                    certificatePath ) );
-                }
-                if ( !privateKeyPath.exists() )
-                {
-                    throw new ServerStartupException(
-                            String.format(
-                                    "TLS certificate found, but missing key at '%s'. Cannot start server without key.",
-                                    privateKeyPath ) );
-                }
-
-                return Optional.of( new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath ) );
-            }
-            catch ( GeneralSecurityException e )
-            {
-                throw new ServerStartupException(
-                        "TLS certificate error occurred, unable to start server: " + e.getMessage(), e );
-            }
-            catch ( IOException | OperatorCreationException e )
-            {
-                throw new ServerStartupException(
-                        "IO problem while loading or creating TLS certificates: " + e.getMessage(), e );
-            }
-        }
-        else
-        {
-            return Optional.empty();
-        }
-    }
-
     @Override
     public void stop()
     {
-        // TODO: All components should be moved over to the LifeSupport instance, life, in here.
-        new RunCarefully(
-                this::stopWebServer,
-                this::stopModules,
-                life::stop
-        ).run();
+        life.stop();
     }
 
     private void stopWebServer()
@@ -458,7 +417,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     public Optional<URI> httpsUri()
     {
-        return httpsAdvertisedAddress.map( ( address ) -> uriBuilder.buildURI( address, true ) );
+        return httpsAdvertisedAddress.map( address -> uriBuilder.buildURI( address, true ) );
     }
 
     public WebServer getWebServer()
@@ -526,7 +485,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return false;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private <T extends ServerModule> T getModule( Class<T> clazz )
     {
         for ( ServerModule sm : serverModules )
@@ -554,4 +513,39 @@ public abstract class AbstractNeoServer implements NeoServer
             return db.getGraph().getDependencyResolver();
         }
     } );
+
+    private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
+    {
+        @Override
+        public void start() throws Throwable
+        {
+            DiagnosticsManager diagnosticsManager = resolveDependency( DiagnosticsManager.class );
+            Log diagnosticsLog = diagnosticsManager.getTargetLog();
+            diagnosticsLog.info( "--- SERVER STARTED START ---" );
+            connectorPortRegister = dependencyResolver.resolveDependency( ConnectorPortRegister.class );
+            databaseActions = createDatabaseActions();
+
+            transactionFacade = createTransactionalActions();
+
+            cypherExecutor = new CypherExecutor( database, logProvider );
+
+            configureWebServer();
+
+            cypherExecutor.start();
+
+            startModules();
+
+            startWebServer();
+
+            diagnosticsLog.info( "--- SERVER STARTED END ---" );
+        }
+
+        @Override
+        public void stop()
+                throws Throwable
+        {
+            stopWebServer();
+            stopModules();
+        }
+    }
 }

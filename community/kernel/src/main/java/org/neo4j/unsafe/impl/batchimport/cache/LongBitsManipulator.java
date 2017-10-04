@@ -38,7 +38,7 @@ public class LongBitsManipulator
         private final long maxValue;
         private final int bitOffset;
 
-        public Slot( int bits, long mask, int bitOffset )
+        Slot( int bits, long mask, int bitOffset )
         {
             this.mask = mask;
             this.bitOffset = bitOffset;
@@ -59,7 +59,7 @@ public class LongBitsManipulator
             }
 
             long otherBits = field & ~mask;
-            return ((value << bitOffset)&mask) | otherBits;
+            return ((value << bitOffset) & mask) | otherBits;
         }
 
         public long clear( long field, boolean trueForAllOnes )

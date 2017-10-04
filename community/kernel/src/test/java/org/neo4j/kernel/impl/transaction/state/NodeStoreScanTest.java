@@ -21,10 +21,9 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.util.List;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -51,29 +50,25 @@ public class NodeStoreScanTest
     public void shouldGiveBackCompletionPercentage() throws Throwable
     {
         // given
-        final int total = 10;
-        when( nodeStore.getHighId() ).thenReturn( (long) total );
+        long total = 10;
+        when( nodeStore.getHighId() ).thenReturn( total );
+        NodeRecord emptyRecord = new NodeRecord( 0 );
         NodeRecord inUseRecord = new NodeRecord( 42 );
         inUseRecord.setInUse( true );
+        when( nodeStore.newRecord() ).thenReturn( emptyRecord );
         when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenReturn(
                 inUseRecord, inUseRecord, inUseRecord, inUseRecord,
                 inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord );
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
 
-        final NodeStoreScan scan = new NodeStoreScan( nodeStore, locks,  total )
+        final NodeStoreScan<RuntimeException> scan = new NodeStoreScan<RuntimeException>( nodeStore, locks, total )
         {
-            private int read = 0;
+            private int read;
 
             @Override
-            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
                     long currentlyIndexedNodeId )
-            {
-                // no-op
-            }
-
-            @Override
-            public void configure( List list )
             {
                 // no-op
             }
@@ -96,7 +91,7 @@ public class NodeStoreScanTest
 
     private static class PercentageSupplier implements Supplier<Float>
     {
-        private StoreScan storeScan;
+        private StoreScan<?> storeScan;
 
         @Override
         public Float get()
@@ -106,7 +101,7 @@ public class NodeStoreScanTest
             return (float) progress.getCompleted() / (float) progress.getTotal();
         }
 
-        public void setStoreScan( StoreScan storeScan )
+        public void setStoreScan( StoreScan<?> storeScan )
         {
             this.storeScan = storeScan;
         }

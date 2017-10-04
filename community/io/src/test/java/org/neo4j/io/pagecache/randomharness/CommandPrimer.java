@@ -55,14 +55,8 @@ class CommandPrimer
     // Entity-locks that protect the individual records, since page write locks are not exclusive.
     private final TinyLockManager recordLocks;
 
-    public CommandPrimer(
-            Random rng,
-            MuninnPageCache cache,
-            File[] files,
-            Map<File,PagedFile> fileMap,
-            int filePageCount,
-            int filePageSize,
-            RecordFormat recordFormat )
+    CommandPrimer( Random rng, MuninnPageCache cache, File[] files, Map<File,PagedFile> fileMap, int filePageCount,
+            int filePageSize, RecordFormat recordFormat )
     {
         this.rng = rng;
         this.cache = cache;
@@ -225,10 +219,8 @@ class CommandPrimer
         }
         final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
         List<Integer> recordsWritten = recordsWrittenTo.get( file );
-        final int recordId =
-                recordsWritten.isEmpty()?
-                rng.nextInt( maxRecordCount )
-                : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
+        final int recordId = recordsWritten.isEmpty() ? rng.nextInt( maxRecordCount )
+                                                      : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
         final int pageId = recordId / recordsPerPage;
         final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
         final Record expectedRecord = recordFormat.createRecord( file, recordId );
@@ -264,8 +256,7 @@ class CommandPrimer
         private final int pageOffset;
         private final Record expectedRecord;
 
-        public ReadAction(
-                File file, int recordId, int pageId, int pageOffset, Record expectedRecord, Action innerAction )
+        ReadAction( File file, int recordId, int pageId, int pageOffset, Record expectedRecord, Action innerAction )
         {
             super( Command.ReadRecord, innerAction,
                     "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, expectedRecord=%s]", file, recordId, pageId,
@@ -304,7 +295,7 @@ class CommandPrimer
         private final int pageOffset;
         private final Record record;
 
-        public WriteAction( File file, int recordId, int pageId, int pageOffset, Record record, Action innerAction )
+        WriteAction( File file, int recordId, int pageId, int pageOffset, Record record, Action innerAction )
         {
             super( Command.WriteRecord, innerAction, "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, record=%s]",
                     file, recordId, pageId, pageOffset, record );

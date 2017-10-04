@@ -119,7 +119,7 @@ class VerifyingRaftLog implements RaftLog
 
     private void verifyDirectLookupForwards( InMemoryRaftLog expected, RaftLog other ) throws IOException
     {
-        for ( long logIndex = expected.prevIndex()+1; logIndex <= expected.appendIndex(); logIndex++ )
+        for ( long logIndex = expected.prevIndex() + 1; logIndex <= expected.appendIndex(); logIndex++ )
         {
             directAssertions( expected, other, logIndex );
         }
@@ -141,21 +141,22 @@ class VerifyingRaftLog implements RaftLog
     private void verifyTraversalUsingCursor( RaftLog expected, RaftLog other ) throws IOException
     {
         long startIndex = expected.prevIndex() + 1;
-        try( RaftLogCursor expectedCursor = expected.getEntryCursor( startIndex) )
+        try ( RaftLogCursor expectedCursor = expected.getEntryCursor( startIndex) )
         {
-            try( RaftLogCursor otherCursor = other.getEntryCursor( startIndex ) )
+            try ( RaftLogCursor otherCursor = other.getEntryCursor( startIndex ) )
             {
                 boolean expectedNext;
                 do
                 {
                     expectedNext = expectedCursor.next();
                     assertEquals( expectedNext, otherCursor.next() );
-                    if( expectedNext )
+                    if ( expectedNext )
                     {
                         assertEquals( expectedCursor.get(), otherCursor.get() );
                         assertEquals( expectedCursor.index(), otherCursor.index() );
                     }
-                } while( expectedNext );
+                }
+                while ( expectedNext );
             }
         }
     }

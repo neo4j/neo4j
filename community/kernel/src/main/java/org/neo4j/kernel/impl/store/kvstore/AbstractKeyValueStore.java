@@ -42,8 +42,8 @@ import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
  *
  * @param <Key> a base type for the keys stored in this store.
  */
-@Rotation(/*default strategy:*/Rotation.Strategy.LEFT_RIGHT/*(subclasses can override)*/ )
-@State(/*default strategy:*/State.Strategy.CONCURRENT_HASH_MAP/*(subclasses can override)*/ )
+@Rotation( Rotation.Strategy.LEFT_RIGHT )
+@State( State.Strategy.CONCURRENT_HASH_MAP )
 public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 {
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
@@ -226,14 +226,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             ProgressiveState<Key> prior = state;
             if ( prior.storedVersion() == version && !prior.hasChanges() )
             {
-                return new PreparedRotation()
-                {
-                    @Override
-                    public long rotate() throws IOException
-                    {
-                        return version;
-                    }
-                };
+                return () -> version;
             }
             return new RotationTask( version );
         }
@@ -303,7 +296,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 
         private long rotate( boolean force ) throws IOException
         {
-            try( RotationState<Key> rotation = this.rotation )
+            try ( RotationState<Key> rotation = this.rotation )
             {
                 try
                 {

@@ -21,9 +21,12 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
@@ -97,8 +100,10 @@ import org.neo4j.logging.Log;
 public class Tracers
 {
     public final PageCacheTracer pageCacheTracer;
+    public final PageCursorTracerSupplier pageCursorTracerSupplier;
     public final TransactionTracer transactionTracer;
     public final CheckPointTracer checkPointTracer;
+    public final LockTracer lockTracer;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
@@ -114,9 +119,11 @@ public class Tracers
     {
         if ( "null".equalsIgnoreCase( desiredImplementationName ) )
         {
+            pageCursorTracerSupplier = DefaultPageCursorTracerSupplier.NULL;
             pageCacheTracer = PageCacheTracer.NULL;
             transactionTracer = TransactionTracer.NULL;
             checkPointTracer = CheckPointTracer.NULL;
+            lockTracer = LockTracer.NONE;
         }
         else
         {
@@ -145,9 +152,11 @@ public class Tracers
                 msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
             }
 
+            pageCursorTracerSupplier = foundFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
             pageCacheTracer = foundFactory.createPageCacheTracer( monitors, jobScheduler );
             transactionTracer = foundFactory.createTransactionTracer( monitors, jobScheduler );
             checkPointTracer = foundFactory.createCheckPointTracer( monitors, jobScheduler );
+            lockTracer = foundFactory.createLockTracer( monitors, jobScheduler );
         }
     }
 }

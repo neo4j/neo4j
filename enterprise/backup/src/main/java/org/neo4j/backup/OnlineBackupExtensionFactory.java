@@ -26,6 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -33,11 +34,12 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineBackupExtensionFactory.Dependencies>
 {
     static final String KEY = "online backup";
@@ -65,6 +67,8 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         FileSystemAbstraction fileSystemAbstraction();
 
         PageCache pageCache();
+
+        StoreCopyCheckPointMutex storeCopyCheckPointMutex();
     }
 
     public OnlineBackupExtensionFactory()
@@ -72,10 +76,10 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         super( KEY );
     }
 
-    @Override
+    @Deprecated
     public Class<OnlineBackupSettings> getSettingsClass()
     {
-        return OnlineBackupSettings.class;
+        throw new AssertionError();
     }
 
     @Override
@@ -89,6 +93,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
                 dependencies.logicalTransactionStoreSupplier(),
                 dependencies.logFileInformationSupplier(),
                 dependencies.fileSystemAbstraction(),
-                dependencies.pageCache() );
+                dependencies.pageCache(),
+                dependencies.storeCopyCheckPointMutex() );
     }
 }

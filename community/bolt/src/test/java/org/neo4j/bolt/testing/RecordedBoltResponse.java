@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
-import org.neo4j.bolt.v1.runtime.spi.Record;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
+import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -33,9 +34,9 @@ import static org.junit.Assert.assertArrayEquals;
 
 public class RecordedBoltResponse
 {
-    private List<Record> records;
+    private List<QueryResult.Record> records;
     private BoltResponseMessage response;
-    private Map<String, Object> metadata;
+    private Map<String, AnyValue> metadata;
 
     public RecordedBoltResponse()
     {
@@ -44,12 +45,12 @@ public class RecordedBoltResponse
         metadata = new HashMap<>();
     }
 
-    public void addRecord( Record record )
+    public void addRecord( QueryResult.Record record )
     {
         records.add( record );
     }
 
-    public void addMetadata( String key, Object value )
+    public void addMetadata( String key, AnyValue value )
     {
         metadata.put( key, value );
     }
@@ -80,9 +81,9 @@ public class RecordedBoltResponse
         assertArrayEquals( records.get( index ).fields(), values );
     }
 
-    public Record[] records()
+    public QueryResult.Record[] records()
     {
-        Record[] recordArray = new Record[records.size()];
+        QueryResult.Record[] recordArray = new QueryResult.Record[records.size()];
         return records.toArray( recordArray );
     }
 }

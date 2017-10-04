@@ -103,7 +103,7 @@ public class CacheSmallStoresRecordAccessTest
         verifyZeroInteractions( delegate );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static <T extends AbstractBaseRecord> Matcher<RecordReference<T>> isDirectReferenceTo( T record )
     {
         return (Matcher) new DirectReferenceMatcher<T>( record );
@@ -114,7 +114,7 @@ public class CacheSmallStoresRecordAccessTest
     {
         private final T record;
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         DirectReferenceMatcher( T record )
         {
             super( DirectRecordReference.class );

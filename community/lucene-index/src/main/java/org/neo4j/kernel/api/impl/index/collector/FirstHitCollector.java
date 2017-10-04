@@ -35,7 +35,7 @@ public final class FirstHitCollector extends SimpleCollector
     public static final int NO_MATCH = -1;
 
     private int result = NO_MATCH;
-    private int readerDocBase = 0;
+    private int readerDocBase;
 
     /**
      * @return true when this collector got a match, otherwise false.

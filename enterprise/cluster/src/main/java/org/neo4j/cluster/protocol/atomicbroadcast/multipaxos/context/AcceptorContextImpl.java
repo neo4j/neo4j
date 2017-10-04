@@ -40,7 +40,7 @@ class AcceptorContextImpl
 
     AcceptorContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
             LogProvider logging,
-            Timeouts timeouts, AcceptorInstanceStore instanceStore)
+            Timeouts timeouts, AcceptorInstanceStore instanceStore )
     {
         super( me, commonState, logging, timeouts );
         this.instanceStore = instanceStore;
@@ -90,12 +90,7 @@ class AcceptorContextImpl
 
         AcceptorContextImpl that = (AcceptorContextImpl) o;
 
-        if ( instanceStore != null ? !instanceStore.equals( that.instanceStore ) : that.instanceStore != null )
-        {
-            return false;
-        }
-
-        return true;
+        return instanceStore != null ? instanceStore.equals( that.instanceStore ) : that.instanceStore == null;
     }
 
     @Override

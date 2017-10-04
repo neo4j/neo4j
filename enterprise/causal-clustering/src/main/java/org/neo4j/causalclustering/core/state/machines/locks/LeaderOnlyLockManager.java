@@ -21,12 +21,15 @@ package org.neo4j.causalclustering.core.state.machines.locks;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -120,14 +123,14 @@ public class LeaderOnlyLockManager implements Locks
         try
         {
             boolean success = (boolean) future.get();
-            if( success )
+            if ( success )
             {
                 return lockTokenRequest.id();
             }
             else
             {
                 throw new AcquireLockTimeoutException( "Failed to acquire lock token. Was taken by another candidate.",
-                        NotALeader);
+                        NotALeader );
             }
         }
         catch ( ExecutionException e )
@@ -206,16 +209,16 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public void acquireShared( ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
         {
-            localClient.acquireShared( resourceType, resourceId );
+            localClient.acquireShared( tracer, resourceType, resourceId );
         }
 
         @Override
-        public void acquireExclusive( ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
         {
             ensureHoldingToken();
-            localClient.acquireExclusive( resourceType, resourceId );
+            localClient.acquireExclusive( tracer, resourceType, resourceId );
         }
 
         @Override
@@ -232,15 +235,28 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public void releaseShared( ResourceType resourceType, long resourceId )
+        public boolean reEnterShared( ResourceType resourceType, long resourceId )
         {
-            localClient.releaseShared( resourceType, resourceId );
+            return localClient.reEnterShared( resourceType, resourceId );
         }
 
         @Override
-        public void releaseExclusive( ResourceType resourceType, long resourceId )
+        public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
         {
-            localClient.releaseExclusive( resourceType, resourceId );
+            ensureHoldingToken();
+            return localClient.reEnterExclusive( resourceType, resourceId );
+        }
+
+        @Override
+        public void releaseShared( ResourceType resourceType, long... resourceIds )
+        {
+            localClient.releaseShared( resourceType, resourceIds );
+        }
+
+        @Override
+        public void releaseExclusive( ResourceType resourceType, long... resourceIds )
+        {
+            localClient.releaseExclusive( resourceType, resourceIds );
         }
 
         @Override
@@ -259,6 +275,18 @@ public class LeaderOnlyLockManager implements Locks
         public int getLockSessionId()
         {
             return lockTokenId;
+        }
+
+        @Override
+        public Stream<? extends ActiveLock> activeLocks()
+        {
+            return localClient.activeLocks();
+        }
+
+        @Override
+        public long activeLockCount()
+        {
+            return localClient.activeLockCount();
         }
     }
 }

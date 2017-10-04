@@ -19,42 +19,58 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.kernel.api.exceptions.Status;
-
 import java.io.IOException;
-import java.util.Map;
+import java.util.function.Supplier;
 
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.*;
+import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.helpers.BaseToObjectValueWriter;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.PrettyPrinter;
+import org.neo4j.values.virtual.MapValue;
+
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.RECORD;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 
 /**
  * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}.
  */
 public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOException>
 {
-    public static final BoltResponseMessageBoundaryHook NO_BOUNDARY_HOOK = () -> {
+    public static final BoltResponseMessageBoundaryHook NO_BOUNDARY_HOOK = () ->
+    {
     };
 
     private final Neo4jPack.Packer packer;
     private final BoltResponseMessageBoundaryHook onMessageComplete;
+    private final BoltMessageLogger messageLogger;
 
     /**
      * @param packer            serializer to output channel
      * @param onMessageComplete invoked for each message, after it's done writing to the output
+     * @param messageLogger     logger for Bolt messages
      */
-    public BoltResponseMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete )
+    public BoltResponseMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete,
+                                      BoltMessageLogger messageLogger )
     {
         this.packer = packer;
         this.onMessageComplete = onMessageComplete;
+        this.messageLogger = messageLogger;
     }
 
     @Override
-    public void onRecord( Record item ) throws IOException
+    public void onRecord( QueryResult.Record item ) throws IOException
     {
-        Object[] fields = item.fields();
+        AnyValue[] fields = item.fields();
         packer.packStructHeader( 1, RECORD.signature() );
         packer.packListHeader( fields.length );
-        for ( Object field : fields )
+        for ( AnyValue field : fields )
         {
             packer.pack( field );
         }
@@ -67,23 +83,36 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     }
 
     @Override
-    public void onSuccess( Map<String, Object> metadata ) throws IOException
+    public void onSuccess( MapValue metadata ) throws IOException
     {
+        messageLogger.logSuccess( () -> metadata );
         packer.packStructHeader( 1, SUCCESS.signature() );
         packer.packRawMap( metadata );
         onMessageComplete.onMessageComplete();
     }
 
+    private Supplier<String> metadataSupplier( MapValue metadata )
+    {
+        return () ->
+        {
+            PrettyPrinter printer = new PrettyPrinter();
+            metadata.writeTo( printer );
+            return printer.value();
+        };
+    }
+
     @Override
     public void onIgnored() throws IOException
     {
+        messageLogger.logIgnored();
         packer.packStructHeader( 0, IGNORED.signature() );
         onMessageComplete.onMessageComplete();
     }
 
     @Override
-    public void onFailure( Status status, String message ) throws IOException
+    public void onFailure( Status status, String errorMessage ) throws IOException
     {
+        messageLogger.logFailure( status );
         packer.packStructHeader( 1, FAILURE.signature() );
         packer.packMapHeader( 2 );
 
@@ -91,21 +120,53 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
         packer.pack( status.code().serialize() );
 
         packer.pack( "message" );
-        packer.pack( message );
+        packer.pack( errorMessage );
 
         onMessageComplete.onMessageComplete();
     }
 
     @Override
-    public void onFatal( Status status, String message ) throws IOException
+    public void onFatal( Status status, String errorMessage ) throws IOException
     {
-        onFailure( status, message );
+        messageLogger.serverError( "FATAL", status);
+        onFailure( status, errorMessage );
         flush();
     }
 
     public void flush() throws IOException
     {
         packer.flush();
+    }
+
+    private class MapToObjectWriter extends BaseToObjectValueWriter<RuntimeException>
+    {
+
+        private UnsupportedOperationException exception =
+                new UnsupportedOperationException( "Functionality not implemented." );
+
+        @Override
+        protected Node newNodeProxyById( long id )
+        {
+            throw exception;
+        }
+
+        @Override
+        protected Relationship newRelationshipProxyById( long id )
+        {
+            throw exception;
+        }
+
+        @Override
+        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
+        {
+            throw exception;
+        }
+
+        @Override
+        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        {
+            throw exception;
+        }
     }
 
 }

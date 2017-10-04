@@ -19,9 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -39,9 +41,11 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -51,17 +55,21 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
+import static org.neo4j.kernel.internal.locker.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
 {
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDir );
     private Path homeDir;
     private Path confDir;
 
     private FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private OutsideWorld outsideWorld = mock( OutsideWorld.class );
+    private FileChannel channel;
 
     @Before
     public void setup() throws ClusterStateException
@@ -71,6 +79,12 @@ public class UnbindFromClusterCommandTest
         fs.mkdir( homeDir.toFile() );
 
         when( outsideWorld.fileSystem() ).thenReturn( fs );
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        IOUtils.closeAll( channel );
     }
 
     private File createClusterStateDir( FileSystemAbstraction fs ) throws ClusterStateException
@@ -192,7 +206,7 @@ public class UnbindFromClusterCommandTest
     private FileLock createLockedStoreLockFileIn( Path parent ) throws IOException
     {
         Path storeLockFile = Files.createFile( Paths.get( parent.toString(), STORE_LOCK_FILENAME ) );
-        FileChannel channel = FileChannel.open( storeLockFile, READ, WRITE );
+        channel = FileChannel.open( storeLockFile, READ, WRITE );
         return channel.lock( 0, Long.MAX_VALUE, true );
     }
 

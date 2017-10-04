@@ -26,7 +26,8 @@ import static org.neo4j.helpers.Format.bytes;
  */
 public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
 {
-    private long heapUsage, offHeapUsage;
+    private long heapUsage;
+    private long offHeapUsage;
 
     @Override
     public void heapUsage( long bytes )

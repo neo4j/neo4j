@@ -52,9 +52,9 @@ public abstract class AbstractAdversary implements Adversary
         sneakyThrow( throwable );
     }
 
-    public static void sneakyThrow(Throwable throwable)
+    public static void sneakyThrow( Throwable throwable )
     {
-        AbstractAdversary.<RuntimeException>_sneakyThrow( throwable );
+        AbstractAdversary._sneakyThrow( throwable );
     }
 
     // http://youtu.be/7qXXWHfJha4

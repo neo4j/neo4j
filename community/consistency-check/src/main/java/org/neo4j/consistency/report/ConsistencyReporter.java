@@ -61,8 +61,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.SchemaConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.NodeConsistencyReport> NODE_REPORT =
             ProxyFactory.create( ConsistencyReport.NodeConsistencyReport.class );
-    private static final ProxyFactory<ConsistencyReport.LabelsMatchReport> LABEL_MATCH_REPORT =
-            ProxyFactory.create( ConsistencyReport.LabelsMatchReport.class );
     private static final ProxyFactory<ConsistencyReport.RelationshipConsistencyReport> RELATIONSHIP_REPORT =
             ProxyFactory.create( ConsistencyReport.RelationshipConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.PropertyConsistencyReport> PROPERTY_REPORT =
@@ -95,12 +93,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         void reported( Class<?> report, String method, String message );
     }
 
-    public static final Monitor NO_MONITOR = new Monitor()
+    public static final Monitor NO_MONITOR = ( report, method, message ) ->
     {
-        @Override
-        public void reported( Class<?> report, String method, String message )
-        {
-        }
     };
 
     public ConsistencyReporter( RecordAccess records, InconsistencyReport report )
@@ -185,7 +179,9 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         final InconsistencyReport report;
         private final ProxyFactory<REPORT> factory;
         final RecordType type;
-        private short errors = 0, warnings = 0, references = 1/*this*/;
+        private short errors;
+        private short warnings;
+        private short references = 1/*this*/;
         private final RecordAccess records;
         private final Monitor monitor;
 
@@ -239,7 +235,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                 RecordReference<REFERRED> reference, ComparativeRecordChecker<RECORD, ? super REFERRED, REPORT> checker )
         {
             references++;
-            reference.dispatch( new PendingReferenceCheck<REFERRED>( this, checker ) );
+            reference.dispatch( new PendingReferenceCheck<>( this, checker ) );
         }
 
         @Override
@@ -360,7 +356,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         void checkReference( CheckerEngine engine, ComparativeRecordChecker checker, AbstractBaseRecord referenced,
                              RecordAccess records )
         {
@@ -368,65 +364,12 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         void checkDiffReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                  AbstractBaseRecord oldReferenced, AbstractBaseRecord newReferenced,
                                  RecordAccess records )
         {
             checker.checkReference( record, newReferenced, this, records );
-        }
-    }
-
-    private static class DiffReportHandler
-            <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
-            extends ReportInvocationHandler<RECORD,REPORT>
-    {
-        private final AbstractBaseRecord oldRecord;
-        private final AbstractBaseRecord newRecord;
-
-        private DiffReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory,
-                                   RecordType type,
-                                   RecordAccess records,
-                                   AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Monitor monitor )
-        {
-            super( report, factory, type, records, monitor );
-            this.oldRecord = oldRecord;
-            this.newRecord = newRecord;
-        }
-
-        @Override
-        long recordId()
-        {
-            return newRecord.getId();
-        }
-
-        @Override
-        protected void logError( String message, Object[] args )
-        {
-            report.error( type, oldRecord, newRecord, message, args );
-        }
-
-        @Override
-        protected void logWarning( String message, Object[] args )
-        {
-            report.warning( type, oldRecord, newRecord, message, args );
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        void checkReference( CheckerEngine engine, ComparativeRecordChecker checker, AbstractBaseRecord referenced,
-                             RecordAccess records )
-        {
-            checker.checkReference( newRecord, referenced, this, records );
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        void checkDiffReference( CheckerEngine engine, ComparativeRecordChecker checker,
-                                 AbstractBaseRecord oldReferenced, AbstractBaseRecord newReferenced,
-                                 RecordAccess records )
-        {
-            checker.checkReference( newRecord, newReferenced, this, records );
         }
     }
 
@@ -488,12 +431,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> nodeLabelCheck )
-    {
-        dispatch( RecordType.NODE, LABEL_MATCH_REPORT, nodeRecord, nodeLabelCheck );
-    }
-
-    @Override
     public void forPropertyKey( PropertyKeyTokenRecord key,
                                 RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
@@ -540,7 +477,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             return (ProxyFactory<T>) instances.get( cls );
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         ProxyFactory( Class<T> type ) throws LinkageError
         {
             this.type = type;

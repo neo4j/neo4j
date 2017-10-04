@@ -19,16 +19,17 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -90,6 +91,7 @@ public class ProposerContextImplTest
 
         HeartbeatContext heartbeatContext = mock( HeartbeatContext.class );
         when( heartbeatContext.getAlive() ).thenReturn( alive );
+        when( heartbeatContext.getUriForId( any( InstanceId.class ) ) ).thenReturn( URI.create( "http://localhost:8080" ) );
 
         // when
         ProposerContextImpl proposerContext = new ProposerContextImpl( new InstanceId( 1 ), commonContextState,

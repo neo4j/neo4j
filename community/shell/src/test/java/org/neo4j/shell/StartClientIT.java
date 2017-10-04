@@ -34,26 +34,25 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
@@ -62,6 +61,7 @@ public class StartClientIT extends AbstractShellIT
 {
     @Rule
     public SuppressOutput mute = suppressAll();
+    private GraphDatabaseShellServer shellServer;
 
     @Before
     public void startDatabase() throws Exception
@@ -79,11 +79,7 @@ public class StartClientIT extends AbstractShellIT
         StartClient.main( new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()} );
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( db.getNodeById( 0 ).getProperty( "foo" ), equalTo( "bar" ) );
-            tx.success();
-        }
+        assertNodeExists( "testshell_foo", "testshell_bar" );
     }
 
     @Test
@@ -96,7 +92,7 @@ public class StartClientIT extends AbstractShellIT
         InputStream realStdin = System.in;
         try
         {
-            System.setIn( new ByteArrayInputStream( "CREATE (n {foo:'bar'});".getBytes() ) );
+            System.setIn( new ByteArrayInputStream( "CREATE (n {stdin_foo:'stdin_bar'});".getBytes() ) );
             StartClient.main( new String[]{"-file", "-"} );
         }
         finally
@@ -105,11 +101,7 @@ public class StartClientIT extends AbstractShellIT
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( db.getNodeById( 0 ).getProperty( "foo" ), equalTo( "bar" ) );
-            tx.success();
-        }
+        assertNodeExists( "stdin_foo", "stdin_bar" );
     }
 
     @Test
@@ -145,7 +137,7 @@ public class StartClientIT extends AbstractShellIT
         PrintStream err = mock( PrintStream.class );
         CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
         final GraphDatabaseShellServer databaseShellServer = mock( GraphDatabaseShellServer.class );
-        when( databaseShellServer.welcome( anyMap() ) )
+        when( databaseShellServer.welcome( any() ) )
                 .thenReturn( new Welcome( StringUtils.EMPTY, 1, StringUtils.EMPTY ) );
         when( databaseShellServer.interpretLine( any( Serializable.class ), any( String.class ), any( Output.class ) ) )
                 .thenReturn( new Response( StringUtils.EMPTY, Continuation.INPUT_COMPLETE ) );
@@ -160,7 +152,8 @@ public class StartClientIT extends AbstractShellIT
         };
 
         // when
-        startClient.start( new String[]{"-path", db.getStoreDir(), "-c", "CREATE (n {foo:'bar'});"}, ctrlCHandler );
+        startClient.start( new String[]{"-path", db.getStoreDir().getAbsolutePath(), "-c", "CREATE (n {foo:'bar'});"},
+                ctrlCHandler );
 
         // verify
         verify( databaseShellServer ).shutdown();
@@ -176,9 +169,9 @@ public class StartClientIT extends AbstractShellIT
         StartClient client = new StartClient( new PrintStream( out ), new PrintStream( err ) );
 
         // when
-        client.start( new String[]{"-path", db.getStoreDir(), "-c", "dbinfo -g Configuration unsupported.dbms.edition"},
+        client.start( new String[]{"-path", db.getStoreDir().getAbsolutePath() + "testDb", "-c",
+                        "dbinfo -g Configuration unsupported.dbms.edition"},
                 ctrlCHandler );
-
         // then
         assertEquals( 0, err.size() );
         assertThat( out.toString(), containsString( "\"unsupported.dbms.edition\": \"community\"" ) );
@@ -215,14 +208,36 @@ public class StartClientIT extends AbstractShellIT
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
                     String configFile ) throws RemoteException
             {
-                return new GraphDatabaseShellServer( new TestGraphDatabaseFactory().setUserLogProvider( log ), path,
-                        readOnly, configFile );
+                TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory().setUserLogProvider( log );
+                shellServer = new GraphDatabaseShellServer( factory, path, readOnly, configFile );
+                return shellServer;
             }
-        }.start( new String[]{"-c", "RETURN 1;", "-path", db.getStoreDir(), "-config",
+        }.start( new String[]{"-c", "RETURN 1;", "-path", db.getStoreDir().getAbsolutePath() + "test-db", "-config",
                 getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()}, mock( CtrlCHandler.class ) );
+        try
+        {
+            log.assertNone( inLog( startsWith( WorkerFactory.class.getPackage().getName() ) ).any() );
+        }
+        finally
+        {
+            if ( shellServer != null )
+            {
+                shellServer.shutdown();
+            }
+        }
+    }
 
-        // Then
-        log.assertNone( inLog( startsWith( WorkerFactory.class.getPackage().getName() ) ).any() );
+    private void assertNodeExists( String property, Object value )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Result result = db.execute( "MATCH (n {" + property + ": $value}) RETURN count(n) AS res",
+                    singletonMap( "value", value ) );
+
+            long count = (long) single( result ).getOrDefault( "res", 0 );
+            assertEquals( 1, count );
+            tx.success();
+        }
     }
 
     private String runAndCaptureOutput( String[] arguments )

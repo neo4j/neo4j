@@ -21,22 +21,24 @@ package org.neo4j.desktop.model;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Scanner;
 
 public class LastLocation
 {
+    private LastLocation()
+    {
+    }
+
     public static String getLastLocation( String defaultLocation )
     {
         File file = new File( ".dblocation" );
         String location = defaultLocation;
 
-        if( file.exists() && file.canRead() )
+        if ( file.exists() && file.canRead() )
         {
-            try( Scanner scanner = new Scanner( file ) )
+            try ( Scanner scanner = new Scanner( file ) )
             {
                 if ( scanner.hasNextLine() )
                 {

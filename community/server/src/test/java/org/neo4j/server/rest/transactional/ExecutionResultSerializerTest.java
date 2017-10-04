@@ -22,8 +22,6 @@ package org.neo4j.server.rest.transactional;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -58,6 +56,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.MockGeometry;
+import org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.MockPoint;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mockito.mock.GraphMock;
 import org.neo4j.test.mockito.mock.Link;
@@ -77,7 +77,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.*;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockCartesian;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockWGS84;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.link;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
@@ -282,7 +283,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]},{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}," +
+                      "{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -308,9 +310,9 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[" +
-                      "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}," +
-                      "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
-                      "\"errors\":[]}", result );
+                "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}," +
+                "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
@@ -364,9 +366,12 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"nested\"]," +
-                      "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]," +
-                      "\"meta\":[{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":1,\"type\":\"node\",\"deleted\":false},[{\"id\":1,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
-                      "\"errors\":[]}", result );
+                "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12}," +
+                "\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]," +
+                "\"meta\":[{\"id\":1,\"type\":\"relationship\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"node\",\"deleted\":false},[{\"id\":1,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
@@ -386,9 +391,10 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
-                      "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
-                      "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
-                      "\"errors\":[]}", result );
+                "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
+                "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
@@ -399,8 +405,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         ExecutionResultSerializer serializer = getSerializerWith( output );
 
         List<Coordinate> points = new ArrayList<>();
-        points.add( new Coordinate(1,2) );
-        points.add( new Coordinate(2,3) );
+        points.add( new Coordinate( 1, 2 ) );
+        points.add( new Coordinate( 2, 3 ) );
         Result executionResult = mockExecutionResult(
                 map( "geom", new MockPoint( 12.3, 45.6, mockWGS84() ) ),
                 map( "geom", new MockPoint( 123, 456, mockCartesian() ) ),
@@ -460,8 +466,10 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals(
-                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
-                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
+                        "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\"," +
+                        "\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
 
@@ -497,7 +505,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals(
-                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
                 "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
@@ -533,10 +542,16 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         String node1 = "{\"id\":\"1\",\"labels\":[],\"properties\":{\"name\":\"node1\"}}";
         String node2 = "{\"id\":\"2\",\"labels\":[\"This\",\"That\"],\"properties\":{\"name\":\"node2\"}}";
         String node3 = "{\"id\":\"3\",\"labels\":[\"Other\"],\"properties\":{\"name\":\"node3\"}}";
-        String rel0 = "\"relationships\":[{\"id\":\"0\",\"type\":\"KNOWS\",\"startNode\":\"0\",\"endNode\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
-        String rel1 = "\"relationships\":[{\"id\":\"1\",\"type\":\"LOVES\",\"startNode\":\"2\",\"endNode\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
-        String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}],\"meta\":[{\"id\":0,\"type\":\"node\",\"deleted\":false},{\"id\":0,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
-        String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}],\"meta\":[{\"id\":2,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+        String rel0 = "\"relationships\":[{\"id\":\"0\",\"type\":\"KNOWS\"," +
+                "\"startNode\":\"0\",\"endNode\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
+        String rel1 = "\"relationships\":[{\"id\":\"1\",\"type\":\"LOVES\"," +
+                "\"startNode\":\"2\",\"endNode\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
+        String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}]," +
+                "\"meta\":[{\"id\":0,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":0,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+        String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}]," +
+                "\"meta\":[{\"id\":2,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
         int n0 = result.indexOf( node0 );
         int n1 = result.indexOf( node1 );
         int n2 = result.indexOf( node2 );
@@ -785,7 +800,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         return root;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private Map<String, ?> planRootMap( String resultString ) throws JsonParseException
     {
         Map<String, ?> resultMap = (Map<String, ?>) ((List<?>) ((Map<String, ?>) (readJson( resultString ))).get("results")).get( 0 );
@@ -816,7 +831,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     public void shouldAbbreviateWellKnownIOErrors() throws Exception
     {
         // given
-        OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException("Broken pipe") ) );
+        OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException( "Broken pipe" ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         ExecutionResultSerializer serializer = getSerializerWith( output, null, logProvider );
 
@@ -825,7 +840,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
         // then
         logProvider.assertExactly(
-                AssertableLogProvider.inLog( ExecutionResultSerializer.class ).error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." )
+                AssertableLogProvider.inLog( ExecutionResultSerializer.class )
+                    .error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." )
         );
     }
 
@@ -932,13 +948,14 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @SafeVarargs
-    private static Result mockExecutionResult(ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String,Object>... rows )
     {
-        return mockExecutionResult( planDescription, Collections.<Notification>emptyList(), rows );
+        return mockExecutionResult( planDescription, Collections.emptyList(), rows );
     }
 
     @SafeVarargs
-    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Iterable<Notification> notifications, Map<String, Object>... rows )
+    private static Result mockExecutionResult( ExecutionPlanDescription planDescription,
+            Iterable<Notification> notifications, Map<String, Object>... rows )
     {
         Set<String> keys = new TreeSet<>();
         for ( Map<String, Object> row : rows )
@@ -950,22 +967,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         when( executionResult.columns() ).thenReturn( new ArrayList<>( keys ) );
 
         final Iterator<Map<String, Object>> inner = asList( rows ).iterator();
-        when( executionResult.hasNext() ).thenAnswer( new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return inner.hasNext();
-            }
-        } );
-        when( executionResult.next() ).thenAnswer( new Answer<Map<String,Object>>()
-        {
-            @Override
-            public Map<String, Object> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return inner.next();
-            }
-        } );
+        when( executionResult.hasNext() ).thenAnswer( invocation -> inner.hasNext() );
+        when( executionResult.next() ).thenAnswer( invocation -> inner.next() );
 
         when( executionResult.getQueryExecutionType() )
                 .thenReturn( null != planDescription
@@ -984,21 +987,17 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
     private static void mockAccept( Result mock )
     {
-        doAnswer( new Answer<Void>()
+        doAnswer( invocation ->
         {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
+            Result result = (Result) invocation.getMock();
+            Result.ResultVisitor visitor = invocation.getArgument( 0 );
+            while ( result.hasNext() )
             {
-                Result result = (Result) invocation.getMock();
-                Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
-                while ( result.hasNext() )
-                {
-                    visitor.visit( new MapRow( result.next() ) );
-                }
-                return null;
+                visitor.visit( new MapRow( result.next() ) );
             }
+            return null;
         } ).when( mock )
-           .accept( (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
+               .accept( (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
     }
 
     private static Path mockPath( Map<String, Object> startNodeProperties, Map<String, Object> relationshipProperties,

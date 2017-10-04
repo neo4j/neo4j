@@ -34,5 +34,5 @@ public enum AtomicBroadcastMessage
 
     // Protocol implementation messages
     entered, join, leave, // Group management
-    broadcastResponse, broadcastTimeout, failed; // Internal message created by implementation
+    broadcastResponse, broadcastTimeout, failed // Internal message created by implementation
 }

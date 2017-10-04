@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.build</groupId>
   <artifactId>licensecheck-config</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Licensing configuration</name>
   <description>Licensing configuration for the Neo4j project.</description>
@@ -16,7 +16,6 @@
   <url>http://components.neo4j.org/${project.artifactId}</url>
 
   <properties>
-    <short-name>licenses</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>none</licensing.phase>
@@ -66,15 +65,34 @@
         <configuration>
           <skip>true</skip>
         </configuration>
-         <executions>
+        <executions>
           <execution>
             <id>check-licenses</id>
             <phase>none</phase>
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemProperties>
+            <property>
+              <name>ignoreNoticeYear</name>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
 </project>
 

@@ -36,6 +36,7 @@ import com.hazelcast.core.ItemListener;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberSelector;
 import com.hazelcast.core.MultiExecutionCallback;
+import com.hazelcast.core.MultiMap;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
 import com.hazelcast.map.listener.MapListener;
@@ -45,6 +46,7 @@ import com.hazelcast.mapreduce.aggregation.Aggregation;
 import com.hazelcast.mapreduce.aggregation.Supplier;
 import com.hazelcast.monitor.LocalExecutorStats;
 import com.hazelcast.monitor.LocalMapStats;
+import com.hazelcast.monitor.LocalMultiMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
@@ -69,8 +71,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -94,20 +96,21 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClientTest
 {
+    private MemberId myself = new MemberId( UUID.randomUUID() );
+    private TopologyServiceRetryStrategy topologyServiceRetryStrategy = new TopologyServiceNoRetriesStrategy();
+
     private Config config()
     {
-        Config defaults = Config.defaults();
-
         HashMap<String, String> settings = new HashMap<>();
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
 
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:3001" );
+        settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+        settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:3001" );
 
-        return defaults.augment( settings );
+        return Config.defaults( settings );
     }
 
     @Test
@@ -116,13 +119,16 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
+
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -146,13 +152,16 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
+
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -192,7 +201,8 @@ public class HazelcastClientTest
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, logProvider, config() );
+
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, logProvider, config(), myself, topologyServiceRetryStrategy );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -227,10 +237,12 @@ public class HazelcastClientTest
         when( clientService.getConnectedClients() ).thenReturn( asSet( client ) );
 
         HazelcastMap hazelcastMap = new HazelcastMap();
+        HazelcastMultiMap hazelcastMultiMap = new HazelcastMultiMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( hazelcastMultiMap );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -240,7 +252,8 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         // when
         hazelcastClient.start();
@@ -273,6 +286,7 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -282,7 +296,8 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         hazelcastClient.start();
 
@@ -305,13 +320,16 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         doThrow( new NullPointerException( "boom!!!" ) ).when( hazelcastInstance ).shutdown();
 
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
+
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         hazelcastClient.start();
 
@@ -327,10 +345,10 @@ public class HazelcastClientTest
     {
         Member member = mock( Member.class );
         when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
-        when( member.getStringAttribute( TRANSACTION_SERVER ) ).thenReturn( format( "host%d:%d", id, (7000 + id) ) );
-        when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, (6000 + id) ) );
+        when( member.getStringAttribute( TRANSACTION_SERVER ) ).thenReturn( format( "host%d:%d", id, 7000 + id ) );
+        when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, 6000 + id ) );
         when( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) )
-                .thenReturn( format( "bolt://host%d:%d,http://host%d:%d", id, (5000 + id), id, (5000 + id) ) );
+                .thenReturn( format( "bolt://host%d:%d,http://host%d:%d", id, 5000 + id, id, 5000 + id ) );
         return member;
     }
 
@@ -901,11 +919,222 @@ public class HazelcastClientTest
         }
     }
 
+    private class HazelcastMultiMap implements MultiMap<Object,Object>
+    {
+        private Map<Object,Object> delegate = new HashMap<>();
+
+        @Override
+        public String getPartitionKey()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getName()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getServiceName()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void destroy()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean put( Object key, Object value )
+        {
+            if ( delegate.get( key ) != null )
+            {
+                throw new UnsupportedOperationException( "This is not a true multimap" );
+            }
+            delegate.put( key, value );
+            return true;
+        }
+
+        @Override
+        public Collection<Object> get( Object key )
+        {
+            return asSet( delegate.get( key ) );
+        }
+
+        @Override
+        public boolean remove( Object key, Object value )
+        {
+            return delegate.remove( key, value );
+        }
+
+        @Override
+        public Collection<Object> remove( Object key )
+        {
+            return asSet( delegate.remove( key ) );
+        }
+
+        @Override
+        public Set<Object> localKeySet()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Set<Object> keySet()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Collection<Object> values()
+        {
+            return delegate.values();
+        }
+
+        @Override
+        public Set<Map.Entry<Object,Object>> entrySet()
+        {
+            return delegate.entrySet();
+        }
+
+        @Override
+        public boolean containsKey( Object key )
+        {
+            return delegate.containsKey( key );
+        }
+
+        @Override
+        public boolean containsValue( Object value )
+        {
+            return delegate.containsValue( value );
+        }
+
+        @Override
+        public boolean containsEntry( Object key, Object value )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size()
+        {
+            return delegate.size();
+        }
+
+        @Override
+        public void clear()
+        {
+            delegate.clear();
+        }
+
+        @Override
+        public int valueCount( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String addLocalEntryListener( EntryListener<Object,Object> listener )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String addEntryListener( EntryListener<Object,Object> listener, boolean includeValue )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeEntryListener( String registrationId )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String addEntryListener( EntryListener<Object,Object> listener, Object key, boolean includeValue )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void lock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void lock( Object key, long leaseTime, TimeUnit timeUnit )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isLocked( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean tryLock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
+                throws InterruptedException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void unlock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void forceUnlock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LocalMultiMapStats getLocalMultiMapStats()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier,
+                Aggregation<Object,SuppliedValue,Result> aggregation )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier,
+                Aggregation<Object,SuppliedValue,Result> aggregation, JobTracker jobTracker )
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
     private class HazelcastSet implements ISet<Object>
     {
         private Set<Object> delegate;
 
-        public HazelcastSet()
+        HazelcastSet()
         {
             this.delegate = new HashSet<>();
         }

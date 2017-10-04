@@ -29,7 +29,7 @@ class AggregatingWriter implements ResultDataContentWriter
 {
     private final ResultDataContentWriter[] writers;
 
-    public AggregatingWriter( ResultDataContentWriter[] writers )
+    AggregatingWriter( ResultDataContentWriter[] writers )
     {
         this.writers = writers;
     }

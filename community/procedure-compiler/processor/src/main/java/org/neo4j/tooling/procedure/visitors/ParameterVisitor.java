@@ -19,10 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.ParameterMissingAnnotationError;
-import org.neo4j.tooling.procedure.messages.ParameterTypeError;
-
 import java.util.List;
 import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
@@ -32,13 +28,16 @@ import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.SimpleElementVisitor8;
 
 import org.neo4j.procedure.Name;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.ParameterMissingAnnotationError;
+import org.neo4j.tooling.procedure.messages.ParameterTypeError;
 
 class ParameterVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
 
     private final TypeVisitor<Boolean,Void> parameterTypeVisitor;
 
-    public ParameterVisitor( TypeVisitor<Boolean,Void> parameterTypeVisitor )
+    ParameterVisitor( TypeVisitor<Boolean,Void> parameterTypeVisitor )
     {
         this.parameterTypeVisitor = parameterTypeVisitor;
     }

@@ -20,7 +20,6 @@
 package org.neo4j.server.enterprise.modules;
 
 import java.lang.management.ManagementFactory;
-
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
@@ -55,7 +54,8 @@ public class JMXManagementModule implements ServerModule
     }
 
     @Override
-    public void stop() {
+    public void stop()
+    {
         try
         {
             MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();

@@ -25,12 +25,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.ExecutingQuery;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
+import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ExecutingQueryListTest
 {
@@ -46,6 +51,21 @@ public class ExecutingQueryListTest
 
         // Then
         assertThat( result, equalTo( ExecutingQueryList.EMPTY ) );
+    }
+
+    @Test
+    public void shouldNotChangeAListWhenRemovingAQueryThatIsNotInTheList() throws Exception
+    {
+        // given
+        ExecutingQuery query1 = createExecutingQuery( 1, "query1" );
+        ExecutingQuery query2 = createExecutingQuery( 2, "query2" );
+        ExecutingQueryList list = ExecutingQueryList.EMPTY.push( query1 );
+
+        // when
+        ExecutingQueryList result = list.remove( query2 );
+
+        // then
+        assertThat( result, equalTo( list ) );
     }
 
     @Test
@@ -98,7 +118,8 @@ public class ExecutingQueryListTest
 
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
-        return new ExecutingQuery( queryId, QuerySource.UNKNOWN, "me", query,
-                Collections.emptyMap(), 10, Collections.emptyMap() );
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, "me", query,
+                EMPTY_MAP, Collections.emptyMap(), () -> 0, PageCursorTracer.NULL, Thread.currentThread(),
+                Clocks.nanoClock(), CpuClock.CPU_CLOCK, HeapAllocation.HEAP_ALLOCATION );
     }
 }

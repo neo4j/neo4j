@@ -29,32 +29,36 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 /**
  * Defines all types of read operations that can be done from the {@link KernelAPI}.
@@ -63,14 +67,13 @@ public interface ReadOperations
 {
     int ANY_LABEL = -1;
     int ANY_RELATIONSHIP_TYPE = -1;
-    int NO_SUCH_LABEL = -1;
-    int NO_SUCH_PROPERTY_KEY = -1;
 
     //===========================================
     //== TOKEN OPERATIONS =======================
     //===========================================
 
-    /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
+    /** Returns a label id for a label name. If the label doesn't exist, {@link KeyReadOperations#NO_SUCH_LABEL}
+     * will be returned. */
     int labelGetForName( String labelName );
 
     /** Returns the label name for the given label id. */
@@ -115,60 +118,15 @@ public interface ReadOperations
     PrimitiveLongIterator nodesGetForLabel( int labelId );
 
     /**
-     * Returns an iterator with the matched nodes.
+     * Queries the given index with the given index query.
      *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
+     * @param index the index to query against.
+     * @param predicates array of the {@link IndexQuery} predicates to query for.
+     * @return ids of the matching nodes
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( IndexDescriptor index, String term )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( IndexDescriptor index, String suffix )
-            throws IndexNotFoundKernelException;
+    PrimitiveLongIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
      * @return an iterator over all nodes in the database.
@@ -180,9 +138,8 @@ public interface ReadOperations
      */
     PrimitiveLongIterator relationshipsGetAll();
 
-    RelationshipIterator nodeGetRelationships( long nodeId,
-            Direction direction,
-            int... relTypes ) throws EntityNotFoundException;
+    RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
+            throws EntityNotFoundException;
 
     RelationshipIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
 
@@ -198,15 +155,13 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
-            IndexBrokenKernelException;
+    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
+            IndexBrokenKernelException, IndexNotApplicableKernelException;
 
-    long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean nodeExists( long nodeId );
-
-    boolean relationshipExists( long relId );
 
     /**
      * Checks if a node is labeled with a certain label or not. Returns
@@ -218,7 +173,7 @@ public interface ReadOperations
 
     int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
 
-    boolean nodeIsDense(long nodeId) throws EntityNotFoundException;
+    boolean nodeIsDense( long nodeId ) throws EntityNotFoundException;
 
     /**
      * Returns all labels set on node with id {@code nodeId}.
@@ -236,15 +191,15 @@ public interface ReadOperations
 
     boolean nodeHasProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Object nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    Value nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
     boolean relationshipHasProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Object relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
+    Value relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
     boolean graphHasProperty( int propertyKeyId );
 
-    Object graphGetProperty( int propertyKeyId );
+    Value graphGetProperty( int propertyKeyId );
 
     <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
             throws EntityNotFoundException, EXCEPTION;
@@ -257,40 +212,20 @@ public interface ReadOperations
     //== CURSOR ACCESS OPERATIONS ===============
     //===========================================
 
-    Cursor<NodeItem> nodeCursor( long nodeId );
+    Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException;
 
-    Cursor<RelationshipItem> relationshipCursor( long relId );
+    Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException;
 
-    Cursor<NodeItem> nodeCursorGetAll();
+    Cursor<PropertyItem> nodeGetProperties( NodeItem node );
 
-    Cursor<RelationshipItem> relationshipCursorGetAll();
-
-    Cursor<NodeItem> nodeCursorGetForLabel( int labelId );
-
-    Cursor<NodeItem> nodeCursorGetFromIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexScan( IndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException;
+    Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship );
 
     //===========================================
     //== SCHEMA OPERATIONS ======================
     //===========================================
 
-    /** Returns the index rule for the given labelId and propertyKey. */
-    IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    /** Returns the index rule for the given LabelSchemaDescriptor. */
+    IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
@@ -298,16 +233,6 @@ public interface ReadOperations
 
     /** Returns all indexes. */
     Iterator<IndexDescriptor> indexesGetAll();
-
-    /** Returns the constraint index for the given labelId and propertyKey. */
-    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
-            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException;
-
-    /** Get all constraint indexes for a label. */
-    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId );
-
-    /** Returns all constraint indexes. */
-    Iterator<IndexDescriptor> uniqueIndexesGetAll();
 
     /** Retrieve the state of an index. */
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
@@ -325,41 +250,33 @@ public interface ReadOperations
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to label and propertyKey.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
+    Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
 
     /**
-     * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to label.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId );
+    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
 
     /**
-     * Get all constraints applicable to relationship type. There are only {@link RelationshipPropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to relationship type.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId );
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
 
     /**
-     * Get all constraints applicable to relationship type and propertyKey.
-     * There are only {@link RelationshipPropertyConstraint} for the time being.
+     * Get all constraints.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId, int propertyKeyId );
-
-    /**
-     * Get all constraints. There are only {@link PropertyConstraint}
-     * for the time being.
-     */
-    Iterator<PropertyConstraint> constraintsGetAll();
+    Iterator<ConstraintDescriptor> constraintsGetAll();
 
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
 
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
+
+    <K, V> V schemaStateGet( K key );
 
     void schemaStateFlush();
 
@@ -367,75 +284,77 @@ public interface ReadOperations
     //== LOCKING OPERATIONS =====================
     //===========================================
 
-    void acquireExclusive( ResourceType type, long id );
-    void acquireShared(    ResourceType type, long id );
+    void acquireExclusive( ResourceType type, long... ids );
 
-    void releaseExclusive( ResourceType type, long id );
-    void releaseShared(    ResourceType type, long id );
+    void acquireShared( ResourceType type, long... ids );
+
+    void releaseExclusive( ResourceType type, long... ids );
+
+    void releaseShared( ResourceType type, long... ids );
 
     //===========================================
-    //== LEGACY INDEX OPERATIONS ================
+    //== EXPLICIT INDEX OPERATIONS ================
     //===========================================
 
     /**
      * @param indexName name of node index to check for existence.
      * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
      * be matched and a mismatch will throw {@link IllegalArgumentException}.
-     * @return whether or not node legacy index with name {@code indexName} exists.
+     * @return whether or not node explicit index with name {@code indexName} exists.
      * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
      */
-    boolean nodeLegacyIndexExists( String indexName, Map<String,String> customConfiguration );
+    boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
     /**
      * @param indexName name of relationship index to check for existence.
      * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
      * be matched and a mismatch will throw {@link IllegalArgumentException}.
-     * @return whether or not relationship legacy index with name {@code indexName} exists.
+     * @return whether or not relationship explicit index with name {@code indexName} exists.
      * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
      */
-    boolean relationshipLegacyIndexExists( String indexName, Map<String,String> customConfiguration );
+    boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
-    Map<String, String> nodeLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException;
+    Map<String, String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException;
 
-    Map<String, String> relationshipLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException;
+    Map<String, String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexGet( String indexName, String key, Object value )
-            throws LegacyIndexNotFoundKernelException;
+    ExplicitIndexHits nodeExplicitIndexGet( String indexName, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException;
+    ExplicitIndexHits nodeExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException;
-
-    /**
-     * @param startNode -1 if ignored.
-     * @param endNode -1 if ignored.
-     */
-    LegacyIndexHits relationshipLegacyIndexGet( String name, String key, Object valueOrNull, long startNode,
-            long endNode ) throws LegacyIndexNotFoundKernelException;
+    ExplicitIndexHits nodeExplicitIndexQuery( String indexName, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * @param startNode -1 if ignored.
      * @param endNode -1 if ignored.
      */
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject,
+    ExplicitIndexHits relationshipExplicitIndexGet( String name, String key, Object valueOrNull, long startNode,
+            long endNode ) throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * @param startNode -1 if ignored.
+     * @param endNode -1 if ignored.
+     */
+    ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject,
             long startNode, long endNode )
-            throws LegacyIndexNotFoundKernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * @param startNode -1 if ignored.
      * @param endNode -1 if ignored.
      */
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject,
+    ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, Object queryOrQueryObject,
             long startNode, long endNode )
-            throws LegacyIndexNotFoundKernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
-    String[] nodeLegacyIndexesGetAll();
+    String[] nodeExplicitIndexesGetAll();
 
-    String[] relationshipLegacyIndexesGetAll();
+    String[] relationshipExplicitIndexesGetAll();
 
     //===========================================
     //== COUNTS OPERATIONS ======================
@@ -576,6 +495,9 @@ public interface ReadOperations
 
     /** Fetch a function given its signature, or <code>empty</code> if no such function exists*/
     Optional<UserFunctionSignature> functionGet( QualifiedName name );
+
+    /** Fetch an aggregation function given its signature, or <code>empty</code> if no such function exists*/
+    Optional<UserFunctionSignature> aggregationFunctionGet( QualifiedName name );
 
     /** Fetch all registered procedures */
     Set<UserFunctionSignature> functionsGetAll();

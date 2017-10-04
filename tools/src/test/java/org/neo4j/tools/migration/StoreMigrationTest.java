@@ -53,7 +53,7 @@ public class StoreMigrationTest
 
         // after migration we can open store and do something
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
-        try (Transaction transaction = database.beginTx())
+        try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
             node.setProperty( "key", "value" );

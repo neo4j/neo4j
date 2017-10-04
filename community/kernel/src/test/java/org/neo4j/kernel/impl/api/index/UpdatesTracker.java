@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 public class UpdatesTracker
 {
-    private int created = 0;
-    private int deleted = 0;
-    private int createdDuringPopulation = 0;
-    private int deletedDuringPopulation = 0;
-    private boolean populationCompleted = false;
+    private int created;
+    private int deleted;
+    private int createdDuringPopulation;
+    private int deletedDuringPopulation;
+    private boolean populationCompleted;
 
     public void increaseCreated( int num )
     {

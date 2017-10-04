@@ -91,7 +91,7 @@ public class AdversarialFileChannel extends StoreFileChannel
     {
         if ( adversary.injectFailureOrMischief( IOException.class ) )
         {
-            length = length == 1? 1 : length / 2;
+            length = length == 1 ? 1 : length / 2;
             ByteBuffer mischievousBuffer = srcs[offset + length - 1];
             int oldLimit = mischiefLimit( mischievousBuffer );
             long written = delegate.write( srcs, offset, length );

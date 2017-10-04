@@ -33,7 +33,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * The main access point to a running Neo4j instance. The most common way to instantiate a {@link GraphDatabaseService}
  * is as follows:
  * <pre>
- * <code>GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "var/graphDb" );
+ * <code>GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( new File("var/graphDb") );
  * // ... use Neo4j
  * graphDb.{@link #shutdown() shutdown()};</code>
  * </pre>
@@ -54,6 +54,16 @@ public interface GraphDatabaseService
      * @return the created node.
      */
     Node createNode();
+
+    /**
+     * Creates a new node and returns it id.
+     * Please note: Neo4j reuses its internal ids when
+     * nodes and relationships are deleted, which means it's bad practice to
+     * refer to them this way. Instead, use application generated ids.
+     *
+     * @return the created nodes id.
+     */
+    Long createNodeId();
 
     /**
      * Creates a new node and adds the provided labels to it.

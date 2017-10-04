@@ -106,7 +106,8 @@ public class ClusterShutdownIT
             final AtomicInteger numberOfInstancesReady = new AtomicInteger();
             for ( int i = 0; i < NUMBER_OF_LOCK_ACQUIRERS; i++ )
             {
-                txExecutor.execute( () -> {
+                txExecutor.execute( () ->
+                {
                     try ( Transaction tx = victimDB.beginTx() )
                     {
                         numberOfInstancesReady.incrementAndGet();
@@ -133,7 +134,8 @@ public class ClusterShutdownIT
             // then - shutdown in any order should still be possible
             for ( final int id : shutdownOrder )
             {
-                shutdownExecutor.execute( () -> {
+                shutdownExecutor.execute( () ->
+                {
                     cluster.getCoreMemberById( id ).shutdown();
                     shutdownLatch.countDown();
                 } );

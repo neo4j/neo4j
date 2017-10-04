@@ -42,7 +42,8 @@ class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<NodeRecord> node()
     {
-        return ( written, read ) -> {
+        return ( written, read ) ->
+        {
             assertEquals( written.getNextProp(), read.getNextProp() );
             assertEquals( written.getNextRel(), read.getNextRel() );
             assertEquals( written.getLabelField(), read.getLabelField() );
@@ -53,7 +54,8 @@ class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<RelationshipRecord> relationship()
     {
-        return ( written, read ) -> {
+        return ( written, read ) ->
+        {
             assertEquals( written.getNextProp(), read.getNextProp() );
             assertEquals( written.getFirstNode(), read.getFirstNode() );
             assertEquals( written.getSecondNode(), read.getSecondNode() );
@@ -109,7 +111,8 @@ class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<RelationshipGroupRecord> relationshipGroup()
     {
-        return ( written, read ) -> {
+        return ( written, read ) ->
+        {
             assertEquals( written.getType(), read.getType() );
             assertEquals( written.getFirstOut(), read.getFirstOut() );
             assertEquals( written.getFirstIn(), read.getFirstIn() );
@@ -128,7 +131,8 @@ class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<PropertyKeyTokenRecord> propertyKeyToken()
     {
-        return ( written, read ) -> {
+        return ( written, read ) ->
+        {
             assertEquals( written.getNameId(), read.getNameId() );
             assertEquals( written.getPropertyCount(), read.getPropertyCount() );
         };
@@ -143,7 +147,8 @@ class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<DynamicRecord> dynamic()
     {
-        return ( written, read ) -> {
+        return ( written, read ) ->
+        {
             // Don't assert type, since that's read from the data, and the data in this test
             // is randomly generated. Since we assert that the data is the same then the type
             // is also correct.

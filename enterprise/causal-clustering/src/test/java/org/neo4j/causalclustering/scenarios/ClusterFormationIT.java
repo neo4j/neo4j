@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
@@ -42,6 +41,7 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ClusterFormationIT
 {
@@ -76,12 +76,12 @@ public class ClusterFormationIT
             }
 
             // (2) BuiltInProcedures from enterprise
-            try( InternalTransaction tx = gdb.beginTransaction(
+            try ( InternalTransaction tx = gdb.beginTransaction(
                     KernelTransaction.Type.explicit,
                     EnterpriseSecurityContext.AUTH_DISABLED
             ) )
             {
-                Result result = gdb.execute( tx, "CALL dbms.listQueries()", Collections.emptyMap() );
+                Result result = gdb.execute( tx, "CALL dbms.listQueries()", EMPTY_MAP );
                 assertTrue( result.hasNext() );
                 result.close();
 
@@ -118,7 +118,8 @@ public class ClusterFormationIT
     {
         // given
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit( () -> {
+        executorService.submit( () ->
+        {
             CoreGraphDatabase leader = cluster.getDbWithRole( Role.LEADER ).database();
             try ( Transaction tx = leader.beginTx() )
             {

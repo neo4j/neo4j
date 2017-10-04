@@ -22,13 +22,12 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -44,7 +43,9 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
@@ -55,7 +56,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.properties.Property.intProperty;
 
 public class PropertyLoaderTest
 {
@@ -75,32 +75,11 @@ public class PropertyLoaderTest
     public void setUpMocking() throws Exception
     {
         doReturn( nodeStore ).when( neoStores ).getNodeStore();
-        when( nodeStore.newRecord() ).thenAnswer( new Answer<NodeRecord>()
-        {
-            @Override
-            public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new NodeRecord( -1 );
-            }
-        } );
+        when( nodeStore.newRecord() ).thenAnswer( invocation -> new NodeRecord( -1 ) );
         doReturn( relationshipStore ).when( neoStores ).getRelationshipStore();
-        when( relationshipStore.newRecord() ).thenAnswer( new Answer<RelationshipRecord>()
-        {
-            @Override
-            public RelationshipRecord answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipRecord( -1 );
-            }
-        } );
+        when( relationshipStore.newRecord() ).thenAnswer( invocation -> new RelationshipRecord( -1 ) );
         doReturn( propertyStore ).when( neoStores ).getPropertyStore();
-        when( propertyStore.newRecord() ).thenAnswer( new Answer<PropertyRecord>()
-        {
-            @Override
-            public PropertyRecord answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new PropertyRecord( -1 );
-            }
-        } );
+        when( propertyStore.newRecord() ).thenAnswer( invocation -> new PropertyRecord( -1 ) );
     }
 
     @Test
@@ -190,16 +169,12 @@ public class PropertyLoaderTest
     private <R extends PrimitiveRecord> void setUpPropertyChain( long id, Class<R> recordClass,
             CommonAbstractStore<R,? extends StoreHeader> store, int... propertyValues )
     {
-        when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( new Answer<R>()
+        when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( invocation ->
         {
-            @Override
-            public R answer( InvocationOnMock invocation ) throws Throwable
-            {
-                R record = (R) invocation.getArguments()[1];
-                record.setId( ((Number)invocation.getArguments()[0]).longValue() );
-                record.setNextProp( 1 );
-                return record;
-            }
+            R record = invocation.getArgument( 1 );
+            record.setId( ((Number) invocation.getArgument( 0 )).longValue() );
+            record.setNextProp( 1 );
+            return record;
         } );
         List<PropertyRecord> propertyChain = new ArrayList<>( propertyValues.length );
         for ( int i = 0; i < propertyValues.length; i++ )
@@ -220,8 +195,13 @@ public class PropertyLoaderTest
     private static PropertyBlock newSingleIntPropertyBlock( int value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, PROP_KEY_ID, value, null, null );
+        PropertyStore.encodeValue( block, PROP_KEY_ID, Values.intValue( value ), null, null );
         block.setKeyIndexId( PROP_KEY_ID );
         return block;
+    }
+
+    private StorageProperty intProperty( int propKeyId, int value )
+    {
+        return new PropertyKeyValue( propKeyId, Values.of( value ) );
     }
 }

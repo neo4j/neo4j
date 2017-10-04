@@ -47,16 +47,12 @@ public class AllPaths extends TraversalPathFinder
     @Override
     protected Traverser instantiateTraverser( Node start, Node end )
     {
-//        // Legacy single-directional traversal (for reference or something)
-//        return traversal().expand( expander ).depthFirst().uniqueness( uniqueness() )
-//                .evaluator( toDepth( maxDepth ) ).evaluator( Evaluators.includeWhereEndNodeIs( end ) )
-//                .traverse( start );
-
         // Bidirectional traversal
         GraphDatabaseService db = start.getGraphDatabase();
         TraversalDescription base = db.traversalDescription().depthFirst().uniqueness( uniqueness() );
-        return db.bidirectionalTraversalDescription().startSide( base.expand( expander ).evaluator( toDepth( maxDepth/2 ) ) )
-                .endSide( base.expand( expander.reverse() ).evaluator( toDepth( maxDepth-maxDepth/2 ) ) )
+        return db.bidirectionalTraversalDescription()
+                .startSide( base.expand( expander ).evaluator( toDepth( maxDepth / 2 ) ) )
+                .endSide( base.expand( expander.reverse() ).evaluator( toDepth( maxDepth - maxDepth / 2 ) ) )
                 .traverse( start, end );
     }
 }

@@ -27,7 +27,9 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -52,20 +54,26 @@ public class TestConfiguration
     @Test
     public void testOnByDefault() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
-        OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+        int port = PortAuthority.allocatePort();
+
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
+                .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + port ).newGraphDatabase();
+        OnlineBackup.from( HOST_ADDRESS, port ).full( BACKUP_DIR );
         db.shutdown();
     }
 
     @Test
     public void testOffByConfig() throws Exception
     {
+        int port = PortAuthority.allocatePort();
+
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + port )
                 .newGraphDatabase();
         try
         {
-            OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+            OnlineBackup.from( HOST_ADDRESS, port ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
@@ -77,32 +85,35 @@ public class TestConfiguration
     @Test
     public void testEnableDefaultsInConfig() throws Exception
     {
+        int port = PortAuthority.allocatePort();
+
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + port )
                 .newGraphDatabase();
 
-        OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+        OnlineBackup.from( HOST_ADDRESS, port ).full( BACKUP_DIR );
         db.shutdown();
     }
 
     @Test
     public void testEnableCustomPortInConfig() throws Exception
     {
-        String customPort = "12345";
+        int customPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
                 .setConfig( OnlineBackupSettings.online_backup_server, ":" + customPort )
                 .newGraphDatabase();
         try
         {
-            OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+            OnlineBackup.from( HOST_ADDRESS, PortAuthority.allocatePort() ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
         { // Good
         }
 
-        OnlineBackup.from( HOST_ADDRESS, Integer.parseInt(customPort) ).full( BACKUP_DIR );
+        OnlineBackup.from( HOST_ADDRESS, customPort ).full( BACKUP_DIR );
         db.shutdown();
     }
 }

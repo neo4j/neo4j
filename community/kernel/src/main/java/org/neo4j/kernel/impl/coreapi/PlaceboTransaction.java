@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
@@ -96,5 +97,11 @@ public class PlaceboTransaction implements InternalTransaction
     public KernelTransaction.Revertable overrideWith( SecurityContext context )
     {
         return currentTransaction.overrideWith( context );
+    }
+
+    @Override
+    public Optional<Status> terminationReason()
+    {
+        return currentTransaction.getReasonIfTerminated();
     }
 }

@@ -79,13 +79,13 @@ public class TestConcurrentRelationshipChainLoadingIssue
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
     {
         loadNode( db, node );
-        // TODO clear cache here
         loadNode( db, node );
     }
 
     private void loadNode( GraphDatabaseAPI db, Node node )
     {
-        try (Transaction ignored = db.beginTx()) {
+        try ( Transaction ignored = db.beginTx() )
+        {
             Iterables.count( node.getRelationships() );
         }
     }
@@ -93,7 +93,8 @@ public class TestConcurrentRelationshipChainLoadingIssue
     private void tryOnce( final GraphDatabaseAPI db, final Node node ) throws Throwable
     {
         Race race = new Race().withRandomStartDelays();
-        race.addContestants( Runtime.getRuntime().availableProcessors(), () -> {
+        race.addContestants( Runtime.getRuntime().availableProcessors(), () ->
+        {
             try ( Transaction ignored = db.beginTx() )
             {
                 assertEquals( relCount, count( node.getRelationships() ) );

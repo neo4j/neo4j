@@ -34,14 +34,16 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import javax.ws.rs.core.HttpHeaders;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -59,12 +61,14 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
 
 abstract class AbstractRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
+
+    private ConnectorPortRegister connectorPortRegister;
+
     abstract String commitPath();
 
     abstract void consume( Consumer<ResourceIterator<Map<String,Object>>> resultConsumer, JsonNode data );
@@ -79,14 +83,14 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
 
     AbstractRESTInteraction( Map<String,String> config ) throws IOException
     {
-        CommunityServerBuilder builder = EnterpriseServerBuilder.server();
+        CommunityServerBuilder builder = EnterpriseServerBuilder.serverOnRandomPorts();
         builder = builder
-                .withProperty( boltConnector( "0" ).type.name(), "BOLT" )
-                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
-                .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
+                .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
+                .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
+                .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), OPTIONAL.name() )
+                .withProperty( LegacySslPolicyConfig.tls_key_file.name(),
                         NeoInteractionLevel.tempPath( "key", ".key" ) )
-                .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),
+                .withProperty( LegacySslPolicyConfig.tls_certificate_file.name(),
                         NeoInteractionLevel.tempPath( "cert", ".cert" ) )
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) );
 
@@ -97,6 +101,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
         this.server = builder.build();
         this.server.start();
         authManager = this.server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        connectorPortRegister = server.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
     @Override
@@ -106,7 +111,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
         {
             return ((EnterpriseAuthAndUserManager) authManager).getUserManager();
         }
-        throw new Exception("The used configuration does not have a user manager");
+        throw new Exception( "The used configuration does not have a user manager" );
     }
 
     @Override
@@ -162,7 +167,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public void logout( RESTSubject subject ) { }
+    public void logout( RESTSubject subject )
+    {
+    }
 
     @Override
     public void updateAuthToken( RESTSubject subject, String username, String password )
@@ -188,7 +195,8 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     @Override
     public void assertAuthenticated( RESTSubject subject )
     {
-        assertThat( authenticate( subject.principalCredentials ).status(), equalTo( 200 ) );
+        HTTP.Response authenticate = authenticate( subject.principalCredentials );
+        assertThat( authenticate.rawContent(), authenticate.status(), equalTo( 200 ) );
     }
 
     @Override
@@ -212,9 +220,15 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public String getConnectionDetails()
+    public String getConnectionProtocol()
     {
-        return "server-session";
+        return "http";
+    }
+
+    @Override
+    public HostnamePort lookupConnector( String connectorKey )
+    {
+        return connectorPortRegister.getLocalAddress( connectorKey );
     }
 
     private String parseErrorMessage( HTTP.Response response )
@@ -247,7 +261,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     {
         private JsonNode data;
         private JsonNode columns;
-        private int index = 0;
+        private int index;
 
         AbstractRESTResult( JsonNode fullResult )
         {
@@ -314,11 +328,15 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
         {
             value = valueNode.getLongValue();
         }
+        else if ( valueNode.isNull() )
+        {
+            return null;
+        }
         else
         {
             throw new RuntimeException( String.format(
-                "Unhandled REST value type '%s'. Need String (TextNode), List (ArrayNode), Object (ObjectNode), long (LongNode), or int (IntNode).",
-                valueNode.getClass()
+                "Unhandled REST value type '%s'. Need String (TextNode), List (ArrayNode), Object (ObjectNode), " +
+                        "long (LongNode), or int (IntNode).", valueNode.getClass()
             ) );
         }
         return value;

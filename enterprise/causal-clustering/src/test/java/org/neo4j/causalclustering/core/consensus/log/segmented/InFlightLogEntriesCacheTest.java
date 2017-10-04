@@ -25,16 +25,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 public class InFlightLogEntriesCacheTest
 {
     @Test
+    public void shouldNotCacheUntilEnabled() throws Exception
+    {
+        InFlightMap<Object> cache = new InFlightMap<>();
+        Object entry = new Object();
+
+        cache.put( 1L, entry );
+        assertNull( cache.get( 1L ) );
+
+        cache.enable();
+        cache.put( 1L, entry );
+        assertEquals( entry, cache.get( 1L ) );
+    }
+
+    @Test
     public void shouldRegisterAndUnregisterValues() throws Exception
     {
         InFlightMap<Object> entries = new InFlightMap<>();
+        entries.enable();
 
         Map<Long, Object> logEntryList = new HashMap<>();
         logEntryList.put(1L, new Object() );
@@ -65,6 +79,7 @@ public class InFlightLogEntriesCacheTest
     public void shouldNotReinsertValues() throws Exception
     {
         InFlightMap<Object> entries = new InFlightMap<>();
+        entries.enable();
         Object addedObject = new Object();
         entries.put( 1L, addedObject );
         entries.put( 1L, addedObject );
@@ -74,6 +89,7 @@ public class InFlightLogEntriesCacheTest
     public void shouldNotReplaceRegisteredValues() throws Exception
     {
         InFlightMap<Object> cache = new InFlightMap<>();
+        cache.enable();
         Object first = new Object();
         Object second = new Object();
 

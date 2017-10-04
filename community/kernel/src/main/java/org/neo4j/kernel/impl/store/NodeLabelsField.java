@@ -40,6 +40,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
  */
 public class NodeLabelsField
 {
+    private NodeLabelsField()
+    {
+    }
+
     public static NodeLabels parseLabelsField( NodeRecord node )
     {
         long labelField = node.getLabelField();

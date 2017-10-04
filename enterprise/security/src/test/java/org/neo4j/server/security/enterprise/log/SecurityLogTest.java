@@ -44,7 +44,7 @@ public class SecurityLogTest
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
-    private Config config = Config.defaults().augment(
+    private Config config = Config.defaults(
             stringMap( SecuritySettings.store_security_log_rotation_threshold.name(), "5",
                     SecuritySettings.store_security_log_rotation_delay.name(), "1ms" ) );
 
@@ -109,7 +109,7 @@ public class SecurityLogTest
     private SecurityLog withLogLevel( Level debug ) throws IOException
     {
         return new SecurityLog(
-                Config.defaults().augment( stringMap( SecuritySettings.security_log_level.name(), debug.name() ) ),
+                Config.defaults( SecuritySettings.security_log_level, debug.name() ),
                 fileSystemRule.get(),
                 Runnable::run
             );

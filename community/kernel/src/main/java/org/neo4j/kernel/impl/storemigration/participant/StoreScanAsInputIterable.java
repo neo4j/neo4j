@@ -41,7 +41,7 @@ abstract class StoreScanAsInputIterable<INPUT extends InputEntity,RECORD extends
     private final RecordCursor<RECORD> cursor;
     private final StoreSourceTraceability traceability;
 
-    public StoreScanAsInputIterable( RecordStore<RECORD> store )
+    StoreScanAsInputIterable( RecordStore<RECORD> store )
     {
         this.store = store;
         this.cursor = store.newRecordCursor( store.newRecord() );

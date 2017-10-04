@@ -269,7 +269,7 @@ public class AvailabilityGuard
             return Availability.AVAILABLE;
         }
 
-        assert (count > 0);
+        assert count > 0;
 
         return Availability.UNAVAILABLE;
     }

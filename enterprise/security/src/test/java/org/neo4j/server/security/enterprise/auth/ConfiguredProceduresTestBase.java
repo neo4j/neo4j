@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,17 +38,20 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
-import static org.hamcrest.CoreMatchers.not;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.internal.util.collections.Sets.newSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
@@ -62,9 +67,9 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     @Test
     public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyOnTimeout() throws Throwable
     {
-        configuredSetup( stringMap( GraphDatabaseSettings.transaction_timeout.name(), "2s" ) );
+        configuredSetup( stringMap( GraphDatabaseSettings.transaction_timeout.name(), "4s" ) );
 
-        assertFail( adminSubject, "CALL test.loop", "Transaction guard check failed" );
+        assertFail( adminSubject, "CALL test.loop", PROCEDURE_TIMEOUT_ERROR );
 
         Result result = neo.getLocalGraph().execute(
                 "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
@@ -186,7 +191,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     public void shouldSetAllMatchingWildcardRoleConfigsWithDefaultForUDFs() throws Throwable
     {
         configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester;test.create*:other",
-                                    SecuritySettings.default_allowed.name(), "default" ) );
+                SecuritySettings.default_allowed.name(), "default" ) );
 
         userManager.newRole( "tester", "noneSubject" );
         userManager.newRole( "default", "noneSubject" );
@@ -230,17 +235,17 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         configuredSetup( defaultConfiguration() );
 
         Map<String,Set<String>> expected = genericMap(
-                "dbms.changePassword", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.functions", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.killQueries", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.killQuery", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.listActiveLocks", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.changePassword", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.functions", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.killQueries", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.killQuery", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listActiveLocks", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.listConfig", newSet( ADMIN ),
-                "dbms.listQueries", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.procedures", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listQueries", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.procedures", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.activateUser", newSet( ADMIN ),
                 "dbms.security.addRoleToUser", newSet( ADMIN ),
-                "dbms.security.changePassword", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.changePassword", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.changeUserPassword", newSet( ADMIN ),
                 "dbms.security.clearAuthCache", newSet( ADMIN ),
                 "dbms.security.createRole", newSet( ADMIN ),
@@ -252,9 +257,10 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "dbms.security.listUsers", newSet( ADMIN ),
                 "dbms.security.listUsersForRole", newSet( ADMIN ),
                 "dbms.security.removeRoleFromUser", newSet( ADMIN ),
-                "dbms.security.showCurrentUser", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.showCurrentUser", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.showCurrentUser", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.suspendUser", newSet( ADMIN ),
-                "dbms.setTXMetaData", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ));
+                "dbms.setTXMetaData", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ) );
 
         assertListProceduresHasRoles( readSubject, expected, "CALL dbms.procedures" );
     }
@@ -267,17 +273,17 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 SecuritySettings.default_allowed.name(), "default" ) );
 
         Map<String,Set<String>> expected = genericMap(
-                "test.staticReadProcedure", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.staticWriteProcedure", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticReadProcedure", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticWriteProcedure", newSet( "default", EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "test.staticSchemaProcedure", newSet( "default", ARCHITECT, ADMIN ),
-                "test.annotatedProcedure", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.numNodes", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "db.labels", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.security.changePassword", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.procedures", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.listQueries", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.annotatedProcedure", newSet( "annotated", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.numNodes", newSet( "counter", "user", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "db.labels", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.changePassword", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.procedures", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listQueries", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.createUser", newSet( ADMIN ),
-                "db.createLabel", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ));
+                "db.createLabel", newSet( "default", EDITOR, PUBLISHER, ARCHITECT, ADMIN ) );
 
         String call = "CALL dbms.procedures";
         assertListProceduresHasRoles( adminSubject, expected, call );
@@ -294,9 +300,9 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 SecuritySettings.default_allowed.name(), "default" ) );
 
         Map<String,Set<String>> expected = genericMap(
-                "test.annotatedFunction", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.allowedFunc", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.nonAllowedFunc", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ) );
+                "test.annotatedFunction", newSet( "annotated", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.allowedFunc", newSet( "counter", "user", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.nonAllowedFunc", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ) );
 
         String call = "CALL dbms.functions";
         assertListProceduresHasRoles( adminSubject, expected, call );
@@ -305,18 +311,69 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         assertListProceduresHasRoles( readSubject, expected, call );
     }
 
+    @Test
+    public void shouldGiveNiceMessageAtFailWhenTryingToKill() throws Throwable
+    {
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name(), "true" ) );
+
+        String query = "CALL dbms.killQuery('query-9999999999')";
+        Map<String,Object> expected = new HashMap<>();
+        expected.put( "queryId", valueOf( "query-9999999999" ) );
+        expected.put( "username", valueOf( "n/a" ) );
+        expected.put( "message", valueOf( "No Query found with this id" ) );
+        assertSuccess( adminSubject, query, r -> Assert.assertThat( r.next(), equalTo( expected ) ) );
+    }
+
+    @Test
+    public void shouldNotGiveNiceMessageAtFailWhenTryingToKillWhenConfigured() throws Throwable
+    {
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name(), "false" ) );
+        String query = "CALL dbms.killQuery('query-9999999999')";
+        assertSuccess( adminSubject, query, r ->
+
+                Assert.assertThat( r.hasNext(), is( false ) ) );
+    }
+
+    @Test
+    public void shouldGiveNiceMessageAtFailWhenTryingToKillMoreThenOne() throws Throwable
+    {
+        //Given
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name(), "true" ) );
+        String query = "CALL dbms.killQueries(['query-9999999999', 'query-9999999989'])";
+
+        //Expect
+        Set<Map<String,Object>> expected = new HashSet<>();
+        Map<String,Object> firstResultExpected = new HashMap<>();
+        firstResultExpected.put( "queryId", valueOf( "query-9999999989" ) );
+        firstResultExpected.put( "username", valueOf( "n/a" ) );
+        firstResultExpected.put( "message", valueOf( "No Query found with this id" ) );
+        Map<String,Object> secoundResultExpected = new HashMap<>();
+        secoundResultExpected.put( "queryId", valueOf( "query-9999999999" ) );
+        secoundResultExpected.put( "username", valueOf( "n/a" ) );
+        secoundResultExpected.put( "message", valueOf( "No Query found with this id" ) );
+        expected.add( firstResultExpected );
+        expected.add( secoundResultExpected );
+
+        //Then
+        assertSuccess( adminSubject, query, r ->
+        {
+            Set<Map<String,Object>> actual = r.stream().collect( toSet() );
+            Assert.assertThat( actual, equalTo( expected ) );
+        } );
+    }
+
     private void assertListProceduresHasRoles( S subject, Map<String,Set<String>> expected, String call )
     {
         assertSuccess( subject, call, itr ->
         {
             List<String> failures = itr.stream().filter( record ->
             {
-                String name = record.get( "name" ).toString();
-                List<?> roles = (List<?>) record.get( "roles" );
+                String name = toRawValue( record.get( "name" ) ).toString();
+                List<?> roles = (List<?>) toRawValue( record.get( "roles" ) );
                 return expected.containsKey( name ) && !expected.get( name ).equals( new HashSet<>( roles ) );
             } ).map( record ->
             {
-                String name = record.get( "name" ).toString();
+                String name = toRawValue( record.get( "name" ) ).toString();
                 return name + ": expected '" + expected.get( name ) + "' but was '" + record.get( "roles" ) + "'";
             } ).collect( toList() );
 

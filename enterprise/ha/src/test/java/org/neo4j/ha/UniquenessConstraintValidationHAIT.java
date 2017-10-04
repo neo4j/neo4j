@@ -156,7 +156,8 @@ public class UniquenessConstraintValidationHAIT
 
     private static Listener<GraphDatabaseService> uniquenessConstraint( final Label label, final String propertyKey )
     {
-        return db -> {
+        return db ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();

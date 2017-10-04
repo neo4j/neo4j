@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -51,7 +52,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
+import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccessSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -121,14 +122,14 @@ public class RelationshipCreatorTest
         private final Set<Long> relationshipLocksAcquired = new HashSet<>();
         private final Set<Long> changedRelationships = new HashSet<>();
 
-        public Tracker( NeoStores neoStores )
+        Tracker( NeoStores neoStores )
         {
             this.delegate = new DirectRecordAccessSet( neoStores );
             this.relRecords = new TrackingRecordAccess<>( delegate.getRelRecords(), this );
         }
 
         @Override
-        public void acquireExclusive( ResourceType resourceType, long... resourceIds )
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
                 throws AcquireLockTimeoutException
         {
             assertEquals( ResourceTypes.RELATIONSHIP, resourceType );
@@ -146,49 +147,49 @@ public class RelationshipCreatorTest
         }
 
         @Override
-        public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
+        public RecordAccess<NodeRecord, Void> getNodeRecords()
         {
             return delegate.getNodeRecords();
         }
 
         @Override
-        public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+        public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
         {
             return delegate.getPropertyRecords();
         }
 
         @Override
-        public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
+        public RecordAccess<RelationshipRecord, Void> getRelRecords()
         {
             return relRecords;
         }
 
         @Override
-        public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+        public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
         {
             return delegate.getRelGroupRecords();
         }
 
         @Override
-        public RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges()
+        public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
         {
             return delegate.getSchemaRuleChanges();
         }
 
         @Override
-        public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+        public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
         {
             return delegate.getPropertyKeyTokenChanges();
         }
 
         @Override
-        public RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+        public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
         {
             return delegate.getLabelTokenChanges();
         }
 
         @Override
-        public RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+        public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
         {
             return delegate.getRelationshipTypeTokenChanges();
         }

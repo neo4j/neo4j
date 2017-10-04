@@ -70,7 +70,7 @@ public class ExternalPropertiesDecorator implements Decorator<InputNode>
         Header header = headerFactory.create( dataStream, config, idType );
         this.deserializer = new InputEntityDeserializer<>( header, dataStream, config.delimiter(),
                 new InputNodeDeserialization( header, dataStream, new Groups(), idType.idsAreExternal() ),
-                NO_NODE_DECORATOR, Validators.<InputNode>emptyValidator(), badCollector );
+                NO_NODE_DECORATOR, Validators.emptyValidator(), badCollector );
     }
 
     @Override

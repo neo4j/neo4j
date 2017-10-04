@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -25,13 +25,22 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons Lang
+  Apache Commons Text
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
   Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
   Caffeine cache
-  Commons BeanUtils
-  Commons Digester
   Commons IO
   Commons Lang
   Commons Logging
@@ -65,7 +74,10 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ASM Analysis
   ASM Core
+  ASM Tree
+  ASM Util
   Scala Compiler
 
 Bouncy Castle License

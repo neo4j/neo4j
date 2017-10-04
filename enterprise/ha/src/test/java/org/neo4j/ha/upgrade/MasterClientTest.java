@@ -22,7 +22,7 @@ package org.neo4j.ha.upgrade;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -30,7 +30,6 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.StoreIdTestFactory;
-import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
@@ -38,9 +37,8 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencies;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.MasterClient310;
+import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
@@ -81,7 +79,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 
 public class MasterClientTest
@@ -111,7 +108,7 @@ public class MasterClientTest
         newMasterServer( masterImplSPI );
 
         StoreId storeId = StoreIdTestFactory.newStoreIdForCurrentVersion( 5, 6, 7, 8 );
-        MasterClient masterClient = newMasterClient310( storeId );
+        MasterClient masterClient = newMasterClient320( storeId );
 
         // When
         masterClient.handshake( 1, storeId );
@@ -135,7 +132,7 @@ public class MasterClientTest
         ResponseUnpacker unpacker = life.add(
                 new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE, 0 ) );
 
-        MasterClient masterClient = newMasterClient310( StoreId.DEFAULT, unpacker );
+        MasterClient masterClient = newMasterClient320( StoreId.DEFAULT, unpacker );
 
         // When
         masterClient.newLockSession( new RequestContext( 1, 2, 3, 4, 5 ) );
@@ -154,13 +151,13 @@ public class MasterClientTest
 
         ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
         MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( storeId );
-        when( masterImplSPI.packTransactionObligationResponse( any( RequestContext.class ), Matchers.anyObject() ) )
+        when( masterImplSPI.packTransactionObligationResponse( any( RequestContext.class ), ArgumentMatchers.any() ) )
                 .thenReturn( Response.empty() );
         when( masterImplSPI.getTransactionChecksum( anyLong() ) ).thenReturn( txChecksum );
 
         newMasterServer( masterImplSPI );
 
-        MasterClient client = newMasterClient310( storeId, responseUnpacker );
+        MasterClient client = newMasterClient320( storeId, responseUnpacker );
 
         HandshakeResult handshakeResult;
         try ( Response<HandshakeResult> handshakeResponse = client.handshake( 1, storeId ) )
@@ -205,30 +202,26 @@ public class MasterClientTest
                 ConversationManager.class ), logEntryReader ) );
     }
 
-    private MasterClient newMasterClient310( StoreId storeId ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId ) throws Throwable
     {
-        return newMasterClient310( storeId, NO_OP_RESPONSE_UNPACKER );
+        return newMasterClient320( storeId, NO_OP_RESPONSE_UNPACKER );
     }
 
-    private MasterClient newMasterClient310( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
     {
-        return life.add( new MasterClient310( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
+        return life.add( new MasterClient320( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
-                monitors.newMonitor( ByteCounterMonitor.class, MasterClient310.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient310.class ), logEntryReader ) );
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient320.class ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient320.class ), logEntryReader ) );
     }
 
     private static Response<Void> voidResponseWithTransactionLogs()
     {
-        return new TransactionStreamResponse<>( null, StoreId.DEFAULT, new TransactionStream()
+        return new TransactionStreamResponse<>( null, StoreId.DEFAULT, visitor ->
         {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
+            for ( int i = 1; i <= TX_LOG_COUNT; i++ )
             {
-                for ( int i = 1; i <= TX_LOG_COUNT; i++ )
-                {
-                    visitor.visit( committedTransactionRepresentation( i ) );
-                }
+                visitor.visit( committedTransactionRepresentation( i ) );
             }
         }, ResourceReleaser.NO_OP );
     }
@@ -243,7 +236,7 @@ public class MasterClientTest
 
     private static Config masterConfig()
     {
-        return new Config( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.defaults( ClusterSettings.server_id, "1" );
     }
 
     private static Server.Configuration masterServerConfiguration()

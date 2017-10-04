@@ -34,14 +34,7 @@ public class SingleSourceShortestPathDijkstraTest extends
         Node startNode )
     {
         return new SingleSourceShortestPathDijkstra<Integer>( 0, startNode,
-            new CostEvaluator<Integer>()
-            {
-                public Integer getCost( Relationship relationship,
-                    Direction direction )
-                {
-                    return 1;
-                }
-            }, new org.neo4j.graphalgo.impl.util.IntegerAdder(),
+                ( relationship, direction ) -> 1, new org.neo4j.graphalgo.impl.util.IntegerAdder(),
             new org.neo4j.graphalgo.impl.util.IntegerComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
@@ -50,14 +43,7 @@ public class SingleSourceShortestPathDijkstraTest extends
         Node startNode, Direction direction, RelationshipType... relTypes )
     {
         return new SingleSourceShortestPathDijkstra<Integer>( 0, startNode,
-            new CostEvaluator<Integer>()
-            {
-                public Integer getCost( Relationship relationship,
-                    Direction direction )
-                {
-                    return 1;
-                }
-            }, new org.neo4j.graphalgo.impl.util.IntegerAdder(),
+                ( relationship, direction1 ) -> 1, new org.neo4j.graphalgo.impl.util.IntegerAdder(),
             new org.neo4j.graphalgo.impl.util.IntegerComparator(), direction,
             relTypes );
     }

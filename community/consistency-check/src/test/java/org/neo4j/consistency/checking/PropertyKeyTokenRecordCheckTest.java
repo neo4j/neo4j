@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking;
 
 import org.junit.Test;
 
-import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 
@@ -29,11 +29,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class PropertyKeyTokenRecordCheckTest extends
-                                        RecordCheckTestBase<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport, PropertyKeyTokenRecordCheck>
+        RecordCheckTestBase<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport, PropertyKeyTokenRecordCheck>
 {
     public PropertyKeyTokenRecordCheckTest()
     {
-        super( new PropertyKeyTokenRecordCheck(), ConsistencyReport.PropertyKeyTokenConsistencyReport.class, new int[0] );
+        super( new PropertyKeyTokenRecordCheck(), PropertyKeyTokenConsistencyReport.class, new int[0] );
     }
 
     @Test
@@ -43,7 +43,7 @@ public class PropertyKeyTokenRecordCheckTest extends
         PropertyKeyTokenRecord key = notInUse( new PropertyKeyTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.PropertyKeyTokenConsistencyReport report = check( key );
+        PropertyKeyTokenConsistencyReport report = check( key );
 
         // then
         verifyNoMoreInteractions( report );
@@ -56,7 +56,7 @@ public class PropertyKeyTokenRecordCheckTest extends
         PropertyKeyTokenRecord key = inUse( new PropertyKeyTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.PropertyKeyTokenConsistencyReport report = check( key );
+        PropertyKeyTokenConsistencyReport report = check( key );
 
         // then
         verifyNoMoreInteractions( report );
@@ -71,7 +71,7 @@ public class PropertyKeyTokenRecordCheckTest extends
         key.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.PropertyKeyTokenConsistencyReport report = check( key );
+        PropertyKeyTokenConsistencyReport report = check( key );
 
         // then
         verify( report ).nameBlockNotInUse( name );
@@ -87,7 +87,7 @@ public class PropertyKeyTokenRecordCheckTest extends
         key.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.PropertyKeyTokenConsistencyReport report = check( key );
+        PropertyKeyTokenConsistencyReport report = check( key );
 
         // then
         verify( report ).emptyName( name );

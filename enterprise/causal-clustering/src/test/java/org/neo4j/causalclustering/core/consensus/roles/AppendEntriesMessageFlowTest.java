@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
@@ -36,9 +36,9 @@ import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
+import org.neo4j.causalclustering.messaging.Outbound;
 
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
@@ -49,7 +49,7 @@ import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appe
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class AppendEntriesMessageFlowTest
 {
     private MemberId myself = member( 0 );

@@ -19,9 +19,10 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
@@ -43,11 +44,25 @@ import static org.neo4j.helpers.Exceptions.rootCause;
 
 public class GraphDatabaseShutdownTest
 {
+
+    private GraphDatabaseAPI db;
+
+    @Before
+    public void setUp()
+    {
+        db = newDb();
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown() throws Exception
     {
         // GIVEN
-        final GraphDatabaseAPI db = newDb();
         final Locks locks = db.getDependencyResolver().resolveDependency( Locks.class );
         assertEquals( 0, lockCount( locks ) );
         Exception exceptionThrownByTxClose = null;
@@ -79,8 +94,6 @@ public class GraphDatabaseShutdownTest
     public void shouldBeAbleToShutdownWhenThereAreTransactionsWaitingForLocks() throws Exception
     {
         // GIVEN
-        final GraphDatabaseService db = newDb();
-
         final Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -92,37 +105,29 @@ public class GraphDatabaseShutdownTest
 
         // WHEN
         // one thread locks previously create node and initiates graph db shutdown
-        newSingleThreadExecutor().submit( new Callable<Void>()
+        Future<Void> shutdownFuture = newSingleThreadExecutor().submit( () ->
         {
-            @Override
-            public Void call() throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    node.addLabel( label( "ABC" ) );
-                    nodeLockedLatch.countDown();
-                    Thread.sleep( 1_000 ); // Let the second thread attempt to lock same node
-                    db.shutdown();
-                    tx.success();
-                }
-                return null;
+                node.addLabel( label( "ABC" ) );
+                nodeLockedLatch.countDown();
+                Thread.sleep( 1_000 ); // Let the second thread attempt to lock same node
+                db.shutdown();
+                tx.success();
             }
+            return null;
         } );
 
         // other thread tries to lock the same node while it has been locked and graph db is being shutdown
-        Future<Void> secondTxResult = newSingleThreadExecutor().submit( new Callable<Void>()
+        Future<Void> secondTxResult = newSingleThreadExecutor().submit( () ->
         {
-            @Override
-            public Void call() throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    nodeLockedLatch.await();
-                    node.addLabel( label( "DEF" ) );
-                    tx.success();
-                }
-                return null;
+                nodeLockedLatch.await();
+                node.addLabel( label( "DEF" ) );
+                tx.success();
             }
+            return null;
         } );
 
         // THEN
@@ -131,6 +136,15 @@ public class GraphDatabaseShutdownTest
         {
             secondTxResult.get( 60, SECONDS );
             fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( rootCause( e ), instanceOf( TransactionTerminatedException.class ) );
+        }
+        try
+        {
+            shutdownFuture.get();
+            fail( "Should thrown exception since transaction should be canceled." );
         }
         catch ( Exception e )
         {

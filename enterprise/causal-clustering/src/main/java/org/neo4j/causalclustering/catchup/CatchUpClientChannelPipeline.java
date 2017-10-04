@@ -47,17 +47,25 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotResponseHandle
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 class CatchUpClientChannelPipeline
 {
-    static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider, Monitors monitors )
-            throws Exception
+    private CatchUpClientChannelPipeline()
+    {
+    }
+
+    static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider,
+                             Monitors monitors, PipelineHandlerAppender pipelineHandlerAppender ) throws Exception
     {
         CatchupClientProtocol protocol = new CatchupClientProtocol();
 
         ChannelPipeline pipeline = ch.pipeline();
+
+        pipelineHandlerAppender.addPipelineHandlerForClient( pipeline, ch );
+
         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
         pipeline.addLast( new LengthFieldPrepender( 4 ) );
 

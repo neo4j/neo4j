@@ -93,7 +93,7 @@ public class RelationshipConversionTest
         private final long[] ids;
         private int position;
 
-        ArrayRelationshipVisitor(long[] ids)
+        ArrayRelationshipVisitor( long[] ids )
         {
             this.ids = ids;
         }

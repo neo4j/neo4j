@@ -35,7 +35,7 @@ public class SubProcessTest
     private static class TestingProcess extends SubProcess<Callable<String>, String> implements Callable<String>
     {
         private String message;
-        private transient volatile boolean started = false;
+        private transient volatile boolean started;
 
         @Override
         protected void startup( String parameter )
@@ -48,8 +48,10 @@ public class SubProcessTest
         public String call() throws Exception
         {
             while ( !started )
-                // because all calls are asynchronous
+            // because all calls are asynchronous
+            {
                 Thread.sleep( 1 );
+            }
             return message;
         }
     }

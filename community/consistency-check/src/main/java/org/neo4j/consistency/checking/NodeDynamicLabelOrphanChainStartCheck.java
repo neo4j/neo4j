@@ -41,30 +41,24 @@ public class NodeDynamicLabelOrphanChainStartCheck
 
     private static final
     ComparativeRecordChecker<DynamicRecord, NodeRecord, DynamicLabelConsistencyReport> VALID_NODE_RECORD =
-            new ComparativeRecordChecker<DynamicRecord, NodeRecord, DynamicLabelConsistencyReport>()
+            ( record, nodeRecord, engine, records ) ->
             {
-                @Override
-                public void checkReference( DynamicRecord record, NodeRecord nodeRecord,
-                                            CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
-                                            RecordAccess records )
+                if ( ! nodeRecord.inUse() )
                 {
-                    if ( ! nodeRecord.inUse() )
+                    // if this node record is not in use it is not a valid owner
+                    engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
+                }
+                else
+                {
+                    // if this node record is in use but doesn't point to the dynamic label record
+                    // that label record has an invalid owner
+                    long recordId = record.getId();
+                    if ( fieldPointsToDynamicRecordOfLabels( nodeRecord.getLabelField() ) )
                     {
-                        // if this node record is not in use it is not a valid owner
-                        engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
-                    }
-                    else
-                    {
-                        // if this node record is in use but doesn't point to the dynamic label record
-                        // that label record has an invalid owner
-                        long recordId = record.getId();
-                        if ( fieldPointsToDynamicRecordOfLabels( nodeRecord.getLabelField() ) )
+                        long dynamicLabelRecordId = firstDynamicLabelRecordId( nodeRecord.getLabelField() );
+                        if ( dynamicLabelRecordId != recordId )
                         {
-                            long dynamicLabelRecordId = firstDynamicLabelRecordId( nodeRecord.getLabelField() );
-                            if ( dynamicLabelRecordId != recordId )
-                            {
-                                engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
-                            }
+                            engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
                         }
                     }
                 }

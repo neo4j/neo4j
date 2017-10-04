@@ -23,31 +23,34 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
+import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
@@ -58,20 +61,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsPrimitiveLongIteratorFrom;
 
 public class IndexQueryTransactionStateTest
 {
-    int labelId = 2;
-    int propertyKeyId = 3;
-    String value = "My Value";
-    IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
+    private int labelId = 2;
+    private int propertyKeyId = 3;
+    private Value value = Values.of( "My Value" );
+    private IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( labelId, propertyKeyId  );
+    private List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
+    private IndexQuery.ExactPredicate withValue = IndexQuery.exact( propertyKeyId, value );
 
     private StoreReadLayer store;
     private StoreStatement statement;
@@ -85,17 +88,13 @@ public class IndexQueryTransactionStateTest
         TransactionState txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
 
-        int labelId1 = 10, labelId2 = 12;
         store = mock( StoreReadLayer.class );
         when( store.indexGetState( indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
-        when( store.indexesGetForLabel( labelId1 ) ).then( answerAsIteratorFrom( Collections
-                .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
-                .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<NodePropertyConstraint>emptyIterator() );
-        when( store.indexGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
-                .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
+        when( store.indexesGetForLabel( labelId ) ).then( answerAsIteratorFrom( indexes ) );
+        when( store.indexesGetAll() ).then( answerAsIteratorFrom( indexes ) );
+        when( store.indexesGetRelatedToProperty( propertyKeyId ) ).then( answerAsIteratorFrom( indexes ) );
+        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.emptyIterator() );
+        when( store.indexGetForSchema( indexDescriptor.schema() ) ).thenReturn( indexDescriptor );
 
         statement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( statement );
@@ -105,11 +104,11 @@ public class IndexQueryTransactionStateTest
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,
-                new InternalAutoIndexing( Config.empty(), null ),
+                new InternalAutoIndexing( Config.defaults(), null ),
                 mock( ConstraintIndexCreator.class ),
-                mock( LegacyIndexStore.class ) );
-        txContext = new ConstraintEnforcingEntityOperations(
-                new StandardConstraintSemantics(), stateHandlingOperations, stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
+                mock( ExplicitIndexStore.class ) );
+        txContext = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), stateHandlingOperations,
+                stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }
 
     @Test
@@ -117,15 +116,14 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 2L;
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 1L, nodeId, 3L ) ) );
+        when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 1L, nodeId, 3L ) ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) )
-                .thenReturn( asNodeCursor( nodeId ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
 
         txContext.nodeDelete( state, nodeId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, indexDescriptor, withValue );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 1L, 3L ) ) );
@@ -136,15 +134,14 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
+        when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) )
-                .thenReturn( asNodeCursor( nodeId ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
 
         txContext.nodeDelete( state, nodeId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, withValue );
 
         // Then
         assertNoSuchNode( result );
@@ -154,13 +151,12 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodesWithMissingLabelFromIndexQuery() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
-        state.txState().nodeDoReplaceProperty( 1L, Property.noNodeProperty( 1L, propertyKeyId ),
-                Property.intProperty( propertyKeyId, 10 ) );
+        state.txState().nodeDoAddProperty( 1L, propertyKeyId, Values.of( 10 ) );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, indexDescriptor, withValue );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -170,12 +166,11 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodeWithMissingLabelFromUniqueIndexQuery() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator() );
-        state.txState().nodeDoReplaceProperty( 1L, Property.noNodeProperty( 1L, propertyKeyId ),
-                Property.intProperty( propertyKeyId, 10 ) );
+        when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
+        state.txState().nodeDoAddProperty( 1L, propertyKeyId, Values.of( 10 ) );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, withValue );
 
         // Then
         assertNoSuchNode( result );
@@ -185,21 +180,18 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeCreatedNodesWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
-        state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
-                stringProperty( propertyKeyId, value ) );
+        state.txState().nodeDoAddProperty( nodeId, propertyKeyId, value );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        mockStoreProperty();
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        Cursors.<LabelItem>empty() ) );
-
+        when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, indexDescriptor, withValue );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2L, 3L ) ) );
@@ -209,21 +201,19 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeUniqueCreatedNodeWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator() );
+        when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
 
         long nodeId = 1L;
-        state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
-                stringProperty( propertyKeyId, value ) );
+        state.txState().nodeDoAddProperty( nodeId, propertyKeyId, value );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        Cursors.<LabelItem>empty() ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        mockStoreProperty();
 
+        when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, withValue );
 
         // Then
         assertThat( result, equalTo( nodeId ) );
@@ -233,19 +223,18 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeExistingNodesWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor() ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        mockStoreProperty();
 
+        when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, indexDescriptor, withValue );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2L, 3L ) ) );
@@ -255,19 +244,18 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeExistingUniqueNodeWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator() );
+        when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
 
         long nodeId = 2L;
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor() ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        mockStoreProperty();
 
+        when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, withValue );
 
         // Then
         assertThat( result, equalTo( nodeId ) );
@@ -278,17 +266,16 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( nodeId, 2L, 3L ) ) );
+        when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( nodeId, 2L, 3L ) ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor( labelId ) ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) )
+                .thenReturn( asNodeCursor( nodeId, 40L, labels( labelId ) ) );
+        mockStoreProperty();
 
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, indexDescriptor, withValue );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -299,17 +286,16 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
+        when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor( labelId ) ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) )
+                .thenReturn( asNodeCursor( nodeId, 40L, labels( labelId ) ) );
+        mockStoreProperty();
 
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, withValue );
 
         // Then
         assertNoSuchNode( result );
@@ -319,21 +305,18 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeNodesWithRemovedProperty() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
-        state.txState().nodeDoReplaceProperty( nodeId, Property.noNodeProperty( nodeId, propertyKeyId ),
-                Property.intProperty( propertyKeyId, 10 ) );
+        state.txState().nodeDoAddProperty( nodeId, propertyKeyId, Values.of( 10 ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor(),
-                        asLabelCursor( labelId ) ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) )
+                .thenReturn( asNodeCursor( nodeId, labels( labelId ) ) );
 
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, indexDescriptor, withValue );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -344,20 +327,28 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
+        when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor( labelId ) ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) )
+                .thenReturn( asNodeCursor( nodeId, 40, labels( labelId ) ) );
+        mockStoreProperty();
 
         txContext.nodeRemoveProperty( state, nodeId, propertyKeyId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, withValue );
 
         // Then
         assertNoSuchNode( result );
+    }
+
+    private void mockStoreProperty()
+    {
+        when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, value ) ) );
+        when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( AssertOpen.class ) ) )
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, value ) ) );
     }
 
     private void assertNoSuchNode( long node )
@@ -367,12 +358,6 @@ public class IndexQueryTransactionStateTest
 
     private static PrimitiveLongResourceIterator asPrimitiveResourceIterator( long... values )
     {
-        return PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( values ), new Resource()
-        {
-            @Override
-            public void close()
-            {
-            }
-        } );
+        return PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( values ), Resource.EMPTY );
     }
 }

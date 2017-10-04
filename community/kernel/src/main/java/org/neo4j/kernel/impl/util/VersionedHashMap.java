@@ -79,8 +79,8 @@ public class VersionedHashMap<K, V> implements Map<K, V>
      */
     private Record<K, V>[] buckets;
 
-    private int size = 0;
-    private int version = 0;
+    private int size;
+    private int version;
 
     /**
      * Number of current non-exhausted iterators. When we know there are iterators pending we need to take special
@@ -90,7 +90,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
      * Ideally, this copying will be very rare, as most records will not be in chains, so this should not incur huge
      * overhead.
      */
-    private short liveIterators = 0;
+    private short liveIterators;
 
     private int bitwiseModByBuckets;
 
@@ -103,19 +103,19 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
     public VersionedHashMap()
     {
-        this(16, 0.85f);
+        this( 16, 0.85f );
     }
 
     public VersionedHashMap( int numBuckets, float resizeAtCapacity )
     {
-        if( bitCount( numBuckets ) != 1)
+        if ( bitCount( numBuckets ) != 1 )
         {
             throw new UnsupportedOperationException( "Number of buckets must be a power-of-2 number, 2,4,8,16 etc." );
         }
         this.resizeAtCapacity = resizeAtCapacity;
         this.buckets = new Record[numBuckets];
         this.bitwiseModByBuckets = numBuckets - 1;
-        this.resizeThreshold = (int)(numBuckets * resizeAtCapacity);
+        this.resizeThreshold = (int) (numBuckets * resizeAtCapacity);
     }
 
     @Override
@@ -139,11 +139,11 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     @Override
     public boolean containsValue( Object value )
     {
-        for ( Record<K, V> bucket : buckets )
+        for ( Record<K,V> bucket : buckets )
         {
-            while(bucket != null)
+            while ( bucket != null )
             {
-                if(bucket.value == value || bucket.value.equals( value ))
+                if ( bucket.value == value || bucket.value.equals( value ) )
                 {
                     return true;
                 }
@@ -158,7 +158,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     public V get( Object key )
     {
         Record<K, V> record = getRecord( key );
-        if(record != null)
+        if ( record != null )
         {
             return record.value;
         }
@@ -168,12 +168,12 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     @Override
     public V put( K key, V value )
     {
-        final int hash = hash(key.hashCode());
+        final int hash = hash( key.hashCode() );
         final int bucket = hash & bitwiseModByBuckets;
 
-        for(Record<K,V> record = buckets[bucket]; record != null; record = record.next)
+        for ( Record<K,V> record = buckets[bucket]; record != null; record = record.next )
         {
-            if(record.hashCode == hash && ((record.key == key) || record.key.equals( key )))
+            if ( record.hashCode == hash && ((record.key == key) || record.key.equals( key )) )
             {
                 V old = record.value;
                 record.value = value;
@@ -182,10 +182,10 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         }
 
         // No pre-existing entry, create a new one
-        Record<K,V> record = new Record<>(hash, key, value, buckets[bucket], version);
+        Record<K,V> record = new Record<>( hash, key, value, buckets[bucket], version );
         buckets[bucket] = record;
 
-        if(size++ > resizeThreshold)
+        if ( size++ > resizeThreshold )
         {
             resize( buckets.length << 1 );
         }
@@ -196,16 +196,16 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     @Override
     public V remove( Object key )
     {
-        final int hash = hash(key.hashCode());
+        final int hash = hash( key.hashCode() );
         final int bucket = hash & bitwiseModByBuckets;
 
-        Record<K, V> prev = null;
-        for(Record<K,V> record = buckets[bucket]; record != null; record = record.next)
+        Record<K,V> prev = null;
+        for ( Record<K,V> record = buckets[bucket]; record != null; record = record.next )
         {
-            if(record.hashCode == hash && ((record.key == key) || record.key.equals( key )))
+            if ( record.hashCode == hash && ((record.key == key) || record.key.equals( key )) )
             {
                 V old = record.value;
-                if(prev == null)
+                if ( prev == null )
                 {
                     buckets[bucket] = record.next;
                 }
@@ -259,12 +259,12 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
     private Record<K,V> getRecord( Object key )
     {
-        final int hash = hash(key.hashCode());
+        final int hash = hash( key.hashCode() );
         final int bucket = hash & bitwiseModByBuckets;
 
-        for(Record<K,V> record = buckets[bucket]; record != null; record = record.next)
+        for ( Record<K,V> record = buckets[bucket]; record != null; record = record.next )
         {
-            if(record.key.equals( key ))
+            if ( record.key.equals( key ) )
             {
                 return record;
             }
@@ -273,9 +273,9 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         return null;
     }
 
-    private void resize(int numBuckets)
+    private void resize( int numBuckets )
     {
-        if(numBuckets >= MAX_BUCKETS)
+        if ( numBuckets >= MAX_BUCKETS )
         {
             // Avoid getting this call again, we can't make it any bigger.
             resizeThreshold = Integer.MAX_VALUE;
@@ -286,23 +286,23 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
         buckets = new Record[numBuckets];
         bitwiseModByBuckets = numBuckets - 1;
-        resizeThreshold = (int)(numBuckets * resizeAtCapacity);
+        resizeThreshold = (int) (numBuckets * resizeAtCapacity);
 
-        for ( Record<K, V> record : oldBuckets )
+        for ( Record<K,V> record : oldBuckets )
         {
-            while(record != null)
+            while ( record != null )
             {
                 Record<K,V> next = record.next;
 
-                if(next != null && liveIterators > 0)
+                if ( next != null && liveIterators > 0 )
                 {
                     record = record.copy();
                 }
-                else if(liveIterators == 0 && record instanceof CopiedRecord)
+                else if ( liveIterators == 0 && record instanceof CopiedRecord )
                 {
                     // If there are no iterators, take this opportunity to get rid of copied records and use the
                     // originals.
-                    record = ((CopiedRecord)record).original;
+                    record = ((CopiedRecord) record).original;
                 }
 
                 int bucket = record.hashCode & bitwiseModByBuckets;
@@ -314,7 +314,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
     }
 
-    private static int hash(int h)
+    private static int hash( int h )
     {
         // See: http://stackoverflow.com/questions/9335169/understanding-strange-java-hash-function
         h ^= (h >>> 20) ^ (h >>> 12);
@@ -375,14 +375,14 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     private class EntryIterator implements Iterator<Entry<K,V>>
     {
         private int viewVersion;
-        private int currentBucket = 0;
+        private int currentBucket;
         private Record<K,V> next;
         private Record<K,V> current;
 
         // In case the map is resized, we need to retain a fixed view of the buckets, so keep a reference to the current
         // bucket array.
         private Record<K,V>[] bucketsView = buckets;
-        private boolean exhausted = false;
+        private boolean exhausted;
 
         private EntryIterator()
         {
@@ -400,18 +400,18 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         @Override
         public boolean hasNext()
         {
-            if(exhausted)
+            if ( exhausted )
             {
                 return false;
             }
 
             // Take into account the fact that we may have pre-fetched a record that has then been removed
-            if( next != null && next.removed )
+            if ( next != null && next.removed )
             {
                 next();
             }
 
-            if(next != null)
+            if ( next != null )
             {
                 return true;
             }
@@ -431,13 +431,13 @@ public class VersionedHashMap<K, V> implements Map<K, V>
             // This is rather complex, but the gist is this: Iterate over each bucket, and within each iterate over
             // the chain of records. If we find a record that we are allowed to see
             // (eg. as an addedInVersion <= viewVersion && !removed), stop and set next to that record.
-            if((next = next.next) == null || next.addedInVersion > viewVersion || next.removed)
+            if ( (next = next.next) == null || next.addedInVersion > viewVersion || next.removed )
             {
-                for ( ; (next == null || next.addedInVersion > viewVersion || next.removed)
-                        && currentBucket < bucketsView.length; currentBucket++ )
+                for ( ; (next == null || next.addedInVersion > viewVersion || next.removed) &&
+                        currentBucket < bucketsView.length; currentBucket++ )
                 {
                     next = bucketsView[currentBucket];
-                    while( next != null && (next.addedInVersion > viewVersion || next.removed))
+                    while ( next != null && (next.addedInVersion > viewVersion || next.removed) )
                     {
                         next = next.next;
                     }
@@ -450,7 +450,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         @Override
         public void remove()
         {
-            if(current == null)
+            if ( current == null )
             {
                 throw new IllegalStateException( "Not currently on a record. Did you call next()?" );
             }
@@ -462,7 +462,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     {
         private final Iterator<Entry<K,V>> entryIterator;
 
-        private KeyIterator(Iterator<Entry<K,V>> entryIterator)
+        private KeyIterator( Iterator<Entry<K,V>> entryIterator )
         {
             this.entryIterator = entryIterator;
         }
@@ -490,7 +490,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     {
         private final Iterator<Entry<K,V>> entryIterator;
 
-        private ValueIterator(Iterator<Entry<K,V>> entryIterator)
+        private ValueIterator( Iterator<Entry<K,V>> entryIterator )
         {
             this.entryIterator = entryIterator;
         }
@@ -522,9 +522,9 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         protected Record<K, V> next;
 
         protected int addedInVersion;
-        protected boolean removed = false;
+        protected boolean removed;
 
-        public Record(int hashCode, K key, V value, Record<K,V> next, int addedInVersion)
+        Record( int hashCode, K key, V value, Record<K,V> next, int addedInVersion )
         {
             this.hashCode = hashCode;
             this.key = key;
@@ -560,7 +560,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
         public Record<K,V> copy()
         {
-            if(!removed)
+            if ( !removed )
             {
                 return new CopiedRecord<>( this, hashCode, key, value, next, addedInVersion );
             }
@@ -594,9 +594,9 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     {
         private Record<K,V> original;
 
-        public CopiedRecord(Record<K,V> original, int hashCode, K key, V value, Record<K,V> next, int addedInVersion)
+        CopiedRecord( Record<K,V> original, int hashCode, K key, V value, Record<K,V> next, int addedInVersion )
         {
-            super(hashCode, key, value, next, addedInVersion);
+            super( hashCode, key, value, next, addedInVersion );
             this.original = original;
         }
 

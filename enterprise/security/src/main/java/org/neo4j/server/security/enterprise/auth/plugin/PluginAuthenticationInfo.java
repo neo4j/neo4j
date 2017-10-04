@@ -54,29 +54,28 @@ class PluginAuthenticationInfo extends ShiroAuthenticationInfo implements Custom
 
     private static PluginAuthenticationInfo create(
             AuthenticationInfo authenticationInfo,
-            String realmName
-    ) {
+            String realmName )
+    {
         return new PluginAuthenticationInfo( authenticationInfo.principal(), realmName, null );
     }
 
     private static PluginAuthenticationInfo create(
             AuthenticationInfo authenticationInfo,
             SimpleHash hashedCredentials,
-            String realmName
-    ) {
+            String realmName )
+    {
         return new PluginAuthenticationInfo(
                             authenticationInfo.principal(),
                             hashedCredentials.getBytes(),
                             hashedCredentials.getSalt(),
-                            realmName
-                        );
+                            realmName );
     }
 
     public static PluginAuthenticationInfo createCacheable(
             AuthenticationInfo authenticationInfo,
             String realmName,
-            SecureHasher secureHasher
-    ) {
+            SecureHasher secureHasher )
+    {
         if ( authenticationInfo instanceof CustomCacheableAuthenticationInfo )
         {
             CustomCacheableAuthenticationInfo info = (CustomCacheableAuthenticationInfo) authenticationInfo;

@@ -23,8 +23,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -65,14 +64,14 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
             StorageProperty changedProperty = state.getChangedProperty( propertyKeyId );
             if ( changedProperty != null )
             {
-                this.property = (DefinedProperty) changedProperty;
+                this.property = changedProperty;
                 return true;
             }
 
             StorageProperty addedProperty = state.getAddedProperty( propertyKeyId );
             if ( addedProperty != null )
             {
-                this.property = (DefinedProperty) addedProperty;
+                this.property = addedProperty;
                 return true;
             }
 
@@ -109,7 +108,7 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
 
         if ( seekFoundIt )
         {
-            property = Property.property( cursor.get().propertyKeyId(), cursor.get().value() );
+            property = new PropertyKeyValue( cursor.get().propertyKeyId(), cursor.get().value() );
         }
         seekFoundIt = false;
 

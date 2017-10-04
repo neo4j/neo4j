@@ -39,7 +39,7 @@ public interface ConfigurationContext
 
     URI getUriForId( InstanceId id );
 
-    InstanceId getIdForUri(URI uri);
+    InstanceId getIdForUri( URI uri );
 
     boolean isMe( InstanceId server );
 }

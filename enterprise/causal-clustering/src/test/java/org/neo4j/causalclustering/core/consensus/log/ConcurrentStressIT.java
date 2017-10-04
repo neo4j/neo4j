@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -57,37 +58,42 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
 
     private void readAndWrite( int nReaders, int time, TimeUnit unit ) throws Throwable
     {
-        DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
-        T raftLog = createRaftLog( fsa, dir.directory() );
-
-        try
+        try ( DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
         {
-            ExecutorService es = Executors.newCachedThreadPool();
+            LifeSupport lifeSupport = new LifeSupport();
+            T raftLog = createRaftLog( fsa, dir.directory() );
+            lifeSupport.add( raftLog );
+            lifeSupport.start();
 
-            Collection<Future<Long>> futures = new ArrayList<>();
-
-            futures.add( es.submit( new TimedTask( () -> {
-                write( raftLog );
-            }, time, unit ) ) );
-
-            for ( int i = 0; i < nReaders; i++ )
+            try
             {
-                futures.add( es.submit( new TimedTask( () -> {
-                    read( raftLog );
+                ExecutorService es = Executors.newCachedThreadPool();
+
+                Collection<Future<Long>> futures = new ArrayList<>();
+                futures.add( es.submit( new TimedTask( () ->
+                {
+                    write( raftLog );
                 }, time, unit ) ) );
-            }
 
-            for ( Future<Long> f : futures )
+                for ( int i = 0; i < nReaders; i++ )
+                {
+                    futures.add( es.submit( new TimedTask( () ->
+                    {
+                        read( raftLog );
+                    }, time, unit ) ) );
+                }
+
+                for ( Future<Long> f : futures )
+                {
+                    long iterations = f.get();
+                }
+
+                es.shutdown();
+            }
+            finally
             {
-                long iterations = f.get();
+                lifeSupport.shutdown();
             }
-
-            es.shutdown();
-        }
-        finally
-        {
-            //noinspection ThrowFromFinallyBlock
-            raftLog.shutdown();
         }
     }
 

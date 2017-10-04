@@ -24,10 +24,10 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntPredicate;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -47,6 +47,17 @@ public class PrimitiveIntCollectionsTest
 
         // THEN
         assertItems( iterator, items );
+    }
+
+    @Test
+    public void convertCollectionToLongArray()
+    {
+        PrimitiveIntSet heapSet = PrimitiveIntCollections.asSet( new int[]{1, 2, 3} );
+        PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet();
+        offHeapIntSet.add( 7 );
+        offHeapIntSet.add( 8 );
+        assertArrayEquals( new long[]{1, 2, 3}, PrimitiveIntCollections.asLongArray( heapSet ) );
+        assertArrayEquals( new long[]{7, 8}, PrimitiveIntCollections.asLongArray( offHeapIntSet ) );
     }
 
     @Test
@@ -111,20 +122,20 @@ public class PrimitiveIntCollectionsTest
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, (IntPredicate) item -> item != 2 );
+        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, item -> item != 2 );
 
         // THEN
         assertItems( filtered, 1, 3 );
     }
 
     @Test
-    public void dedup() throws Exception
+    public void deduplicate() throws Exception
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
 
         // WHEN
-        PrimitiveIntIterator deduped = PrimitiveIntCollections.dedup( items );
+        PrimitiveIntIterator deduped = PrimitiveIntCollections.deduplicate( items );
 
         // THEN
         assertItems( deduped, 1, 2, 3 );
@@ -528,6 +539,45 @@ public class PrimitiveIntCollectionsTest
         assertTrue( Arrays.equals( new int[] { 1, 2, 3 }, array ) );
     }
 
+    @Test
+    public void shouldNotContinueToCallNextOnHasNextFalse() throws Exception
+    {
+        // GIVEN
+        AtomicInteger count = new AtomicInteger( 2 );
+        PrimitiveIntIterator iterator = new PrimitiveIntCollections.PrimitiveIntBaseIterator()
+        {
+            @Override
+            protected boolean fetchNext()
+            {
+                return count.decrementAndGet() >= 0 && next( count.get() );
+            }
+        };
+
+        // WHEN/THEN
+        assertTrue( iterator.hasNext() );
+        assertTrue( iterator.hasNext() );
+        assertEquals( 1L, iterator.next() );
+        assertTrue( iterator.hasNext() );
+        assertTrue( iterator.hasNext() );
+        assertEquals( 0L, iterator.next() );
+        assertFalse( iterator.hasNext() );
+        assertFalse( iterator.hasNext() );
+        assertEquals( -1L, count.get() );
+    }
+
+    @Test
+    public void shouldDeduplicate() throws Exception
+    {
+        // GIVEN
+        int[] array = new int[] {1, 6, 2, 5, 6, 1, 6};
+
+        // WHEN
+        int[] deduped = PrimitiveIntCollections.deduplicate( array );
+
+        // THEN
+        assertArrayEquals( new int[] {1, 6, 2, 5}, deduped );
+    }
+
     private void assertNoMoreItems( PrimitiveIntIterator iterator )
     {
         assertFalse( iterator + " should have no more items", iterator.hasNext() );
@@ -562,7 +612,7 @@ public class PrimitiveIntCollectionsTest
         int[] result = new int[items.length];
         for ( int i = 0; i < items.length; i++ )
         {
-            result[i] = items[items.length-i-1];
+            result[i] = items[items.length - i - 1];
         }
         return result;
     }

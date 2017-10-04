@@ -35,7 +35,8 @@ class KeyValueWriter implements Closeable
 {
     private final MetadataCollector metadata;
     private final Writer writer;
-    private int keySize, valueSize;
+    private int keySize;
+    private int valueSize;
     private State state = State.expecting_format_specifier;
 
     public static KeyValueWriter create(

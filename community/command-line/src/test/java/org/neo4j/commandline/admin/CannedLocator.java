@@ -26,7 +26,7 @@ class CannedLocator implements CommandLocator
 {
     private final Map<String,AdminCommand.Provider> commands;
 
-    public CannedLocator( AdminCommand.Provider... commands )
+    CannedLocator( AdminCommand.Provider... commands )
     {
         this.commands = new HashMap<>();
         for ( AdminCommand.Provider provider : commands )

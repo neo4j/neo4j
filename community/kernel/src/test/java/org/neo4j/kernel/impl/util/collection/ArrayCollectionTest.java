@@ -133,7 +133,7 @@ public class ArrayCollectionTest
         Collection<Integer> ints = new ArrayList<>();
         for ( int i = 0; i < size; i++ )
         {
-            ints.add( startingAt+i );
+            ints.add( startingAt + i );
         }
         return ints;
     }

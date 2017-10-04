@@ -34,5 +34,5 @@ public interface BidirectionalUniquenessFilter extends UniquenessFilter
      * @return {@code true} if the {@code path} fulfills the uniqueness contract,
      *         otherwise {@code false}.
      */
-    boolean checkFull(Path path);
+    boolean checkFull( Path path );
 }

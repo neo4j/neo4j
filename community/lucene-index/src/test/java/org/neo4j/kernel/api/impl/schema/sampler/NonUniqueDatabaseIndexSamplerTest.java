@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -60,13 +61,13 @@ public class NonUniqueDatabaseIndexSamplerTest
 
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class, Mockito.RETURNS_DEEP_STUBS );
     private final TaskCoordinator taskControl = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
-    private final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+    private final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
 
     @Test
     public void nonUniqueSamplingCancel() throws IndexNotFoundKernelException, IOException
     {
         Terms terms = getTerms( "test", 1 );
-        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "string", terms, "id", terms, "string", terms );
+        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "0string", terms, "id", terms, "0string", terms );
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
@@ -84,7 +85,7 @@ public class NonUniqueDatabaseIndexSamplerTest
         Terms aTerms = getTerms( "a", 1 );
         Terms idTerms = getTerms( "id", 2 );
         Terms bTerms = getTerms( "b", 3 );
-        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "string", aTerms, "id", idTerms, "array", bTerms );
+        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "0string", aTerms, "id", idTerms, "0array", bTerms );
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
         indexReader.setElements( new String[4] );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
@@ -107,7 +108,7 @@ public class NonUniqueDatabaseIndexSamplerTest
             try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
             {
                 NonUniqueLuceneIndexSampler sampler = new NonUniqueLuceneIndexSampler( searcher.getIndexSearcher(),
-                        taskControl.newInstance(), new IndexSamplingConfig( Config.empty() ) );
+                        taskControl.newInstance(), new IndexSamplingConfig( Config.defaults() ) );
 
                 assertEquals( new IndexSample( 2, 2, 2 ), sampler.sampleIndex() );
             }
@@ -129,9 +130,10 @@ public class NonUniqueDatabaseIndexSamplerTest
         return terms;
     }
 
-    private static void insertDocument( WritableIndexPartition partition, long nodeId, Object propertyValue ) throws IOException
+    private static void insertDocument( WritableIndexPartition partition, long nodeId, Object propertyValue )
+            throws IOException
     {
-        Document doc = LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue );
+        Document doc = LuceneDocumentStructure.documentRepresentingProperties( nodeId, Values.of( propertyValue ) );
         partition.getIndexWriter().addDocument( doc );
     }
 
@@ -140,7 +142,7 @@ public class NonUniqueDatabaseIndexSamplerTest
 
         private Map<String,Terms> fieldTermsMap;
 
-        public SamplingFields( Map<String,Terms> fieldTermsMap )
+        SamplingFields( Map<String,Terms> fieldTermsMap )
         {
             this.fieldTermsMap = fieldTermsMap;
         }

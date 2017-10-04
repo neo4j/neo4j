@@ -24,6 +24,10 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 
 public class LuceneKernelExtensions
 {
+    private LuceneKernelExtensions()
+    {
+    }
+
     public static DirectoryFactory directoryFactory( boolean ephemeral, FileSystemAbstraction fileSystem )
     {
         return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class,

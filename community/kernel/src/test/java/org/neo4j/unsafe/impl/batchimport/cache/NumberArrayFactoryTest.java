@@ -21,7 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -36,7 +38,6 @@ import static org.mockito.Mockito.verify;
 public class NumberArrayFactoryTest
 {
     private static final long KILO = 1024;
-    private static final long MEGA = KILO*KILO;
 
     @Test
     public void shouldPickFirstAvailableCandidateLongArray() throws Exception
@@ -45,12 +46,12 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        LongArray array = factory.newLongArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
         assertTrue( array instanceof HeapLongArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -62,13 +63,13 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        LongArray array = factory.newLongArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newLongArray( 1*KILO, -1, 0 );
+        verify( lowMemoryFactory, times( 1 ) ).newLongArray( KILO, -1, 0 );
         assertTrue( array instanceof HeapLongArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -82,7 +83,7 @@ public class NumberArrayFactoryTest
         // WHEN
         try
         {
-            factory.newLongArray( 1*KILO, -1 );
+            factory.newLongArray( KILO, -1 );
             fail( "Should have thrown" );
         }
         catch ( OutOfMemoryError e )
@@ -98,12 +99,12 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
 
         // WHEN
-        IntArray array = factory.newIntArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        IntArray array = factory.newIntArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
         assertTrue( array instanceof HeapIntArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -111,17 +112,17 @@ public class NumberArrayFactoryTest
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
-        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyInt() );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyLong() );
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
-        IntArray array = factory.newIntArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        IntArray array = factory.newIntArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newIntArray( 1*KILO, -1, 0 );
+        verify( lowMemoryFactory, times( 1 ) ).newIntArray( KILO, -1, 0 );
         assertTrue( array instanceof HeapIntArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -130,16 +131,41 @@ public class NumberArrayFactoryTest
         // GIVEN
         NumberArrayFactory throwingMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( ArithmeticException.class ).when( throwingMemoryFactory )
-                .newByteArray( anyLong(), any( byte[].class ), anyInt() );
+                .newByteArray( anyLong(), any( byte[].class ), anyLong() );
         NumberArrayFactory factory = new NumberArrayFactory.Auto( throwingMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
-        ByteArray array = factory.newByteArray( 1*KILO, new byte[4], 0 );
-        array.setInt( 1*KILO-10, 0, 12345 );
+        ByteArray array = factory.newByteArray( KILO, new byte[4], 0 );
+        array.setInt( KILO - 10, 0, 12345 );
 
         // THEN
-        verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( 1*KILO ), any( byte[].class ), eq( 0L ) );
+        verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( KILO ), any( byte[].class ), eq( 0L ) );
         assertTrue( array instanceof HeapByteArray );
-        assertEquals( 12345, array.getInt( 1*KILO-10, 0 ) );
+        assertEquals( 12345, array.getInt( KILO - 10, 0 ) );
+    }
+
+    @Test
+    public void heapArrayShouldAllowVeryLargeBases() throws Exception
+    {
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
+        verifyVeryLargeBaseSupport( factory );
+    }
+
+    @Test
+    public void offHeapArrayShouldAllowVeryLargeBases() throws Exception
+    {
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.OFF_HEAP );
+        verifyVeryLargeBaseSupport( factory );
+    }
+
+    private void verifyVeryLargeBaseSupport( NumberArrayFactory factory )
+    {
+        long base = Integer.MAX_VALUE * 1337L;
+        byte[] into = new byte[1];
+        into[0] = 1;
+        factory.newByteArray( 10, new byte[1], base ).get( base + 1, into );
+        assertThat( into[0], is( (byte) 0 ) );
+        assertThat( factory.newIntArray( 10, 1, base ).get( base + 1 ), is( 1 ) );
+        assertThat( factory.newLongArray( 10, 1, base ).get( base + 1 ), is( 1L ) );
     }
 }

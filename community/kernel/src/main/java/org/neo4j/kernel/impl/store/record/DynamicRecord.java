@@ -25,7 +25,8 @@ import org.neo4j.kernel.impl.store.PropertyType;
 public class DynamicRecord extends AbstractBaseRecord
 {
     public static final byte[] NO_DATA = new byte[0];
-    private static final int MAX_BYTES_IN_TO_STRING = 8, MAX_CHARS_IN_TO_STRING = 16;
+    private static final int MAX_BYTES_IN_TO_STRING = 8;
+    private static final int MAX_CHARS_IN_TO_STRING = 16;
 
     private byte[] data;
     private int length;
@@ -161,7 +162,14 @@ public class DynamicRecord extends AbstractBaseRecord
                 .append( ",used=" ).append(inUse() ).append( "," )
                 .append("(" ).append( length ).append( "),type=" );
         PropertyType type = getType();
-        if ( type == null ) buf.append( this.type ); else buf.append( type.name() );
+        if ( type == null )
+        {
+            buf.append( this.type );
+        }
+        else
+        {
+            buf.append( type.name() );
+        }
         buf.append( ",data=" );
         if ( type == PropertyType.STRING && data.length <= MAX_CHARS_IN_TO_STRING )
         {
@@ -176,7 +184,10 @@ public class DynamicRecord extends AbstractBaseRecord
             {
                 for ( int i = 0; i < data.length; i++ )
                 {
-                    if (i != 0) buf.append( ',' );
+                    if ( i != 0 )
+                    {
+                        buf.append( ',' );
+                    }
                     buf.append( data[i] );
                 }
             }

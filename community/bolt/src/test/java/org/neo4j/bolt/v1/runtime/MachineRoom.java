@@ -20,10 +20,12 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
-import java.util.Map;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,12 +41,17 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
  */
 public class MachineRoom
 {
-    static final Map<String, Object> EMPTY_PARAMS = emptyMap();
+    static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     static final String USER_AGENT = "BoltStateMachineTest/0.0";
+
+    private MachineRoom()
+    {
+    }
 
     public static BoltStateMachine newMachine()
     {
-        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), null, Clock.systemUTC() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), boltChannel, Clock.systemUTC() );
     }
 
     public static BoltStateMachine newMachine( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality
@@ -55,7 +62,8 @@ public class MachineRoom
         return machine;
     }
 
-    public static BoltStateMachine newMachineWithTransaction( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality
+    public static BoltStateMachine newMachineWithTransaction( BoltStateMachine.State state )
+            throws AuthenticationException, BoltConnectionFatality
     {
         BoltStateMachine machine = newMachine();
         init( machine );
@@ -70,7 +78,8 @@ public class MachineRoom
         BoltStateMachine.SPI spi = mock( BoltStateMachine.SPI.class, RETURNS_MOCKS );
         when( spi.transactionSpi() ).thenReturn( transactionSPI );
 
-        BoltStateMachine machine = new BoltStateMachine( spi, null, Clock.systemUTC() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC() );
         init( machine );
         return machine;
     }

@@ -39,89 +39,55 @@ public class NetworkReadableClosableChannelNetty4 implements ReadableClosablePos
     @Override
     public byte get() throws IOException
     {
-        try
-        {
-            return delegate.readByte();
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw ReadPastEndException.INSTANCE;
-        }
+        ensureBytes( Byte.BYTES );
+        return delegate.readByte();
     }
 
     @Override
     public short getShort() throws IOException
     {
-        try
-        {
-            return delegate.readShort();
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw ReadPastEndException.INSTANCE;
-        }
+        ensureBytes( Short.BYTES );
+        return delegate.readShort();
     }
 
     @Override
     public int getInt() throws IOException
     {
-        try
-        {
-            return delegate.readInt();
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw ReadPastEndException.INSTANCE;
-        }
+        ensureBytes( Integer.BYTES );
+        return delegate.readInt();
     }
 
     @Override
     public long getLong() throws IOException
     {
-        try
-        {
-            return delegate.readLong();
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw ReadPastEndException.INSTANCE;
-        }
+        ensureBytes( Long.BYTES );
+        return delegate.readLong();
     }
 
     @Override
     public float getFloat() throws IOException
     {
-        try
-        {
-            return delegate.readFloat();
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw ReadPastEndException.INSTANCE;
-        }
+        ensureBytes( Float.BYTES );
+        return delegate.readFloat();
     }
 
     @Override
     public double getDouble() throws IOException
     {
-        try
-        {
-            return delegate.readDouble();
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw ReadPastEndException.INSTANCE;
-        }
+        ensureBytes( Double.BYTES );
+        return delegate.readDouble();
     }
 
     @Override
     public void get( byte[] bytes, int length ) throws IOException
     {
-        try
-        {
-            delegate.readBytes( bytes, 0, length );
-        }
-        catch ( IndexOutOfBoundsException e )
+        ensureBytes( length );
+        delegate.readBytes( bytes, 0, length );
+    }
+
+    private void ensureBytes( int byteCount ) throws ReadPastEndException
+    {
+        if ( delegate.readableBytes() < byteCount )
         {
             throw ReadPastEndException.INSTANCE;
         }

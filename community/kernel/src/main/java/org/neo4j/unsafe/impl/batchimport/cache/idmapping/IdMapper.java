@@ -66,7 +66,8 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable
     void prepare( InputIterable<Object> allIds, Collector collector, ProgressListener progress );
 
     /**
-     * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare(InputIterable, Collector, ProgressListener)} must have
+     * Returns an actual node id representing {@code inputId}.
+     * For this call to work {@link #prepare(InputIterable, Collector, ProgressListener)} must have
      * been called after all calls to {@link #put(Object, long, Group)} have been made,
      * iff {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
      * @link #put(Object, long) being put}

@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.security;
 
+import org.codehaus.jackson.node.ArrayNode;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.ws.rs.core.HttpHeaders;
-
-import org.codehaus.jackson.node.ArrayNode;
-import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -40,7 +40,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
     @Override
     public void startServer( boolean authEnabled ) throws IOException
     {
-        server = EnterpriseServerBuilder.server()
+        server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
         server.start();
@@ -66,10 +66,10 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         assertThat( "Should have no errors", errors.size(), equalTo( 0 ) );
         ArrayNode results = (ArrayNode) response.get("results");
         ArrayNode data = (ArrayNode) results.get(0).get("data");
-        assertThat( "Should have 4 predefined roles", data.size(), equalTo( 4 ) );
+        assertThat( "Should have 5 predefined roles", data.size(), equalTo( 5 ) );
         Stream<String> values = data.findValues( "row" ).stream().map( row -> row.get(0).asText() );
         assertThat( "Expected specific roles", values.collect( Collectors.toList()),
-                hasItems( "admin", "architect", "publisher", "reader") );
+                hasItems( "admin", "architect", "publisher", "editor", "reader") );
 
     }
 
@@ -97,7 +97,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
 
     private void startServerWithAuthDisabled() throws IOException
     {
-        server = EnterpriseServerBuilder.server()
+        server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( false ) )
                 .build();
         server.start();

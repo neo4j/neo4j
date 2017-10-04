@@ -45,7 +45,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_strategy;
@@ -83,7 +82,7 @@ public class TransactionPropagatorTest
         };
         Log logger = mock( Log.class );
         Slaves slaves = mock( Slaves.class );
-        when( slaves.getSlaves() ).thenReturn( Collections.<Slave>emptyList() );
+        when( slaves.getSlaves() ).thenReturn( Collections.emptyList() );
         CommitPusher pusher = mock( CommitPusher.class );
         TransactionPropagator propagator = life.add( new TransactionPropagator( config, logger, slaves, pusher ) );
 
@@ -101,7 +100,8 @@ public class TransactionPropagatorTest
     public void shouldPrioritizeAscendingIfAsked() throws Exception
     {
         // GIVEN
-        Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), fixed_ascending.name() )));
+        Configuration propagator = TransactionPropagator
+                .from( Config.defaults( tx_push_strategy, fixed_ascending.name() ) );
         SlavePriority strategy = propagator.getReplicationStrategy();
 
         // WHEN
@@ -115,7 +115,8 @@ public class TransactionPropagatorTest
     public void shouldPrioritizeDescendingIfAsked() throws Exception
     {
         // GIVEN
-        Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), fixed_descending.name() )));
+        Configuration propagator = TransactionPropagator
+                .from( Config.defaults( tx_push_strategy, fixed_descending.name() ) );
         SlavePriority strategy = propagator.getReplicationStrategy();
 
         // WHEN

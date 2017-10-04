@@ -39,13 +39,17 @@ public class LogEntryWriter
     private final FlushableChannel channel;
     private final Visitor<StorageCommand,IOException> serializer;
 
+    /**
+     * Create a writer that uses {@link LogEntryVersion#CURRENT} for versioning.
+     * @param channel underlying channel
+     */
     public LogEntryWriter( FlushableChannel channel )
     {
         this.channel = channel;
         this.serializer = new StorageCommandSerializer( channel );
     }
 
-    private void writeLogEntryHeader( byte type ) throws IOException
+    protected void writeLogEntryHeader( byte type ) throws IOException
     {
         channel.put( CURRENT.byteCode() ).put( type );
     }
@@ -88,7 +92,7 @@ public class LogEntryWriter
     {
         private final FlushableChannel channel;
 
-        public StorageCommandSerializer( FlushableChannel channel )
+        StorageCommandSerializer( FlushableChannel channel )
         {
             this.channel = channel;
         }

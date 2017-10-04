@@ -51,7 +51,7 @@ import static org.neo4j.test.DatabaseFunctions.index;
 import static org.neo4j.test.DatabaseFunctions.setProperty;
 import static org.neo4j.test.DatabaseFunctions.uniquenessConstraint;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class UniqueIndexApplicationIT
 {
     @Rule
@@ -59,7 +59,7 @@ public class UniqueIndexApplicationIT
 
     private final Function<GraphDatabaseService, ?> createIndex;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> indexTypes()
     {
         return asList( createIndex( index( label( "Label1" ), "key1" ) ),
@@ -164,7 +164,8 @@ public class UniqueIndexApplicationIT
     private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup(
             final Label label, final String propertyKey, final Object value )
     {
-        return graphDb -> {
+        return graphDb ->
+        {
             ArrayList<Long> ids = new ArrayList<>();
             for ( Node node : loop( graphDb.findNodes( label, propertyKey, value ) ) )
             {

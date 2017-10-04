@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.messaging;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenSerializer;
 import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSetSerializer;
@@ -29,12 +28,14 @@ import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequestSerializer;
+import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
+import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenSerializer;
+import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionSerializer;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
-import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -47,6 +48,7 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
     private static final byte NEW_LEADER_BARRIER_TYPE = 5;
     private static final byte LOCK_TOKEN_REQUEST = 6;
     private static final byte DISTRIBUTED_OPERATION = 7;
+    private static final byte DUMMY_REQUEST = 8;
 
     @Override
     public void marshal( ReplicatedContent content, WritableChannel channel ) throws IOException
@@ -75,15 +77,20 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
         {
             channel.put( NEW_LEADER_BARRIER_TYPE );
         }
-        else if( content instanceof ReplicatedLockTokenRequest )
+        else if ( content instanceof ReplicatedLockTokenRequest )
         {
             channel.put( LOCK_TOKEN_REQUEST );
             ReplicatedLockTokenSerializer.marshal( (ReplicatedLockTokenRequest) content, channel );
         }
-        else if( content instanceof DistributedOperation )
+        else if ( content instanceof DistributedOperation )
         {
             channel.put( DISTRIBUTED_OPERATION );
             ((DistributedOperation) content).serialize( channel );
+        }
+        else if ( content instanceof DummyRequest )
+        {
+            channel.put( DUMMY_REQUEST );
+            DummyRequest.Marshal.INSTANCE.marshal( (DummyRequest) content, channel );
         }
         else
         {
@@ -118,6 +125,9 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
                 break;
             case DISTRIBUTED_OPERATION:
                 content = DistributedOperation.deserialize( channel );
+                break;
+            case DUMMY_REQUEST:
+                content = DummyRequest.Marshal.INSTANCE.unmarshal( channel );
                 break;
             default:
                 throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );

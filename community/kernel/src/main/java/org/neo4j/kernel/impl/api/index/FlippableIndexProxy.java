@@ -35,13 +35,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -57,6 +57,7 @@ public class FlippableIndexProxy implements IndexProxy
     // But it turns out that that may not be the case. F.ex. ReentrantReadWriteLock
     // code uses unsafe compareAndSwap that sort of circumvents an equivalent of a volatile read.
     private volatile IndexProxy delegate;
+    private boolean started;
 
     public FlippableIndexProxy()
     {
@@ -75,6 +76,7 @@ public class FlippableIndexProxy implements IndexProxy
         try
         {
             delegate.start();
+            started = true;
         }
         finally
         {
@@ -211,6 +213,20 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
+    public LabelSchemaDescriptor schema()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.schema();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
         lock.readLock().lock();
@@ -296,7 +312,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException, ConstraintVerificationFailedKernelException
+    public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException
     {
         lock.readLock().lock();
         try
@@ -388,6 +404,10 @@ public class FlippableIndexProxy implements IndexProxy
             {
                 actionDuringFlip.call();
                 this.delegate = flipTarget.create();
+                if ( started )
+                {
+                    this.delegate.start();
+                }
             }
             catch ( Exception e )
             {
@@ -398,20 +418,6 @@ public class FlippableIndexProxy implements IndexProxy
         finally
         {
             lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public IndexConfiguration config()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return delegate.config();
-        }
-        finally
-        {
-            lock.readLock().unlock();
         }
     }
 

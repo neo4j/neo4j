@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -40,16 +40,21 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
 
+import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -60,12 +65,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelIT extends KernelIntegrationTest
 {
+
     @Test
     public void mixingBeansApiWithKernelAPI() throws Exception
     {
@@ -79,7 +84,7 @@ public class KernelIT extends KernelIntegrationTest
         //    same transaction.
         Node node = db.createNode();
 
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
 
         // 4: Close the StatementContext
@@ -99,7 +104,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         outerTx.close();
@@ -117,7 +122,7 @@ public class KernelIT extends KernelIntegrationTest
 
             // WHEN
             node = db.createNode();
-            labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
             statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
             statement.close();
         }
@@ -148,7 +153,7 @@ public class KernelIT extends KernelIntegrationTest
         {
             Statement statement = statementContextSupplier.get();
             node = db.createNode();
-            labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
             statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
             statement.close();
             transaction.failure();
@@ -164,9 +169,9 @@ public class KernelIT extends KernelIntegrationTest
         }
 
         // THEN
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx();
+              Statement statement = statementContextSupplier.get() )
         {
-            Statement statement = statementContextSupplier.get();
             try
             {
                 statement.readOperations().nodeHasLabel( node.getId(), labelId );
@@ -184,26 +189,29 @@ public class KernelIT extends KernelIntegrationTest
     {
         Transaction tx = db.beginTx();
 
-        Statement statement = statementContextSupplier.get();
-
-        // WHEN
+        int labelId1;
+        int labelId2;
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
-        statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
-        statement.close();
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            // WHEN
+            labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
+            labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
+            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
+            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
+            statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
+        }
         tx.success();
         tx.close();
 
         // THEN
         tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        assertEquals( asSet( labelId1 ),
-                PrimitiveIntCollections.toSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ),
+                    PrimitiveIntCollections.asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        }
         tx.close();
-
     }
 
     @Test
@@ -214,16 +222,16 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
+        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
 
         // THEN
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( asSet( labelId1 ),
-                PrimitiveIntCollections.toSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ),
+                PrimitiveIntCollections.asSet(  statement.readOperations().nodeGetLabels( node.getId() ) ) );
 
         statement.close();
         tx.success();
@@ -238,8 +246,8 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Statement statement = statementContextSupplier.get();
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
+        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.close();
@@ -253,10 +261,10 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
 
         // THEN
-        PrimitiveIntIterator labelsIterator = statement.readOperations().nodeGetLabels( node.getId() );
-        Set<Integer> labels = PrimitiveIntCollections.toSet( labelsIterator );
+        PrimitiveIntSet labels = PrimitiveIntCollections.asSet(
+                statement.readOperations().nodeGetLabels( node.getId() ) );
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( asSet( labelId1 ), labels );
+        assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ), labels );
         statement.close();
         tx.success();
         tx.close();
@@ -269,7 +277,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Statement statement = statementContextSupplier.get();
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.close();
         tx.success();
@@ -286,13 +294,14 @@ public class KernelIT extends KernelIntegrationTest
         // THEN
         tx = db.beginTx();
         statement = statementContextSupplier.get();
-        PrimitiveIntIterator labels = statement.readOperations().nodeGetLabels( node.getId() );
+        Set<Integer> labels = PrimitiveIntCollections.toSet(
+                statement.readOperations().nodeGetLabels( node.getId() ) );
 
         statement.close();
         tx.success();
         tx.close();
 
-        assertThat( PrimitiveIntCollections.toSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
+        assertThat( labels, equalTo( Collections.<Integer>emptySet() ) );
     }
 
     @Test
@@ -301,17 +310,22 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        statement.close();
+        int labelId;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
+            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+        }
         tx.success();
         tx.close();
 
         // WHEN
         tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        boolean added = statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+        boolean added;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            added = statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+        }
         tx.close();
 
         // THEN
@@ -324,16 +338,21 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
-        statement.close();
+        int labelId;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
+        }
         tx.success();
         tx.close();
 
         // WHEN
         tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        boolean added = statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+        boolean added;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            added = statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+        }
         tx.close();
 
         // THEN
@@ -346,17 +365,22 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        statement.close();
+        int labelId;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
+            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+        }
         tx.success();
         tx.close();
 
         // WHEN
         tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        boolean removed = statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId );
+        boolean removed;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            removed = statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId );
+        }
 
         // THEN
         assertTrue( "Should have been removed now", removed );
@@ -369,16 +393,21 @@ public class KernelIT extends KernelIntegrationTest
         // GIVEN
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
-        statement.close();
+        int labelId;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
+        }
         tx.success();
         tx.close();
 
         // WHEN
         tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        boolean removed = statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId );
+        boolean removed;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            removed = statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId );
+        }
 
         // THEN
         assertFalse( "Shouldn't have been removed now", removed );
@@ -430,7 +459,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.close();
 
-        assertEquals( emptySetOf( Long.class ), nodes );
+        assertEquals( emptySet(), nodes );
     }
 
     @Test
@@ -451,10 +480,13 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         tx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
-        int labelId = statement.readOperations().labelGetForName( label.name() );
-        PrimitiveLongIterator nodes = statement.readOperations().nodesGetForLabel( labelId );
-        Set<Long> nodeSet = PrimitiveLongCollections.toSet( nodes );
+        Set<Long> nodeSet;
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            int labelId = statement.readOperations().labelGetForName( label.name() );
+            PrimitiveLongIterator nodes = statement.readOperations().nodesGetForLabel( labelId );
+            nodeSet = PrimitiveLongCollections.toSet( nodes );
+        }
         tx.success();
         tx.close();
 
@@ -471,12 +503,12 @@ public class KernelIT extends KernelIntegrationTest
         commit();
 
         // WHEN
-        createIndex( schemaWriteOperationsInNewTransaction() );
+        createIndex( statementInNewTransaction( SecurityContext.AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            db.schema().awaitIndexesOnline( 20, SECONDS );
             tx.success();
         }
         // THEN
@@ -487,12 +519,12 @@ public class KernelIT extends KernelIntegrationTest
     public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
-        IndexDescriptor idx = createIndex( schemaWriteOperationsInNewTransaction() );
+        IndexDescriptor idx = createIndex( statementInNewTransaction( SecurityContext.AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            db.schema().awaitIndexesOnline( 20, SECONDS );
             getOrCreateSchemaState( "my key", "some state" );
             tx.success();
         }
@@ -517,7 +549,7 @@ public class KernelIT extends KernelIntegrationTest
             tx.acquireStatement().readOperations().nodeExists( 0L );
             fail("Should have been terminated.");
         }
-        catch( TransactionTerminatedException e )
+        catch ( TransactionTerminatedException e )
         {
             // Success
         }
@@ -597,10 +629,8 @@ public class KernelIT extends KernelIntegrationTest
 
         KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         try ( Statement statement = tx.acquireStatement();
-              Cursor<NodeItem> cursor = statement.readOperations().nodeCursor( 1 ) )
+              Cursor<NodeItem> cursor = statement.readOperations().nodeCursorById( 1 ) )
         {
-            assertTrue( cursor.next() );
-            cursor.close();
         }
         tx.success();
 
@@ -626,17 +656,21 @@ public class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private IndexDescriptor createIndex( SchemaWriteOperations schemaWriteOperations ) throws SchemaKernelException
+    private IndexDescriptor createIndex( Statement statement )
+            throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
-        return schemaWriteOperations.indexCreate( schemaWriteOperations.labelGetOrCreateForName( "hello" ),
-                schemaWriteOperations.propertyKeyGetOrCreateForName( "hepp" ) );
+        TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
+        SchemaWriteOperations schemaWriteOperations = statement.schemaWriteOperations();
+        LabelSchemaDescriptor schemaDescriptor = forLabel( tokenWriteOperations.labelGetOrCreateForName( "hello" ),
+                        tokenWriteOperations.propertyKeyGetOrCreateForName( "hepp" ) );
+        return schemaWriteOperations.indexCreate( schemaDescriptor );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = statementContextSupplier.get() )
         {
-            Statement statement = statementContextSupplier.get();
             String state = statement.readOperations().schemaStateGetOrCreate( key, s -> maybeSetThisState );
             tx.success();
             return state;
@@ -645,11 +679,12 @@ public class KernelIT extends KernelIntegrationTest
 
     private boolean schemaStateContains( String key )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = statementContextSupplier.get() )
         {
-            Statement statement = statementContextSupplier.get();
             final AtomicBoolean result = new AtomicBoolean( true );
-            statement.readOperations().schemaStateGetOrCreate( key, s -> {
+            statement.readOperations().schemaStateGetOrCreate( key, s ->
+            {
                 result.set( false );
                 return null;
             } );

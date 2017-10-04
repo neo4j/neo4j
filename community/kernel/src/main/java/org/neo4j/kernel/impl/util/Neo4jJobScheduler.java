@@ -19,7 +19,12 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -31,16 +36,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
+import static org.neo4j.scheduler.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private ExecutorService globalPool;
     private ScheduledThreadPoolExecutor scheduledExecutor;
+
+    // Contains JobHandles which hasn't been cancelled yet, this to be able to cancel those when shutting down
+    // This Set is synchronized, which is fine because there are only a handful of jobs generally and only
+    // added when starting a database.
+    private final Set<JobHandle> jobs = Collections.synchronizedSet( new HashSet<>() );
 
     @Override
     public void init()
@@ -70,20 +81,41 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
-        if (globalPool == null)
-            throw new RejectedExecutionException( "Scheduler is not started" );
-
-        switch( group.strategy() )
+        if ( globalPool == null )
         {
-        case POOLED:
-            return new PooledJobHandle( this.globalPool.submit( job ) );
-        case NEW_THREAD:
-            Thread thread = createNewThread( group, job, metadata );
-            thread.start();
-            return new SingleThreadHandle( thread );
-        default:
-            throw new IllegalArgumentException( "Unsupported strategy for scheduling job: " + group.strategy() );
+            throw new RejectedExecutionException( "Scheduler is not started" );
         }
+
+        return register( new PooledJobHandle( this.globalPool.submit( job ) ) );
+    }
+
+    private JobHandle register( PooledJobHandle pooledJobHandle )
+    {
+        jobs.add( pooledJobHandle );
+
+        // Return a JobHandle which removes itself from this register,
+        // otherwise functions like the supplied handle
+        return new JobHandle()
+        {
+            @Override
+            public void waitTermination() throws InterruptedException, ExecutionException
+            {
+                pooledJobHandle.waitTermination();
+            }
+
+            @Override
+            public void cancel( boolean mayInterruptIfRunning )
+            {
+                pooledJobHandle.cancel( mayInterruptIfRunning );
+                jobs.remove( pooledJobHandle );
+            }
+
+            @Override
+            public void registerCancelListener( CancelListener listener )
+            {
+                pooledJobHandle.registerCancelListener( listener );
+            }
+        };
     }
 
     @Override
@@ -94,27 +126,15 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
     @Override
     public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
-                                        TimeUnit timeUnit )
+            TimeUnit timeUnit )
     {
-        switch ( group.strategy() )
-        {
-        case POOLED:
-            return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
-        default:
-            throw new IllegalArgumentException( "Unsupported strategy to use for recurring jobs: " + group.strategy() );
-        }
+        return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
     }
 
     @Override
     public JobHandle schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
-        switch ( group.strategy() )
-        {
-        case POOLED:
-            return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
-        default:
-            throw new IllegalArgumentException( "Unsupported strategy to use for delayed jobs: " + group.strategy() );
-        }
+        return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
     }
 
     @Override
@@ -128,6 +148,14 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         RuntimeException exception = null;
         try
         {
+            // Cancel jobs which hasn't been cancelled already, this to avoid having to wait the full
+            // max wait time and then just leave them.
+            for ( JobHandle handle : jobs )
+            {
+                handle.cancel( true );
+            }
+            jobs.clear();
+
             shutdownPool( globalPool );
         }
         catch ( RuntimeException e )
@@ -188,8 +216,9 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     private static class PooledJobHandle implements JobHandle
     {
         private final Future<?> job;
+        private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
-        public PooledJobHandle( Future<?> job )
+        PooledJobHandle( Future<?> job )
         {
             this.job = job;
         }
@@ -198,6 +227,10 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         public void cancel( boolean mayInterruptIfRunning )
         {
             job.cancel( mayInterruptIfRunning );
+            for ( CancelListener cancelListener : cancelListeners )
+            {
+                cancelListener.cancelled( mayInterruptIfRunning );
+            }
         }
 
         @Override
@@ -205,30 +238,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         {
             job.get();
         }
-    }
-
-    private static class SingleThreadHandle implements JobHandle
-    {
-        private final Thread thread;
-
-        public SingleThreadHandle( Thread thread )
-        {
-            this.thread = thread;
-        }
 
         @Override
-        public void cancel( boolean mayInterruptIfRunning )
+        public void registerCancelListener( CancelListener listener )
         {
-            if ( mayInterruptIfRunning )
-            {
-                thread.interrupt();
-            }
-        }
-
-        @Override
-        public void waitTermination() throws InterruptedException
-        {
-            thread.join();
+            cancelListeners.add( listener );
         }
     }
 }

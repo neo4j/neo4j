@@ -3,24 +3,16 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cluster</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Clustering Infrastructure</name>
   <description>Library implementing Paxos and Heartbeat components required for High Availability Neo4j</description>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
-  <properties>
-    <bundle.namespace>org.neo4j.cluster</bundle.namespace>
-    <short-name>backup</short-name>
-    <version-package>cluster.impl</version-package>
-    <docs-plugin.skip>false</docs-plugin.skip>
-  </properties>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -61,7 +53,6 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>annotations</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -105,5 +96,18 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-enterprise-kernel</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
+
 </project>

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.InvalidArgumentException
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class CypherStatementWithOptionsTest extends CypherFunSuite {
 
@@ -29,11 +29,11 @@ class CypherStatementWithOptionsTest extends CypherFunSuite {
   }
 
   test("should not allow inconsistent runtime options") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse runtime=interpreted RETURN 42"))
+    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
   }
 
   test("should not allow multiple versions") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER 2.3 CYPHER 3.0 RETURN 42"))
+    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER 2.3 CYPHER 3.1 RETURN 42"))
   }
 
   test("should not allow both EXPLAIN and PROFILE") {

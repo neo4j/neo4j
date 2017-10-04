@@ -31,7 +31,9 @@ public class LockGroupTest
     public void shouldReleaseAllLocksWhenExitingTheLockGroupRegion() throws Exception
     {
         // given
-        Lock lock1 = mock( Lock.class ), lock2 = mock( Lock.class ), lock3 = mock( Lock.class );
+        Lock lock1 = mock( Lock.class );
+        Lock lock2 = mock( Lock.class );
+        Lock lock3 = mock( Lock.class );
 
         // when
         try ( LockGroup locks = new LockGroup() )

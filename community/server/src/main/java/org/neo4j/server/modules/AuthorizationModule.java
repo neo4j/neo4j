@@ -21,7 +21,6 @@ package org.neo4j.server.modules;
 
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-
 import javax.servlet.Filter;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -40,7 +39,8 @@ public class AuthorizationModule implements ServerModule
     private final LogProvider logProvider;
     private final Pattern[] uriWhitelist;
 
-    public AuthorizationModule( WebServer webServer, Supplier<AuthManager> authManager, LogProvider logProvider, Config config, Pattern[] uriWhitelist )
+    public AuthorizationModule( WebServer webServer, Supplier<AuthManager> authManager, LogProvider logProvider,
+            Config config, Pattern[] uriWhitelist )
     {
         this.webServer = webServer;
         this.config = config;

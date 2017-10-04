@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -34,42 +34,36 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * A {@link LuceneIndexPopulator} used for unique Lucene schema indexes.
  * Performs sampling using {@link UniqueIndexSampler}.
  * Verifies uniqueness of added and changed values using
- * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int)} method.
+ * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int[])} method.
  */
 public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    private final int propertyKeyId;
+    private final int[] propertyKeyIds;
     private final UniqueIndexSampler sampler;
 
     public UniqueLuceneIndexPopulator( SchemaIndex index, IndexDescriptor descriptor )
     {
         super( index );
-        this.propertyKeyId = descriptor.getPropertyKeyId();
+        this.propertyKeyIds = descriptor.schema().getPropertyIds();
         this.sampler = new UniqueIndexSampler();
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor ) throws IOException
     {
-        return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyId, luceneIndex, accessor, sampler );
+        return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler );
     }
 
     @Override
-    public void includeSample( NodePropertyUpdate update )
+    public void includeSample( IndexEntryUpdate<?> update )
     {
         sampler.increment( 1 );
-    }
-
-    @Override
-    public void configureSampling( boolean onlineSampling )
-    {
-        // nothing to configure so far
     }
 
     @Override

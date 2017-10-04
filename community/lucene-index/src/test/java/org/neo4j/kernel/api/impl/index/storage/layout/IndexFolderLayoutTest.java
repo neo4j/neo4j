@@ -35,8 +35,7 @@ public class IndexFolderLayoutTest
         IndexFolderLayout indexLayout = createTestIndex();
         File indexFolder = indexLayout.getIndexFolder();
 
-        assertEquals( indexRoot, indexFolder.getParentFile() );
-        assertEquals( "testIndex", indexFolder.getName() );
+        assertEquals( indexRoot, indexFolder );
     }
 
     @Test
@@ -56,7 +55,6 @@ public class IndexFolderLayoutTest
 
     private IndexFolderLayout createTestIndex()
     {
-        return new IndexFolderLayout( indexRoot, "testIndex" );
+        return new IndexFolderLayout( indexRoot );
     }
-
 }

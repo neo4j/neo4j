@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core.consensus.roles;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -55,7 +55,7 @@ import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.r
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class FollowerTest
 {
     private MemberId myself = member( 0 );
@@ -297,20 +297,20 @@ public class FollowerTest
                 new RaftMessages.HeartbeatResponse( myself ) ) ) );
     }
 
-    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int term, int firstIndex ) throws IOException
+    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int term,
+            int firstIndex ) throws IOException
     {
         for ( int i = 0; i < numberOfEntriesToAppend; i++ )
         {
             int prevLogIndex = (firstIndex + i) - 1;
             raft.update( follower.handle( new AppendEntries.Request( myself, term, prevLogIndex, term,
-                            new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
-                    log() ) );
+                    new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft, log() ) );
         }
     }
 
     private static class ContentGenerator
     {
-        private static int count = 0;
+        private static int count;
 
         public static ReplicatedString content()
         {

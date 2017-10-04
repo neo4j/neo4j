@@ -71,7 +71,8 @@ public abstract class TransactionProvidingApp extends AbstractApp
     private static final Label[] EMPTY_LABELS = new Label[0];
     private static final RelationshipType[] EMPTY_REL_TYPES = new RelationshipType[0];
 
-    private static final Function<String[],Label[]> CREATE_LABELS = values -> {
+    private static final Function<String[],Label[]> CREATE_LABELS = values ->
+    {
         Label[] labels = new Label[values.length];
         for ( int i = 0; i < values.length; i++ )
         {
@@ -80,7 +81,8 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return labels;
     };
 
-    private static final Function<String[],RelationshipType[]> CREATE_REL_TYPES = values -> {
+    private static final Function<String[],RelationshipType[]> CREATE_REL_TYPES = values ->
+    {
         RelationshipType[] types = new RelationshipType[values.length];
         for ( int i = 0; i < values.length; i++ )
         {
@@ -755,7 +757,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
                 matches.put( type.name(), direction );
             }
         }
-        return matches.isEmpty() ? Collections.<String, Direction>emptyMap() : matches;
+        return matches.isEmpty() ? Collections.emptyMap() : matches;
     }
 
     protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,

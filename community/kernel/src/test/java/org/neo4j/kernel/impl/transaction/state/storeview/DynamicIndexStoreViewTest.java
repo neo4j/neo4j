@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -33,7 +31,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -41,6 +39,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -54,27 +53,14 @@ import static org.mockito.Mockito.when;
 
 public class DynamicIndexStoreViewTest
 {
-
-    private LabelScanStore labelScanStore = mock( LabelScanStore.class );
-    private NeoStores neoStores = mock( NeoStores.class );
-    private NodeStore nodeStore = mock( NodeStore.class );
-    private CountsTracker countStore = mock( CountsTracker.class );
-    private Visitor<NodePropertyUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-    private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
-
-    @BeforeClass
-    public static void init()
-    {
-        DynamicIndexStoreView.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = true;
-    }
-
-    @AfterClass
-    public static void cleanup()
-    {
-        DynamicIndexStoreView.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = false;
-    }
+    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
+    private final NodeStore nodeStore = mock( NodeStore.class );
+    private final CountsTracker countStore = mock( CountsTracker.class );
+    private final Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
+    private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
+    private final AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
 
     @Before
     public void setUp()
@@ -88,29 +74,7 @@ public class DynamicIndexStoreViewTest
     }
 
     @Test
-    public void visitAllNodesWhenThresholdReached() throws Exception
-    {
-        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 10L );
-        when( nodeStore.getHighId() ).thenReturn( 10L );
-
-        mockLabelNodeCount( countStore, 1 );
-        mockLabelNodeCount( countStore, 2 );
-        mockLabelNodeCount( countStore, 3 );
-
-        DynamicIndexStoreView storeView =
-                new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
-
-        StoreScan<Exception> storeScan = storeView
-                .visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
-
-        storeScan.run();
-
-        Mockito.verify( nodeStore, times( 10 ) )
-                .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
-    }
-
-    @Test
-    public void visitOnlyLabeledNodesWhenThresholdNotReached() throws Exception
+    public void visitOnlyLabeledNodes() throws Exception
     {
         LabelScanReader labelScanReader = mock( LabelScanReader.class );
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
@@ -124,16 +88,44 @@ public class DynamicIndexStoreViewTest
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 6 );
 
-        DynamicIndexStoreView storeView =
-                new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
+        DynamicIndexStoreView storeView = dynamicIndexStoreView();
 
         StoreScan<Exception> storeScan = storeView
-                .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
+                .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, false );
 
         storeScan.run();
 
         Mockito.verify( nodeStore, times( 8 ) )
                 .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
+    }
+
+    @Test
+    public void shouldBeAbleToForceStoreScan() throws Exception
+    {
+        when( labelScanStore.newReader() ).thenThrow( new RuntimeException( "Should not be used" ) );
+
+        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 200L );
+        when( nodeStore.getHighId() ).thenReturn( 20L );
+
+        mockLabelNodeCount( countStore, 2 );
+        mockLabelNodeCount( countStore, 6 );
+
+        DynamicIndexStoreView storeView = dynamicIndexStoreView();
+
+        StoreScan<Exception> storeScan = storeView
+                .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, true );
+
+        storeScan.run();
+
+        Mockito.verify( nodeStore, times( 20 ) )
+                .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
+    }
+
+    private DynamicIndexStoreView dynamicIndexStoreView()
+    {
+        LockService locks = LockService.NO_LOCK_SERVICE;
+        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, neoStores ), labelScanStore,
+                locks, neoStores, NullLogProvider.getInstance() );
     }
 
     private NodeRecord getNodeRecord()

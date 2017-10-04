@@ -19,15 +19,15 @@
  */
 package org.neo4j.locking;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CyclicBarrier;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;

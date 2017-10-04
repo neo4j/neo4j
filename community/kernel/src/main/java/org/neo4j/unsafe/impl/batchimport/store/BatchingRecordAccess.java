@@ -31,33 +31,33 @@ import org.neo4j.kernel.impl.util.collection.ArrayCollection;
  * Mostly here as a bridge between a batch importer and existing record logic in {@link TransactionRecordState}
  * and friends.
  */
-public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>
+public abstract class BatchingRecordAccess<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
-    private final Collection<RecordProxy<KEY,RECORD,ADDITIONAL>> proxies = new ArrayCollection<>( 1000 );
+    private final Collection<RecordProxy<RECORD,ADDITIONAL>> proxies = new ArrayCollection<>( 1000 );
 
     @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData )
+    public RecordProxy<RECORD,ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData )
     {
         throw new UnsupportedOperationException( "We only support creations here" );
     }
 
     @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> create( KEY key, ADDITIONAL additionalData )
+    public RecordProxy<RECORD,ADDITIONAL> create( long key, ADDITIONAL additionalData )
     {
         RECORD record = createRecord( key, additionalData );
-        BatchingRecordProxy<KEY,RECORD,ADDITIONAL> proxy = new BatchingRecordProxy<>( key, record, additionalData );
+        BatchingRecordProxy<RECORD,ADDITIONAL> proxy = new BatchingRecordProxy<>( key, record, additionalData );
         proxies.add( proxy );
         return proxy;
     }
 
-    protected abstract RECORD createRecord( KEY key, ADDITIONAL additionalData );
+    protected abstract RECORD createRecord( long key, ADDITIONAL additionalData );
 
     public Iterable<RECORD> records()
     {
-        return new IterableWrapper<RECORD,RecordProxy<KEY,RECORD,ADDITIONAL>>( proxies )
+        return new IterableWrapper<RECORD,RecordProxy<RECORD,ADDITIONAL>>( proxies )
         {
             @Override
-            protected RECORD underlyingObjectToObject( RecordProxy<KEY,RECORD,ADDITIONAL> object )
+            protected RECORD underlyingObjectToObject( RecordProxy<RECORD,ADDITIONAL> object )
             {
                 return object.forReadingLinkage();
             }
@@ -65,13 +65,19 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
     }
 
     @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> getIfLoaded( KEY key )
+    public RecordProxy<RECORD,ADDITIONAL> getIfLoaded( long key )
     {
         throw new UnsupportedOperationException( "Not supported" );
     }
 
     @Override
-    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    public void setTo( long key, RECORD newRecord, ADDITIONAL additionalData )
+    {
+        throw new UnsupportedOperationException( "Not supported" );
+    }
+
+    @Override
+    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData )
     {
         throw new UnsupportedOperationException( "Not supported" );
     }
@@ -83,7 +89,7 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
     }
 
     @Override
-    public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
+    public Iterable<RecordProxy<RECORD,ADDITIONAL>> changes()
     {
         return proxies;
     }
@@ -94,13 +100,13 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
         proxies.clear();
     }
 
-    public static class BatchingRecordProxy<KEY,RECORD,ADDITIONAL> implements RecordProxy<KEY,RECORD,ADDITIONAL>
+    public static class BatchingRecordProxy<RECORD,ADDITIONAL> implements RecordProxy<RECORD,ADDITIONAL>
     {
-        private final KEY key;
+        private final long key;
         private final RECORD record;
         private final ADDITIONAL additional;
 
-        private BatchingRecordProxy( KEY key, RECORD record, ADDITIONAL additional )
+        private BatchingRecordProxy( long key, RECORD record, ADDITIONAL additional )
         {
             this.key = key;
             this.record = record;
@@ -108,7 +114,7 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
         }
 
         @Override
-        public KEY getKey()
+        public long getKey()
         {
             return key;
         }

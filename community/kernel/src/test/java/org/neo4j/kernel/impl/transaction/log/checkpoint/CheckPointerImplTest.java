@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.concurrent.BinaryLatch;
@@ -181,17 +182,18 @@ public class CheckPointerImplTest
     public void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
     {
         // Given
-        ReentrantLock reentrantLock = new ReentrantLock();
-        final Lock spyLock = spy( reentrantLock );
+        Lock lock = new ReentrantLock();
+        final Lock spyLock = spy( lock );
 
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
             reset( appender );
             invocation.callRealMethod();
             return null;
         } ).when( spyLock ).unlock();
 
-        final CheckPointerImpl checkPointing = checkPointer( spyLock );
+        final CheckPointerImpl checkPointing = checkPointer( mutex( spyLock ) );
         mockTxIdStore();
 
         final CountDownLatch startSignal = new CountDownLatch( 2 );
@@ -201,25 +203,21 @@ public class CheckPointerImplTest
 
         Thread checkPointerThread = new CheckPointerThread( checkPointing, startSignal, completed );
 
-        Thread forceCheckPointThread = new Thread()
+        Thread forceCheckPointThread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    startSignal.countDown();
-                    startSignal.await();
-                    checkPointing.forceCheckPoint( INFO );
+                startSignal.countDown();
+                startSignal.await();
+                checkPointing.forceCheckPoint( INFO );
 
-                    completed.countDown();
-                }
-                catch ( Throwable e )
-                {
-                    throw new RuntimeException( e );
-                }
+                completed.countDown();
             }
-        };
+            catch ( Throwable e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
 
         // when
         checkPointerThread.start();
@@ -231,13 +229,31 @@ public class CheckPointerImplTest
         verify( spyLock, times( 2 ) ).unlock();
     }
 
+    private StoreCopyCheckPointMutex mutex( Lock lock )
+    {
+        return new StoreCopyCheckPointMutex( new ReadWriteLock()
+        {
+            @Override
+            public Lock writeLock()
+            {
+                return lock;
+            }
+
+            @Override
+            public Lock readLock()
+            {
+                throw new UnsupportedOperationException();
+            }
+        } );
+    }
+
     @Test
     public void tryCheckPointShouldWaitTheCurrentCheckPointingToCompleteNoRunCheckPointButUseTheTxIdOfTheEarlierRun()
             throws Throwable
     {
         // Given
         Lock lock = mock( Lock.class );
-        final CheckPointerImpl checkPointing = checkPointer( lock );
+        final CheckPointerImpl checkPointing = checkPointer( mutex( lock ) );
         mockTxIdStore();
 
         checkPointing.forceCheckPoint( INFO );
@@ -253,7 +269,7 @@ public class CheckPointerImplTest
     @Test
     public void mustUseIoLimiterFromFlushing() throws Throwable
     {
-        limiter = (stamp, ios, flushable) -> 42;
+        limiter = ( stamp, ios, flushable ) -> 42;
         when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
         mockTxIdStore();
         CheckPointerImpl checkPointing = checkPointer();
@@ -349,7 +365,8 @@ public class CheckPointerImplTest
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
 
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             backgroundCheckPointStartedLatch.release();
             forceCheckPointStartLatch.await();
             long newValue = limitDisableCounter.get();
@@ -357,7 +374,8 @@ public class CheckPointerImplTest
             return null;
         } ).when( storageEngine ).flushAndForce( limiter );
 
-        Future<Object> forceCheckPointer = forkFuture( () -> {
+        Future<Object> forceCheckPointer = forkFuture( () ->
+        {
             backgroundCheckPointStartedLatch.await();
             asyncAction.accept( checkPointer );
             return null;
@@ -369,29 +387,29 @@ public class CheckPointerImplTest
         assertThat( observedRushCount.get(), is( 1L ) );
     }
 
-    @Test(timeout = 5000)
+    @Test( timeout = 5000 )
     public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
     {
         verifyAsyncActionCausesConcurrentFlushingRush(
                 checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
     }
 
-    @Test(timeout = 5000)
+    @Test( timeout = 5000 )
     public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
     {
         verifyAsyncActionCausesConcurrentFlushingRush(
                 checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
     }
 
-    private CheckPointerImpl checkPointer( Lock lock )
+    private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )
     {
         return new CheckPointerImpl( txIdStore, threshold, storageEngine, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer, limiter, lock );
+                NullLogProvider.getInstance(), tracer, limiter, mutex );
     }
 
     private CheckPointerImpl checkPointer()
     {
-        return checkPointer( new ReentrantLock() );
+        return checkPointer( new StoreCopyCheckPointMutex() );
     }
 
     private void mockTxIdStore()
@@ -407,8 +425,7 @@ public class CheckPointerImplTest
         private final CountDownLatch startSignal;
         private final CountDownLatch completed;
 
-        public CheckPointerThread( CheckPointerImpl checkPointing, CountDownLatch startSignal,
-                CountDownLatch completed )
+        CheckPointerThread( CheckPointerImpl checkPointing, CountDownLatch startSignal, CountDownLatch completed )
         {
             this.checkPointing = checkPointing;
             this.startSignal = startSignal;

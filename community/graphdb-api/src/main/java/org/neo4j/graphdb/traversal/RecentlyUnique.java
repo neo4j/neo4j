@@ -36,8 +36,7 @@ class RecentlyUnique extends AbstractUniquenessFilter
     {
         super( type );
         parameter = parameter != null ? parameter : DEFAULT_RECENT_SIZE;
-        recentlyVisited = new LruCache<>( "Recently visited",
-                ((Number) parameter).intValue() );
+        recentlyVisited = new LruCache<>( "Recently visited", ((Number) parameter).intValue() );
     }
 
     @Override

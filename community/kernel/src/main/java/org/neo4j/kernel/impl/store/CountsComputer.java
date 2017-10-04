@@ -19,27 +19,32 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.NodeCountsStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
-    public static void recomputeCounts( NeoStores stores )
+
+    private final NumberArrayFactory numberArrayFactory;
+
+    public static void recomputeCounts( NeoStores stores, PageCache pageCache )
     {
         MetaDataStore metaDataStore = stores.getMetaDataStore();
         CountsTracker counts = stores.getCounts();
         try ( CountsAccessor.Updater updater = counts.reset( metaDataStore.getLastCommittedTransactionId() ) )
         {
-            new CountsComputer( stores ).initialize( updater );
+            new CountsComputer( stores, pageCache ).initialize( updater );
         }
     }
 
@@ -48,43 +53,56 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final int highLabelId;
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
+    private final ProgressReporter progressMonitor;
 
-    public CountsComputer( NeoStores stores )
+    public CountsComputer( NeoStores stores, PageCache pageCache )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
-              stores.getNodeStore(), stores.getRelationshipStore(),
-              (int) stores.getLabelTokenStore().getHighId(),
-              (int) stores.getRelationshipTypeTokenStore().getHighId() );
+                stores.getNodeStore(), stores.getRelationshipStore(),
+                (int) stores.getLabelTokenStore().getHighId(),
+                (int) stores.getRelationshipTypeTokenStore().getHighId(),
+                NumberArrayFactory.auto( pageCache, stores.getStoreDir(), true ) );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId,
-            int highRelationshipTypeId )
+            int highLabelId, int highRelationshipTypeId, NumberArrayFactory numberArrayFactory )
+    {
+        this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
+                numberArrayFactory, SilentProgressReporter.INSTANCE );
+    }
+
+    public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
+            int highLabelId, int highRelationshipTypeId, NumberArrayFactory numberArrayFactory, ProgressReporter progressMonitor )
     {
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
         this.relationships = relationships;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
+        this.numberArrayFactory = numberArrayFactory;
+        this.progressMonitor = progressMonitor;
     }
 
     @Override
     public void initialize( CountsAccessor.Updater countsUpdater )
     {
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
+        progressMonitor.start( nodes.getHighestPossibleIdInUse() + relationships.getHighestPossibleIdInUse() );
+        NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, highLabelId );
         try
         {
             // Count nodes
             superviseDynamicExecution(
-                    new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater ) );
+                    new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater,
+                            progressMonitor ) );
             // Count relationships
             superviseDynamicExecution(
                     new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId,
-                            highRelationshipTypeId, countsUpdater, AUTO ) );
+                            highRelationshipTypeId, countsUpdater, numberArrayFactory, progressMonitor ) );
         }
         finally
         {
             cache.close();
+            progressMonitor.completed();
         }
     }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
 import java.net.URI;
 import java.util.function.Supplier;
 
@@ -37,11 +36,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -49,7 +50,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
+import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
@@ -81,13 +82,15 @@ public class OnlineBackupKernelExtension implements Lifecycle
                                         final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                                         final Supplier<LogFileInformation> logFileInformationSupplier,
                                         final FileSystemAbstraction fileSystemAbstraction,
-                                        final PageCache pageCache )
+                                        final PageCache pageCache,
+                                        final StoreCopyCheckPointMutex storeCopyCheckPointMutex )
     {
-        this( config, graphDatabaseAPI, () -> {
+        this( config, graphDatabaseAPI, () ->
+        {
             TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
             StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
-                    fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
-                    monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache );
+                    fileSystemAbstraction, graphDatabaseAPI.getStoreDir(),
+                    monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache, storeCopyCheckPointMutex );
             LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
             LogFileInformation logFileInformation = logFileInformationSupplier.get();
             return new BackupImpl( copier, logicalTransactionStore, transactionIdStore, logFileInformation,
@@ -223,11 +226,13 @@ public class OnlineBackupKernelExtension implements Lifecycle
         }
     }
 
-    private ClusterMemberAvailability getClusterMemberAvailability() {
+    private ClusterMemberAvailability getClusterMemberAvailability()
+    {
         return graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
     }
 
-    private URI createBackupURI() {
+    private URI createBackupURI()
+    {
         String hostString = ServerUtil.getHostString( server.getSocketAddress() );
         String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
         int port = server.getSocketAddress().getPort();

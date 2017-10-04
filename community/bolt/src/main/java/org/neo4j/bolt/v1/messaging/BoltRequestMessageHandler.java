@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.messaging;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Interface defining simple handler methods for each defined
@@ -37,7 +38,7 @@ public interface BoltRequestMessageHandler<E extends Exception>
 
     void onReset() throws E;
 
-    void onRun( String statement, Map<String,Object> params ) throws E;
+    void onRun( String statement, MapValue params ) throws E;
 
     void onDiscardAll() throws E;
 

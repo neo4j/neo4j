@@ -65,7 +65,7 @@ public class TransactionIdTracker
      * @param oldestAcceptableTxId id of the Oldest Acceptable Transaction (OAT) that must have been applied before
      *                             continuing work.
      * @param timeout maximum duration to wait for OAT to be applied
-     * @throws TransactionFailureException transaction failed
+     * @throws TransactionFailureException when OAT did not get applied within the given duration
      */
     public void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException
     {
@@ -96,6 +96,14 @@ public class TransactionIdTracker
         }
     }
 
+    private TransactionIdStore transactionIdStore()
+    {
+        // We need to resolve this as late as possible in case the database has been restarted as part of store copy.
+        // This causes TransactionIdStore staleness and we could get a MetaDataStore closed exception.
+        // Ideally we'd fix this with some life cycle wizardry but not going to do that for now.
+        return transactionIdStoreSupplier.get();
+    }
+
     /**
      * Find the id of the Newest Encountered Transaction (NET) that could have been seen on this server.
      * We expect the returned id to be sent back the client and ultimately supplied to
@@ -106,10 +114,5 @@ public class TransactionIdTracker
     public long newestEncounteredTxId()
     {
         return transactionIdStore().getLastClosedTransactionId();
-    }
-
-    private TransactionIdStore transactionIdStore()
-    {
-        return transactionIdStoreSupplier.get();
     }
 }

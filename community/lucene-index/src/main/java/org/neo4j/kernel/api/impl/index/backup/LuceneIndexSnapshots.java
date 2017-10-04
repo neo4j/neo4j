@@ -34,7 +34,7 @@ import java.util.Collection;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 /**
  * Create iterators over Lucene index files for a particular {@link IndexCommit index commit}.
@@ -42,6 +42,10 @@ import static org.neo4j.helpers.collection.Iterators.emptyIterator;
  */
 public class LuceneIndexSnapshots
 {
+    private LuceneIndexSnapshots()
+    {
+    }
+
     /**
      * Create index snapshot iterator for a writable index.
      * @param indexFolder index location folder
@@ -57,7 +61,7 @@ public class LuceneIndexSnapshots
             SnapshotDeletionPolicy policy = (SnapshotDeletionPolicy) deletionPolicy;
             return hasCommits( indexWriter )
                    ? new WritableIndexSnapshotFileIterator( indexFolder, policy )
-                   : emptyIterator();
+                   : emptyResourceIterator();
         }
         else
         {
@@ -79,7 +83,7 @@ public class LuceneIndexSnapshots
     {
         if ( !hasCommits( directory ) )
         {
-            return emptyIterator();
+            return emptyResourceIterator();
         }
         Collection<IndexCommit> indexCommits = DirectoryReader.listCommits( directory );
         IndexCommit indexCommit = Iterables.last( indexCommits );

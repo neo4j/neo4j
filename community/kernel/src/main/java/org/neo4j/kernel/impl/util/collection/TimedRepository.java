@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.neo4j.function.Factory;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -38,7 +39,7 @@ import static org.neo4j.helpers.Format.duration;
  * acquire/release methods.
  *
  * The {@link #run()} method here performs one "sweep", checking for idle entries to reap. You will want to trigger
- * that run on a recurring basis, for instance using {@link org.neo4j.kernel.impl.util.JobScheduler}.
+ * that run on a recurring basis, for instance using {@link JobScheduler}.
  */
 public class TimedRepository<KEY, VALUE> implements Runnable
 {
@@ -50,13 +51,15 @@ public class TimedRepository<KEY, VALUE> implements Runnable
 
     private class Entry
     {
-        static final int IDLE = 0, IN_USE = 1, MARKED_FOR_END = 2;
+        static final int IDLE = 0;
+        static final int IN_USE = 1;
+        static final int MARKED_FOR_END = 2;
 
         private final AtomicInteger state = new AtomicInteger( IDLE );
         private final VALUE value;
         private volatile long latestActivityTimestamp;
 
-        public Entry( VALUE value )
+        Entry( VALUE value )
         {
             this.value = value;
             this.latestActivityTimestamp = clock.millis();
@@ -92,7 +95,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         public String toString()
         {
             return format( "%s[%s last accessed at %d (%s ago)", getClass().getSimpleName(),
-                    value, latestActivityTimestamp, duration( currentTimeMillis()-latestActivityTimestamp ) );
+                    value, latestActivityTimestamp, duration( currentTimeMillis() - latestActivityTimestamp ) );
         }
     }
 
@@ -122,7 +125,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
      */
     public VALUE end( KEY key )
     {
-        while(true)
+        while ( true )
         {
             Entry entry = repo.get( key );
             if ( entry == null )
@@ -169,7 +172,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         {
             throw new NoSuchEntryException( String.format("Cannot access '%s', no such entry exists.", key) );
         }
-        if(entry.acquire())
+        if ( entry.acquire() )
         {
             return entry.value;
         }
@@ -179,11 +182,11 @@ public class TimedRepository<KEY, VALUE> implements Runnable
     public void release( KEY key )
     {
         Entry entry = repo.get( key );
-        if(entry != null && !entry.release())
+        if ( entry != null && !entry.release() )
         {
             // This happens when another client has asked that this entry be ended while we were using it, leaving us
             // a note to not release the object back to the public, and to end its life when we are done with it.
-            end0(key, entry.value);
+            end0( key, entry.value );
         }
     }
 
@@ -209,7 +212,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         }
     }
 
-    private void end0(KEY key, VALUE value)
+    private void end0( KEY key, VALUE value )
     {
         repo.remove( key );
         reaper.accept( value );

@@ -32,6 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -66,13 +67,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     private static final LongSupplier DEFAULT_CURRENT_TIME_SUPPLIER = System::currentTimeMillis;
 
     // Used only in case no new output file can be created during rotation
-    private static final OutputStream nullStream = new OutputStream()
-    {
-        @Override
-        public void write( int i ) throws IOException
-        {
-        }
-    };
+    private static final OutputStream nullStream = NullOutputStream.NULL_OUTPUT_STREAM;
 
     private final LongSupplier currentTimeSupplier;
     private final FileSystemAbstraction fileSystem;

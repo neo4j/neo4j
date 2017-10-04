@@ -24,7 +24,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.server.NeoServer;
@@ -39,14 +38,15 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class ReadOnlyIT extends ExclusiveServerTestBase
 {
-    private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
     private NeoServer readOnlyServer;
+    private HTTP.Builder http;
 
     @Before
     public void setup() throws IOException
     {
         ServerHelper.cleanTheDatabase( readOnlyServer );
         readOnlyServer = ServerHelper.createNonPersistentReadOnlyServer();
+        http = HTTP.withBaseUri( readOnlyServer.baseUri() );
     }
 
     @After
@@ -62,7 +62,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     public void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception
     {
         // Given
-        HTTP.Response response = http.POST( "/db/data/transaction/commit",
+        HTTP.Response response = http.POST( "db/data/transaction/commit",
                 quotedJson( "{ 'statements': [ { 'statement': 'CREATE (node)' } ] }" ) );
 
         // Then
@@ -79,7 +79,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     {
         // Given
         // When
-        HTTP.Response response = http.POST( "/db/data/transaction/commit",
+        HTTP.Response response = http.POST( "db/data/transaction/commit",
                 quotedJson( "{ 'statements': [ { 'statement': 'CREATE (node:Node)' } ] }" ) );
 
         // Then

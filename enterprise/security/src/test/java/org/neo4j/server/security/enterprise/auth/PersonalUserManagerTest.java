@@ -31,11 +31,11 @@ import java.util.Set;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.mockito.Mockito.spy;
@@ -85,10 +85,10 @@ public class PersonalUserManagerTest
 
     private class EvilUserManager implements EnterpriseUserManager
     {
-        private boolean failNextCall = false;
+        private boolean failNextCall;
         private EnterpriseUserManager delegate;
 
-        public EvilUserManager( EnterpriseUserManager delegate )
+        EvilUserManager( EnterpriseUserManager delegate )
         {
             this.delegate = delegate;
         }

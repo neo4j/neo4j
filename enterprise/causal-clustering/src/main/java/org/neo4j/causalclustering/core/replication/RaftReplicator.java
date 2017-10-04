@@ -25,11 +25,13 @@ import java.util.function.BiConsumer;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.replication.session.OperationContext;
-import org.neo4j.causalclustering.helper.RetryStrategy;
+import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -44,43 +46,57 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
-    private final RetryStrategy retryStrategy;
+    private final TimeoutStrategy timeoutStrategy;
+    private final AvailabilityGuard availabilityGuard;
     private final LeaderLocator leaderLocator;
     private final Log log;
-
-    private volatile boolean shutdown;
+    private final Throttler throttler;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
-                           Outbound<MemberId, RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
-                           ProgressTracker progressTracker, RetryStrategy retryStrategy, LogProvider logProvider )
+            Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
+            ProgressTracker progressTracker, TimeoutStrategy timeoutStrategy, AvailabilityGuard availabilityGuard,
+            LogProvider logProvider, long replicationLimit )
     {
         this.me = me;
         this.outbound = outbound;
         this.progressTracker = progressTracker;
         this.sessionPool = sessionPool;
-        this.retryStrategy = retryStrategy;
-
+        this.timeoutStrategy = timeoutStrategy;
+        this.availabilityGuard = availabilityGuard;
+        this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
         log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException, NoLeaderFoundException
+    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException
+    {
+        if ( command.hasSize() )
+        {
+            return throttler.invoke( () -> replicate0( command, trackResult ), command.size() );
+        }
+        else
+        {
+            return replicate0( command, trackResult );
+        }
+    }
 
+    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult ) throws InterruptedException
     {
         OperationContext session = sessionPool.acquireSession();
 
         DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
         Progress progress = progressTracker.start( operation );
 
-        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
+        TimeoutStrategy.Timeout timeout = timeoutStrategy.newTimeout();
         do
         {
             assertDatabaseNotShutdown();
             try
             {
-                outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ) );
+                // blocking at least until the send has succeeded or failed before retrying
+                outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ), true );
                 progress.awaitReplication( timeout.getMillis() );
                 timeout.increment();
             }
@@ -93,11 +109,12 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
             {
                 log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
             }
-        } while( !progress.isReplicated() );
+        }
+        while ( !progress.isReplicated() );
 
         BiConsumer<Object,Throwable> cleanup = ( ignored1, ignored2 ) -> sessionPool.releaseSession( session );
 
-        if( trackResult )
+        if ( trackResult )
         {
             progress.futureResult().whenComplete( cleanup );
         }
@@ -115,17 +132,11 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         progressTracker.triggerReplicationEvent();
     }
 
-    @Override
-    public void shutdown()
-    {
-        shutdown = true;
-    }
-
     private void assertDatabaseNotShutdown() throws InterruptedException
     {
-        if ( shutdown )
+        if ( availabilityGuard.isShutdown() )
         {
-            throw new InterruptedException( "Database has been shutdown, transaction cannot be replicated." );
+            throw new DatabaseShutdownException( "Database has been shutdown, transaction cannot be replicated." );
         }
     }
 }

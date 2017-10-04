@@ -25,12 +25,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
  */
 public interface StoreApplyEvent extends AutoCloseable
 {
-    StoreApplyEvent NULL = new StoreApplyEvent()
+    StoreApplyEvent NULL = () ->
     {
-        @Override
-        public void close()
-        {
-        }
     };
 
     /**

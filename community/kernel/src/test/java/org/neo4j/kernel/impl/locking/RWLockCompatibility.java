@@ -36,10 +36,11 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 /**
- * This is the test suite that tested the original (from 2007) lock manager. It has been ported to test {@link org.neo4j.kernel.impl.locking.Locks}
+ * This is the test suite that tested the original (from 2007) lock manager.
+ * It has been ported to test {@link org.neo4j.kernel.impl.locking.Locks}
  * to ensure implementors of that API don't fall in any of the traps this test suite sets for them.
  */
-@Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
+@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     public RWLockCompatibility( LockingCompatibilityTestSuite suite )
@@ -69,7 +70,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             // good
         }
 
-        clientA.acquireShared( NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
         try
         {
             clientA.releaseExclusive( NODE, 1L );
@@ -81,7 +82,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
 
         clientA.releaseShared( NODE, 1L );
-        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
         try
         {
             clientA.releaseShared( NODE, 1L );
@@ -93,13 +94,13 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         clientA.releaseExclusive( NODE, 1L );
 
-        clientA.acquireShared( NODE, 1L );
-        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
         clientA.releaseExclusive( NODE, 1L );
         clientA.releaseShared( NODE, 1L );
 
-        clientA.acquireExclusive( NODE, 1L );
-        clientA.acquireShared( NODE, 1L );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
         clientA.releaseShared( NODE, 1L );
         clientA.releaseExclusive( NODE, 1L );
 
@@ -107,11 +108,11 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         {
             if ( (i % 2) == 0 )
             {
-                clientA.acquireExclusive( NODE, 1L );
+                clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
             }
             else
             {
-                clientA.acquireShared( NODE, 1L );
+                clientA.acquireShared( LockTracer.NONE, NODE, 1L );
             }
         }
         for ( int i = 9; i >= 0; i-- )
@@ -195,7 +196,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         catch ( Exception e )
         {
-            LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.directory( getClass().getSimpleName() ) );
+            LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.file( getClass().getSimpleName() ) );
             File file = dumper.dumpState( locks, t1, t2, t3, t4 );
             throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
         }
@@ -253,12 +254,12 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
                             float f = rand.nextFloat();
                             if ( f < readWriteRatio )
                             {
-                                client.acquireShared( NODE, nodeId );
+                                client.acquireShared( LockTracer.NONE, NODE, nodeId );
                                 lockStack.push( READ );
                             }
                             else
                             {
-                                client.acquireExclusive( NODE, nodeId );
+                                client.acquireExclusive( LockTracer.NONE, NODE, nodeId );
                                 lockStack.push( WRITE );
                             }
                         }
@@ -334,16 +335,18 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         for ( StressThread stressThread : stressThreads )
         {
             if ( stressThread.error != null )
+            {
                 throw stressThread.error;
+            }
             else if ( stressThread.isAlive() )
             {
                 for ( StackTraceElement stackTraceElement : stressThread.getStackTrace() )
                 {
-                    System.out.println(stackTraceElement);
+                    System.out.println( stackTraceElement );
                 }
             }
         }
-        if(anyAlive)
+        if ( anyAlive )
         {
             throw new RuntimeException( "Expected all threads to complete." );
         }
@@ -367,9 +370,13 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         for ( StressThread stressThread : stressThreads )
         {
             if ( stressThread.error != null )
+            {
                 return false;
+            }
             if ( stressThread.isAlive() )
+            {
                 return true;
+            }
         }
         return false;
     }

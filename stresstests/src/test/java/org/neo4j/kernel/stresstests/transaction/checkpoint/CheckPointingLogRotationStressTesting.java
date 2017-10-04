@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -70,8 +72,12 @@ public class CheckPointingLogRotationStressTesting
         String pageCacheMemory = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_CACHE_MEMORY", DEFAULT_PAGE_CACHE_MEMORY );
 
         System.out.println( "1/6\tBuilding initial store..." );
-        new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), DEFAULT, NullLogService.getInstance(),
-                ExecutionMonitors.defaultVisible(), Config.defaults() ).doImport( new NodeCountInputs( nodeCount ) );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), fileSystem, DEFAULT,
+                    NullLogService.getInstance(), ExecutionMonitors.defaultVisible(), Config.defaults() )
+                    .doImport( new NodeCountInputs( nodeCount ) );
+        }
 
         System.out.println( "2/6\tStarting database..." );
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );

@@ -89,12 +89,7 @@ public class RoleRecord
         {
             return false;
         }
-        if ( users != null ? !users.equals( role.users ) : role.users != null )
-        {
-            return false;
-        }
-
-        return true;
+        return users != null ? users.equals( role.users ) : role.users == null;
     }
 
     @Override

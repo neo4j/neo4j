@@ -89,7 +89,7 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
 
     private static final long TWO_BIT_FIXED_REFERENCE_BIT_MASK = 0x300000000L;
 
-    public RelationshipRecordFormatV3_0_6()
+    RelationshipRecordFormatV3_0_6()
     {
         this( RECORD_SIZE );
     }
@@ -110,7 +110,7 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
             RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte, boolean inUse )
     {
         int type = cursor.getShort() & 0xFFFF;
-        if (record.isUseFixedReferences())
+        if ( record.isUseFixedReferences() )
         {
             // read record in fixed reference format
             readFixedReferencesRecord( record, cursor, headerByte, inUse, type );
@@ -164,7 +164,7 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
             throws IOException
     {
         cursor.putShort( (short) record.getType() );
-        if (record.isUseFixedReferences())
+        if ( record.isUseFixedReferences() )
         {
             // write record in fixed reference format
             writeFixedReferencesRecord( record, cursor );

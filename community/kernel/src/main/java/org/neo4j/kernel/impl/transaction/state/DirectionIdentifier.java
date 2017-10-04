@@ -25,6 +25,10 @@ import org.neo4j.kernel.impl.util.DirectionWrapper;
 
 public class DirectionIdentifier
 {
+    private DirectionIdentifier()
+    {
+    }
+
     public static DirectionWrapper wrapDirection( RelationshipRecord rel, NodeRecord startNode )
     {
         boolean isOut = rel.getFirstNode() == startNode.getId();

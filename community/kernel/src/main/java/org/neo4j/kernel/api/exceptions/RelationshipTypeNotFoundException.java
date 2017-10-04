@@ -23,6 +23,6 @@ public class RelationshipTypeNotFoundException extends KernelException
 {
     public RelationshipTypeNotFoundException( String message, Exception cause )
     {
-        super( Status.Schema.RelationshipTypeAccessFailed, cause, message);
+        super( Status.Schema.RelationshipTypeAccessFailed, cause, message );
     }
 }

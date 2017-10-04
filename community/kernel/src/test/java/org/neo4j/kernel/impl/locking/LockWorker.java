@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.locking;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.OtherThreadExecutor;
 
@@ -39,9 +38,13 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     {
         Future<Void> future = executeDontWait( acquireLockCommand );
         if ( wait )
+        {
             awaitFuture( future );
+        }
         else
+        {
             waitUntilWaiting();
+        }
         return future;
     }
 
@@ -53,7 +56,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state ) throws AcquireLockTimeoutException
             {
                 state.doing( "+R " + resource + ", wait:" + wait );
-                state.client.acquireShared( NODE, resource );
+                state.client.acquireShared( LockTracer.NONE, NODE, resource );
                 state.done();
             }
         }, wait );
@@ -67,7 +70,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state ) throws AcquireLockTimeoutException
             {
                 state.doing( "+W " + resource + ", wait:" + wait );
-                state.client.acquireExclusive( NODE, resource );
+                state.client.acquireExclusive( LockTracer.NONE, NODE, resource );
                 state.done();
             }
         }, wait );
@@ -104,17 +107,6 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     public boolean isLastGetLockDeadLock()
     {
         return state.deadlockOnLastWait;
-    }
-
-    @Override
-    public void dump( Logger logger )
-    {
-        super.dump( logger );
-        logger.log( "What have I done up until now?" );
-        for ( String op : state.completedOperations )
-            logger.log( op );
-        logger.log( "Doing right now:" );
-        logger.log( state.doing );
     }
 
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>

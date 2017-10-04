@@ -23,7 +23,6 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntPredicate;
 
@@ -31,33 +30,24 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.FailedIndexProxyFactory;
 import org.neo4j.kernel.impl.api.index.FlippableIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class LabelScanViewNodeStoreScanTest
@@ -68,7 +58,7 @@ public class LabelScanViewNodeStoreScanTest
     private LabelScanReader labelScanReader = mock( LabelScanReader.class );
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private Visitor<NodePropertyUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
     @Before
     public void setUp()
@@ -94,71 +84,9 @@ public class LabelScanViewNodeStoreScanTest
         assertThat( visitedNodeIds, Matchers.hasItems( 1L, 2L, 4L, 8L ) );
     }
 
-    @Test
-    public void configureSamplersToNotUseOnlineSampling() throws Exception
-    {
-        LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
-        IndexStoreView storeView = mock( IndexStoreView.class );
-        LabelScanTestMultipleIndexPopulator indexPopulator = new LabelScanTestMultipleIndexPopulator( storeView, NullLogProvider.getInstance() );
-
-        List<MultipleIndexPopulator.IndexPopulation> populations =
-                Arrays.asList( getPopulation( indexPopulator ), getPopulation( indexPopulator ) );
-        scanViewStoreScan.configure( populations );
-
-        for ( MultipleIndexPopulator.IndexPopulation population : populations )
-        {
-            verify( population.populator ).configureSampling( false );
-        }
-    }
-
-    @Test
-    public void resetNodeIdIteratorDuringConcurrentUpdates()
-    {
-        when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) )
-                .thenReturn( PrimitiveLongCollections.iterator( 1, 2, 3, 4 ) );
-
-        LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
-        PrimitiveLongResourceIterator nodeIdIterator = scanViewStoreScan.getNodeIdIterator();
-
-        verify( labelScanStore).newReader();
-        verify( labelScanReader ).nodesWithAnyOfLabels( 1, 2 );
-
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "First expected node id is 1.", 1, nodeIdIterator.next() );
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "Second expected node id is 2.", 2, nodeIdIterator.next() );
-
-        populateWithConcurrentUpdates( scanViewStoreScan );
-
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "Third expected node id is 3.", 3, nodeIdIterator.next() );
-
-        verify( labelScanReader ).close();
-        verify( labelScanStore, times( 2 ) ).newReader();
-        verify( labelScanReader, times( 2 ) ).nodesWithAnyOfLabels( 1, 2 );
-
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "Fourth expected node id is 4.", 4, nodeIdIterator.next() );
-
-        assertFalse( nodeIdIterator.hasNext() );
-
-        verifyNoMoreInteractions( labelScanReader, labelScanStore );
-    }
-
-    private void populateWithConcurrentUpdates( LabelScanViewNodeStoreScan<Exception> scanViewStoreScan )
-    {
-        MultipleIndexPopulator.MultipleIndexUpdater indexUpdater = mock( MultipleIndexPopulator.MultipleIndexUpdater.class );
-        scanViewStoreScan.acceptUpdate( indexUpdater, NodePropertyUpdate.add( 1, 2, "add", new long[]{1} ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, NodePropertyUpdate.change( 2, 2, "changeBefore", new long[]{2},
-                "changeAfter", new long[]{1, 2} ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, NodePropertyUpdate.change( 2, 5, "changeBefore2", new long[]{1},
-                "changeAfter2", new long[]{1, 2} ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, NodePropertyUpdate.remove( 3, 4, "remove", new long[]{1,2}), 0L );
-    }
-
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )
     {
-        return indexPopulator.createPopulation( mock( IndexPopulator.class ), null, null, null, null, null, null );
+        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, null, null, null );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
@@ -169,22 +97,19 @@ public class LabelScanViewNodeStoreScanTest
 
     private class LabelScanTestMultipleIndexPopulator extends MultipleIndexPopulator
     {
-        public LabelScanTestMultipleIndexPopulator( IndexStoreView storeView,
-                LogProvider logProvider )
+        LabelScanTestMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
         {
             super( storeView, logProvider );
         }
 
         @Override
-        public IndexPopulation createPopulation( IndexPopulator populator,
-                IndexDescriptor descriptor, IndexConfiguration config,
-                SchemaIndexProvider.Descriptor providerDescriptor,
+        public IndexPopulation createPopulation( IndexPopulator populator, long indexId,
+                IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                 FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
                 String indexUserDescription )
         {
-            return super.createPopulation( populator, descriptor, config, providerDescriptor, flipper,
-                            failedIndexProxyFactory,
-                            indexUserDescription );
+            return super.createPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
+                            failedIndexProxyFactory, indexUserDescription );
         }
     }
 

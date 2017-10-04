@@ -22,7 +22,6 @@ package org.neo4j.bolt.v1.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,6 +42,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,7 +58,8 @@ public class ChunkedOutputTest
     {
         ExecutorService runner = Executors.newFixedThreadPool( 4 );
         // When
-        runner.execute( () -> {
+        runner.execute( () ->
+        {
             try
             {
                 for ( int i = 0; i < 5; i++ )
@@ -78,8 +79,8 @@ public class ChunkedOutputTest
         } );
         for ( int i = 0; i < 9; i++ )
         {
-
-            runner.execute( () -> {
+            runner.execute( () ->
+            {
                 try
                 {
                     for ( int j = 0; j < 5; j++ )
@@ -192,9 +193,10 @@ public class ChunkedOutputTest
         final CountDownLatch finishLatch = new CountDownLatch( 1 );
         final AtomicBoolean parallelException = new AtomicBoolean( false );
 
-        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation -> {
+        when( ch.writeAndFlush( any(), isNull() ) ).thenAnswer( invocation ->
+        {
             startLatch.countDown();
-            ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
+            ByteBuf byteBuf = invocation.getArgument( 0 );
             writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
             byteBuf.readBytes( writtenData );
             return null;
@@ -273,8 +275,9 @@ public class ChunkedOutputTest
 
     private void setupWriteAndFlush()
     {
-        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation -> {
-            ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
+        when( ch.writeAndFlush( any(), isNull() ) ).thenAnswer( invocation ->
+        {
+            ByteBuf byteBuf = invocation.getArgument( 0 );
             writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
             byteBuf.readBytes( writtenData );
             return null;

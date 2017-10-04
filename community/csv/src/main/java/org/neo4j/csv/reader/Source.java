@@ -32,7 +32,7 @@ public interface Source extends Closeable
     /**
      * One chunk of data to read.
      */
-    public interface Chunk
+    interface Chunk
     {
         /**
          * @return character data to read
@@ -116,7 +116,7 @@ public interface Source extends Closeable
         }
     };
 
-    public static Source singleChunk( Chunk chunk )
+    static Source singleChunk( Chunk chunk )
     {
         return new Source()
         {

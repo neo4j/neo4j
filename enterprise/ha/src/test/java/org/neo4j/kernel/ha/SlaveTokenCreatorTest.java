@@ -48,7 +48,7 @@ public class SlaveTokenCreatorTest
         Response<Integer> callMasterMethod( Master master, RequestContext ctx, String name );
     }
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> tokenCreators()
     {
         SlaveTokenCreatorFixture slaveLabelTokenCreatorFixture = new SlaveTokenCreatorFixture()

@@ -38,11 +38,25 @@ public interface LogFile
     FlushablePositionAwareChannel getWriter();
 
     /**
+     * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
+     * from that position and onwards, through physical log versions.
+     *
      * @param position {@link LogPosition} to position the returned reader at.
      * @return {@link ReadableClosableChannel} capable of reading log data, starting from {@link LogPosition position}.
-     * @throws IOException
+     * @throws IOException on I/O error.
      */
     ReadableLogChannel getReader( LogPosition position ) throws IOException;
+
+    /**
+     * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
+     * from that position and onwards, with the given {@link LogVersionBridge}.
+     *
+     * @param position {@link LogPosition} to position the returned reader at.
+     * @param logVersionBridge {@link LogVersionBridge} how to bridge log versions.
+     * @return {@link ReadableClosableChannel} capable of reading log data, starting from {@link LogPosition position}.
+     * @throws IOException on I/O error.
+     */
+    ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge ) throws IOException;
 
     void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
 
@@ -50,6 +64,7 @@ public interface LogFile
 
     /**
      * @return {@code true} if a rotation is needed.
+     * @throws IOException on I/O error.
      */
     boolean rotationNeeded() throws IOException;
 

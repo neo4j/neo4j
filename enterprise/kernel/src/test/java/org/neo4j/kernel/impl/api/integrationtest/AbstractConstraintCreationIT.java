@@ -27,29 +27,33 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -59,24 +63,26 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public abstract class AbstractConstraintCreationIT<Constraint extends PropertyConstraint> extends KernelIntegrationTest
+public abstract class AbstractConstraintCreationIT<Constraint extends ConstraintDescriptor, DESCRIPTOR extends SchemaDescriptor>
+        extends KernelIntegrationTest
 {
-    protected static final String KEY = "Foo";
-    protected static final String PROP = "bar";
+    static final String KEY = "Foo";
+    static final String PROP = "bar";
 
-    protected int typeId;
-    protected int propertyKeyId;
+    int typeId;
+    int propertyKeyId;
+    DESCRIPTOR descriptor;
 
-    abstract int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException;
+    abstract int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name )
+            throws KernelException;
 
-    abstract Constraint createConstraint( SchemaWriteOperations writeOps, int type, int property ) throws Exception;
+    abstract Constraint createConstraint( SchemaWriteOperations writeOps, DESCRIPTOR descriptor ) throws Exception;
 
     abstract void createConstraintInRunningTx( GraphDatabaseService db, String type, String property );
 
-    abstract Constraint newConstraintObject( int type, int property );
+    abstract Constraint newConstraintObject( DESCRIPTOR descriptor );
 
     abstract void dropConstraint( SchemaWriteOperations writeOps, Constraint constraint ) throws Exception;
 
@@ -84,97 +90,118 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
     abstract void removeOffendingDataInRunningTx( GraphDatabaseService db );
 
+    abstract DESCRIPTOR makeDescriptor( int typeId, int propertyKeyId );
+
     @Before
     public void createKeys() throws Exception
     {
-        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-        this.typeId = initializeLabelOrRelType( statement, KEY );
-        this.propertyKeyId = statement.propertyKeyGetOrCreateForName( PROP );
+        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+        this.typeId = initializeLabelOrRelType( tokenWriteOperations, KEY );
+        this.propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP );
+        this.descriptor = makeDescriptor( typeId, propertyKeyId );
         commit();
     }
 
     @Override
-    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    protected GraphDatabaseService createGraphDatabase()
     {
-        return new TestEnterpriseGraphDatabaseFactory()
-                .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder()
-                .newGraphDatabase();
+        return new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
+                .newEmbeddedDatabase( testDir.graphDbDir() );
     }
 
     @Test
     public void shouldBeAbleToStoreAndRetrieveConstraint() throws Exception
     {
         // given
-        PropertyConstraint constraint;
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
 
-            // when
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+        // when
+        ConstraintDescriptor constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
 
-            // then
-            assertEquals( constraint, single( statement.constraintsGetAll() ) );
+        // then
+        assertEquals( constraint, single( statement.readOperations().constraintsGetAll() ) );
 
-            // given
-            commit();
-        }
-        {
-            ReadOperations statement = readOperationsInNewTransaction();
+        // given
+        commit();
+        ReadOperations readOperations = readOperationsInNewTransaction();
 
-            // when
-            Iterator<?> constraints = statement.constraintsGetAll();
+        // when
+        Iterator<?> constraints = readOperations.constraintsGetAll();
 
-            // then
-            assertEquals( constraint, single( constraints ) );
-        }
+        // then
+        assertEquals( constraint, single( constraints ) );
+        commit();
+    }
+
+    @Test
+    public void shouldBeAbleToStoreAndRetrieveConstraintAfterRestart() throws Exception
+    {
+        // given
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+
+        // when
+        ConstraintDescriptor constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
+
+        // then
+        assertEquals( constraint, single( statement.readOperations().constraintsGetAll() ) );
+
+        // given
+        commit();
+        restartDb();
+        ReadOperations readOperations = readOperationsInNewTransaction();
+
+        // when
+        Iterator<?> constraints = readOperations.constraintsGetAll();
+
+        // then
+        assertEquals( constraint, single( constraints ) );
+
+        commit();
     }
 
     @Test
     public void shouldNotPersistConstraintCreatedInAbortedTransaction() throws Exception
     {
         // given
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
-            createConstraint( statement, typeId, propertyKeyId );
+        createConstraint( schemaWriteOperations, descriptor );
 
-            // when
-            rollback();
-        }
-        {
-            ReadOperations statement = readOperationsInNewTransaction();
+        // when
+        rollback();
 
-            // then
-            Iterator<?> constraints = statement.constraintsGetAll();
-            assertFalse( "should not have any constraints", constraints.hasNext() );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+
+        // then
+        Iterator<?> constraints = readOperations.constraintsGetAll();
+        assertFalse( "should not have any constraints", constraints.hasNext() );
+        commit();
     }
 
     @Test
     public void shouldNotStoreConstraintThatIsRemovedInTheSameTransaction() throws Exception
     {
         // given
+        try ( Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED ) )
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            Constraint constraint = createConstraint( statement, typeId, propertyKeyId );
+            Constraint constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
 
             // when
-            dropConstraint( statement, constraint );
+            dropConstraint( statement.schemaWriteOperations(), constraint );
 
             // then
-            assertFalse( "should not have any constraints", statement.constraintsGetAll().hasNext() );
-
-            // when
-            commit();
+            assertFalse( "should not have any constraints", statement.readOperations().constraintsGetAll().hasNext() );
         }
-        {
-            ReadOperations statement = readOperationsInNewTransaction();
 
-            // then
-            assertFalse( "should not have any constraints", statement.constraintsGetAll().hasNext() );
-        }
+        // when
+        commit();
+
+        ReadOperations readOperations = readOperationsInNewTransaction();
+
+        // then
+        assertFalse( "should not have any constraints", readOperations.constraintsGetAll().hasNext() );
+        commit();
     }
 
     @Test
@@ -184,7 +211,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         Constraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+            constraint = createConstraint( statement, descriptor );
             commit();
         }
 
@@ -201,6 +228,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
             // then
             assertFalse( "should not have any constraints", statement.constraintsGetAll().hasNext() );
+            commit();
         }
     }
 
@@ -210,7 +238,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            createConstraint( statement, typeId, propertyKeyId );
+            createConstraint( statement, descriptor );
             commit();
         }
 
@@ -219,7 +247,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            createConstraint( statement, typeId, propertyKeyId );
+            createConstraint( statement, descriptor );
 
             fail( "Should not have validated" );
         }
@@ -228,6 +256,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         {
             // good
         }
+        commit();
     }
 
     @Test
@@ -237,8 +266,13 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         Constraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+            constraint = createConstraint( statement, descriptor );
             commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            // Make sure all schema changes are stable, to avoid any synchronous schema state invalidation
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
         {
@@ -246,7 +280,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
             // when
             dropConstraint( statement, constraint );
-            createConstraint( statement, typeId, propertyKeyId );
+            createConstraint( statement, descriptor );
             commit();
         }
         {
@@ -255,6 +289,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
             // then
             assertEquals( singletonList( constraint ), asCollection( statement.constraintsGetAll() ) );
             schemaState.assertNotCleared( statement );
+            commit();
         }
     }
 
@@ -267,7 +302,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
         // when
-        createConstraint( statement, typeId, propertyKeyId );
+        createConstraint( statement, descriptor );
         commit();
 
         // then
@@ -283,7 +318,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         SchemaStateCheck schemaState;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+            constraint = createConstraint( statement, descriptor );
             commit();
 
             schemaState = new SchemaStateCheck().setUp();
@@ -306,7 +341,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
     public void shouldNotDropConstraintThatDoesNotExist() throws Exception
     {
         // given
-        Constraint constraint = newConstraintObject( typeId, propertyKeyId );
+        Constraint constraint = newConstraintObject( descriptor );
 
         // when
         {
@@ -327,7 +362,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // then
         {
             ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
+            assertEquals( emptySet(), asSet( statement.indexesGetAll() ) );
             commit();
         }
     }
@@ -397,7 +432,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
         // then - this should not fail
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-        createConstraint( statement, typeId, propertyKeyId );
+        createConstraint( statement, descriptor );
         commit();
     }
 
@@ -405,16 +440,12 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
     public void changedConstraintsShouldResultInTransientFailure() throws InterruptedException
     {
         // Given
-        Runnable constraintCreation = new Runnable()
+        Runnable constraintCreation = () ->
         {
-            @Override
-            public void run()
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    createConstraintInRunningTx( db, KEY, PROP );
-                    tx.success();
-                }
+                createConstraintInRunningTx( db, KEY, PROP );
+                tx.success();
             }
         };
 
@@ -468,14 +499,14 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
             return this;
         }
 
-        public void assertCleared( ReadOperations readOperations )
+        void assertCleared( ReadOperations readOperations )
         {
             int count = invocationCount;
             checkState( readOperations );
             assertEquals( "schema state should have been cleared.", count + 1, invocationCount );
         }
 
-        public void assertNotCleared( ReadOperations readOperations )
+        void assertNotCleared( ReadOperations readOperations )
         {
             int count = invocationCount;
             checkState( readOperations );

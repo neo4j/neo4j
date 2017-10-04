@@ -24,11 +24,10 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
 /**
  * Migrates schema and label indexes between different neo4j versions.
@@ -39,32 +38,31 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
-    private boolean deleteObsoleteIndexes = false;
-    private File labelIndexDirectory;
+    private boolean deleteObsoleteIndexes;
     private File schemaIndexDirectory;
     private final SchemaIndexProvider schemaIndexProvider;
-    private final LabelScanStoreProvider labelScanStoreProvider;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, SchemaIndexProvider schemaIndexProvider,
-            LabelScanStoreProvider labelScanStoreProvider )
+    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, SchemaIndexProvider schemaIndexProvider )
     {
         super( "Indexes" );
         this.fileSystem = fileSystem;
         this.schemaIndexProvider = schemaIndexProvider;
-        this.labelScanStoreProvider = labelScanStoreProvider;
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
+    public void migrate( File storeDir, File migrationDir, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
         RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
         if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
         {
-            schemaIndexDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
-            labelIndexDirectory = labelScanStoreProvider.getStoreDirectory( storeDir );
-            deleteObsoleteIndexes = true;
+            schemaIndexDirectory = schemaIndexProvider.directoryStructure().rootDirectory();
+            if ( schemaIndexDirectory != null )
+            {
+                deleteObsoleteIndexes = true;
+            }
+            // else this schema index provider doesn't have any persistent storage to delete.
         }
     }
 
@@ -75,7 +73,6 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         if ( deleteObsoleteIndexes )
         {
             deleteIndexes( schemaIndexDirectory );
-            deleteIndexes( labelIndexDirectory );
         }
     }
 

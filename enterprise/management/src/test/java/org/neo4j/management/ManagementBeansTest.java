@@ -19,11 +19,11 @@
  */
 package org.neo4j.management;
 
-import java.util.Map;
-
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Map;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 public class ManagementBeansTest
 {
     @ClassRule
-    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ManagementBeansTest.class );
+    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
     private static GraphDatabaseAPI graphDb;
 
     @BeforeClass

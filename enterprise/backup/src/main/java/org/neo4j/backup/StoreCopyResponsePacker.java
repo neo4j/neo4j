@@ -69,7 +69,8 @@ public class StoreCopyResponsePacker extends ResponsePacker
         final String packerIdentifier = Thread.currentThread().getName();
         final long toStartFrom = mandatoryStartTransactionId;
         final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
-        TransactionStream transactions = visitor -> {
+        TransactionStream transactions = visitor ->
+        {
             // Check so that it's even worth thinking about extracting any transactions at all
             if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
             {

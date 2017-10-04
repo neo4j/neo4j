@@ -46,7 +46,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -56,8 +56,11 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  */
 public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 {
-    private static final String REVERSE = "reverse", NODE = "node", FIRST = "first",
-            RELS = "relationships", PROPS = "properties";
+    private static final String REVERSE = "reverse";
+    private static final String NODE = "node";
+    private static final String FIRST = "first";
+    private static final String RELS = "relationships";
+    private static final String PROPS = "properties";
     private static final String RELSTORE = "neostore.relationshipstore.db";
     private static final String PROPSTORE = "neostore.propertystore.db";
     private static final String NODESTORE = "neostore.nodestore.db";
@@ -112,9 +115,8 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
     void dump( File storeDir ) throws IOException
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
-        try ( PageCache pageCache = createPageCache( fs ) )
+        try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( fs ) )
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = Config.defaults();

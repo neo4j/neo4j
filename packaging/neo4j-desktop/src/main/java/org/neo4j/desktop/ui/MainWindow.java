@@ -19,13 +19,23 @@
  */
 package org.neo4j.desktop.ui;
 
-import java.awt.*;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import javax.swing.*;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.desktop.model.LastLocation;
@@ -33,9 +43,7 @@ import org.neo4j.desktop.model.SysTrayListener;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
-import static javax.swing.JOptionPane.CANCEL_OPTION;
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
-import static javax.swing.JOptionPane.OK_CANCEL_OPTION;
 import static javax.swing.JOptionPane.OK_OPTION;
 import static javax.swing.SwingUtilities.invokeLater;
 import static org.neo4j.desktop.ui.Components.createPanel;
@@ -115,7 +123,8 @@ public class MainWindow extends JFrame
 
     private void createComponents()
     {
-        directoryDisplay = createUnmodifiableTextField( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ), 35 );
+        String lastLocation = LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() );
+        directoryDisplay = createUnmodifiableTextField( lastLocation, 35 );
 
         optionsButton = createOptionsButton();
         browseButton = createBrowseButton();
@@ -159,15 +168,11 @@ public class MainWindow extends JFrame
 
     private JButton createOptionsButton()
     {
-        return Components.createTextButton( ellipsis( "Options" ), new ActionListener()
+        return Components.createTextButton( ellipsis( "Options" ), e ->
         {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                JDialog settingsDialog = new SettingsDialog( MainWindow.this, model );
-                settingsDialog.setLocationRelativeTo( null );
-                settingsDialog.setVisible( true );
-            }
+            JDialog settingsDialog = new SettingsDialog( MainWindow.this, model );
+            settingsDialog.setLocationRelativeTo( null );
+            settingsDialog.setVisible( true );
         } );
     }
 
@@ -200,7 +205,7 @@ public class MainWindow extends JFrame
             @Override
             public void mouseClicked( MouseEvent e )
             {
-                if( MouseEvent.BUTTON1 == e.getButton() && e.isAltDown() )
+                if ( MouseEvent.BUTTON1 == e.getButton() && e.isAltDown() )
                 {
                     debugWindow.show();
                 }
@@ -222,23 +227,15 @@ public class MainWindow extends JFrame
 
     private JButton createStopButton()
     {
-        return Components.createTextButton( "Stop", new ActionListener()
+        return Components.createTextButton( "Stop", e ->
         {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                updateStatus( DatabaseStatus.STOPPING );
+            updateStatus( DatabaseStatus.STOPPING );
 
-                invokeLater( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        databaseActions.stop();
-                        updateStatus( STOPPED );
-                    }
-                } );
-            }
+            invokeLater( () ->
+            {
+                databaseActions.stop();
+                updateStatus( STOPPED );
+            } );
         } );
     }
 

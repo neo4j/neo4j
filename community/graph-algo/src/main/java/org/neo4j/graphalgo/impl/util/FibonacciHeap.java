@@ -47,10 +47,13 @@ public class FibonacciHeap<KeyType>
      */
     public class FibonacciHeapNode
     {
-        FibonacciHeapNode left, right, parent, child;
-        boolean marked = false;
+        FibonacciHeapNode left;
+        FibonacciHeapNode right;
+        FibonacciHeapNode parent;
+        FibonacciHeapNode child;
+        boolean marked;
         KeyType key;
-        int degree = 0;
+        int degree;
 
         public FibonacciHeapNode( KeyType key )
         {
@@ -71,7 +74,7 @@ public class FibonacciHeap<KeyType>
 
     Comparator<KeyType> keyComparator;
     FibonacciHeapNode minimum;
-    int nrNodes = 0;
+    int nrNodes;
 
     public FibonacciHeap( Comparator<KeyType> keyComparator )
     {

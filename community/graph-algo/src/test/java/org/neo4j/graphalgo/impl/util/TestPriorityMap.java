@@ -34,7 +34,7 @@ public class TestPriorityMap
     public void testIt()
     {
         PriorityMap<Integer, Integer, Double> map =
-            PriorityMap.<Integer, Double>withSelfKeyNaturalOrder();
+            PriorityMap.withSelfKeyNaturalOrder();
         map.put( 0, 5d );
         map.put( 1, 4d );
         map.put( 1, 4d );
@@ -43,7 +43,15 @@ public class TestPriorityMap
         assertEntry( map.pop(), 0, 5d );
         assertNull( map.pop() );
 
-        int start = 0, a = 1, b = 2, c = 3, d = 4, e = 6, f = 7, y = 8, x = 9;
+        int start = 0;
+        int a = 1;
+        int b = 2;
+        int c = 3;
+        int d = 4;
+        int e = 6;
+        int f = 7;
+        int y = 8;
+        int x = 9;
         map.put( start, 0d );
         map.put( a, 1d );
         // get start
@@ -73,7 +81,7 @@ public class TestPriorityMap
     public void shouldReplaceIfBetter() throws Exception
     {
         // GIVEN
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder();
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
         map.put( 1, 2d );
 
         // WHEN
@@ -92,7 +100,7 @@ public class TestPriorityMap
     {
         // GIVEN
         int entity = 5;
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder( false, false );
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false );
         assertTrue( map.put( entity, 3d ) );
         assertTrue( map.put( entity, 2d ) );
 
@@ -113,7 +121,7 @@ public class TestPriorityMap
         // GIVEN
         int first = 1;
         int second = 2;
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder( false, false);
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false);
 
         // WHEN
         assertTrue( map.put( first, 1d) );
@@ -133,7 +141,7 @@ public class TestPriorityMap
         // GIVEN
         int first = 1;
         int second = 2;
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder( false, false);
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false);
 
         // WHEN
         assertTrue( map.put( first, 3d) );

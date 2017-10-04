@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 /**
@@ -27,9 +27,9 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
  */
 public interface DiffSetsVisitor<T>
 {
-    void visitAdded( T element ) throws ConstraintValidationKernelException, CreateConstraintFailureException;
+    void visitAdded( T element ) throws ConstraintValidationException, CreateConstraintFailureException;
 
-    void visitRemoved( T element ) throws ConstraintValidationKernelException;
+    void visitRemoved( T element ) throws ConstraintValidationException;
 
     class Adapter<T> implements DiffSetsVisitor<T>
     {

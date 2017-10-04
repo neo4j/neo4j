@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.concurrent.Runnables;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -179,38 +180,24 @@ public class InputCache implements Closeable
 
     public InputIterable<InputNode> nodes( String subType, boolean deleteAfterUse )
     {
-        return entities( new ThrowingSupplier<InputIterator<InputNode>, IOException>()
-        {
-            @Override
-            public InputIterator<InputNode> get() throws IOException
-            {
-                return new InputNodeReader( channel( NODES, subType, "r" ), channel( NODES_HEADER, subType, "r" ),
-                        bufferSize, deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ),
-                        config.maxNumberOfProcessors() );
-            }
-        } );
+        return entities( () -> new InputNodeReader( channel( NODES, subType, "r" ), channel( NODES_HEADER, subType, "r" ),
+                bufferSize, deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ),
+                config.maxNumberOfProcessors() ) );
     }
 
     public InputIterable<InputRelationship> relationships( String subType, boolean deleteAfterUse )
     {
-        return entities( new ThrowingSupplier<InputIterator<InputRelationship>, IOException>()
-        {
-            @Override
-            public InputIterator<InputRelationship> get() throws IOException
-            {
-                return new InputRelationshipReader( channel( RELATIONSHIPS, subType, "r" ),
-                        channel( RELATIONSHIPS_HEADER, subType, "r" ), bufferSize,
-                        deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ),
-                        config.maxNumberOfProcessors() );
-            }
-        } );
+        return entities( () -> new InputRelationshipReader( channel( RELATIONSHIPS, subType, "r" ),
+                channel( RELATIONSHIPS_HEADER, subType, "r" ), bufferSize,
+                deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ),
+                config.maxNumberOfProcessors() ) );
     }
 
     protected Runnable deleteAction( boolean deleteAfterUse, String type, String header, String subType )
     {
         if ( !deleteAfterUse )
         {
-            return () -> {};
+            return Runnables.EMPTY_RUNNABLE;
         }
 
         return () ->

@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -42,13 +42,20 @@ public interface StorageEngine
     StoreReadLayer storeReadLayer();
 
     /**
+     * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageStatement, ResourceLocker,
+     * long)}.
+     * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
+     */
+    CommandCreationContext allocateCommandCreationContext();
+
+    /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
-     * ({@code state} and {@code legacyIndexTransactionState}.
+     * ({@code state}.
      * The returned commands can be used to form {@link CommandsToApply} batches, which can be applied to this
      * storage using {@link #apply(CommandsToApply, TransactionApplicationMode)}.
      * The reason this is separated like this is that the generated commands can be used for other things
      * than applying to storage, f.ex replicating to another storage engine.
-     *
      * @param target {@link Collection} to put {@link StorageCommand commands} into.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
      * @param storageStatement {@link StorageStatement} to use for reading store state during creation of commands.
@@ -61,10 +68,11 @@ public interface StorageEngine
      * @param lastTransactionIdWhenStarted transaction id which was seen as last committed when this
      * transaction started, i.e. before any changes were made and before any data was read.
      * TODO Transitional (Collection), might be {@link Stream} or whatever.
+     *
      * @throws TransactionFailureException if command generation fails or some prerequisite of some command
      * didn't validate, for example if trying to delete a node that still has relationships.
      * @throws CreateConstraintFailureException if this transaction was set to create a constraint and that failed.
-     * @throws ConstraintValidationKernelException if this transaction was set to create a constraint
+     * @throws ConstraintValidationException if this transaction was set to create a constraint
      * and some data violates that constraint.
      */
     void createCommands(
@@ -73,7 +81,7 @@ public interface StorageEngine
             StorageStatement storageStatement,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
-            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException;
+            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException;
 
     /**
      * Apply a batch of groups of commands to this storage.

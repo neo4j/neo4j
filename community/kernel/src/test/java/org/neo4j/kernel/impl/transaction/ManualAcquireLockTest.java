@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 
 public class ManualAcquireLockTest
 {
-    public DatabaseRule db = new ImpermanentDatabaseRule(  );
+    public DatabaseRule db = new ImpermanentDatabaseRule();
     public GraphTransactionRule tx = new GraphTransactionRule( db );
 
     @Rule
@@ -87,7 +87,7 @@ public class ManualAcquireLockTest
         {
             worker.finishTx();
         }
-        catch(ExecutionException e)
+        catch ( ExecutionException e )
         {
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
         }
@@ -141,7 +141,7 @@ public class ManualAcquireLockTest
         {
             worker.finishTx();
         }
-        catch(ExecutionException e)
+        catch ( ExecutionException e )
         {
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
         }
@@ -157,7 +157,7 @@ public class ManualAcquireLockTest
         private final GraphDatabaseService graphDb;
         private Transaction tx;
 
-        public State( GraphDatabaseService graphDb )
+        State( GraphDatabaseService graphDb )
         {
             this.graphDb = graphDb;
         }
@@ -165,48 +165,36 @@ public class ManualAcquireLockTest
 
     private class Worker extends OtherThreadExecutor<State>
     {
-        public Worker()
+        Worker()
         {
             super( "other thread", new State( getGraphDb() ) );
         }
 
         void beginTx() throws Exception
         {
-            execute( new WorkerCommand<State, Void>()
+            execute( (WorkerCommand<State,Void>) state ->
             {
-                @Override
-                public Void doWork( State state )
-                {
-                    state.tx = state.graphDb.beginTx();
-                    return null;
-                }
+                state.tx = state.graphDb.beginTx();
+                return null;
             } );
         }
 
         void finishTx() throws Exception
         {
-            execute( new WorkerCommand<State, Void>()
+            execute( (WorkerCommand<State,Void>) state ->
             {
-                @Override
-                public Void doWork( State state )
-                {
-                    state.tx.success();
-                    state.tx.close();
-                    return null;
-                }
+                state.tx.success();
+                state.tx.close();
+                return null;
             } );
         }
 
         void setProperty( final Node node, final String key, final Object value ) throws Exception
         {
-            execute( new WorkerCommand<State, Object>()
+            execute( state ->
             {
-                @Override
-                public Object doWork( State state )
-                {
-                    node.setProperty( key, value );
-                    return null;
-                }
+                node.setProperty( key, value );
+                return null;
             }, 200, MILLISECONDS );
         }
     }

@@ -27,7 +27,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.Objects.requireNonNull;
 
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "in-memory-index";
@@ -35,7 +35,7 @@ public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemor
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( KEY, "1.0" );
 
-    private final InMemoryIndexProvider singleProvider;
+    private final SchemaIndexProvider singleProvider;
 
     public interface Dependencies
     {
@@ -47,7 +47,7 @@ public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemor
         this.singleProvider = null;
     }
 
-    public InMemoryIndexProviderFactory( InMemoryIndexProvider singleProvider )
+    public InMemoryIndexProviderFactory( SchemaIndexProvider singleProvider )
     {
         super( KEY );
         this.singleProvider = requireNonNull( singleProvider, "provider" );

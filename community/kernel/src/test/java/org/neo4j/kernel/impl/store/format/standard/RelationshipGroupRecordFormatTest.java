@@ -32,9 +32,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.junit.Assert.assertEquals;
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -44,8 +43,7 @@ public class RelationshipGroupRecordFormatTest
     @Parameters
     public static Collection<RecordFormats> formats()
     {
-        return asList( StandardV2_1.RECORD_FORMATS, StandardV2_2.RECORD_FORMATS, StandardV2_3.RECORD_FORMATS,
-                StandardV3_0.RECORD_FORMATS );
+        return asList( StandardV2_3.RECORD_FORMATS, StandardV3_0.RECORD_FORMATS );
     }
 
     private final RecordFormat<RelationshipGroupRecord> format;

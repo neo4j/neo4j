@@ -19,13 +19,17 @@
  */
 package org.neo4j.server.web;
 
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import javax.ws.rs.core.UriBuilder;
 
 public class XForwardUtil
 {
     public static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
     public static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
+
+    private XForwardUtil()
+    {
+    }
 
     public static String externalUri( String internalUri, String xForwardedHost, String xForwardedProto )
     {
@@ -64,7 +68,7 @@ public class XForwardUtil
     {
         String host;
         int port = -1;
-        boolean isValid = false;
+        boolean isValid;
 
         ForwardedHost( String headerValue )
         {
@@ -79,7 +83,8 @@ public class XForwardUtil
             try
             {
                 UriBuilder.fromUri( firstHostInXForwardedHostHeader ).build();
-            } catch ( IllegalArgumentException ex )
+            }
+            catch ( IllegalArgumentException ex )
             {
                 this.isValid = false;
                 return;
@@ -127,7 +132,8 @@ public class XForwardUtil
             if ( headerValue != null )
             {
                 this.headerValue = headerValue;
-            } else
+            }
+            else
             {
                 this.headerValue = "";
             }

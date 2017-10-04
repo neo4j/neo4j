@@ -25,11 +25,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import static java.lang.String.format;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static java.lang.String.format;
+
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
 
 public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
@@ -43,7 +45,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     @Test
     public void shouldFailGracefullyWhenPathCannotBeCreated() throws Exception
     {
-        path = new File( "target/" + UUID.randomUUID() )
+        path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) )
         {
             @Override
             public boolean mkdirs()

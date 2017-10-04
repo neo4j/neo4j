@@ -33,7 +33,7 @@ public final class Completion
     private volatile Collection<Runnable> callbacks = new ArrayList<>();
     private final List<ProcessFailureException.Entry> processFailureCauses = new ArrayList<>();
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     void complete()
     {
         Collection<Runnable> callbacks = this.callbacks;
@@ -65,7 +65,7 @@ public final class Completion
         complete();
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     void notify( Runnable callback )
     {
         if ( callback == null )
@@ -90,7 +90,7 @@ public final class Completion
         }
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     public void await( long timeout, TimeUnit unit )
             throws InterruptedException, TimeoutException, ProcessFailureException
     {

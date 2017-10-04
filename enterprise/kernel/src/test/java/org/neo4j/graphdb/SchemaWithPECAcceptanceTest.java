@@ -25,7 +25,10 @@ import org.junit.Test;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.NodeKeyConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
@@ -43,7 +46,9 @@ public class SchemaWithPECAcceptanceTest
 
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
+    private Label label2 = Labels.MY_OTHER_LABEL;
     private String propertyKey = "my_property_key";
+    private String propertyKey2 = "my_other_property";
 
     private enum Labels implements Label
     {
@@ -89,10 +94,12 @@ public class SchemaWithPECAcceptanceTest
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
         ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
+        ConstraintDefinition constraint3 = createNodeKeyConstraint( label, propertyKey2 );
+        createNodeKeyConstraint( label2, propertyKey2 );
         createNodePropertyExistenceConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db, label ), containsOnly( constraint1, constraint2 ) );
+        assertThat( getConstraints( db, label ), containsOnly( constraint1, constraint2, constraint3 ) );
     }
 
     @Test
@@ -113,22 +120,35 @@ public class SchemaWithPECAcceptanceTest
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
         ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
         ConstraintDefinition constraint3 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
+        ConstraintDefinition constraint4 = createNodeKeyConstraint( label, propertyKey2 );
 
         // WHEN THEN
-        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2, constraint3 ) );
+        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2, constraint3, constraint4 ) );
     }
 
     private ConstraintDefinition createUniquenessConstraint( Label label, String propertyKey )
     {
         SchemaHelper.createUniquenessConstraint( db, label, propertyKey );
         SchemaHelper.awaitIndexes( db );
-        return new UniquenessConstraintDefinition( mock( InternalSchemaActions.class ), label, propertyKey );
+        InternalSchemaActions actions = mock( InternalSchemaActions.class );
+        IndexDefinition index = new IndexDefinitionImpl( actions, label, new String[]{propertyKey}, true );
+        return new UniquenessConstraintDefinition( actions, index );
+    }
+
+    private ConstraintDefinition createNodeKeyConstraint( Label label, String propertyKey )
+    {
+        SchemaHelper.createNodeKeyConstraint( db, label, propertyKey );
+        SchemaHelper.awaitIndexes( db );
+        InternalSchemaActions actions = mock( InternalSchemaActions.class );
+        IndexDefinition index = new IndexDefinitionImpl( actions, label, new String[]{propertyKey}, true );
+        return new NodeKeyConstraintDefinition( actions, index );
     }
 
     private ConstraintDefinition createNodePropertyExistenceConstraint( Label label, String propertyKey )
     {
         SchemaHelper.createNodePropertyExistenceConstraint( db, label, propertyKey );
-        return new NodePropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ), label, propertyKey );
+        return new NodePropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ), label,
+                new String[]{propertyKey} );
     }
 
     private ConstraintDefinition createRelationshipPropertyExistenceConstraint( Types type, String propertyKey )

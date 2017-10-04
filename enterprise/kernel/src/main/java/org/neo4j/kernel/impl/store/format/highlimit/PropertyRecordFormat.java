@@ -81,7 +81,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 
     protected PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimitFormatSettings.PROPERTY_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -183,9 +183,9 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 
     private boolean canUseFixedReferences( PropertyRecord record, int recordSize )
     {
-        return ( isRecordBigEnoughForFixedReferences( recordSize ) &&
-                ((record.getNextProp() == NULL) || ((record.getNextProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)) &&
-                ((record.getPrevProp() == NULL) || ((record.getPrevProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)));
+        return isRecordBigEnoughForFixedReferences( recordSize ) &&
+                (record.getNextProp() == NULL || (record.getNextProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0) &&
+                (record.getPrevProp() == NULL || (record.getPrevProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0);
     }
 
     private boolean isRecordBigEnoughForFixedReferences( int recordSize )

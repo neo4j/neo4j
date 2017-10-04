@@ -19,14 +19,11 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.management.Attribute;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
@@ -46,6 +43,8 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 public class Dbinfo extends NonTransactionProvidingApp
 {
@@ -97,7 +96,8 @@ public class Dbinfo extends NonTransactionProvidingApp
         {
             try
             {
-                kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getSingleManagementBean( Kernel.class );
+                kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                        .getSingleManagementBean( Kernel.class );
             }
             catch ( Exception e )
             {
@@ -115,7 +115,8 @@ public class Dbinfo extends NonTransactionProvidingApp
     protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         Kernel kernel = getKernel();
-        boolean list = parser.options().containsKey( "l" ), get = parser.options().containsKey( "g" );
+        boolean list = parser.options().containsKey( "l" );
+        boolean get = parser.options().containsKey( "g" );
         if ( (list && get) || (!list && !get) )
         {
             StringBuilder usage = new StringBuilder();
@@ -213,7 +214,7 @@ public class Dbinfo extends NonTransactionProvidingApp
             {
                 Object[] arrayValue = (Object[]) attributeValue;
                 JSONArray array = new JSONArray();
-                for ( Object item : (Object[]) arrayValue )
+                for ( Object item : arrayValue )
                 {
                     if ( item instanceof CompositeData )
                     {
@@ -240,7 +241,7 @@ public class Dbinfo extends NonTransactionProvidingApp
     private Map<?, ?> compositeDataAsMap( CompositeData item )
     {
         Map<String, Object> result = new HashMap<String, Object>();
-        CompositeData compositeData = (CompositeData) item;
+        CompositeData compositeData = item;
         for ( String key : compositeData.getCompositeType().keySet() )
         {
             result.put( key, compositeData.get( key ) );

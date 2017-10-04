@@ -20,36 +20,40 @@
 package org.neo4j.server.security.enterprise.configuration;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES;
+import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
 
 /**
  * Settings for security module
  */
 @Description( "Security configuration settings" )
-public class SecuritySettings
+public class SecuritySettings implements LoadableConfig
 {
     public static final String NATIVE_REALM_NAME = "native";
     public static final String LDAP_REALM_NAME = "ldap";
@@ -70,45 +74,44 @@ public class SecuritySettings
                   "They will be queried in the given order when login is attempted." )
     @Internal
     public static final Setting<List<String>> auth_providers =
-            derivedSetting( "dbms.security.auth_providers", auth_provider,
-                    ( r ) -> Arrays.asList( r ), STRING_LIST );
+            derivedSetting( "dbms.security.auth_providers", auth_provider, Arrays::asList, STRING_LIST );
 
     @Description( "Enable authentication via native authentication provider." )
     @Internal
     public static final Setting<Boolean> native_authentication_enabled =
             derivedSetting( "dbms.security.native.authentication_enabled", auth_providers,
-                    ( providers ) -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authorization via native authorization provider." )
     @Internal
     public static final Setting<Boolean> native_authorization_enabled =
             derivedSetting( "dbms.security.native.authorization_enabled", auth_providers,
-                    ( providers ) -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via settings configurable LDAP authentication provider." )
     @Internal
     public static final Setting<Boolean> ldap_authentication_enabled =
             derivedSetting( "dbms.security.ldap.authentication_enabled", auth_providers,
-                    ( providers ) -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authorization via settings configurable LDAP authorization provider." )
     @Internal
     public static final Setting<Boolean> ldap_authorization_enabled =
             derivedSetting( "dbms.security.ldap.authorization_enabled", auth_providers,
-                    ( providers ) -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via plugin authentication providers." )
     @Internal
     public static final Setting<Boolean> plugin_authentication_enabled =
             derivedSetting( "dbms.security.plugin.authentication_enabled", auth_providers,
-                    ( providers ) -> providers.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
+                    providers -> providers.stream().anyMatch( r -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
 
     @Description( "Enable authorization via plugin authorization providers." )
     @Internal
     public static final Setting<Boolean> plugin_authorization_enabled =
             derivedSetting( "dbms.security.plugin.authorization_enabled", auth_providers,
-                    ( providers ) -> providers.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
+                    providers -> providers.stream().anyMatch( r -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
 
     //=========================================================================
@@ -129,7 +132,7 @@ public class SecuritySettings
             "First an initial insecure connection will be made with the LDAP server, and a STARTTLS command will be " +
             "issued to negotiate an upgrade of the connection to TLS before initiating authentication." )
     public static final Setting<Boolean> ldap_use_starttls =
-            setting( "dbms.security.ldap.use_starttls", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.use_starttls", BOOLEAN, FALSE );
 
     @Description(
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
@@ -142,12 +145,12 @@ public class SecuritySettings
     @Description( "The timeout for establishing an LDAP connection. If a connection with the LDAP server cannot be " +
                   "established within the given time the attempt is aborted. " +
                   "A value of 0 means to use the network protocol's (i.e., TCP's) timeout value." )
-    public static Setting<Long> ldap_connection_timeout =
+    public static Setting<Duration> ldap_connection_timeout =
             setting( "dbms.security.ldap.connection_timeout", DURATION, "30s" );
 
     @Description( "The timeout for an LDAP read request (i.e. search). If the LDAP server does not respond within " +
                   "the given time the request will be aborted. A value of 0 means wait for a response indefinitely." )
-    public static Setting<Long> ldap_read_timeout =
+    public static Setting<Duration> ldap_read_timeout =
             setting( "dbms.security.ldap.read_timeout", DURATION, "30s" );
 
     //-----------------------------------------------------
@@ -183,6 +186,14 @@ public class SecuritySettings
     public static final Setting<Boolean> ldap_authentication_cache_enabled =
             setting( "dbms.security.ldap.authentication.cache_enabled", BOOLEAN, "true" );
 
+    @Description( "Perform authentication with sAMAccountName instead of DN.\n" +
+                  "Using this setting requires `dbms.security.ldap.authorization.system_username` and " +
+                  "dbms.security.ldap.authorization.system_password to be used since there is no way to log in " +
+                  "through ldap directly with the sAMAccountName, instead the login name will be resolved to a DN " +
+                  "that will be used to log in with." )
+    public static final Setting<Boolean> ldap_authentication_use_samaccountname =
+            setting( "dbms.security.ldap.authentication.use_samaccountname", BOOLEAN, FALSE );
+
     //-----------------------------------------------------
     // LDAP authorization settings
     //-----------------------------------------------------
@@ -203,7 +214,7 @@ public class SecuritySettings
                   "Note that this account only needs read access to the relevant parts of the LDAP directory " +
                   "and does not need to have access rights to Neo4j, or any other systems." )
     public static final Setting<Boolean> ldap_authorization_use_system_account =
-            setting( "dbms.security.ldap.authorization.use_system_account", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.authorization.use_system_account", BOOLEAN, FALSE );
 
     @Description(
             "An LDAP system account username to use for authorization searches when " +
@@ -257,7 +268,7 @@ public class SecuritySettings
                   "external auth providers (LDAP or plugin). Setting the TTL to 0 will disable auth caching. " +
                   "Disabling caching while using the LDAP auth provider requires the use of an LDAP system account " +
                   "for resolving authorization information." )
-    public static final Setting<Long> auth_cache_ttl =
+    public static final Setting<Duration> auth_cache_ttl =
             setting( "dbms.security.auth_cache_ttl", DURATION, "10m" );
 
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
@@ -268,10 +279,10 @@ public class SecuritySettings
     // Security log settings
     //=========================================================================
 
-    @Internal
-    public static final Setting<File> security_log_filename = derivedSetting( "dbms.security.log_path",
+    @Description( "Path to the security log file." )
+    public static final Setting<File> security_log_filename = derivedSetting( "dbms.logs.security.path",
             GraphDatabaseSettings.logs_directory,
-            ( logs ) -> new File( logs, "security.log" ),
+            logs -> new File( logs, "security.log" ),
             PATH );
 
     @Description( "Security log level threshold." )
@@ -287,23 +298,23 @@ public class SecuritySettings
 
     @Description( "Threshold for rotation of the security log." )
     public static final Setting<Long> store_security_log_rotation_threshold =
-            setting( "dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+            buildSetting( "dbms.logs.security.rotation.size", BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Minimum time interval after last rotation of the security log before it may be rotated again." )
-    public static final Setting<Long> store_security_log_rotation_delay =
+    public static final Setting<Duration> store_security_log_rotation_delay =
             setting( "dbms.logs.security.rotation.delay", DURATION, "300s" );
 
     @Description( "Maximum number of history files for the security log." )
     public static final Setting<Integer> store_security_log_max_archives =
-            setting( "dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
+            buildSetting( "dbms.logs.security.rotation.keep_number", INTEGER, "7" ).constraint( min(1) ).build();
 
     //=========================================================================
     // Procedure security settings
     //=========================================================================
 
     @Description( "The default role that can execute all procedures and user-defined functions that are not covered " +
-                  "by the `"+PROC_ALLOWED_SETTING_ROLES+"` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` " +
-                  "setting is the empty string (default), procedures will be executed according to the same security " +
+                  "by the `" + PROC_ALLOWED_SETTING_ROLES + "` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME +
+                  "` setting is the empty string (default), procedures will be executed according to the same security " +
                   "rules as normal Cypher statements." )
     public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
 

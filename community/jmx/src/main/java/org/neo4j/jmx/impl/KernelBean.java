@@ -22,16 +22,15 @@ package org.neo4j.jmx.impl;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
-
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.internal.KernelData;
 
 public class KernelBean extends Neo4jMBean implements Kernel
 {
@@ -43,7 +42,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private boolean isReadOnly;
     private long storeCreationDate = -1;
     private long storeId = -1;
-    private String databaseName = null;
+    private String databaseName;
     private long storeLogVersion;
 
     KernelBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException

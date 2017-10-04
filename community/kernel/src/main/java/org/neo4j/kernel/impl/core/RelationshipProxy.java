@@ -41,15 +41,16 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 
@@ -100,7 +101,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     private void initializeData()
     {
         // it enough to check only start node, since it's absence will indicate that data was not yet loaded
-        if (startNode == AbstractBaseRecord.NO_ID)
+        if ( startNode == AbstractBaseRecord.NO_ID )
         {
             try ( Statement statement = actions.statement() )
             {
@@ -179,16 +180,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public Node getOtherNode( Node node )
     {
         assertInUnterminatedTransaction();
-        if ( sourceId() == node.getId() )
-        {
-            return actions.newNodeProxy( targetId() );
-        }
-        if ( targetId() == node.getId() )
-        {
-            return actions.newNodeProxy( sourceId() );
-        }
-        throw new NotFoundException( "Node[" + node.getId()
-                                     + "] not connected to this relationship[" + getId() + "]" );
+        return actions.newNodeProxy( getOtherNodeId( node.getId() ) );
     }
 
     @Override
@@ -203,6 +195,34 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     {
         assertInUnterminatedTransaction();
         return actions.newNodeProxy( targetId() );
+    }
+
+    @Override
+    public long getStartNodeId()
+    {
+        return sourceId();
+    }
+
+    @Override
+    public long getEndNodeId()
+    {
+        return targetId();
+    }
+
+    @Override
+    public long getOtherNodeId( long id )
+    {
+        long start = sourceId();
+        long end = targetId();
+        if ( start == id )
+        {
+            return end;
+        }
+        if ( end == id )
+        {
+            return start;
+        }
+        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + "]" );
     }
 
     @Override
@@ -250,18 +270,17 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
         try ( Statement statement = actions.statement() )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
+            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
             {
-                if ( !relationship.next() )
-                {
-                    throw new NotFoundException( "Relationship not found",
-                            new EntityNotFoundException( EntityType.RELATIONSHIP, getId() ) );
-                }
-
-                try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
+                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations()
+                        .relationshipGetProperties( relationship.get() ) )
                 {
                     return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
                 }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( "Relationship not found", e );
             }
         }
     }
@@ -271,28 +290,27 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     {
         try ( Statement statement = actions.statement() )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
+            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
             {
-                if ( !relationship.next() )
+                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations()
+                        .relationshipGetProperties( relationship.get() ) )
                 {
-                    throw new NotFoundException( "Relationship not found",
-                            new EntityNotFoundException( EntityType.RELATIONSHIP, getId() ) );
-                }
-
-                try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
-                {
-                    Map<String, Object> properties = new HashMap<>();
+                    Map<String,Object> properties = new HashMap<>();
 
                     // Get all properties
                     while ( propertyCursor.next() )
                     {
-                        String name = statement.readOperations().propertyKeyGetName(
-                                propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value() );
+                        String name =
+                                statement.readOperations().propertyKeyGetName( propertyCursor.get().propertyKeyId() );
+                        properties.put( name, propertyCursor.get().value().asObjectCopy() );
                     }
 
                     return properties;
                 }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( "Relationship not found", e );
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
@@ -319,14 +337,14 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                     throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
                 }
 
-                Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+                Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
 
-                if (value == null)
+                if ( value == Values.NO_VALUE )
                 {
                     throw new PropertyNotFoundException( propertyId, EntityType.RELATIONSHIP, getId() );
                 }
 
-                return value;
+                return value.asObjectCopy();
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )
             {
@@ -347,8 +365,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
-            return value == null ? defaultValue : value;
+            Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -382,7 +400,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            statement.dataWriteOperations().relationshipSetProperty( getId(), Property.property( propertyKeyId, value ) );
+            statement.dataWriteOperations()
+                    .relationshipSetProperty( getId(), propertyKeyId, Values.of( value, false ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -416,7 +435,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).value( null );
+            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -448,7 +467,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public int compareTo( Object rel )
     {
         Relationship r = (Relationship) rel;
-        long ourId = this.getId(), theirId = r.getId();
+        long ourId = this.getId();
+        long theirId = r.getId();
 
         if ( ourId < theirId )
         {

@@ -29,12 +29,16 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -44,19 +48,19 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public class NodePropertyExistenceConstraintCreationIT
-        extends AbstractConstraintCreationIT<NodePropertyExistenceConstraint>
+        extends AbstractConstraintCreationIT<NodeExistenceConstraintDescriptor,LabelSchemaDescriptor>
 {
     @Override
-    int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
+    int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
     {
-        return writeOps.labelGetOrCreateForName( name );
+        return tokenWriteOperations.labelGetOrCreateForName( name );
     }
 
     @Override
-    NodePropertyExistenceConstraint createConstraint( SchemaWriteOperations writeOps, int type, int property )
+    NodeExistenceConstraintDescriptor createConstraint( SchemaWriteOperations writeOps, LabelSchemaDescriptor descriptor )
             throws Exception
     {
-        return writeOps.nodePropertyExistenceConstraintCreate( type, property );
+        return writeOps.nodePropertyExistenceConstraintCreate( descriptor );
     }
 
     @Override
@@ -66,13 +70,13 @@ public class NodePropertyExistenceConstraintCreationIT
     }
 
     @Override
-    NodePropertyExistenceConstraint newConstraintObject( int type, int property )
+    NodeExistenceConstraintDescriptor newConstraintObject( LabelSchemaDescriptor descriptor )
     {
-        return new NodePropertyExistenceConstraint( type, property );
+        return ConstraintDescriptorFactory.existsForSchema( descriptor );
     }
 
     @Override
-    void dropConstraint( SchemaWriteOperations writeOps, NodePropertyExistenceConstraint constraint )
+    void dropConstraint( SchemaWriteOperations writeOps, NodeExistenceConstraintDescriptor constraint )
             throws Exception
     {
         writeOps.constraintDrop( constraint );
@@ -96,15 +100,21 @@ public class NodePropertyExistenceConstraintCreationIT
         }
     }
 
+    @Override
+    LabelSchemaDescriptor makeDescriptor( int typeId, int propertyKeyId )
+    {
+        return SchemaDescriptorFactory.forLabel( typeId, propertyKeyId );
+    }
+
     @Test
     public void shouldNotDropPropertyExistenceConstraintThatDoesNotExistWhenThereIsAUniquePropertyConstraint()
             throws Exception
     {
         // given
-        UniquenessConstraint constraint;
+        UniquenessConstraintDescriptor constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.uniquePropertyConstraintCreate( typeId, propertyKeyId );
+            constraint = statement.uniquePropertyConstraintCreate( descriptor );
             commit();
         }
 
@@ -112,8 +122,7 @@ public class NodePropertyExistenceConstraintCreationIT
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.constraintDrop(
-                    new NodePropertyExistenceConstraint( constraint.label(), constraint.propertyKey() ) );
+            statement.constraintDrop( ConstraintDescriptorFactory.existsForSchema( constraint.schema() ) );
 
             fail( "expected exception" );
         }
@@ -131,10 +140,10 @@ public class NodePropertyExistenceConstraintCreationIT
         {
             ReadOperations statement = readOperationsInNewTransaction();
 
-            Iterator<NodePropertyConstraint> constraints =
-                    statement.constraintsGetForLabelAndPropertyKey( typeId, propertyKeyId );
+            Iterator<ConstraintDescriptor> constraints = statement.constraintsGetForSchema( descriptor );
 
             assertEquals( constraint, single( constraints ) );
+            commit();
         }
     }
 }

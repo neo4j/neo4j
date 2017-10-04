@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -67,7 +67,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllShortestPathPayLoad( g ) )
-        .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
+        .post( getServerUri() + "db/data/node/" + a + "/paths" )
         .entity();
         Collection<?> result = (Collection<?>) JsonHelper.readJson( response );
         assertEquals( 2, result.size() );
@@ -105,7 +105,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllShortestPathPayLoad( g ) )
-        .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+        .post( getServerUri() + "db/data/node/" + a + "/path" )
         .entity();
         // Get single shortest path
 
@@ -149,13 +149,20 @@ public class PathsIT extends AbstractRestFunctionalTestBase
     @Graph( nodes = { @NODE( name = "a", setNameProperty = true ), @NODE( name = "b", setNameProperty = true ),
             @NODE( name = "c", setNameProperty = true ), @NODE( name = "d", setNameProperty = true ),
             @NODE( name = "e", setNameProperty = true ), @NODE( name = "f", setNameProperty = true ) }, relationships = {
-            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "c", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "f", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1.2", type = GraphDescription.PropType.DOUBLE ) } ) } )
+            @REL( start = "a", end = "b", type = "to",
+                    properties = { @PROP( key = "cost", value = "1.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "c", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "f", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "c", end = "d", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "d", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "b", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "f", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "1.2", type = GraphDescription.PropType.DOUBLE ) } ) } )
     @Title( "Execute a Dijkstra algorithm and get a single path" )
     @Documented( "This example is running a Dijkstra algorithm over a graph with different\n" +
                  "cost properties on different relationships. Note that the request URI\n" +
@@ -167,7 +174,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         long e = nodeId( data.get(), "e" );
         String response = gen().expectedStatus( Status.OK.getStatusCode() )
                 .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+                .post( getServerUri() + "db/data/node/" + a + "/path" )
                 .entity();
         //
         Map<?, ?> path = JsonHelper.jsonToMap( response );
@@ -189,13 +196,20 @@ public class PathsIT extends AbstractRestFunctionalTestBase
     @Graph( nodes = { @NODE( name = "a", setNameProperty = true ), @NODE( name = "b", setNameProperty = true ),
             @NODE( name = "c", setNameProperty = true ), @NODE( name = "d", setNameProperty = true ),
             @NODE( name = "e", setNameProperty = true ), @NODE( name = "f", setNameProperty = true ) }, relationships = {
-            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "c", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "f", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1.0", type = GraphDescription.PropType.DOUBLE ) } ) } )
+            @REL( start = "a", end = "b", type = "to",
+                    properties = { @PROP( key = "cost", value = "1.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "c", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "f", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "c", end = "d", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "d", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "b", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "f", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "1.0", type = GraphDescription.PropType.DOUBLE ) } ) } )
     @Title( "Execute a Dijkstra algorithm and get multiple paths" )
     @Documented( "This example is running a Dijkstra algorithm over a graph with different\n" +
                  "cost properties on different relationships. Note that the request URI\n" +
@@ -208,7 +222,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         long e = nodeId( data.get(), "e" );
         String response = gen().expectedStatus( Status.OK.getStatusCode() )
                 .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
+                .post( getServerUri() + "db/data/node/" + a + "/paths" )
                 .entity();
         //
         List<Map<String, Object>> list = JsonHelper.jsonToList( response );
@@ -241,13 +255,20 @@ public class PathsIT extends AbstractRestFunctionalTestBase
             @NODE( name = "b", setNameProperty = true ), @NODE( name = "c", setNameProperty = true ),
             @NODE( name = "d", setNameProperty = true ), @NODE( name = "e", setNameProperty = true ),
             @NODE( name = "f", setNameProperty = true ) }, relationships = {
-            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "a", end = "c", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "a", end = "f", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ) } )
+            @REL( start = "a", end = "b", type = "to",
+                    properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "a", end = "c", type = "to",
+                    properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "a", end = "f", type = "to",
+                    properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "c", end = "d", type = "to",
+                    properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "d", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "b", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "f", end = "e", type = "to",
+                    properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ) } )
     @Title( "Execute a Dijkstra algorithm with equal weights on relationships" )
     @Documented( "The following is executing a Dijkstra search on a graph with equal\n" +
                  "weights on all relationships. This example is included to show the\n" +
@@ -261,7 +282,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String response = gen()
                 .expectedStatus( Status.OK.getStatusCode() )
                 .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+                .post( getServerUri() + "db/data/node/" + a + "/path" )
                 .entity();
 
         Map<?, ?> path = JsonHelper.jsonToMap( response );
@@ -294,7 +315,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String entity = gen()
         .expectedStatus( Status.NOT_FOUND.getStatusCode() )
         .payload( noHitsJson )
-        .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+        .post( getServerUri() + "db/data/node/" + a + "/path" )
         .entity();
         System.out.println( entity );
     }
@@ -307,7 +328,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
 
     private String nodeUri( final long l )
     {
-        return NODES + l;
+        return getServerUri() + "db/data/node/" + l;
     }
 
     private String getAllShortestPathPayLoad( final long to )
@@ -325,6 +346,11 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         + ( includeDefaultCost ? ", \"default_cost\":1" : "" )
         + ", \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"dijkstra\"}";
         return json;
+    }
+
+    private String getServerUri()
+    {
+        return server().baseUri().toString();
     }
 
 }

@@ -61,7 +61,7 @@ public class Properties implements Answer<Object>, Iterable<String>
     public Object answer( InvocationOnMock invocation ) throws Throwable
     {
         Object[] arguments = invocation.getArguments();
-        @SuppressWarnings("SuspiciousMethodCalls")
+        @SuppressWarnings( "SuspiciousMethodCalls" )
         Object result = properties.get( arguments[0] );
         if ( result == null )
         {

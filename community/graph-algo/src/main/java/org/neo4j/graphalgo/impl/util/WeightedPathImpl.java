@@ -108,4 +108,5 @@ public class WeightedPathImpl implements WeightedPath
     {
         return path.iterator();
     }
+
 }

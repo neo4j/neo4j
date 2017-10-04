@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.IOCursorAsResourceIterable;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -57,6 +56,11 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
  */
 public class LogMatchers
 {
+
+    private LogMatchers()
+    {
+    }
+
     public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
         File logFile = new File( logPath );
@@ -68,7 +72,7 @@ public class LogMatchers
         // Read all log entries
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, header.logVersion, header.logFormatVersion );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel( versionedStoreChannel );
         LogEntryCursor logEntryCursor = new LogEntryCursor( new VersionAwareLogEntryReader<>(), logChannel );
         return Iterables.asList( new IOCursorAsResourceIterable<>( logEntryCursor ) );
     }

@@ -21,7 +21,9 @@ package org.neo4j.graphdb.config;
 
 /**
  * Provide the basic operation that one could perform on a set of configurations.
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
+@Deprecated
 public interface Configuration
 {
     /**
@@ -33,4 +35,17 @@ public interface Configuration
      * of the given property.
      */
     <T> T get( Setting<T> setting );
+
+    /**
+     * Empty configuration without any settings.
+     */
+    Configuration EMPTY = new Configuration()
+    {
+        @Override
+        public <T> T get( Setting<T> setting )
+        {
+            return null;
+        }
+    };
+
 }

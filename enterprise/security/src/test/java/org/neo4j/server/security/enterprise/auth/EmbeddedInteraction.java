@@ -22,26 +22,28 @@ package org.neo4j.server.security.enterprise.auth;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecurityContext>
@@ -49,11 +51,17 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     private GraphDatabaseFacade db;
     private EnterpriseAuthManager authManager;
     private FileSystemAbstraction fileSystem;
+    private ConnectorPortRegister connectorRegister;
 
     EmbeddedInteraction( Map<String, String> config ) throws Throwable
     {
+        this( config, EphemeralFileSystemAbstraction::new );
+    }
+
+    EmbeddedInteraction( Map<String, String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws Throwable
+    {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
-        factory.setFileSystem( new EphemeralFileSystemAbstraction() );
+        factory.setFileSystem( fileSystemSupplier.get() );
         GraphDatabaseBuilder builder = factory.newImpermanentDatabaseBuilder();
         this.fileSystem = factory.getFileSystem();
         init( builder, config );
@@ -66,11 +74,12 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
 
     private void init( GraphDatabaseBuilder builder, Map<String, String> config ) throws Throwable
     {
-        builder.setConfig( boltConnector( "0" ).type, "BOLT" );
-        builder.setConfig( boltConnector( "0" ).enabled, "true" );
-        builder.setConfig( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
-        builder.setConfig( BoltKernelExtension.Settings.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
-        builder.setConfig( BoltKernelExtension.Settings.tls_certificate_file,
+        builder.setConfig( new BoltConnector( "bolt" ).type, "BOLT" );
+        builder.setConfig( new BoltConnector( "bolt" ).enabled, "true" );
+        builder.setConfig( new BoltConnector( "bolt" ).encryption_level, OPTIONAL.name() );
+        builder.setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" );
+        builder.setConfig( LegacySslPolicyConfig.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
+        builder.setConfig( LegacySslPolicyConfig.tls_certificate_file,
                 NeoInteractionLevel.tempPath( "cert", ".cert" ) );
         builder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
 
@@ -78,6 +87,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
 
         db = (GraphDatabaseFacade) builder.newGraphDatabase();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        connectorRegister = db.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
     @Override
@@ -91,7 +101,10 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     }
 
     @Override
-    public GraphDatabaseFacade getLocalGraph() { return db; }
+    public GraphDatabaseFacade getLocalGraph()
+    {
+        return db;
+    }
 
     @Override
     public FileSystemAbstraction fileSystem()
@@ -177,8 +190,14 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     }
 
     @Override
-    public String getConnectionDetails()
+    public String getConnectionProtocol()
     {
-        return "embedded-session";
+        return "embedded";
+    }
+
+    @Override
+    public HostnamePort lookupConnector( String connectorKey )
+    {
+        return connectorRegister.getLocalAddress( connectorKey );
     }
 }

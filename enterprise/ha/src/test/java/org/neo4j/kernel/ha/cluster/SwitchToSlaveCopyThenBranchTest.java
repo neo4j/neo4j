@@ -22,8 +22,6 @@ package org.neo4j.kernel.ha.cluster;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,16 +73,18 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
+import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -99,7 +99,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SwitchToSlaveCopyThenBranchTest
 {
@@ -178,7 +177,8 @@ public class SwitchToSlaveCopyThenBranchTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, new URI("cluster://localhost?serverId=1"), me, CancellationRequest.NEVER_CANCELLED );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId,
+                    new URI( "cluster://localhost?serverId=1" ), me, CancellationRequest.NEVER_CANCELLED );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -187,7 +187,8 @@ public class SwitchToSlaveCopyThenBranchTest
         }
 
         // Then
-        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any(URI.class), any(URI.class), any(CancellationRequest.class) );
+        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any( URI.class ),
+                any( URI.class ), any( CancellationRequest.class ) );
     }
 
     @Test
@@ -218,7 +219,8 @@ public class SwitchToSlaveCopyThenBranchTest
         }
 
         // Then
-        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any(URI.class), any(URI.class), any(CancellationRequest.class) );
+        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any( URI.class ),
+                any( URI.class ), any( CancellationRequest.class ) );
     }
 
     @Test
@@ -228,7 +230,7 @@ public class SwitchToSlaveCopyThenBranchTest
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         doAnswer( invocation ->
         {
-            MoveAfterCopy moveAfterCopy = invocation.getArgumentAt( 2, MoveAfterCopy.class );
+            MoveAfterCopy moveAfterCopy = invocation.getArgument( 2 );
             moveAfterCopy.move( Stream.empty(), new File( "" ), new File( "" ) );
             return null;
         } ).when( storeCopyClient ).copyStore(
@@ -263,7 +265,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
         inOrder.verify( storeCopyClient ).copyStore( any( StoreCopyClient.StoreCopyRequester.class ),
                 any( CancellationRequest.class ), any( MoveAfterCopy.class ) ) ;
-        inOrder.verify( branchPolicy ).handle( new File(""), pageCacheMock, NullLogService.getInstance() );
+        inOrder.verify( branchPolicy ).handle( new File( "" ), pageCacheMock, NullLogService.getInstance() );
     }
 
     @Test
@@ -298,14 +300,10 @@ public class SwitchToSlaveCopyThenBranchTest
 
         when( pullerFactory.createUpdatePullerScheduler( updatePuller ) ).thenReturn( pullerScheduler );
         // emulate lifecycle start call on scheduler
-        doAnswer( new Answer()
+        doAnswer( invocationOnMock ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                pullerScheduler.init();
-                return null;
-            }
+            pullerScheduler.init();
+            return null;
         } ).when( communicationLife ).start();
 
         switchToSlave.switchToSlave( communicationLife, localhost, localhost, mock( CancellationRequest.class ) );
@@ -331,8 +329,10 @@ public class SwitchToSlaveCopyThenBranchTest
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         Stream mockStream = mock( Stream.class );
         when( mockStream.filter( any( Predicate.class ) ) ).thenReturn( mock( Stream.class ) );
-        when( pageCacheMock.streamFilesRecursive( any( File.class) ) ).thenReturn( mockStream );
-
+        FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
+        when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) )
+                .thenReturn( mockStream );
+        when( pageCacheMock.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         return newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
     }
 
@@ -355,7 +355,8 @@ public class SwitchToSlaveCopyThenBranchTest
                 mock( IndexConfigStore.class ),
                 mock( TransactionCommittingResponseUnpacker.class ),
                 mock( DataSourceManager.class ),
-                mock( StoreLockerLifecycleAdapter.class )
+                mock( StoreLockerLifecycleAdapter.class ),
+                mock( FileSystemWatcherService.class )
                 );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
@@ -375,7 +376,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
         MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
         when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
-                any( StoreId.class ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
+                argThat( storeId -> true ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         return spy( new SwitchToSlaveCopyThenBranch( new File( "" ), NullLogService.getInstance(),
                 configMock(), resolver,
@@ -388,7 +389,8 @@ public class SwitchToSlaveCopyThenBranchTest
                 storeCopyClient,
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                slave -> {
+                slave ->
+                {
                     SlaveServer server = mock( SlaveServer.class );
                     InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
 
@@ -399,7 +401,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
     private Config configMock()
     {
-        return new Config( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.defaults( ClusterSettings.server_id, "1" );
     }
 
     private <T> T mockWithLifecycle( Class<T> clazz )

@@ -42,17 +42,17 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.guard.TimeoutGuard;
+import org.neo4j.kernel.guard.TerminationGuard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -63,8 +63,9 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.ProcedureAllowedConfig;
+import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
+import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
@@ -82,7 +83,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.TerminationGuard;
+import org.neo4j.procedure.ProcedureTransaction;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
@@ -160,8 +161,7 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Clock clock = getClock();
-        guard = createGuard( deps, clock, logging );
+        guard = createGuard( deps, platformModule.clock, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -188,8 +188,6 @@ public class DataSourceModule
                 storeDir,
                 config,
                 editionModule.idGeneratorFactory,
-                editionModule.eligibleForIdReuse,
-                editionModule.idTypeConfigurationProvider,
                 logging,
                 platformModule.jobScheduler,
                 tokenNameLookup,
@@ -216,7 +214,12 @@ public class DataSourceModule
                 platformModule.tracers,
                 procedures,
                 editionModule.ioLimiter,
-                clock, editionModule.accessCapability ) );
+                platformModule.availabilityGuard,
+                platformModule.clock, editionModule.accessCapability,
+                platformModule.storeCopyCheckPointMutex,
+                platformModule.recoveryCleanupWorkCollector,
+                editionModule.idController,
+                platformModule.databaseInfo.operationalMode ) );
 
         dataSourceManager.register( neoStoreDataSource );
 
@@ -225,7 +228,7 @@ public class DataSourceModule
         life.add( nodeManager );
 
         life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor,
-                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ) ) );
+                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() ) );
 
         life.add( new StartupWaiter( platformModule.availabilityGuard, editionModule.transactionStartTimeout ) );
 
@@ -234,11 +237,10 @@ public class DataSourceModule
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
-    }
 
-    protected Clock getClock()
-    {
-        return Clock.systemUTC();
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, deps,
+                editionModule.coreAPIAvailabilityGuard );
+        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(
@@ -336,14 +338,14 @@ public class DataSourceModule
 
     private Guard createGuard( Dependencies deps, Clock clock, LogService logging )
     {
-        TimeoutGuard guard = createGuard( clock, logging );
+        TerminationGuard guard = createGuard();
         deps.satisfyDependency( guard );
         return guard;
     }
 
-    protected TimeoutGuard createGuard( Clock clock, LogService logging )
+    protected TerminationGuard createGuard()
     {
-        return new TimeoutGuard( clock, logging.getInternalLog( TimeoutGuard.class ) );
+        return new TerminationGuard();
     }
 
     private Procedures setupProcedures( PlatformModule platform, EditionModule editionModule )
@@ -354,7 +356,7 @@ public class DataSourceModule
         Procedures procedures = new Procedures(
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
-                pluginDir, internalLog, new ProcedureAllowedConfig( platform.config ) );
+                pluginDir, internalLog, new ProcedureConfig( platform.config ) );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
@@ -366,16 +368,11 @@ public class DataSourceModule
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
-        procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog );
+        procedures.registerComponent( Log.class, ctx -> proceduresLog, true );
 
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
-        procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ) );
-
-        // Register injected private API components: useful to have available in procedures to access the kernel etc.
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
-                platform.dependencies, storeId, this.queryExecutor, editionModule.coreAPIAvailabilityGuard,
-                platform.urlAccessRule );
-        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply );
+        procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
+        procedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider( guard ), true );
 
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following
@@ -384,12 +381,12 @@ public class DataSourceModule
         //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        procedures.registerComponent( DependencyResolver.class, ( ctx ) -> platform.dependencies );
-        procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
-        procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
+        procedures.registerComponent( DependencyResolver.class, ctx -> platform.dependencies, false );
+        procedures.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
+        procedures.registerComponent( GraphDatabaseAPI.class, ctx -> platform.graphDatabaseFacade, false );
 
         // Security procedures
-        procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ) );
+        procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
         // Edition procedures
         try

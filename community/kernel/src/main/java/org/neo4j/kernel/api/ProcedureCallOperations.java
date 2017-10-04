@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.security.AccessMode;
 
@@ -107,4 +108,19 @@ public interface ProcedureCallOperations
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
     Object functionCallOverride( QualifiedName name, Object[] arguments ) throws ProcedureException;
+
+    /**
+     * Create a read-only aggregation function by name
+     * @param name the name of the function
+     * @return the aggregation function
+     * @throws ProcedureException
+     */
+    CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name ) throws ProcedureException;
+
+    /** Invoke a read-only aggregation function by name, and set the transaction's access mode to
+     * {@link AccessMode.Static#READ READ} for the duration of the function execution.
+     * @param name the name of the function.
+     * @throws ProcedureException if there was an exception thrown during function execution.
+     */
+    CallableUserAggregationFunction.Aggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException;
 }

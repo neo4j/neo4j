@@ -34,6 +34,10 @@ public class PathInterestFactory
 {
     public static final Comparator<Comparable> STANDARD_COMPARATOR = Comparable::compareTo;
 
+    private PathInterestFactory()
+    {
+    }
+
     public static PathInterest<? extends Comparable> single()
     {
         return SINGLE;
@@ -134,14 +138,7 @@ public class PathInterestFactory
 
         return new VisitCountBasedPathInterest<P>()
         {
-            private Comparator<P> comparator = new Comparator<P>()
-            {
-                @Override
-                public int compare( P o1, P o2 )
-                {
-                    return o1.compareTo( o2 );
-                }
-            };
+            private Comparator<P> comparator = ( o1, o2 ) -> o1.compareTo( o2 );
 
             @Override
             int numberOfWantedPaths()

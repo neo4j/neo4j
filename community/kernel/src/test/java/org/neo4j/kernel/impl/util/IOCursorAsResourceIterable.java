@@ -105,11 +105,11 @@ public class IOCursorAsResourceIterable<T> implements ResourceIterable<T>
             }
 
             cursor.close();
-            return Iterators.<T>asResourceIterator( Collections.<T>emptyIterator() );
+            return Iterators.asResourceIterator( Collections.emptyIterator() );
         }
         catch ( IOException e )
         {
-            return Iterators.<T>asResourceIterator( Collections.<T>emptyIterator() );
+            return Iterators.asResourceIterator( Collections.emptyIterator() );
         }
     }
 }

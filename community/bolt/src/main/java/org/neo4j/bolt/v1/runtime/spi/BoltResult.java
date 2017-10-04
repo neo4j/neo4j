@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.runtime.spi;
 
+import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.values.AnyValue;
+
 /**
  * Represents a data stream of records, this is the output cypher produces.
  *
@@ -37,12 +40,12 @@ public abstract class BoltResult implements AutoCloseable
 
     public interface Visitor
     {
-        void visit( Record record ) throws Exception;
+        void visit( QueryResult.Record record ) throws Exception;
 
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
          * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc) */
-        void addMetadata( String key, Object value );
+        void addMetadata( String key, AnyValue value );
     }
 
     public static final BoltResult EMPTY = new BoltResult()

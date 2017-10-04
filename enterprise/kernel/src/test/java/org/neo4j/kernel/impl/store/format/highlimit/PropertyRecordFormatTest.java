@@ -212,7 +212,7 @@ public class PropertyRecordFormatTest
         assertEquals( recordA.getPrevProp(), recordB.getPrevProp() );
     }
 
-    private void verifyDifferentReferences(PropertyRecord recordA, PropertyRecord recordB)
+    private void verifyDifferentReferences( PropertyRecord recordA, PropertyRecord recordB )
     {
         assertNotEquals( recordA.getNextProp(), recordB.getNextProp() );
         assertNotEquals( recordA.getPrevProp(), recordB.getPrevProp() );

@@ -41,13 +41,14 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -55,10 +56,13 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestUnit
 {
@@ -73,11 +77,13 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( overrideSettingsFunction ) );
+        lookupConnectorAddress();
     }
 
     protected Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
     {
-        return settings -> {
+        return settings ->
+        {
             Map<Setting<?>,String> o = new LinkedHashMap<>();
             overrideSettingsFunction.accept( o );
             for ( Setting key : o.keySet() )
@@ -92,21 +98,26 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         return new TestEnterpriseGraphDatabaseFactory();
     }
 
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" );
     }
 
     public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
 
-    public HostnamePort address = new HostnamePort( "localhost:7687" );
-
+    protected HostnamePort address;
     protected TransportConnection client;
 
     @Before
     public void setup()
     {
         this.client = cf.newInstance();
+        lookupConnectorAddress();
+    }
+
+    protected void lookupConnectorAddress()
+    {
+        this.address = server.lookupDefaultConnector();
     }
 
     @After
@@ -152,7 +163,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                      "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
                 pullAll() ) );
 
-        assertThat( client, eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( 0L ) ) ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( longValue( 0L ) ) ) ) ) );
     }
 
     protected void testAuthWithReaderUser( String username, String password, String realm ) throws Exception
@@ -199,12 +210,13 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected void assertRoles( String... roles ) throws Exception
     {
-        client.send( TransportTestUtil.chunk( run( "CALL dbms.security.showCurrentUser" ), pullAll() ) );
+        client.send( TransportTestUtil.chunk( run( "CALL dbms.showCurrentUser" ), pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( "tank"), containsInAnyOrder( roles ), anything() ) ),
+                msgRecord( eqRecord( equalTo( stringValue( "tank" ) ),
+                        containsInAnyOrder( stream( roles ).map( Values::stringValue ).toArray() ), anything() ) ),
                 msgSuccess() ) );
     }
 
@@ -254,7 +266,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
 
-        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles +"]";
+        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
 
         // Then
         assertThat( client, eventuallyReceives(
@@ -280,7 +292,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                 run( "CREATE ()" ),
                 pullAll() ) );
 
-        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles +"]";
+        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
 
         // Then
         assertThat( client, eventuallyReceives(

@@ -27,27 +27,27 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
-
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
-import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class NeoTransactionIndexApplierTest
 {
@@ -59,13 +59,14 @@ public class NeoTransactionIndexApplierTest
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
+    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
 
     @Before
     public void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );
+        when( indexingService.convertToIndexUpdates( any() ) ).thenAnswer( o -> Iterables.empty() );
     }
 
     @Test
@@ -96,8 +97,7 @@ public class NeoTransactionIndexApplierTest
         PropertyStore propertyStore = mock( PropertyStore.class );
         return new IndexBatchTransactionApplier( indexingService,
                 labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                mock(PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
-                TransactionApplicationMode.INTERNAL );
+                new PropertyPhysicalToLogicalConverter( propertyStore ) );
     }
 
     @Test
@@ -121,6 +121,11 @@ public class NeoTransactionIndexApplierTest
         // Then
         assertFalse( result );
         verify( indexingService ).createIndexes( indexRule );
+    }
+
+    private IndexRule indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
+    {
+        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
     @Test

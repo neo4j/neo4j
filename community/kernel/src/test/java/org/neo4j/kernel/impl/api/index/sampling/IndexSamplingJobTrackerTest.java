@@ -28,8 +28,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.test.DoubleLatch;
 
@@ -45,6 +48,15 @@ import static org.mockito.Mockito.when;
 public class IndexSamplingJobTrackerTest
 {
     private final IndexSamplingConfig config = mock( IndexSamplingConfig.class );
+    LabelSchemaDescriptor descriptor11 = SchemaDescriptorFactory.forLabel( 1, 1 );
+    LabelSchemaDescriptor descriptor12 = SchemaDescriptorFactory.forLabel( 1, 2 );
+    LabelSchemaDescriptor descriptor22 = SchemaDescriptorFactory.forLabel( 2, 2 );
+    IndexDescriptor index11 = IndexDescriptorFactory.forSchema( descriptor11 );
+    IndexDescriptor index12 = IndexDescriptorFactory.forSchema( descriptor12 );
+    IndexDescriptor index22 = IndexDescriptorFactory.forSchema( descriptor22 );
+    long indexId11;
+    long indexId12 = 1;
+    long indexId22 = 2;
 
     @Test
     public void shouldNotRunASampleJobWhichIsAlreadyRunning() throws Throwable
@@ -62,8 +74,6 @@ public class IndexSamplingJobTrackerTest
         assertTrue( jobTracker.canExecuteMoreSamplingJobs() );
         IndexSamplingJob job = new IndexSamplingJob()
         {
-            private final IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
-
             @Override
             public void run()
             {
@@ -74,9 +84,9 @@ public class IndexSamplingJobTrackerTest
             }
 
             @Override
-            public IndexDescriptor descriptor()
+            public long indexId()
             {
-                return descriptor;
+                return indexId12;
             }
         };
 
@@ -106,8 +116,6 @@ public class IndexSamplingJobTrackerTest
 
         jobTracker.scheduleSamplingJob( new IndexSamplingJob()
         {
-            private final IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
-
             @Override
             public void run()
             {
@@ -116,9 +124,9 @@ public class IndexSamplingJobTrackerTest
             }
 
             @Override
-            public IndexDescriptor descriptor()
+            public long indexId()
             {
-                return descriptor;
+                return indexId12;
             }
         } );
 
@@ -148,7 +156,7 @@ public class IndexSamplingJobTrackerTest
         assertFalse( waiting.get() );
 
         // eventually we accept new jobs
-        while( ! jobTracker.canExecuteMoreSamplingJobs() )
+        while ( !jobTracker.canExecuteMoreSamplingJobs() )
         {
             Thread.yield();
         }
@@ -171,9 +179,9 @@ public class IndexSamplingJobTrackerTest
         jobTracker.scheduleSamplingJob( new IndexSamplingJob()
         {
             @Override
-            public IndexDescriptor descriptor()
+            public long indexId()
             {
-                return new IndexDescriptor( 1, 1 );
+                return indexId11;
             }
 
             @Override
@@ -190,9 +198,9 @@ public class IndexSamplingJobTrackerTest
             jobTracker.scheduleSamplingJob( new IndexSamplingJob()
             {
                 @Override
-                public IndexDescriptor descriptor()
+                public long indexId()
                 {
-                    return new IndexDescriptor( 2, 2 );
+                    return indexId22;
                 }
 
                 @Override
@@ -253,8 +261,8 @@ public class IndexSamplingJobTrackerTest
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 
-        WaitingIndexSamplingJob job1 = new WaitingIndexSamplingJob( new IndexDescriptor( 1, 1 ), latch1 );
-        WaitingIndexSamplingJob job2 = new WaitingIndexSamplingJob( new IndexDescriptor( 2, 2 ), latch1 );
+        WaitingIndexSamplingJob job1 = new WaitingIndexSamplingJob( indexId11, latch1 );
+        WaitingIndexSamplingJob job2 = new WaitingIndexSamplingJob( indexId22, latch1 );
 
         jobTracker.scheduleSamplingJob( job1 );
         jobTracker.scheduleSamplingJob( job2 );
@@ -291,8 +299,8 @@ public class IndexSamplingJobTrackerTest
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 
-        WaitingIndexSamplingJob job1 = new WaitingIndexSamplingJob( new IndexDescriptor( 1, 1 ), latch1 );
-        WaitingIndexSamplingJob job2 = new WaitingIndexSamplingJob( new IndexDescriptor( 2, 2 ), latch1 );
+        WaitingIndexSamplingJob job1 = new WaitingIndexSamplingJob( indexId11, latch1 );
+        WaitingIndexSamplingJob job2 = new WaitingIndexSamplingJob( indexId22, latch1 );
 
         jobTracker.scheduleSamplingJob( job1 );
         jobTracker.scheduleSamplingJob( job2 );
@@ -300,9 +308,11 @@ public class IndexSamplingJobTrackerTest
         Future<?> stopping = Executors.newSingleThreadExecutor().submit( () ->
         {
             latch2.countDown();
-            try {
+            try
+            {
                 jobTracker.awaitAllJobs( 10, TimeUnit.SECONDS );
-            } catch (InterruptedException e)
+            }
+            catch ( InterruptedException e )
             {
                 throw new RuntimeException( e );
             }
@@ -323,21 +333,21 @@ public class IndexSamplingJobTrackerTest
 
     private static class WaitingIndexSamplingJob implements IndexSamplingJob
     {
-        final IndexDescriptor descriptor;
+        final long indexId;
         final CountDownLatch latch;
 
         volatile boolean executed;
 
-        WaitingIndexSamplingJob( IndexDescriptor descriptor, CountDownLatch latch )
+        WaitingIndexSamplingJob( long indexId, CountDownLatch latch )
         {
-            this.descriptor = descriptor;
+            this.indexId = indexId;
             this.latch = latch;
         }
 
         @Override
-        public IndexDescriptor descriptor()
+        public long indexId()
         {
-            return descriptor;
+            return indexId;
         }
 
         @Override

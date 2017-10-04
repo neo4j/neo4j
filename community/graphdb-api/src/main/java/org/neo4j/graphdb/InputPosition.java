@@ -31,7 +31,7 @@ public final class InputPosition
     /**
      * The empty position
      */
-    public static InputPosition empty = new InputPosition(-1, -1, -1);
+    public static InputPosition empty = new InputPosition( -1, -1, -1 );
 
     /**
      * Creating a position from and offset, line number and a column number.
@@ -39,7 +39,8 @@ public final class InputPosition
      * @param line the line number, starting from 1.
      * @param column the column number, starting from 1.
      */
-    public InputPosition(int offset, int line, int column) {
+    public InputPosition( int offset, int line, int column )
+    {
         this.offset = offset;
         this.line = line;
         this.column = column;
@@ -76,16 +77,24 @@ public final class InputPosition
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         InputPosition that = (InputPosition) o;
 
         if ( offset != that.offset )
-        { return false; }
+        {
+            return false;
+        }
         if ( line != that.line )
-        { return false; }
+        {
+            return false;
+        }
         return column == that.column;
 
     }
@@ -97,5 +106,11 @@ public final class InputPosition
         result = 31 * result + line;
         result = 31 * result + column;
         return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "InputPosition{" + "offset=" + offset + ", line=" + line + ", column=" + column + '}';
     }
 }

@@ -365,7 +365,7 @@ public class ResourcePoolTest
 
     private static class SomethingResourcePool extends ResourcePool<Something>
     {
-        public SomethingResourcePool( int minSize, CheckStrategy checkStrategy, StatefulMonitor stateMonitor )
+        SomethingResourcePool( int minSize, CheckStrategy checkStrategy, StatefulMonitor stateMonitor )
         {
             super( minSize, checkStrategy, stateMonitor );
         }
@@ -471,7 +471,7 @@ public class ResourcePoolTest
 
     private class StatefulMonitor implements ResourcePool.Monitor<Something>
     {
-        public AtomicInteger currentPeakSize = new AtomicInteger(-1);
+        public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
         public AtomicInteger targetSize = new AtomicInteger( -1 );
         public AtomicInteger created = new AtomicInteger( 0 );
         public AtomicInteger acquired = new AtomicInteger( 0 );

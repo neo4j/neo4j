@@ -67,6 +67,10 @@ public class UsageDataKeys
         Key bolt = new Key( 3 );
     }
 
+    private UsageDataKeys()
+    {
+    }
+
     /**
      * Tracks features in use, including decay such that features that are not
      * used for a while are marked as no longer in use.

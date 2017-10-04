@@ -19,13 +19,19 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import java.util.Iterator;
+import java.util.function.BiPredicate;
+
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -34,62 +40,87 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 public class StandardConstraintSemantics implements ConstraintSemantics
 {
-    public static final String ERROR_MESSAGE = "Property existence constraint requires Neo4j Enterprise Edition";
+    public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
+    public static final String ERROR_MESSAGE_NODE_KEY = "Node Key constraint requires Neo4j Enterprise Edition";
 
     @Override
-    public void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
+    public void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes,
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasProperty )
             throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( new NodePropertyExistenceConstraint( label, propertyKey ) );
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
     }
 
     @Override
-    public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRels, int type,
-            int key ) throws CreateConstraintFailureException
+    public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
+            RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
+            throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( new RelationshipPropertyExistenceConstraint( type, key ) );
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
     }
 
     @Override
-    public PropertyConstraint readConstraint( PropertyConstraintRule rule )
+    public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasProperty )
+            throws CreateConstraintFailureException
     {
-        if ( rule instanceof UniquePropertyConstraintRule )
+        throw nodeKeyConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
+    public ConstraintDescriptor readConstraint( ConstraintRule rule )
+    {
+        ConstraintDescriptor desc = rule.getConstraintDescriptor();
+        switch ( desc.type() )
         {
-            return ((UniquePropertyConstraintRule) rule).toConstraint();
+        case EXISTS:
+            return readNonStandardConstraint( rule, ERROR_MESSAGE_EXISTS );
+        case UNIQUE_EXISTS:
+            return readNonStandardConstraint( rule, ERROR_MESSAGE_NODE_KEY );
+        default:
+            return desc;
         }
-        return readNonStandardConstraint( rule );
     }
 
-    protected PropertyConstraint readNonStandardConstraint( PropertyConstraintRule rule )
+    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
     {
         // When opening a store in Community Edition that contains a Property Existence Constraint
-        throw new IllegalStateException( ERROR_MESSAGE );
+        throw new IllegalStateException( errorMessage );
     }
 
-    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( PropertyConstraint constraint )
+    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
         // When creating a Property Existence Constraint in Community Edition
-        return new CreateConstraintFailureException( constraint, new IllegalStateException( ERROR_MESSAGE ) );
+        return new CreateConstraintFailureException(
+                ConstraintDescriptorFactory.existsForSchema( descriptor ), ERROR_MESSAGE_EXISTS );
     }
 
-    @Override
-    public PropertyConstraintRule writeUniquePropertyConstraint( long ruleId, int label, int propertyKey, long indexId )
+    private CreateConstraintFailureException nodeKeyConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
-        return UniquePropertyConstraintRule.uniquenessConstraintRule( ruleId, label, propertyKey, indexId );
+        // When creating a Node Key Constraint in Community Edition
+        return new CreateConstraintFailureException(
+                ConstraintDescriptorFactory.existsForSchema( descriptor ), ERROR_MESSAGE_NODE_KEY );
     }
 
     @Override
-    public PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int label, int propertyKey )
+    public ConstraintRule createUniquenessConstraintRule(
+            long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
+    {
+        return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+    }
+
+    @Override
+    public ConstraintRule createNodeKeyConstraintRule(
+            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId ) throws CreateConstraintFailureException
+    {
+        throw nodeKeyConstraintsNotAllowed( descriptor.schema() );
+    }
+
+    @Override
+    public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( new NodePropertyExistenceConstraint( label, propertyKey ) );
-    }
-
-    @Override
-    public PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int key )
-            throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( new RelationshipPropertyExistenceConstraint( type, key ) );
+        throw propertyExistenceConstraintsNotAllowed( descriptor.schema() );
     }
 
     @Override

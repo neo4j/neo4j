@@ -31,11 +31,14 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.Mode;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.logging.LogProvider;
@@ -54,51 +57,34 @@ import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.Iterables.mix;
+import static org.neo4j.server.configuration.ServerSettings.jmx_module_enabled;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseNeoServer extends CommunityNeoServer
 {
-    public enum Mode
+
+    private static final GraphFactory HA_FACTORY = ( config, dependencies ) ->
     {
-        SINGLE,
-        HA,
-        ARBITER,
-        CORE,
-        READ_REPLICA;
-
-        public static Mode fromString( String value )
-        {
-            try
-            {
-                return Mode.valueOf( value );
-            }
-            catch ( IllegalArgumentException ex )
-            {
-                return SINGLE;
-            }
-        }
-    }
-
-    private static final GraphFactory HA_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new HighlyAvailableGraphDatabase( storeDir, config, dependencies );
     };
 
-    private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) -> {
+    private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) ->
+    {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new EnterpriseGraphDatabase( storeDir, config, dependencies );
     };
 
-    private static final GraphFactory CORE_FACTORY = ( config, dependencies ) -> {
+    private static final GraphFactory CORE_FACTORY = ( config, dependencies ) ->
+    {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new CoreGraphDatabase( storeDir, config, dependencies );
     };
 
-    private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) -> {
+    private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) ->
+    {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new ReadReplicaGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new ReadReplicaGraphDatabase( storeDir, config, dependencies );
     };
 
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
@@ -106,9 +92,15 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         super( config, createDbFactory( config ), dependencies, logProvider );
     }
 
+    public EnterpriseNeoServer( Config config, Database.Factory dbFactory, GraphDatabaseFacadeFactory.Dependencies
+            dependencies, LogProvider logProvider )
+    {
+        super( config, dbFactory, dependencies, logProvider );
+    }
+
     protected static Database.Factory createDbFactory( Config config )
     {
-        final Mode mode = Mode.fromString( config.get( EnterpriseServerSettings.mode ).toUpperCase() );
+        final Mode mode = config.get( EnterpriseEditionSettings.mode );
 
         switch ( mode )
         {
@@ -121,7 +113,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
             return lifecycleManagingDatabase( CORE_FACTORY );
         case READ_REPLICA:
             return lifecycleManagingDatabase( READ_REPLICA_FACTORY );
-        default: // Anything else gives community, including Mode.SINGLE
+        default:
             return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
         }
     }
@@ -130,7 +122,8 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     protected WebServer createWebServer()
     {
         Jetty9WebServer webServer = (Jetty9WebServer) super.createWebServer();
-        webServer.setJettyCreatedCallback( ( jetty ) -> {
+        webServer.setJettyCreatedCallback( jetty ->
+        {
             ThreadPool threadPool = jetty.getThreadPool();
             assert threadPool != null;
             try
@@ -171,8 +164,14 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        return mix( asList( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ),
-                new JMXManagementModule( this ) ), super.createServerModules() );
+        List<ServerModule> modules = new ArrayList<>();
+        modules.add( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ) );
+        if ( getConfig().get( jmx_module_enabled ) )
+        {
+            modules.add( new JMXManagementModule( this ) );
+        }
+        super.createServerModules().forEach( modules::add );
+        return modules;
     }
 
     @Override

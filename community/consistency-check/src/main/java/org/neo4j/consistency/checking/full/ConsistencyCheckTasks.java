@@ -136,7 +136,7 @@ public class ConsistencyCheckTasks
             PropertyReader propertyReader = new PropertyReader( nativeStores );
             tasks.add( recordScanner( CheckStage.Stage8_PS_Props.name(),
                     new IterableStore<>( nativeStores.getNodeStore(), true ),
-                    new PropertyAndNode2LabelIndexProcessor( reporter, (checkIndexes ? indexes : null ),
+                    new PropertyAndNode2LabelIndexProcessor( reporter, checkIndexes ? indexes : null,
                             propertyReader, cacheAccess, mandatoryProperties.forNodes( reporter ) ),
                     CheckStage.Stage8_PS_Props, ROUND_ROBIN,
                     new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
@@ -152,7 +152,7 @@ public class ConsistencyCheckTasks
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
         final SchemaRecordCheck schemaCheck =
-                new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ) );
+                new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
                 schemaCheck, progress, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
@@ -171,24 +171,19 @@ public class ConsistencyCheckTasks
             tasks.add( create( "LabelNameStore", nativeStores.getLabelNameStore(), ROUND_ROBIN ) );
             tasks.add( create( "NodeDynamicLabelStore", nativeStores.getNodeDynamicLabelStore(), ROUND_ROBIN ) );
         }
-        if ( checkLabelScanStore )
-        {
-            tasks.add( recordScanner( "NodeStoreToLabelScanStore",
-                    new IterableStore<>( nativeStores.getNodeStore(), true ),
-                    new NodeToLabelScanRecordProcessor( reporter, labelScanStore ),
-                    CheckStage.Stage9_NS_LabelCounts, ROUND_ROBIN ) );
-        }
+
         ConsistencyReporter filteredReporter = multiPass.reporter( NODES );
         if ( checkLabelScanStore )
         {
+            long highId = nativeStores.getNodeStore().getHighId();
             tasks.add( recordScanner( "LabelScanStore",
-                    labelScanStore.allNodeLabelRanges(), new LabelScanDocumentProcessor(
-                            filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
+                    new GapFreeAllEntriesLabelScanReader( labelScanStore.allNodeLabelRanges(), highId ),
+                    new LabelScanDocumentProcessor( filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
                     ROUND_ROBIN ) );
         }
         if ( checkIndexes )
         {
-            for ( IndexRule indexRule : indexes.rules() )
+            for ( IndexRule indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
                         new IndexIterator( indexes.accessorFor( indexRule ) ),

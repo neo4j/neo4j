@@ -46,6 +46,6 @@ public class Distribution<T>
             }
             comparison /= 2f;
         }
-        return items[items.length-1];
+        return items[items.length - 1];
     }
 }

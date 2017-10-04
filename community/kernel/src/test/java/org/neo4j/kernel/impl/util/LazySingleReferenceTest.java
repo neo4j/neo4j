@@ -148,7 +148,8 @@ public class LazySingleReferenceTest
         assertTrue( "Should be initialized after a re-evaluation", fourthResult );
     }
 
-    private OtherThreadExecutor<Void> t1, t2;
+    private OtherThreadExecutor<Void> t1;
+    private OtherThreadExecutor<Void> t2;
 
     @Before
     public void before()
@@ -166,26 +167,15 @@ public class LazySingleReferenceTest
 
     private WorkerCommand<Void,Integer> evaluate( final LazySingleReference<Integer> ref )
     {
-        return new WorkerCommand<Void,Integer>()
-        {
-            @Override
-            public Integer doWork( Void state ) throws Exception
-            {
-                return ref.get();
-            }
-        };
+        return state -> ref.get();
     }
 
     private WorkerCommand<Void,Void> invalidate( final LazySingleReference<Integer> ref )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                ref.invalidate();
-                return null;
-            }
+            ref.invalidate();
+            return null;
         };
     }
 }

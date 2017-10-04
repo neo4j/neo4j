@@ -24,8 +24,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,16 +62,12 @@ public abstract class AbstractNeo4jTestCase
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
 
     @ClassRule
-    public static final TestRule START_GRAPHDB = new TestRule()
+    public static final TestRule START_GRAPHDB = ( base, description ) ->
     {
-        @Override
-        public Statement apply( Statement base, Description description )
-        {
-            tearDownDb();
-            setupGraphDatabase( description.getTestClass().getName(),
-                    description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value() );
-            return base;
-        }
+        tearDownDb();
+        setupGraphDatabase( description.getTestClass().getName(),
+                description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value() );
+        return base;
     };
 
     private static ThreadLocal<GraphDatabaseAPI> threadLocalGraphDb = new ThreadLocal<>();

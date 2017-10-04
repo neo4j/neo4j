@@ -21,18 +21,32 @@ package org.neo4j.commandline.admin;
 
 public class CommandFailed extends Exception
 {
-    public CommandFailed( String message, Exception cause )
+    private final int code;
+
+    public CommandFailed( String message, Throwable cause, int code )
     {
         super( message, cause );
+        this.code = code;
     }
 
-    public CommandFailed( Throwable cause )
+    public CommandFailed( String message, Throwable cause )
     {
-        super( cause );
+        this( message, cause, 1 );
     }
 
     public CommandFailed( String message )
     {
+        this( message, 1 );
+    }
+
+    public CommandFailed( String message, int code )
+    {
         super( message );
+        this.code = code;
+    }
+
+    public int code()
+    {
+        return code;
     }
 }

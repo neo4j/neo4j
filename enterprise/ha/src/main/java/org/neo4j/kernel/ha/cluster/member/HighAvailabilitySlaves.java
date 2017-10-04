@@ -65,7 +65,8 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
 
     private Function<ClusterMember, Slave> slaveForMember()
     {
-        return from -> {
+        return from ->
+        {
             synchronized ( HighAvailabilitySlaves.this )
             {
                 Slave presentSlave = slaves.get( from );
@@ -84,7 +85,8 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     {
         // Return all cluster members which are currently SLAVEs,
         // are alive, and convert to Slave with a cache if possible
-        return map( clusterMember -> {
+        return map( clusterMember ->
+        {
             Slave slave = slaveForMember().apply( clusterMember );
 
             if ( slave == null )

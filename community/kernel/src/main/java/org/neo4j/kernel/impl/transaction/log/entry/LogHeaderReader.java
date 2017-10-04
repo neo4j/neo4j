@@ -31,6 +31,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 
 public class LogHeaderReader
 {
+    private LogHeaderReader()
+    {
+    }
+
     public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         return readLogHeader( fileSystem, file, true );
@@ -87,12 +91,12 @@ public class LogHeaderReader
         return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
     }
 
-    public static long decodeLogVersion( long encLogVersion )
+    static long decodeLogVersion( long encLogVersion )
     {
         return encLogVersion & 0x00FFFFFFFFFFFFFFL;
     }
 
-    public static byte decodeLogFormatVersion( long encLogVersion )
+    static byte decodeLogFormatVersion( long encLogVersion )
     {
         return (byte) ((encLogVersion >> 56) & 0xFF);
     }

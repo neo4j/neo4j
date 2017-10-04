@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.test.causalclustering.ClusterRule;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -53,12 +53,12 @@ public class CoreReplicationIT
 {
     private final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
-    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     private final VerboseTimeout timeout = VerboseTimeout.builder()
             .withTimeout( 1000, TimeUnit.SECONDS )
             .build();
+
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( clusterRule ).around( timeout);
+    public RuleChain ruleChain = RuleChain.outerRule( clusterRule ).around( timeout);
 
     private Cluster cluster;
 
@@ -166,7 +166,10 @@ public class CoreReplicationIT
     public void shouldReplicateTransactionToCoreMemberAddedAfterInitialStartUp() throws Exception
     {
         // given
+        cluster.getCoreMemberById( 0 ).shutdown();
+
         cluster.addCoreMemberWithId( 3 ).start();
+        cluster.getCoreMemberById( 0 ).start();
 
         cluster.coreTx( ( db, tx ) ->
         {
@@ -291,10 +294,11 @@ public class CoreReplicationIT
                     cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
                     latch.countDown();
                 } );
+                fail( "Should have thrown" );
             }
-            catch ( Exception e )
+            catch ( Exception ignored )
             {
-                throw new RuntimeException( e );
+                // expected
             }
         } );
 

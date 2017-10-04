@@ -84,7 +84,10 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsWrites() { return write; }
+        public boolean allowsWrites()
+        {
+            return write;
+        }
 
         @Override
         public boolean allowsTokenCreates()

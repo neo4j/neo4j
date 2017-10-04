@@ -35,8 +35,8 @@ public abstract class InjectableProvider<E> extends AbstractHttpContextInjectabl
 
     public static <E> InjectableProvider<? extends E> providerForSingleton(
             final E component,
-            final Class<E> componentClass
-    ) {
+            final Class<E> componentClass )
+    {
         return new InjectableProvider<E>( componentClass )
         {
             @Override
@@ -49,8 +49,8 @@ public abstract class InjectableProvider<E> extends AbstractHttpContextInjectabl
 
     public static <E> InjectableProvider<? extends E> providerFromSupplier(
             final Supplier<E> supplier,
-            final Class<E> componentClass
-    ) {
+            final Class<E> componentClass )
+    {
         return new InjectableProvider<E>( componentClass )
         {
             @Override

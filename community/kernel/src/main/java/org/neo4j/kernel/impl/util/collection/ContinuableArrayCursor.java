@@ -68,6 +68,6 @@ public class ContinuableArrayCursor<T> implements Cursor<T>
         {
             throw new IllegalStateException();
         }
-        return current[cursor-1];
+        return current[cursor - 1];
     }
 }

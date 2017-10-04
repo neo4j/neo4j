@@ -20,7 +20,7 @@
 package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -536,42 +535,14 @@ public class HighAvailabilityMemberStateMachineTest
         SwitchToSlave.Monitor monitor = new SwitchToSlave.Monitor()
         {
             @Override
-            public void switchToSlaveStarted()
-            {
-            }
-
-            @Override
             public void switchToSlaveCompleted( boolean wasSuccessful )
             {
                 switchedSuccessfully.set( wasSuccessful );
                 latch.countDown();
             }
-
-            @Override
-            public void storeCopyStarted()
-            {
-            }
-
-            @Override
-            public void storeCopyCompleted( boolean wasSuccessful )
-            {
-
-            }
-
-            @Override
-            public void catchupStarted()
-            {
-
-            }
-
-            @Override
-            public void catchupCompleted()
-            {
-
-            }
         };
 
-        Config config = new Config( Collections.singletonMap( ClusterSettings.server_id.name(), me.toString() ) );
+        Config config = Config.defaults( ClusterSettings.server_id, me.toString() );
 
         TransactionStats transactionCounters = mock( TransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
@@ -595,7 +566,8 @@ public class HighAvailabilityMemberStateMachineTest
                 new StoreCopyClient.Monitor.Adapter(),
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                slave -> {
+                slave ->
+                {
                     SlaveServer mock = mock( SlaveServer.class );
                     when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
                     return mock;
@@ -697,10 +669,11 @@ public class HighAvailabilityMemberStateMachineTest
     static ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
     {
         final ClusterMemberListenerContainer listenerContainer = new ClusterMemberListenerContainer();
-        doAnswer( invocation -> {
-            listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
+        doAnswer( invocation ->
+        {
+            listenerContainer.set( invocation.getArgument( 0 ) );
             return null;
-        } ).when( events ).addClusterMemberListener( Matchers.any() );
+        } ).when( events ).addClusterMemberListener( ArgumentMatchers.any() );
         return listenerContainer;
     }
 
@@ -736,25 +709,25 @@ public class HighAvailabilityMemberStateMachineTest
             return this;
         }
 
-        public StateMachineBuilder withEvents(ClusterMemberEvents events)
+        public StateMachineBuilder withEvents( ClusterMemberEvents events )
         {
             this.events = events;
             return this;
         }
 
-        public StateMachineBuilder withClusterMembers(ObservedClusterMembers clusterMember)
+        public StateMachineBuilder withClusterMembers( ObservedClusterMembers clusterMember )
         {
             this.clusterMembers = clusterMember;
             return this;
         }
 
-        public StateMachineBuilder withGuard(AvailabilityGuard guard)
+        public StateMachineBuilder withGuard( AvailabilityGuard guard )
         {
             this.guard = guard;
             return this;
         }
 
-        public StateMachineBuilder withElection(Election election)
+        public StateMachineBuilder withElection( Election election )
         {
             this.election = election;
             return this;
@@ -790,12 +763,12 @@ public class HighAvailabilityMemberStateMachineTest
 
     static final class HAStateChangeListener implements HighAvailabilityMemberListener
     {
-        boolean masterIsElected = false;
-        boolean masterIsAvailable = false;
-        boolean slaveIsAvailable = false;
-        boolean instanceStops = false;
-        boolean instanceDetached = false;
-        HighAvailabilityMemberChangeEvent lastEvent = null;
+        boolean masterIsElected;
+        boolean masterIsAvailable;
+        boolean slaveIsAvailable;
+        boolean instanceStops;
+        boolean instanceDetached;
+        HighAvailabilityMemberChangeEvent lastEvent;
 
         @Override
         public void masterIsElected( HighAvailabilityMemberChangeEvent event )

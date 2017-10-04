@@ -21,10 +21,12 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 
+/**
+ * Extends upon the topology service with a few extra services, connected to
+ * the underlying discovery service.
+ */
 public interface CoreTopologyService extends TopologyService
 {
-    ReadReplicaTopology readReplicas();
-
     void addCoreTopologyListener( Listener listener );
 
     /**
@@ -35,7 +37,7 @@ public interface CoreTopologyService extends TopologyService
      *
      * @return True if the cluster ID was successfully CAS:ed, otherwise false.
      */
-    boolean setClusterId( ClusterId clusterId );
+    boolean setClusterId( ClusterId clusterId ) throws InterruptedException;
 
     interface Listener
     {

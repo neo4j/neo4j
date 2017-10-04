@@ -66,7 +66,7 @@ public class EventReporterBuilder
         if ( config.get( graphiteEnabled ) )
         {
             HostnamePort server = config.get( graphiteServer );
-            long period = config.get( graphiteInterval );
+            long period = config.get( graphiteInterval ).toMillis();
             GraphiteOutput graphiteOutput = new GraphiteOutput( server, period, registry, logger, prefix );
             reporter.add( graphiteOutput );
             life.add( graphiteOutput );
@@ -82,7 +82,7 @@ public class EventReporterBuilder
         if ( prefix.equals( MetricsSettings.metricsPrefix.getDefaultValue() ) )
         {
             // If default name and in HA, try to figure out a nicer name
-            if ( config.getParams().containsKey( ClusterSettings.server_id.name() ) )
+            if ( config.isConfigured( ClusterSettings.server_id ) )
             {
                 prefix += "." + config.get( ClusterSettings.cluster_name );
                 prefix += "." + config.get( ClusterSettings.server_id );

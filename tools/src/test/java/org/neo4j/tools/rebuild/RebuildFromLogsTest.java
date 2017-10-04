@@ -21,73 +21,86 @@ package org.neo4j.tools.rebuild;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.InconsistentStoreException;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class RebuildFromLogsTest
 {
-    @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final TestDirectory dir = TestDirectory.testDirectory();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final ExpectedException expectedException = ExpectedException.none();
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( dir )
+            .around( suppressOutput ).around( fileSystemRule ).around( expectedException );
+
+    private final Transaction[] work;
+
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection<WorkLog> commands()
+    {
+        return WorkLog.combinations();
+    }
 
     @Test
     public void shouldRebuildFromLog() throws Exception, InconsistentStoreException
     {
         // given
         File prototypePath = new File( dir.graphDbDir(), "prototype" );
-        GraphDatabaseService prototype = db( prototypePath );
-        try
-        {
-            for ( Transaction transaction : work )
-            {
-                transaction.applyTo( prototype );
-            }
-        }
-        finally
-        {
-            prototype.shutdown();
-        }
+        populatePrototype( prototypePath );
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
+        new RebuildFromLogs( fileSystemRule.get() ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
 
         // then
         assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
     }
 
-    private DbRepresentation getDbRepresentation( File path )
+    @Test
+    public void failRebuildFromLogIfStoreIsInconsistentAfterRebuild() throws InconsistentStoreException, Exception
     {
-        return DbRepresentation.of( path );
+        File prototypePath = new File( dir.graphDbDir(), "prototype" );
+        populatePrototype( prototypePath );
+
+        // when
+        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
+        expectedException.expect( InconsistentStoreException.class );
+        RebuildFromLogs rebuildFromLogs = new TestRebuildFromLogs( fileSystemRule.get() );
+        rebuildFromLogs.rebuild( prototypePath, rebuildPath, BASE_TX_ID );
     }
 
     @Test
@@ -95,20 +108,7 @@ public class RebuildFromLogsTest
     {
         // given
         File prototypePath = new File( dir.graphDbDir(), "prototype" );
-        GraphDatabaseAPI prototype = db( prototypePath );
-        long txId;
-        try
-        {
-            for ( Transaction transaction : work )
-            {
-                transaction.applyTo( prototype );
-            }
-        }
-        finally
-        {
-            txId = prototype.getDependencyResolver().resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
-            prototype.shutdown();
-        }
+        long txId = populatePrototype( prototypePath );
 
         File copy = new File( dir.graphDbDir(), "copy" );
         FileUtils.copyRecursively( prototypePath, copy );
@@ -125,10 +125,34 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId );
+        new RebuildFromLogs( fileSystemRule.get() ).rebuild( copy, rebuildPath, txId );
 
         // then
         assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
+    }
+
+    private long populatePrototype( File prototypePath )
+    {
+        GraphDatabaseAPI prototype = db( prototypePath );
+        long txId;
+        try
+        {
+            for ( Transaction transaction : work )
+            {
+                transaction.applyTo( prototype );
+            }
+        }
+        finally
+        {
+            txId = prototype.getDependencyResolver().resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
+            prototype.shutdown();
+        }
+        return txId;
+    }
+
+    private DbRepresentation getDbRepresentation( File path )
+    {
+        return DbRepresentation.of( path );
     }
 
     private GraphDatabaseAPI db( File rebuiltPath )
@@ -167,17 +191,22 @@ public class RebuildFromLogsTest
                     @Override
                     void applyTx( GraphDatabaseService graphDb )
                     {
-                        for ( Node node : graphDb.getAllNodes() )
+                        ResourceIterable<Node> nodes = graphDb.getAllNodes();
+                        try ( ResourceIterator<Node> iterator = nodes.iterator() )
                         {
-                            if ( "value".equals( node.getProperty( CREATE_NODE_WITH_PROPERTY.name(), null ) ) )
+                            while ( iterator.hasNext() )
                             {
-                                node.setProperty( CREATE_NODE_WITH_PROPERTY.name(), "other" );
-                                break;
+                                Node node = iterator.next();
+                                if ( "value".equals( node.getProperty( CREATE_NODE_WITH_PROPERTY.name(), null ) ) )
+                                {
+                                    node.setProperty( CREATE_NODE_WITH_PROPERTY.name(), "other" );
+                                    break;
+                                }
                             }
                         }
                     }
                 },
-        LEGACY_INDEX_NODE( CREATE_NODE )
+        EXPLICIT_INDEX_NODE( CREATE_NODE )
                 {
                     @Override
                     void applyTx( GraphDatabaseService graphDb )
@@ -194,7 +223,7 @@ public class RebuildFromLogsTest
 
         private final Transaction[] dependencies;
 
-        private Transaction( Transaction... dependencies )
+        Transaction( Transaction... dependencies )
         {
             this.dependencies = dependencies;
         }
@@ -275,21 +304,22 @@ public class RebuildFromLogsTest
         }
     }
 
-    private final Transaction[] work;
-
     public RebuildFromLogsTest( WorkLog work )
     {
         this.work = work.transactions();
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Object[]> commands()
+    private class TestRebuildFromLogs extends RebuildFromLogs
     {
-        List<Object[]> commands = new ArrayList<>();
-        for ( WorkLog combination : WorkLog.combinations() )
+        TestRebuildFromLogs( FileSystemAbstraction fs )
         {
-            commands.add( new Object[]{combination} );
+            super( fs );
         }
-        return commands;
+
+        @Override
+        void checkConsistency( File target, PageCache pageCache ) throws Exception, InconsistentStoreException
+        {
+            throw new InconsistentStoreException( new ConsistencySummaryStatistics() );
+        }
     }
 }

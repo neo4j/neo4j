@@ -37,12 +37,15 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if(server != null) {server.stop();}
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 
     protected void startServer( boolean authEnabled ) throws IOException
     {
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
         server.start();
@@ -68,7 +71,7 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         return server.baseUri().resolve( "user/" + username + "/password" ).toString();
     }
 
-    protected String base64(String value)
+    protected String base64( String value )
     {
         return UTF8.decode( Base64.encode( value ) );
     }

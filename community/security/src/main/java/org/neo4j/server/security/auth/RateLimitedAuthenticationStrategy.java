@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.impl.security.User;
 
 public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
 {
@@ -35,12 +36,13 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     private class AuthenticationMetadata
     {
         private final AtomicInteger failedAuthAttempts = new AtomicInteger();
-        private long lastFailedAttemptTime = 0;
+        private long lastFailedAttemptTime;
 
         public boolean authenticationPermitted()
         {
-            return failedAuthAttempts.get() < maxFailedAttempts
-                    || clock.millis() >= ( lastFailedAttemptTime + FAILED_AUTH_COOLDOWN_PERIOD );
+            return maxFailedAttempts <= 0 || // amount of attempts is not limited
+                   failedAuthAttempts.get() < maxFailedAttempts || // less failed attempts than configured
+                   clock.millis() >= (lastFailedAttemptTime + FAILED_AUTH_COOLDOWN_PERIOD); // cool down period expired
         }
 
         public void authSuccess()
@@ -67,7 +69,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     }
 
     @Override
-    public AuthenticationResult authenticate( User user, String password)
+    public AuthenticationResult authenticate( User user, String password )
     {
         AuthenticationMetadata authMetadata = authMetadataFor( user.name() );
 
@@ -80,7 +82,8 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         {
             authMetadata.authSuccess();
             return AuthenticationResult.SUCCESS;
-        } else
+        }
+        else
         {
             authMetadata.authFailed();
             return AuthenticationResult.FAILURE;

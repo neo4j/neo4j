@@ -23,10 +23,12 @@ import java.util.Collections;
 
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
-public class NodeAutoIndexRepresentation extends IndexRepresentation {
+public class NodeAutoIndexRepresentation extends IndexRepresentation
+{
 
-    public NodeAutoIndexRepresentation() {
-        super("", Collections.EMPTY_MAP);
+    public NodeAutoIndexRepresentation()
+    {
+        super( "", Collections.EMPTY_MAP );
     }
 
     @Override
@@ -36,7 +38,8 @@ public class NodeAutoIndexRepresentation extends IndexRepresentation {
     }
 
     @Override
-    protected String propertyContainerType() {
+    protected String propertyContainerType()
+    {
         return null;
     }
 

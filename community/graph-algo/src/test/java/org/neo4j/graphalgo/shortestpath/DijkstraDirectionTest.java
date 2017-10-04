@@ -19,17 +19,17 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertEquals;
+import common.Neo4jAlgoTestCase;
+import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertEquals;
 
 /**
  * This set of tests is mainly made to test the "backwards" argument to the
@@ -47,28 +47,20 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
             (double) 0,
             graph.getNode( "s" ),
             graph.getNode( "e" ),
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                            Direction direction )
+                ( relationship, direction ) ->
                 {
                     assertEquals( Direction.OUTGOING, direction );
                     return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.OUTGOING, MyRelTypes.R1 );
         dijkstra.getCost();
         dijkstra = new Dijkstra<Double>( (double) 0, graph.getNode( "s" ),
-            graph.getNode( "e" ), new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                            Direction direction )
-                {
-                    assertEquals( Direction.INCOMING, direction );
-                    return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            graph.getNode( "e" ), ( relationship, direction ) ->
+        {
+            assertEquals( Direction.INCOMING, direction );
+            return 1.0;
+        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.INCOMING, MyRelTypes.R1 );
         dijkstra.getCost();
@@ -89,28 +81,20 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
             (double) 0,
             graph.getNode( "s" ),
             graph.getNode( "e" ),
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                            Direction direction )
+                ( relationship, direction ) ->
                 {
                     assertEquals( Direction.OUTGOING, direction );
                     return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.OUTGOING, MyRelTypes.R1 );
         dijkstra.getCost();
         dijkstra = new Dijkstra<Double>( (double) 0, graph.getNode( "s" ),
-            graph.getNode( "e" ), new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                            Direction direction )
-                {
-                    assertEquals( Direction.INCOMING, direction );
-                    return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            graph.getNode( "e" ), ( relationship, direction ) ->
+        {
+            assertEquals( Direction.INCOMING, direction );
+            return 1.0;
+        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.INCOMING, MyRelTypes.R1 );
         dijkstra.getCost();
@@ -121,8 +105,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
     {
         HashMap<Relationship, Direction> dirs;
 
-        public directionSavingCostEvaluator(
-                HashMap<Relationship, Direction> dirs )
+        directionSavingCostEvaluator( HashMap<Relationship,Direction> dirs )
         {
             super();
             this.dirs = dirs;

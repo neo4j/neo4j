@@ -34,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.NamedFunction;
@@ -51,6 +52,14 @@ public class RelationshipCountsTest
     public final DatabaseRule db = new ImpermanentDatabaseRule();
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
+    private Supplier<Statement> statementSupplier;
+
+    @Before
+    public void exposeGuts()
+    {
+        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class );
+    }
 
     @Test
     public void shouldReportNumberOfRelationshipsInAnEmptyGraph() throws Exception
@@ -102,7 +111,8 @@ public class RelationshipCountsTest
             node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
             tx.success();
         }
-        long before = numberOfRelationships(), during;
+        long before = numberOfRelationships();
+        long during;
         try ( Transaction tx = graphDb.beginTx() )
         {
             rel.delete();
@@ -268,6 +278,64 @@ public class RelationshipCountsTest
     }
 
     @Test
+    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodesWithRelationships() throws Exception
+    {
+        // given
+        int numberOfNodes = 2;
+        Node[] nodes = new Node[numberOfNodes];
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < numberOfNodes; i++ )
+            {
+                Node foo = db.createNode( label( "Foo" + i ) );
+                foo.addLabel( Label.label( "Common" ) );
+                Node bar = db.createNode( label( "Bar" + i ) );
+                foo.createRelationshipTo( bar, withName( "BAZ" + i ) );
+                nodes[i] = foo;
+            }
+
+            tx.success();
+        }
+
+        long[] beforeCommon = new long[numberOfNodes];
+        long[] before = new long[numberOfNodes];
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            beforeCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null  );
+            before[i] = numberOfRelationshipsMatching( label( "Foo" + i ), withName( "BAZ" + i ), null );
+        }
+
+        // when
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : nodes )
+            {
+                for ( Relationship relationship : node.getRelationships() )
+                {
+                    relationship.delete();
+                }
+                node.delete();
+            }
+
+            tx.success();
+        }
+        long[] afterCommon = new long[numberOfNodes];
+        long[] after = new long[numberOfNodes];
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            afterCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null  );
+            after[i] = numberOfRelationshipsMatching( label( "Foo" + i ), withName( "BAZ" + i ), null );
+        }
+
+        // then
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            assertEquals( beforeCommon[i] - 1, afterCommon[i] );
+            assertEquals( before[i] - 1, after[i] );
+        }
+    }
+
+    @Test
     public void shouldUpdateRelationshipWithLabelCountsWhenRemovingLabelAndDeletingRelationship() throws Exception
     {
         // given
@@ -327,53 +395,49 @@ public class RelationshipCountsTest
      */
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
-        ReadOperations read = statementSupplier.get().readOperations();
-        int startId, typeId, endId;
-        // start
-        if ( start == null )
+        try ( Statement statement = statementSupplier.get() )
         {
-            startId = ReadOperations.ANY_LABEL;
-        }
-        else
-        {
-            if ( ReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+            ReadOperations read = statement.readOperations();
+            int startId;
+            int typeId;
+            int endId;
+            // start
+            if ( start == null )
             {
-                return 0;
+                startId = ReadOperations.ANY_LABEL;
             }
-        }
-        // type
-        if ( type == null )
-        {
-            typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
-        }
-        else
-        {
-            if ( ReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+            else
             {
-                return 0;
+                if ( KeyReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+                {
+                    return 0;
+                }
             }
-        }
-        // end
-        if ( end == null )
-        {
-            endId = ReadOperations.ANY_LABEL;
-        }
-        else
-        {
-            if ( ReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+            // type
+            if ( type == null )
             {
-                return 0;
+                typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
             }
+            else
+            {
+                if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+                {
+                    return 0;
+                }
+            }
+            // end
+            if ( end == null )
+            {
+                endId = ReadOperations.ANY_LABEL;
+            }
+            else
+            {
+                if ( KeyReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+                {
+                    return 0;
+                }
+            }
+            return read.countsForRelationship( startId, typeId, endId );
         }
-        return read.countsForRelationship( startId, typeId, endId );
-    }
-
-    private Supplier<Statement> statementSupplier;
-
-    @Before
-    public void exposeGuts()
-    {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                              .resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

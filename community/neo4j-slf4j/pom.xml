@@ -3,20 +3,18 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <properties>
-    <short-name>neo4j-slf4j</short-name>
-    <bundle.namespace>org.neo4j.logging</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-slf4j</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>SLF4J Neo4j Binding</name>
@@ -49,6 +47,15 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -58,18 +65,15 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.7</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>annotations</artifactId>
     </dependency>
 
-
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
-      <version>1.7.7</version>
       <scope>test</scope>
     </dependency>
 

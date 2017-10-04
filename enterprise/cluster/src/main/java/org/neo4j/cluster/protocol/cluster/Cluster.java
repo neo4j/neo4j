@@ -30,10 +30,13 @@ import java.util.concurrent.Future;
  */
 public interface Cluster
 {
-    void create(String clusterName);
-    Future<ClusterConfiguration> join(String clusterName, URI... otherServerUrls);
+    void create( String clusterName );
+
+    Future<ClusterConfiguration> join( String clusterName, URI... otherServerUrls );
+
     void leave();
 
-    void addClusterListener( ClusterListener listener);
-    void removeClusterListener( ClusterListener listener);
+    void addClusterListener( ClusterListener listener );
+
+    void removeClusterListener( ClusterListener listener );
 }

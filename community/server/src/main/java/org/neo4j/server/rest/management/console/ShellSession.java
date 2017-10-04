@@ -24,9 +24,9 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
@@ -39,7 +39,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellSession implements ScriptSession
 {
-    private static volatile ShellServer fallbackServer = null;
+    private static volatile ShellServer fallbackServer;
 
     private final ShellClient client;
     private final CollectingOutput output;

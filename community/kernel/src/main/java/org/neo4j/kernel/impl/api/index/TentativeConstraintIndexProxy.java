@@ -24,15 +24,15 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -70,13 +70,13 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        switch( mode )
+        switch ( mode )
         {
             case ONLINE:
                 return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
                 {
                     @Override
-                    public void process( NodePropertyUpdate update )
+                    public void process( IndexEntryUpdate<?> update )
                             throws IOException, IndexEntryConflictException
                     {
                         try
@@ -137,14 +137,16 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public void validate() throws ConstraintVerificationFailedKernelException
+    public void validate() throws UniquePropertyValueValidationException
     {
         if ( !failures.isEmpty() )
         {
-            IndexDescriptor descriptor = getDescriptor();
-            throw new UniquenessConstraintVerificationFailedKernelException(
-                    new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ),
-                    new HashSet<>( failures ) );
+            LabelSchemaDescriptor descriptor = getDescriptor().schema();
+            throw new UniquePropertyValueValidationException(
+                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyId() ),
+                    ConstraintValidationException.Phase.VERIFICATION,
+                    new HashSet<>( failures )
+                );
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,20 +41,35 @@ import java.util.stream.Stream;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public final class Iterables
 {
-    @SuppressWarnings("unchecked")
+
+    @SuppressWarnings( "rawtypes" )
+    private static final ResourceIterable EMPTY_RESOURCE_ITERATOR = new EmptyResourceIterable<>();
+
+    private Iterables()
+    {
+    }
+
+    @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> empty()
     {
-        return EMPTY;
+        return Collections.emptyList();
+    }
+
+    public static <T> Iterable<T> emptyResourceIterable()
+    {
+        return (Iterable<T>) EMPTY_RESOURCE_ITERATOR;
     }
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
     {
-        return () -> {
+        return () ->
+        {
             final Iterator<T> iterator = iterable.iterator();
 
             return new Iterator<T>()
@@ -89,7 +105,8 @@ public final class Iterables
 
     public static <T> Iterable<T> unique( final Iterable<T> iterable )
     {
-        return () -> {
+        return () ->
+        {
             final Iterator<T> iterator = iterable.iterator();
 
             return new Iterator<T>()
@@ -136,18 +153,18 @@ public final class Iterables
         Iterator<? extends T> iterator = iterable.iterator();
         try
         {
-            while (iterator.hasNext())
+            while ( iterator.hasNext() )
             {
                 collection.add( iterator.next() );
             }
         }
         finally
         {
-            if (iterator instanceof AutoCloseable)
+            if ( iterator instanceof AutoCloseable )
             {
                 try
                 {
-                    ((AutoCloseable)iterator).close();
+                    ((AutoCloseable) iterator).close();
                 }
                 catch ( Exception e )
                 {
@@ -166,7 +183,8 @@ public final class Iterables
 
     public static <X> Iterable<X> skip( final int skip, final Iterable<X> iterable )
     {
-        return () -> {
+        return () ->
+        {
             Iterator<X> iterator = iterable.iterator();
 
             for ( int i = 0; i < skip; i++ )
@@ -177,7 +195,7 @@ public final class Iterables
                 }
                 else
                 {
-                    return Iterables.<X>empty().iterator();
+                    return Collections.emptyIterator();
                 }
             }
 
@@ -207,7 +225,8 @@ public final class Iterables
     @SafeVarargs
     public static <T> Iterable<T> mix( final Iterable<T>... iterables )
     {
-        return () -> {
+        return () ->
+        {
             final Iterable<Iterator<T>> iterators = asList( map( Iterable::iterator, Arrays.asList(iterables) ) );
 
             return new Iterator<T>()
@@ -270,21 +289,26 @@ public final class Iterables
         return new MapIterable<>( from, function );
     }
 
-    @SafeVarargs
-    @SuppressWarnings("unchecked")
-    public static <T, C extends T> Iterable<T> iterable( C... items )
+    public static <FROM, TO> Iterable<TO> flatMap( Function<? super FROM, ? extends Iterable<TO>> function, Iterable<FROM> from )
     {
-        return (Iterable<T>) Arrays.asList(items);
+        return new CombiningIterable<>( map(function, from) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SafeVarargs
+    @SuppressWarnings( "unchecked" )
+    public static <T, C extends T> Iterable<T> iterable( C... items )
+    {
+        return (Iterable<T>) Arrays.asList( items );
+    }
+
+    @SuppressWarnings( "unchecked" )
     public static <T, C> Iterable<T> cast( Iterable<C> iterable )
     {
         return (Iterable) iterable;
     }
 
     @SafeVarargs
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> concat( Iterable<? extends T>... iterables )
     {
         return concat( Arrays.asList( (Iterable<T>[]) iterables ) );
@@ -343,7 +367,8 @@ public final class Iterables
 
     public static <T, C extends T> Iterable<T> append( final C item, final Iterable<T> iterable )
     {
-        return () -> {
+        return () ->
+        {
             final Iterator<T> iterator = iterable.iterator();
 
             return new Iterator<T>()
@@ -391,7 +416,7 @@ public final class Iterables
         return asArray( Object.class, iterable );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> T[] asArray( Class<T> componentType, Iterable<T> iterable )
     {
         if ( iterable == null )
@@ -416,10 +441,10 @@ public final class Iterables
     {
         Iterator<?> it = values.iterator();
         StringBuilder sb = new StringBuilder();
-        while(it.hasNext())
+        while ( it.hasNext() )
         {
             sb.append( it.next().toString() );
-            if(it.hasNext())
+            if ( it.hasNext() )
             {
                 sb.append( separator );
             }
@@ -431,6 +456,10 @@ public final class Iterables
      * Returns the given iterable's first element or {@code null} if no
      * element found.
      *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the first element in the {@code iterable}, or {@code null} if no
@@ -438,7 +467,18 @@ public final class Iterables
      */
     public static <T> T firstOrNull( Iterable<T> iterable )
     {
-        return Iterators.firstOrNull( iterable.iterator() );
+        Iterator<T> iterator = iterable.iterator();
+        try
+        {
+            return Iterators.firstOrNull( iterator );
+        }
+        finally
+        {
+            if ( iterator instanceof Resource )
+            {
+                ((Resource) iterator).close();
+            }
+        }
     }
 
     /**
@@ -596,7 +636,18 @@ public final class Iterables
      */
     public static <T> long count( Iterable<T> iterable, Predicate<T> filter )
     {
-        return Iterators.count( iterable.iterator(), filter );
+        Iterator<T> iterator = iterable.iterator();
+        try
+        {
+            return Iterators.count( iterator, filter );
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator )
+            {
+                ((ResourceIterator) iterator).close();
+            }
+        }
     }
 
     /**
@@ -619,8 +670,9 @@ public final class Iterables
     public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
     {
         Map<T, U> map = new HashMap<>();
-        for (Pair<T, U> pair: pairs) {
-            map.put(pair.first(), pair.other());
+        for ( Pair<T,U> pair : pairs )
+        {
+            map.put( pair.first(), pair.other() );
         }
         return map;
     }
@@ -646,10 +698,15 @@ public final class Iterables
      */
     public static <T> Set<T> asUniqueSet( Iterable<T> iterable )
     {
-        return Iterators.addToCollectionUnique( iterable, new HashSet<T>() );
+        return Iterators.addToCollectionUnique( iterable, new HashSet<>() );
     }
 
     public static Iterable<Long> asIterable( final long... array )
+    {
+        return () -> Iterators.asIterator( array );
+    }
+
+    public static Iterable<Integer> asIterable( final int... array )
     {
         return () -> Iterators.asIterator( array );
     }
@@ -669,7 +726,7 @@ public final class Iterables
     {
         private final Iterable<I> iterable;
 
-        public FlattenIterable( Iterable<I> iterable )
+        FlattenIterable( Iterable<I> iterable )
         {
             this.iterable = iterable;
         }
@@ -686,7 +743,7 @@ public final class Iterables
             private final Iterator<I> iterator;
             private Iterator<? extends T> currentIterator;
 
-            public FlattenIterator( Iterator<I> iterator )
+            FlattenIterator( Iterator<I> iterator )
             {
                 this.iterator = iterator;
                 currentIterator = null;
@@ -708,8 +765,7 @@ public final class Iterables
                     }
                 }
 
-                while ( !currentIterator.hasNext() &&
-                        iterator.hasNext() )
+                while ( !currentIterator.hasNext() && iterator.hasNext() )
                 {
                     currentIterator = iterator.next().iterator();
                 }
@@ -887,32 +943,23 @@ public final class Iterables
         return Iterators.stream( iterable.iterator(), characteristics );
     }
 
-    private static Iterable EMPTY = new Iterable()
+    public static <T extends Enum<T>> List<String> enumNames( Class<T> cls )
     {
-        Iterator iterator = new Iterator()
+        List<String> names = new ArrayList<>();
+        EnumSet.allOf( cls ).forEach( item -> names.add( item.name() ) );
+        return names;
+    }
+
+    private static class EmptyResourceIterable<T> implements ResourceIterable<T>
+    {
+        private EmptyResourceIterable()
         {
-            @Override
-            public boolean hasNext()
-            {
-                return false;
-            }
-
-            @Override
-            public Object next()
-            {
-                throw new NoSuchElementException();
-            }
-
-            @Override
-            public void remove()
-            {
-            }
-        };
+        }
 
         @Override
-        public Iterator iterator()
+        public ResourceIterator<T> iterator()
         {
-            return iterator;
+            return Iterators.emptyResourceIterator();
         }
-    };
+    }
 }

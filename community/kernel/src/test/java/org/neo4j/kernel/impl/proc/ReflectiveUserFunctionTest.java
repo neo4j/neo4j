@@ -31,11 +31,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
@@ -65,7 +67,8 @@ public class ReflectiveUserFunctionTest
     public void setUp() throws Exception
     {
         components = new ComponentRegistry();
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT );
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
+                NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
     @Test
@@ -73,7 +76,7 @@ public class ReflectiveUserFunctionTest
     {
         // Given
         Log log = spy( Log.class );
-        components.register( Log.class, (ctx) -> log );
+        components.register( Log.class, ctx -> log );
         CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
 
         // When
@@ -245,11 +248,53 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
+    public void shouldLoadWhiteListedFunction() throws Throwable
+    {
+        // Given
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
+                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist,
+                "org.neo4j.kernel.impl.proc.listCoolPeople" ) ) );
+
+        CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
+
+        // Expect
+        Object out = method.apply( new BasicContext(), new Object[0] );
+        assertThat(out, equalTo(Arrays.asList("Bonnie", "Clyde")) );
+    }
+
+    @Test
+    public void shouldNotLoadNoneWhiteListedFunction() throws Throwable
+    {
+        // Given
+        Log log = spy(Log.class);
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "WrongName" ) ) );
+
+        List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
+        verify( log ).warn( "The function 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
+        assertThat( method.size(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
+    {
+        // Given
+        Log log = spy(Log.class);
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "" ) ) );
+
+        List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
+        verify( log ).warn( "The function 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
+        assertThat( method.size(), equalTo( 0 ) );
+    }
+
+    @Test
     public void shouldSupportFunctionDeprecation() throws Throwable
     {
         // Given
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, log, ProcedureAllowedConfig.DEFAULT );
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+                new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
 
         // When
         List<CallableUserFunction> funcs = procedureCompiler.compileFunction( FunctionWithDeprecation.class );
@@ -400,7 +445,7 @@ public class ReflectiveUserFunctionTest
 
     public static class FunctionWithOverriddenName
     {
-        @UserFunction("org.mystuff.thisisActuallyTheName")
+        @UserFunction( "org.mystuff.thisisActuallyTheName" )
         public Object somethingThatShouldntMatter()
         {
             return null;
@@ -410,7 +455,7 @@ public class ReflectiveUserFunctionTest
 
     public static class FunctionWithSingleName
     {
-        @UserFunction("singleName")
+        @UserFunction( "singleName" )
         public String blahDoesntMatterEither()
         {
             return null;
@@ -426,13 +471,13 @@ public class ReflectiveUserFunctionTest
         }
 
         @Deprecated
-        @UserFunction(deprecatedBy = "newFunc")
+        @UserFunction( deprecatedBy = "newFunc" )
         public String oldFunc()
         {
             return null;
         }
 
-        @UserFunction(deprecatedBy = "newFunc")
+        @UserFunction( deprecatedBy = "newFunc" )
         public Object badFunc()
         {
             return null;

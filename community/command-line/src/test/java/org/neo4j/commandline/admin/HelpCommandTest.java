@@ -51,6 +51,7 @@ public class HelpCommandTest
     }
 
     @Test
+    @SuppressWarnings( "unchecked" )
     public void printsUnknownCommandWhenUnknownCommandIsProvided() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
@@ -121,13 +122,15 @@ public class HelpCommandTest
                             "Manage your Neo4j instance.%n" +
                             "%n" +
                             "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "available commands:%n" +
+                            "%n" +
+                            "General%n" +
                             "    bar%n" +
                             "        null%n" +
                             "    baz%n" +
@@ -138,13 +141,6 @@ public class HelpCommandTest
                             "Use neo4j-admin help <command> for more details.%n" ),
                     baos.toString() );
         }
-    }
-
-    private AdminCommand.Provider mockCommand( String name )
-    {
-        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( name );
-        return commandProvider;
     }
 
     @Test
@@ -169,11 +165,26 @@ public class HelpCommandTest
 
             assertEquals( String.format( "usage: neo4j-admin foobar [--database=<name>]%n" +
                             "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
+                            "%n" +
                             "This is a description of the foobar command.%n" +
                             "%n" +
                             "options:%n" +
                             "  --database=<name>   Name of database. [default:graph.db]%n" ),
                     baos.toString() );
         }
+    }
+
+    private AdminCommand.Provider mockCommand( String name )
+    {
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
+        when( commandProvider.name() ).thenReturn( name );
+        when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
+        return commandProvider;
     }
 }

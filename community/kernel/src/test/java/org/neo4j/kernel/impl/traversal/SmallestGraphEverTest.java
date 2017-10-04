@@ -126,7 +126,7 @@ public class SmallestGraphEverTest extends TraversalTestBase
 
     private void execute( TraversalDescription traversal, Uniqueness uniqueness )
     {
-        try (Transaction transaction = beginTx())
+        try ( Transaction transaction = beginTx() )
         {
             Traverser traverser = traversal.uniqueness( uniqueness ).traverse( node( "1" ) );
             assertFalse( "empty traversal", Iterables.count( traverser ) == 0 );
@@ -136,7 +136,7 @@ public class SmallestGraphEverTest extends TraversalTestBase
     @Test
     public void testTraverseRelationshipsWithStartNodeNotIncluded() throws Exception
     {
-        try (Transaction transaction = beginTx())
+        try ( Transaction transaction = beginTx() )
         {
             TraversalDescription traversal = getGraphDb().traversalDescription().evaluator( excludeStartPosition() );
             assertEquals( 1, Iterables.count( traversal.traverse( node( "1" ) ).relationships() ) );

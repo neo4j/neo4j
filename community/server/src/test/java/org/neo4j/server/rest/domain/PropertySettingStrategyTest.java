@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.rest.domain;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -81,7 +81,7 @@ public class PropertySettingStrategyTest
         propSetter.setProperty( node, "name", "bob" );
 
         // Then
-        assertThat( (String) node.getProperty( "name" ), is("bob"));
+        assertThat( node.getProperty( "name" ), is("bob"));
     }
 
     @Test
@@ -103,9 +103,9 @@ public class PropertySettingStrategyTest
         propSetter.setProperties( node, props );
 
         // Then
-        assertThat( (String) node.getProperty( "name" ), is("bob"));
-        assertThat( (Integer) node.getProperty( "age" ), is(12));
-        assertThat( (String[]) node.getProperty( "anArray" ), is(new String[]{"hello","Iamanarray"}));
+        assertThat( node.getProperty( "name" ), is("bob"));
+        assertThat( node.getProperty( "age" ), is(12));
+        assertThat( node.getProperty( "anArray" ), is(new String[]{"hello","Iamanarray"}));
     }
 
     @Test
@@ -120,8 +120,8 @@ public class PropertySettingStrategyTest
         propSetter.setAllProperties( node, map( "name", "Steven", "color", 123 ) );
 
         // Then
-        assertThat( (String) node.getProperty( "name" ), is("Steven"));
-        assertThat( (Integer) node.getProperty( "color" ), is(123));
+        assertThat( node.getProperty( "name" ), is("Steven"));
+        assertThat( node.getProperty( "color" ), is(123));
         assertThat( node.hasProperty( "age" ), is(false));
     }
 
@@ -138,7 +138,7 @@ public class PropertySettingStrategyTest
         propSetter.setProperty( node, "arr", new ArrayList<Object>() );
 
         // Then
-        assertThat( (String[]) node.getProperty( "arr" ), is(new String[]{}));
+        assertThat( node.getProperty( "arr" ), is(new String[]{}));
     }
 
     @Test
@@ -156,11 +156,11 @@ public class PropertySettingStrategyTest
         propSetter.setProperties( node, props );
 
         // Then
-        assertThat( (String) node.getProperty( "name" ), is("bob"));
-        assertThat( (String[]) node.getProperty( "arr" ), is(new String[]{}));
+        assertThat( node.getProperty( "name" ), is("bob"));
+        assertThat( node.getProperty( "arr" ), is(new String[]{}));
     }
 
-    @Test(expected = PropertyValueException.class)
+    @Test( expected = PropertyValueException.class )
     public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingProperty() throws Exception
     {
         // Given
@@ -170,7 +170,7 @@ public class PropertySettingStrategyTest
         propSetter.setProperty( node, "arr", new ArrayList<Object>() );
     }
 
-    @Test(expected = PropertyValueException.class)
+    @Test( expected = PropertyValueException.class )
     public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingEmptyArray() throws Exception
     {
         // Given
@@ -192,7 +192,7 @@ public class PropertySettingStrategyTest
         propSetter.setProperty( node, "arr", new ArrayList<Object>() );
 
         // Then
-        assertThat( (String[]) node.getProperty( "arr" ), is(new String[]{}));
+        assertThat( node.getProperty( "arr" ), is(new String[]{}));
     }
 
     @Test
@@ -208,7 +208,7 @@ public class PropertySettingStrategyTest
 
         // Then
         assertThat( node.hasProperty( "name" ), is(false));
-        assertThat( (String[]) node.getProperty( "arr" ), is(new String[]{}));
+        assertThat( node.getProperty( "arr" ), is(new String[]{}));
     }
 
 }

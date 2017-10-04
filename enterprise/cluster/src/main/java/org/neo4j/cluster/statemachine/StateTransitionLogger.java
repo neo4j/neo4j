@@ -83,11 +83,11 @@ public class StateTransitionLogger
             Object payload = transition.getMessage().getPayload();
             if ( payload != null )
             {
-                if (payload instanceof Payload )
+                if ( payload instanceof Payload )
                 {
                     try
                     {
-                        payload = atomicBroadcastSerializer.receive( (Payload) payload);
+                        payload = atomicBroadcastSerializer.receive( (Payload) payload );
                     }
                     catch ( Throwable e )
                     {
@@ -100,7 +100,7 @@ public class StateTransitionLogger
 
             // Throttle
             String msg = line.toString();
-            if( msg.equals( lastLogMessage ) )
+            if ( msg.equals( lastLogMessage ) )
             {
                 return;
             }

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -137,10 +138,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * Instantiates a new record cursor capable of iterating over records in this store. A {@link RecordCursor}
      * gets created with one record and will use every time it reads records.
      *
-     * This method relates to {@link #placeRecordCursor(long, RecordCursor, RecordLoad)} just like
-     * {@link #newRecord()} relates to {@link #getRecord(long, AbstractBaseRecord, RecordLoad)} in that
-     * instantiation of object is separate from reading record data.
-     *
      * @param record instance to use when reading record data.
      * @return a new {@link RecordCursor} instance capable of reading records in this store.
      */
@@ -242,6 +239,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION;
 
+    void freeId( long id );
+
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
 
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
@@ -293,6 +292,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public long nextId()
         {
             return actual.nextId();
+        }
+
+        @Override
+        public IdRange nextIdBatch( int size )
+        {
+            return actual.nextIdBatch( size );
         }
 
         @Override
@@ -384,6 +389,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         {
             actual.scanAllRecords( visitor );
         }
+
+        @Override
+        public void freeId( long id )
+        {
+            actual.freeId( id );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -473,7 +484,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * an explicit choice when to create the record instances passed into it.
      * Also for mocking purposes it's less confusing and error prone having only a single method.
      */
-    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, RecordLoad mode )
+    static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, RecordLoad mode )
     {
         R record = store.newRecord();
         store.getRecord( id, record, mode );
@@ -485,7 +496,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * an explicit choice when to create the record instances passed into it.
      * Also for mocking purposes it's less confusing and error prone having only a single method.
      */
-    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
+    static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
     {
         return getRecord( store, id, RecordLoad.NORMAL );
     }

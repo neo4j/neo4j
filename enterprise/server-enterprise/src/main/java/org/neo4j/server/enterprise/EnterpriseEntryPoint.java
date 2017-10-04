@@ -27,6 +27,10 @@ public class EnterpriseEntryPoint
 {
     private static Bootstrapper bootstrapper;
 
+    private EnterpriseEntryPoint()
+    {
+    }
+
     public static void main( String[] args )
     {
         int status = ServerBootstrapper.start( new EnterpriseBootstrapper(), args );
@@ -42,7 +46,7 @@ public class EnterpriseEntryPoint
         System.exit( ServerBootstrapper.start( bootstrapper, args ) );
     }
 
-    public static void stop( @SuppressWarnings("UnusedParameters") String[] args )
+    public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
     {
         if ( bootstrapper != null )
         {

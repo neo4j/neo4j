@@ -57,11 +57,11 @@ public class SchemaLoggingIT
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
         logProvider.assertAtLeastOnce(
                 match.info( "Index population started: [%s]", ":User(name) [provider: {key=in-memory-index, version=1.0}]" ),
-                match.info( "Index population completed. Index is now online: [%s]", ":User(name) [provider: {key=in-memory-index, version=1.0}]" )
-        );
+                match.info( "Index population completed. Index is now online: [%s]",
+                        ":User(name) [provider: {key=in-memory-index, version=1.0}]" ) );
     }
 
-    private void createIndex( @SuppressWarnings("deprecation") GraphDatabaseAPI db, String labelName, String property )
+    private void createIndex( GraphDatabaseAPI db, String labelName, String property )
     {
         try ( Transaction tx = db.beginTx() )
         {

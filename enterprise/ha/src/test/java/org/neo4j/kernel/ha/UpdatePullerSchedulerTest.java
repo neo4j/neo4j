@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 

@@ -19,9 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.validators.AllowedTypesValidator;
-
 import java.util.function.Predicate;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
@@ -29,12 +26,15 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.lang.model.util.Types;
 
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.validators.AllowedTypesValidator;
+
 class RecordFieldTypeVisitor extends SimpleTypeVisitor8<Boolean,Void>
 {
 
     private final Predicate<TypeMirror> allowedTypesValidator;
 
-    public RecordFieldTypeVisitor( Types typeUtils, TypeMirrorUtils typeMirrors )
+    RecordFieldTypeVisitor( Types typeUtils, TypeMirrorUtils typeMirrors )
     {
         allowedTypesValidator = new AllowedTypesValidator( typeMirrors, typeUtils );
     }

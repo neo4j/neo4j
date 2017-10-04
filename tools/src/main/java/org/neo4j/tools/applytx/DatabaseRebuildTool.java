@@ -34,11 +34,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
@@ -167,12 +167,12 @@ public class DatabaseRebuildTool
         private final StoreAccess access;
         private final File storeDir;
 
-        public Store( GraphDatabaseBuilder dbBuilder )
+        Store( GraphDatabaseBuilder dbBuilder )
         {
             this.db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
             this.access = new StoreAccess( db.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
-            this.storeDir = new File( db.getStoreDir() );
+            this.storeDir = db.getStoreDir();
         }
 
         public void shutdown()
@@ -208,7 +208,7 @@ public class DatabaseRebuildTool
                     Result result = new ConsistencyCheckService().runFullConsistencyCheck( storeDir,
                             Config.defaults(), ProgressMonitorFactory.textual( out ),
                             FormattedLogProvider.toOutputStream( System.out ), false );
-                    out.println( (result.isSuccessful() ? "consistent" : "INCONSISTENT") );
+                    out.println( result.isSuccessful() ? "consistent" : "INCONSISTENT" );
                 }
                 finally
                 {

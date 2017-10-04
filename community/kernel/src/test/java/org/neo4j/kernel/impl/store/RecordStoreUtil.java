@@ -42,14 +42,15 @@ public class RecordStoreUtil
         @Override
         public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
         {
-            if ( ((Number)invocation.getArguments()[0]).longValue() == 0L && invocation.getArguments()[1] == null &&
-                    invocation.getArguments()[2] == null )
+            if ( ((Number) invocation.getArgument( 0 )).longValue() == 0L &&
+                    invocation.getArgument( 1 ) == null &&
+                    invocation.getArgument( 2 ) == null )
             {
                 return null;
             }
 
-            NodeRecord record = (NodeRecord) invocation.getArguments()[1];
-            record.setId( ((Number)invocation.getArguments()[0]).longValue() );
+            NodeRecord record = invocation.getArgument( 1 );
+            record.setId( ((Number) invocation.getArgument( 0 )).longValue() );
             record.setInUse( true );
             record.setDense( dense );
             record.setNextRel( nextRel );

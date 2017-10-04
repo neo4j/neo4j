@@ -88,4 +88,10 @@ public final class IdValidator
             throw new IdCapacityExceededException( id, maxId );
         }
     }
+
+    public static boolean hasReservedIdInRange( long startIdInclusive, long endIdExclusive )
+    {
+        return startIdInclusive <= IdGeneratorImpl.INTEGER_MINUS_ONE &&
+                endIdExclusive > IdGeneratorImpl.INTEGER_MINUS_ONE;
+    }
 }

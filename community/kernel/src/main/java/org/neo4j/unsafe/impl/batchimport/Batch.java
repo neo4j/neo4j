@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
@@ -39,15 +39,12 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
 
     public final INPUT[] input;
     public RECORD[] records;
-    public int[] propertyBlocksLengths;
-    // This is a special succer. All property blocks for ALL records in this batch sits in this
-    // single array. The number of property blocks for a given record sits in propertyBlocksLengths
-    // using the same index as the record. So it's a collective size suitable for complete looping
-    // over the batch.
-    public PropertyBlock[] propertyBlocks;
-    // Used by relationship staged to query idMapper and store ids here
+
+    public PropertyRecord[][] propertyRecords;
+    public int numberOfProperties;
+
+    // Used by relationship stages to query idMapper and store ids here
     public long[] ids;
-    public boolean parallelizableWithPrevious;
     public long firstRecordId;
     public long[][] labels;
 

@@ -51,9 +51,9 @@ public class StageExecutionTest
 
         // THEN
         Pair<Step<?>,Float> fastest = ordered.next();
-        assertEquals( 1f/2f, fastest.other().floatValue(), 0f );
+        assertEquals( 1f / 2f, fastest.other().floatValue(), 0f );
         Pair<Step<?>,Float> faster = ordered.next();
-        assertEquals( 1f/3f, faster.other().floatValue(), 0f );
+        assertEquals( 1f / 3f, faster.other().floatValue(), 0f );
         Pair<Step<?>,Float> fast = ordered.next();
         assertEquals( 1f, fast.other().floatValue(), 0f );
         assertFalse( ordered.hasNext() );

@@ -21,17 +21,14 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwapperTest
 {
-    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
     @Override
-    public void tearDown()
+    protected boolean isRootAccessible()
     {
-        // Do nothing
+        return false;
     }
 
     @Override
@@ -43,6 +40,6 @@ public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwa
     @Override
     protected FileSystemAbstraction getFs()
     {
-        return fs;
+        return  getRealFileSystem();
     }
 }

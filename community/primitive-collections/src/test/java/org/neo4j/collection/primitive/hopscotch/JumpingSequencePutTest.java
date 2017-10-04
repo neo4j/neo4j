@@ -19,9 +19,10 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Test;
+
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Test;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 
@@ -54,7 +55,7 @@ public class JumpingSequencePutTest
         private static final int sizePerJump = 100;
         private final AtomicLong nextId = new AtomicLong();
         private int leftToNextJump = sizePerJump / 2;
-        private long highBits = 0;
+        private long highBits;
 
         public long next()
         {

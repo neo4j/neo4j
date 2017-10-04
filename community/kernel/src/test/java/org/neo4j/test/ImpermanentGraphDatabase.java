@@ -28,15 +28,18 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -44,7 +47,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
-import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -55,7 +57,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * If enabled will track unclosed database instances in tests. The place of instantiation
      * will get printed in an exception with the message "Unclosed database instance".
      */
-    private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
+    private static final boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
 
     protected static final File PATH = new File( "target/test-data/impermanent-db" );
@@ -66,7 +68,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase()
     {
-        this( new HashMap<String, String>() );
+        this( new HashMap<>() );
     }
 
     /*
@@ -80,7 +82,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     public ImpermanentGraphDatabase( File storeDir )
     {
-        this( storeDir, new HashMap<String, String>() );
+        this( storeDir, new HashMap<>() );
     }
 
     /**
@@ -99,8 +101,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( File storeDir, Map<String, String> params )
     {
         this( storeDir, params,
-                Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
-                        KernelExtensionFactory.class ) ) );
+                Iterables.cast( Service.load( KernelExtensionFactory.class ) ) );
     }
 
     /**
@@ -131,7 +132,13 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         super( storeDir, params, dependencies );
+        trackUnclosedUse( storeDir );
+    }
 
+    public ImpermanentGraphDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        super( storeDir, config, dependencies );
         trackUnclosedUse( storeDir );
     }
 
@@ -141,11 +148,13 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                    GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade );
+                return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies,
+                        graphDatabaseFacade );
             }
-        }.initFacade( storeDir, new HashMap<>( params ), dependencies, this );
+        }.initFacade( storeDir, params, dependencies, this );
     }
 
     private void trackUnclosedUse( File storeDir )
@@ -166,36 +175,32 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
         {
-            startedButNotYetClosed.remove( new File( getStoreDir() ) );
+            startedButNotYetClosed.remove( getStoreDir() );
         }
 
         super.shutdown();
     }
 
-    private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
+    private static Config withForcedInMemoryConfiguration( Config config )
     {
-        Map<String, String> result = new HashMap<>( params );
-        // To signal to index provides that we should be in-memory
-        result.put( ephemeral.name(), TRUE );
-        if ( !result.containsKey( pagecache_memory.name() ) )
-        {
-            result.put( pagecache_memory.name(), "8M" );
-        }
-        return result;
-    }
-
-    public void cleanContent()
-    {
-        cleanDatabaseContent( this );
+        config.augment( ephemeral, TRUE );
+        config.augmentDefaults( pagecache_memory, "8M" );
+        return config;
     }
 
     protected static class ImpermanentPlatformModule extends PlatformModule
     {
-        public ImpermanentPlatformModule( File storeDir, Map<String, String> params, DatabaseInfo databaseInfo,
-                                          GraphDatabaseFacadeFactory.Dependencies dependencies,
+        public ImpermanentPlatformModule( File storeDir, Config config, DatabaseInfo databaseInfo,
+                                          Dependencies dependencies,
                                           GraphDatabaseFacade graphDatabaseFacade )
         {
-            super( storeDir, withForcedInMemoryConfiguration(params), databaseInfo, dependencies, graphDatabaseFacade );
+            super( storeDir, withForcedInMemoryConfiguration(config), databaseInfo, dependencies, graphDatabaseFacade );
+        }
+
+        @Override
+        protected StoreLocker createStoreLocker()
+        {
+            return new StoreLocker( fileSystem, storeDir );
         }
 
         @Override

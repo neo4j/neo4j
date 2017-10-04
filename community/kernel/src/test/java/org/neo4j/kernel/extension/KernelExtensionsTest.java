@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -77,7 +77,7 @@ public class KernelExtensionsTest
 
     private static class TestingExtensionFactory extends KernelExtensionFactory<TestingDependencies>
     {
-        public TestingExtensionFactory()
+        TestingExtensionFactory()
         {
             super( "testing" );
         }
@@ -91,7 +91,7 @@ public class KernelExtensionsTest
 
     private static class TestingExtension extends LifecycleAdapter
     {
-        public TestingExtension( JobScheduler jobScheduler )
+        TestingExtension( JobScheduler jobScheduler )
         {
             // We don't need it right now
         }

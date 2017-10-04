@@ -131,7 +131,7 @@ public enum AtomicBroadcastState
                         case broadcast:
                         case failed:
                         {
-                            if( context.hasQuorum() )
+                            if ( context.hasQuorum() )
                             {
                                 org.neo4j.cluster.InstanceId coordinator = context.getCoordinator();
                                 if ( coordinator != null )
@@ -179,7 +179,7 @@ public enum AtomicBroadcastState
                             }
                             else
                             {
-                                context.receive( message.<Payload>getPayload() );
+                                context.receive( message.getPayload() );
                             }
 
                             break;

@@ -40,7 +40,8 @@ public final class DatabaseFunctions
 
     public static Function<Node,Node> addLabel( Label label )
     {
-        return node -> {
+        return node ->
+        {
             node.addLabel( label );
             return node;
         };
@@ -48,7 +49,8 @@ public final class DatabaseFunctions
 
     public static Function<Node,Node> setProperty( String propertyKey, Object value )
     {
-        return node -> {
+        return node ->
+        {
             node.setProperty( propertyKey, value );
             return node;
         };
@@ -56,7 +58,8 @@ public final class DatabaseFunctions
 
     public static Function<GraphDatabaseService,Void> index( Label label, String propertyKey )
     {
-        return graphDb -> {
+        return graphDb ->
+        {
             graphDb.schema().indexFor( label ).on( propertyKey ).create();
             return null;
         };
@@ -64,7 +67,8 @@ public final class DatabaseFunctions
 
     public static Function<GraphDatabaseService,Void> uniquenessConstraint( Label label, String propertyKey )
     {
-        return graphDb -> {
+        return graphDb ->
+        {
             graphDb.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
             return null;
         };
@@ -72,7 +76,8 @@ public final class DatabaseFunctions
 
     public static Function<GraphDatabaseService,Void> awaitIndexesOnline( long timeout, TimeUnit unit )
     {
-        return graphDb -> {
+        return graphDb ->
+        {
             graphDb.schema().awaitIndexesOnline( timeout, unit );
             return null;
         };

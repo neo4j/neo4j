@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.lang.reflect.Array;
 import java.util.Base64;
 
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
+import org.neo4j.values.storable.Values;
 
 public final class ArrayEncoder
 {
@@ -33,37 +35,147 @@ public final class ArrayEncoder
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static String encode( Object array )
+    public static String encode( Value array )
     {
-        if ( !array.getClass().isArray() )
+        if ( !Values.isArrayValue( array ) )
         {
             throw new IllegalArgumentException( "Only works with arrays" );
         }
 
-        StringBuilder builder = new StringBuilder();
-        int length = Array.getLength( array );
-        String type = "";
-        for ( int i = 0; i < length; i++ )
+        ValueEncoder encoder = new ValueEncoder();
+        array.writeTo( encoder );
+        return encoder.result();
+    }
+
+    static class ValueEncoder implements ValueWriter<RuntimeException>
+    {
+        StringBuilder builder;
+
+        ValueEncoder()
         {
-            Object o = Array.get( array, i );
-            if ( o instanceof Number )
-            {
-                type = "D";
-                builder.append( ((Number) o).doubleValue() );
-            }
-            else if ( o instanceof Boolean )
-            {
-                type = "Z";
-                builder.append( o );
-            }
-            else
-            {
-                type = "L";
-                String str = o.toString();
-                builder.append( base64Encoder.encodeToString( UTF8.encode( str ) ) );
-            }
-            builder.append( "|" );
+            builder = new StringBuilder();
         }
-        return type + builder.toString();
+
+        public String result()
+        {
+            return builder.toString();
+        }
+
+        @Override
+        public void writeNull()
+        {
+        }
+
+        @Override
+        public void writeBoolean( boolean value )
+        {
+            builder.append( value );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeInteger( byte value )
+        {
+            builder.append( (double)value );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeInteger( short value )
+        {
+            builder.append( (double)value );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeInteger( int value )
+        {
+            builder.append( (double)value );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeInteger( long value )
+        {
+            builder.append( (double)value );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeFloatingPoint( float value )
+        {
+            builder.append( (double)value );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeFloatingPoint( double value )
+        {
+            builder.append( value );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeString( String value )
+        {
+            builder.append( base64Encoder.encodeToString( UTF8.encode( value ) ) );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeString( char value )
+        {
+            builder.append( base64Encoder.encodeToString( UTF8.encode( Character.toString( value ) ) ) );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeString( char[] value, int offset, int length )
+        {
+            builder.append( value, offset, length );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void beginArray( int size, ArrayType arrayType )
+        {
+            if ( size > 0 )
+            {
+                builder.append( typeChar( arrayType ) );
+            }
+        }
+
+        @Override
+        public void endArray()
+        {
+        }
+
+        @Override
+        public void writeByteArray( byte[] value )
+        {
+            builder.append( 'D' );
+            for ( byte b : value )
+            {
+                builder.append( (double)b );
+                builder.append( '|' );
+            }
+        }
+
+        private char typeChar( ArrayType arrayType )
+        {
+            switch ( arrayType )
+            {
+            case BOOLEAN: return 'Z';
+            case BYTE: return 'D';
+            case SHORT: return 'D';
+            case INT: return 'D';
+            case LONG: return 'D';
+            case FLOAT: return 'D';
+            case DOUBLE: return 'D';
+            case CHAR: return 'L';
+            case STRING: return 'L';
+            default: throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
+            }
+        }
     }
 }

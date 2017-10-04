@@ -47,7 +47,7 @@ public class BiggerThanLogTxIT
 
     protected ClusterManager.ManagedCluster cluster;
 
-    private TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
+    private final TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
 
     @Before
     public void setup() throws Exception
@@ -137,17 +137,12 @@ public class BiggerThanLogTxIT
                     }
 
                     long count = nodeCount( db );
-                    if (expectedNodeCount == count)
+                    if ( expectedNodeCount == count )
+                    {
                         break;
+                    }
 
-                    try
-                    {
-                        cluster.sync(  );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
+                    cluster.sync(  );
                 }
             }
 
@@ -157,7 +152,8 @@ public class BiggerThanLogTxIT
 
     private int commitLargeTx( final GraphDatabaseService db )
     {
-        return template.with( db ).execute( transaction -> {
+        return template.with( db ).execute( transaction ->
+        {
             // We're not actually asserting that this transaction produces log data
             // bigger than the threshold.
             long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );

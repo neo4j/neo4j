@@ -28,7 +28,6 @@ import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
 import static javax.swing.SwingUtilities.invokeLater;
-
 import static org.neo4j.desktop.ui.Components.alert;
 import static org.neo4j.desktop.ui.DatabaseStatus.STARTED;
 import static org.neo4j.desktop.ui.DatabaseStatus.STARTING;
@@ -40,7 +39,7 @@ class StartDatabaseActionListener implements ActionListener
     private final DesktopModel model;
     private final DatabaseActions databaseActions;
 
-    public StartDatabaseActionListener( MainWindow mainWindow, DesktopModel model, DatabaseActions databaseActions )
+    StartDatabaseActionListener( MainWindow mainWindow, DesktopModel model, DatabaseActions databaseActions )
     {
         this.mainWindow = mainWindow;
         this.model = model;

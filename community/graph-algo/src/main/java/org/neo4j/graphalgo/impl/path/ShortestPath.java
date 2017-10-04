@@ -43,11 +43,13 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.NestingIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.NestingResourceIterator;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -72,7 +74,8 @@ public class ShortestPath implements PathFinder<Path>
     private ShortestPathPredicate predicate;
     private DataMonitor dataMonitor;
 
-    public interface ShortestPathPredicate {
+    public interface ShortestPathPredicate
+    {
         boolean test( Path path );
     }
 
@@ -148,19 +151,19 @@ public class ShortestPath implements PathFinder<Path>
         MutableInt sharedFrozenDepth = new MutableInt( NULL ); // ShortestPathLengthSoFar
         MutableBoolean sharedStop = new MutableBoolean();
         MutableInt sharedCurrentDepth = new MutableInt( 0 );
-        final DirectionData startData =
-                new DirectionData( start, sharedVisitedRels, sharedFrozenDepth, sharedStop, sharedCurrentDepth,
-                        expander );
-        final DirectionData endData =
-                new DirectionData( end, sharedVisitedRels, sharedFrozenDepth, sharedStop, sharedCurrentDepth,
-                        expander.reverse() );
-        while ( startData.hasNext() || endData.hasNext() )
+        try ( DirectionData startData = new DirectionData( start, sharedVisitedRels,
+                sharedFrozenDepth, sharedStop, sharedCurrentDepth, expander );
+              DirectionData endData = new DirectionData( end, sharedVisitedRels, sharedFrozenDepth,
+                      sharedStop, sharedCurrentDepth, expander.reverse() ) )
         {
-            goOneStep( startData, endData, hits, startData, stopAsap );
-            goOneStep( endData, startData, hits, startData, stopAsap );
+            while ( startData.hasNext() || endData.hasNext() )
+            {
+                goOneStep( startData, endData, hits, startData, stopAsap );
+                goOneStep( endData, startData, hits, startData, stopAsap );
+            }
+            Collection<Hit> least = hits.least();
+            return least != null ? filterPaths( hitsToPaths( least, start, end, stopAsap, maxResultCount ) ) : Collections.emptyList();
         }
-        Collection<Hit> least = hits.least();
-        return least != null ? filterPaths(hitsToPaths( least, start, end, stopAsap )) : Collections.<Path> emptyList();
     }
 
     @Override
@@ -250,7 +253,9 @@ public class ShortestPath implements PathFinder<Path>
                         // to see if it finds a shorter path. (i.e. stop this side and freeze the depth).
                         // but only if the other side has not stopped, otherwise we might miss shorter paths
                         if ( otherSide.stop )
-                        { return; }
+                        {
+                            return;
+                        }
                         directionData.stop = true;
                     }
                 }
@@ -301,12 +306,12 @@ public class ShortestPath implements PathFinder<Path>
     }
 
     // Two long-lived instances
-    private class DirectionData extends PrefetchingIterator<Node>
+    private class DirectionData extends PrefetchingResourceIterator<Node>
     {
         private boolean finishCurrentLayerThenStop;
         private final Node startNode;
         private int currentDepth;
-        private Iterator<Relationship> nextRelationships;
+        private ResourceIterator<Relationship> nextRelationships;
         private final Collection<Node> nextNodes = new ArrayList<>();
         private final Map<Node,LevelData> visitedNodes = new HashMap<>();
         private final Collection<Long> sharedVisitedRels;
@@ -336,7 +341,7 @@ public class ShortestPath implements PathFinder<Path>
             }
             else
             {
-                this.nextRelationships = Collections.<Relationship> emptyList().iterator();
+                this.nextRelationships = Iterators.emptyResourceIterator();
             }
         }
 
@@ -345,17 +350,32 @@ public class ShortestPath implements PathFinder<Path>
             Collection<Node> nodesToIterate = new ArrayList<>( this.nextNodes );
             this.nextNodes.clear();
             this.lastPath.setLength( currentDepth );
-            this.nextRelationships = new NestingIterator<Relationship,Node>( nodesToIterate.iterator() )
+            closeRelationshipsIterator();
+            this.nextRelationships = new NestingResourceIterator<Relationship,Node>( nodesToIterate.iterator() )
             {
                 @Override
-                protected Iterator<Relationship> createNestedIterator( Node node )
+                protected ResourceIterator<Relationship> createNestedIterator( Node node )
                 {
                     lastPath.setEndNode( node );
-                    return expander.expand( lastPath, BranchState.NO_STATE ).iterator();
+                    return Iterators.asResourceIterator( expander.expand( lastPath, BranchState.NO_STATE ).iterator() );
                 }
             };
             this.currentDepth++;
             this.sharedCurrentDepth.increment();
+        }
+
+        private void closeRelationshipsIterator()
+        {
+            if ( this.nextRelationships != null )
+            {
+                this.nextRelationships.close();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            closeRelationshipsIterator();
         }
 
         @Override
@@ -548,12 +568,7 @@ public class ShortestPath implements PathFinder<Path>
 
         int add( Hit hit, int atDepth )
         {
-            Collection<Hit> depthHits = hits.get( atDepth );
-            if ( depthHits == null )
-            {
-                depthHits = new HashSet<>();
-                hits.put( atDepth, depthHits );
-            }
+            Collection<Hit> depthHits = hits.computeIfAbsent( atDepth, k -> new HashSet<>() );
             if ( depthHits.add( hit ) )
             {
                 totalHitCount++;
@@ -586,7 +601,7 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
-    private static Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end, boolean stopAsap )
+    private static Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end, boolean stopAsap, int maxResultCount )
     {
         LinkedHashMap<String,Path> paths = new LinkedHashMap<>();
         for ( Hit hit : depthHits )
@@ -594,6 +609,10 @@ public class ShortestPath implements PathFinder<Path>
             for ( Path path : hitToPaths( hit, start, end, stopAsap ) )
             {
                 paths.put( path.toString(), path );
+                if ( paths.size() >= maxResultCount )
+                {
+                    break;
+                }
             }
         }
         return paths.values();
@@ -634,7 +653,9 @@ public class ShortestPath implements PathFinder<Path>
             set.add( new PathData( connectingNode, new LinkedList<>( Arrays.asList( graphDb
                     .getRelationshipById( rel ) ) ) ) );
             if ( stopAsap )
+            {
                 break;
+            }
         }
         for ( int i = 0; i < levelData.depth - 1; i++ )
         {
@@ -657,7 +678,9 @@ public class ShortestPath implements PathFinder<Path>
                     rels.addFirst( graphDb.getRelationshipById( rel ) );
                     nextSet.add( new PathData( otherNode, rels ) );
                     if ( stopAsap )
+                    {
                         break;
+                    }
                 }
             }
             set = nextSet;

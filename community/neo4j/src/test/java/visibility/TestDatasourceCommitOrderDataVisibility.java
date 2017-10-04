@@ -19,15 +19,17 @@
  */
 package visibility;
 
-import java.util.Collection;
-import java.util.HashSet;
-
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.HashSet;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.core.Is.is;
@@ -49,32 +51,38 @@ public class TestDatasourceCommitOrderDataVisibility
         graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
+    @After
+    public void tearDown()
+    {
+        graphDatabaseService.shutdown();
+    }
+
     @Test
     public void shouldNotMakeIndexWritesVisibleUntilCommit() throws Exception
     {
         Node commonNode;
-        try(Transaction tx = graphDatabaseService.beginTx())
+        try ( Transaction tx = graphDatabaseService.beginTx() )
         {
             commonNode = graphDatabaseService.createNode();
             tx.success();
         }
 
-        try(Transaction transaction = graphDatabaseService.beginTx())
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             // index write first so that that datastore is added first
             graphDatabaseService.index().forNodes( INDEX_NAME ).add( commonNode, INDEX_KEY, INDEX_VALUE );
             commonNode.setProperty( PROPERTY_NAME, PROPERTY_VALUE );
 
             assertNodeIsNotIndexedOutsideThisTransaction();
-            assertNodeIsUnchangedOutsideThisTransaction(commonNode);
+            assertNodeIsUnchangedOutsideThisTransaction( commonNode );
 
             transaction.success();
 
             assertNodeIsNotIndexedOutsideThisTransaction();
-            assertNodeIsUnchangedOutsideThisTransaction(commonNode);
+            assertNodeIsUnchangedOutsideThisTransaction( commonNode );
         }
 
-        assertNodeIsIndexed(commonNode);
+        assertNodeIsIndexed( commonNode );
         assertNodeHasBeenUpdated( commonNode );
     }
 
@@ -82,20 +90,17 @@ public class TestDatasourceCommitOrderDataVisibility
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx();
+                  IndexHits<Node> indexHits = graphDatabaseService.index()
+                          .forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ); )
             {
-                try(Transaction ignored = graphDatabaseService.beginTx())
-                {
-                    assertThat( graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY,
-                            INDEX_VALUE ).size(), is( 0 ) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                assertThat( indexHits.size(), is( 0 ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();
@@ -111,19 +116,15 @@ public class TestDatasourceCommitOrderDataVisibility
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx() )
             {
-                try(Transaction ignored = graphDatabaseService.beginTx())
-                {
-                    assertThat( commonNode.hasProperty( PROPERTY_NAME ), is( false ) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                assertThat( commonNode.hasProperty( PROPERTY_NAME ), is( false ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();
@@ -135,25 +136,21 @@ public class TestDatasourceCommitOrderDataVisibility
         }
     }
 
-    private void assertNodeIsIndexed(final Node commonNode) throws Exception
+    private void assertNodeIsIndexed( final Node commonNode ) throws Exception
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx() )
             {
-                try(Transaction ignored = graphDatabaseService.beginTx())
-                {
-                    Node node = graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY,
-                            INDEX_VALUE ).getSingle();
-                    assertThat( node, is( commonNode) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                Node node = graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE )
+                        .getSingle();
+                assertThat( node, is( commonNode ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();
@@ -169,20 +166,15 @@ public class TestDatasourceCommitOrderDataVisibility
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx() )
             {
-                try(Transaction ignored = graphDatabaseService.beginTx())
-                {
-                    assertThat( (Integer) commonNode.getProperty( PROPERTY_NAME ),
-                            is( PROPERTY_VALUE ) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                assertThat( commonNode.getProperty( PROPERTY_NAME ), is( PROPERTY_VALUE ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();

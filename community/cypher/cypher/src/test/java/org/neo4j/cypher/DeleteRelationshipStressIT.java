@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +44,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 public class DeleteRelationshipStressIT
 {
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
+    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
     @Rule
     public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
@@ -60,7 +62,7 @@ public class DeleteRelationshipStressIT
                 {
                     Node node = db.createNode( label( "L" ) );
 
-                    if (prev != null)
+                    if ( prev != null )
                     {
                         Relationship rel = prev.createRelationshipTo( node, DynamicRelationshipType.withName( "T" ) );
                         rel.setProperty( "prop", i + j );
@@ -72,7 +74,11 @@ public class DeleteRelationshipStressIT
         }
     }
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
+    @After
+    public void tearDown()
+    {
+        executorService.shutdown();
+    }
 
     @Test
     public void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
@@ -104,7 +110,8 @@ public class DeleteRelationshipStressIT
     public void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
     {
         // Given
-        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return exists(r.prop)" );
+        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
+                "OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return exists(r.prop)" );
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -116,7 +123,8 @@ public class DeleteRelationshipStressIT
     public void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
     {
         // Given
-        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() REMOVE r.prop" );
+        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
+                "OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() REMOVE r.prop" );
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -128,7 +136,8 @@ public class DeleteRelationshipStressIT
     public void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
     {
         // Given
-        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() SET r.foo = 'bar'" );
+        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
+                "OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() SET r.foo = 'bar'" );
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -138,22 +147,17 @@ public class DeleteRelationshipStressIT
 
     private void executeInThread( final String query )
     {
-        executorService.execute( new Runnable()
+        executorService.execute( () ->
         {
-            @Override
-            public void run()
+            Result execute = db.execute( query );
+            try
             {
-                Result execute = db.execute( query );
-                try
-                {
-                    //resultAsString is good test case since it serializes labels, types, properties etc
-                    execute.resultAsString();
-                }
-                catch ( Exception e )
-                {
-                    e.printStackTrace();
-                    hasFailed.set( true );
-                }
+                //resultAsString is good test case since it serializes labels, types, properties etc
+                execute.resultAsString();
+            }
+            catch ( Exception e )
+            {
+                hasFailed.set( true );
             }
         } );
     }

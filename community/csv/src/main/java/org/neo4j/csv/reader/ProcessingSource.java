@@ -43,6 +43,7 @@ public class ProcessingSource implements Closeable
     private final int chunkSize;
     private char[] backBuffer; // grows on demand
     private int backBufferCursor;
+    private volatile long position;
 
     // Buffer reuse. Each item starts out as UNALLOCATED, transitions into IN_USE and tied to a Chunk,
     // which will put its allocated buffer back into that slot on Chunk#close(). After that flipping between
@@ -104,6 +105,7 @@ public class ProcessingSource implements Closeable
         if ( read > -1 )
         {
             offset += read;
+            position += read;
         }
 
         return new ProcessingChunk( buffer, offset, reader.sourceDescription() );
@@ -143,9 +145,14 @@ public class ProcessingSource implements Closeable
         reader.close();
     }
 
+    public long position()
+    {
+        return position;
+    }
+
     private static int offsetOfLastNewline( char[] buffer )
     {
-        for ( int i = buffer.length-1; i >= 0; i-- )
+        for ( int i = buffer.length - 1; i >= 0; i-- )
         {
             if ( buffer[i] == '\n' )
             {
@@ -161,7 +168,7 @@ public class ProcessingSource implements Closeable
         private final int length;
         private final String sourceDescription;
 
-        public ProcessingChunk( Buffer buffer, int length, String sourceDescription )
+        ProcessingChunk( Buffer buffer, int length, String sourceDescription )
         {
             this.buffer = buffer;
             this.length = length;

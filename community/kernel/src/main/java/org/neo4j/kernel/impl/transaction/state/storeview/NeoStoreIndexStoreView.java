@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.Collection;
 import java.util.function.IntPredicate;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -43,8 +40,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -67,79 +65,79 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output )
+    public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output )
     {
-        return counts.indexUpdatesAndSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+        return counts.indexUpdatesAndSize( indexId, output );
     }
 
     @Override
-    public void replaceIndexCounts( IndexDescriptor descriptor,
-                                    long uniqueElements, long maxUniqueElements, long indexSize )
+    public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements, long indexSize )
     {
-        int labelId = descriptor.getLabelId();
-        int propertyKeyId = descriptor.getPropertyKeyId();
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
-            updater.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
-            updater.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0L, indexSize );
+            updater.replaceIndexSample( indexId, uniqueElements, maxUniqueElements );
+            updater.replaceIndexUpdateAndSize( indexId, 0L, indexSize );
         }
     }
 
     @Override
-    public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
+    public void incrementIndexUpdates( long indexId, long updatesDelta )
     {
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
+            updater.incrementIndexUpdates( indexId, updatesDelta );
         }
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output )
+    public DoubleLongRegister indexSample( long indexId, DoubleLongRegister output )
     {
-        return counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+        return counts.indexSample( indexId, output );
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<NodePropertyUpdates, FAILURE> propertyUpdatesVisitor,
-            final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
+            final Visitor<NodeUpdates, FAILURE> propertyUpdatesVisitor,
+            final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
+            boolean forceStoreScan )
     {
         return new StoreViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
     }
 
     @Override
-    public void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target )
+    public NodeUpdates nodeAsUpdates( long nodeId )
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
         {
-            return;
+            return null;
         }
         long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
-            return; // no properties => no updates (it's not going to be in any index)
+            return null; // no properties => no updates (it's not going to be in any index)
         }
         long[] labels = parseLabelsField( node ).get( nodeStore );
         if ( labels.length == 0 )
         {
-            return; // no labels => no updates (it's not going to be in any index)
+            return null; // no labels => no updates (it's not going to be in any index)
         }
+        NodeUpdates.Builder update = NodeUpdates.forNode( nodeId, labels );
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
             for ( PropertyBlock property : propertyRecord )
             {
-                Object value = property.getType().getValue( property, propertyStore );
-                target.add( add( node.getId(), property.getKeyIndexId(), value, labels ) );
+                Value value = property.getType().value( property, propertyStore );
+                update.added( property.getKeyIndexId(), value );
             }
         }
+        return update.build();
     }
 
     @Override
-    public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
@@ -149,17 +147,44 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
-            return Property.noNodeProperty( nodeId, propertyKeyId );
+            return Values.NO_VALUE;
         }
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
             PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( propertyKeyId );
             if ( propertyBlock != null )
             {
-                return propertyBlock.newPropertyData( propertyStore );
+                return propertyBlock.newPropertyValue( propertyStore );
             }
         }
-        return Property.noNodeProperty( nodeId, propertyKeyId );
+        return Values.NO_VALUE;
     }
 
+    @Override
+    public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+    {
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+        if ( !node.inUse() )
+        {
+            return;
+        }
+        long firstPropertyId = node.getNextProp();
+        if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            return;
+        }
+        for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
+        {
+            for ( PropertyBlock block : propertyRecord )
+            {
+                int currentPropertyId = block.getKeyIndexId();
+                if ( propertyIds.contains( currentPropertyId ) )
+                {
+                    Value currentValue = block.getType().value( block, propertyStore );
+                    sink.onProperty( currentPropertyId, currentValue );
+                    propertyIds.remove( currentPropertyId );
+                }
+            }
+        }
+    }
 }

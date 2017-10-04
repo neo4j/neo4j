@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.System.arraycopy;
 
@@ -84,16 +86,16 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
 
         int arrayLength = Array.getLength( array );
-        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength);
-        int totalBits = requiredBits*arrayLength;
-        int numberOfBytes = (totalBits-1)/8+1;
-        int bitsUsedInLastByte = totalBits%8;
+        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength );
+        int totalBits = requiredBits * arrayLength;
+        int numberOfBytes = (totalBits - 1) / 8 + 1;
+        int bitsUsedInLastByte = totalBits % 8;
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
         numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
         byte[] bytes;
         if ( isByteArray )
         {
-            bytes = new byte[NUMBER_HEADER_SIZE+ arrayLength];
+            bytes = new byte[NUMBER_HEADER_SIZE + arrayLength];
             bytes[0] = (byte) type.intValue();
             bytes[1] = (byte) bitsUsedInLastByte;
             bytes[2] = (byte) requiredBits;
@@ -106,17 +108,17 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 Byte[] source = (Byte[]) array;
                 for ( int i = 0; i < source.length; i++ )
                 {
-                    bytes[NUMBER_HEADER_SIZE+i] = source[i];
+                    bytes[NUMBER_HEADER_SIZE + i] = source[i];
                 }
             }
         }
         else
         {
             Bits bits = Bits.bits( numberOfBytes );
-            bits.put( (byte)type.intValue() );
-            bits.put( (byte)bitsUsedInLastByte );
-            bits.put( (byte)requiredBits );
-            type.writeAll(array, arrayLength,requiredBits,bits);
+            bits.put( (byte) type.intValue() );
+            bits.put( (byte) bitsUsedInLastByte );
+            bits.put( (byte) requiredBits );
+            type.writeAll( array, arrayLength, requiredBits, bits );
             bytes = bits.asBytes();
         }
         allocateRecordsFromBytes( target, bytes, recordAllocator );
@@ -170,14 +172,14 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public static Object getRightArray( Pair<byte[],byte[]> data )
+    public static Value getRightArray( Pair<byte[],byte[]> data )
     {
         byte[] header = data.first();
         byte[] bArray = data.other();
         byte typeId = header[0];
         if ( typeId == PropertyType.STRING.intValue() )
         {
-            ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length-1 );
+            ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length - 1 );
             int arrayLength = headerBuffer.getInt();
             String[] result = new String[arrayLength];
 
@@ -189,7 +191,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 dataBuffer.get( stringByteArray );
                 result[i] = PropertyStore.decodeString( stringByteArray );
             }
-            return result;
+            return Values.stringArray( result );
         }
         else
         {
@@ -200,23 +202,21 @@ public class DynamicArrayStore extends AbstractDynamicStore
             {
                 return type.createEmptyArray();
             }
-            Object result;
             if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
             {   // Optimization for byte arrays (probably large ones)
-                result = bArray;
+                return Values.byteArray( bArray );
             }
             else
             {   // Fallback to the generic approach, which is a slower
                 Bits bits = Bits.bitsFromBytes( bArray );
-                int length = (bArray.length*8-(8-bitsUsedInLastByte))/requiredBits;
-                result = type.createArray(length, bits, requiredBits);
+                int length = (bArray.length * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
+                return type.createArray( length, bits, requiredBits );
             }
-            return result;
         }
     }
 
     public Object getArrayFor( Iterable<DynamicRecord> records )
     {
-        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) );
+        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
     }
 }

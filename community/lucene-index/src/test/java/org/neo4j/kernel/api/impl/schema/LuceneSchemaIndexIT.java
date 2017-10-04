@@ -39,34 +39,41 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.Values;
 
+import static java.util.Collections.emptySet;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class LuceneSchemaIndexIT
 {
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", "10" );
     }
 
     @After
-    public void after() throws IOException
+    public void after()
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", "" );
     }
@@ -110,17 +117,17 @@ public class LuceneSchemaIndexIT
             // When & Then
             try ( ResourceIterator<File> snapshotIterator = indexAccessor.snapshotFiles() )
             {
-                assertThat( asUniqueSetOfNames( snapshotIterator ), equalTo( emptySetOf( String.class ) ) );
+                assertThat( asUniqueSetOfNames( snapshotIterator ), equalTo( emptySet() ) );
             }
         }
     }
 
     @Test
-    public void updateMultiplePartitionedIndex() throws IOException, IndexEntryConflictException
+    public void updateMultiplePartitionedIndex() throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create()
-                .withIndexRootFolder( testDir.directory() )
-                .withIndexIdentifier( "partitionedIndexForUpdates" )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor )
+                .withFileSystem( fileSystemRule.get() )
+                .withIndexRootFolder( testDir.directory( "partitionedIndexForUpdates" ) )
                 .build() )
         {
             index.create();
@@ -128,7 +135,7 @@ public class LuceneSchemaIndexIT
             addDocumentToIndex( index, 45 );
 
             index.getIndexWriter().updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( 100 ),
-                    LuceneDocumentStructure.documentRepresentingProperty( 100, 100 ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) 100, Values.intValue( 100 ) ) );
             index.maybeRefreshBlocking();
 
             long documentsInIndex = Iterators.count( index.allDocumentsReader().iterator() );
@@ -140,9 +147,9 @@ public class LuceneSchemaIndexIT
     public void createPopulateDropIndex() throws Exception
     {
         File crudOperation = testDir.directory( "indexCRUDOperation" );
-        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create()
-                .withIndexRootFolder( crudOperation )
-                .withIndexIdentifier( "crudIndex" )
+        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor )
+                .withFileSystem( fileSystemRule.get() )
+                .withIndexRootFolder( new File( crudOperation, "crudIndex" ) )
                 .build() )
         {
             crudIndex.open();
@@ -163,9 +170,9 @@ public class LuceneSchemaIndexIT
     @Test
     public void createFailPartitionedIndex() throws Exception
     {
-        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create()
-                .withIndexRootFolder( testDir.directory( "failedIndexFolder" ) )
-                .withIndexIdentifier( "failedIndex" )
+        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor )
+                .withFileSystem( fileSystemRule.get() )
+                .withIndexRootFolder( new File( testDir.directory( "failedIndexFolder" ), "failedIndex" ) )
                 .build() )
         {
             failedIndex.open();
@@ -187,9 +194,9 @@ public class LuceneSchemaIndexIT
         SchemaIndex reopenIndex = null;
         try
         {
-            reopenIndex = LuceneSchemaIndexBuilder.create()
-                    .withIndexRootFolder( testDir.directory( "reopenIndexFolder" ) )
-                    .withIndexIdentifier( "reopenIndex" )
+            reopenIndex = LuceneSchemaIndexBuilder.create( descriptor )
+                    .withFileSystem( fileSystemRule.get() )
+                    .withIndexRootFolder( new File( testDir.directory( "reopenIndexFolder" ), "reopenIndex" ) )
                     .build();
             reopenIndex.open();
 
@@ -233,19 +240,20 @@ public class LuceneSchemaIndexIT
     {
         for ( int i = 0; i < documents; i++ )
         {
-            index.getIndexWriter().addDocument( LuceneDocumentStructure.documentRepresentingProperty( i, i ) );
+            index.getIndexWriter().addDocument(
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) i, Values.intValue( i ) ) );
         }
     }
 
     private LuceneIndexAccessor createDefaultIndexAccessor() throws IOException
     {
-        SchemaIndex index = LuceneSchemaIndexBuilder.create()
-                .withIndexRootFolder( testDir.directory() )
-                .withIndexIdentifier( "testIndex" )
+        SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor )
+                .withFileSystem( fileSystemRule.get() )
+                .withIndexRootFolder( testDir.directory( "testIndex" ) )
                 .build();
         index.create();
         index.open();
-        return new LuceneIndexAccessor( index, new IndexDescriptor( 1, 1 ) );
+        return new LuceneIndexAccessor( index, descriptor );
     }
 
     private Map<String,Integer> countTemplateMatches( List<String> nameTemplates, List<String> fileNames )
@@ -295,9 +303,8 @@ public class LuceneSchemaIndexIT
         }
     }
 
-    private NodePropertyUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
-        return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
+        return IndexEntryUpdate.add( nodeId, descriptor.schema(), Values.of( value ) );
     }
-
 }

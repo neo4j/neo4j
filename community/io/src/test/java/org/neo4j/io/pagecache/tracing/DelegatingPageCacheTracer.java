@@ -37,81 +37,157 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         this.delegate = delegate;
     }
 
+    @Override
     public void mappedFile( File file )
     {
         delegate.mappedFile( file );
     }
 
+    @Override
     public long bytesRead()
     {
         return delegate.bytesRead();
     }
 
+    @Override
     public MajorFlushEvent beginFileFlush( PageSwapper swapper )
     {
         return delegate.beginFileFlush( swapper );
     }
 
+    @Override
     public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
     {
         return delegate.beginPageEvictions( pageCountToEvict );
     }
 
+    @Override
     public long unpins()
     {
         return delegate.unpins();
     }
 
+    @Override
+    public long hits()
+    {
+        return delegate.hits();
+    }
+
+    @Override
     public MajorFlushEvent beginCacheFlush()
     {
         return delegate.beginCacheFlush();
     }
 
+    @Override
     public long bytesWritten()
     {
         return delegate.bytesWritten();
     }
 
+    @Override
     public long pins()
     {
         return delegate.pins();
     }
 
+    @Override
     public long filesUnmapped()
     {
         return delegate.filesUnmapped();
     }
 
-    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-    {
-        return delegate.beginPin( writeLock, filePageId, swapper );
-    }
-
+    @Override
     public void unmappedFile( File file )
     {
         delegate.unmappedFile( file );
     }
 
+    @Override
     public long evictionExceptions()
     {
         return delegate.evictionExceptions();
     }
 
+    @Override
+    public double hitRatio()
+    {
+        return delegate.hitRatio();
+    }
+
+    @Override
+    public void pins( long pins )
+    {
+        delegate.pins( pins );
+    }
+
+    @Override
+    public void unpins( long unpins )
+    {
+        delegate.unpins( unpins );
+    }
+
+    @Override
+    public void hits( long hits )
+    {
+        delegate.hits( hits );
+    }
+
+    @Override
+    public void faults( long faults )
+    {
+        delegate.faults( faults );
+    }
+
+    @Override
+    public void bytesRead( long bytesRead )
+    {
+        delegate.bytesRead( bytesRead );
+    }
+
+    @Override
+    public void evictions( long evictions )
+    {
+        delegate.evictions( evictions );
+    }
+
+    @Override
+    public void evictionExceptions( long evictionExceptions )
+    {
+        delegate.evictionExceptions( evictionExceptions );
+    }
+
+    @Override
+    public void bytesWritten( long bytesWritten )
+    {
+        delegate.bytesWritten( bytesWritten );
+    }
+
+    @Override
+    public void flushes( long flushes )
+    {
+        delegate.flushes( flushes );
+    }
+
+    @Override
     public long filesMapped()
     {
         return delegate.filesMapped();
     }
 
+    @Override
     public long flushes()
     {
         return delegate.flushes();
     }
 
+    @Override
     public long faults()
     {
         return delegate.faults();
     }
 
+    @Override
     public long evictions()
     {
         return delegate.evictions();

@@ -25,7 +25,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FilteredTermsEnum;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -48,11 +47,10 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
-import java.util.EnumMap;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.values.storable.Value;
 
 import static org.apache.lucene.document.Field.Store.YES;
 
@@ -63,20 +61,8 @@ public class LuceneDocumentStructure
 
     public static final String NODE_ID_KEY = "id";
 
-    //  Absolute hard maximum length for a term, in bytes once
-    //  encoded as UTF8.  If a term arrives from the analyzer
-    //  longer than this length, an IllegalArgumentException
-    //  when lucene writer trying to add or update document
-    private static final int MAX_FIELD_LENGTH = IndexWriter.MAX_TERM_LENGTH;
-
-    private static final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
-    {
-        @Override
-        protected DocWithId initialValue()
-        {
-            return new DocWithId( NODE_ID_KEY );
-        }
-    };
+    private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
+    public static final String DELIMITER = "\u001F";
 
     private LuceneDocumentStructure()
     {
@@ -89,18 +75,25 @@ public class LuceneDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperty( long nodeId, Object value )
+    public static Document documentRepresentingProperties( long nodeId, Value... values )
     {
         DocWithId document = reuseDocument( nodeId );
-        document.setValue( ValueEncoding.forValue( value ), value );
+        document.setValues( values );
         return document.document;
     }
 
-    public static String encodedStringValue( Object value )
+    public static String encodedStringValuesForSampling( Value... values )
     {
-        ValueEncoding encoding = ValueEncoding.forValue( value );
-        Field field = encoding.encodeField( value );
-        return field.stringValue();
+        StringBuilder sb = new StringBuilder();
+        String sep = "";
+        for ( Value value : values )
+        {
+            sb.append( sep );
+            sep = DELIMITER;
+            ValueEncoding encoding = ValueEncoding.forValue( value );
+            sb.append( encoding.encodeField( encoding.key(), value ).stringValue() );
+        }
+        return sb.toString();
     }
 
     public static MatchAllDocsQuery newScanQuery()
@@ -108,10 +101,15 @@ public class LuceneDocumentStructure
         return new MatchAllDocsQuery();
     }
 
-    public static Query newSeekQuery( Object value )
+    public static Query newSeekQuery( Value... values )
     {
-        ValueEncoding encoding = ValueEncoding.forValue( value );
-        return encoding.encodeQuery( value );
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for ( int i = 0; i < values.length; i++ )
+        {
+            ValueEncoding encoding = ValueEncoding.forValue( values[i] );
+            builder.add( encoding.encodeQuery( values[i], i ), BooleanClause.Occur.MUST );
+        }
+        return builder.build();
     }
 
     /**
@@ -122,7 +120,7 @@ public class LuceneDocumentStructure
     {
         Double min = lower != null ? lower.doubleValue() : null;
         Double max = upper != null ? upper.doubleValue() : null;
-        return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key(), min, max, true, true );
+        return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key( 0 ), min, max, true, true );
     }
 
     public static Query newRangeSeekByStringQuery( String lower, boolean includeLower,
@@ -130,48 +128,48 @@ public class LuceneDocumentStructure
     {
         boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
         boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
-        TermRangeQuery termRangeQuery = TermRangeQuery.newStringRange( ValueEncoding.String.key(), lower, upper,
+        TermRangeQuery termRangeQuery = TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper,
                 includeLowerBoundary, includeUpperBoundary );
 
         if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
         {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            builder.setDisableCoord(true);
             if ( includeLowerBoundary != includeLower )
             {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key(), lower ) ), BooleanClause.Occur
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), lower ) ), BooleanClause.Occur
                         .MUST_NOT );
             }
             if ( includeUpperBoundary != includeUpper )
             {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key(), upper ) ), BooleanClause.Occur
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), upper ) ), BooleanClause.Occur
                         .MUST_NOT );
             }
-            builder.add( termRangeQuery, BooleanClause.Occur.SHOULD );
-            return builder.build();
+            builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
+            return new ConstantScoreQuery( builder.build() );
         }
-        return new ConstantScoreQuery( termRangeQuery );
+        return termRangeQuery;
     }
 
     public static Query newWildCardStringQuery( String searchFor )
     {
         String searchTerm = QueryParser.escape( searchFor );
-        Term term = new Term( ValueEncoding.String.key(), "*" + searchTerm + "*" );
+        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm + "*" );
 
         return new WildcardQuery( term );
     }
 
     public static Query newRangeSeekByPrefixQuery( String prefix )
     {
-        Term term = new Term( ValueEncoding.String.key(), prefix );
-        MultiTermQuery prefixQuery = USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) :
+        Term term = new Term( ValueEncoding.String.key( 0 ), prefix );
+        return USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) :
                                      new PrefixMultiTermsQuery( term );
-        return new ConstantScoreQuery( prefixQuery );
     }
 
     public static Query newSuffixStringQuery( String suffix )
     {
         String searchTerm = QueryParser.escape( suffix );
-        Term term = new Term( ValueEncoding.String.key(), "*" + searchTerm );
+        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm );
 
         return new WildcardQuery( term );
     }
@@ -188,12 +186,12 @@ public class LuceneDocumentStructure
 
     /**
      * Filters the given {@link Terms terms} to include only terms that were created using fields from
-     * {@link ValueEncoding#encodeField(Object)}. Internal lucene terms like those created for indexing numeric values
+     * {@link ValueEncoding#encodeField(String, Value)}. Internal lucene terms like those created for indexing numeric values
      * (see javadoc for {@link NumericRangeQuery} class) are skipped. In other words this method returns
      * {@link TermsEnum} over all terms for the given field that were created using {@link ValueEncoding}.
      *
      * @param terms the terms to be filtered
-     * @param fieldKey the corresponding {@link ValueEncoding#key() field key}
+     * @param fieldKey the corresponding {@link ValueEncoding#key(int) field key}
      * @return terms enum over all inserted terms
      * @throws IOException if it is not possible to obtain {@link TermsEnum}
      * @see NumericRangeQuery
@@ -221,7 +219,7 @@ public class LuceneDocumentStructure
 
         PrefixMultiTermsQuery( Term term )
         {
-            super(term.field());
+            super( term.field() );
             this.term = term;
         }
 
@@ -256,21 +254,31 @@ public class LuceneDocumentStructure
         }
     }
 
+    public static Field encodeValueField( Value value )
+    {
+        ValueEncoding encoding = ValueEncoding.forValue( value );
+        return encoding.encodeField( encoding.key(), value );
+    }
+
+    public static boolean useFieldForUniquenessVerification( String fieldName )
+    {
+        return !LuceneDocumentStructure.NODE_ID_KEY.equals( fieldName ) &&
+                ValueEncoding.fieldPropertyNumber( fieldName ) == 0;
+    }
+
     private static class DocWithId
     {
         private final Document document;
 
-        private final String idFieldName;
         private final Field idField;
         private final Field idValueField;
 
-        private final Map<ValueEncoding,Field> valueFields = new EnumMap<>( ValueEncoding.class );
+        private Field[] reusableValueFields = new Field[0];
 
-        private DocWithId( String idFieldName )
+        private DocWithId()
         {
-            this.idFieldName = idFieldName;
-            idField = new StringField( idFieldName, "", YES );
-            idValueField = new NumericDocValuesField( idFieldName, 0L );
+            idField = new StringField( NODE_ID_KEY, "", YES );
+            idValueField = new NumericDocValuesField( NODE_ID_KEY, 0L );
             document = new Document();
             document.add( idField );
             document.add( idValueField );
@@ -278,36 +286,24 @@ public class LuceneDocumentStructure
 
         private void setId( long id )
         {
-            idField.setStringValue( "" + id );
+            idField.setStringValue( Long.toString( id ) );
             idValueField.setLongValue( id );
         }
 
-        private void setValue( ValueEncoding encoding, Object value )
+        private void setValues( Value... values )
         {
             removeAllValueFields();
-            Field reusableField = getFieldWithValue( encoding, value );
-            if ( isArrayOrString( reusableField ) )
+            int neededLength = values.length * ValueEncoding.values().length;
+            if ( reusableValueFields.length < neededLength )
             {
-                if ( isShorterThenMaximum( reusableField ) )
-                {
-                    document.add( reusableField );
-                }
+                reusableValueFields = new Field[neededLength];
             }
-            else
+
+            for ( int i = 0; i < values.length; i++ )
             {
+                Field reusableField = getFieldWithValue( i, values[i] );
                 document.add( reusableField );
             }
-        }
-
-        private boolean isShorterThenMaximum( Field reusableField )
-        {
-            return reusableField.stringValue().getBytes().length <= MAX_FIELD_LENGTH;
-        }
-
-        private boolean isArrayOrString( Field reusableField )
-        {
-            return ValueEncoding.Array.key().equals( reusableField.name() ) ||
-                   ValueEncoding.String.key().equals( reusableField.name() );
         }
 
         private void removeAllValueFields()
@@ -317,20 +313,23 @@ public class LuceneDocumentStructure
             {
                 IndexableField field = it.next();
                 String fieldName = field.name();
-                if ( !fieldName.equals( idFieldName ) )
+                if ( !fieldName.equals( NODE_ID_KEY ) )
                 {
                     it.remove();
                 }
             }
         }
 
-        private Field getFieldWithValue( ValueEncoding encoding, Object value )
+        private Field getFieldWithValue( int propertyNumber, Value value )
         {
-            Field reusableField = valueFields.get( encoding );
+            ValueEncoding encoding = ValueEncoding.forValue( value );
+            int reuseId = propertyNumber * ValueEncoding.values().length + encoding.ordinal();
+            String key = encoding.key( propertyNumber );
+            Field reusableField = reusableValueFields[reuseId];
             if ( reusableField == null )
             {
-                reusableField = encoding.encodeField( value );
-                valueFields.put( encoding, reusableField );
+                reusableField = encoding.encodeField( key, value );
+                reusableValueFields[reuseId] = reusableField;
             }
             else
             {

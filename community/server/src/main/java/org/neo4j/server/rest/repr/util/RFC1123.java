@@ -34,7 +34,8 @@ public final class RFC1123
 
     private static final Date Y2K_START_DATE;
 
-    static {
+    static
+    {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeZone( GMT );
         calendar.set( 2000, Calendar.JANUARY, 1, 0, 0, 0 );
@@ -50,21 +51,23 @@ public final class RFC1123
         format.setTimeZone( GMT );
     }
 
-    public Date parse(String input) throws ParseException
+    public Date parse( String input ) throws ParseException
     {
         format.set2DigitYearStart( Y2K_START_DATE );
         return format.parse( input );
     }
 
-    public String format(Date date)
+    public String format( Date date )
     {
         if ( null == date )
+        {
             throw new IllegalArgumentException( "Date is null" );
+        }
 
         return format.format( date );
     }
 
-    static final RFC1123 instance()
+    static RFC1123 instance()
     {
         RFC1123 instance = INSTANCES.get();
         if ( null == instance )
@@ -75,12 +78,12 @@ public final class RFC1123
         return instance;
     }
 
-    public static Date parseTimestamp(String input) throws ParseException
+    public static Date parseTimestamp( String input ) throws ParseException
     {
         return instance().parse( input );
     }
 
-    public static String formatDate(Date date)
+    public static String formatDate( Date date )
     {
         return instance().format( date );
     }

@@ -162,7 +162,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         return new Prototype<>( this, version );
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     static <Key> void applyUpdate( ReadableState<Key> store, ConcurrentMap<Key, byte[]> changes,
                                    Key key, ValueUpdate update, boolean reset ) throws IOException
     {
@@ -219,7 +219,8 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     private static class Prototype<Key> extends PrototypeState<Key>
     {
         final ConcurrentMap<Key, byte[]> changes = new ConcurrentHashMap<>();
-        final AtomicLong highestAppliedVersion, appliedChanges = new AtomicLong();
+        final AtomicLong highestAppliedVersion;
+        final AtomicLong appliedChanges = new AtomicLong();
         final AtomicBoolean hasTrackedChanges;
         private final long threshold;
 
@@ -402,7 +403,8 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
 
     private static class Entry implements Comparable<Entry>
     {
-        final byte[] key, value;
+        final byte[] key;
+        final byte[] value;
 
         private Entry( byte[] key, byte[] value )
         {

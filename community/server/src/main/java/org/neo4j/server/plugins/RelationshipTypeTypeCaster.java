@@ -29,7 +29,10 @@ class RelationshipTypeTypeCaster extends TypeCaster
     Object get( GraphDatabaseAPI graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         String typeName = parameters.getString( name );
-        if ( typeName == null ) return null;
+        if ( typeName == null )
+        {
+            return null;
+        }
         return RelationshipType.withName( typeName );
     }
 
@@ -37,7 +40,10 @@ class RelationshipTypeTypeCaster extends TypeCaster
     Object[] getList( GraphDatabaseAPI graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         String[] strings = parameters.getStringList( name );
-        if ( strings == null ) return null;
+        if ( strings == null )
+        {
+            return null;
+        }
         RelationshipType[] result = new RelationshipType[strings.length];
         for ( int i = 0; i < result.length; i++ )
         {

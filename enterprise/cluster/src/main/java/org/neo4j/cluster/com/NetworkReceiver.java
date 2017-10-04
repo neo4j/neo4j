@@ -110,7 +110,7 @@ public class NetworkReceiver
     private final Map<URI, Channel> connections = new ConcurrentHashMap<>();
     private final Listeners<NetworkChannelsListener> listeners = new Listeners<>();
 
-    volatile boolean bindingDetected = false;
+    volatile boolean bindingDetected;
 
     private volatile boolean paused;
     private int port;
@@ -171,7 +171,7 @@ public class NetworkReceiver
     {
     }
 
-    public void setPaused(boolean paused)
+    public void setPaused( boolean paused )
     {
         this.paused = paused;
     }
@@ -186,7 +186,7 @@ public class NetworkReceiver
             {
                 String address = config.clusterServer().getHost();
                 InetSocketAddress localAddress;
-                if ( address == null || address.equals( INADDR_ANY ))
+                if ( address == null || address.equals( INADDR_ANY ) )
                 {
                     localAddress = new InetSocketAddress( checkPort );
                 }
@@ -222,7 +222,7 @@ public class NetworkReceiver
 
     public void receive( Message message )
     {
-        if (!paused)
+        if ( !paused )
         {
             for ( MessageProcessor processor : processors )
             {
@@ -306,7 +306,9 @@ public class NetworkReceiver
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
+            pipeline.addLast( "frameDecoder",
+                    new ObjectDecoder( 1024 * 1000,
+                            NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
         }
@@ -326,9 +328,9 @@ public class NetworkReceiver
         @Override
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
-            if (!bindingDetected)
+            if ( !bindingDetected )
             {
-                InetSocketAddress local = ((InetSocketAddress)event.getChannel().getLocalAddress());
+                InetSocketAddress local = (InetSocketAddress) event.getChannel().getLocalAddress();
                 bindingDetected = true;
                 listeningAt( getURI( local ) );
             }
@@ -343,7 +345,7 @@ public class NetworkReceiver
             {
                 remoteAddress = wrapAddressForIPv6Uri( remoteAddress );
             }
-            fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
+            fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );

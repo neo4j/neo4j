@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectInstance;
@@ -37,13 +36,6 @@ import org.neo4j.jmx.ManagementInterface;
  * Does not have any public methods - since the public interface of
  * {@link org.neo4j.management.Neo4jManager} should be defined completely in
  * that class.
- *
- * Does not have any (direct or transitive) dependencies on any part of the jmx
- * component - since this class is used in
- * {@link org.neo4j.management.impl.jconsole.Neo4jPlugin the JConsole plugin},
- * and the jmx component is not on the class path in JConsole.
- *
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
 public abstract class KernelProxy
 {
@@ -91,13 +83,12 @@ public abstract class KernelProxy
             Class<?> beanType = null;
             try
             {
-                if ( className != null ) beanType = Class.forName( className );
+                if ( className != null )
+                {
+                    beanType = Class.forName( className );
+                }
             }
-            catch ( Exception ignored )
-            {
-                // fall through
-            }
-            catch ( LinkageError ignored )
+            catch ( Exception | LinkageError ignored )
             {
                 // fall through
             }
@@ -200,7 +191,7 @@ public abstract class KernelProxy
 
     private static ObjectName createObjectName( ObjectName query, String beanName, boolean isQuery )
     {
-        Hashtable<String, String> properties = new Hashtable<String, String>(query.getKeyPropertyList());
+        Hashtable<String,String> properties = new Hashtable<String,String>( query.getKeyPropertyList() );
         return createObjectName( query.getDomain(), properties, beanName, isQuery );
     }
 
@@ -229,7 +220,10 @@ public abstract class KernelProxy
         try
         {
             result = new ObjectName( domain, properties );
-            if ( query ) result = ObjectName.getInstance( result.toString() + ",*" );
+            if ( query )
+            {
+                result = ObjectName.getInstance( result.toString() + ",*" );
+            }
         }
         catch ( MalformedObjectNameException e )
         {

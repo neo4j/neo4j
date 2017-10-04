@@ -151,7 +151,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     {
         byte[] header = null;
         List<byte[]> byteList = new ArrayList<>();
-        int totalSize = 0, i = 0;
+        int totalSize = 0;
+        int i = 0;
         for ( DynamicRecord record : records )
         {
             int offset = 0;
@@ -162,7 +163,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             }
 
             byteList.add( record.getData() );
-            totalSize += (record.getData().length - offset);
+            totalSize += record.getData().length - offset;
         }
         byte[] bArray = new byte[totalSize];
         assert header != null :
@@ -173,7 +174,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         {
             System.arraycopy( currentArray, sourceOffset, bArray, offset,
                     currentArray.length - sourceOffset );
-            offset += (currentArray.length - sourceOffset);
+            offset += currentArray.length - sourceOffset;
             sourceOffset = 0;
         }
         return Pair.of( header, bArray );
@@ -182,10 +183,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     @Override
     public DynamicRecord nextRecord()
     {
-        DynamicRecord record = new DynamicRecord( nextId() );
-        record.setCreated();
-        record.setInUse( true );
-        return record;
+        return StandardDynamicRecordAllocator.allocateRecord( nextId() );
     }
 
     public void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src )

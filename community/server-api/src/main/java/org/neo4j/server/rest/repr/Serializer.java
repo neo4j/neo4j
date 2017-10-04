@@ -58,7 +58,10 @@ abstract class Serializer
                     {
                         StringBuilder path = new StringBuilder( "/ext/" ).append( ext.getKey() );
                         path.append( "/" ).append( value.type.valueName );
-                        if ( entityIdentity != null ) path.append( "/" ).append( entityIdentity );
+                        if ( entityIdentity != null )
+                        {
+                            path.append( "/" ).append( entityIdentity );
+                        }
                         path.append( "/" ).append( method );
                         extension.writeValue( RepresentationType.URI, method, joinBaseWithRelativePath( baseUri,
                                 path.toString() ) );
@@ -76,7 +79,7 @@ abstract class Serializer
         list.done();
     }
 
-    final String relativeUri(String path)
+    final String relativeUri( String path )
     {
         return joinBaseWithRelativePath(baseUri, path);
     }
@@ -89,7 +92,7 @@ abstract class Serializer
     static String joinBaseWithRelativePath( URI baseUri, String path )
     {
         String base = baseUri.toString();
-        final StringBuilder result = new StringBuilder(base.length() + path.length() +1).append(base);
+        final StringBuilder result = new StringBuilder( base.length() + path.length() + 1 ).append( base );
         if ( base.endsWith( "/" ) )
         {
             if ( path.startsWith( "/" ) )

@@ -35,6 +35,10 @@ import org.neo4j.kernel.impl.util.Listener;
 
 public class ElectionUtil
 {
+    private ElectionUtil()
+    {
+    }
+
     public static MemberId waitForLeaderAgreement( Iterable<RaftMachine> validRafts, long maxTimeMillis ) throws
             InterruptedException, TimeoutException
     {
@@ -70,7 +74,8 @@ public class ElectionUtil
             validRafts, Map<MemberId,MemberId> leaderViews, long viewCount, CompletableFuture<MemberId>
             futureAgreedLeader )
     {
-        Listener<MemberId> listener = newLeader -> {
+        Listener<MemberId> listener = newLeader ->
+        {
             synchronized ( leaderViews )
             {
                 leaderViews.put( raft.identity(), newLeader );
@@ -84,7 +89,7 @@ public class ElectionUtil
                     }
                 }
 
-                if( newLeader != null && leaderIsValid && allAgreeOnLeader( leaderViews, viewCount, newLeader ) )
+                if ( newLeader != null && leaderIsValid && allAgreeOnLeader( leaderViews, viewCount, newLeader ) )
                 {
                     futureAgreedLeader.complete( newLeader );
                 }
@@ -104,7 +109,7 @@ public class ElectionUtil
 
         for ( T leaderView : leaderViews.values() )
         {
-            if( !leader.equals( leaderView) )
+            if ( !leader.equals( leaderView ) )
             {
                 return false;
             }

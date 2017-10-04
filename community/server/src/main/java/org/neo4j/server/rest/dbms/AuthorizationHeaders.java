@@ -23,6 +23,10 @@ import com.sun.jersey.core.util.Base64;
 
 public class AuthorizationHeaders
 {
+    private AuthorizationHeaders()
+    {
+    }
+
     /**
      * Extract the encoded username and password from a HTTP Authorization header value.
      */

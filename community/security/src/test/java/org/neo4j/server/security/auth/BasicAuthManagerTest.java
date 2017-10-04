@@ -29,7 +29,9 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
@@ -51,7 +53,7 @@ import static org.neo4j.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMP
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class BasicAuthManagerTest extends InitialUserTests
+public class BasicAuthManagerTest extends InitialUserTest
 {
     private BasicAuthManager manager;
     private AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );

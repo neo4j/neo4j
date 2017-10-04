@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -29,17 +30,21 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class ReadAheadChannelTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Test
     public void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist() throws Exception
     {
         // Given
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         StoreChannel storeChannel = fileSystem.open( new File( "foo.txt" ), "rw" );
         ByteBuffer buffer = ByteBuffer.allocate( 1 );
         buffer.put( (byte) 1 );
@@ -56,9 +61,9 @@ public class ReadAheadChannelTest
         try
         {
             channel.get();
-            fail("Should have thrown exception signalling end of file reached");
+            fail( "Should have thrown exception signalling end of file reached" );
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -66,9 +71,9 @@ public class ReadAheadChannelTest
         try
         {
             channel.get();
-            fail("Should have thrown exception signalling end of file reached");
+            fail( "Should have thrown exception signalling end of file reached" );
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -78,7 +83,7 @@ public class ReadAheadChannelTest
     public void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered() throws Exception
     {
         // Given
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         StoreChannel storeChannel = fileSystem.open( new File( "foo.txt" ), "rw" );
         ByteBuffer buffer = ByteBuffer.allocate( 1 );
         buffer.put( (byte) 1 );
@@ -95,7 +100,7 @@ public class ReadAheadChannelTest
             channel.getShort();
             fail("Should have thrown exception signalling end of file reached");
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -105,9 +110,9 @@ public class ReadAheadChannelTest
         try
         {
             channel.get();
-            fail("Should have thrown exception signalling end of file reached");
+            fail( "Should have thrown exception signalling end of file reached" );
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -117,7 +122,7 @@ public class ReadAheadChannelTest
     public void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles() throws Exception
     {
         // Given
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         StoreChannel storeChannel1 = fileSystem.open( new File( "foo.1" ), "rw" );
         ByteBuffer buffer = ByteBuffer.allocate( 2 );
         buffer.put( (byte) 0 );
@@ -154,7 +159,7 @@ public class ReadAheadChannelTest
             channel.getLong();
             fail("Should have thrown exception signalling end of file reached");
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -166,7 +171,7 @@ public class ReadAheadChannelTest
             channel.get();
             fail("Should have thrown exception signalling end of file reached");
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -176,7 +181,7 @@ public class ReadAheadChannelTest
     public void shouldReturnPositionWithinBufferedStream() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         File file = new File( "foo.txt" );
 
         int readAheadSize = 512;

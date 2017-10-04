@@ -21,6 +21,7 @@ package org.neo4j.logging;
 
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A log into which various levels of messages can be written
@@ -59,7 +60,7 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
-    void debug( @Nonnull String format, @Nonnull Object... arguments );
+    void debug( @Nonnull String format, @Nullable Object... arguments );
 
     /**
      * @return a {@link Logger} instance for writing info messages
@@ -88,7 +89,7 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
-    void info( @Nonnull String format, @Nonnull Object... arguments );
+    void info( @Nonnull String format, @Nullable Object... arguments );
 
     /**
      * @return a {@link Logger} instance for writing warn messages
@@ -117,7 +118,7 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
-    void warn( @Nonnull String format, @Nonnull Object... arguments );
+    void warn( @Nonnull String format, @Nullable Object... arguments );
 
     /**
      * @return a {@link Logger} instance for writing error messages
@@ -146,7 +147,7 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the {@code format}
      */
-    void error( @Nonnull String format, @Nonnull Object... arguments );
+    void error( @Nonnull String format, @Nullable Object... arguments );
 
     /**
      * Used to temporarily log several messages in bulk. The implementation may choose to

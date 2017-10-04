@@ -64,12 +64,15 @@ public class AppendLogEntry implements RaftLogCommand
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         AppendLogEntry that = (AppendLogEntry) o;
-        return index == that.index &&
-               Objects.equals( entry, that.entry );
+        return index == that.index && Objects.equals( entry, that.entry );
     }
 
     @Override

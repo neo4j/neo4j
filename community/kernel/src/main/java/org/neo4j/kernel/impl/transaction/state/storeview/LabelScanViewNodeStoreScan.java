@@ -19,16 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -36,18 +33,16 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 /**
  * Store scan view that will try to minimize amount of scanned nodes by using label scan store {@link LabelScanStore}
  * as a source of known labeled node ids.
- * @param <FAILURE>
+ * @param <FAILURE> type of exception thrown on failure
  */
 public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
 {
     private final LabelScanStore labelScanStore;
-    // flag that indicated presence of concurrent updates that are not visible to current label index scan
-    private boolean outdated;
 
     public LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
             PropertyStore propertyStore,
             LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+            Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
             IntPredicate propertyKeyIdFilter )
     {
         super( nodeStore, locks, propertyStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
@@ -58,39 +53,6 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     @Override
     public PrimitiveLongResourceIterator getNodeIdIterator()
     {
-        return new LabelScanViewIdIterator( this, labelScanStore, labelIds );
+        return new LabelScanViewIdIterator( labelScanStore.newReader(), labelIds );
     }
-
-    @Override
-    public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
-    {
-        populations.forEach( population -> population.populator.configureSampling( false ) );
-    }
-
-    @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
-            long currentlyIndexedNodeId )
-    {
-        super.acceptUpdate( updater, update, currentlyIndexedNodeId );
-        if ( update.getNodeId() > currentlyIndexedNodeId )
-        {
-            markOutdated();
-        }
-    }
-
-    boolean isOutdated()
-    {
-        return outdated;
-    }
-
-    void clearOutdatedFlag()
-    {
-        outdated = false;
-    }
-
-    private void markOutdated()
-    {
-        outdated = true;
-    }
-
 }

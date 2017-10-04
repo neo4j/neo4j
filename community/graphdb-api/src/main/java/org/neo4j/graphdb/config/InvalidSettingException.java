@@ -21,31 +21,24 @@ package org.neo4j.graphdb.config;
 
 /**
  * Thrown when a configuration setting is, for one reason or another, invalid.
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
+@Deprecated
 public class InvalidSettingException extends RuntimeException
 {
-    private final String name;
 
     public InvalidSettingException( String name, String value, String message )
     {
-        super(String.format( "Bad value '%s' for setting '%s': %s", value, name, message ));
-        this.name = name;
+        super( String.format( "Bad value '%s' for setting '%s': %s", value, name, message ) );
     }
 
-    public InvalidSettingException( String name, String message )
+    public InvalidSettingException( String message )
     {
-        super(message);
-        this.name = name;
+        super( message );
     }
 
-    /**
-     * Get the name of the setting causing this exception.
-     *
-     * @return the setting associated with this exception.
-     */
-    public String settingName()
+    public InvalidSettingException( String message, Throwable cause )
     {
-        return name;
+        super( message, cause );
     }
-
 }

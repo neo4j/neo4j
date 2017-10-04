@@ -50,16 +50,21 @@ public class GlobalSession
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         GlobalSession that = (GlobalSession) o;
 
         if ( !sessionId.equals( that.sessionId ) )
-        { return false; }
+        {
+            return false;
+        }
         return owner.equals( that.owner );
-
     }
 
     @Override

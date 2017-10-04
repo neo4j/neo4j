@@ -32,7 +32,7 @@ public class Exporter
 {
     private final SubGraphExporter exporter;
 
-    Exporter(SubGraph graph)
+    Exporter( SubGraph graph )
     {
         exporter = new SubGraphExporter( graph );
     }
@@ -42,7 +42,8 @@ public class Exporter
         exporter.export( asWriter(out), "begin", "commit" );
     }
 
-    private PrintWriter asWriter(Output out) {
+    private PrintWriter asWriter( Output out )
+    {
         return new PrintWriter( new OutputAsWriter( out ) );
     }
 }

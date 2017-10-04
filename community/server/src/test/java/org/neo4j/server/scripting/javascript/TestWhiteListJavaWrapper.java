@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Test;
 import org.mozilla.javascript.Context;
@@ -34,8 +27,15 @@ import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.UniqueTag;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.server.scripting.UserScriptClassWhiteList;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class TestWhiteListJavaWrapper
 {
@@ -43,19 +43,21 @@ public class TestWhiteListJavaWrapper
     @After
     public void exitContext()
     {
-        try {
+        try
+        {
             Context.exit();
-        } catch (IllegalStateException e)
+        }
+        catch ( IllegalStateException e )
         {
             // Om nom nom
         }
     }
 
-    @Test(expected = SecurityException.class)
+    @Test( expected = SecurityException.class )
     public void shouldBlockAttemptsAtAccessingClassLoader() throws Exception
     {
         // Given
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<String>(  ) ));
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<String>() ) );
 
         // When
         wrapper.wrap( null, null, getClass().getClassLoader(), null );
@@ -68,7 +70,7 @@ public class TestWhiteListJavaWrapper
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
 
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
 
         Context cx = Context.enter();
         Scriptable scope = cx.initStandardObjects();
@@ -81,17 +83,17 @@ public class TestWhiteListJavaWrapper
         NativeJavaObject obj = (NativeJavaObject)wrapped;
 
         assertThat( obj.has( "aGetter", scope ), is( false ));
-        assertThat( (UniqueTag) obj.get( "aGetter", scope ), is( UniqueTag.NOT_FOUND ) );
+        assertThat( obj.get( "aGetter", scope ), is( UniqueTag.NOT_FOUND ) );
     }
 
-    @Test(expected = SecurityException.class)
+    @Test( expected = SecurityException.class )
     public void shouldThrowSecurityExceptionWhenAccessingLockedClasses() throws Exception
     {
         // Given
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
 
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
 
         Context cx = Context.enter();
         Scriptable scope = cx.initStandardObjects();
@@ -108,8 +110,8 @@ public class TestWhiteListJavaWrapper
         // other tests will already have configured global security settings that we cannot override.
 
         // Given
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter(
-                UserScriptClassWhiteList.getWhiteList() ));
+        WhiteListJavaWrapper wrapper =
+                new WhiteListJavaWrapper( new WhiteListClassShutter( UserScriptClassWhiteList.getWhiteList() ) );
 
         Context cx = Context.enter();
         Scriptable scope = cx.initStandardObjects();

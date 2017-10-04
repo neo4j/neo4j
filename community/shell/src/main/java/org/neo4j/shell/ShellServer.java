@@ -69,7 +69,7 @@ public interface ShellServer extends Remote
      * @param clientID identifying the client.
      * @throws RemoteException RMI error.
      */
-    public void terminate( Serializable clientID ) throws RemoteException;
+    void terminate( Serializable clientID ) throws RemoteException;
 
     /**
      * @param initialSession the initial session variables that the client would

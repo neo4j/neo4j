@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.factory;
 
 import java.util.Collections;
+import java.util.function.Predicate;
 
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -48,6 +49,12 @@ public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGrap
     public TestHighlyAvailableGraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         getCurrentState().setKernelExtensions( newKernelExtensions );
+        return this;
+    }
+
+    public TestHighlyAvailableGraphDatabaseFactory removeKernelExtensions( Predicate<KernelExtensionFactory<?>> toRemove )
+    {
+        getCurrentState().removeKernelExtensions( toRemove );
         return this;
     }
 }

@@ -28,15 +28,16 @@ import org.junit.runners.model.Statement;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+
+import org.neo4j.helpers.collection.Iterators;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -52,7 +53,7 @@ import static org.junit.Assert.fail;
 public class AssertableLogProvider extends AbstractLogProvider<Log> implements TestRule
 {
     private final boolean debugEnabled;
-    private final List<LogCall> logCalls = Collections.synchronizedList( new ArrayList<LogCall>() );
+    private final List<LogCall> logCalls = new CopyOnWriteArrayList<>();
 
     public AssertableLogProvider()
     {
@@ -133,7 +134,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             if ( message != null )
             {
                 builder.append( '\'' ).append( escapeJava( message ) ).append( '\'' );
-            } else
+            }
+            else
             {
                 builder.append( "null" );
             }
@@ -152,7 +154,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                     builder.append( escapeJava( "" + arg ) );
                 }
                 builder.append( "]" );
-            } else
+            }
+            else
             {
                 builder.append( "null" );
             }
@@ -160,7 +163,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             if ( throwable != null )
             {
                 builder.append( '\'' ).append( escapeJava( throwable.toString() ) ).append( '\'' );
-            } else
+            }
+            else
             {
                 builder.append( "null" );
             }
@@ -196,7 +200,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         private final String context;
         private final Level level;
 
-        public LogCallRecorder( String context, Level level )
+        LogCallRecorder( String context, Level level )
         {
             this.context = context;
             this.level = level;
@@ -319,7 +323,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         private final Matcher<? extends Object[]> argumentsMatcher;
         private final Matcher<? extends Throwable> throwableMatcher;
 
-        public LogMatcher( Matcher<String> contextMatcher, Matcher<Level> levelMatcher, Matcher<String> messageMatcher, Matcher<? extends Object[]> argumentsMatcher, Matcher<? extends Throwable> throwableMatcher )
+        public LogMatcher( Matcher<String> contextMatcher, Matcher<Level> levelMatcher, Matcher<String> messageMatcher,
+                Matcher<? extends Object[]> argumentsMatcher, Matcher<? extends Throwable> throwableMatcher )
         {
             this.contextMatcher = contextMatcher;
             this.levelMatcher = levelMatcher;
@@ -368,17 +373,20 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
         public LogMatcher debug( String message )
         {
-            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, equalTo( message ), NULL_ARGUMENTS_MATCHER, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, equalTo( message ), NULL_ARGUMENTS_MATCHER,
+                    NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher debug( Matcher<String> messageMatcher )
         {
-            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, messageMatcher, NULL_ARGUMENTS_MATCHER, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, messageMatcher, NULL_ARGUMENTS_MATCHER,
+                    NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher debug( Matcher<String> messageMatcher, Matcher<Throwable> throwableMatcher )
         {
-            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, messageMatcher, NULL_ARGUMENTS_MATCHER, throwableMatcher );
+            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, messageMatcher, NULL_ARGUMENTS_MATCHER,
+                    throwableMatcher );
         }
 
         public LogMatcher debug( String format, Object... arguments )
@@ -388,7 +396,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
         public LogMatcher debug( Matcher<String> format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, format,
+                    arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher info( String message )
@@ -413,17 +422,20 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
         public LogMatcher info( Matcher<String> format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, INFO_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, INFO_LEVEL_MATCHER, format,
+                    arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher warn( String message )
         {
-            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, equalTo( message ), NULL_ARGUMENTS_MATCHER, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, equalTo( message ), NULL_ARGUMENTS_MATCHER,
+                    NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher warn( Matcher<String> messageMatcher )
         {
-            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, messageMatcher, NULL_ARGUMENTS_MATCHER, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, messageMatcher, NULL_ARGUMENTS_MATCHER,
+                    NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher warn( Matcher<String> messageMatcher, Matcher<Throwable> throwableMatcher )
@@ -438,12 +450,14 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
         public LogMatcher warn( Matcher<String> format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, format,
+                    arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher error( String message )
         {
-            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, equalTo( message ), NULL_ARGUMENTS_MATCHER, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, equalTo( message ), NULL_ARGUMENTS_MATCHER,
+                    NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher error( Matcher<String> messageMatcher )
@@ -463,7 +477,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
         public LogMatcher error( Matcher<String> format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, format,
+                    arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher any()
@@ -483,7 +498,9 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                 if ( arg instanceof Matcher )
                 {
                     matchers.add( (Matcher) arg );
-                } else {
+                }
+                else
+                {
                     matchers.add( equalTo( arg ) );
                 }
             }
@@ -510,7 +527,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
     {
         Iterator<LogMatcher> expectedIterator = asList( expected ).iterator();
 
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             Iterator<LogCall> callsIterator = logCalls.iterator();
 
@@ -524,7 +541,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                     {
                         fail( format( "Log call did not match expectation\n  Expected: %s\n  Call was: %s", logMatcher, logCall ) );
                     }
-                } else
+                }
+                else
                 {
                     fail( format( "Got fewer log calls than expected. The missing log calls were:\n%s", describe( expectedIterator ) ) );
                 }
@@ -584,20 +602,10 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
      */
     public void assertAtLeastOnce( LogMatcher... expected )
     {
-        Set<LogMatcher> expectedMatchers = new HashSet<>( Arrays.asList( expected ) );
-        synchronized (logCalls)
+        Set<LogMatcher> expectedMatchers = Iterators.asSet( expected );
+        synchronized ( logCalls )
         {
-            for ( LogCall logCall : logCalls )
-            {
-                for ( LogMatcher matcher : expectedMatchers )
-                {
-                    if ( matcher.matches( logCall ) )
-                    {
-                        expectedMatchers.remove( matcher );
-                        break;
-                    }
-                }
-            }
+            expectedMatchers.removeIf( this::containsMatchingLogCall );
 
             if ( expectedMatchers.size() > 0 )
             {
@@ -612,40 +620,73 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertNone( LogMatcher notExpected )
     {
-        synchronized (logCalls)
+        LogCall logCall = firstMatchingLogCall( notExpected );
+        if ( logCall != null )
         {
-            for ( LogCall logCall : logCalls )
-            {
-                if ( notExpected.matches( logCall ) )
-                {
-                    fail( format(
-                            "Log call was not expected, but occurred:\n%s\n", logCall.toString()
-                    ) );
-                }
-            }
+            fail( format(
+                    "Log call was not expected, but occurred:\n%s\n", logCall.toString()
+            ) );
+        }
+    }
+
+    public void assertNoLogCallContaining( String partOfMessage )
+    {
+        if ( containsLogCallContaining( partOfMessage ) )
+        {
+            fail( format(
+                    "Expected no log statement containing '%s', but at least one found. Actual log calls were:\n%s",
+                    partOfMessage, serialize( logCalls.iterator() ) ) );
         }
     }
 
     public void assertContainsLogCallContaining( String partOfMessage )
     {
-        synchronized (logCalls)
+        if ( !containsLogCallContaining( partOfMessage ) )
+        {
+            fail( format(
+                    "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s",
+                    partOfMessage, serialize( logCalls.iterator() ) ) );
+        }
+    }
+
+    private boolean containsLogCallContaining( String partOfMessage )
+    {
+        synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
                 if ( logCall.toString().contains( partOfMessage ) )
                 {
-                    return;
+                    return true;
                 }
             }
-            fail( format(
-                    "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s", partOfMessage, serialize( logCalls.iterator() )
-            ) );
         }
+        return false;
+    }
+
+    public boolean containsMatchingLogCall( LogMatcher logMatcher )
+    {
+        return firstMatchingLogCall( logMatcher ) != null;
+    }
+
+    private LogCall firstMatchingLogCall( LogMatcher logMatcher )
+    {
+        synchronized ( logCalls )
+        {
+            for ( LogCall logCall : logCalls )
+            {
+                if ( logMatcher.matches( logCall ) )
+                {
+                    return logCall;
+                }
+            }
+        }
+        return null;
     }
 
     public void assertContainsMessageContaining( String partOfMessage )
     {
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             if ( containsMessage( partOfMessage ) )
             {
@@ -683,7 +724,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertContainsMessageMatching( Matcher<String> messageMatcher )
     {
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
@@ -695,8 +736,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             StringDescription description = new StringDescription();
             description.appendDescriptionOf( messageMatcher );
             fail( format(
-                    "Expected at least one log statement with message as %s, but none found. Actual log calls were:\n%s", description.toString(), serialize( logCalls.iterator() )
-            ) );
+                    "Expected at least one log statement with message as %s, but none found. Actual log calls were:\n%s",
+                    description.toString(), serialize( logCalls.iterator() ) ) );
         }
     }
 

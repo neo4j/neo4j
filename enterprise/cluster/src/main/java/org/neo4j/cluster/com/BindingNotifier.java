@@ -27,7 +27,7 @@ import org.neo4j.cluster.BindingListener;
  */
 public interface BindingNotifier
 {
-    public void addBindingListener( BindingListener listener );
+    void addBindingListener( BindingListener listener );
 
-    public void removeBindingListener( BindingListener listener );
+    void removeBindingListener( BindingListener listener );
 }

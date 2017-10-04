@@ -49,12 +49,13 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static java.util.Arrays.asList;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.inOrder;
@@ -65,6 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -97,7 +99,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
-        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
+        outputOrder.verify( output ).notifications( anyCollection() );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -133,7 +135,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
-        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
+        outputOrder.verify( output ).notifications( anyCollection() );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -238,7 +240,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        Statement statement = new Statement("query", map(), false, (ResultDataContent[]) null);
+        Statement statement = new Statement( "query", map(), false, (ResultDataContent[]) null );
         handle.commit( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // then
@@ -388,7 +390,8 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction.TransactionCommitFailed ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction
+                .TransactionCommitFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -412,7 +415,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        Statement statement = new Statement("matsch (n) return n", map(), false, (ResultDataContent[]) null);
+        Statement statement = new Statement( "matsch (n) return n", map(), false, (ResultDataContent[]) null );
         handle.commit( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // then
@@ -430,7 +433,10 @@ public class TransactionHandleTest
         // given
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         when( executionEngine.executeQuery( eq( "match (n) return n" ), eq( map() ), any( TransactionalContext.class ) ) ).thenAnswer(
-                invocationOnMock -> { throw new Exception("BOO"); } );
+                invocationOnMock ->
+                {
+                    throw new Exception( "BOO" );
+                } );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
@@ -447,6 +453,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
+        outputOrder.verify( output ).statementResult( isNull(), eq( false ), isNull() );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -481,7 +488,7 @@ public class TransactionHandleTest
     {
         // given
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        when( executionEngine.executeQuery( anyString(), anyMap(), any( TransactionalContext.class ) ) )
+        when( executionEngine.executeQuery( anyString(), anyMap(), isNull() ) )
                 .thenThrow( new DeadlockDetectedException( "deadlock" ) );
 
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );

@@ -39,13 +39,13 @@ public final class ByteCodeUtils
         {
             builder.append( reference.declaringClassName() ).append( '$' );
         }
-        builder.append( reference.simpleName() );
+        builder.append( reference.name() );
         return builder.toString();
     }
 
     public static String outerName( TypeReference reference )
     {
-        if (!reference.isInnerClass())
+        if ( !reference.isInnerClass() )
         {
             return null;
         }
@@ -73,7 +73,7 @@ public final class ByteCodeUtils
         return internalDesc( declaration.erased(), false );
     }
 
-    public static String desc( MethodReference reference)
+    public static String desc( MethodReference reference )
     {
         StringBuilder builder = new StringBuilder(  );
         builder.append( "(" );
@@ -110,7 +110,7 @@ public final class ByteCodeUtils
     {
 
         List<TypeReference> throwsList = declaration.erased().throwsList();
-        if (throwsList.isEmpty())
+        if ( throwsList.isEmpty() )
         {
             return null;
         }
@@ -142,7 +142,7 @@ public final class ByteCodeUtils
         if ( showErasure && throwsList.stream().anyMatch( TypeReference::isTypeParameter ) )
         {
             builder.append( "^" );
-            throwsList.forEach( ( t ) -> internalType( builder, t, false ) );
+            throwsList.forEach( t -> internalType( builder, t, false ) );
         }
         return builder.toString();
     }
@@ -155,15 +155,10 @@ public final class ByteCodeUtils
     private static StringBuilder internalType( StringBuilder builder, TypeReference reference,
             boolean showErasure )
     {
-        String name;
+        String name = reference.name();
         if ( reference.isArray() )
         {
             builder.append( "[" );
-            name = reference.simpleName().substring( 0, reference.simpleName().length() - 2 );
-        }
-        else
-        {
-            name = reference.simpleName();
         }
 
         switch ( name )
@@ -222,7 +217,7 @@ public final class ByteCodeUtils
                 builder.append( "<" );
                 parameters
                         .stream()
-                        .forEach( ( p ) -> internalType( builder, p, true ) );
+                        .forEach( p -> internalType( builder, p, true ) );
                 builder.append( ">" );
             }
             builder.append( ";" );

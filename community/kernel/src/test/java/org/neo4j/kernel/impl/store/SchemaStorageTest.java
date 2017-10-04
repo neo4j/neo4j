@@ -27,34 +27,32 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
-import org.neo4j.kernel.api.exceptions.schema.EntitySchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.schema.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
-import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -62,9 +60,12 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaStorageTest
 {
@@ -84,25 +85,25 @@ public class SchemaStorageTest
     @BeforeClass
     public static void initStorage() throws Exception
     {
-        storage = new SchemaStorage( dependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getSchemaStore() );
+        try ( Transaction transaction = db.beginTx();
+                Statement statement = getStatement() )
+        {
+            TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
+            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
+            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
+            tokenWriteOperations.labelGetOrCreateForName( LABEL1 );
+            tokenWriteOperations.labelGetOrCreateForName( LABEL2 );
+            tokenWriteOperations.relationshipTypeGetOrCreateForName( TYPE1 );
+            transaction.success();
+        }
+        SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
+        storage = new SchemaStorage( schemaStore );
     }
 
     @Before
     public void clearSchema()
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
-            {
-                constraint.drop();
-            }
-            for ( IndexDefinition index : db.schema().getIndexes() )
-            {
-                index.drop();
-            }
-            tx.success();
-        }
+        GraphDatabaseServiceCleaner.cleanupSchema( db );
     }
 
     @Test
@@ -115,13 +116,66 @@ public class SchemaStorageTest
                 index( LABEL2, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexRule( labelId( LABEL1 ), propId( PROP1 ) );
+        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNotNull( rule );
-        assertEquals( labelId( LABEL1 ), rule.getLabel() );
-        assertEquals( propId( PROP1 ), rule.getPropertyKey() );
-        assertEquals( SchemaRule.Kind.INDEX_RULE, rule.getKind() );
+        assertRule( rule, LABEL1, PROP2, IndexDescriptor.Type.GENERAL );
+    }
+
+    @Test
+    public void shouldReturnIndexRuleForLabelAndPropertyComposite() throws Exception
+    {
+        String a = "a";
+        String b = "b";
+        String c = "c";
+        String d = "d";
+        String e = "e";
+        String f = "f";
+        createSchema( db ->
+        {
+            db.schema().indexFor( Label.label( LABEL1 ) )
+              .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create();
+        } );
+
+        IndexRule rule = storage.indexGetForSchema( IndexDescriptorFactory.forLabel(
+                labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );
+
+        assertNotNull( rule );
+        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( a ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( b ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( c ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+    }
+
+    @Test
+    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite() throws Exception
+    {
+        String[] props = "abcdefghijklmnopqrstuvwxyzABCDEFGHJILKMNOPQRSTUVWXYZ".split( "\\B" );
+        createSchema( db ->
+        {
+            IndexCreator indexCreator = db.schema().indexFor( Label.label( LABEL1 ) );
+            for ( String prop : props )
+            {
+                indexCreator = indexCreator.on( prop );
+            }
+            indexCreator.create();
+        } );
+
+        IndexRule rule = storage.indexGetForSchema( IndexDescriptorFactory.forLabel(
+                labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ) );
+
+        assertNotNull( rule );
+        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
+        for ( String prop : props )
+        {
+            assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
+        }
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
     }
 
     @Test
@@ -132,7 +186,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexRule( labelId( LABEL1 ), propId( PROP2 ) );
+        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNull( rule );
@@ -147,13 +201,11 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexRule rule = storage.indexRule( labelId( LABEL1 ), propId( PROP1 ), IndexRuleKind.CONSTRAINT );
+        IndexRule rule = storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) );
 
         // Then
         assertNotNull( rule );
-        assertEquals( labelId( LABEL1 ), rule.getLabel() );
-        assertEquals( propId( PROP1 ), rule.getPropertyKey() );
-        assertEquals( SchemaRule.Kind.CONSTRAINT_INDEX_RULE, rule.getKind() );
+        assertRule( rule, LABEL1, PROP1, IndexDescriptor.Type.UNIQUE );
     }
 
     @Test
@@ -166,51 +218,13 @@ public class SchemaStorageTest
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        Set<IndexRule> listedRules = asSet( storage.allIndexRules() );
+        Set<IndexRule> listedRules = asSet( storage.indexesGetAll() );
 
         // Then
         Set<IndexRule> expectedRules = new HashSet<>();
-        expectedRules.add( new IndexRule( 0, labelId( LABEL1 ), propId( PROP1 ), PROVIDER_DESCRIPTOR, null ) );
-        expectedRules.add( new IndexRule( 1, labelId( LABEL1 ), propId( PROP2 ), PROVIDER_DESCRIPTOR, null ) );
-        expectedRules.add( new IndexRule( 2, labelId( LABEL2 ), propId( PROP1 ), PROVIDER_DESCRIPTOR, 0L ) );
-
-        assertEquals( expectedRules, listedRules );
-    }
-
-    @Test
-    public void shouldListAllSchemaRulesForNodes()
-    {
-        // Given
-        createSchema(
-                index( LABEL2, PROP1 ),
-                uniquenessConstraint( LABEL1, PROP1 ) );
-
-        // When
-        Set<NodePropertyConstraintRule> listedRules = asSet( storage.schemaRulesForNodes( value -> value, NodePropertyConstraintRule.class, labelId( LABEL1 ),
-                Predicates.<NodePropertyConstraintRule>alwaysTrue() ) );
-
-        // Then
-        Set<NodePropertyConstraintRule> expectedRules = new HashSet<>();
-        expectedRules.add( uniquenessConstraintRule( 1, labelId( LABEL1 ), propId( PROP1 ), 0 ) );
-
-        assertEquals( expectedRules, listedRules );
-    }
-
-    @Test
-    public void shouldListSchemaRulesByClass()
-    {
-        // Given
-        createSchema(
-                index( LABEL1, PROP1 ),
-                uniquenessConstraint( LABEL2, PROP1 ) );
-
-        // When
-        Set<UniquePropertyConstraintRule> listedRules = asSet(
-                storage.schemaRules( UniquePropertyConstraintRule.class ) );
-
-        // Then
-        Set<UniquePropertyConstraintRule> expectedRules = new HashSet<>();
-        expectedRules.add( uniquenessConstraintRule( 0, labelId( LABEL2 ), propId( PROP1 ), 0 ) );
+        expectedRules.add( makeIndexRule( 0, LABEL1, PROP1 ) );
+        expectedRules.add( makeIndexRule( 1, LABEL1, PROP2 ) );
+        expectedRules.add( makeIndexRuleForConstraint( 2, LABEL2, PROP1, 0L ) );
 
         assertEquals( expectedRules, listedRules );
     }
@@ -225,13 +239,12 @@ public class SchemaStorageTest
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        UniquePropertyConstraintRule rule = storage.uniquenessConstraint( labelId( LABEL1 ), propId( PROP1 ) );
+        ConstraintRule rule = storage.constraintsGetSingle(
+                ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
 
         // Then
         assertNotNull( rule );
-        assertEquals( labelId( LABEL1 ), rule.getLabel() );
-        assertEquals( propId( PROP1 ), rule.getPropertyKey() );
-        assertEquals( SchemaRule.Kind.UNIQUENESS_CONSTRAINT, rule.getKind() );
+        assertRule( rule, LABEL1, PROP1, ConstraintDescriptor.Type.UNIQUE );
     }
 
     @Test
@@ -242,14 +255,13 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         // EXPECT
-        expectedException.expect( EntitySchemaRuleNotFoundException.class );
-        expectedException.expect(
-                new KernelExceptionUserMessageMatcher( tokenNameLookup, "Constraint for label 'Label1' and property" +
-                                                                        " 'prop1' not found." ) );
+        expectedException.expect( SchemaRuleNotFoundException.class );
+        expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
+                "No node property existence constraint was found for :Label1(prop1)." ) );
 
         // WHEN
-        storage.nodePropertyExistenceConstraint( labelId( LABEL1 ), propId( PROP1 ) );
-
+        storage.constraintsGetSingle(
+                ConstraintDescriptorFactory.existsForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
     }
 
     @Test
@@ -260,18 +272,19 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
-                Iterators.<SchemaRule>iterator(
+        Mockito.when( schemaStorageSpy.loadAllSchemaRules( any(), any(), anyBoolean() ) ).thenReturn(
+                Iterators.iterator(
                         getUniquePropertyConstraintRule( 1L, LABEL1, PROP1 ),
                         getUniquePropertyConstraintRule( 2L, LABEL1, PROP1 ) ) );
 
         //EXPECT
-        expectedException.expect( DuplicateEntitySchemaRuleException.class );
+        expectedException.expect( DuplicateSchemaRuleException.class );
         expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple constraints found for label 'Label1' and property 'prop1'." ) );
+                "Multiple uniqueness constraints found for :Label1(prop1)." ) );
 
         // WHEN
-        schemaStorageSpy.uniquenessConstraint( labelId( LABEL1 ), propId( PROP1 ) );
+        schemaStorageSpy.constraintsGetSingle(
+                ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
     }
 
     @Test
@@ -281,12 +294,13 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         // EXPECT
-        expectedException.expect( EntitySchemaRuleNotFoundException.class );
+        expectedException.expect( SchemaRuleNotFoundException.class );
         expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "Constraint for relationship type 'Type1' and property 'prop1' not found." ) );
+                "No relationship property existence constraint was found for -[:Type1(prop1)]-." ) );
 
         //WHEN
-        storage.relationshipPropertyExistenceConstraint( typeId( TYPE1 ), propId( PROP1 ) );
+        storage.constraintsGetSingle(
+                ConstraintDescriptorFactory.existsForRelType( typeId( TYPE1 ), propId( PROP1 ) ) );
     }
 
     @Test
@@ -297,95 +311,127 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
-                Iterators.<SchemaRule>iterator(
+        Mockito.when( schemaStorageSpy.loadAllSchemaRules( any(), any(), anyBoolean() ) ).thenReturn(
+                Iterators.iterator(
                         getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1, PROP1 ),
                         getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1, PROP1 ) ) );
 
         //EXPECT
-        expectedException.expect( DuplicateEntitySchemaRuleException.class );
+        expectedException.expect( DuplicateSchemaRuleException.class );
         expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple constraints found for relationship type 'Type1' and property 'prop1'." ) );
+                "Multiple relationship property existence constraints found for -[:Type1(prop1)]-." ) );
 
         // WHEN
-        schemaStorageSpy.relationshipPropertyExistenceConstraint( typeId( TYPE1 ), propId( PROP1 ) );
+        schemaStorageSpy.constraintsGetSingle(
+                ConstraintDescriptorFactory.existsForRelType( typeId( TYPE1 ), propId( PROP1 ) ) );
     }
 
     private TokenNameLookup getDefaultTokenNameLookup()
     {
-        TokenNameLookup tokenNameLookup = Mockito.mock( TokenNameLookup.class );
+        TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         Mockito.when( tokenNameLookup.labelGetName( labelId( LABEL1 ) ) ).thenReturn( LABEL1 );
         Mockito.when( tokenNameLookup.propertyKeyGetName( propId( PROP1 ) ) ).thenReturn( PROP1 );
         Mockito.when( tokenNameLookup.relationshipTypeGetName( typeId( TYPE1 ) ) ).thenReturn( TYPE1 );
         return tokenNameLookup;
     }
 
-    private UniquePropertyConstraintRule getUniquePropertyConstraintRule( long id, String label,
+    private void assertRule( IndexRule rule, String label, String propertyKey, IndexDescriptor.Type type )
+    {
+        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
+        assertEquals( type, rule.getIndexDescriptor().type() );
+    }
+
+    private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )
+    {
+        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
+        assertEquals( type, rule.getConstraintDescriptor().type() );
+    }
+
+    private IndexDescriptor indexDescriptor( String label, String property )
+    {
+        return IndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
+    }
+
+    private IndexDescriptor uniqueIndexDescriptor( String label, String property )
+    {
+        return IndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
+    }
+
+    private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )
+    {
+        return IndexRule.indexRule(
+                ruleId,
+                IndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ),
+                PROVIDER_DESCRIPTOR );
+    }
+
+    private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
+            long constraintId )
+    {
+        return IndexRule.constraintIndexRule(
+                ruleId,
+                IndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
+                PROVIDER_DESCRIPTOR, constraintId );
+    }
+
+    private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )
+    {
+        return ConstraintRule.constraintRule( id,
+                ConstraintDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) ), 0L );
+    }
+
+    private ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, String type,
             String property )
     {
-        return UniquePropertyConstraintRule
-                .uniquenessConstraintRule( id, labelId( label ), propId( property ), 0L );
+        return ConstraintRule.constraintRule( id,
+                ConstraintDescriptorFactory.existsForRelType( typeId( type ), propId( property ) ) );
     }
 
-    private RelationshipPropertyExistenceConstraintRule getRelationshipPropertyExistenceConstraintRule( long id,
-            String type,
-            String property )
+    private static int labelId( String labelName )
     {
-        return RelationshipPropertyExistenceConstraintRule
-                .relPropertyExistenceConstraintRule( id, typeId( type ), propId( property ) );
-    }
-
-    private static void awaitIndexes()
-    {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+              Statement statement = getStatement() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
-        }
-    }
-
-    private int labelId( String labelName )
-    {
-        try ( Transaction ignore = db.beginTx() )
-        {
-            return readOps().labelGetForName( labelName );
+            return statement.readOperations().labelGetForName( labelName );
         }
     }
 
     private int propId( String propName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+              Statement statement = getStatement() )
         {
-            return readOps().propertyKeyGetForName( propName );
+            return statement.readOperations().propertyKeyGetForName( propName );
         }
     }
 
-    private int typeId( String typeName )
+    private static int typeId( String typeName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+                Statement statement = getStatement() )
         {
-            return readOps().relationshipTypeGetForName( typeName );
+            return statement.readOperations().relationshipTypeGetForName( typeName );
         }
     }
 
-    private ReadOperations readOps()
+    private static Statement getStatement()
     {
-        DependencyResolver dependencyResolver = dependencyResolver();
-        Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
-        return statement.readOperations();
+        return resolveDependency( ThreadToStatementContextBridge.class ).get();
     }
 
-    private static DependencyResolver dependencyResolver()
+    private static <T> T resolveDependency( Class<T> clazz )
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver();
+        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( clazz );
     }
 
-    private Consumer<GraphDatabaseService> index( String label, String prop )
+    private static Consumer<GraphDatabaseService> index( String label, String prop )
     {
         return db -> db.schema().indexFor( Label.label( label ) ).on( prop ).create();
     }
 
-    private Consumer<GraphDatabaseService> uniquenessConstraint( String label, String prop )
+    private static Consumer<GraphDatabaseService> uniquenessConstraint( String label, String prop )
     {
         return db -> db.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( prop ).create();
     }
@@ -402,5 +448,14 @@ public class SchemaStorageTest
             tx.success();
         }
         awaitIndexes();
+    }
+
+    private static void awaitIndexes()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.success();
+        }
     }
 }

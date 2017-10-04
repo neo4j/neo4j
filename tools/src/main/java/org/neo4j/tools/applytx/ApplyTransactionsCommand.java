@@ -31,24 +31,23 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.tools.console.input.ArgsCommand;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -104,11 +103,11 @@ public class ApplyTransactionsCommand extends ArgsCommand
                         resolver.resolveDependency( TransactionAppender.class ),
                         resolver.resolveDependency( StorageEngine.class ) );
         LifeSupport life = new LifeSupport();
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            LogicalTransactionStore source = life.add(
-                    new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath, new Monitors() ) );
+            LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath,
+                    new Monitors() ) );
             life.start();
             long lastAppliedTx = fromTxExclusive;
             // Some progress if there are more than a couple of transactions to apply

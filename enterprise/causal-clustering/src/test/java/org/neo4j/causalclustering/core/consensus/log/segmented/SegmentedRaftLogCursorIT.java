@@ -51,6 +51,7 @@ public class SegmentedRaftLogCursorIT
     {
         life.stop();
         life.shutdown();
+        fileSystem.close();
     }
 
     private SegmentedRaftLog createRaftLog( long rotateAtSize, String pruneStrategy )

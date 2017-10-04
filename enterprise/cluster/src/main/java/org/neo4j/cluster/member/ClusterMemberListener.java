@@ -71,8 +71,7 @@ public interface ClusterMemberListener
      */
     void memberIsAlive( InstanceId instanceId );
 
-    public abstract class Adapter
-            implements ClusterMemberListener
+    abstract class Adapter implements ClusterMemberListener
     {
         @Override
         public void coordinatorIsElected( InstanceId coordinatorId )

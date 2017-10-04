@@ -23,13 +23,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-kernel</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Graph Database Kernel</name>
   <description>
@@ -40,9 +40,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j</bundle.namespace>
-    <short-name>kernel</short-name>
-    <version-package>kernel.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -77,12 +74,11 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
+      <!-- This module contains public API, generate javadoc -->
       <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <argLine>-Xmx300m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields -XX:-OmitStackTraceInFastThrow</argLine>
-        </configuration>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -120,53 +116,19 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
-          <groups>
-            <group>
-              <title>Graph database</title>
-              <packages>org.neo4j.graphdb:org.neo4j.graphdb.*</packages>
-            </group>
-            <group>
-              <title>Procedures</title>
-              <packages>org.neo4j.procedure:org.neo4j.procedure.*</packages>
-            </group>
-            <group>
-              <title>Helpers</title>
-              <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
-            </group>
-          </groups>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default</id>
-            <phase>${clirr-check-phase}</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
-          <failOnError>true</failOnError>
-          <logResults>true</logResults>
-          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
-           need to fix that.
-           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
-            -->
-          <comparisonVersion>3.0.1</comparisonVersion>
-          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
-          <includes>
-            <include>org/neo4j/graphdb/**</include>
-          </includes>
-          <excludeMessageCodes>
-            <param>6006</param><!-- Field was made final. -->
-            <param>7012</param><!-- Method added to interface -->
-          </excludeMessageCodes>
+          <ignored combine.children="append">
+            <difference>
+              <className>org/neo4j/unsafe/batchinsert/DirectRecordAccess</className>
+              <differenceType>8001</differenceType>
+            </difference>
+            <difference>
+              <className>org/neo4j/unsafe/batchinsert/DirectRecordAccessSet</className>
+              <differenceType>8001</differenceType>
+            </difference>
+          </ignored>
         </configuration>
       </plugin>
     </plugins>
@@ -182,6 +144,11 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -214,7 +181,21 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-lucene-upgrade</artifactId>
       <version>${project.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-configuration</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-index</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ssl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>annotations</artifactId>
@@ -242,8 +223,8 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.jimfs</groupId>
-      <artifactId>jimfs</artifactId>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
     </dependency>
 
     <dependency>
@@ -251,6 +232,11 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-common</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

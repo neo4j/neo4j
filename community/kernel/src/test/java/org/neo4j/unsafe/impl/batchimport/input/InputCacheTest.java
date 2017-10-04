@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -49,7 +49,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 public class InputCacheTest
 {
-    private static final int BATCH_SIZE = 100, BATCHES = 100;
+    private static final int BATCH_SIZE = 100;
+    private static final int BATCHES = 100;
 
     private static final String[] TOKENS = new String[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
 
@@ -68,7 +69,7 @@ public class InputCacheTest
     public void shouldCacheAndRetrieveNodes() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
+        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), Standard.LATEST_RECORD_FORMATS,
                 withMaxProcessors( 50 ), (int) ByteUnit.kibiBytes( 8 ), BATCH_SIZE ) )
         {
             List<InputNode> nodes = new ArrayList<>();
@@ -110,7 +111,7 @@ public class InputCacheTest
     public void shouldCacheAndRetrieveRelationships() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
+        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), Standard.LATEST_RECORD_FORMATS,
                 withMaxProcessors( 50 ), (int) ByteUnit.kibiBytes( 8 ), BATCH_SIZE ) )
         {
             List<InputRelationship> relationships = new ArrayList<>();
@@ -288,7 +289,7 @@ public class InputCacheTest
     private Object[] randomProperties( Randoms random )
     {
         int length = random.random().nextInt( 10 );
-        Object[] properties = new Object[length*2];
+        Object[] properties = new Object[length * 2];
         for ( int i = 0; i < properties.length; i++ )
         {
             properties[i++] = random.random().nextFloat() < 0.2f ? random.intBetween( 0, 10 ) : random.among( TOKENS );

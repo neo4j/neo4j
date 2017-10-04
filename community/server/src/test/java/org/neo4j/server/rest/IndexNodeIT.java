@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,9 +33,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,13 +48,11 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 
 import static java.util.Collections.singletonList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -272,7 +270,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         // When
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Build~0.1%20AND%20Gender:Male&order=score" ).entity();
+                        + "?query=" + key + ":Build~0.1%20AND%20Gender:Male&order=score" ).entity();
 
         //noinspection unchecked
         hits = (Collection<LinkedHashMap<String, String>>) JsonHelper.readJson( entity );
@@ -329,9 +327,8 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
          */
         assertTrue( "scores are reversed", score2 > score1 );
 
-        entity = gen().expectedStatus( 200 ).get(
-                functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Builder~%20AND%20Gender:Male&order=index" ).entity();
+        entity = gen().expectedStatus( 200 ).get( functionalTestHelper.indexNodeUri( indexName ) + "?query=" + key +
+                ":Builder~%20AND%20Gender:Male&order=index" ).entity();
 
         hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
@@ -355,7 +352,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
 
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Builder~%20AND%20Gender:Male&order=score" ).entity();
+                        + "?query=" + key + ":Builder~%20AND%20Gender:Male&order=score" ).entity();
 
         hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
@@ -662,7 +659,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_a_node_in_an_unique_index() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Tobias";
         helper.createNodeIndex( index );
         ResponseEntity response = gen()
                 .expectedStatus( 201 /* created */ )
@@ -683,7 +682,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_node_with_array_properties() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Tobias";
         helper.createNodeIndex( index );
         ResponseEntity response = gen()
                 .expectedStatus( 201 /* created */ )
@@ -718,7 +719,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_unique_node_if_already_existing() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
 
         GraphDatabaseService graphdb = graphdb();
         try ( Transaction tx = graphdb().beginTx() )
@@ -754,7 +757,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_a_unique_node_or_fail_create() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Tobias";
         helper.createNodeIndex( index );
         ResponseEntity response = gen.get()
                 .expectedStatus( 201 /* created */ )
@@ -782,7 +787,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_a_unique_node_or_return_fail___fail() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
 
         GraphDatabaseService graphdb = graphdb();
         helper.createNodeIndex( index );
@@ -877,12 +884,15 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void put_node_if_absent___create() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Mattias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Mattias";
         helper.createNodeIndex( index );
         String uri = functionalTestHelper.nodeIndexUri() + index + "?unique";
         gen().expectedStatus( 201 /* created */ )
                  .payloadType( MediaType.APPLICATION_JSON_TYPE )
-                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
+                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", " +
+                         "\"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
                  .post( uri );
     }
 
@@ -890,7 +900,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     public void already_indexed_node_should_not_fail_on_create_or_fail() throws Exception
     {
         // Given
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createNodeIndex( index );
         Node node;

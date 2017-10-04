@@ -27,7 +27,7 @@ class ValueRegister extends AbstractKeyValueStore.Reader<Register.DoubleLongRegi
 {
     private final Register.DoubleLongRegister target;
 
-    public ValueRegister( Register.DoubleLongRegister target )
+    ValueRegister( Register.DoubleLongRegister target )
     {
         this.target = target;
     }

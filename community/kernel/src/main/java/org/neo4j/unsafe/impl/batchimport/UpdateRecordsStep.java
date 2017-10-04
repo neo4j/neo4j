@@ -45,7 +45,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
     {
-        super( control, "v", config, 1 );
+        super( control, "v", config, config.parallelRecordWrites() ? 0 : 1 );
         this.store = store;
         this.recordSize = store.getRecordSize();
     }
@@ -81,7 +81,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     @Override
     public Stat stat( Key key )
     {
-        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize*recordsUpdated ) : null;
+        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize * recordsUpdated ) : null;
     }
 
     @Override

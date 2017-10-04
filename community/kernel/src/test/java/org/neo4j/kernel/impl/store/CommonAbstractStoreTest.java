@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
 
@@ -29,18 +31,22 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RecordingPageCacheTracer;
-import org.neo4j.io.pagecache.RecordingPageCacheTracer.Pin;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.ConfigurablePageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.recording.Event;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -55,8 +61,10 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.hamcrest.Matchers.empty;
@@ -79,9 +87,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
+import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Pin;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.test.rule.PageCacheRule.config;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class CommonAbstractStoreTest
@@ -95,22 +104,25 @@ public class CommonAbstractStoreTest
     private final PageCursor pageCursor = mock( PageCursor.class );
     private final PagedFile pageFile = mock( PagedFile.class );
     private final PageCache pageCache = mock( PageCache.class );
-    private final Config config = Config.empty();
+    private final Config config = Config.defaults();
     private final File storeFile = new File( "store" );
     private final RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
-    private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private static final TestDirectory dir = testDirectory( fs );
-    private static final PageCacheRule pageCacheRule = new PageCacheRule();
+    private static final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private static final TestDirectory dir = testDirectory( fileSystemRule.get() );
+    private static final ConfigurablePageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
 
     @ClassRule
-    public static final RuleChain ruleChain = RuleChain.outerRule( dir ).around( pageCacheRule );
+    public static final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( dir ).around( pageCacheRule );
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUpMocks() throws IOException
     {
-        when( idGeneratorFactory.open( any( File.class ), eq( idType ), anyInt(), anyInt() ) )
+        when( idGeneratorFactory.open( any( File.class ), eq( idType ), any( Supplier.class ), anyLong() ) )
                 .thenReturn( idGenerator );
 
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
@@ -141,7 +153,7 @@ public class CommonAbstractStoreTest
         long pageIdForRecord = store.pageIdForRecord( recordId );
 
         when( pageCursor.getCurrentPageId() ).thenReturn( pageIdForRecord );
-        when( pageCursor.next( anyInt() ) ).thenReturn( true );
+        when( pageCursor.next( anyLong() ) ).thenReturn( true );
 
         RecordCursor<TheRecord> cursor = store.newRecordCursor( newRecord( -1 ) );
         cursor.acquire( recordId, RecordLoad.FORCE );
@@ -154,20 +166,49 @@ public class CommonAbstractStoreTest
     }
 
     @Test
+    public void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException
+    {
+        File storeFile = dir.file( "a" );
+        PageCache pageCache = mock( PageCache.class );
+        PagedFile pagedFile = mock( PagedFile.class );
+        PageCursor pageCursor = mock( PageCursor.class );
+
+        when( pageCache.map( eq( storeFile ), anyInt(), any( OpenOption.class ) ) ).thenReturn( pagedFile );
+        when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK ) ).thenReturn( pageCursor );
+        when( pageCursor.next() ).thenReturn( false );
+
+        RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
+
+        expectedException.expect( StoreNotFoundException.class );
+        expectedException.expectMessage( "Fail to read header record of store file: " + storeFile.getAbsolutePath() );
+
+        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, config, IdType.NODE_LABELS,
+                idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
+                Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ),
+                recordFormats.dynamic(),recordFormats.storeVersion() ) )
+        {
+            dynamicArrayStore.initialise( false );
+        }
+    }
+
+    @Test
     public void recordCursorPinsEachPageItReads() throws Exception
     {
         File storeFile = dir.file( "a" );
-        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer( Pin.class );
-        PageCache pageCache = pageCacheRule.getPageCache( fs, tracer, Config.empty() );
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer pageCursorTracer = new RecordingPageCursorTracer( Pin.class );
+        PageCacheRule.PageCacheConfig pageCacheConfig = config().withTracer( tracer )
+                                        .withCursorTracerSupplier( pageCursorTracerSupplier( pageCursorTracer ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), pageCacheConfig, Config.defaults() );
 
-        try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fs ),
-                pageCache, NullLogProvider.getInstance(), null, StandardV3_0.RECORD_FORMATS ) )
+        try ( NodeStore store = new NodeStore( storeFile, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
+                pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )
         {
             store.initialise( true );
             assertNull( tracer.tryObserve( Event.class ) );
 
-            long nodeId1 = insertNodeRecordAndObservePinEvent( tracer, store );
-            long nodeId2 = insertNodeRecordAndObservePinEvent( tracer, store );
+            long nodeId1 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
+            long nodeId2 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
 
             try ( RecordCursor<NodeRecord> cursor = store.newRecordCursor( store.newRecord() ) )
             {
@@ -179,8 +220,8 @@ public class CommonAbstractStoreTest
             // event. This pin event will not be observable until after we have closed the cursor. We could
             // alternatively have chosen nodeId2 to be on a different page than nodeId1. In that case, the pin event
             // for nodeId1 would have been visible after our call to cursor.next( nodeId2 ).
-            assertNotNull( tracer.tryObserve( Pin.class ) );
-            assertNull( tracer.tryObserve( Event.class ) );
+            assertNotNull( pageCursorTracer.tryObserve( Pin.class ) );
+            assertNull( pageCursorTracer.tryObserve( Event.class ) );
         }
     }
 
@@ -271,7 +312,8 @@ public class CommonAbstractStoreTest
         // GIVEN
         File file = dir.file( "store" ).getAbsoluteFile();
         File idFile = new File( file.getParentFile(), StoreFileType.ID.augment( file.getName() ) );
-        PageCache pageCache = pageCacheRule.getPageCache( fs, PageCacheTracer.NULL, Config.empty() );
+        FileSystemAbstraction fs = fileSystemRule.get();
+        PageCache pageCache = pageCacheRule.getPageCache( fs, Config.defaults() );
         TheStore store = new TheStore( file, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
                 NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
         store.initialise( true );
@@ -300,7 +342,7 @@ public class CommonAbstractStoreTest
         return new TheRecord( id );
     }
 
-    private long insertNodeRecordAndObservePinEvent( RecordingPageCacheTracer tracer, NodeStore store )
+    private long insertNodeRecordAndObservePinEvent( RecordingPageCursorTracer tracer, NodeStore store )
     {
         long nodeId = store.nextId();
         NodeRecord record = store.newRecord();
@@ -311,6 +353,12 @@ public class CommonAbstractStoreTest
         assertNotNull( tracer.tryObserve( Pin.class ) );
         assertNull( tracer.tryObserve( Event.class ) );
         return nodeId;
+    }
+
+    private static ConfigurablePageCursorTracerSupplier pageCursorTracerSupplier(
+            RecordingPageCursorTracer pageCursorTracer )
+    {
+        return new ConfigurablePageCursorTracerSupplier( pageCursorTracer );
     }
 
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>

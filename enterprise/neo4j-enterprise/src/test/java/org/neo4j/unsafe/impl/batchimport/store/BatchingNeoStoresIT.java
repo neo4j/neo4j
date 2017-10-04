@@ -24,8 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -39,7 +38,6 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 public class BatchingNeoStoresIT
 {
-
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
@@ -48,10 +46,9 @@ public class BatchingNeoStoresIT
     @Test
     public void startBatchingNeoStoreWithMetricsPluginEnabled() throws Exception
     {
-        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         File storeDir = testDirectory.graphDbDir();
-        Config config = Config.defaults()
-                .with( MapUtil.stringMap( MetricsSettings.metricsEnabled.name(), "true" ) );
+        Config config = Config.defaults( MetricsSettings.metricsEnabled, "true"  );
         AssertableLogProvider provider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( provider, provider );
 

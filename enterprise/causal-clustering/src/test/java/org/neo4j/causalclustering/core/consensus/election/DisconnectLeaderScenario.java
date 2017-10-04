@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -74,7 +73,9 @@ public class DisconnectLeaderScenario
         long startTime = System.currentTimeMillis();
 
         fixture.net.disconnect( oldLeader );
-        MemberId newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( rafts, raft -> !raft.identity().equals( oldLeader ) ), leaderStabilityMaxTimeMillis );
+        MemberId newLeader = ElectionUtil.waitForLeaderAgreement(
+                new FilteringIterable<>( rafts, raft -> !raft.identity().equals( oldLeader ) ),
+                leaderStabilityMaxTimeMillis );
         assert !newLeader.equals( oldLeader ); // this should be guaranteed by the waitForLeaderAgreement call
 
         return System.currentTimeMillis() - startTime;
@@ -98,7 +99,8 @@ public class DisconnectLeaderScenario
         @Override
         public String toString()
         {
-            return String.format( "Result{nonCollidingAverage=%s, collidingAverage=%s, collisionRate=%s, collisionCount=%d, timeoutCount=%d}",
+            return String.format( "Result{nonCollidingAverage=%s, collidingAverage=%s, collisionRate=%s, " +
+                            "collisionCount=%d, timeoutCount=%d}",
                     nonCollidingAverage, collidingAverage, collisionRate, collisionCount, timeoutCount );
         }
     }

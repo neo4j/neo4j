@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,14 +51,14 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.test.RepeatRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -67,10 +68,13 @@ public class DatabaseIndexIntegrationTest
     private static final int THREAD_NUMBER = 5;
     private static ExecutorService workers;
 
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final RepeatRule repeatRule = new RepeatRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public RepeatRule repeatRule = new RepeatRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( repeatRule )
+            .around( fileSystemRule );
 
     private final CountDownLatch raceSignal = new CountDownLatch( 1 );
     private SyncNotifierDirectoryFactory directoryFactory;
@@ -92,7 +96,7 @@ public class DatabaseIndexIntegrationTest
     public void setUp() throws IOException
     {
         directoryFactory = new SyncNotifierDirectoryFactory( raceSignal );
-        luceneIndex = createTestLuceneIndex( directoryFactory, testDir.directory() );
+        luceneIndex = createTestLuceneIndex( directoryFactory, testDirectory.directory() );
     }
 
     @After
@@ -133,10 +137,10 @@ public class DatabaseIndexIntegrationTest
         assertFalse( luceneIndex.isOpen() );
     }
 
-    private static WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
+    private WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "test", false );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage(
+                dirFactory, fileSystemRule.get(), folder, false );
         WritableTestDatabaseIndex index = new WritableTestDatabaseIndex( indexStorage );
         index.create();
         index.open();
@@ -165,7 +169,8 @@ public class DatabaseIndexIntegrationTest
 
     private Runnable createConcurrentDropTask( CountDownLatch dropRaceSignal )
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 dropRaceSignal.await();
@@ -181,7 +186,8 @@ public class DatabaseIndexIntegrationTest
 
     private Runnable createConcurrentCloseTask( CountDownLatch closeRaceSignal )
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 closeRaceSignal.await();
@@ -197,7 +203,8 @@ public class DatabaseIndexIntegrationTest
 
     private Runnable createMainCloseTask()
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 luceneIndex.close();
@@ -237,8 +244,7 @@ public class DatabaseIndexIntegrationTest
     private static class TestLuceneIndex extends AbstractLuceneIndex
     {
 
-        public TestLuceneIndex( PartitionedIndexStorage indexStorage,
-                IndexPartitionFactory partitionFactory )
+        TestLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
         {
             super( indexStorage, partitionFactory );
         }
@@ -282,7 +288,7 @@ public class DatabaseIndexIntegrationTest
             private final Directory delegate;
             private final CountDownLatch signal;
 
-            public SyncNotifierDirectory( Directory delegate, CountDownLatch signal )
+            SyncNotifierDirectory( Directory delegate, CountDownLatch signal )
             {
                 this.delegate = delegate;
                 this.signal = signal;

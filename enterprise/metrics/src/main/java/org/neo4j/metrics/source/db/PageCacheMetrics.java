@@ -45,6 +45,10 @@ public class PageCacheMetrics extends LifecycleAdapter
     public static final String PC_EVICTIONS = name( PAGE_CACHE_PREFIX, "evictions" );
     @Documented( "The total number of page faults happened in the page cache" )
     public static final String PC_PAGE_FAULTS = name( PAGE_CACHE_PREFIX, "page_faults" );
+    @Documented( "The total number of page hits happened in the page cache" )
+    public static final String PC_HITS = name( PAGE_CACHE_PREFIX, "hits" );
+    @Documented( "The ratio of hits to the total number of lookups in the page cache" )
+    public static final String PC_HIT_RATIO = name( PAGE_CACHE_PREFIX, "hit_ratio" );
 
     private final MetricRegistry registry;
     private final PageCacheCounters pageCacheCounters;
@@ -62,8 +66,10 @@ public class PageCacheMetrics extends LifecycleAdapter
         registry.register( PC_EVICTIONS, (Gauge<Long>) pageCacheCounters::evictions );
         registry.register( PC_PINS, (Gauge<Long>) pageCacheCounters::pins );
         registry.register( PC_UNPINS, (Gauge<Long>) pageCacheCounters::unpins );
+        registry.register( PC_HITS, (Gauge<Long>) pageCacheCounters::hits );
         registry.register( PC_FLUSHES, (Gauge<Long>) pageCacheCounters::flushes );
         registry.register( PC_EVICTION_EXCEPTIONS, (Gauge<Long>) pageCacheCounters::evictionExceptions );
+        registry.register( PC_HIT_RATIO, (Gauge<Double>) pageCacheCounters::hitRatio );
     }
 
     @Override
@@ -73,7 +79,9 @@ public class PageCacheMetrics extends LifecycleAdapter
         registry.remove( PC_EVICTIONS );
         registry.remove( PC_PINS );
         registry.remove( PC_UNPINS );
+        registry.remove( PC_HITS );
         registry.remove( PC_FLUSHES );
         registry.remove( PC_EVICTION_EXCEPTIONS );
+        registry.remove( PC_HIT_RATIO );
     }
 }

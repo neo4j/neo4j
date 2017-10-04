@@ -60,7 +60,8 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
     @Override
     public void fulfill( final long toTxId ) throws InterruptedException
     {
-        updatePuller.pullUpdates( ( currentTicket, targetTicket ) -> {
+        updatePuller.pullUpdates( ( currentTicket, targetTicket ) ->
+        {
             /*
              * We need to await last *closed* transaction id, not last *committed* transaction id since
              * right after leaving this method we might read records off of disk, and they had better

@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
@@ -30,28 +31,31 @@ import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 
 import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
 {
     private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
 
-    StartStopLoad( FileSystemAbstraction fs, BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster,
-            int numberOfCores, int numberOfEdges )
+    StartStopLoad( FileSystemAbstraction fs, PageCache pageCache, BooleanSupplier keepGoing, Runnable onFailure,
+            Cluster cluster, int numberOfCores, int numberOfEdges )
     {
         super( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges );
         this.fs = fs;
+        this.pageCache = pageCache;
     }
 
     @Override
     protected void doWorkOnMember( boolean isCore, int id )
     {
         ClusterMember member = isCore ? cluster.getCoreMemberById( id ) : cluster.getReadReplicaById( id );
-        String storeDir = member.database().getStoreDir();
+        File storeDir = member.database().getStoreDir();
         KernelExtensions kernelExtensions =
                 member.database().getDependencyResolver().resolveDependency( KernelExtensions.class );
         member.shutdown();
@@ -60,17 +64,17 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
         member.start();
     }
 
-    private void assertStoreConsistent( String storeDir, KernelExtensions kernelExtensions )
+    private void assertStoreConsistent( File storeDir, KernelExtensions kernelExtensions )
     {
-        File fromDirectory = new File( storeDir );
-        File parent = fromDirectory.getParentFile();
-        try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, parent );
-                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        File parent = storeDir.getParentFile();
+        try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, pageCache, parent );
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
-            fs.copyRecursively( fromDirectory, storeDirectory.storeDir() );
+            fs.copyRecursively( storeDir, storeDirectory.storeDir() );
             new CopiedStoreRecovery( Config.defaults(), kernelExtensions.listFactories(),  pageCache )
                     .recoverCopiedStore( storeDirectory.storeDir() );
-            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir} );
+            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
+                    new PrintStream( NULL_OUTPUT_STREAM ), new PrintStream( NULL_OUTPUT_STREAM ) );
             if ( !result.isSuccessful() )
             {
                 throw new RuntimeException( "Not consistent database in " + storeDir );

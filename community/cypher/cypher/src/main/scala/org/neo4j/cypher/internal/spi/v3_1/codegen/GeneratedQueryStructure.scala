@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.spi.v3_1.codegen
 import java.lang.reflect.Modifier
 import java.util
 
-import org.neo4j.codegen.CodeGeneratorOption._
 import org.neo4j.codegen.TypeReference._
-import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
-import org.neo4j.codegen.{CodeGenerator, _}
+import org.neo4j.codegen.bytecode.ByteCode.{BYTECODE, VERIFY_GENERATED_BYTECODE}
+import org.neo4j.codegen.source.SourceCode.SOURCECODE
+import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenType, FloatType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_1.helpers._
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.using
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext}
@@ -37,6 +38,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
+
+import scala.collection.mutable
 
 object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
@@ -46,31 +49,38 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   case class GeneratedQueryStructureResult(query: GeneratedQuery, source: Option[(String, String)])
     extends CodeStructureResult[GeneratedQuery]
 
-  private def createGenerator(conf: CodeGenConfiguration, source: (Option[(String, String)]) => Unit) = {
+  private def createGenerator(conf: CodeGenConfiguration, source: (String, String) => Unit) = {
     val mode = conf.mode match {
-      case SourceCodeMode => SourceCode.SOURCECODE
-      case ByteCodeMode => SourceCode.BYTECODE
+      case SourceCodeMode => SOURCECODE
+      case ByteCodeMode => BYTECODE
     }
-    val option = if (conf.saveSource) new SourceVisitor {
-      override protected def visitSource(reference: TypeReference,
-                                         sourceCode: CharSequence) = source(Some(reference.name(), sourceCode.toString))
-    } else {
-      source(None)
-      BLANK_OPTION
+
+    val options = mutable.ListBuffer.empty[CodeGeneratorOption]
+    if(conf.saveSource) {
+      options += (if(mode == SOURCECODE) new SourceVisitor {
+        override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
+          source(reference.fullName(), sourceCode.toString)
+      } else new DisassemblyVisitor {
+        override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
+          source(className, disassembly.toString)
+      })
+    }
+    if(getClass.desiredAssertionStatus()) {
+      options += VERIFY_GENERATED_BYTECODE
     }
 
     try {
-      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option)
+      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, options:_*)
     } catch {
       case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
     }
   }
 
-  class SourceSaver extends ((Option[(String, String)]) => Unit) {
+  class SourceSaver extends ((String, String) => Unit) {
 
     private var _source: Option[(String, String)] = None
 
-    override def apply(v1: Option[(String, String)]) =  _source = v1
+    override def apply(typeName: String, sourceCode: String): Unit =  _source = Some(typeName, sourceCode)
 
     def source: Option[(String, String)] = _source
   }
@@ -94,8 +104,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
         params = clazz.field(typeRef[util.Map[String, Object]], "params"),
         closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
-        success = clazz.generate(Templates.SUCCESS),
-        close = clazz.generate(Templates.CLOSE))
+        success = clazz.generate(Templates.success(clazz.handle())),
+        close = clazz.generate(Templates.close(clazz.handle())))
         // the "COLUMNS" static field
         clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](
         columns.map(key => constant(key))))
@@ -106,10 +116,10 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       }
 
       // simple methods
-      clazz.generate(Templates.CONSTRUCTOR)
-      clazz.generate(Templates.SET_SUCCESSFUL_CLOSEABLE)
-      clazz.generate(Templates.EXECUTION_MODE)
-      clazz.generate(Templates.EXECUTION_PLAN_DESCRIPTION)
+      clazz.generate(Templates.constructor(clazz.handle()))
+      clazz.generate(Templates.setSuccessfulCloseable(clazz.handle()))
+      clazz.generate(Templates.executionMode(clazz.handle()))
+      clazz.generate(Templates.executionPlanDescription(clazz.handle()))
       clazz.generate(Templates.JAVA_COLUMNS)
 
       using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",

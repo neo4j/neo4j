@@ -26,12 +26,12 @@ import org.junit.rules.TemporaryFolder;
 
 import javax.management.ObjectName;
 
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.jmx.impl.ConfigurationBean;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -40,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.jmx.JmxUtils.getAttribute;
 import static org.neo4j.jmx.JmxUtils.getObjectName;
 
@@ -51,11 +52,28 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     private CommunityNeoServer server;
 
     @Test
+    public void durationsAlwaysHaveUnitsInJMX() throws Throwable
+    {
+        // Given
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( transaction_timeout.name(), "10" )
+                .build();
+
+        // When
+        server.start();
+
+        // Then
+        ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
+        String attr = getAttribute( name, transaction_timeout.name() );
+        assertThat( attr, equalTo( "10000ms" ) );
+    }
+
+    @Test
     public void serverConfigShouldBeVisibleInJMX() throws Throwable
     {
         // Given
         String configValue = tempDir.newFile().getAbsolutePath();
-        server = CommunityServerBuilder.server().withProperty(
+        server = CommunityServerBuilder.serverOnRandomPorts().withProperty(
         ServerSettings.run_directory.name(), configValue ).build();
 
         // When
@@ -63,16 +81,17 @@ public class ServerConfigIT extends ExclusiveServerTestBase
 
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
-        assertThat( getAttribute( name, ServerSettings.run_directory.name() ), equalTo( (Object)configValue ) );
+        String attr = getAttribute( name, ServerSettings.run_directory.name() );
+        assertThat( attr, equalTo( configValue ) );
     }
 
     @Test
     public void shouldBeAbleToOverrideShellConfig()  throws Throwable
     {
         // Given
-        final int customPort = findFreeShellPortToUse( 8881 );
+        final int customPort = PortAuthority.allocatePort();
 
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( ShellSettings.remote_shell_enabled.name(), Settings.TRUE )
                 .withProperty( ShellSettings.remote_shell_port.name(), "" + customPort )
                 .build();
@@ -91,7 +110,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     public void shouldNotBeAbleToConnectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
     {
         // Given
-        server = CommunityServerBuilder.server().build();
+        server = CommunityServerBuilder.serverOnRandomPorts().build();
 
         // When
         server.start();
@@ -106,22 +125,6 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         {
             assertThat( "Should have been got connection refused", e.getMessage(),
                     containsString( "Connection refused" ) );
-        }
-    }
-
-    private int findFreeShellPortToUse( int startingPort )
-    {
-        // Make sure there's no other random stuff on that port
-        while ( true )
-        {
-            try
-            {
-                ShellLobby.newClient( startingPort++ ).shutdown();
-            }
-            catch ( ShellException e )
-            {   // Good
-                return startingPort;
-            }
         }
     }
 

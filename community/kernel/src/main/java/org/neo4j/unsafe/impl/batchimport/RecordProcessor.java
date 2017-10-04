@@ -37,7 +37,7 @@ public interface RecordProcessor<T extends AbstractBaseRecord>
 
     void done();
 
-    public static class Multiple<T extends AbstractBaseRecord> implements RecordProcessor<T>
+    class Multiple<T extends AbstractBaseRecord> implements RecordProcessor<T>
     {
         private final RecordProcessor<T>[] processors;
 

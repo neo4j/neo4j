@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 /**
  * Provides access to records, both for reading and for writing.
  */
-public interface RecordAccess<KEY,RECORD,ADDITIONAL>
+public interface RecordAccess<RECORD,ADDITIONAL>
 {
     /**
      * Gets an already loaded record, or loads it as part of this call if it wasn't. The {@link RecordProxy}
@@ -34,11 +34,14 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<KEY, RECORD, ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData );
+    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData );
 
-    RecordProxy<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key );
+    RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
 
-    void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData );
+    @Deprecated
+    void setTo( long key, RECORD newRecord, ADDITIONAL additionalData );
+
+    RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData );
 
     /**
      * Creates a new record with the given {@code key}. Any {@code additionalData} is set in the
@@ -48,7 +51,7 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<KEY, RECORD, ADDITIONAL> create( KEY key, ADDITIONAL additionalData );
+    RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData );
 
     /**
      * Closes the record access.
@@ -57,15 +60,15 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
 
     int changeSize();
 
-    Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes();
+    Iterable<RecordProxy<RECORD,ADDITIONAL>> changes();
 
     /**
      * A proxy for a record that encapsulates load/store actions to take, knowing when the underlying record is
      * requested for reading or for writing.
      */
-    public interface RecordProxy<KEY, RECORD, ADDITIONAL>
+    interface RecordProxy<RECORD, ADDITIONAL>
     {
-        KEY getKey();
+        long getKey();
 
         RECORD forChangingLinkage();
 
@@ -87,11 +90,11 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
     /**
      * Hook for loading and creating records.
      */
-    public interface Loader<KEY,RECORD,ADDITIONAL>
+    interface Loader<RECORD,ADDITIONAL>
     {
-        RECORD newUnused( KEY key, ADDITIONAL additionalData );
+        RECORD newUnused( long key, ADDITIONAL additionalData );
 
-        RECORD load( KEY key, ADDITIONAL additionalData );
+        RECORD load( long key, ADDITIONAL additionalData );
 
         void ensureHeavy( RECORD record );
 

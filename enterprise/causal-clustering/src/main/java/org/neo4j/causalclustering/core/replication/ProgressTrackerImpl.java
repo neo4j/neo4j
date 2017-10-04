@@ -49,13 +49,13 @@ public class ProgressTrackerImpl implements ProgressTracker
     @Override
     public void trackReplication( DistributedOperation operation )
     {
-        if( !operation.globalSession().equals( myGlobalSession ) )
+        if ( !operation.globalSession().equals( myGlobalSession ) )
         {
             return;
         }
 
         Progress progress = tracker.get( operation.operationId() );
-        if( progress != null )
+        if ( progress != null )
         {
             progress.setReplicated();
         }
@@ -64,7 +64,7 @@ public class ProgressTrackerImpl implements ProgressTracker
     @Override
     public void trackResult( DistributedOperation operation, Result result )
     {
-        if( !operation.globalSession().equals( myGlobalSession ) )
+        if ( !operation.globalSession().equals( myGlobalSession ) )
         {
             return;
         }

@@ -34,7 +34,10 @@ public abstract class ManagementBeanProvider extends Service
     public ManagementBeanProvider( Class<?> beanInterface )
     {
         super( ManagementSupport.beanName( beanInterface ) );
-        if ( DynamicMBean.class.isAssignableFrom( beanInterface ) ) beanInterface = DynamicMBean.class;
+        if ( DynamicMBean.class.isAssignableFrom( beanInterface ) )
+        {
+            beanInterface = DynamicMBean.class;
+        }
         this.beanInterface = beanInterface;
     }
 
@@ -88,7 +91,10 @@ public abstract class ManagementBeanProvider extends Service
 
     private static Collection<? extends Neo4jMBean> singletonOrNone( Neo4jMBean mbean )
     {
-        if ( mbean == null ) return Collections.emptySet();
+        if ( mbean == null )
+        {
+            return Collections.emptySet();
+        }
         return Collections.singleton( mbean );
     }
 }

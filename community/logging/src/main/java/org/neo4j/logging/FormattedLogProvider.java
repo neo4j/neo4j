@@ -22,7 +22,8 @@ package org.neo4j.logging;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.util.Date;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -31,9 +32,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.function.Suppliers;
 
-import static org.neo4j.logging.FormattedLog.DEFAULT_CURRENT_DATE_SUPPLIER;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
-import static org.neo4j.logging.FormattedLog.UTC;
 
 /**
  * A {@link LogProvider} implementation that applies a simple formatting to each log message.
@@ -48,7 +47,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     public static class Builder
     {
         private boolean renderContext = true;
-        private TimeZone timezone = UTC;
+        private ZoneId zoneId = ZoneOffset.UTC;
         private Map<String, Level> levels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;
@@ -69,25 +68,38 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
-         * Set the timezone for datestamps in the log
+         * Set the zoneId for datestamps in the log
          *
          * @return this builder
          */
-        public Builder withUTCTimeZone()
+        public Builder withUTCZoneId()
         {
-            return withTimeZone( FormattedLog.UTC );
+            return withZoneId( ZoneOffset.UTC );
         }
 
         /**
-         * Set the timezone for datestamps in the log
+         * Set the zoneId for datestamps in the log
          *
-         * @param timezone the timezone to use for datestamps
          * @return this builder
+         * @param zoneId to use
          */
+        public Builder withZoneId( ZoneId zoneId )
+        {
+            this.zoneId = zoneId;
+            return this;
+        }
+
+        /**
+         * Set the zoneId from timestamp for datestamps in the log
+         *
+         * @param timezone to use
+         * @return this builder
+         * @deprecated use {@link #withZoneId(ZoneId)}
+         */
+        @Deprecated
         public Builder withTimeZone( TimeZone timezone )
         {
-            this.timezone = timezone;
-            return this;
+            return withZoneId( timezone.toZoneId() );
         }
 
         /**
@@ -118,7 +130,8 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
-         * Set the log level for many contexts - equivalent to calling {@link #withLogLevel(String, Level)} for every entry in the provided map.
+         * Set the log level for many contexts - equivalent to calling {@link #withLogLevel(String, Level)}
+         * for every entry in the provided map.
          *
          * @param levels a map containing paris of context and level
          * @return this builder
@@ -194,13 +207,12 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext, levels, defaultLevel, autoFlush );
+            return new FormattedLogProvider( writerSupplier, zoneId, renderContext, levels, defaultLevel, autoFlush );
         }
     }
 
-    private final Supplier<Date> currentDateSupplier;
     private final Supplier<PrintWriter> writerSupplier;
-    private final TimeZone timezone;
+    private final ZoneId zoneId;
     private final boolean renderContext;
     private final Map<String, Level> levels;
     private final Level defaultLevel;
@@ -224,18 +236,31 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
      */
     public static Builder withUTCTimeZone()
     {
-        return new Builder().withUTCTimeZone();
+        return new Builder().withUTCZoneId();
     }
 
     /**
-     * Start creating a {@link FormattedLogProvider} with the specified timezone for datestamps in the log
+     * Start creating a {@link FormattedLogProvider} with the specified zoneId for datestamps in the log
      *
-     * @param timezone the timezone to use for datestamps
      * @return a builder for a {@link FormattedLogProvider}
+     * @param zoneId to use
      */
-    public static Builder withTimeZone( TimeZone timezone )
+    public static Builder withZoneId( ZoneId zoneId )
     {
-        return new Builder().withTimeZone( timezone );
+        return new Builder().withZoneId( zoneId );
+    }
+
+    /**
+     * Start creating a {@link FormattedLogProvider} with the specified zoneId from timezone for datestamps in the log
+     *
+     * @param timeZone to use
+     * @return a builder for a {@link FormattedLogProvider}
+     * @deprecated use {@link #withZoneId(ZoneId)}
+     */
+    @Deprecated
+    public static Builder withTimeZone( TimeZone timeZone )
+    {
+        return new Builder().withZoneId( timeZone.toZoneId() );
     }
 
     /**
@@ -318,12 +343,12 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         return new Builder().toPrintWriter( writerSupplier );
     }
 
-    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, TimeZone timezone,boolean renderContext,
-            Map<String, Level> levels, Level defaultLevel, boolean autoFlush )
+    FormattedLogProvider( Supplier<PrintWriter> writerSupplier,
+                          ZoneId zoneId, boolean renderContext,
+                          Map<String, Level> levels, Level defaultLevel, boolean autoFlush )
     {
-        this.currentDateSupplier = currentDateSupplier;
         this.writerSupplier = writerSupplier;
-        this.timezone = timezone;
+        this.zoneId = zoneId;
         this.renderContext = renderContext;
         this.levels = new HashMap<>( levels );
         this.defaultLevel = defaultLevel;
@@ -346,7 +371,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
 
     private FormattedLog buildLog( String context, Level level )
     {
-        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? context : null, level, autoFlush );
+        return new FormattedLog( writerSupplier, zoneId, this, renderContext ? context : null, level, autoFlush );
     }
 
     private Level levelForContext( String context )

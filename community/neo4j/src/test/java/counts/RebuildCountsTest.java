@@ -32,7 +32,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -49,6 +51,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -56,8 +61,6 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class RebuildCountsTest
 {
-    // Indexing counts are recovered/rebuild in IndexingService.start() and are not tested here
-
     @Test
     public void shouldRebuildMissingCountsStoreOnStart() throws IOException
     {
@@ -76,9 +79,9 @@ public class RebuildCountsTest
         assertEquals( HUMANS, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        internalLogProvider.assertAtLeastOnce(
-                inLog( MetaDataStore.class ).warn( "Missing counts store, rebuilding it." )
-        );
+        AssertableLogProvider.LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
     }
 
     @Test
@@ -101,9 +104,9 @@ public class RebuildCountsTest
         assertEquals( 0, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        internalLogProvider.assertAtLeastOnce(
-                inLog( MetaDataStore.class ).warn( "Missing counts store, rebuilding it." )
-        );
+        AssertableLogProvider.LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
     }
 
     private void createAliensAndHumans()
@@ -124,7 +127,7 @@ public class RebuildCountsTest
 
     private void deleteHumans()
     {
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             try ( ResourceIterator<Node> humans = db.findNodes( HUMAN ) )
             {
@@ -139,11 +142,12 @@ public class RebuildCountsTest
 
     private int labelId( Label alien )
     {
-        try ( Transaction tx = db.beginTx() )
+        ThreadToStatementContextBridge contextBridge = ((GraphDatabaseAPI) db).getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class );
+        try ( Transaction tx = db.beginTx();
+              Statement statement = contextBridge.get() )
         {
-            return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                          .resolveDependency( ThreadToStatementContextBridge.class )
-                                          .get().readOperations().labelGetForName( alien.name() );
+            return statement.readOperations().labelGetForName( alien.name() );
         }
     }
 
@@ -192,8 +196,8 @@ public class RebuildCountsTest
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         db = dbFactory.setUserLogProvider( userLogProvider )
                       .setInternalLogProvider( internalLogProvider )
-                      .setFileSystem( fs )
-                      .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
+                      .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                      .setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) )
                       .newImpermanentDatabaseBuilder( storeDir )
                       .setConfig( index_background_sampling_enabled, "false" )
                       .newGraphDatabase();

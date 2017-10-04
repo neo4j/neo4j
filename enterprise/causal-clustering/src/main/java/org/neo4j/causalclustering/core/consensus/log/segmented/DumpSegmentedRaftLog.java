@@ -59,7 +59,8 @@ class DumpSegmentedRaftLog
                 new RecoveryProtocol( fileSystem, fileNames, readerPool, marshal, logProvider );
         Segments segments = recoveryProtocol.run().segments;
 
-        segments.visit( (segment) -> {
+        segments.visit( segment ->
+        {
                 logsFound[0]++;
                 out.println( "=== " + segment.getFilename() + " ===" );
 
@@ -101,8 +102,12 @@ class DumpSegmentedRaftLog
             for ( String fileAsString : arguments.orphans() )
             {
                 System.out.println( "Reading file " + fileAsString );
-                new DumpSegmentedRaftLog( new DefaultFileSystemAbstraction(), new CoreReplicatedContentMarshal() )
-                        .dump( fileAsString, printer.getFor( fileAsString ) );
+
+                try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+                {
+                    new DumpSegmentedRaftLog( fileSystem, new CoreReplicatedContentMarshal() )
+                            .dump( fileAsString, printer.getFor( fileAsString ) );
+                }
             }
         }
     }

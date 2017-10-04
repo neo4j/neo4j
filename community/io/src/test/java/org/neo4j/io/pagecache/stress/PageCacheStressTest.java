@@ -21,14 +21,17 @@ package org.neo4j.io.pagecache.stress;
 
 import java.io.File;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
-import static java.lang.System.getProperty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
@@ -60,6 +63,7 @@ public class PageCacheStressTest
     private final int cachePageSize;
 
     private final PageCacheTracer tracer;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final Condition condition;
 
     private final File workingDirectory;
@@ -73,6 +77,7 @@ public class PageCacheStressTest
         this.cachePageSize = builder.cachePageSize;
 
         this.tracer = builder.tracer;
+        this.pageCursorTracerSupplier = builder.pageCursorTracerSupplier;
         this.condition = builder.condition;
 
         this.workingDirectory = builder.workingDirectory;
@@ -80,28 +85,31 @@ public class PageCacheStressTest
 
     public void run() throws Exception
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.setFileSystemAbstraction( fs );
-
-        try ( PageCache pageCacheUnderTest = new MuninnPageCache(
-                swapperFactory, numberOfCachePages, cachePageSize, tracer ) )
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            PageCacheStresser pageCacheStresser = new PageCacheStresser(
-                    numberOfPages, numberOfThreads, workingDirectory );
-            pageCacheStresser.stress( pageCacheUnderTest, condition );
+            PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
+            swapperFactory.open( fs, Configuration.EMPTY );
+
+            try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, numberOfCachePages, cachePageSize,
+                    tracer, pageCursorTracerSupplier ) )
+            {
+                PageCacheStresser pageCacheStresser =
+                        new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
+                pageCacheStresser.stress( pageCacheUnderTest, condition );
+            }
         }
     }
 
     public static class Builder
     {
         int numberOfPages = 10000;
-        int numberOfThreads = 8;
+        int numberOfThreads = 7;
 
         int numberOfCachePages = 1000;
         int cachePageSize = 8192;
 
         PageCacheTracer tracer = NULL;
+        PageCursorTracerSupplier pageCursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         Condition condition;
 
         File workingDirectory;

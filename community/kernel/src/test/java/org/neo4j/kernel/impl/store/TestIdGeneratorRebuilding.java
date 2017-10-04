@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,15 +32,14 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.contains;
@@ -50,32 +50,27 @@ import static org.mockito.Mockito.mock;
 public class TestIdGeneratorRebuilding
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
+    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private TestDirectory testDirectory = TestDirectory.testDirectory(fsRule.get());
+
     @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory );
+
     private EphemeralFileSystemAbstraction fs;
-    private File storeDir;
 
     @Before
     public void doBefore()
     {
         fs = fsRule.get();
-        storeDir = AbstractNeo4jTestCase.getStorePath( "xatest" );
-        fs.mkdirs( storeDir );
-    }
-
-    private File file( String name )
-    {
-        return new File( storeDir, name );
     }
 
     @Test
     public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly() throws IOException
     {
         // Given we have a store ...
-        Config config = new Config( MapUtil.stringMap(
-                GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
-        File storeFile = file( "nodes" );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
+        File storeFile = testDirectory.file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
@@ -125,11 +120,10 @@ public class TestIdGeneratorRebuilding
     public void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly() throws Exception
     {
         // Given we have a store ...
-        Config config = new Config( MapUtil.stringMap(
-                GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config,
+                new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 
@@ -178,9 +172,8 @@ public class TestIdGeneratorRebuilding
     public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage() throws IOException
     {
         // Given we have a store ...
-        Config config = new Config( MapUtil.stringMap(
-                GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
-        File storeFile = file( "nodes" );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
+        File storeFile = testDirectory.file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),

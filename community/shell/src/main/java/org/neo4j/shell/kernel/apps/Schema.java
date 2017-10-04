@@ -30,7 +30,8 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.shell.AppCommandParser;
@@ -179,10 +180,13 @@ public class Schema extends TransactionProvidingApp
 
         validateLabelsAndProperty( labels, property );
 
-        Statement statement = getServer().getStatement();
-
-        int labelKey = statement.readOperations().labelGetForName( labels[0].name() );
-        int propertyKey = statement.readOperations().propertyKeyGetForName( property );
+        int labelKey;
+        int propertyKey;
+        try ( Statement statement = getServer().getStatement() )
+        {
+            labelKey = statement.readOperations().labelGetForName( labels[0].name() );
+            propertyKey = statement.readOperations().propertyKeyGetForName( property );
+        }
 
         if ( labelKey == -1 )
         {
@@ -193,7 +197,15 @@ public class Schema extends TransactionProvidingApp
             throw new ShellException( "No property associated with '" + property + "' was found" );
         }
 
-        indexingService.triggerIndexSampling( new IndexDescriptor( labelKey, propertyKey ), samplingMode );
+        try
+        {
+            indexingService.triggerIndexSampling( SchemaDescriptorFactory.forLabel( labelKey, propertyKey ),
+                    samplingMode );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new ShellException( e.getMessage() );
+        }
     }
 
     private IndexSamplingMode getSamplingMode( boolean forceSample )
@@ -440,6 +452,7 @@ public class Schema extends TransactionProvidingApp
     private static boolean isNodeConstraint( ConstraintDefinition constraint )
     {
         return constraint.isConstraintType( ConstraintType.UNIQUENESS ) ||
+               constraint.isConstraintType( ConstraintType.NODE_KEY ) ||
                constraint.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE );
     }
 
@@ -463,9 +476,7 @@ public class Schema extends TransactionProvidingApp
         Iterable<IndexDefinition> indexes = schema.getIndexes();
         for ( final Label label : labels )
         {
-            indexes = filter( item -> {
-                return item.getLabel().name().equals( label.name() );
-            }, indexes );
+            indexes = filter( item -> item.getLabel().name().equals( label.name() ), indexes );
         }
         return indexes;
     }

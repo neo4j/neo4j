@@ -100,8 +100,8 @@ class HintException(message: String, cause: Throwable)
   val status = Status.Statement.ExecutionFailed
 }
 
-class IndexHintException(variable: String, label: String, property: String, message: String, cause: Throwable)
-  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`", cause) {
+class IndexHintException(variable: String, label: String, properties: Seq[String], message: String, cause: Throwable)
+  extends CypherException(s"$message\nLabel: `$label`\nProperty name: ${properties.map(p => s"'$p'").mkString(", ")}", cause) {
   val status = Status.Schema.IndexNotFound
 }
 
@@ -139,6 +139,11 @@ class IncomparableValuesException(details: Option[String], lhs: String, rhs: Str
   extends CypherTypeException(s"${details.getOrElse("Don't know how to compare that.")} Left: $lhs; Right: $rhs", cause) {
   def this(lhs: String, rhs: String, cause: Throwable) = this(None, lhs, rhs, null)
   def this(lhs: String, rhs: String) = this(None, lhs, rhs, null)
+}
+
+class UnorderableValueException(value: String, cause: Throwable)
+  extends CypherTypeException(s"Do not know how to order $value", cause) {
+  def this(value: String) = this(value, null)
 }
 
 class PeriodicCommitInOpenTransactionException(cause: Throwable)

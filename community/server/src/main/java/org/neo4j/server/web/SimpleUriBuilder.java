@@ -24,7 +24,8 @@ import java.net.URISyntaxException;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public class SimpleUriBuilder {
+public class SimpleUriBuilder
+{
 
     public URI buildURI( AdvertisedSocketAddress address, boolean isSsl )
     {
@@ -41,7 +42,7 @@ public class SimpleUriBuilder {
         sb.append( address.getHostname() );
 
         int port = address.getPort();
-        if ( port != 80 && port != 443)
+        if ( port != 80 && port != 443 )
         {
             sb.append( ":" );
             sb.append( port );

@@ -22,9 +22,10 @@ package org.neo4j.kernel.api.impl.schema.reader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,22 +38,25 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema.IndexQuery.range;
 
 public class SimpleIndexReaderTest
 {
     private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class );
-    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
+    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 
     @Before
@@ -72,51 +76,51 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void seekQueryReachSearcher() throws IOException
+    public void seekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.seek( "test" );
+        simpleIndexReader.query( IndexQuery.exact( 1, "test" ) );
 
-        verify( indexSearcher ).search( any( TermQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
     }
 
     @Test
-    public void scanQueryReachSearcher() throws IOException
+    public void scanQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.scan();
+        simpleIndexReader.query( IndexQuery.exists( 1 ) );
 
         verify( indexSearcher ).search( any( MatchAllDocsQuery.class ), any( DocValuesCollector.class ) );
     }
 
     @Test
-    public void stringRangeSeekQueryReachSearcher() throws IOException
+    public void stringRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.rangeSeekByString( "a", false, "b", true );
+        simpleIndexReader.query( range( 1, "a", false, "b", true ) );
 
-        verify( indexSearcher ).search( any( TermQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( TermRangeQuery.class ), any( DocValuesCollector.class ) );
     }
 
     @Test
-    public void prefixRangeSeekQueryReachSearcher() throws IOException
+    public void prefixRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.rangeSeekByPrefix( "bb" );
+        simpleIndexReader.query( IndexQuery.stringPrefix( 1, "bb" ) );
 
-        verify( indexSearcher ).search( any( PrefixQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( MultiTermQuery.class ), any( DocValuesCollector.class ) );
     }
 
     @Test
-    public void numberRangeSeekQueryReachSearcher() throws IOException
+    public void numberRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.rangeSeekByNumberInclusive( 7, 8 );
+        simpleIndexReader.query( range( 1, 7, true, 8, true ) );
 
         verify( indexSearcher ).search( any( NumericRangeQuery.class ), any( DocValuesCollector.class ) );
     }
@@ -126,9 +130,9 @@ public class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.countIndexedNodes( 2, "testValue" );
+        simpleIndexReader.countIndexedNodes( 2, Values.of( "testValue" ) );
 
-        verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( BooleanQuery.class ), any( TotalHitCountCollector.class ) );
     }
 
     @Test
@@ -147,11 +151,13 @@ public class SimpleIndexReaderTest
 
     private SimpleIndexReader getNonUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, IndexConfiguration.NON_UNIQUE, samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
+                taskCoordinator );
     }
 
     private SimpleIndexReader getUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, IndexConfiguration.UNIQUE, samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.uniqueForLabel( 0, 0 ),
+                samplingConfig, taskCoordinator );
     }
 }

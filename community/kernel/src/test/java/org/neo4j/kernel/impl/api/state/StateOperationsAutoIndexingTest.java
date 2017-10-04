@@ -22,23 +22,23 @@ package org.neo4j.kernel.impl.api.state;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.legacyindex.AutoIndexing;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -46,7 +46,8 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.properties.Property.property;
+import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
+import static org.neo4j.kernel.impl.util.Cursors.empty;
 
 public class StateOperationsAutoIndexingTest
 {
@@ -57,8 +58,9 @@ public class StateOperationsAutoIndexingTest
     private final StorageStatement storeStmt = mock( StorageStatement.class );
     private final DataWriteOperations writeOps = mock(DataWriteOperations.class);
     private final KernelStatement stmt = mock( KernelStatement.class, RETURNS_MOCKS );
+    private final StoreReadLayer storeLayer = mock( StoreReadLayer.class, RETURNS_MOCKS );
     private final StateHandlingStatementOperations context = new StateHandlingStatementOperations(
-            mock(StoreReadLayer.class), idx, mock(ConstraintIndexCreator.class), mock(LegacyIndexStore.class) );
+            storeLayer, idx, mock(ConstraintIndexCreator.class), mock(ExplicitIndexStore.class) );
 
     @Before
     public void setup() throws InvalidTransactionTypeKernelException
@@ -73,8 +75,7 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalNodeRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeStmt.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( mock( NodeItem.class ) ) );
+        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( mock( NodeItem.class )) );
 
         // When
         context.nodeDelete( stmt, 1337 );
@@ -87,8 +88,7 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalRelationshipRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeStmt.acquireSingleRelationshipCursor( eq(1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( mock( RelationshipItem.class ) ) );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( mock( RelationshipItem.class )) );
 
         // When
         context.relationshipDelete( stmt, 1337 );
@@ -101,82 +101,90 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalNodePropertyAddedToAutoIndex() throws Exception
     {
         // Given
-        DefinedProperty property = property( 1, "Hello!" );
+        int propertyKeyId = 1;
+        Value value = Values.of( "Hello!" );
 
         NodeItem node = mock( NodeItem.class );
-        when( node.property( property.propertyKeyId() )).thenReturn( Cursors.empty() );
-        when( node.labels() ).thenReturn( Cursors.empty() );
-        when( storeStmt.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( node ) );
+        when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
+        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
+        when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( AssertOpen.class ) ) )
+                .thenReturn( cursor() );
 
         // When
-        context.nodeSetProperty( stmt, 1337, property );
+        context.nodeSetProperty( stmt, 1337, propertyKeyId, value );
 
         // Then
-        verify( nodeOps ).propertyAdded( writeOps, 1337, property );
+        verify( nodeOps ).propertyAdded( writeOps, 1337, propertyKeyId, value );
     }
 
     @Test
     public void shouldSignalRelationshipPropertyAddedToAutoIndex() throws Exception
     {
         // Given
-        DefinedProperty property = property( 1, "Hello!" );
+        int propertyKeyId = 1;
+        Value value = Values.of( "Hello!" );
 
-        RelationshipItem rel = mock( RelationshipItem.class );
-        when( rel.property( property.propertyKeyId() )).thenReturn( Cursors.empty() );
-        when( storeStmt.acquireSingleRelationshipCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( rel ) );
+        RelationshipItem relationship = mock( RelationshipItem.class );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, AssertOpen.ALWAYS_OPEN ) )
+                .thenReturn( empty() );
 
         // When
-        context.relationshipSetProperty( stmt, 1337, property );
+        context.relationshipSetProperty( stmt, 1337, propertyKeyId, value );
 
         // Then
-        verify( relOps ).propertyAdded( writeOps, 1337, property );
+        verify( relOps ).propertyAdded( writeOps, 1337, propertyKeyId, value );
     }
 
     @Test
     public void shouldSignalNodePropertyChangedToAutoIndex() throws Exception
     {
         // Given
-        DefinedProperty property = property( 1, "Hello!" );
+        int propertyKeyId = 1;
+        Value value = Values.of( "Hello!" );
         PropertyItem existingProperty = mock( PropertyItem.class );
 
-        when(existingProperty.propertyKeyId()).thenReturn( property.propertyKeyId() );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        when(existingProperty.propertyKeyId()).thenReturn( propertyKeyId );
+        when(existingProperty.value()).thenReturn( Values.of( "Goodbye!" ) );
 
         NodeItem node = mock( NodeItem.class );
-        when( node.property( property.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( node.labels() ).thenReturn( Cursors.empty() );
-        when( storeStmt.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( node ) );
+        when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
+        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
+        when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( AssertOpen.class ) ) )
+                .thenReturn( cursor( existingProperty ) );
 
         // When
-        context.nodeSetProperty( stmt, 1337, property );
+        context.nodeSetProperty( stmt, 1337, propertyKeyId, value );
 
         // Then
-        verify( nodeOps ).propertyChanged( eq(writeOps), eq(1337L), any(Property.class), eq(property) );
+        verify( nodeOps ).propertyChanged( eq(writeOps), eq(1337L),
+                eq( propertyKeyId ), any( Value.class ), eq( value ) );
     }
 
     @Test
     public void shouldSignalRelationshipPropertyChangedToAutoIndex() throws Exception
     {
         // Given
-        DefinedProperty property = property( 1, "Hello!" );
+        int propertyKeyId = 1;
+        Value value = Values.of( "Hello!" );
         PropertyItem existingProperty = mock( PropertyItem.class );
 
-        when(existingProperty.propertyKeyId()).thenReturn( property.propertyKeyId() );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        when(existingProperty.propertyKeyId()).thenReturn( propertyKeyId );
+        when(existingProperty.value()).thenReturn( Values.of( "Goodbye!" ) );
 
-        RelationshipItem rel = mock( RelationshipItem.class );
-        when( rel.property( property.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( storeStmt.acquireSingleRelationshipCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( rel ) );
+        RelationshipItem relationship = mock( RelationshipItem.class );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, stmt ) )
+                .thenReturn( cursor( existingProperty ) );
 
         // When
-        context.relationshipSetProperty( stmt, 1337, property );
+        context.relationshipSetProperty( stmt, 1337, propertyKeyId, value );
 
         // Then
-        verify( relOps ).propertyChanged( eq(writeOps), eq(1337L), any(Property.class), eq(property) );
+        verify( relOps ).propertyChanged( eq( writeOps ), eq( 1337L ),
+                eq( propertyKeyId ), any( Value.class ), eq( value ) );
     }
 
     @Test
@@ -184,21 +192,22 @@ public class StateOperationsAutoIndexingTest
     {
         // Given
         PropertyItem existingProperty = mock( PropertyItem.class );
-
-        when(existingProperty.propertyKeyId()).thenReturn( 1 );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        when( existingProperty.propertyKeyId() ).thenReturn( 1 );
+        when( existingProperty.value() ).thenReturn( Values.of( "Goodbye!" ) );
+        int propertyKeyId = existingProperty.propertyKeyId();
 
         NodeItem node = mock( NodeItem.class );
-        when( node.property( existingProperty.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( node.labels() ).thenReturn( Cursors.empty() );
-        when( storeStmt.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( node ) );
+        when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( AssertOpen.class ) ) )
+                .thenReturn( cursor( existingProperty ) );
+        when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
+        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
 
         // When
-        context.nodeRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );
+        context.nodeRemoveProperty( stmt, 1337, propertyKeyId );
 
         // Then
-        verify( nodeOps ).propertyRemoved( writeOps, 1337L, existingProperty.propertyKeyId() );
+        verify( nodeOps ).propertyRemoved( writeOps, 1337L, propertyKeyId );
     }
 
     @Test
@@ -207,13 +216,14 @@ public class StateOperationsAutoIndexingTest
         // Given
         PropertyItem existingProperty = mock( PropertyItem.class );
 
-        when(existingProperty.propertyKeyId()).thenReturn( 1 );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        int propertyKeyId = 1;
+        when( existingProperty.propertyKeyId() ).thenReturn( propertyKeyId );
+        when( existingProperty.value() ).thenReturn( Values.of( "Goodbye!" ) );
 
-        RelationshipItem rel = mock( RelationshipItem.class );
-        when( rel.property( existingProperty.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( storeStmt.acquireSingleRelationshipCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( Cursors.cursor( rel ) );
+        RelationshipItem relationship = mock( RelationshipItem.class );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, stmt ) )
+                .thenReturn( cursor( existingProperty ) );
 
         // When
         context.relationshipRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );

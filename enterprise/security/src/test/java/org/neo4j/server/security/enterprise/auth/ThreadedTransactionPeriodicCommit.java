@@ -50,8 +50,7 @@ public class ThreadedTransactionPeriodicCommit<S>
 
     void execute( ThreadingRule threading, S subject, int nLines )
     {
-        NamedFunction<Integer, Throwable> servCsv =
-                new NamedFunction<Integer,Throwable>("serv-csv")
+        NamedFunction<Integer, Throwable> servCsv = new NamedFunction<Integer,Throwable>( "serv-csv" )
                 {
                     @Override
                     public Throwable apply( Integer n ) throws RuntimeException
@@ -68,7 +67,7 @@ public class ThreadedTransactionPeriodicCommit<S>
                             out.print( "Connection: close\r\n" ); // Will close stream
                             out.print( "\r\n" ); // End of headers
 
-                            for ( int i = 0; i < n-1; i++ )
+                            for ( int i = 0; i < n - 1; i++ )
                             {
                                 out.print( "line " + i + "\r\n" );
                             }
@@ -77,7 +76,7 @@ public class ThreadedTransactionPeriodicCommit<S>
 
                             barrier.reached();
 
-                            out.print( "line " + (n-1) +"\r\n" );
+                            out.print( "line " + (n - 1) + "\r\n" );
 
                             out.close();
 
@@ -104,12 +103,12 @@ public class ThreadedTransactionPeriodicCommit<S>
                             return neo.executeQuery(
                                     subject,
                                     "USING PERIODIC COMMIT 1 " +
-                                    "LOAD CSV FROM 'http://localhost:"+csvHttpPort+"/file.csv' AS line " +
+                                    "LOAD CSV FROM 'http://localhost:" + csvHttpPort + "/file.csv' AS line " +
                                     "CREATE (l:Line {name: line[0]}) RETURN line[0] as name",
                                     null, r -> {}
                                 );
                         }
-                        catch (Throwable t)
+                        catch ( Throwable t )
                         {
                             return t.getMessage();
                         }
@@ -125,7 +124,7 @@ public class ThreadedTransactionPeriodicCommit<S>
         String exceptionMsgInOtherThread = join();
         if ( exceptionMsgInOtherThread != "" )
         {
-            fail( "Expected no exception in ThreadedCreate, got '"+exceptionMsgInOtherThread+"'" );
+            fail( "Expected no exception in ThreadedCreate, got '" + exceptionMsgInOtherThread + "'" );
         }
     }
 

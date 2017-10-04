@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.id;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * {@link IdGeneratorFactory} managing read-only {@link IdGenerator} instances which basically only can access
@@ -32,13 +33,13 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     private final Map<IdType,IdGenerator> idGenerators = new HashMap<>();
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         return open( filename, 0, idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdGenerator generator = new ReadOnlyIdGenerator( highId );
         idGenerators.put( idType, generator );
@@ -61,9 +62,9 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     {
         private final long highId;
 
-        ReadOnlyIdGenerator( long highId )
+        ReadOnlyIdGenerator( Supplier<Long> highId )
         {
-            this.highId = highId;
+            this.highId = highId.get();
         }
 
         @Override

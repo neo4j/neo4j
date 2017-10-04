@@ -163,5 +163,11 @@ public class CypherExecutorTest
         when( databaseQueryService.beginTransaction( type, securityContext,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS ) ).thenReturn( transaction );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( resolver );
+        when( request.getScheme() ).thenReturn( "http" );
+        when( request.getRemoteAddr() ).thenReturn( "127.0.0.1" );
+        when( request.getRemotePort() ).thenReturn( 5678 );
+        when( request.getServerName() ).thenReturn( "127.0.0.1" );
+        when( request.getServerPort() ).thenReturn( 7474 );
+        when( request.getRequestURI() ).thenReturn( "/" );
     }
 }

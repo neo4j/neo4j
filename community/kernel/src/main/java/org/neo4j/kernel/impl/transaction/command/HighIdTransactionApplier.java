@@ -186,7 +186,7 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     {
         private long id;
 
-        public HighId( long id )
+        HighId( long id )
         {
             this.id = id;
         }

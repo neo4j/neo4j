@@ -19,6 +19,14 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import com.hazelcast.client.impl.MemberImpl;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.Member;
+import com.hazelcast.core.MultiMap;
+import com.hazelcast.nio.Address;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,16 +35,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.hazelcast.client.impl.MemberImpl;
-import com.hazelcast.core.Member;
-import com.hazelcast.nio.Address;
-import org.junit.Test;
-
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
 
@@ -44,40 +46,27 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buildMemberAttributes;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractMemberAttributes;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buildMemberAttributesForCore;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.toCoreMemberMap;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClusterTopologyTest
 {
-    @Test
-    public void shouldStoreMemberIdentityAndAddressesAsMemberAttributes() throws Exception
+    private static final Set<String> GROUPS = asSet( "group1", "group2", "group3" );
+
+    private final HazelcastInstance hzInstance = mock( HazelcastInstance.class );
+
+    @Before
+    public void setup()
     {
-        // given
-        MemberId memberId = new MemberId( UUID.randomUUID() );
-        Config config = Config.defaults();
-        HashMap<String, String> settings = new HashMap<>();
-        settings.put( CausalClusteringSettings.transaction_advertised_address.name(), "tx:1001" );
-        settings.put( CausalClusteringSettings.raft_advertised_address.name(), "raft:2001" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:3001" );
-        config.augment( settings );
-
-        // when
-        Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
-        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes,
-                false ) );
-
-        // then
-        assertEquals( memberId, extracted.first() );
-        CoreAddresses addresses = extracted.other();
-        assertEquals( new AdvertisedSocketAddress( "tx", 1001 ), addresses.getCatchupServer() );
-        assertEquals( new AdvertisedSocketAddress( "raft", 2001 ), addresses.getRaftServer() );
-        assertEquals( new AdvertisedSocketAddress( "bolt", 3001 ), addresses.getClientConnectorAddresses().getBoltAddress() );
+        @SuppressWarnings( "unchecked" )
+        MultiMap<String,String> serverGroupsMMap = mock( MultiMap.class );
+        when( serverGroupsMMap.get( any() ) ).thenReturn( GROUPS );
+        when( hzInstance.getMultiMap( anyString() ) ).thenReturn( (MultiMap) serverGroupsMMap );
     }
 
     @Test
@@ -94,30 +83,30 @@ public class HazelcastClusterTopologyTest
             HashMap<String, String> settings = new HashMap<>();
             settings.put( CausalClusteringSettings.transaction_advertised_address.name(), "tx:" + (i + 1) );
             settings.put( CausalClusteringSettings.raft_advertised_address.name(), "raft:" + (i + 1) );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+            settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+            settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+            settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+            settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
 
             config.augment( settings );
-            Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
+            Map<String, Object> attributes = buildMemberAttributesForCore( memberId, config ).getAttributes();
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
 
         }
 
         // when
-        Map<MemberId, CoreAddresses> coreMemberMap =
-                HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, NullLog.getInstance() );
+        Map<MemberId,CoreServerInfo> coreMemberMap = toCoreMemberMap( hazelcastMembers, NullLog.getInstance(), hzInstance );
 
         // then
         for ( int i = 0; i < 5; i++ )
         {
-            CoreAddresses coreAddresses = coreMemberMap.get( coreMembers.get( i ) );
-            assertEquals( new AdvertisedSocketAddress( "tx", (i + 1) ), coreAddresses.getCatchupServer() );
-            assertEquals( new AdvertisedSocketAddress( "raft", (i + 1) ), coreAddresses.getRaftServer() );
-            assertEquals( new AdvertisedSocketAddress( "bolt", (i + 1) ), coreAddresses.getClientConnectorAddresses().getBoltAddress() );
+            CoreServerInfo coreServerInfo = coreMemberMap.get( coreMembers.get( i ) );
+            assertEquals( new AdvertisedSocketAddress( "tx", i + 1 ), coreServerInfo.getCatchupServer() );
+            assertEquals( new AdvertisedSocketAddress( "raft", i + 1 ), coreServerInfo.getRaftServer() );
+            assertEquals( new AdvertisedSocketAddress( "bolt", i + 1 ), coreServerInfo.connectors().boltAddress() );
+            assertEquals( coreServerInfo.groups(), GROUPS );
         }
     }
 
@@ -133,15 +122,15 @@ public class HazelcastClusterTopologyTest
             coreMembers.add( memberId );
             Config config = Config.defaults();
             HashMap<String, String> settings = new HashMap<>();
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+            settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+            settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+            settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+            settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
 
             config.augment( settings );
-            Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
+            Map<String, Object> attributes = buildMemberAttributesForCore( memberId, config ).getAttributes();
             if ( i == 2 )
             {
                 attributes.remove( HazelcastClusterTopology.RAFT_SERVER );
@@ -149,8 +138,7 @@ public class HazelcastClusterTopologyTest
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
         }
         // when
-        Map<MemberId, CoreAddresses> map =
-                HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, NullLog.getInstance() );
+        Map<MemberId,CoreServerInfo> map = toCoreMemberMap( hazelcastMembers, NullLog.getInstance(), hzInstance );
 
         // then
         assertThat( map.keySet(), hasItems( coreMembers.get( 0 ), coreMembers.get( 1 ), coreMembers.get( 3 ) ) );

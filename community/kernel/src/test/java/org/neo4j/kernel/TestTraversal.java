@@ -32,8 +32,9 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class TestTraversal
 {
-    private static RelationshipType T1 = withName( "T1" ),
-            T2 = withName( "T2" ), T3 = withName( "T3" );
+    private static RelationshipType T1 = withName( "T1" );
+    private static RelationshipType T2 = withName( "T2" );
+    private static RelationshipType T3 = withName( "T3" );
 
     @Test
     public void canCreateExpanderWithMultipleTypesAndDirections()

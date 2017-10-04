@@ -46,14 +46,14 @@ public class IndexProviderImpl implements IndexProvider
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            if ( !statement.readOperations().nodeLegacyIndexExists( indexName, customConfiguration ) )
+            if ( !statement.readOperations().nodeExplicitIndexExists( indexName, customConfiguration ) )
             {
                 // There's a sub-o-meta thing here where we create index config,
                 // and the index will itself share the same IndexConfigStore as us and pick up and use
                 // that. We should pass along config somehow with calls.
-                statement.dataWriteOperations().nodeLegacyIndexCreateLazily( indexName, customConfiguration );
+                statement.dataWriteOperations().nodeExplicitIndexCreateLazily( indexName, customConfiguration );
             }
-            return new LegacyIndexProxy<>( indexName, LegacyIndexProxy.Type.NODE, gds, transactionBridge );
+            return new ExplicitIndexProxy<>( indexName, ExplicitIndexProxy.Type.NODE, gds, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -67,14 +67,14 @@ public class IndexProviderImpl implements IndexProvider
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            if ( !statement.readOperations().relationshipLegacyIndexExists( indexName, customConfiguration ) )
+            if ( !statement.readOperations().relationshipExplicitIndexExists( indexName, customConfiguration ) )
             {
                 // There's a sub-o-meta thing here where we create index config,
                 // and the index will itself share the same IndexConfigStore as us and pick up and use
                 // that. We should pass along config somehow with calls.
-                statement.dataWriteOperations().relationshipLegacyIndexCreateLazily( indexName, customConfiguration );
+                statement.dataWriteOperations().relationshipExplicitIndexCreateLazily( indexName, customConfiguration );
             }
-            return new RelationshipLegacyIndexProxy( indexName, gds, transactionBridge );
+            return new RelationshipExplicitIndexProxy( indexName, gds, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {

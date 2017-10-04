@@ -22,7 +22,6 @@ package org.neo4j.function;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static java.lang.System.currentTimeMillis;
@@ -32,6 +31,10 @@ import static java.lang.System.currentTimeMillis;
  */
 public final class Suppliers
 {
+    private Suppliers()
+    {
+    }
+
     /**
      * Creates a {@link Supplier} that returns a single object
      *
@@ -55,7 +58,7 @@ public final class Suppliers
     {
         return new Supplier<T>()
         {
-            volatile T instance = null;
+            volatile T instance;
 
             @Override
             public T get()
@@ -92,8 +95,8 @@ public final class Suppliers
     {
         return new Supplier<T>()
         {
-            volatile V lastValue = null;
-            T instance = null;
+            volatile V lastValue;
+            T instance;
 
             @Override
             public T get()
@@ -118,8 +121,9 @@ public final class Suppliers
         };
     }
 
-    public static <T, E extends Exception> ThrowingCapturingSupplier<T,E> compose( final ThrowingSupplier<T,E> input,
-            final ThrowingPredicate<T,E> predicate )
+    public static <T, E extends Exception> ThrowingCapturingSupplier<T,E> compose(
+            final ThrowingSupplier<T,? extends E> input,
+            final ThrowingPredicate<T,? extends E> predicate )
     {
         return new ThrowingCapturingSupplier<>( input, predicate );
     }
@@ -132,12 +136,12 @@ public final class Suppliers
 
     static class ThrowingCapturingSupplier<T, E extends Exception> implements ThrowingSupplier<Boolean,E>
     {
-        private final ThrowingSupplier<T,E> input;
-        private final ThrowingPredicate<T,E> predicate;
+        private final ThrowingSupplier<T,? extends E> input;
+        private final ThrowingPredicate<T,? extends E> predicate;
 
         private T current;
 
-        ThrowingCapturingSupplier( ThrowingSupplier<T,E> input, ThrowingPredicate<T,E> predicate )
+        ThrowingCapturingSupplier( ThrowingSupplier<T,? extends E> input, ThrowingPredicate<T,? extends E> predicate )
         {
             this.input = input;
             this.predicate = predicate;
@@ -153,6 +157,12 @@ public final class Suppliers
         {
             current = input.get();
             return predicate.test( current );
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "%s on %s", predicate, input );
         }
     }
 }

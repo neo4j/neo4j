@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.util.collection.ContinuableArrayCursor;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.GROUP_TOKEN;
@@ -109,7 +109,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends InputIterat
         /** The processor is the guy converting the byte[] to ENTITY[]
          *  we will have a lot of those guys
          */
-        BiFunction<byte[],Void,Object[]> processor = (batchData,ignore) ->
+        BiFunction<byte[],Void,Object[]> processor = ( batchData, ignore ) ->
         {
             ProcessorState state = new ProcessorState( batchData );
             try
@@ -201,7 +201,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends InputIterat
         case HAS_FIRST_PROPERTY_ID: return channel.getLong();
         case 0: return InputEntity.NO_PROPERTIES;
         default:
-            Object[] properties = new Object[count*2];
+            Object[] properties = new Object[count * 2];
             for ( int i = 0; i < properties.length; i++ )
             {
                 properties[i++] = readToken( PROPERTY_KEY_TOKEN, channel );

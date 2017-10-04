@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Transaction;
@@ -37,14 +37,12 @@ import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
@@ -64,7 +62,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get()
@@ -89,22 +88,16 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createIndex( labelName, propertyKey );
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
-        List<Map<String,Object>> serializedList = retryOnStillPopulating( new Callable<String>()
-        {
-            @Override
-            public String call()
-            {
-                return gen.get()
-                        .expectedStatus( 200 )
-                        .payload( createJsonFrom( definition ) )
-                        .get( getSchemaIndexLabelUri( labelName ) )
-                        .entity();
-            }
-        } );
+        List<Map<String,Object>> serializedList = retryOnStillPopulating( () -> gen.get()
+                                                                           .expectedStatus( 200 )
+                                                                           .payload( createJsonFrom( definition ) )
+                                                                           .get( getSchemaIndexLabelUri( labelName ) )
+                                                                           .entity() );
 
         Map<String,Object> index = new HashMap<>();
         index.put( "label", labelName );
@@ -155,19 +148,15 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
-        String labelName2 = labels.newInstance(), propertyKey2 = properties.newInstance();
+        String labelName1 = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String labelName2 = labels.newInstance();
+        String propertyKey2 = properties.newInstance();
         createIndex( labelName1, propertyKey1 );
         createIndex( labelName2, propertyKey2 );
 
-        List<Map<String,Object>> serializedList = retryOnStillPopulating( new Callable<String>()
-        {
-            @Override
-            public String call() throws Exception
-            {
-                return gen.get().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
-            }
-        } );
+        List<Map<String,Object>> serializedList = retryOnStillPopulating(
+                () -> gen.get().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity() );
 
         Map<String,Object> index1 = new HashMap<>();
         index1.put( "label", labelName1 );
@@ -187,7 +176,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         IndexDefinition schemaIndex = createIndex( labelName, propertyKey );
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), containsOnly( schemaIndex ) );
 
@@ -205,7 +195,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_existing_index()
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createIndex( labelName, propertyKey );
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
@@ -218,23 +209,21 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     @Test
     public void drop_non_existent_index() throws Exception
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
 
         gen.get()
                 .expectedStatus( 404 )
                 .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) );
     }
 
-    /**
-     * Creating a compound index should not yet be supported
-     */
     @Test
     public void create_compound_index()
     {
         Map<String,Object> definition = map( "property_keys", asList( properties.newInstance(), properties.newInstance()) );
 
         gen.get()
-                .expectedStatus( 400 )
+                .expectedStatus( 200 )
                 .payload( createJsonFrom( definition ) )
                 .post( getSchemaIndexLabelUri( labels.newInstance() ) );
     }

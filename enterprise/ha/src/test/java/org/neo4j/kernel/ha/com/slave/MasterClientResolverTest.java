@@ -26,6 +26,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.MasterClient310;
+import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -55,7 +56,7 @@ public class MasterClientResolverTest
             life.start();
             MasterClient masterClient1 =
                     resolver.instantiate( "cluster://localhost", 44, null, new Monitors(), StoreId.DEFAULT, life );
-            assertThat( masterClient1, instanceOf( MasterClient310.class ) );
+            assertThat( masterClient1, instanceOf( MasterClient320.class ) );
         }
         finally
         {

@@ -87,7 +87,7 @@ public class RelationshipCountsProcessorTest
         when( nodeLabelCache.get( eq( client ), eq( 4L ), any( int[].class ) ) ).thenReturn( new int[]{} );
 
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
-                relationTypes, countsUpdater, NumberArrayFactory.AUTO );
+                relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
 
         countsProcessor.process( 1, 0, 3 );
         countsProcessor.process( 2, 1, 4 );
@@ -108,11 +108,11 @@ public class RelationshipCountsProcessorTest
         verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 2, 1L );
     }
 
-    private class IsNonNegativeLong extends ArgumentMatcher<Long>
+    private class IsNonNegativeLong implements ArgumentMatcher<Long>
     {
-        public boolean matches( Object argument )
+        public boolean matches( Long argument )
         {
-            return argument != null && ((Long) argument) >= 0;
+            return argument != null && argument >= 0;
         }
     }
 }

@@ -235,7 +235,7 @@ class ExpectedTransactionData
     {
         Set<Node> expectedCreatedNodes = new HashSet<>( this.expectedCreatedNodes );
         Set<Relationship> expectedCreatedRelationships = new HashSet<>( this.expectedCreatedRelationships );
-        Set<Node> expectedDeletedNodes = new HashSet<Node>( this.expectedDeletedNodes );
+        Set<Node> expectedDeletedNodes = new HashSet<>( this.expectedDeletedNodes );
         Set<Relationship> expectedDeletedRelationships = new HashSet<>( this.expectedDeletedRelationships );
         Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedAssignedNodeProperties =
                 clone( this.expectedAssignedNodeProperties );

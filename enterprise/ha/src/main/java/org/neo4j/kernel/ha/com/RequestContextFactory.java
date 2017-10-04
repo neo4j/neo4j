@@ -35,7 +35,7 @@ public class RequestContextFactory extends LifecycleAdapter
 
     public static final int DEFAULT_EVENT_IDENTIFIER = -1;
 
-    public RequestContextFactory( int serverId, Supplier<TransactionIdStore> txIdStoreSupplier)
+    public RequestContextFactory( int serverId, Supplier<TransactionIdStore> txIdStoreSupplier )
     {
         this.txIdStoreSupplier = txIdStoreSupplier;
         this.epoch = -1;

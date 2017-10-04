@@ -21,18 +21,21 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-
-import org.neo4j.cypher.internal.compiler.v3_1.CypherSerializer
-import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CypherSerializer
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
 
   // pure syntax errors -- not sure if TCK material?
 
+  test("foo") {
+    execute("RETURN 42")
+  }
+
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",
-      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33 (offset: 32))"
+      "Unexpected end of input: expected whitespace, DISTINCT, GRAPHS, SOURCE GRAPH [AS <name>], TARGET GRAPH [AS <name>], GRAPH AT <graph-url> [AS <name>], GRAPH OF <pattern> [AS <name>], GRAPH, GRAPH <graph-ref> [AS <name>], >>, '*' or an expression (line 1, column 33 (offset: 32))"
     )
   }
 
@@ -115,7 +118,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("badMatch4") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[!]->dude return dude.name",
-      "Invalid input '!': expected whitespace, a variable, '?', relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
+      "Invalid input '!': expected whitespace, a variable, relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
       35
     )
   }
@@ -124,8 +127,9 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p[:likes]->dude return dude.name",
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
-        "a relationship pattern, ',', USING, WHERE, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
-        "CALL, RETURN, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
+      "a relationship pattern, ',', USING, WHERE, LOAD CSV, FROM, INTO, START, MATCH, UNWIND, MERGE, " +
+      "CREATE GRAPH >>, CREATE >> GRAPH, CREATE GRAPH, CREATE, SET, DELETE GRAPHS, DELETE, REMOVE, FOREACH, WITH, " +
+      "CALL, PERSIST, RELOCATE, RETURN, SNAPSHOT, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
       33
     )
   }
@@ -171,24 +175,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("create with variable already existing2") {
-    expectError(
-      "match (a) where id(a) = 0 CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
-      "Can't create `a` with properties or labels here. The variable is already declared in this context"
-    )
-  }
-
   test("fail when using exclamation mark") {
     expectError(
       "match (n) where id(n) = 0 and n.foo != 2 return n",
       "Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing) (line 1, column 37 (offset: 36))"
-    )
-  }
-
-  test("can not use optional pattern as predicate") {
-    expectError(
-      "match (a) where id(a) = 1 RETURN (a)-[?]->()",
-      "Optional relationships cannot be specified in this context (line 1, column 37 (offset: 36))"
     )
   }
 
@@ -209,13 +199,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   }
 
   test("trying to add unique constraint when duplicates exist") {
-    createLabeledNode(Map("name" -> "A"), "Person")
-    createLabeledNode(Map("name" -> "A"), "Person")
+    val node1 = createLabeledNode(Map("name" -> "A"), "Person").getId
+    val node2 = createLabeledNode(Map("name" -> "A"), "Person").getId
 
     expectError(
       "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
       String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
-        "Multiple nodes with label `Person` have property `name` = 'A':%n  node(0)%n  node(1)")
+        "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'")
     )
   }
 
@@ -226,25 +216,11 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("report deprecated use of property name with question mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title? = \"foo\"",
-      "This syntax is no longer supported (missing properties are now returned as null). Please use (not(exists(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
-    )
-  }
-
-  test("report deprecated use of property name with exclamation mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title! = \"foo\"",
-      "This syntax is no longer supported (missing properties are now returned as null)."
-    )
-  }
-
   test("report wrong usage of index hint") {
     graph.createConstraint("Person", "id")
     expectError(
-      "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.id = 12 OR n.id = 14 RETURN n",
-      "Cannot use index hint in this context. Index hints are only supported for the following predicates in WHERE (either directly or as part of a top-level AND): equality comparison, inequality (range) comparison, STARTS WITH, IN condition or checking property existence. The comparison cannot be performed between two property values. Note that the label and property comparison must be specified on a non-optional node (line 1, column 18 (offset: 17))"
+      "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.name = 'Andres' RETURN n",
+      "Cannot use index hint in this context. Index hints are only supported for the following predicates in WHERE (either directly or as part of a top-level AND or OR): equality comparison, inequality (range) comparison, STARTS WITH, IN condition or checking property existence. The comparison cannot be performed between two property values. Note that the label and property comparison must be specified on a non-optional node (line 1, column 18 (offset: 17))"
     )
   }
 
@@ -265,6 +241,12 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectError(
       "RETURN 42; RETURN 42",
       "Expected exactly one statement per query but got: 2")
+  }
+
+  test("should give proper error message when trying to use Node Key constraint on community") {
+    expectError("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname) IS NODE KEY",
+                String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT exists(person.firstname):%n" +
+                  "Node Key constraint requires Neo4j Enterprise Edition"))
   }
 
   private def expectError(query: String, expectedError: String) {

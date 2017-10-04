@@ -193,7 +193,7 @@ public class ByteCodeUtilsTest
         assertThat( exceptions, equalTo(new String[]{"java/lang/Exception"} ));
     }
 
-    private void assertTypeName(Class<?> type, String expected)
+    private void assertTypeName( Class<?> type, String expected )
     {
         // GIVEN
         TypeReference reference = typeReference( type );

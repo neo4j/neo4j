@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.helpers
 import java.util
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.RuntimeJavaValueConverter
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.isGraphKernelResultValue
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
+import org.neo4j.helpers.ValueUtils.asMapValue
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.Statement
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.transaction.TransactionStats
 
 import scala.collection.JavaConverters._
@@ -82,13 +84,17 @@ trait GraphIcing {
       }
     }
 
-    def createIndex(label: String, property: String) = {
-      val indexDef = inTx {
-        graph.schema().indexFor(Label.label(label)).on(property).create()
-      }
-
+    def createNodeKeyConstraint(label: String, property: String): Result = {
       inTx {
-        graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
+        graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.$property) IS NODE KEY")
+      }
+    }
+
+    def createIndex(label: String, properties: String*) = {
+      graph.execute(s"CREATE INDEX ON :$label(${properties.mkString(",")})")
+
+      val indexDef = inTx {
+        graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
       }
 
       indexDef
@@ -100,14 +106,14 @@ trait GraphIcing {
     def inTx[T](f: => T, txType: Type = Type.`implicit`): T = withTx(_ => f, txType)
 
     private val locker: PropertyContainerLocker = new PropertyContainerLocker
-    private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
+    private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
     private def createTransactionalContext(txType: Type, queryText: String, params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
       val tx = graph.beginTransaction(txType, AUTH_DISABLED)
       val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService,
         locker)
-      val transactionalContext = contextFactory.newContext(QuerySource.UNKNOWN, tx, queryText, javaParams)
+      val transactionalContext = contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, queryText, asMapValue(javaParams))
       (tx, transactionalContext)
     }
 

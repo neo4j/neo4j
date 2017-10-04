@@ -21,25 +21,28 @@ package org.neo4j.bolt.security.auth;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.PasswordPolicy;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicSecurityContext;
-import org.neo4j.server.security.auth.PasswordPolicy;
+import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class BasicAuthenticationTest
@@ -47,62 +50,37 @@ public class BasicAuthenticationTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private Authentication authentication;
+
     @Test
     public void shouldNotDoAnythingOnSuccess() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        AuthSubject authSubject = mock( AuthSubject.class );
-
-        when( manager.login( anyMap() ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
-
-        //Expect nothing
-
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
+        AuthenticationResult result =
+                authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", "secret2" ) );
+
+        // Then
+        assertThat(result.getSecurityContext().mode(), equalTo( AccessMode.Static.FULL));
+        assertThat( result.getSecurityContext().subject().username(), equalTo( "mike" ) );
     }
 
     @Test
     public void shouldThrowAndLogOnFailure() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        AuthSubject authSubject = mock( AuthSubject.class );
-
-        when( manager.login( anyMap() ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
-
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "banana" ) );
     }
 
     @Test
     public void shouldIndicateThatCredentialsExpired() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        AuthSubject authSubject = mock( AuthSubject.class );
-
-        when( manager.login( anyMap() ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
-
         // When
-        org.neo4j.bolt.security.auth.AuthenticationResult result =
+        AuthenticationResult result =
                 authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
 
         // Then
@@ -113,96 +91,68 @@ public class BasicAuthenticationTest
     public void shouldFailWhenTooManyAttempts() throws Exception
     {
         // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        AuthSubject authSubject = mock( AuthSubject.class );
+        int maxFailedAttempts = ThreadLocalRandom.current().nextInt( 1, 10 );
+        Authentication auth = createAuthentication( maxFailedAttempts );
 
-        when( manager.login( anyMap() ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
+        for ( int i = 0; i < maxFailedAttempts; ++i )
+        {
+            try
+            {
+                auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "gelato" ) );
+            }
+            catch ( AuthenticationException e )
+            {
+                assertThat( e.status(), equalTo( Status.Security.Unauthorized ) );
+            }
+        }
 
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.AuthenticationRateLimit ) );
         exception.expectMessage( "The client has provided incorrect authentication details too many times in a row." );
 
-        // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
+        //When
+        auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "gelato" ) );
     }
 
     @Test
     public void shouldBeAbleToUpdateCredentials() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        AuthSubject authSubject = mock( AuthSubject.class );
-
-        when( manager.login( anyMap() ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
-
-        //Expect nothing
-
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new_credentials", "secret2" ) );
+        authentication.authenticate(
+                map( "scheme", "basic", "principal", "mike", "credentials", "secret2", "new_credentials", "secret" ) );
+
+        // Then
+        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", "secret" ) );
     }
 
     @Test
     public void shouldBeAbleToUpdateExpiredCredentials() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        AuthSubject authSubject = mock( AuthSubject.class );
-
-        when( manager.login( anyMap() ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
-
-        //Expect nothing
-
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new_credentials", "secret2" ) );
+        AuthenticationResult result = authentication.authenticate(
+                map( "scheme", "basic", "principal", "bob", "credentials", "secret", "new_credentials", "secret2" ) );
+
+        // Then
+        assertThat(result.credentialsExpired(), equalTo( false ));
     }
 
     @Test
     public void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        AuthSubject authSubject = mock( AuthSubject.class );
-
-        when( manager.login( anyMap() ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
-
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "gelato",
                 "new_credentials", "secret2" ) );
     }
 
     @Test
     public void shouldThrowWithNoScheme() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-
-        when( manager.login( anyMap() ) ).thenThrow( new InvalidAuthTokenException( "foo" ) );
-
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
@@ -214,11 +164,6 @@ public class BasicAuthenticationTest
     @Test
     public void shouldFailOnInvalidAuthToken() throws Exception
     {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenThrow( new InvalidAuthTokenException( "foo" ) );
-
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
@@ -230,11 +175,6 @@ public class BasicAuthenticationTest
     @Test
     public void shouldFailOnMalformedToken() throws Exception
     {
-        // Given
-        BasicAuthManager manager = new BasicAuthManager( mock( UserRepository.class), mock( PasswordPolicy.class ),
-                FakeClock.systemUTC(), mock( UserRepository.class ) );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
@@ -246,6 +186,27 @@ public class BasicAuthenticationTest
                 .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", "secret" ) );
     }
 
+    @Before
+    public void setup() throws Throwable
+    {
+        authentication = createAuthentication( 3 );
+    }
+
+    private static Authentication createAuthentication( int maxFailedAttempts ) throws Exception
+    {
+        UserRepository users = new InMemoryUserRepository();
+        PasswordPolicy policy = mock( PasswordPolicy.class );
+
+        Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, String.valueOf( maxFailedAttempts ) );
+
+        BasicAuthManager manager = new BasicAuthManager( users, policy, Clocks.systemClock(), users, config );
+        Authentication authentication = new BasicAuthentication( manager, manager );
+        manager.newUser( "bob", "secret", true );
+        manager.newUser( "mike", "secret2", false );
+
+        return authentication;
+    }
+
     private HasStatus hasStatus( Status status )
     {
         return new HasStatus( status );
@@ -255,7 +216,7 @@ public class BasicAuthenticationTest
     {
         private Status status;
 
-        public HasStatus( Status status )
+        HasStatus( Status status )
         {
             this.status = status;
         }
@@ -280,5 +241,4 @@ public class BasicAuthenticationTest
                     .appendValue( item.status() );
         }
     }
-
 }

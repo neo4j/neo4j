@@ -119,9 +119,9 @@ public class GraphDescription implements GraphDefinition
             @Override
             Object convert( PropType componentType, String value )
             {
-                String[] items  = value.split( " *, *" );
+                String[] items = value.split( " *, *" );
                 Object[] result = (Object[]) Array.newInstance( componentType.componentClass(), items.length );
-                for ( int i =0 ; i < items.length; i++ )
+                for ( int i = 0; i < items.length; i++ )
                 {
                     result[i] = componentType.convert( items[i] );
                 }
@@ -185,18 +185,22 @@ public class GraphDescription implements GraphDefinition
             }
         },
 
-        ERROR{
-        };
+        ERROR
+                {
+                };
 
-        Class<?> componentClass() {
+        Class<?> componentClass()
+        {
             throw new UnsupportedOperationException( "Not implemented for property type" + name() );
         }
 
-        Object convert( String value ) {
+        Object convert( String value )
+        {
             throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
         }
 
-        Object convert( PropType componentType, String value ) {
+        Object convert( PropType componentType, String value )
+        {
             throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
         }
     }
@@ -231,7 +235,8 @@ public class GraphDescription implements GraphDefinition
             graphdb.index().getRelationshipAutoIndexer().setEnabled( autoIndexRelationships );
             for ( NODE def : nodes )
             {
-                Node node = init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(), graphdb.index().getNodeAutoIndexer(), autoIndexNodes );
+                Node node = init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(),
+                        graphdb.index().getNodeAutoIndexer(), autoIndexNodes );
                 for ( LABEL label : def.labels() )
                 {
                     node.addLabel( label( label.value() ) );
@@ -254,22 +259,23 @@ public class GraphDescription implements GraphDefinition
         autoindex.setEnabled( auto );
         for ( PROP prop : properties )
         {
-            if(auto)
+            if ( auto )
             {
                 autoindex.startAutoIndexingProperty( prop.key() );
             }
             PropType tpe = prop.type();
-            switch(tpe) {
-                case ARRAY:
-                    entity.setProperty( prop.key(), tpe.convert( prop.componentType(), prop.value() ) );
-                    break;
-                default:
-                    entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
+            switch ( tpe )
+            {
+            case ARRAY:
+                entity.setProperty( prop.key(), tpe.convert( prop.componentType(), prop.value() ) );
+                break;
+            default:
+                entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
             }
         }
         if ( name != null )
         {
-            if(auto)
+            if ( auto )
             {
                 autoindex.startAutoIndexingProperty( "name" );
             }
@@ -306,14 +312,19 @@ public class GraphDescription implements GraphDefinition
 
     public static void destroy( Map<String, Node> nodes )
     {
-        if ( nodes.isEmpty() ) return;
+        if ( nodes.isEmpty() )
+        {
+            return;
+        }
         GraphDatabaseService db = nodes.values().iterator().next().getGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             for ( Node node : db.getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
+                {
                     rel.delete();
+                }
                 node.delete();
             }
             tx.success();
@@ -351,7 +362,8 @@ public class GraphDescription implements GraphDefinition
             relationships.add( rel );
         }
         parse( graph.value(), nodes, relationships );
-        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ), graph.autoIndexNodes(), graph.autoIndexRelationships() );
+        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ),
+                graph.autoIndexNodes(), graph.autoIndexRelationships() );
     }
 
     private static void createIfAbsent( Map<String, NODE> nodes, String name, String ... labels )
@@ -371,7 +383,7 @@ public class GraphDescription implements GraphDefinition
             }
 
             String[] labelNameArray = joinedLabels.toArray(new String[joinedLabels.size()]);
-            nodes.put( name, new NodeWithAddedLabels(preexistingNode, labelNameArray));
+            nodes.put( name, new NodeWithAddedLabels( preexistingNode, labelNameArray ) );
         }
     }
 
@@ -462,9 +474,9 @@ public class GraphDescription implements GraphDefinition
         {
             super( name );
             labels = new LABEL[labelNames.length];
-            for(int i=0;i<labelNames.length;i++)
+            for ( int i = 0; i < labelNames.length; i++ )
             {
-                labels[i] = new DefaultLabel(labelNames[i]);
+                labels[i] = new DefaultLabel( labelNames[i] );
             }
         }
 
@@ -488,9 +500,9 @@ public class GraphDescription implements GraphDefinition
         {
             this.inner = inner;
             labels = new LABEL[labelNames.length];
-            for(int i=0;i<labelNames.length;i++)
+            for ( int i = 0; i < labelNames.length; i++ )
             {
-                labels[i] = new DefaultLabel(labelNames[i]);
+                labels[i] = new DefaultLabel( labelNames[i] );
             }
         }
 
@@ -527,7 +539,9 @@ public class GraphDescription implements GraphDefinition
 
     private static class DefaultRel extends Default implements REL
     {
-        private final String start, type, end;
+        private final String start;
+        private final String type;
+        private final String end;
 
         DefaultRel( String start, String type, String end )
         {
@@ -561,7 +575,7 @@ public class GraphDescription implements GraphDefinition
 
         private final String name;
 
-        public DefaultLabel( String name )
+        DefaultLabel( String name )
         {
 
             this.name = name;

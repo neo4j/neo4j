@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.transaction.command.Command;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.kernel.impl.transaction.command.Command.Mode.fromRecordState;
@@ -31,11 +33,11 @@ public class TestCommandMode
     @Test
     public void shouldInferCorrectModes() throws Exception
     {
-        assertThat( fromRecordState( /* create */true, /* inUse */true ), equalTo( org.neo4j.kernel.impl.transaction.command.Command.Mode.CREATE));
-        assertThat( fromRecordState( /* create */false, /* inUse */true ), equalTo( org.neo4j.kernel.impl.transaction.command.Command.Mode.UPDATE));
+        assertThat( fromRecordState( true, true ), equalTo( Command.Mode.CREATE ) );
+        assertThat( fromRecordState( false, true ), equalTo( Command.Mode.UPDATE ) );
 
-        assertThat( fromRecordState( /* create */false, /* inUse */false ), equalTo( org.neo4j.kernel.impl.transaction.command.Command.Mode.DELETE));
-        assertThat( fromRecordState( /* create */true, /* inUse */false ), equalTo( org.neo4j.kernel.impl.transaction.command.Command.Mode.DELETE));
+        assertThat( fromRecordState( false, false ), equalTo( Command.Mode.DELETE ) );
+        assertThat( fromRecordState( true, false ), equalTo( Command.Mode.DELETE ) );
     }
 
 }

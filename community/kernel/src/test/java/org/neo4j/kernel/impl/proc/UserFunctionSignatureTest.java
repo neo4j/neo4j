@@ -44,7 +44,7 @@ public class UserFunctionSignatureTest
         exception.expect( UnsupportedOperationException.class );
 
         // When
-        signature.inputSignature().add( new FieldSignature( "in2", Neo4jTypes.NTAny ));
+        signature.inputSignature().add( FieldSignature.inputField( "in2", Neo4jTypes.NTAny ) );
     }
 
     @Test

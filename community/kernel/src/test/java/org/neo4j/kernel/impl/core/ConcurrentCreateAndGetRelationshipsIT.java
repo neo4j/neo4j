@@ -127,7 +127,7 @@ public class ConcurrentCreateAndGetRelationshipsIT
         private final Node parentNode;
         private final AtomicBoolean stopSignal;
 
-        public Worker( GraphDatabaseService db, CountDownLatch startSignal, AtomicBoolean stopSignal,
+        Worker( GraphDatabaseService db, CountDownLatch startSignal, AtomicBoolean stopSignal,
                 AtomicReference<Exception> failure, Node parentNode )
         {
             this.db = db;

@@ -30,13 +30,13 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -58,9 +58,16 @@ public class GraphDbStructureGuideTest
         graph.createNode( label("Person") );
         graph.createNode( label("Party") );
         graph.createNode( label("Animal") );
-        int personLabelId = read().labelGetForName( "Person" );
-        int partyLabelId = read().labelGetForName( "Party" );
-        int animalLabelId = read().labelGetForName( "Animal" );
+        int personLabelId;
+        int partyLabelId;
+        int animalLabelId;
+        try ( Statement statement = statement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            personLabelId = readOperations.labelGetForName( "Person" );
+            partyLabelId = readOperations.labelGetForName( "Party" );
+            animalLabelId = readOperations.labelGetForName( "Animal" );
+        }
 
         // WHEN
         accept( visitor );
@@ -94,13 +101,21 @@ public class GraphDbStructureGuideTest
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
-        Node lhs = graph.createNode(), rhs = graph.createNode();
+        Node lhs = graph.createNode();
+        Node rhs = graph.createNode();
         lhs.createRelationshipTo( rhs, withName( "KNOWS" ) );
         lhs.createRelationshipTo( rhs, withName( "LOVES" ) );
         lhs.createRelationshipTo( rhs, withName( "FAWNS_AT" ) );
-        int knowsId = read().relationshipTypeGetForName( "KNOWS" );
-        int lovesId = read().relationshipTypeGetForName( "LOVES" );
-        int fawnsAtId = read().relationshipTypeGetForName( "FAWNS_AT" );
+        int knowsId;
+        int lovesId;
+        int fawnsAtId;
+        try ( Statement statement = statement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            knowsId = readOperations.relationshipTypeGetForName( "KNOWS" );
+            lovesId = readOperations.relationshipTypeGetForName( "LOVES" );
+            fawnsAtId = readOperations.relationshipTypeGetForName( "FAWNS_AT" );
+        }
 
         // WHEN
         accept( visitor );
@@ -138,14 +153,14 @@ public class GraphDbStructureGuideTest
 
         commitAndReOpen();
 
-        UniquenessConstraint constraint = createUniqueConstraint( labelId, pkId );
-        IndexDescriptor descriptor = new IndexDescriptor( labelId, pkId );
+        UniquenessConstraintDescriptor constraint = createUniqueConstraint( labelId, pkId );
+        IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( labelId, pkId );
 
         // WHEN
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0L );
+        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0L );
         verify( visitor ).visitUniqueConstraint( constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
                 "UNIQUE" );
     }
@@ -216,17 +231,27 @@ public class GraphDbStructureGuideTest
 
     private void createRel( long startId, int relTypeId, long endId ) throws Exception
     {
-        dataWrite().relationshipCreate( relTypeId, startId, endId );
+        try ( Statement statement = statement() )
+        {
+            statement.dataWriteOperations().relationshipCreate( relTypeId, startId, endId );
+        }
     }
 
     private IndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().indexCreate( labelId, pkId );
+        try ( Statement statement = statement() )
+        {
+            return statement.schemaWriteOperations().indexCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
+        }
     }
 
-    private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception
+    private UniquenessConstraintDescriptor createUniqueConstraint( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().uniquePropertyConstraintCreate( labelId, pkId );
+        try ( Statement statement = statement() )
+        {
+            return statement.schemaWriteOperations()
+                    .uniquePropertyConstraintCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
+        }
     }
 
     private int createLabeledNodes( String labelName, int amount ) throws Exception
@@ -241,24 +266,36 @@ public class GraphDbStructureGuideTest
 
     private long createLabeledNode( int labelId ) throws Exception
     {
-        long nodeId = dataWrite().nodeCreate();
-        dataWrite().nodeAddLabel( nodeId, labelId );
-        return nodeId;
+        try ( Statement statement = statement() )
+        {
+            long nodeId = statement.dataWriteOperations().nodeCreate();
+            statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
+            return nodeId;
+        }
     }
 
     private int createLabel( String name ) throws Exception
     {
-        return dataWrite().labelGetOrCreateForName( name );
+        try ( Statement statement = statement() )
+        {
+            return statement.tokenWriteOperations().labelGetOrCreateForName( name );
+        }
     }
 
     private int createPropertyKey( String name ) throws Exception
     {
-        return dataWrite().propertyKeyGetOrCreateForName( name );
+        try ( Statement statement = statement() )
+        {
+            return statement.tokenWriteOperations().propertyKeyGetOrCreateForName( name );
+        }
     }
 
     private int createRelTypeId( String name ) throws Exception
     {
-        return dataWrite().relationshipTypeGetOrCreateForName( name );
+        try ( Statement statement = statement() )
+        {
+            return statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( name );
+        }
     }
 
     @Rule
@@ -292,21 +329,6 @@ public class GraphDbStructureGuideTest
     private Statement statement()
     {
         return bridge.get();
-    }
-
-    private ReadOperations read()
-    {
-        return statement().readOperations();
-    }
-
-    private DataWriteOperations dataWrite() throws Exception
-    {
-        return statement().dataWriteOperations();
-    }
-
-    private SchemaWriteOperations schemaWrite() throws Exception
-    {
-        return statement().schemaWriteOperations();
     }
 
     public void commitAndReOpen()

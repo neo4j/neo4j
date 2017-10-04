@@ -21,20 +21,21 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.recovery.Recovery;
-import org.neo4j.kernel.recovery.PositionToRecoverFrom;
+import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
 public class LoggingLogFileMonitor implements
         PhysicalLogFile.Monitor,
-        LogRotation.Monitor,
-        Recovery.Monitor,
-        PositionToRecoverFrom.Monitor
+        LogRotation.Monitor, RecoveryMonitor,
+        RecoveryStartInformationProvider.Monitor
 {
-    private long firstTransactionRecovered = -1, lastTransactionRecovered;
+    private long firstTransactionRecovered = -1;
+    private long lastTransactionRecovered;
     private final Log log;
 
     public LoggingLogFileMonitor( Log log )
@@ -63,6 +64,21 @@ public class LoggingLogFileMonitor implements
     }
 
     @Override
+    public void failToRecoverTransactionsAfterCommit( Throwable t, LogEntryCommit commitEntry, LogPosition recoveryToPosition )
+    {
+        log.warn( format( "Fail to recover all transactions. Last recoverable transaction id:%d, committed " +
+                        "at:%d. Any later transaction after %s are unreadable and will be truncated.",
+                commitEntry.getTxId(), commitEntry.getTimeWritten(), recoveryToPosition ), t );
+    }
+
+    @Override
+    public void failToRecoverTransactionsAfterPosition( Throwable t, LogPosition recoveryFromPosition )
+    {
+        log.warn( format( "Fail to recover all transactions. Any later transactions after position %s are " +
+                "unreadable and will be truncated.", recoveryFromPosition ), t );
+    }
+
+    @Override
     public void startedRotating( long currentVersion )
     {
         log.info( format( "Rotating log version:%d", currentVersion ) );
@@ -88,7 +104,7 @@ public class LoggingLogFileMonitor implements
     public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
     {
         log.info( format( "Opened logical log [%s] version=%d, lastTxId=%d (%s)",
-                logFile, logVersion, lastTransactionId,  (clean ? "clean" : "recovered") ) );
+                logFile, logVersion, lastTransactionId, clean ? "clean" : "recovered" ) );
     }
 
     @Override

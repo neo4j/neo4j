@@ -59,6 +59,5 @@ public final class NullLogger implements Logger
     @Override
     public void bulk( @Nonnull Consumer<Logger> consumer )
     {
-        consumer.accept( this );
     }
 }

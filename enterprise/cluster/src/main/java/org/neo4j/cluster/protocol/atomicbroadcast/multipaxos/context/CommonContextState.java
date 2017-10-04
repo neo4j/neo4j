@@ -30,11 +30,11 @@ class CommonContextState
     private URI boundAt;
     private long lastKnownLearnedInstanceInCluster = -1;
     private org.neo4j.cluster.InstanceId lastKnownAliveUpToDateInstance;
-    private long nextInstanceId = 0;
+    private long nextInstanceId;
     private ClusterConfiguration configuration;
     private final int maxAcceptors;
 
-    public CommonContextState( ClusterConfiguration configuration, int maxAcceptors )
+    CommonContextState( ClusterConfiguration configuration, int maxAcceptors )
     {
         this.configuration = configuration;
         this.maxAcceptors = maxAcceptors;
@@ -68,7 +68,7 @@ class CommonContextState
 
     public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster, InstanceId instanceId )
     {
-        if(this.lastKnownLearnedInstanceInCluster <= lastKnownLearnedInstanceInCluster)
+        if ( this.lastKnownLearnedInstanceInCluster <= lastKnownLearnedInstanceInCluster )
         {
             this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
             if ( instanceId != null )
@@ -76,7 +76,7 @@ class CommonContextState
                 this.lastKnownAliveUpToDateInstance = instanceId;
             }
         }
-        else if(lastKnownLearnedInstanceInCluster == -1)
+        else if ( lastKnownLearnedInstanceInCluster == -1 )
         {
             // Special case for clearing the state
             this.lastKnownLearnedInstanceInCluster = -1;
@@ -150,12 +150,7 @@ class CommonContextState
         {
             return false;
         }
-        if ( configuration != null ? !configuration.equals( that.configuration ) : that.configuration != null )
-        {
-            return false;
-        }
-
-        return true;
+        return configuration != null ? configuration.equals( that.configuration ) : that.configuration == null;
     }
 
     @Override

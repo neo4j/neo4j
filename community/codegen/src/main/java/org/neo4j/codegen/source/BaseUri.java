@@ -33,7 +33,7 @@ final class BaseUri
         this.prefix = prefix;
     }
 
-    public BaseUri( Path path )
+    BaseUri( Path path )
     {
         this( path.toUri().toString() );
     }

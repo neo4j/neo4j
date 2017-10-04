@@ -29,6 +29,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Math.pow;
+
+import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
 
 /**
@@ -55,6 +57,8 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 
     private final PrintStream out;
     private final int width;
+    // For tracking delta
+    private long lastProgress;
 
     public SpectrumExecutionMonitor( long interval, TimeUnit unit, PrintStream out, int width )
     {
@@ -66,7 +70,8 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     @Override
     public void start( StageExecution execution )
     {
-        out.println( execution.getStageName() );
+        out.println( execution.getStageName() + ", started " + date() );
+        lastProgress = 0;
     }
 
     @Override
@@ -146,6 +151,10 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
         builder.append( "]" ).append( fitInProgress( progress ) );
+
+        long currentDelta = progress - lastProgress;
+        builder.append( " ∆" + fitInProgress( currentDelta ) );
+        lastProgress = progress;
     }
 
     private static String fitInProgress( long value )
@@ -161,13 +170,13 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         {
             double floatValue = value / pow( 1000, weight );
             progress = String.valueOf( floatValue );
-            if ( progress.length() > PROGRESS_WIDTH-1 )
+            if ( progress.length() > PROGRESS_WIDTH - 1 )
             {
-                progress = progress.substring( 0, PROGRESS_WIDTH-1 );
+                progress = progress.substring( 0, PROGRESS_WIDTH - 1 );
             }
             if ( progress.endsWith( "." ) )
             {
-                progress = progress.substring( 0, progress.length()-1 );
+                progress = progress.substring( 0, progress.length() - 1 );
             }
             progress += WEIGHTS[weight];
         }

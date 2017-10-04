@@ -35,8 +35,10 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 
 /**
  * Batching version of a {@link TokenStore} where tokens can be created and retrieved, but only persisted
@@ -121,7 +123,8 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     public long[] getOrCreateIds( String[] names )
     {
         long[] result = new long[names.length];
-        int from, to;
+        int from;
+        int to;
         for ( from = 0, to = 0; from < names.length; from++ )
         {
             int id = getOrCreateId( names[from] );
@@ -163,12 +166,12 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     public void close()
     {
         // Batch-friendly record access
-        BatchingRecordAccess<Integer, RECORD, Void> recordAccess = new BatchingRecordAccess<Integer, RECORD, Void>()
+        BatchingRecordAccess<RECORD, Void> recordAccess = new BatchingRecordAccess<RECORD, Void>()
         {
             @Override
-            protected RECORD createRecord( Integer key, Void additionalData )
+            protected RECORD createRecord( long key, Void additionalData )
             {
-                return BatchingTokenRepository.this.createRecord( key );
+                return BatchingTokenRepository.this.createRecord( toIntExact( key ) );
             }
         };
 
@@ -222,7 +225,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             {
                 int key = getOrCreateId( properties[cursor++] );
                 Object value = properties[cursor++];
-                target[offset+i] = creator.encodeValue( new PropertyBlock(), key, value );
+                target[offset + i] = creator.encodeValue( new PropertyBlock(), key, Values.of( value ) );
             }
         }
     }

@@ -70,4 +70,12 @@ public class RaftCoreState
             return new RaftCoreState( membershipMarshal.unmarshal( channel ) );
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "RaftCoreState{" +
+               "committed=" + committed +
+               '}';
+    }
 }

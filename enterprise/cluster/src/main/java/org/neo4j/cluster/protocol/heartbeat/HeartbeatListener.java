@@ -31,7 +31,7 @@ public interface HeartbeatListener
 
     void alive( InstanceId server );
 
-    public static class Adapter implements HeartbeatListener
+    class Adapter implements HeartbeatListener
     {
         @Override
         public void failed( InstanceId server )

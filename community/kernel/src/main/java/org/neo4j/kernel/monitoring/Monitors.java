@@ -52,57 +52,35 @@ import static org.neo4j.helpers.collection.Iterables.asArray;
  * The other type of component that would have direct references to the Monitors instance are those that actually implement
  * listening functionality, and must call addMonitorListener.
  *
- * Monitors is monitorable itself, through the {@link org.neo4j.kernel.monitoring.Monitors.Monitor} monitor interface.
- *
  * This class, and the proxy objects it produces, are thread-safe.
  */
 public class Monitors
 {
-    public static final AtomicBoolean FALSE = new AtomicBoolean(false);
-
-    public interface Monitor
-    {
-        void monitorCreated( Class<?> monitorClass, String... tags );
-
-        void monitorListenerException( Throwable throwable );
-
-        class Adapter implements Monitor
-        {
-            @Override
-            public void monitorCreated( Class<?> monitorClass, String... tags )
-            {
-            }
-
-            @Override
-            public void monitorListenerException( Throwable throwable )
-            {
-            }
-        }
-    }
+    private static final AtomicBoolean FALSE = new AtomicBoolean( false );
 
     // Concurrency: Mutation of these data structures is always guarded by the monitor lock on this Monitors instance,
     // while look-ups and reads are performed concurrently. The methodMonitorListerners lists (the map values) are
     // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
     // replace the ones already in the methodMonitorListeners map.
+
     /** Monitor interface method -> Listeners */
     private final Map<Method, List<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
 
-    /** Monitor interface -> Has Listeners? */
+    /**
+     * Monitor interface -> Has Listeners?
+     * Used to determine if recalculation of listeners is needed
+     */
     private final Map<Class<?>,AtomicBoolean> monitoredInterfaces = new ConcurrentHashMap<>();
 
-    /** Listener predicate -> Listener */
+    /**
+     * Listener predicate -> Listener
+     * Used to add listeners to monitors that are added after the listener
+     */
     private final Map<Predicate<Method>, MonitorListenerInvocationHandler> monitorListeners = new ConcurrentHashMap<>();
-
-    private final Monitor monitorsMonitor;
-
-    public Monitors()
-    {
-        monitorsMonitor = newMonitor( Monitor.class );
-    }
 
     public synchronized <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
     {
-        Iterable<String> tagIer = append( owningClass.getName(), Iterables.<String,String>iterable( tags ) );
+        Iterable<String> tagIer = append( owningClass.getName(), Iterables.iterable( tags ) );
         String[] tagArray = asArray( String.class, tagIer );
         return newMonitor( monitorClass, tagArray );
     }
@@ -111,7 +89,7 @@ public class Monitors
     {
         if ( !monitoredInterfaces.containsKey( monitorClass ) )
         {
-            monitoredInterfaces.put( monitorClass, new AtomicBoolean(false) );
+            monitoredInterfaces.put( monitorClass, new AtomicBoolean( false ) );
 
             for ( Method method : monitorClass.getMethods() )
             {
@@ -121,18 +99,7 @@ public class Monitors
 
         ClassLoader classLoader = monitorClass.getClassLoader();
         MonitorInvocationHandler monitorInvocationHandler = new MonitorInvocationHandler( tags );
-        try
-        {
-            return monitorClass.cast( Proxy.newProxyInstance(
-                    classLoader, new Class<?>[]{monitorClass}, monitorInvocationHandler ) );
-        }
-        finally
-        {
-            if ( monitorsMonitor != null )
-            {
-                monitorsMonitor.monitorCreated( monitorClass, tags );
-            }
-        }
+        return monitorClass.cast( Proxy.newProxyInstance( classLoader, new Class<?>[]{monitorClass}, monitorInvocationHandler ) );
     }
 
     public synchronized void addMonitorListener( final Object monitorListener, String... tags )
@@ -177,18 +144,6 @@ public class Monitors
         recalculateAllMethodListeners();
     }
 
-    // TODO: This is a *very* specialized API that adds sugar for monitoring a single
-    //       method in a way that seems, from an end-user POV, would be much easier
-    //       to do by just implementing the regular monitor interface, rather than
-    //       dealing with reflection and predicates. It also seems to be used exclusively
-    //       by tests. Maybe we can remove this? It seems it would simplify Monitors a lot.
-    public synchronized void addMonitorListener(
-            MonitorListenerInvocationHandler invocationHandler, Predicate<Method> methodSpecification )
-    {
-        monitorListeners.put( methodSpecification, invocationHandler );
-        recalculateAllMethodListeners();
-    }
-
     /**
      * While the intention is that the monitoring infrastructure itself should not
      * be a bottleneck (if it is, we should optimize it), components that use the
@@ -221,7 +176,7 @@ public class Monitors
     private void recalculateAllMethodListeners()
     {
         // Mark all monitored interfaces as having no listeners
-        monitoredInterfaces.values().forEach( (b) -> b.set( false ) );
+        monitoredInterfaces.values().forEach( b -> b.set( false ) );
         for ( Method method : methodMonitorListeners.keySet() )
         {
             recalculateMethodListeners( method );
@@ -241,38 +196,44 @@ public class Monitors
 
     private void markMonitorHasListener( Class<?> monitorClass )
     {
-        monitoredInterfaces.getOrDefault( monitorClass, new AtomicBoolean() )
-                .set( true );
+        AtomicBoolean isMonitored = monitoredInterfaces.get( monitorClass );
+        if ( isMonitored != null )
+        {
+            isMonitored.set( true );
+        }
+    }
+
+    private interface MonitorListenerInvocationHandler
+    {
+        void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable;
     }
 
     private static class UntaggedMonitorListenerInvocationHandler implements MonitorListenerInvocationHandler
     {
         private final Object monitorListener;
 
-        public UntaggedMonitorListenerInvocationHandler( Object monitorListener )
+        UntaggedMonitorListenerInvocationHandler( Object monitorListener )
         {
             this.monitorListener = monitorListener;
         }
 
-        public Object getMonitorListener()
+        Object getMonitorListener()
         {
             return monitorListener;
         }
 
         @Override
-        public void invoke( Object proxy, Method method, Object[] args, String... tags )
-                throws Throwable
+        public void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable
         {
             method.invoke( monitorListener, args );
         }
     }
 
-    private static class TaggedMonitorListenerInvocationHandler
-            extends UntaggedMonitorListenerInvocationHandler
+    private static class TaggedMonitorListenerInvocationHandler extends UntaggedMonitorListenerInvocationHandler
     {
         private final String[] tags;
 
-        public TaggedMonitorListenerInvocationHandler( Object monitorListener, String... tags )
+        TaggedMonitorListenerInvocationHandler( Object monitorListener, String... tags )
         {
             super( monitorListener );
             this.tags = tags;
@@ -302,7 +263,7 @@ public class Monitors
     {
         private String[] tags;
 
-        public MonitorInvocationHandler( String... tags )
+        MonitorInvocationHandler( String... tags )
         {
             this.tags = tags;
         }
@@ -328,10 +289,7 @@ public class Monitors
                     }
                     catch ( Throwable e )
                     {
-                        if ( !method.getDeclaringClass().equals( Monitor.class ) )
-                        {
-                            monitorsMonitor.monitorListenerException( e );
-                        }
+                        // TODO: something?! Ignore, rethrow etc.
                     }
                 }
             }

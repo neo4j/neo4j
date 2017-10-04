@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.helpers;
 
-import java.net.URI;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.sun.jersey.api.client.Client;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+
+import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -53,7 +53,7 @@ public final class FunctionalTestHelper
         }
         this.helper = new GraphDbHelper( server.getDatabase() );
         this.server = server;
-        this.request = new RestRequest(server.baseUri().resolve("db/data/"));
+        this.request = new RestRequest( server.baseUri().resolve( "db/data/" ) );
     }
 
     public static Matcher<String[]> arrayContains( final String element )
@@ -80,7 +80,10 @@ public final class FunctionalTestHelper
                 {
                     if ( element == null )
                     {
-                        if ( string == null ) return true;
+                        if ( string == null )
+                        {
+                            return true;
+                        }
                     }
                     else if ( element.equals( string ) )
                     {
@@ -194,13 +197,14 @@ public final class FunctionalTestHelper
         return dataUri() + "ext";
     }
 
-    public JaxRsResponse get(String path) {
-        return request.get(path);
+    public JaxRsResponse get( String path )
+    {
+        return request.get( path );
     }
 
     public long getNodeIdFromUri( String nodeUri )
     {
-        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( "/" ) +1 , nodeUri.length() ) );
+        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( "/" ) + 1, nodeUri.length() ) );
     }
 
     public long getRelationshipIdFromUri( String relationshipUri )
@@ -218,7 +222,9 @@ public final class FunctionalTestHelper
             if ( !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) ) &&
                  !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) ) &&
                  !template.contains( "_auto_" ) )
+            {
                 result.put( entry.getKey(), entry.getValue() );
+            }
         }
         return result;
     }

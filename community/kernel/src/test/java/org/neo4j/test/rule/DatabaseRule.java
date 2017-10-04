@@ -67,14 +67,14 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 {
     private GraphDatabaseBuilder databaseBuilder;
     private GraphDatabaseAPI database;
-    private String storeDir;
+    private File storeDir;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
     private Map<Setting<?>, String> config;
 
     /**
      * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
-     * or {@link #ensureStarted()} call.
+     * or {@link #ensureStarted(String...)} call.
      */
     public DatabaseRule startLazily()
     {
@@ -89,7 +89,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public void executeAndCommit( Consumer<? super GraphDatabaseService> consumer )
     {
-        transaction( (Function<? super GraphDatabaseService,Void>) t -> {
+        transaction( (Function<? super GraphDatabaseService,Void>) t ->
+        {
             consumer.accept( t );
             return null;
         }, true );
@@ -107,7 +108,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public <FROM, TO> Function<FROM,TO> tx( Function<FROM,TO> function )
     {
-        return from -> {
+        return from ->
+        {
             Function<GraphDatabaseService,TO> inner = graphDb -> function.apply( from );
             return executeAndCommit( inner );
         };
@@ -216,7 +218,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public Transaction beginTx( long timeout, TimeUnit timeUnit)
+    public Transaction beginTx( long timeout, TimeUnit timeUnit )
     {
         return getGraphDatabaseAPI().beginTx( timeout, timeUnit );
     }
@@ -364,7 +366,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException;
 
-        RestartAction EMPTY = ( fs, storeDirectory ) -> {
+        RestartAction EMPTY = ( fs, storeDirectory ) ->
+        {
             // duh
         };
     }
@@ -378,7 +381,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         database.shutdown();
-        action.run( fs, new File( storeDir ) );
+        action.run( fs, storeDir );
         database = null;
         applyConfigChanges( configChanges );
         return getGraphDatabaseAPI();
@@ -444,19 +447,19 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public String getStoreDir()
+    public File getStoreDir()
     {
         return database.getStoreDir();
     }
 
     public String getStoreDirAbsolutePath()
     {
-        return new File( getStoreDir() ).getAbsolutePath();
+        return getStoreDir().getAbsolutePath();
     }
 
     public File getStoreDirFile()
     {
-        return new File( getStoreDir() );
+        return getStoreDir();
     }
 
     @Override
@@ -469,6 +472,12 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public Node createNode()
     {
         return database.createNode();
+    }
+
+    @Override
+    public Long createNodeId()
+    {
+        return database.createNodeId();
     }
 
     @Override

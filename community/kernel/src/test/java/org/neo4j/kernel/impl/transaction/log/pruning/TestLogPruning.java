@@ -22,15 +22,14 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import org.junit.After;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -62,7 +61,8 @@ public class TestLogPruning
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
     private PhysicalLogFiles files;
-    private int rotateEveryNTransactions, performedTransactions;
+    private int rotateEveryNTransactions;
+    private int performedTransactions;
 
     @After
     public void after() throws Exception
@@ -71,6 +71,7 @@ public class TestLogPruning
         {
             db.shutdown();
         }
+        fs.close();
     }
 
     @Test
@@ -176,11 +177,11 @@ public class TestLogPruning
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
         TestGraphDatabaseFactory gdf = new TestGraphDatabaseFactory();
-        gdf.setFileSystem( fs );
+        gdf.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
         GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
         builder.setConfig( keep_logical_logs, logPruning );
         this.db = (GraphDatabaseAPI) builder.newGraphDatabase();
-        files = new PhysicalLogFiles( new File( db.getStoreDir() ), PhysicalLogFile.DEFAULT_NAME, fs );
+        files = new PhysicalLogFiles( db.getStoreDir(), PhysicalLogFile.DEFAULT_NAME, fs );
         return db;
     }
 
@@ -234,61 +235,35 @@ public class TestLogPruning
 
     private int logCount() throws IOException
     {
-        return aggregateLogData( new Extractor()
-        {
-            @Override
-            public int extract( long from )
-            {
-                return 1;
-            }
-        } );
+        return aggregateLogData( from -> 1 );
     }
 
     private int logFileSize() throws IOException
     {
-        return aggregateLogData( new Extractor()
-        {
-            @Override
-            public int extract( long from )
-            {
-                return (int) fs.getFileSize( files.getLogFileForVersion( from ) );
-            }
-        } );
+        return aggregateLogData( from -> (int) fs.getFileSize( files.getLogFileForVersion( from ) ) );
     }
 
     private int transactionCount() throws IOException
     {
-        return aggregateLogData( new Extractor()
+        return aggregateLogData( version ->
         {
-            @Override
-            public int extract( long version ) throws IOException
+            int counter = 0;
+            LogVersionBridge bridge = channel -> channel;
+            LogVersionedStoreChannel versionedStoreChannel =
+                    PhysicalLogFile.openForVersion( files, fs, version, false );
+            try ( ReadableLogChannel channel =
+                          new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
             {
-                int counter = 0;
-                LogVersionBridge bridge = new LogVersionBridge()
+                try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
+                        new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
                 {
-                    @Override
-                    public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
+                    while ( physicalTransactionCursor.next() )
                     {
-                        return channel;
-                    }
-                };
-                StoreChannel storeChannel = fs.open( files.getLogFileForVersion( version ), "r" );
-                LogVersionedStoreChannel versionedStoreChannel =
-                        PhysicalLogFile.openForVersion( files, fs, version, false );
-                try ( ReadableLogChannel channel =
-                              new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
-                {
-                    try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
-                            new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
-                    {
-                        while ( physicalTransactionCursor.next())
-                        {
-                            counter++;
-                        }
+                        counter++;
                     }
                 }
-                return counter;
             }
+            return counter;
         } );
     }
 }

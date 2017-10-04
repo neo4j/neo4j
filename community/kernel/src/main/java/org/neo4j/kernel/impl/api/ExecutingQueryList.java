@@ -19,21 +19,61 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 
-interface ExecutingQueryList
+abstract class ExecutingQueryList
 {
-    Stream<ExecutingQuery> queries();
+    abstract Stream<ExecutingQuery> queries();
 
-    ExecutingQueryList push( ExecutingQuery newExecutingQuery );
+    abstract ExecutingQueryList push( ExecutingQuery newExecutingQuery );
 
-    ExecutingQueryList remove( ExecutingQuery executingQuery );
+    final ExecutingQueryList remove( ExecutingQuery executingQuery )
+    {
+        return remove( null, executingQuery );
+    }
 
-    ExecutingQueryList EMPTY = new Empty();
+    abstract ExecutingQueryList remove( ExecutingQuery parent, ExecutingQuery target );
 
-    class Entry implements ExecutingQueryList
+    abstract <T> T top( Function<ExecutingQuery,T> accessor );
+
+    abstract void waitsFor( ExecutingQuery query );
+
+    static ExecutingQueryList EMPTY = new ExecutingQueryList()
+    {
+        @Override
+        Stream<ExecutingQuery> queries()
+        {
+            return Stream.empty();
+        }
+
+        @Override
+        ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        {
+            return new Entry( newExecutingQuery, this );
+        }
+
+        @Override
+        ExecutingQueryList remove( ExecutingQuery parent, ExecutingQuery target )
+        {
+            return this;
+        }
+
+        @Override
+        <T> T top( Function<ExecutingQuery,T> accessor )
+        {
+            return null;
+        }
+
+        @Override
+        void waitsFor( ExecutingQuery query )
+        {
+        }
+    };
+
+    private static class Entry extends ExecutingQueryList
     {
         final ExecutingQuery query;
         final ExecutingQueryList next;
@@ -45,7 +85,7 @@ interface ExecutingQueryList
         }
 
         @Override
-        public Stream<ExecutingQuery> queries()
+        Stream<ExecutingQuery> queries()
         {
             Stream.Builder<ExecutingQuery> builder = Stream.builder();
             ExecutingQueryList entry = this;
@@ -59,44 +99,45 @@ interface ExecutingQueryList
         }
 
         @Override
-        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        ExecutingQueryList push( ExecutingQuery newExecutingQuery )
         {
-            assert( newExecutingQuery.internalQueryId() > query.internalQueryId() );
+            assert newExecutingQuery.internalQueryId() > query.internalQueryId();
+            waitsFor( newExecutingQuery );
             return new Entry( newExecutingQuery, this );
         }
 
         @Override
-        public ExecutingQueryList remove( ExecutingQuery executingQuery )
+        ExecutingQueryList remove( ExecutingQuery parent, ExecutingQuery target )
         {
-            if ( executingQuery.equals( query ) )
+            if ( target.equals( query ) )
             {
+                next.waitsFor( parent );
                 return next;
             }
             else
             {
-                return next == EMPTY ? EMPTY : new Entry( query, next.remove( executingQuery ) );
+                ExecutingQueryList removed = next.remove( parent, target );
+                if ( removed == next )
+                {
+                    return this;
+                }
+                else
+                {
+                    return new Entry( query, removed );
+                }
             }
         }
-    }
 
-    class Empty implements ExecutingQueryList
-    {
         @Override
-        public Stream<ExecutingQuery> queries()
+        <T> T top( Function<ExecutingQuery,T> accessor )
         {
-            return Stream.empty();
+            return accessor.apply( query );
         }
 
         @Override
-        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        void waitsFor( ExecutingQuery child )
         {
-            return new Entry(newExecutingQuery, this);
-        }
-
-        @Override
-        public ExecutingQueryList remove( ExecutingQuery executingQuery )
-        {
-            return this;
+            this.query.waitsForQuery( child );
         }
     }
 }

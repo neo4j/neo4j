@@ -23,26 +23,36 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
-import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
+import org.neo4j.causalclustering.core.replication.ReplicationBenchmarkProcedure;
+import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
+import org.neo4j.causalclustering.core.state.machines.id.FreeIdFilteredIdGeneratorFactory;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
-import org.neo4j.causalclustering.discovery.procedures.GetServersProcedure;
+import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
+import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForMultiDC;
+import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForSingleDC;
+import org.neo4j.causalclustering.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -52,16 +62,18 @@ import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.RaftChannelInitializer;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
+import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -74,10 +86,13 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
@@ -89,6 +104,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
+
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
@@ -96,13 +113,27 @@ import org.neo4j.udc.UsageData;
 public class EnterpriseCoreEditionModule extends EditionModule
 {
     private final ConsensusModule consensusModule;
+    private final ReplicationModule replicationModule;
     private final CoreTopologyService topologyService;
-    private final LogProvider logProvider;
-    private final Config config;
+    protected final LogProvider logProvider;
+    protected final Config config;
+    private CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
     {
         IN_MEMORY, SEGMENTED
+    }
+
+    private LoadBalancingProcessor getLoadBalancingProcessor()
+    {
+        try
+        {
+            return LoadBalancingPluginLoader.load( topologyService, consensusModule.raftMachine(), logProvider, config );
+        }
+        catch ( Throwable e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -110,10 +141,22 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
         procedures.register(
-                new GetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
-        procedures.register(
-                new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+                new LegacyGetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
+
+        if ( config.get( CausalClusteringSettings.multi_dc_license ) )
+        {
+            procedures.register( new GetServersProcedureForMultiDC( getLoadBalancingProcessor() ) );
+        }
+        else
+        {
+            procedures.register( new GetServersProcedureForSingleDC( topologyService, consensusModule.raftMachine(),
+                    config, logProvider ) );
+        }
+
+        procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
+        procedures.registerComponent( Replicator.class, x -> replicationModule.getReplicator(), true );
+        procedures.registerProcedure( ReplicationBenchmarkProcedure.class );
     }
 
     EnterpriseCoreEditionModule( final PlatformModule platformModule,
@@ -137,28 +180,42 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             throw new RuntimeException( e );
         }
+        dependencies.satisfyDependency( clusterStateDirectory );
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ),
-                platformModule.dataSourceManager, platformModule.pageCache, fileSystem, databaseHealthSupplier,
-                platformModule.availabilityGuard, logProvider );
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherService );
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
+                new StoreFiles( fileSystem, platformModule.pageCache ),
+                platformModule.dataSourceManager,
+                databaseHealthSupplier,
+                watcherService,
+                platformModule.availabilityGuard,
+                logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
-        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule, clusterStateDirectory.get() );
+        ClusteringModule clusteringModule = getClusteringModule( platformModule, discoveryServiceFactory,
+                clusterStateDirectory, identityModule, dependencies );
+
+        // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
+
+        PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
+        PipelineHandlerAppender pipelineHandlerAppender = appenderFactory.create( config, dependencies, logProvider );
+
         topologyService = clusteringModule.topologyService();
 
-        long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle );
-        int maxQueueSize = config.get( CausalClusteringSettings.outgoing_queue_size );
+        long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
         final SenderService raftSender = new SenderService(
-                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors ),
-                logProvider, platformModule.monitors, maxQueueSize );
+                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, pipelineHandlerAppender ),
+                logProvider, platformModule.monitors );
         life.add( raftSender );
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
@@ -173,14 +230,19 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 
-        ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
+        replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
                 loggingOutbound, clusterStateDirectory.get(), fileSystem, logProvider );
 
-        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory.get(),
-                config, replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
+        coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
+                platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),
+                consensusModule.raftMachine(), dependencies, localDatabase );
 
-        this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
+
+        createIdComponents( platformModule, dependencies, coreStateMachinesModule.idGeneratorFactory );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
+
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
@@ -190,7 +252,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
                 coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
-                messageLogger, databaseHealthSupplier );
+                messageLogger, databaseHealthSupplier, pipelineHandlerAppender );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
@@ -200,13 +262,45 @@ public class EnterpriseCoreEditionModule extends EditionModule
         life.add( coreServerModule.membershipWaiterLifecycle );
     }
 
+    protected ClusteringModule getClusteringModule( PlatformModule platformModule,
+                                                  DiscoveryServiceFactory discoveryServiceFactory,
+                                                  ClusterStateDirectory clusterStateDirectory,
+                                                  IdentityModule identityModule, Dependencies dependencies )
+    {
+        return new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
+                platformModule, clusterStateDirectory.get() );
+    }
+
+    protected PipelineHandlerAppenderFactory appenderFactory()
+    {
+        return new NoOpPipelineHandlerAppenderFactory();
+    }
+
+    @Override
+    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
+            IdGeneratorFactory editionIdGeneratorFactory )
+    {
+        super.createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
+        this.idGeneratorFactory =
+                new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactory, coreStateMachinesModule.freeIdCondition );
+    }
+
+    static Predicate<String> fileWatcherFileNameFilter()
+    {
+        return Predicates.any(
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+        );
+    }
+
     private MessageLogger<MemberId> createMessageLogger( Config config, LifeSupport life, MemberId myself )
     {
         final MessageLogger<MemberId> messageLogger;
         if ( config.get( CausalClusteringSettings.raft_messages_log_enable ) )
         {
-            File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logsDir ) ) );
+            File logFile = config.get( raft_messages_log_path );
+            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logFile ) ) );
         }
         else
         {
@@ -230,7 +324,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         schemaWriteGuard = createSchemaWriteGuard();
 
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
@@ -249,14 +343,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return consensusModule.raftMachine().currentRole() == Role.LEADER;
     }
 
-    private static PrintWriter raftMessagesLog( File logsDir )
+    private static PrintWriter raftMessagesLog( File logFile )
     {
         //noinspection ResultOfMethodCallIgnored
-        logsDir.mkdirs();
+        logFile.getParentFile().mkdirs();
         try
         {
 
-            return new PrintWriter( new FileOutputStream( new File( logsDir, "raft-messages.log" ), true ) );
+            return new PrintWriter( new FileOutputStream( logFile, true ) );
         }
         catch ( FileNotFoundException e )
         {
@@ -266,7 +360,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
     private SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {};
+        return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
     private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
@@ -284,7 +378,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
             final DependencyResolver dependencyResolver )
     {
-        life.addLifecycleListener( ( instance, from, to ) -> {
+        life.addLifecycleListener( ( instance, from, to ) ->
+        {
             if ( instance instanceof DatabaseAvailability && LifecycleStatus.STARTED.equals( to ) )
             {
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );

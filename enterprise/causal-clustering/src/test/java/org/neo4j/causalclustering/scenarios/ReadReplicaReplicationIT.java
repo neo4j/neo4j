@@ -24,17 +24,20 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -50,31 +53,34 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static java.lang.String.format;
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -87,21 +93,27 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
-import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+/**
+ * Note that this test is extended in the blockdevice repository.
+ */
 public class ReadReplicaReplicationIT
 {
+    // This test is extended in the blockdevice repository, and these constants are required there as well.
+    protected static final int NR_CORE_MEMBERS = 3;
+    protected static final int NR_READ_REPLICAS = 1;
+
     @Rule
-    public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 1 )
-                    .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
-                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( NR_CORE_MEMBERS )
+            .withNumberOfReadReplicas( NR_READ_REPLICAS )
+            .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
+            .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
 
     @Test
     public void shouldNotBeAbleToWriteToReadReplica() throws Exception
@@ -163,15 +175,19 @@ public class ReadReplicaReplicationIT
             } );
         }
 
+        Set<Path> labelScanStoreFiles = new HashSet<>();
+        cluster.coreTx( ( db, tx ) -> gatherLabelScanStoreFiles( db, labelScanStoreFiles ) );
+
         AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
         Monitors monitors = new Monitors();
         ReadReplica rr = cluster.addReadReplicaWithIdAndMonitors( 0, monitors );
-
-        File labelScanStore = LabelScanStoreProvider.getStoreDirectory( new File( rr.storeDir(), TEMP_COPY_DIRECTORY_NAME ) );
+        Path readReplicateStoreDir = rr.storeDir().toPath().toAbsolutePath();
 
         monitors.addMonitorListener( (FileCopyMonitor) file ->
         {
-            if ( file.getParent().contains( labelScanStore.getPath() ) )
+            Path relativPath = readReplicateStoreDir.relativize( file.toPath().toAbsolutePath() );
+            relativPath = relativPath.subpath( 1, relativPath.getNameCount() );
+            if ( labelScanStoreFiles.contains( relativPath ) )
             {
                 labelScanStoreCorrectlyPlaced.set( true );
             }
@@ -195,7 +211,7 @@ public class ReadReplicaReplicationIT
             try ( Transaction tx = readReplica.beginTx() )
             {
                 ThrowingSupplier<Long,Exception> nodeCount = () -> count( readReplica.getAllNodes() );
-                assertEventually( "node to appear on read replica", nodeCount, is( 200L ) , 1, MINUTES );
+                assertEventually( "node to appear on read replica", nodeCount, is( 400L ) , 1, MINUTES );
 
                 for ( Node node : readReplica.getAllNodes() )
                 {
@@ -209,6 +225,21 @@ public class ReadReplicaReplicationIT
         assertTrue( labelScanStoreCorrectlyPlaced.get() );
     }
 
+    private void gatherLabelScanStoreFiles( GraphDatabaseAPI db, Set<Path> labelScanStoreFiles )
+    {
+        Path dbStoreDirectory = db.getStoreDir().toPath().toAbsolutePath();
+        LabelScanStore labelScanStore = db.getDependencyResolver().resolveDependency( LabelScanStore.class );
+        try ( ResourceIterator<File> files = labelScanStore.snapshotStoreFiles() )
+        {
+            Path relativePath = dbStoreDirectory.relativize( files.next().toPath().toAbsolutePath() );
+            labelScanStoreFiles.add( relativePath );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     @Test
     public void shouldShutdownRatherThanPullUpdatesFromCoreMemberWithDifferentStoreIdIfLocalStoreIsNonEmpty()
             throws Exception
@@ -217,13 +248,16 @@ public class ReadReplicaReplicationIT
 
         cluster.coreTx( createSomeData );
 
-        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 2, TimeUnit.SECONDS );
-        // Shutdown server before copying its data, because Windows can't copy open files.
-        follower.shutdown();
+        cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 2, TimeUnit.SECONDS );
 
+        // Get a read replica and make sure that it is operational
         ReadReplica readReplica = cluster.addReadReplicaWithId( 4 );
-        putSomeDataWithDifferentStoreId( readReplica.storeDir(), follower.storeDir() );
-        follower.start();
+        readReplica.start();
+        readReplica.database().beginTx().close();
+
+        // Change the store id, so it should fail to join the cluster again
+        changeStoreId( readReplica );
+        readReplica.shutdown();
 
         try
         {
@@ -264,15 +298,12 @@ public class ReadReplicaReplicationIT
 
         awaitEx( () -> readReplicasUpToDateAsTheLeader( cluster.awaitLeader(), cluster.readReplicas() ), 1, TimeUnit.MINUTES );
 
-        List<File> coreStoreDirs =
-                cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toList() );
-        List<File> readReplicaStoreDirs =
-                cluster.readReplicas().stream().map( ReadReplica::storeDir ).collect( toList() );
+        Function<ClusterMember,DbRepresentation> toRep = db -> DbRepresentation.of( db.database() );
+        Set<DbRepresentation> dbs = cluster.coreMembers().stream().map( toRep ).collect( toSet() );
+        dbs.addAll( cluster.readReplicas().stream().map( toRep ).collect( toSet() ) );
 
         cluster.shutdown();
 
-        Set<DbRepresentation> dbs = coreStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() );
-        dbs.addAll( readReplicaStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() ) );
         assertEquals( 1, dbs.size() );
     }
 
@@ -339,6 +370,7 @@ public class ReadReplicaReplicationIT
                 () -> DbRepresentation.of( readReplica.database() ),
                 equalTo( DbRepresentation.of( cluster.awaitLeader().database() ) ), 10, TimeUnit.SECONDS );
     }
+
     @Test
     public void shouldBeAbleToPullTxAfterHavingDownloadedANewStoreAfterPruning() throws Exception
     {
@@ -379,8 +411,9 @@ public class ReadReplicaReplicationIT
         awaitEx( () -> readReplicasUpToDateAsTheLeader( cluster.awaitLeader(), cluster.readReplicas() ), 1, TimeUnit.MINUTES );
 
         // when
-        cluster.coreTx( (db, tx) -> {
-            createData( db );
+        cluster.coreTx( ( db, tx ) ->
+        {
+            createData( db, 10 );
             tx.success();
         } );
 
@@ -388,6 +421,51 @@ public class ReadReplicaReplicationIT
         assertEventually( "The read replica has the same data as the core members",
                 () -> DbRepresentation.of( readReplica.database() ),
                 equalTo( DbRepresentation.of( cluster.awaitLeader().database() ) ), 10, TimeUnit.SECONDS );
+    }
+
+    @Test
+    public void transactionsShouldNotAppearOnTheReadReplicaWhilePollingIsPaused() throws Throwable
+    {
+        // given
+        Cluster cluster = clusterRule.startCluster();
+
+        ReadReplicaGraphDatabase readReplicaGraphDatabase = cluster.findAnyReadReplica().database();
+        CatchupPollingProcess pollingClient = readReplicaGraphDatabase.getDependencyResolver()
+                .resolveDependency( CatchupPollingProcess.class );
+        pollingClient.stop();
+
+        cluster.coreTx( ( coreGraphDatabase, transaction ) ->
+        {
+            coreGraphDatabase.createNode();
+            transaction.success();
+        } );
+
+        CoreGraphDatabase leaderDatabase = cluster.awaitLeader().database();
+        long transactionVisibleOnLeader = transactionIdTracker( leaderDatabase ).newestEncounteredTxId();
+
+        // when the poller is paused, transaction doesn't make it to the read replica
+        try
+        {
+            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+            fail( "should have thrown exception" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // expected timeout
+        }
+
+        // when the poller is resumed, it does make it to the read replica
+        pollingClient.start();
+        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+    }
+
+    private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
+    {
+        Supplier<TransactionIdStore> transactionIdStore =
+                database.getDependencyResolver().provideDependency( TransactionIdStore.class );
+        AvailabilityGuard availabilityGuard =
+                database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
+        return new TransactionIdTracker( transactionIdStore, availabilityGuard );
     }
 
     private PhysicalLogFiles physicalLogFiles( ClusterMember clusterMember )
@@ -404,19 +482,11 @@ public class ReadReplicaReplicationIT
                 .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
     }
 
-    private void putSomeDataWithDifferentStoreId( File storeDir, File coreStoreDir ) throws IOException
+    private void changeStoreId( ReadReplica replica ) throws IOException
     {
-        FileUtils.copyRecursively( coreStoreDir, storeDir );
-        changeStoreId( storeDir );
-    }
-
-    private void changeStoreId( File storeDir ) throws IOException
-    {
-        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
-        {
-            MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
-        }
+        File neoStoreFile = new File( replica.storeDir(), MetaDataStore.DEFAULT_NAME );
+        PageCache pageCache = replica.database().getDependencyResolver().resolveDependency( PageCache.class );
+        MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
     }
 
     private long lastClosedTransactionId( boolean fail, GraphDatabaseFacade db )
@@ -451,8 +521,9 @@ public class ReadReplicaReplicationIT
 
         try
         {
-            cluster.addReadReplicaWithIdAndRecordFormat( 0, StandardV3_0.NAME ).start();
-            fail( "starting read replica with '" + StandardV3_0.NAME + "' format should have failed" );
+            String format = Standard.LATEST_NAME;
+            cluster.addReadReplicaWithIdAndRecordFormat( 0, format ).start();
+            fail( "starting read replica with '" + format + "' format should have failed" );
         }
         catch ( Exception e )
         {
@@ -503,7 +574,7 @@ public class ReadReplicaReplicationIT
                 SECONDS );
 
         // when
-        cluster.addReadReplicaWithIdAndRecordFormat( 42, HighLimit.NAME ).start();
+        cluster.addReadReplicaWithIdAndRecordFormat( 4, HighLimit.NAME ).start();
 
         // then
         for ( final ReadReplica readReplica : cluster.readReplicas() )
@@ -513,38 +584,18 @@ public class ReadReplicaReplicationIT
         }
     }
 
-    private long versionBy( File raftLogDir, BinaryOperator<Long> operator )
+    private long versionBy( File raftLogDir, BinaryOperator<Long> operator ) throws IOException
     {
-        SortedMap<Long,File> logs =
-                new FileNames( raftLogDir ).getAllFiles( new DefaultFileSystemAbstraction(), mock( Log.class ) );
-        return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            SortedMap<Long,File> logs = new FileNames( raftLogDir ).getAllFiles( fileSystem, mock( Log.class ) );
+            return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
+        }
     }
 
     private final BiConsumer<CoreGraphDatabase,Transaction> createSomeData = ( db, tx ) ->
     {
-        createData( db );
+        createData( db, 10 );
         tx.success();
     };
-
-    private void createData( GraphDatabaseService db )
-    {
-        createData( db, 10 );
-    }
-
-    private void createData( GraphDatabaseService db, int amount )
-    {
-        for ( int i = 0; i < amount; i++ )
-        {
-            Node node = db.createNode(Label.label( "Foo" ));
-            node.setProperty( "foobar", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar1", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar2", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar3", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar4", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar5", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar6", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar7", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar8", format( "baz_bat%s", UUID.randomUUID() ) );
-        }
-    }
 }

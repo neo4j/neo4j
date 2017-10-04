@@ -40,8 +40,10 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 
 import static org.junit.Assert.assertEquals;
@@ -61,13 +63,14 @@ public class TestAStar extends Neo4jAlgoTestCase
         Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
 
         // WHEN
-        WeightedPath path = finder.findSinglePath( start, start );
-
-        // THEN
-        assertNotNull( path );
-        assertEquals( start, path.startNode() );
-        assertEquals( start, path.endNode() );
-        assertEquals( 0, path.length() );
+        try ( WeightedPath path = finder.findSinglePath( start, start ) )
+        {
+            // THEN
+            assertNotNull( path );
+            assertEquals( start, path.startNode() );
+            assertEquals( start, path.endNode() );
+            assertEquals( 0, path.length() );
+        }
     }
 
     @Test
@@ -77,7 +80,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
 
         // WHEN
-        Iterable<WeightedPath> paths = finder.findAllPaths( start, start );
+        ResourceIterable<WeightedPath> paths = Iterables.asResourceIterable(finder.findAllPaths( start, start ) );
 
         // THEN
         for ( WeightedPath path : paths )
@@ -87,6 +90,8 @@ public class TestAStar extends Neo4jAlgoTestCase
             assertEquals( start, path.endNode() );
             assertEquals( 0, path.length() );
         }
+
+        paths.forEach( Path::close );
     }
 
     @Test
@@ -120,13 +125,15 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "c", "end", "length", 4L );
         graph.makeEdge( "start", "d", "length", (short)2 );
         graph.makeEdge( "d", "e", "length", (byte)3 );
-        graph.makeEdge( "e", "end", "length", (int)2 );
+        graph.makeEdge( "e", "end", "length", 2 );
 
         // WHEN
-        WeightedPath path = finder.findSinglePath( start, end );
+        try ( WeightedPath path = finder.findSinglePath( start, end ) )
+        {
 
-        // THEN
-        assertPathDef( path, "start", "d", "e", "end" );
+            // THEN
+            assertPathDef( path, "start", "d", "e", "end" );
+        }
     }
 
     /**
@@ -151,12 +158,14 @@ public class TestAStar extends Neo4jAlgoTestCase
         Relationship relAC = graph.makeEdge( "A", "C", "length", (short)10 );
 
         int counter = 0;
-        for ( WeightedPath path : finder.findAllPaths( nodeA, nodeC ) )
+        Iterable<WeightedPath> allPaths = finder.findAllPaths( nodeA, nodeC );
+        for ( WeightedPath path : allPaths )
         {
             assertEquals( (Double)5d, (Double)path.weight() );
             assertPath( path, nodeA, nodeB, nodeC );
             counter++;
         }
+        allPaths.forEach( Path::close );
         assertEquals( 1, counter );
     }
 
@@ -219,24 +228,19 @@ public class TestAStar extends Neo4jAlgoTestCase
         PathFinder<WeightedPath> traversalFinder = new TraversalAStar( expander,
                 new InitialBranchState.State( initialStateValue, initialStateValue ),
                 doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR );
-        WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC );
-        assertEquals( (Double) 5.0D, (Double) path.weight() );
-        assertPathDef( path, "A", "B", "C" );
-        assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D, nodeC, 5D ), seenBranchStates );
+        try ( WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC ) )
+        {
+            assertEquals( (Double) 5.0D, (Double) path.weight() );
+            assertPathDef( path, "A", "B", "C" );
+            assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
+        }
     }
 
     @Test
     public void betterTentativePath() throws Exception
     {
         // GIVEN
-        EstimateEvaluator<Double> estimator = new EstimateEvaluator<Double>()
-        {
-            @Override
-            public Double getCost( Node node, Node goal )
-            {
-                return ((Double)node.getProperty( "estimate" ));
-            }
-        };
+        EstimateEvaluator<Double> estimator = ( node, goal ) -> (Double) node.getProperty( "estimate" );
         PathFinder<WeightedPath> finder = aStar( PathExpanders.allTypesAndDirections(),
                 doubleCostEvaluator( "weight", 0d ), estimator );
 
@@ -253,24 +257,20 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "3", "4", "weight", 0.013d );
 
         // WHEN
-        WeightedPath best1_4 = finder.findSinglePath( node1, node4 );
-
-        // THEN
-        assertPath( best1_4, node1, node2, node3, node4 );
+        try ( WeightedPath best1_4 = finder.findSinglePath( node1, node4 ) )
+        {
+            // THEN
+            assertPath( best1_4, node1, node2, node3, node4 );
+        }
     }
 
-    static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = new EstimateEvaluator<Double>()
+    static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->
     {
-        @Override
-        public Double getCost( Node node, Node goal )
-        {
-            double dx = (Double) node.getProperty( "x" )
-                        - (Double) goal.getProperty( "x" );
-            double dy = (Double) node.getProperty( "y" )
-                        - (Double) goal.getProperty( "y" );
-            double result = Math.sqrt( Math.pow( dx, 2 ) + Math.pow( dy, 2 ) );
-            return result;
-        }
+        double dx = (Double) node.getProperty( "x" )
+                    - (Double) goal.getProperty( "x" );
+        double dy = (Double) node.getProperty( "y" )
+                    - (Double) goal.getProperty( "y" );
+        return Math.sqrt( Math.pow( dx, 2 ) + Math.pow( dy, 2 ) );
     };
 
     @Parameters

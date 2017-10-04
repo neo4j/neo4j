@@ -67,7 +67,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "a", "c", "cost", (float) 1 );
         graph.makeEdge( "a", "d", "cost", (long) 1 );
-        graph.makeEdge( "a", "e", "cost", (int) 1 );
+        graph.makeEdge( "a", "e", "cost", 1 );
         graph.makeEdge( "b", "c", "cost", (byte) 1 );
         graph.makeEdge( "c", "d", "cost", (short) 1 );
         graph.makeEdge( "d", "e", "cost", (double) 1 );
@@ -113,7 +113,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "s", "c", "cost", (double) 7 );
         graph.makeEdge( "c", "e", "cost", (float) 7 );
         graph.makeEdge( "s", "a", "cost", (long) 2 );
-        graph.makeEdge( "a", "b", "cost", (int) 7 );
+        graph.makeEdge( "a", "b", "cost", 7 );
         graph.makeEdge( "b", "e", "cost", (byte) 2 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "s", "e" );
         assertTrue( dijkstra.getCost() == 11.0 );

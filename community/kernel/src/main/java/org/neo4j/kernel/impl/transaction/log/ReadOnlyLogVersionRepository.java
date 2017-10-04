@@ -63,6 +63,12 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     }
 
     @Override
+    public void setCurrentLogVersion( long version )
+    {
+        throw new UnsupportedOperationException( "Can't set current log version in read only version repository." );
+    }
+
+    @Override
     public long incrementAndGetVersion()
     {   // We can expect a call to this during shutting down, if we have a LogFile using us.
         // So it's sort of OK.

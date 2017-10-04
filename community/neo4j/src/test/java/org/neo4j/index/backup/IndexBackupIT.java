@@ -20,6 +20,7 @@
 package org.neo4j.index.backup;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.lucene.index.IndexFileNames;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,7 +46,6 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -59,7 +59,7 @@ public class IndexBackupIT
     @Rule
     public RandomRule randomRule = new RandomRule();
     @Rule
-    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule( getClass() );
+    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
     private CheckPointer checkPointer;
     private IndexingService indexingService;
     private FileSystemAbstraction fileSystem;
@@ -146,20 +146,19 @@ public class IndexBackupIT
     private void compareSnapshotFiles( Set<String> firstSnapshotFileNames, Set<String> secondSnapshotFileNames,
             FileSystemAbstraction fileSystem )
     {
-        assertThat(
-                format( "Should have at least %d modified index files. Snapshot files  are: %s", NUMBER_OF_INDEXES + 1,
-                        firstSnapshotFileNames ), firstSnapshotFileNames,
-                hasSize( greaterThanOrEqualTo( NUMBER_OF_INDEXES + 1 ) ) );
+        assertThat( format( "Should have %d modified index segment files. Snapshot segment files are: %s",
+                        NUMBER_OF_INDEXES, firstSnapshotFileNames ), firstSnapshotFileNames,
+                hasSize( NUMBER_OF_INDEXES ) );
         for ( String fileName : firstSnapshotFileNames )
         {
-            assertFalse( "Snapshot fileset should not have files from another snapshot set." +
+            assertFalse( "Snapshot segments fileset should not have files from another snapshot set." +
                             describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
                     secondSnapshotFileNames.contains( fileName ) );
             String path = FilenameUtils.getFullPath( fileName );
             assertTrue( "Snapshot should contain files for index in path: " + path + "." +
                             describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
                     secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ) );
-            assertTrue( format( "Snapshot file '%s' should exist.", fileName ),
+            assertTrue( format( "Snapshot segment file '%s' should exist.", fileName ),
                     fileSystem.fileExists( new File( fileName ) ) );
         }
     }
@@ -187,7 +186,7 @@ public class IndexBackupIT
         }
     }
 
-    private String describeFileSets(Set<String> firstFileSet, Set<String> secondFileSet)
+    private String describeFileSets( Set<String> firstFileSet, Set<String> secondFileSet )
     {
         return "First snapshot files are: " + firstFileSet + System.lineSeparator() +
                 "second snapshot files are: " + secondFileSet;
@@ -195,7 +194,9 @@ public class IndexBackupIT
 
     private Set<String> getFileNames( ResourceIterator<File> files )
     {
-        return files.stream().map( File::getAbsolutePath ).collect( Collectors.toSet() );
+        return files.stream().map( File::getAbsolutePath )
+                .filter( this::segmentsFilePredicate )
+                .collect( Collectors.toSet() );
     }
 
     private void forceCheckpoint( CheckPointer checkPointer ) throws IOException
@@ -240,7 +241,7 @@ public class IndexBackupIT
         }
     }
 
-    private <T> T resolveDependency(Class<T> clazz)
+    private <T> T resolveDependency( Class<T> clazz )
     {
         return getDatabaseResolver().resolveDependency( clazz );
     }
@@ -248,5 +249,10 @@ public class IndexBackupIT
     private DependencyResolver getDatabaseResolver()
     {
         return database.getDependencyResolver();
+    }
+
+    private boolean segmentsFilePredicate( String fileName )
+    {
+        return FilenameUtils.getName( fileName ).startsWith( IndexFileNames.SEGMENTS );
     }
 }

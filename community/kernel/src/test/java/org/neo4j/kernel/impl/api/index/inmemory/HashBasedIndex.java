@@ -19,28 +19,33 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.kernel.api.schema.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
-    private Map<Object, Set<Long>> data;
+    private Map<List<Object>,Set<Long>> data;
 
-    public Map<Object, Set<Long>> data()
+    public Map<List<Object>,Set<Long>> data()
     {
         if ( data == null )
         {
@@ -68,19 +73,18 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    synchronized PrimitiveLongIterator doIndexSeek( Object propertyValue )
+    synchronized PrimitiveLongIterator doIndexSeek( Object... propertyValues )
     {
-        Set<Long> nodes = data().get( propertyValue );
+        Set<Long> nodes = data().get( Arrays.asList( propertyValues ) );
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    private synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey();
+            Object key = entry.getKey().get( 0 );
             if ( NUMBER.isSuperTypeOf( key ) )
             {
                 boolean lowerFilter = lower == null || COMPARE_VALUES.compare( key, lower ) >= 0;
@@ -95,14 +99,13 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-            String upper, boolean includeUpper )
+    private synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper,
+            boolean includeUpper )
     {
         Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey();
+            Object key = entry.getKey().get( 0 );
             if ( STRING.isSuperTypeOf( key ) )
             {
                 boolean lowerFilter;
@@ -137,47 +140,43 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    private synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return stringSearch( ( String entry ) -> entry.startsWith( prefix ) );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator containsString( String exactTerm )
+    private synchronized PrimitiveLongIterator containsString( String exactTerm )
     {
         return stringSearch( ( String entry ) -> entry.contains( exactTerm ) );
     }
 
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
+    private PrimitiveLongIterator endsWith( String suffix )
     {
         return stringSearch( ( String entry ) -> entry.endsWith( suffix ) );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator scan()
+    private synchronized PrimitiveLongIterator scan()
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );
         return toPrimitiveIterator( all.iterator() );
     }
 
     @Override
-    synchronized boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
+    synchronized boolean doAdd( long nodeId, boolean applyIdempotently, Object... propertyValue )
     {
-        Set<Long> nodes = data().get( propertyValue );
+        Set<Long> nodes = data().get( Arrays.asList( propertyValue ) );
         if ( nodes == null )
         {
-            data().put( propertyValue, nodes = new HashSet<>() );
+            data().put( Arrays.asList( propertyValue ), nodes = new HashSet<>() );
         }
         // In this implementation we don't care about idempotency.
         return nodes.add( nodeId );
     }
 
     @Override
-    synchronized void doRemove( Object propertyValue, long nodeId )
+    synchronized void doRemove( long nodeId, Object... propertyValues )
     {
-        Set<Long> nodes = data().get( propertyValue );
+        Set<Long> nodes = data().get( Arrays.asList( propertyValues ) );
         if ( nodes != null )
         {
             nodes.remove( nodeId );
@@ -196,7 +195,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     synchronized void iterateAll( IndexEntryIterator iterator ) throws Exception
     {
-        for ( Map.Entry<Object, Set<Long>> entry : data().entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data().entrySet() )
         {
             iterator.visitEntry( entry.getKey(), entry.getValue() );
         }
@@ -229,7 +228,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         HashBasedIndex snapshot = new HashBasedIndex();
         snapshot.initialize();
-        for ( Map.Entry<Object, Set<Long>> entry : data().entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data().entrySet() )
         {
             snapshot.data().put( entry.getKey(), new HashSet<>( entry.getValue() ) );
         }
@@ -237,9 +236,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    protected synchronized long doCountIndexedNodes( long nodeId, Object propertyValue )
+    protected synchronized long doCountIndexedNodes( long nodeId, Object... propertyValues )
     {
-        Set<Long> candidates = data().get( propertyValue );
+        Set<Long> candidates = data().get( Arrays.asList( propertyValues ) );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;
     }
 
@@ -247,6 +246,53 @@ class HashBasedIndex extends InMemoryIndexImplementation
     public synchronized IndexSampler createSampler()
     {
         return new HashBasedIndexSampler( data );
+    }
+
+    @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates )
+    {
+        if ( predicates.length > 1 )
+        {
+            Value[] values = new Value[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                assert predicates[i].type() == exact : "composite indexes only supported for seek";
+                values[i] = ((IndexQuery.ExactPredicate)predicates[i]).value();
+            }
+            return seek( values );
+        }
+        assert predicates.length == 1 : "composite indexes not yet supported, except for seek on all properties";
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exists:
+            return scan();
+        case exact:
+            return seek( ((IndexQuery.ExactPredicate) predicate).value() );
+        case rangeNumeric:
+            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+            return rangeSeekByNumberInclusive( np.from(), np.to() );
+        case rangeString:
+            IndexQuery.StringRangePredicate srp = (IndexQuery.StringRangePredicate) predicate;
+            return rangeSeekByString( srp.from(), srp.fromInclusive(), srp.to(), srp.toInclusive() );
+        case stringPrefix:
+            IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
+            return rangeSeekByPrefix( spp.prefix() );
+        case stringContains:
+            IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
+            return containsString( scp.contains() );
+        case stringSuffix:
+            IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
+            return endsWith( ssp.suffix() );
+        default:
+            throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
+        }
+    }
+
+    @Override
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    {
+        return false;
     }
 
     private interface StringFilter
@@ -257,9 +303,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
     private PrimitiveLongIterator stringSearch( StringFilter filter )
     {
         Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey();
+            Object key = entry.getKey().get( 0 );
             if ( key instanceof String )
             {
                 if ( filter.test( (String) key ) )
@@ -271,4 +317,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
+    @Override
+    boolean hasSameContentsAs( InMemoryIndexImplementation other )
+    {
+        return this.data.equals( ((HashBasedIndex)other).data );
+    }
 }

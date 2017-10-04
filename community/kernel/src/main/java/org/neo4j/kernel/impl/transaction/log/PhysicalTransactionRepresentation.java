@@ -129,33 +129,12 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         }
 
         PhysicalTransactionRepresentation that = (PhysicalTransactionRepresentation) o;
-
-        if ( authorId != that.authorId )
-        {
-            return false;
-        }
-        if ( latestCommittedTxWhenStarted != that.latestCommittedTxWhenStarted )
-        {
-            return false;
-        }
-        if ( masterId != that.masterId )
-        {
-            return false;
-        }
-        if ( timeStarted != that.timeStarted )
-        {
-            return false;
-        }
-        if ( !Arrays.equals( additionalHeader, that.additionalHeader ) )
-        {
-            return false;
-        }
-        if ( !commands.equals( that.commands ) )
-        {
-            return false;
-        }
-
-        return true;
+        return authorId == that.authorId
+               && latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
+               && masterId == that.masterId
+               && timeStarted == that.timeStarted
+               && Arrays.equals( additionalHeader, that.additionalHeader )
+               && commands.equals( that.commands );
     }
 
     @Override
@@ -173,17 +152,17 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder( getClass().getSimpleName() + "[" );
-        builder.append( "masterId:" + masterId + "," );
-        builder.append( "authorId:" + authorId + "," );
-        builder.append( "timeStarted:" + timeStarted + "," );
-        builder.append( "latestCommittedTxWhenStarted:" + latestCommittedTxWhenStarted + "," );
-        builder.append( "timeCommitted:" + timeCommitted + "," );
-        builder.append( "lockSession:" + lockSessionIdentifier + "," );
-        builder.append( "additionalHeader:" + Arrays.toString( additionalHeader ) );
+        StringBuilder builder = new StringBuilder( getClass().getSimpleName() ).append( '[' );
+        builder.append( "masterId:" ).append( masterId ).append( ',' );
+        builder.append( "authorId:" ).append( authorId ).append( ',' );
+        builder.append( "timeStarted:" ).append( timeStarted ).append( ',' );
+        builder.append( "latestCommittedTxWhenStarted:" ).append( latestCommittedTxWhenStarted ).append( ',' );
+        builder.append( "timeCommitted:" ).append( timeCommitted ).append( ',' );
+        builder.append( "lockSession:" ).append( lockSessionIdentifier ).append( ',' );
+        builder.append( "additionalHeader:" ).append( Arrays.toString( additionalHeader ) );
         for ( StorageCommand command : commands )
         {
-            builder.append( "\n" + command );
+            builder.append( '\n' ).append( command );
         }
         return builder.toString();
     }

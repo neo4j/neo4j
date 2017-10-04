@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import org.neo4j.concurrent.AsyncApply;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -43,11 +45,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.transaction.state.RecoveryIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
-
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -58,7 +56,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 {
     private final IndexingService indexingService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
+    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
 
@@ -67,16 +65,15 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     public IndexBatchTransactionApplier( IndexingService indexingService,
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
-            WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync,
-            NodeStore nodeStore, PropertyLoader propertyLoader,
-            PropertyPhysicalToLogicalConverter indexUpdateConverter,
-            TransactionApplicationMode mode )
+            WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync,
+            NodeStore nodeStore,
+            PropertyPhysicalToLogicalConverter indexUpdateConverter )
     {
         this.indexingService = indexingService;
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.indexUpdateConverter = indexUpdateConverter;
-        this.transactionApplier = new SingleTransactionApplier( nodeStore, propertyLoader, mode );
+        this.transactionApplier = new SingleTransactionApplier( nodeStore );
     }
 
     @Override
@@ -85,8 +82,16 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         return transactionApplier;
     }
 
-    private void applyIndexUpdates() throws IOException
+    private void applyPendingLabelAndIndexUpdates() throws IOException
     {
+        AsyncApply labelUpdatesApply = null;
+        if ( labelUpdates != null )
+        {
+            // Updates are sorted according to node id here, an artifact of node commands being sorted
+            // by node id when extracting from TransactionRecordState.
+            labelUpdatesApply = labelScanStoreSync.applyAsync( new LabelUpdateWork( labelUpdates ) );
+            labelUpdates = null;
+        }
         if ( indexUpdates != null && indexUpdates.hasUpdates() )
         {
             try
@@ -95,25 +100,28 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             }
             catch ( ExecutionException e )
             {
-                throw new IOException( "Failed to flush index updates prior to applying schema change", e );
+                throw new IOException( "Failed to flush index updates", e );
             }
             indexUpdates = null;
+        }
+
+        if ( labelUpdatesApply != null )
+        {
+            try
+            {
+                labelUpdatesApply.await();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Failed to flush label updates", e );
+            }
         }
     }
 
     @Override
     public void close() throws Exception
     {
-        // Apply all the label updates within this whole batch of transactions.
-        if ( labelUpdates != null )
-        {
-            // Updates are sorted according to node id here, an artifact of node commands being sorted
-            // by node id when extracting from TransactionRecordState.
-            labelScanStoreSync.apply( new LabelUpdateWork( labelUpdates ) );
-        }
-
-        // Apply all the index updates within this whole batch of transactions.
-        applyIndexUpdates();
+        applyPendingLabelAndIndexUpdates();
     }
 
     /**
@@ -124,17 +132,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
         private final NodeStore nodeStore;
-        private final PropertyLoader propertyLoader;
-        private final TransactionApplicationMode mode;
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
         private List<IndexRule> createdIndexes;
 
-        public SingleTransactionApplier( NodeStore nodeStore, PropertyLoader propertyLoader,
-                TransactionApplicationMode mode )
+        SingleTransactionApplier( NodeStore nodeStore )
         {
             this.nodeStore = nodeStore;
-            this.propertyLoader = propertyLoader;
-            this.mode = mode;
         }
 
         @Override
@@ -161,15 +164,9 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( indexUpdates == null )
             {
-                indexUpdates = createIndexUpdates();
+                indexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, indexUpdateConverter );
             }
             return indexUpdates;
-        }
-
-        private IndexUpdates createIndexUpdates()
-        {
-            return mode == TransactionApplicationMode.RECOVERY ? new RecoveryIndexUpdates() :
-                new OnlineIndexUpdates( nodeStore, propertyLoader, indexUpdateConverter );
         }
 
         @Override
@@ -218,14 +215,14 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 // In that scenario the index would be created, populated and then fed the [this time duplicate]
                 // update for the node created before the index. The most straight forward solution is to
                 // apply pending index updates up to this point in this batch before index schema changes occur.
-                applyIndexUpdates();
+                applyPendingLabelAndIndexUpdates();
 
                 switch ( command.getMode() )
                 {
                 case UPDATE:
                     // Shouldn't we be more clear about that we are waiting for an index to come online here?
                     // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((IndexRule) command.getSchemaRule()).isConstraintIndex() )
+                    if ( ((IndexRule) command.getSchemaRule()).canSupportUniqueConstraint() )
                     {
                         try
                         {

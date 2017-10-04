@@ -29,7 +29,7 @@ public class LongBitsManipulatorTest
     public void shouldManageTwoSlots() throws Exception
     {
         // GIVEN
-        LongBitsManipulator manipulator = new LongBitsManipulator( 64-29, 29 );
+        LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
         long field = 0;
 
         // WHEN
@@ -45,7 +45,7 @@ public class LongBitsManipulatorTest
     public void shouldInterpretAllOnesAsMinusOne() throws Exception
     {
         // GIVEN
-        LongBitsManipulator manipulator = new LongBitsManipulator( 64-29, 29 );
+        LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
 
         // WHEN
         long field = manipulator.template( true, false );

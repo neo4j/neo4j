@@ -37,6 +37,7 @@ class PageCacheFlusher extends Thread
 
     PageCacheFlusher( PageCache pageCache )
     {
+        super( "PageCacheFlusher" );
         this.pageCache = pageCache;
     }
 

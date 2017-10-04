@@ -19,19 +19,19 @@
  */
 package org.neo4j.server;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -41,7 +41,8 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException, InterruptedException
     {
-        ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", 9999 );
+        int serverPort = PortAuthority.allocatePort();
+        ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", serverPort );
         try ( ServerSocket ignored = new ServerSocket(
                 contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHostname() ) ) )
         {
@@ -75,8 +76,10 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
     @Test
     public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException, InterruptedException
     {
-        ListenSocketAddress unContestedAddress = new ListenSocketAddress( "localhost", 8888 );
-        ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", 9999 );
+        int serverPort = PortAuthority.allocatePort();
+        int httpsPort = PortAuthority.allocatePort();
+        ListenSocketAddress unContestedAddress = new ListenSocketAddress( "localhost", serverPort );
+        ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", httpsPort );
         try ( ServerSocket ignored = new ServerSocket(
                 contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHostname() ) ) )
         {

@@ -23,11 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,15 +38,19 @@ public class LuceneSchemaIndexBuilderTest
 {
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
 
     @Test
     public void readOnlyIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor )
+                .withFileSystem( fileSystemRule.get() )
                 .withConfig( getReadOnlyConfig() )
                 .withOperationalMode( OperationalMode.single )
-                .withIndexRootFolder( testDir.graphDbDir() )
-                .withIndexIdentifier( "a" )
+                .withIndexRootFolder( testDir.directory( "a" ) )
                 .build() )
         {
             assertTrue( "Builder should construct read only index.", schemaIndex.isReadOnly() );
@@ -54,11 +60,11 @@ public class LuceneSchemaIndexBuilderTest
     @Test
     public void writableIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withConfig( getDefaultConfig() )
+                .withFileSystem( fileSystemRule.get() )
                 .withOperationalMode( OperationalMode.single )
-                .withIndexRootFolder( testDir.graphDbDir() )
-                .withIndexIdentifier( "b" )
+                .withIndexRootFolder( testDir.directory( "b" ) )
                 .build() )
         {
             assertFalse( "Builder should construct writable index.", schemaIndex.isReadOnly() );
@@ -67,11 +73,11 @@ public class LuceneSchemaIndexBuilderTest
 
     private Config getDefaultConfig()
     {
-        return Config.empty();
+        return Config.defaults();
     }
 
     private Config getReadOnlyConfig()
     {
-        return getDefaultConfig().with( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        return Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
     }
 }

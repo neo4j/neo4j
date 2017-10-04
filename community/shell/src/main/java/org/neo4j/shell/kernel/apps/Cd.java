@@ -28,7 +28,11 @@ import java.util.TreeSet;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MappingResourceIterator;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -92,20 +96,24 @@ public class Cd extends TransactionProvidingApp
         {
             // TODO Check if -r is supplied
             Node node = current.asNode();
-            for ( Node otherNode : RelationshipToNodeIterable.wrap(
-                    node.getRelationships(), node ) )
+            try ( MappingResourceIterator<Node,Relationship> mappingResourceIterator = RelationshipToNodeIterable
+                    .wrap( Iterables.asResourceIterable( node.getRelationships() ), node ) )
             {
-                long otherNodeId = otherNode.getId();
-                String title = findTitle( session, otherNode );
-                if ( title != null )
+                while ( mappingResourceIterator.hasNext() )
                 {
-                    if ( !result.contains( title ) )
+                    Node otherNode = mappingResourceIterator.next();
+                    long otherNodeId = otherNode.getId();
+                    String title = findTitle( session, otherNode );
+                    if ( title != null )
                     {
-                        maybeAddCompletionCandidate( result, title + "," + otherNodeId,
-                                lastWord );
+                        if ( !result.contains( title ) )
+                        {
+                            maybeAddCompletionCandidate( result, title + "," + otherNodeId,
+                                    lastWord );
+                        }
                     }
+                    maybeAddCompletionCandidate( result, "" + otherNodeId, lastWord );
                 }
-                maybeAddCompletionCandidate( result, "" + otherNodeId, lastWord );
             }
         }
         else
@@ -239,12 +247,17 @@ public class Cd extends TransactionProvidingApp
         }
 
         String titleMatch = (String) matchParts[0];
-        for ( Node otherNode : RelationshipToNodeIterable.wrap( node.getRelationships(), node ) )
+        try ( MappingResourceIterator<Node,Relationship> mappingResourceIterator = RelationshipToNodeIterable
+                .wrap( Iterables.asResourceIterable( node.getRelationships() ), node ) )
         {
-            String title = findTitle( session, otherNode );
-            if ( titleMatch.equals( title ) )
+            while ( mappingResourceIterator.hasNext() )
             {
-                return otherNode.getId();
+                Node otherNode = mappingResourceIterator.next();
+                String title = findTitle( session, otherNode );
+                if ( titleMatch.equals( title ) )
+                {
+                    return otherNode.getId();
+                }
             }
         }
         return -1;
@@ -296,27 +309,31 @@ public class Cd extends TransactionProvidingApp
         {
             Node currentNode = current.asNode();
             long startTime = System.currentTimeMillis();
-            for ( Relationship rel : currentNode.getRelationships() )
+            ResourceIterable<Relationship> relationships = Iterables.asResourceIterable( currentNode.getRelationships() );
+            try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
             {
-                if ( newId.isNode() )
+                while ( resourceIterator.hasNext() )
                 {
-                    if ( rel.getOtherNode( currentNode ).getId() ==
-                        newId.getId() )
+                    Relationship rel = resourceIterator.next();
+                    if ( newId.isNode() )
                     {
+                        if ( rel.getOtherNode( currentNode ).getId() == newId.getId() )
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if ( rel.getId() == newId.getId() )
+                        {
+                            return true;
+                        }
+                    }
+                    if ( System.currentTimeMillis() - startTime > 350 )
+                    {
+                        // DOn't spend too long time in here
                         return true;
                     }
-                }
-                else
-                {
-                    if ( rel.getId() == newId.getId() )
-                    {
-                        return true;
-                    }
-                }
-                if ( System.currentTimeMillis()-startTime > 350 )
-                {
-                    // DOn't spend too long time in here
-                    return true;
                 }
             }
         }

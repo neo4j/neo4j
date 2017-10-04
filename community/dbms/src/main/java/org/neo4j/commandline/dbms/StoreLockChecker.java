@@ -20,27 +20,64 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 
-class StoreLockChecker
+class StoreLockChecker implements Closeable
 {
-    Closeable withLock( Path databaseDirectory ) throws CommandFailed, CannotWriteException
+
+    private final FileSystemAbstraction fileSystem;
+    private final StoreLocker storeLocker;
+
+    private StoreLockChecker( FileSystemAbstraction fileSystem, File storeDirectory )
+    {
+        this.fileSystem = fileSystem;
+        this.storeLocker = new GlobalStoreLocker( fileSystem, storeDirectory );
+    }
+
+    /**
+     * Create store lock checker with lock on a provided path if it exists and writable
+     * @param databaseDirectory database path
+     * @return lock checker or empty closeable in case if path does not exists or is not writable
+     * @throws CannotWriteException
+     *
+     * @see StoreLocker
+     * @see Files
+     */
+    static Closeable check( Path databaseDirectory ) throws CannotWriteException
     {
         Path lockFile = databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME );
         if ( Files.exists( lockFile ) )
         {
             if ( Files.isWritable( lockFile ) )
             {
-                StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
-
-                storeLocker.checkLock( databaseDirectory.toFile() );
-
-                return storeLocker;
+                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(), databaseDirectory.toFile() );
+                try
+                {
+                    storeLocker.checkLock();
+                    return storeLocker;
+                }
+                catch ( StoreLockException le )
+                {
+                    try
+                    {
+                        storeLocker.close();
+                    }
+                    catch ( IOException e )
+                    {
+                        le.addSuppressed( e );
+                    }
+                    throw le;
+                }
             }
             else
             {
@@ -50,5 +87,16 @@ class StoreLockChecker
         return () ->
         {
         };
+    }
+
+    private void checkLock()
+    {
+        storeLocker.checkLock();
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        IOUtils.closeAll( storeLocker, fileSystem );
     }
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.io.IOException;
-
 import org.codehaus.jackson.JsonGenerator;
+
+import java.io.IOException;
 
 import org.neo4j.graphdb.Result;
 
@@ -59,7 +59,7 @@ class RowWriter implements ResultDataContentWriter
              * but time is expensive, and redesigning one of three server serialization
              * formats is not a priority.
              */
-            Neo4jJsonCodec codec = ((Neo4jJsonCodec) out.getCodec());
+            Neo4jJsonCodec codec = (Neo4jJsonCodec) out.getCodec();
             for ( String key : columns )
             {
                 codec.writeMeta( out, row.get( key ) );

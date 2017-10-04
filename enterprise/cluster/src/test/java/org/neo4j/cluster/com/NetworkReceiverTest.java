@@ -32,7 +32,8 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -86,14 +87,7 @@ public class NetworkReceiverTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when( ctx.getChannel() ).thenReturn( channel );
 
-        final Message message = Message.to( new MessageType()
-        {
-            @Override
-            public String name()
-            {
-                return "test";
-            }
-        }, new URI( "cluster://anywhere" ) );
+        final Message message = Message.to( () -> "test", new URI( "cluster://anywhere" ) );
 
         MessageEvent messageEvent = mock( MessageEvent.class );
         when( messageEvent.getRemoteAddress() ).thenReturn( inetSocketAddress );

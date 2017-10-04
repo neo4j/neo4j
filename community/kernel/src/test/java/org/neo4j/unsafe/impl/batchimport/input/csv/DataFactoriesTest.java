@@ -179,7 +179,8 @@ public class DataFactoriesTest
         // GIVEN
         final Reader firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
         final Reader secondSource = new StringReader( "0\tThe node\t123456789" );
-        DataFactory<InputNode> dataFactory = data( value -> value, () -> {
+        DataFactory<InputNode> dataFactory = data( value -> value, () ->
+        {
             try
             {
                 return sources( firstSource, secondSource );

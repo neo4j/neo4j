@@ -154,9 +154,16 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         return this;
     }
 
+    @Override
+    public Neo4jRule withAggregationFunction( Class<?> functionClass )
+    {
+        builder = builder.withAggregationFunction( functionClass );
+        return this;
+    }
+
     public URI boltURI()
     {
-        if(controls == null)
+        if ( controls == null )
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
@@ -165,7 +172,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 
     public URI httpURI()
     {
-        if(controls == null)
+        if ( controls == null )
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
@@ -174,18 +181,20 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 
     public URI httpsURI()
     {
-        if(controls == null)
+        if ( controls == null )
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
         return controls.httpURI();
     }
 
-    public GraphDatabaseService getGraphDatabaseService() {
+    public GraphDatabaseService getGraphDatabaseService()
+    {
         return controls.graph();
     }
 
-    public Configuration getConfig() {
+    public Configuration getConfig()
+    {
         return controls.config();
     }
 }

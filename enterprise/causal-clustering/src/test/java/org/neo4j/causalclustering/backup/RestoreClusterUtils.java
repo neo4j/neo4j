@@ -28,10 +28,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class RestoreClusterUtils
 {
+    private RestoreClusterUtils()
+    {
+    }
+
     public static File createClassicNeo4jStore( File base, FileSystemAbstraction fileSystem, int nodesToCreate, String recordFormat )
     {
         File existingDbDir = new File( base, "existing" );
@@ -39,6 +44,7 @@ public class RestoreClusterUtils
                 .setFileSystem( fileSystem )
                 .newEmbeddedDatabaseBuilder( existingDbDir )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormat )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();
 
         for ( int i = 0; i < (nodesToCreate / 2); i++ )

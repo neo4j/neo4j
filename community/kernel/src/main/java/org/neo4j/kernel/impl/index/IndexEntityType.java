@@ -44,7 +44,7 @@ public enum IndexEntityType
 
     private byte id;
 
-    private IndexEntityType( byte id )
+    IndexEntityType( byte id )
     {
         this.id = id;
     }

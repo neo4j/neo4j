@@ -143,7 +143,7 @@ public class Format
         for ( int i = 0; i < half; i++ )
         {
             T temp = array[i];
-            int highIndex = array.length-1-i;
+            int highIndex = array.length - 1 - i;
             array[i] = array[highIndex];
             array[highIndex] = temp;
         }
@@ -192,8 +192,8 @@ public class Format
      */
     public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
 
-    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT ),
-            TIME = new ThreadLocalFormat( TIME_FORMAT );
+    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT );
+    private static final ThreadLocalFormat TIME = new ThreadLocalFormat( TIME_FORMAT );
 
     private static class ThreadLocalFormat extends ThreadLocal<DateFormat>
     {

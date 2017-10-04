@@ -67,14 +67,14 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     private static final long LOWER_NIBBLE_READ_MASK = 0xFL;
     private static final long HIGHER_NIBBLE_READ_MASK = 0xF0L;
 
-    public NodeRecordFormat()
+    NodeRecordFormat()
     {
         this( RECORD_SIZE );
     }
 
     NodeRecordFormat( int recordSize )
     {
-        super( fixedRecordSize( recordSize ), 0 );
+        super( fixedRecordSize( recordSize ), 0, HighLimitFormatSettings.NODE_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -128,9 +128,9 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     @Override
     protected boolean canUseFixedReferences( NodeRecord record, int recordSize )
     {
-        return  (isRecordBigEnoughForFixedReferences( recordSize ) &&
-                 ((record.getNextProp() == NULL) || ((record.getNextProp() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0)) &&
-                 ((record.getNextRel() == NULL) || ((record.getNextRel() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0)));
+        return isRecordBigEnoughForFixedReferences( recordSize ) &&
+                (record.getNextProp() == NULL || (record.getNextProp() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0) &&
+                (record.getNextRel() == NULL || (record.getNextRel() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0);
     }
 
     private boolean isRecordBigEnoughForFixedReferences( int recordSize )

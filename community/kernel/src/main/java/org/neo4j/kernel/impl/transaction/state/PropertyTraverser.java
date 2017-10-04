@@ -46,7 +46,7 @@ public class PropertyTraverser
      * {@code strict} is false value of {@link Record#NO_NEXT_PROPERTY}.
      */
     public long findPropertyRecordContaining( PrimitiveRecord primitive, int propertyKey,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords, boolean strict )
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords, boolean strict )
     {
         long propertyRecordId = primitive.getNextProp();
         while ( !Record.NO_NEXT_PROPERTY.is( propertyRecordId ) )
@@ -70,7 +70,7 @@ public class PropertyTraverser
     }
 
     public void getPropertyChain( long nextProp,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords,
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
             Listener<PropertyBlock> collector )
     {
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
@@ -85,7 +85,7 @@ public class PropertyTraverser
     }
 
     public boolean assertPropertyChain( PrimitiveRecord primitive,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         List<PropertyRecord> toCheck = new LinkedList<>();
         long nextIdToFetch = primitive.getNextProp();
@@ -111,7 +111,8 @@ public class PropertyTraverser
         assert last.getNextProp() == Record.NO_NEXT_PROPERTY.intValue() : primitive
                                                                           + "->"
                                                                           + Arrays.toString( toCheck.toArray() );
-        PropertyRecord current, previous = first;
+        PropertyRecord current;
+        PropertyRecord previous = first;
         for ( int i = 1; i < toCheck.size(); i++ )
         {
             current = toCheck.get( i );

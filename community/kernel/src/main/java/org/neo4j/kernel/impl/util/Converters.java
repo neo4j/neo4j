@@ -23,18 +23,25 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.OptionalHostnamePort;
 
 public class Converters
 {
+    private Converters()
+    {
+    }
+
     public static <T> Function<String,T> mandatory()
     {
-        return key -> {
+        return key ->
+        {
             throw new IllegalArgumentException( "Missing argument '" + key + "'" );
         };
     }
@@ -64,17 +71,18 @@ public class Converters
         return s -> s;
     }
 
-    public static final Comparator<File> BY_FILE_NAME = ( o1, o2 ) -> o1.getName().compareTo( o2.getName() );
+    public static final Comparator<File> BY_FILE_NAME = Comparator.comparing( File::getName );
 
     public static final Comparator<File> BY_FILE_NAME_WITH_CLEVER_NUMBERS =
             ( o1, o2 ) -> NumberAwareStringComparator.INSTANCE.compare( o1.getAbsolutePath(), o2.getAbsolutePath() );
 
     public static Function<String,File[]> regexFiles( final boolean cleverNumberRegexSort )
     {
-        return name -> {
+        return name ->
+        {
             Comparator<File> sorting = cleverNumberRegexSort ? BY_FILE_NAME_WITH_CLEVER_NUMBERS : BY_FILE_NAME;
             List<File> files = Validators.matchingFiles( new File( name ) );
-            Collections.sort( files, sorting );
+            files.sort( sorting );
             return files.toArray( new File[files.size()] );
         };
     }
@@ -82,7 +90,8 @@ public class Converters
     public static Function<String,File[]> toFiles( final String delimiter,
             final Function<String,File[]> eachFileConverter )
     {
-        return from -> {
+        return from ->
+        {
             if ( from == null )
             {
                 return new File[0];
@@ -92,10 +101,7 @@ public class Converters
             List<File> files = new ArrayList<>();
             for ( String name : names )
             {
-                for ( File file : eachFileConverter.apply( name ) )
-                {
-                    files.add( file );
-                }
+                files.addAll( Arrays.asList( eachFileConverter.apply( name ) ) );
             }
             return files.toArray( new File[files.size()] );
         };
@@ -106,24 +112,36 @@ public class Converters
         return Integer::new;
     }
 
-    public static Function<String, HostnamePort> toHostnamePort( HostnamePort defaultAddress )
+    public static OptionalHostnamePort toOptionalHostnamePortFromRawAddress( String rawAddress )
     {
-        return from ->
-        {
-            if ( !from.contains( ":" ) )
-            {
-                from = from + ":" + defaultAddress.getPort();
-            }
-            if ( from.endsWith( ":" ) )
-            {
-                from = from + defaultAddress.getPort();
-            }
-            if ( from.startsWith( ":" ) )
-            {
-                from = defaultAddress.getHost() + from;
-            }
-            String[] parts = from.split( ":" );
-            return new HostnamePort( parts[0], Integer.parseInt( parts[1] ) );
-        };
+        return new OptionalHostnamePort(
+                toHostnameFromRawAddress( rawAddress ),
+                toPortFromRawAddress( rawAddress ),
+                toPortUpperRangeFromRawAddress( rawAddress ) );
+    }
+
+    private static Optional<String> toHostnameFromRawAddress( String rawAddress )
+    {
+        return Optional.ofNullable( rawAddress )
+                .map( addr -> addr.split( ":" )[0] )
+                .filter( addr -> !"".equals( addr ) );
+    }
+
+    private static Optional<Integer> toPortFromRawAddress( String rawAddress )
+    {
+        return Optional.ofNullable( rawAddress )
+                .map( addr -> addr.split( ":" ) )
+                .filter( parts -> parts.length >= 2 )
+                .map( parts -> parts[1] )
+                .map( Integer::parseInt );
+    }
+
+    private static Optional<Integer> toPortUpperRangeFromRawAddress( String rawAddress )
+    {
+        return Optional.ofNullable( rawAddress )
+                .map( addr -> addr.split( ":" ) )
+                .filter( parts -> parts.length == 3 )
+                .map( parts -> parts[2] )
+                .map( Integer::parseInt );
     }
 }

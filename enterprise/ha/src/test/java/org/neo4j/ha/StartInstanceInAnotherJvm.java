@@ -31,6 +31,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class StartInstanceInAnotherJvm
 {
+    private StartInstanceInAnotherJvm()
+    {
+    }
+
     public static void main( String[] args )
     {
         File dir = new File( args[0] );
@@ -45,8 +49,10 @@ public class StartInstanceInAnotherJvm
         List<String> args = new ArrayList<String>();
         args.addAll( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ),
                 StartInstanceInAnotherJvm.class.getName(), dir ) );
-        for ( Map.Entry<String, String> property : config.entrySet() )
+        for ( Map.Entry<String,String> property : config.entrySet() )
+        {
             args.add( "-" + property.getKey() + "=" + property.getValue() );
+        }
         return Runtime.getRuntime().exec( args.toArray( new String[ args.size() ] ) );
     }
 }

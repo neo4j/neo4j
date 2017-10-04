@@ -19,6 +19,16 @@
  */
 package org.neo4j.server.rest;
 
+import org.hamcrest.MatcherAssert;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,18 +41,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.hamcrest.MatcherAssert;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -52,7 +54,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
@@ -81,7 +82,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.System.lineSeparator;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
@@ -92,7 +92,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
@@ -178,7 +177,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         assertEquals( 400, response.getStatus() );
     }
 
-    private JaxRsResponse sendCreateRequestToServer(final String json)
+    private JaxRsResponse sendCreateRequestToServer( final String json )
     {
         return RestRequest.req().post( functionalTestHelper.dataUri() + "node/" , json );
     }
@@ -281,7 +280,8 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty() throws URISyntaxException {
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty() throws URISyntaxException
+    {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonArray = "[1,2,\"three\"]";
@@ -294,7 +294,8 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException {
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException
+    {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonProperties = "{\"a\":\"b\", \"c\":[1,2,\"three\"]}";
@@ -306,7 +307,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         response.close();
     }
 
-    private JaxRsResponse sendDeleteRequestToServer(final long id) throws Exception
+    private JaxRsResponse sendDeleteRequestToServer( final long id ) throws Exception
     {
         return RestRequest.req().delete(functionalTestHelper.dataUri() + "node/" + id);
     }
@@ -337,14 +338,10 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
                     .withClock( clock )
                     .build();
 
-            suppressAll().call( new Callable<Void>()
+            suppressAll().call( (Callable<Void>) () ->
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    server.start();
-                    return null;
-                }
+                server.start();
+                return null;
             } );
             functionalTestHelper = new FunctionalTestHelper( server );
         }
@@ -358,14 +355,10 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         @AfterClass
         public static void stopServer() throws Exception
         {
-            suppressAll().call( new Callable<Void>()
+            suppressAll().call( (Callable<Void>) () ->
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    server.stop();
-                    return null;
-                }
+                server.stop();
+                return null;
             } );
         }
 
@@ -591,9 +584,9 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
             URI uri = new URI( "http://example.org:7474/" );
             when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-            RootService svc = new RootService( new CommunityNeoServer( new Config( stringMap(
-                    ClientConnectorSettings.httpConnector( "http" ).type.name(), "HTTP",
-                    ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true"
+            RootService svc = new RootService( new CommunityNeoServer( Config.defaults( stringMap(
+                    new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP",
+                    new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true"
             ) ),
                     GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() )
                             .monitors( new Monitors() ),

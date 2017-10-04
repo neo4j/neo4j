@@ -30,13 +30,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class FakeClock extends SystemNanoClock
 {
-    private long nanoTime = 0;
+    private volatile long nanoTime;
 
-    FakeClock()
+    public FakeClock()
     {
     }
 
-    FakeClock( long initialTime, TimeUnit unit )
+    public FakeClock( long initialTime, TimeUnit unit )
     {
         forward( initialTime, unit );
     }

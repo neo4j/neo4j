@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.QualifiedName;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -75,8 +75,9 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
             Iterator<ObjectName> names = jmxServer.queryNames( new ObjectName( query ), null ).iterator();
 
             // Then convert them to a Neo4j type system representation
-            return RawIterator.from( () -> {
-                if( !names.hasNext() )
+            return RawIterator.from( () ->
+            {
+                if ( !names.hasNext() )
                 {
                     return null;
                 }
@@ -114,7 +115,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         HashMap<String,Object> out = new HashMap<>();
         for ( MBeanAttributeInfo attribute : attributes )
         {
-            if( attribute.isReadable() )
+            if ( attribute.isReadable() )
             {
                 out.put( attribute.getName(), toNeo4jValue( name, attribute ) );
             }
@@ -130,9 +131,9 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         {
             value = toNeo4jValue( jmxServer.getAttribute( name, attribute.getName() ) );
         }
-        catch( RuntimeMBeanException e )
+        catch ( RuntimeMBeanException e )
         {
-            if( e.getCause() != null && e.getCause() instanceof UnsupportedOperationException )
+            if ( e.getCause() != null && e.getCause() instanceof UnsupportedOperationException )
             {
                 // We include the name and description of this attribute still - but the value of it is
                 // unknown. We do this rather than rethrow the exception, because several MBeans built into
@@ -154,34 +155,34 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     private Object toNeo4jValue( Object attributeValue )
     {
         // These branches as per {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}
-        if( isSimpleType( attributeValue ) )
+        if ( isSimpleType( attributeValue ) )
         {
             return attributeValue;
         }
-        else if( attributeValue.getClass().isArray() )
+        else if ( attributeValue.getClass().isArray() )
         {
-            if( isSimpleType( attributeValue.getClass().getComponentType() ) )
+            if ( isSimpleType( attributeValue.getClass().getComponentType() ) )
             {
                 return attributeValue;
             }
             else
             {
-                return toNeo4jValue((Object[])attributeValue);
+                return toNeo4jValue( (Object[]) attributeValue );
             }
         }
-        else if( attributeValue instanceof CompositeData )
+        else if ( attributeValue instanceof CompositeData )
         {
-            return toNeo4jValue( (CompositeData)attributeValue );
+            return toNeo4jValue( (CompositeData) attributeValue );
         }
-        else if( attributeValue instanceof ObjectName )
+        else if ( attributeValue instanceof ObjectName )
         {
             return ((ObjectName) attributeValue).getCanonicalName();
         }
-        else if( attributeValue instanceof TabularData )
+        else if ( attributeValue instanceof TabularData )
         {
             return toNeo4jValue( (Map<?,?>) attributeValue );
         }
-        else if( attributeValue instanceof Date )
+        else if ( attributeValue instanceof Date )
         {
             return ((Date) attributeValue).getTime();
         }
@@ -197,15 +198,13 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         // Build a new map with the same keys, but each value passed
         // through `toNeo4jValue`
         return attributeValue.entrySet().stream()
-            .map( (e) -> pair(
-                e.getKey().toString(),
-                toNeo4jValue( e.getValue() )) )
-            .collect( Collectors.toMap( Pair::first, Pair::other ) );
+                .map( e -> pair( e.getKey().toString(), toNeo4jValue( e.getValue() ) ) )
+                .collect( Collectors.toMap( Pair::first, Pair::other ) );
     }
 
     private List<Object> toNeo4jValue( Object[] array )
     {
-        return asList(array).stream().map( this::toNeo4jValue ).collect( Collectors.toList() );
+        return Arrays.stream(array).map( this::toNeo4jValue ).collect( Collectors.toList() );
     }
 
     private Map<String, Object> toNeo4jValue( CompositeData composite )

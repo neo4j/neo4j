@@ -19,27 +19,26 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class HeartbeatIAmAliveProcessorTest
 {
@@ -169,15 +168,11 @@ public class HeartbeatIAmAliveProcessorTest
         // Given
         MessageHolder holder = mock( MessageHolder.class );
         // The sender, which adds messages outgoing to the list above.
-        doAnswer( new Answer()
+        doAnswer( invocation ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                sentOut.add( (Message) invocation.getArguments()[0] );
-                return null;
-            }
-        } ).when( holder ).offer( Matchers.<Message<MessageType>>any() );
+            sentOut.add( invocation.getArgument( 0 ) );
+            return null;
+        } ).when( holder ).offer( ArgumentMatchers.<Message<MessageType>>any() );
 
         ClusterContext mockContext = mock( ClusterContext.class );
         ClusterConfiguration mockConfiguration = mock( ClusterConfiguration.class );
@@ -217,15 +212,11 @@ public class HeartbeatIAmAliveProcessorTest
         // Given
         MessageHolder holder = mock( MessageHolder.class );
         // The sender, which adds messages outgoing to the list above.
-        doAnswer( new Answer()
+        doAnswer( invocation ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                sentOut.add( (Message) invocation.getArguments()[0] );
-                return null;
-            }
-        } ).when( holder ).offer( Matchers.<Message<MessageType>>any() );
+            sentOut.add( invocation.getArgument( 0 ) );
+            return null;
+        } ).when( holder ).offer( ArgumentMatchers.<Message<MessageType>>any() );
 
         ClusterContext mockContext = mock( ClusterContext.class );
         ClusterConfiguration mockConfiguration = mock( ClusterConfiguration.class );

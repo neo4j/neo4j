@@ -51,7 +51,10 @@ public abstract class ParameterList
             Converter<T> converter ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         List<T> result = new ArrayList<>();
         if ( value instanceof Object[] )
         {
@@ -77,7 +80,10 @@ public abstract class ParameterList
     public String getString( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertString( value );
     }
 
@@ -106,7 +112,10 @@ public abstract class ParameterList
     public Integer getInteger( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertInteger( value );
     }
 
@@ -135,7 +144,10 @@ public abstract class ParameterList
     public Long getLong( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertLong( value );
     }
 
@@ -164,7 +176,10 @@ public abstract class ParameterList
     public Byte getByte( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertByte( value );
     }
 
@@ -193,7 +208,10 @@ public abstract class ParameterList
     public Character getCharacter( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertCharacter( value );
     }
 
@@ -222,7 +240,10 @@ public abstract class ParameterList
     public Boolean getBoolean( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertBoolean( value );
     }
 
@@ -251,7 +272,10 @@ public abstract class ParameterList
     public Short getShort( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertShort( value );
     }
 
@@ -280,7 +304,10 @@ public abstract class ParameterList
     public Float getFloat( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertFloat( value );
     }
 
@@ -309,7 +336,10 @@ public abstract class ParameterList
     public Double getDouble( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertDouble( value );
     }
 
@@ -339,7 +369,10 @@ public abstract class ParameterList
             throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertNode( graphDb, value );
     }
 
@@ -368,7 +401,10 @@ public abstract class ParameterList
     public Relationship getRelationship( GraphDatabaseAPI graphDb, String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertRelationship( graphDb, value );
     }
 
@@ -397,7 +433,10 @@ public abstract class ParameterList
     public URI getUri( String name ) throws BadInputException
     {
         Object value = data.get( name );
-        if ( value == null ) return null;
+        if ( value == null )
+        {
+            return null;
+        }
         return convertURI( value );
     }
 

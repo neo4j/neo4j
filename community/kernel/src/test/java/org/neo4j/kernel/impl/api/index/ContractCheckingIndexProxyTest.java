@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexPro
 
 public class ContractCheckingIndexProxyTest
 {
-    private static final long TEST_TIMEOUT = 10_000;
+    private static final long TEST_TIMEOUT = 20_000;
 
     @Test( expected = /* THEN */ IllegalStateException.class )
     public void shouldNotCreateIndexTwice() throws IOException
@@ -112,7 +112,7 @@ public class ContractCheckingIndexProxyTest
         outer.close();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotUpdateBeforeCreate() throws Exception
     {
         // GIVEN
@@ -120,13 +120,13 @@ public class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( null );
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotUpdateAfterClose() throws Exception
     {
         // GIVEN
@@ -136,13 +136,13 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+        try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( null );
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotForceBeforeCreate() throws IOException
     {
         // GIVEN
@@ -153,7 +153,7 @@ public class ContractCheckingIndexProxyTest
         outer.force();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotForceAfterClose() throws IOException
     {
         // GIVEN
@@ -182,7 +182,7 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        runInSeparateThread( () -> outer.start() );
+        runInSeparateThread( outer::start );
 
         try
         {
@@ -211,7 +211,7 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        runInSeparateThread( () -> outer.start() );
+        runInSeparateThread( outer::start );
 
         try
         {
@@ -224,7 +224,7 @@ public class ContractCheckingIndexProxyTest
         }
     }
 
-    @Test( timeout = TEST_TIMEOUT)
+    @Test( timeout = TEST_TIMEOUT )
     public void closeWaitForUpdateToFinish() throws IOException, InterruptedException
     {
         // GIVEN
@@ -242,7 +242,8 @@ public class ContractCheckingIndexProxyTest
         outer.start();
 
         // WHEN
-        Thread updaterThread = runInSeparateThread( () -> {
+        Thread updaterThread = runInSeparateThread( () ->
+        {
             try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 updater.process( null );
@@ -262,7 +263,7 @@ public class ContractCheckingIndexProxyTest
             }
         } );
 
-        ThreadTestUtils.awaitThreadState( actionThread, 5_000, Thread.State.TIMED_WAITING );
+        ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();
         updaterThread.join();
         actionThread.join();
@@ -297,7 +298,7 @@ public class ContractCheckingIndexProxyTest
         outer.start();
         Thread thread = runInSeparateThread( outer::force );
 
-        ThreadTestUtils.awaitThreadState( actionThread, 5_000, Thread.State.TIMED_WAITING );
+        ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();
 
         thread.join();
@@ -318,16 +319,17 @@ public class ContractCheckingIndexProxyTest
 
     private Thread createActionThread( ThrowingRunnable action )
     {
-        return new Thread( () -> {
-                try
-                {
-                    action.run();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            } );
+        return new Thread( () ->
+        {
+            try
+            {
+                action.run();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
     }
 
     private ContractCheckingIndexProxy newContractCheckingIndexProxy( IndexProxy inner )

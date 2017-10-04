@@ -33,7 +33,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -57,7 +57,7 @@ public class AbstractDynamicStoreTest
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private final File fileName = new File( "store" );
-    private final RecordFormats formats = StandardV3_0.RECORD_FORMATS;
+    private final RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
     private PageCache pageCache;
     private FileSystemAbstraction fs;
 
@@ -83,6 +83,7 @@ public class AbstractDynamicStoreTest
             DynamicRecord first = createDynamicRecord( 1, store, 0 );
             DynamicRecord second = createDynamicRecord( 2, store, 0 );
             DynamicRecord third = createDynamicRecord( 3, store, 10 );
+            store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
             store.updateRecord( first );
@@ -108,6 +109,7 @@ public class AbstractDynamicStoreTest
             DynamicRecord first = createDynamicRecord( 1, store, 0 );
             DynamicRecord second = createDynamicRecord( 2, store, 0 );
             DynamicRecord third = createDynamicRecord( 3, store, 10 );
+            store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
             store.updateRecord( first );
@@ -140,7 +142,7 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        AbstractDynamicStore store = new AbstractDynamicStore( fileName, Config.empty(), IdType.ARRAY_BLOCK,
+        AbstractDynamicStore store = new AbstractDynamicStore( fileName, Config.defaults(), IdType.ARRAY_BLOCK,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
                 formats.dynamic(), formats.storeVersion() )
         {

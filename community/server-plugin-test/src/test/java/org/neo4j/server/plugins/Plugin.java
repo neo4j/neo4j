@@ -80,7 +80,7 @@ public class Plugin extends ServerPlugin
             @Parameter( name = "type" ) RelationshipType type, @Parameter( name = "nodes" ) Iterable<Node> nodes )
     {
         List<Relationship> result = new ArrayList<>();
-        try(Transaction tx = start.getGraphDatabase().beginTx())
+        try ( Transaction tx = start.getGraphDatabase().beginTx() )
         {
             for ( Node end : nodes )
             {

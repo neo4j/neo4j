@@ -22,6 +22,8 @@ package org.neo4j.backup;
 import java.io.File;
 
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -40,7 +42,11 @@ interface ConsistencyCheck
                 }
 
                 @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
+                public boolean runFull( File storeDir, Config tuningConfiguration,
+                        ProgressMonitorFactory progressFactory, LogProvider logProvider,
+                        FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
+                        ConsistencyFlags consistencyFlags )
+                        throws ConsistencyCheckFailedException
                 {
                     return true;
                 }
@@ -56,14 +62,18 @@ interface ConsistencyCheck
                 }
 
                 @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
+                public boolean runFull( File storeDir, Config tuningConfiguration,
+                        ProgressMonitorFactory progressFactory, LogProvider logProvider,
+                        FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
+                        ConsistencyFlags consistencyFlags ) throws ConsistencyCheckFailedException
                 {
                     try
                     {
                         return new ConsistencyCheckService().runFullConsistencyCheck( storeDir, tuningConfiguration,
-                                progressFactory, logProvider, fileSystem, pageCache, verbose ).isSuccessful();
+                                progressFactory, logProvider, fileSystem, pageCache, verbose, consistencyFlags )
+                                .isSuccessful();
                     }
-                    catch ( org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException e )
+                    catch ( ConsistencyCheckIncompleteException e )
                     {
                         throw new ConsistencyCheckFailedException( e );
                     }
@@ -73,7 +83,8 @@ interface ConsistencyCheck
     String name();
 
     boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
-                     LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
+            LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
+            ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckFailedException;
 
     String toString();
@@ -102,14 +113,18 @@ interface ConsistencyCheck
             }
 
             @Override
-            public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
+            public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+                    LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
+                    ConsistencyFlags consistencyFlags )
+                    throws ConsistencyCheckFailedException
             {
                 try
                 {
-                    return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                            progressFactory, logProvider, fileSystem, pageCache, verbose, reportDir ).isSuccessful();
+                    return consistencyCheckService
+                            .runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
+                                    fileSystem, pageCache, verbose, reportDir, consistencyFlags ).isSuccessful();
                 }
-                catch ( org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException e )
+                catch ( ConsistencyCheckIncompleteException e )
                 {
                     throw new ConsistencyCheckFailedException( e );
                 }

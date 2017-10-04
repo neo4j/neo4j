@@ -45,10 +45,4 @@ public class MetricsKernelExtensionFactory extends KernelExtensionFactory<Metric
     {
         return new MetricsExtension( context, dependencies );
     }
-
-    @Override
-    public Class<MetricsSettings> getSettingsClass()
-    {
-        return MetricsSettings.class;
-    }
 }

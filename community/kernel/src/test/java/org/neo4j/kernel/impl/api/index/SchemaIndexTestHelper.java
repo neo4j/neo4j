@@ -28,9 +28,9 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -42,6 +42,10 @@ import static org.mockito.Mockito.when;
 
 public class SchemaIndexTestHelper
 {
+    private SchemaIndexTestHelper()
+    {
+    }
+
     public static KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies> singleInstanceSchemaIndexProviderFactory(
             String key, final SchemaIndexProvider provider )
     {
@@ -110,21 +114,21 @@ public class SchemaIndexTestHelper
         }
     }
 
-    public static void awaitIndexOnline( ReadOperations readOperations, IndexDescriptor indexRule )
+    public static void awaitIndexOnline( ReadOperations readOperations, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         long start = System.currentTimeMillis();
-        while(true)
+        while ( true )
         {
-            if ( readOperations.indexGetState( indexRule ) == InternalIndexState.ONLINE )
-           {
-               break;
-           }
+            if ( readOperations.indexGetState( index ) == InternalIndexState.ONLINE )
+            {
+                break;
+            }
 
-           if(start + 1000 * 10 < System.currentTimeMillis())
-           {
-               throw new RuntimeException( "Index didn't come online within a reasonable time." );
-           }
+            if ( start + 1000 * 10 < System.currentTimeMillis() )
+            {
+                throw new RuntimeException( "Index didn't come online within a reasonable time." );
+            }
         }
     }
 }

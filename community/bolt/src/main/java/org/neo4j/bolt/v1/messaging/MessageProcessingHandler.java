@@ -23,30 +23,19 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.logging.Log;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 class MessageProcessingHandler implements BoltResponseHandler
 {
-    protected final Map<String,Object> metadata = new HashMap<>();
-
-    // TODO: move this somewhere more sane (when modules are unified)
-    static void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error )
-            throws IOException
-    {
-        if ( error.isFatal() )
-        {
-            out.onFatal( error.status(), error.message() );
-        }
-        else
-        {
-            out.onFailure( error.status(), error.message() );
-        }
-
-    }
+    protected final Map<String,AnyValue> metadata = new HashMap<>();
 
     protected final Log log;
     protected final BoltWorker worker;
@@ -76,7 +65,7 @@ class MessageProcessingHandler implements BoltResponseHandler
     }
 
     @Override
-    public void onMetadata( String key, Object value )
+    public void onMetadata( String key, AnyValue value )
     {
         metadata.put( key, value );
     }
@@ -123,15 +112,44 @@ class MessageProcessingHandler implements BoltResponseHandler
         }
     }
 
-    Map<String,Object> getMetadata()
+    MapValue getMetadata()
     {
-        return metadata;
+        return VirtualValues.map( metadata );
     }
 
-    void clearState()
+    private void clearState()
     {
         error = null;
         ignored = false;
         metadata.clear();
+    }
+
+    private void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error ) throws IOException
+    {
+        try
+        {
+            if ( error.isFatal() )
+            {
+                out.onFatal( error.status(), error.message() );
+            }
+            else
+            {
+                out.onFailure( error.status(), error.message() );
+            }
+        }
+        catch ( PackOutputClosedException e )
+        {
+            // we tried to write error back to the client and realized that the underlying channel is closed
+            // log a warning, client driver might have just been stopped and closed all socket connections
+            log.warn( "Unable to send error back to the client. " +
+                      "Communication channel is closed. Client has probably been stopped.", error.cause() );
+        }
+        catch ( Throwable t )
+        {
+            // some unexpected error happened while writing exception back to the client
+            // log it together with the original error being suppressed
+            t.addSuppressed( error.cause() );
+            log.error( "Unable to send error back to the client", t );
+        }
     }
 }

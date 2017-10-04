@@ -23,8 +23,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,17 +40,17 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class PropertyStoreTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule( false );
+    public static PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -73,8 +71,7 @@ public class PropertyStoreTest
     {
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-        Config config =
-                new Config( singletonMap( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" ));
+        Config config = Config.defaults( PropertyStore.Configuration.rebuild_idgenerators_fast, "true" );
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
@@ -96,15 +93,11 @@ public class PropertyStoreTest
             PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
             record.setPropertyBlock( propertyBlock );
 
-            doAnswer( new Answer()
+            doAnswer( invocation ->
             {
-                @Override
-                public Object answer( InvocationOnMock invocation ) throws Throwable
-                {
-                    PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE );
-                    assertFalse( recordBeforeWrite.inUse() );
-                    return null;
-                }
+                PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE );
+                assertFalse( recordBeforeWrite.inUse() );
+                return null;
             } ).when( stringPropertyStore ).updateRecord( dynamicRecord );
 
             // when

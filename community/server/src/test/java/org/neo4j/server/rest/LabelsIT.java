@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
@@ -38,12 +38,10 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -112,7 +110,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "request body." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true,
-                                              labels = { @LABEL( "Person" ) }) } )
+            labels = {@LABEL( "Person" )} )} )
     public void replacing_labels_on_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
@@ -130,7 +128,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     @Documented( "Listing labels for a node." )
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", labels = { @LABEL( "Actor" ), @LABEL( "Director" ) }, setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = {@NODE( name = "Clint Eastwood", labels = {@LABEL( "Actor" ),
+            @LABEL( "Director" )}, setNameProperty = true )} )
     public void listing_node_labels() throws JsonParseException
     {
         Map<String, Node> nodes = data.get();
@@ -140,7 +139,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
             .expectedStatus( 200 )
             .get( nodeUri + "/labels"  )
             .entity();
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         List<String> labels = (List<String>) readJson( body );
         assertEquals( asSet( "Actor", "Director" ), Iterables.asSet( labels ) );
     }
@@ -210,10 +209,11 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "index is available, all nodes with the given label will be filtered through to find matching nodes.\n" +
                  "\n" +
                  "Currently, it is not possible to search using multiple properties." )
-    @GraphDescription.Graph( nodes = {
-            @NODE( name = "Donald Sutherland",   labels={ @LABEL( "Person" )} ),
-            @NODE( name = "Clint Eastwood", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Clint Eastwood" )}),
-            @NODE( name = "Steven Spielberg", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Steven Spielberg" )})})
+    @GraphDescription.Graph( nodes = {@NODE( name = "Donald Sutherland", labels = {@LABEL( "Person" )} ),
+            @NODE( name = "Clint Eastwood", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "name", value = "Clint Eastwood" )} ),
+            @NODE( name = "Steven Spielberg", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "name", value = "Steven Spielberg" )} )} )
     public void get_nodes_with_label_and_property() throws JsonParseException, UnsupportedEncodingException
     {
         data.get();
@@ -231,12 +231,11 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     @Test
     @Documented( "Get nodes by label and array property." )
-    @GraphDescription.Graph( nodes = {
-            @NODE(name = "Donald Sutherland", labels = {@LABEL("Person")}),
-            @NODE(name = "Clint Eastwood", labels = {@LABEL("Person")}, properties =
-                    {@PROP(key = "names", value = "Clint,Eastwood", type = ARRAY, componentType = STRING)}),
-            @NODE(name = "Steven Spielberg", labels = {@LABEL("Person")}, properties =
-                    {@PROP(key = "names", value = "Steven,Spielberg", type = ARRAY, componentType = STRING)})})
+    @GraphDescription.Graph( nodes = {@NODE( name = "Donald Sutherland", labels = {@LABEL( "Person" )} ),
+            @NODE( name = "Clint Eastwood", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "names", value = "Clint,Eastwood", type = ARRAY, componentType = STRING )} ),
+            @NODE( name = "Steven Spielberg", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "names", value = "Steven,Spielberg", type = ARRAY, componentType = STRING )} )} )
     public void get_nodes_with_label_and_array_property() throws JsonParseException, UnsupportedEncodingException
     {
         data.get();
@@ -264,7 +263,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "By default, the server will return labels in use only. If you also want to return labels not in use,\n" +
                  "append the \"in_use=0\" query parameter." )
     @GraphDescription.Graph( nodes = {
-            @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ), @LABEL( "Director" ) } ),
+            @NODE( name = "Clint Eastwood", setNameProperty = true,
+                    labels = { @LABEL( "Person" ), @LABEL( "Actor" ), @LABEL( "Director" ) } ),
             @NODE( name = "Donald Sutherland", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ) } ),
             @NODE( name = "Steven Spielberg", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Director" ) } )
     } )
@@ -285,7 +285,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     private <T> Function<Object, T> getProperty( final String propertyKey, final Class<T> propertyType )
     {
-        return from -> {
+        return from ->
+        {
             Map<?, ?> node = (Map<?, ?>) from;
             Map<?, ?> data1 = (Map<?, ?>) node.get( "data" );
             return propertyType.cast( data1.get( propertyKey ) );

@@ -47,7 +47,7 @@ class BackupImpl implements TheBackupInterface
     private final LogFileInformation logFileInformation;
     private final Logger logger;
 
-    public BackupImpl( StoreCopyServer storeCopyServer,
+    BackupImpl( StoreCopyServer storeCopyServer,
             LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
             LogFileInformation logFileInformation, Supplier<StoreId> storeId, LogProvider logProvider )
     {
@@ -69,8 +69,9 @@ class BackupImpl implements TheBackupInterface
             logger.log( "%s: Full backup started...", backupIdentifier );
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles(
                     FULL_BACKUP_CHECKPOINT_TRIGGER, storeWriter, forensics );
-            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
-                    transactionIdStore, logFileInformation, storeId, copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() );
+            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore, transactionIdStore,
+                    logFileInformation, storeId, copyStartContext.lastAppliedTransaction() + 1,
+                    storeCopyServer.monitor() );
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
@@ -86,10 +87,12 @@ class BackupImpl implements TheBackupInterface
         String backupIdentifier = getBackupIdentifier();
         try
         {
-            logger.log("%s: Incremental backup started...", backupIdentifier);
+            logger.log( "%s: Incremental backup started...", backupIdentifier );
             return incrementalResponsePacker.packTransactionStreamResponse( context, null );
-        } finally {
-            logger.log("%s: Incremental backup finished.", backupIdentifier);
+        }
+        finally
+        {
+            logger.log( "%s: Incremental backup finished.", backupIdentifier );
         }
     }
 

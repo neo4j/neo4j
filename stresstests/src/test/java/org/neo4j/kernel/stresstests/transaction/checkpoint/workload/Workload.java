@@ -44,16 +44,12 @@ public class Workload implements Resource
 
     public interface TransactionThroughput
     {
-        TransactionThroughput NONE = new TransactionThroughput()
+        TransactionThroughput NONE = ( transactions, timeSlotMillis ) ->
         {
-            @Override
-            public void report( long transactions, long timeSlotMillis )
-            {
-                // ignore
-            }
+            // ignore
         };
 
-        void report( long transactions, long timeSlotMillis);
+        void report( long transactions, long timeSlotMillis );
     }
 
     public void run( long runningTimeMillis, TransactionThroughput throughput )

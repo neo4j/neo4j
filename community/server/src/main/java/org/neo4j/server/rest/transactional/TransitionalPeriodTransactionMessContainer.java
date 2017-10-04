@@ -22,6 +22,7 @@ package org.neo4j.server.rest.transactional;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -30,10 +31,10 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
-import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.server.rest.web.ServerQuerySession;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 public class TransitionalPeriodTransactionMessContainer
 {
@@ -65,11 +66,11 @@ public class TransitionalPeriodTransactionMessContainer
             Type type,
             SecurityContext securityContext,
             String query,
-            Map<String, Object> queryParameters)
+            Map<String, Object> queryParameters )
     {
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service, locker );
-        QuerySource querySource = ServerQuerySession.describe( request );
+        ClientConnectionInfo clientConnection = HttpConnectionInfoFactory.create( request );
         InternalTransaction transaction = service.beginTransaction( type, securityContext );
-        return contextFactory.newContext( querySource, transaction, query, queryParameters );
+        return contextFactory.newContext( clientConnection, transaction, query, ValueUtils.asMapValue( queryParameters ) );
     }
 }

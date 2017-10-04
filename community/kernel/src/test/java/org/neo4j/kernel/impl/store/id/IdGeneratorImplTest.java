@@ -19,32 +19,33 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.io.File;
+import java.util.function.Supplier;
+
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
 import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.ProcessTestUtil.executeSubProcess;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class IdGeneratorImplTest
 {
     @Rule
     public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final File file = new File( "ids" );
 
     @Test
@@ -52,7 +53,7 @@ public class IdGeneratorImplTest
     {
         // GIVEN
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 0 );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, () -> 0L );
 
         // WHEN
         try
@@ -71,7 +72,7 @@ public class IdGeneratorImplTest
     {
         long maxId = 10;
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, 0 );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, () -> 0L );
 
         for ( long i = 0; i <= maxId; i++ )
         {
@@ -94,7 +95,7 @@ public class IdGeneratorImplTest
     {
         long maxId = 10;
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, 0 );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, () -> 0L );
 
         try
         {
@@ -115,7 +116,7 @@ public class IdGeneratorImplTest
     public void highIdCouldBeSetToReservedId()
     {
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, Long.MAX_VALUE, false, 0 );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, Long.MAX_VALUE, false, () -> 0L );
 
         idGenerator.setHighId( IdGeneratorImpl.INTEGER_MINUS_ONE );
 
@@ -125,13 +126,13 @@ public class IdGeneratorImplTest
     @Test
     public void correctDefragCountWhenHaveIdsInFile()
     {
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, 100 );
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 100, false );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, () -> 100L );
 
         idGenerator.freeId( 5 );
         idGenerator.close();
 
-        IdGenerator reloadedIdGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, 100 );
+        IdGenerator reloadedIdGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, () -> 100L );
         assertEquals( 1, reloadedIdGenerator.getDefragCount() );
         assertEquals( 5, reloadedIdGenerator.nextId() );
         assertEquals( 0, reloadedIdGenerator.getDefragCount() );
@@ -155,100 +156,54 @@ public class IdGeneratorImplTest
     public void shouldBeAbleToReadWrittenGenerator()
     {
         // Given
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, () -> 42L );
 
         idGenerator.close();
 
         // When
-        idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 0 );
+        idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, () -> 0L );
 
         // Then
         assertThat( idGenerator.getHighId(), equalTo( 42L ) );
     }
 
     @Test
-    public void shouldForceStickyMark() throws Exception
+    public void constructorShouldCallHighIdSupplierOnNonExistingIdFile() throws Exception
     {
-        // GIVEN
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File dir = new File( "target/test-data/" + getClass().getName() );
-        fs.mkdirs( dir );
-        File file = new File( dir, "ids" );
-        fs.deleteFile( file );
-        IdGeneratorImpl.createGenerator( fs, file, 0, false );
+        // Given
+        // An empty file (default, nothing to do)
+        // and a mock supplier to test against
+        Supplier<Long> highId = mock( Supplier.class );
+        when( highId.get() ).thenReturn( 0L ); // necessary, otherwise it runs into NPE in the constructor below
 
-        // WHEN opening the id generator, where the jvm crashes right after
-        executeSubProcess( getClass(), 1, MINUTES, file.getAbsolutePath() );
+        // Wheb
+        // The id generator is started
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, highId );
 
-        // THEN
-        try
-        {
-            IdGeneratorImpl.readHighId( fs, file );
-            fail( "Should have thrown, saying something with sticky generator" );
-        }
-        catch ( InvalidIdGeneratorException e )
-        {
-            // THEN Good
-        }
+        // Then
+        // The highId supplier must have been called to get the high id
+        verify( highId ).get();
+
+        idGenerator.close();
     }
 
     @Test
-    public void shouldDeleteIfOpen() throws Exception
+    public void constructorShouldNotCallHighIdSupplierOnCleanIdFile() throws Exception
     {
-        // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
+        // Given
+        // A non empty, clean id file
+        IdContainer.createEmptyIdFile( fsr.get(), file, 42, true );
+        // and a mock supplier to test against
+        Supplier<Long> highId = mock( Supplier.class );
 
-        // WHEN
-        idGenerator.delete();
-
-        // THEN
-        assertFalse( fsr.get().fileExists( file ) );
-    }
-
-    @Test
-    public void shouldDeleteIfClosed() throws Exception
-    {
-        // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
+        // When
+        // An IdGenerator is created over the previous properly closed file
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, highId );
         idGenerator.close();
 
-        // WHEN
-        idGenerator.delete();
-
-        // THEN
-        assertFalse( fsr.get().fileExists( file ) );
-    }
-
-    @Test
-    public void shouldTruncateTheFileIfOverwriting() throws Exception
-    {
-        // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 10, true );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
-        for ( int i = 0; i < 17; i++ )
-        {
-            idGenerator.freeId( i );
-        }
-        idGenerator.close();
-        assertThat( (int) fsr.get().getFileSize( file ), greaterThan( IdGeneratorImpl.HEADER_SIZE ) );
-
-        // WHEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 30, false );
-
-        // THEN
-        assertEquals( IdGeneratorImpl.HEADER_SIZE, (int) fsr.get().getFileSize( file ) );
-        assertEquals( 30, IdGeneratorImpl.readHighId( fsr.get(), file ) );
-        idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
-        assertEquals( 30, idGenerator.nextId() );
-    }
-
-    public static void main( String[] args )
-    {
-        // Leave it opened
-        new IdGeneratorImpl( new DefaultFileSystemAbstraction(), new File( args[0] ), 100, 100, false, 42 );
-        System.exit( 0 );
+        // Then
+        // The supplier must have remained untouched
+        verifyZeroInteractions( highId );
     }
 }

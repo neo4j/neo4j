@@ -39,9 +39,8 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.Iterables.limit;
-
 import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterables.limit;
 
 
 class ProposerContextImpl
@@ -72,7 +71,7 @@ class ProposerContextImpl
     private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logging,
                                  Timeouts timeouts, Deque<Message> pendingValues,
                                  Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances,
-                                 HeartbeatContext heartbeatContext)
+                                 HeartbeatContext heartbeatContext )
     {
         super( me, commonState, logging, timeouts );
         this.pendingValues = pendingValues;
@@ -164,14 +163,7 @@ class ProposerContextImpl
     @Override
     public List<URI> getAcceptors()
     {
-        Iterable<URI> aliveMembers = Iterables.map( new Function<org.neo4j.cluster.InstanceId, URI>()
-        {
-            @Override
-            public URI apply( org.neo4j.cluster.InstanceId instanceId ) throws RuntimeException
-            {
-                return heartbeatContext.getUriForId( instanceId );
-            }
-        }, heartbeatContext.getAlive() );
+        Iterable<URI> aliveMembers = Iterables.map( instanceId -> heartbeatContext.getUriForId( instanceId ), heartbeatContext.getAlive() );
 
         return asList( limit( (int) Math.min(Iterables.count( aliveMembers ), commonState.getMaxAcceptors()), aliveMembers ) );
     }
@@ -235,7 +227,7 @@ class ProposerContextImpl
                                          PaxosInstanceStore paxosInstancesSnapshot, HeartbeatContext heartbeatContext )
     {
         return new ProposerContextImpl( me, commonStateSnapshot, logging, timeouts, new LinkedList<>( pendingValues ),
-                new HashMap<>(bookedInstances), paxosInstancesSnapshot, heartbeatContext );
+                new HashMap<>( bookedInstances ), paxosInstancesSnapshot, heartbeatContext );
     }
 
     @Override
@@ -260,12 +252,7 @@ class ProposerContextImpl
         {
             return false;
         }
-        if ( pendingValues != null ? !pendingValues.equals( that.pendingValues ) : that.pendingValues != null )
-        {
-            return false;
-        }
-
-        return true;
+        return pendingValues != null ? pendingValues.equals( that.pendingValues ) : that.pendingValues == null;
     }
 
     @Override

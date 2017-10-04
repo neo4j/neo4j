@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state.storage;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,22 +37,25 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class DurableStateStorageTest
 {
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private final LifeRule lifeRule = new LifeRule( true );
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public LifeRule lifeRule = new LifeRule( true );
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( lifeRule ).around( testDir );
 
     @Test
     public void shouldMaintainStateGivenAnEmptyInitialStore() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         DurableStateStorage<AtomicInteger> storage = lifeRule.add( new DurableStateStorage<>( fsa, testDir.directory(),
@@ -68,7 +72,7 @@ public class DurableStateStorageTest
     public void shouldRotateToOtherStoreFileAfterSufficientEntries() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         final int numberOfEntriesBeforeRotation = 100;
@@ -93,7 +97,7 @@ public class DurableStateStorageTest
     public void shouldRotateBackToFirstStoreFileAfterSufficientEntries() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         final int numberOfEntriesBeforeRotation = 100;
@@ -118,7 +122,7 @@ public class DurableStateStorageTest
     public void shouldClearFileOnFirstUse() throws Throwable
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         int rotationCount = 10;

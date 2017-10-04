@@ -22,15 +22,17 @@ package org.neo4j.kernel.api;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.StatementOperationContainer;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -65,6 +67,10 @@ public class KernelTransactionFactory
         }
     }
 
+    private KernelTransactionFactory()
+    {
+    }
+
     static Instances kernelTransactionWithInternals( SecurityContext securityContext )
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
@@ -78,7 +84,7 @@ public class KernelTransactionFactory
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                mock( StatementOperationContainer.class ),
+                mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ),
                 new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), new Procedures(), headerInformationFactory,
@@ -87,6 +93,8 @@ public class KernelTransactionFactory
                 mock( Pool.class ),
                 Clocks.systemClock(),
                 NULL,
+                LockTracer.NONE,
+                PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite() );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );

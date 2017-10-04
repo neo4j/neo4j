@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.configuration;
 
 import java.lang.annotation.ElementType;
@@ -28,9 +29,13 @@ import java.lang.annotation.Target;
  * Used in settings classes to denote that a field contains an {@link ConfigurationMigrator}.
  * This gets picked up by the configuration, and config migrations are applied whenever configuration
  * is modified.
+ * <p>
+ * The filed must be declared as {@code static} and have a type that implements {@link ConfigurationMigrator}, otherwise
+ * runtime exceptions will be thrown.
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.FIELD )
-public @interface Migrator {
+public @interface Migrator
+{
 
 }

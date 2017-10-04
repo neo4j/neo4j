@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -35,14 +36,18 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,16 +58,20 @@ public class LuceneSchemaIndexPopulationIT
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
-    private int affectedNodes;
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
+    private final int affectedNodes;
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", "10" );
     }
 
     @After
-    public void after() throws IOException
+    public void after()
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", "" );
     }
@@ -81,9 +90,9 @@ public class LuceneSchemaIndexPopulationIT
     @Test
     public void partitionedIndexPopulation() throws Exception
     {
-        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create().uniqueIndex()
-                .withIndexRootFolder( testDir.directory( "partitionIndex" + affectedNodes ) )
-                .withIndexIdentifier( "uniqueIndex" + affectedNodes )
+        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor )
+                .withFileSystem( fileSystemRule.get() )
+                .withIndexRootFolder( new File( testDir.directory( "partitionIndex" + affectedNodes ), "uniqueIndex" + affectedNodes ) )
                 .build() )
         {
             uniqueIndex.open();
@@ -92,8 +101,7 @@ public class LuceneSchemaIndexPopulationIT
             assertEquals( 0, uniqueIndex.allDocumentsReader().maxCount() );
             assertFalse( uniqueIndex.exists() );
 
-            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex,
-                    new IndexDescriptor( 1, 1 ) ) )
+            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
                 indexAccessor.force();
@@ -103,7 +111,7 @@ public class LuceneSchemaIndexPopulationIT
 
                 try ( IndexReader indexReader = indexAccessor.newReader() )
                 {
-                    long[] nodes = PrimitiveLongCollections.asArray( indexReader.scan() );
+                    long[] nodes = PrimitiveLongCollections.asArray( indexReader.query( IndexQuery.exists( 1 )) );
                     assertEquals( affectedNodes, nodes.length );
 
                     IndexSampler indexSampler = indexReader.createSampler();
@@ -128,8 +136,8 @@ public class LuceneSchemaIndexPopulationIT
         }
     }
 
-    private NodePropertyUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
-        return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
+        return IndexEntryUpdate.add( nodeId, descriptor.schema(), Values.of( value ) );
     }
 }

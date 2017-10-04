@@ -29,9 +29,13 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StreamFilesRecursive;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -40,6 +44,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     public DelegatingFileSystemAbstraction( FileSystemAbstraction delegate )
     {
         this.delegate = delegate;
+    }
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        return delegate.fileWatcher();
     }
 
     @Override
@@ -89,6 +99,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     public void deleteFileOrThrow( File file ) throws IOException
     {
         delegate.deleteFileOrThrow( file );
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
 
     @Override
@@ -179,5 +195,11 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         delegate.copyRecursively( fromDirectory, toDirectory );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        delegate.close();
     }
 }

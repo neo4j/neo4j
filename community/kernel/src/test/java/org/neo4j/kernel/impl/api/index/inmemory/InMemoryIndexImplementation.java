@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
 abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterable<Long>
 {
@@ -32,35 +33,34 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
     abstract void drop();
 
+    public final PrimitiveLongIterator seek( Value... values )
+    {
+        return doIndexSeek( encode( values ) );
+    }
+
+    final boolean add( long nodeId, boolean applyIdempotently, Value... propertyValues )
+    {
+        return doAdd( nodeId, applyIdempotently, encode( propertyValues ) );
+    }
+
+    final void remove( long nodeId, Value... propertyValues )
+    {
+        doRemove( nodeId, encode( propertyValues ) );
+    }
+
     @Override
-    public final PrimitiveLongIterator seek( Object value )
+    public final long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        return doIndexSeek( encode( value ) );
+        return doCountIndexedNodes( nodeId, encode( propertyValues ) );
     }
 
-    final boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )
-    {
-        return doAdd( encode( propertyValue ), nodeId, applyIdempotently );
-    }
+    protected abstract long doCountIndexedNodes( long nodeId, Object... encode );
 
-    final void remove( long nodeId, Object propertyValue )
-    {
-        doRemove( encode( propertyValue ), nodeId );
-    }
+    abstract PrimitiveLongIterator doIndexSeek( Object... propertyValue );
 
-    @Override
-    public final long countIndexedNodes( long nodeId, Object propertyValue )
-    {
-        return doCountIndexedNodes( nodeId, encode( propertyValue ) );
-    }
+    abstract boolean doAdd( long nodeId, boolean applyIdempotently, Object... propertyValue );
 
-    protected abstract long doCountIndexedNodes( long nodeId, Object encode );
-
-    abstract PrimitiveLongIterator doIndexSeek( Object propertyValue );
-
-    abstract boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently );
-
-    abstract void doRemove( Object propertyValue, long nodeId );
+    abstract void doRemove( long nodeId, Object... propertyValue );
 
     abstract void remove( long nodeId );
 
@@ -71,24 +71,33 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     {
     }
 
-    private static Object encode( Object propertyValue )
+    private static Object[] encode( Value[] propertyValues )
     {
-        if ( propertyValue instanceof Number )
+        Object[] encoded = new Object[propertyValues.length];
+        for ( int i = 0; i < propertyValues.length; i++ )
         {
-            return ((Number) propertyValue).doubleValue();
+            encoded[i] = encode( propertyValues[i] );
         }
 
-        if ( propertyValue instanceof Character )
-        {
-            return propertyValue.toString();
-        }
+        return encoded;
+    }
 
-        if ( propertyValue.getClass().isArray() )
+    private static Object encode( Value value )
+    {
+        Object asObject = value.asObject();
+        if ( asObject instanceof Number )
         {
-            return new ArrayKey( ArrayEncoder.encode( propertyValue ) );
+            asObject = ((Number) asObject).doubleValue();
         }
-
-        return propertyValue;
+        else if ( asObject instanceof Character )
+        {
+            asObject = asObject.toString();
+        }
+        else if ( asObject.getClass().isArray() )
+        {
+            asObject = new ArrayKey( ArrayEncoder.encode( value ) );
+        }
+        return asObject;
     }
 
     static class ArrayKey
@@ -130,4 +139,6 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     {
         void visitEntry( Object key, Set<Long> nodeId ) throws Exception;
     }
+
+    abstract boolean hasSameContentsAs( InMemoryIndexImplementation other );
 }

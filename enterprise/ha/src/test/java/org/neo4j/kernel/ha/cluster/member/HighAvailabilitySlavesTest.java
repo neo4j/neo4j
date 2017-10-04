@@ -145,7 +145,7 @@ public class HighAvailabilitySlavesTest
                 any( Integer.class ) ) ).thenReturn( mock( Slave.class ), mock( Slave.class ) );
 
         HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory, new
-                HostnamePort( null, 0 ) );
+                HostnamePort( "localhost", 0 ) );
         slaves.init();
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
@@ -219,15 +219,11 @@ public class HighAvailabilitySlavesTest
 
     private static Runnable slavesConsumingRunnable( final HighAvailabilitySlaves haSlaves )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            for ( Slave slave : haSlaves.getSlaves() )
             {
-                for ( Slave slave : haSlaves.getSlaves() )
-                {
-                    assertNotNull( slave );
-                }
+                assertNotNull( slave );
             }
         };
     }

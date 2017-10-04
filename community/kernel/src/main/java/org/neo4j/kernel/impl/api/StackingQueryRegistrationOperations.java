@@ -19,28 +19,36 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
-import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
+import org.neo4j.time.SystemNanoClock;
+import org.neo4j.values.virtual.MapValue;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
-
     private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
-    private final Clock clock;
+    private final SystemNanoClock clock;
+    private final CpuClock cpuClock;
+    private final HeapAllocation heapAllocation;
 
-    public StackingQueryRegistrationOperations( Clock clock )
+    public StackingQueryRegistrationOperations(
+            SystemNanoClock clock,
+            CpuClock cpuClock,
+            HeapAllocation heapAllocation )
     {
         this.clock = clock;
+        this.cpuClock = cpuClock;
+        this.heapAllocation = heapAllocation;
     }
 
     @Override
-    public Stream<ExecutingQuery> executingQueries( KernelStatement statement)
+    public Stream<ExecutingQuery> executingQueries( KernelStatement statement )
     {
         return statement.executingQueryList().queries();
     }
@@ -54,15 +62,18 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     @Override
     public ExecutingQuery startQueryExecution(
         KernelStatement statement,
-        QuerySource querySource,
+        ClientConnectionInfo clientConnection,
         String queryText,
-        Map<String,Object> queryParameters
+        MapValue queryParameters
     )
     {
         long queryId = lastQueryId.incrementAndGet();
+        Thread thread = Thread.currentThread();
         ExecutingQuery executingQuery =
-                new ExecutingQuery( queryId, querySource, statement.username(), queryText, queryParameters,
-                        clock.millis(), statement.getTransaction().getMetaData() );
+                new ExecutingQuery( queryId, clientConnection, statement.username(), queryText, queryParameters,
+                        statement.getTransaction().getMetaData(), statement.locks()::activeLockCount,
+                        statement.getPageCursorTracer(),
+                        thread, clock, cpuClock, heapAllocation );
         registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }
@@ -72,6 +83,5 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     {
         statement.stopQueryExecution( executingQuery );
     }
-
 }
 

@@ -27,32 +27,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
-// 2.3
 public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
 {
-    EMPTY
-            {
-                @Override
-                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReader ) throws IOException
-                {
-                    return null;
-
-                }
-
-                @Override
-                public byte byteCode()
-                {
-                    return LogEntryByteCodes.EMPTY;
-                }
-
-                @Override
-                public boolean skip()
-                {
-                    return false;
-                }
-            },
-
     TX_START
             {
                 @Override
@@ -131,6 +107,7 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                     return false;
                 }
             },
+
     CHECK_POINT
             {
                 @Override

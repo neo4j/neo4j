@@ -21,16 +21,21 @@ package org.neo4j.server.enterprise.helpers;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
+import java.util.Map;
 
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
+
+import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
@@ -42,6 +47,16 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     public static EnterpriseServerBuilder server()
     {
         return server( NullLogProvider.getInstance() );
+    }
+
+    public static EnterpriseServerBuilder serverOnRandomPorts()
+    {
+        EnterpriseServerBuilder server = server();
+        server.onRandomPorts();
+        server.withProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" );
+        server.withProperty( OnlineBackupSettings.online_backup_server.name(),
+                listenAddress( "127.0.0.1", PortAuthority.allocatePort() ) );
+        return server;
     }
 
     public static EnterpriseServerBuilder server( LogProvider logProvider )
@@ -63,16 +78,18 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected CommunityNeoServer build(Optional<File> configFile, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies)
+    protected CommunityNeoServer build( File configFile, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new TestEnterpriseNeoServer( config, configFile, dependencies, logProvider );
     }
 
     private class TestEnterpriseNeoServer extends EnterpriseNeoServer
     {
-        private final Optional<File> configFile;
+        private final File configFile;
 
-        public TestEnterpriseNeoServer( Config config, Optional<File> configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        TestEnterpriseNeoServer( Config config, File configFile,
+                GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
             super( config, dependencies, logProvider );
             this.configFile = configFile;
@@ -88,7 +105,20 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         public void stop()
         {
             super.stop();
-            configFile.ifPresent( File::delete );
+            if ( configFile != null )
+            {
+                configFile.delete();
+            }
         }
+    }
+
+    @Override
+    public Map<String, String> createConfiguration( File temporaryFolder )
+    {
+        Map<String, String> configuration = super.createConfiguration( temporaryFolder );
+
+        configuration.put( OnlineBackupSettings.online_backup_server.name(), listenAddress( "127.0.0.1", PortAuthority.allocatePort() ) );
+
+        return configuration;
     }
 }

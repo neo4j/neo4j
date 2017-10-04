@@ -64,7 +64,33 @@
       <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
       <property name="allowSamelineParameterizedAnnotation" value="false"/>
     </module>
-
+    <module name="UnnecessaryParentheses"/>
+    <module name="LeftCurly">
+      <property name="option" value="nl"/>
+    </module>
+    <module name="RightCurly">
+      <property name="option" value="alone"/>
+    </module>
+    <module name="NeedBraces"/>
+    <module name="RedundantModifier"/>
+    <module name="WhitespaceAround">
+      <property name="allowEmptyConstructors" value="true"/>
+      <property name="allowEmptyLambdas" value="true"/>
+      <property name="allowEmptyMethods" value="true"/>
+    </module>
+    <module name="OneStatementPerLine"/>
+    <module name="ParenPad">
+      <property name="tokens"
+                value="ANNOTATION, ANNOTATION_FIELD_DEF, CTOR_CALL, CTOR_DEF, ENUM_CONSTANT_DEF, LITERAL_CATCH, LITERAL_DO, LITERAL_FOR, LITERAL_IF, LITERAL_NEW, LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_WHILE, RESOURCE_SPECIFICATION, SUPER_CTOR_CALL, LAMBDA, METHOD_DEF"/>
+      <property name="option" value="space"/>
+    </module>
+    <module name="AvoidStarImport"/>
+    <module name="GenericWhitespace"/>
+    <module name="ExplicitInitialization"/>
+    <module name="LineLength">
+      <property name="max" value="160"/>
+      <property name="ignorePattern" value="a href|href|http://|https://"/>
+    </module>
   </module>
 
 </module>

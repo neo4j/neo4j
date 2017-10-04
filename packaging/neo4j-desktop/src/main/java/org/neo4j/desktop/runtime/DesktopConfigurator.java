@@ -27,12 +27,8 @@ import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.server.configuration.ClientConnectorSettings;
-import org.neo4j.server.configuration.ConfigLoader;
-
-import static org.neo4j.helpers.collection.Pair.pair;
 
 public class DesktopConfigurator
 {
@@ -52,10 +48,11 @@ public class DesktopConfigurator
 
     public void refresh()
     {
-        config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
-                Optional.of( dbDir.getAbsoluteFile() ),
-                Optional.of( getConfigurationsFile() ),
-                pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
+        config = Config.fromFile( getConfigurationsFile() )
+                .withHome( dbDir.getAbsoluteFile() )
+                .withServerDefaults()
+                .withSetting( DatabaseManagementSystemSettings.database_path, dbDir.getAbsolutePath() ).build();
+
         config.setLogger( FormattedLog.toOutputStream( System.out ) );
     }
 
@@ -83,6 +80,9 @@ public class DesktopConfigurator
 
     public ListenSocketAddress getServerAddress()
     {
-        return ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE ).get().address.from( config );
+        return config.get( config.httpConnectors().stream()
+                .findFirst()
+                .orElse( new HttpConnector( "http" ) )
+                .listen_address );
     }
 }

@@ -124,7 +124,7 @@ public class TreeGraphTest extends TraversalTestBase
         levels.push( new HashSet<>( asList( "2", "3", "4" ) ) );
         levels.push( new HashSet<>( asList( "1" ) ) );
 
-        try (Transaction tx = beginTx();)
+        try ( Transaction tx = beginTx() )
         {
             assertLevels( traverser, levels );
             tx.success();
@@ -154,12 +154,12 @@ public class TreeGraphTest extends TraversalTestBase
         Traverser traverser = getGraphDb().traversalDescription().order( POSTORDER_DEPTH_FIRST ).traverse( node( "1" ) );
         int i = 0;
         List<String> encounteredNodes = new ArrayList<>();
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             for ( Path pos : traverser )
             {
                 encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
-                assertEquals( expectedDepth( (12 - i++) ), pos.length() );
+                assertEquals( expectedDepth( 12 - i++ ), pos.length() );
             }
             tx.success();
         }

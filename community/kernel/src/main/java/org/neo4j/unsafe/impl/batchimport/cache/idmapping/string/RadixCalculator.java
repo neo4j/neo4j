@@ -42,7 +42,7 @@ public abstract class RadixCalculator
         public int radixOf( long value )
         {
             int index = (int) (value >>> (64 - RADIX_BITS));
-            index = (((index & LENGTH_MASK) >>> 1) | (index & HASHCODE_MASK));
+            index = ((index & LENGTH_MASK) >>> 1) | (index & HASHCODE_MASK);
             return index;
         }
     }
@@ -62,7 +62,7 @@ public abstract class RadixCalculator
         @Override
         public int radixOf( long value )
         {
-            long val1 = (value & ~LENGTH_BITS);
+            long val1 = value & ~LENGTH_BITS;
             val1 = val1 >>> radixShift.intValue();
             int index = (int) val1;
             return index;

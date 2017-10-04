@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
@@ -36,15 +36,13 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulationFailure populationFailure;
-    private final IndexConfiguration configuration;
 
-    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-            IndexPopulationFailure populationFailure, IndexConfiguration configuration )
+    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor, IndexPopulationFailure populationFailure )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.populationFailure = populationFailure;
-        this.configuration = configuration;
     }
 
     @Override
@@ -84,6 +82,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
+    public LabelSchemaDescriptor schema()
+    {
+        return descriptor.schema();
+    }
+
+    @Override
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
         return providerDescriptor;
@@ -99,11 +103,5 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     public IndexReader newReader()
     {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IndexConfiguration config()
-    {
-        return configuration;
     }
 }

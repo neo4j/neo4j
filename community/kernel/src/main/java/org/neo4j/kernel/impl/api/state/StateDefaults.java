@@ -104,7 +104,7 @@ abstract class StateDefaults<KEY, RO, RW extends RO>
         {
             return Iterables.empty();
         }
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         Collection<RO> values = map.values();
         return values;
     }

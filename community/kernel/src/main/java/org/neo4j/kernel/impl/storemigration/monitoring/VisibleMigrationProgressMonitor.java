@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.monitoring;
 
+import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -29,6 +31,8 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
 
     private final Log log;
+    private int numStages;
+    private int currentStage;
 
     public VisibleMigrationProgressMonitor( Log log )
     {
@@ -36,17 +40,17 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     }
 
     @Override
-    public void started()
+    public void started( int numStages )
     {
+        this.numStages = numStages;
         log.info( MESSAGE_STARTED );
     }
 
     @Override
-    public Section startSection( String name )
+    public ProgressReporter startSection( String name )
     {
-        log.info( "Migrating " + name + ":" );
-
-        return new ProgressSection();
+        log.info( format( "Migrating %s (%d/%d):", name, ++currentStage, numStages ) );
+        return new LogProgressReporter( log );
     }
 
     @Override
@@ -55,49 +59,4 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         log.info( MESSAGE_COMPLETED );
     }
 
-    private class ProgressSection implements Section
-    {
-        private static final int STRIDE = 10;
-        private static final int HUNDRED = 100;
-
-        private long current;
-        private int currentPercent;
-        private long max;
-
-        @Override
-        public void progress( long add )
-        {
-            current += add;
-            int percent = max == 0 ? HUNDRED : Math.min( HUNDRED, (int) ((current * HUNDRED) / max) );
-            ensurePercentReported( percent );
-        }
-
-        private void ensurePercentReported( int percent )
-        {
-            while ( currentPercent < percent )
-            {
-                reportPercent( ++currentPercent );
-            }
-        }
-
-        private void reportPercent( int percent )
-        {
-            if ( percent % STRIDE == 0 )
-            {
-                log.info( format( "  %d%% completed", percent ) );
-            }
-        }
-
-        @Override
-        public void start( long max )
-        {
-            this.max = max;
-        }
-
-        @Override
-        public void completed()
-        {
-            ensurePercentReported( HUNDRED );
-        }
-    }
 }

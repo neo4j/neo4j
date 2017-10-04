@@ -41,7 +41,7 @@ public class TestNoFileDescriptorLeaks
     private static final AtomicInteger counter = new AtomicInteger();
 
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( TestNoFileDescriptorLeaks.class );
+    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
 
     @BeforeClass
     public static void beforeClass()

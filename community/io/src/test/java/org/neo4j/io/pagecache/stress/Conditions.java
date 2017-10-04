@@ -27,6 +27,10 @@ import static java.lang.System.currentTimeMillis;
 
 public class Conditions
 {
+    private Conditions()
+    {
+    }
+
     public static Condition numberOfEvictions( final PageCacheCounters monitor,
                                                final long desiredNumberOfEvictions )
     {

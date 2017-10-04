@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,6 +39,8 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +57,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
+import static org.neo4j.scheduler.JobScheduler.Groups.checkPoint;
 
 public class CheckPointSchedulerTest
 {
@@ -58,6 +65,21 @@ public class CheckPointSchedulerTest
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
     private final DatabaseHealth health = mock( DatabaseHealth.class );
+
+    private static ExecutorService executor;
+
+    @BeforeClass
+    public static void setUpExecutor()
+    {
+        executor = Executors.newCachedThreadPool();
+    }
+
+    @AfterClass
+    public static void tearDownExecutor() throws InterruptedException
+    {
+        executor.shutdown();
+        executor.awaitTermination( 30, TimeUnit.SECONDS );
+    }
 
     @Test
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
@@ -137,13 +159,15 @@ public class CheckPointSchedulerTest
         verifyNoMoreInteractions( checkPointer );
     }
 
-    @Test
+    // Timeout as fallback safety if test deadlocks
+    @Test( timeout = 60_000 )
     public void shouldWaitOnStopUntilTheRunningCheckpointIsDone() throws Throwable
     {
         // given
         final AtomicReference<Throwable> ex = new AtomicReference<>();
         final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
+        OtherThreadExecutor<Void> otherThreadExecutor = new OtherThreadExecutor<>( "scheduler stopper", null );
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
@@ -165,6 +189,12 @@ public class CheckPointSchedulerTest
             {
                 throw new RuntimeException( "this should have not been called" );
             }
+
+            @Override
+            public long lastCheckPointedTransactionId()
+            {
+                return 42;
+            }
         };
 
         final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -172,38 +202,25 @@ public class CheckPointSchedulerTest
         // when
         scheduler.start();
 
-        Thread runCheckPointer = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                jobScheduler.runJob();
-            }
-        };
+        Thread runCheckPointer = new Thread( jobScheduler::runJob );
         runCheckPointer.start();
 
         checkPointerLatch.waitForAllToStart();
 
-        Thread stopper = new Thread()
+        otherThreadExecutor.executeDontWait( (WorkerCommand<Void,Void>) state ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    scheduler.stop();
-                    stoppedCompleted.set( true );
-                }
-                catch ( Throwable throwable )
-                {
-                    ex.set( throwable );
-                }
+                scheduler.stop();
+                stoppedCompleted.set( true );
             }
-        };
-
-        stopper.start();
-
-        Thread.sleep( 10 );
+            catch ( Throwable throwable )
+            {
+                ex.set( throwable );
+            }
+            return null;
+        } );
+        otherThreadExecutor.waitUntilWaiting( details -> details.isAt( CheckPointScheduler.class, "waitOngoingCheckpointCompletion" ) );
 
         // then
         assertFalse( stoppedCompleted.get() );
@@ -211,10 +228,11 @@ public class CheckPointSchedulerTest
         checkPointerLatch.finish();
         runCheckPointer.join();
 
-        Thread.sleep( 150 );
-
-        assertTrue( stoppedCompleted.get() );
-        stopper.join(); // just in case
+        while ( !stoppedCompleted.get() )
+        {
+            Thread.sleep( 1 );
+        }
+        otherThreadExecutor.close();
 
         assertNull( ex.get() );
     }
@@ -251,12 +269,11 @@ public class CheckPointSchedulerTest
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 0L, health );
         scheduler.start();
 
-        Thread checkpointerStarter = new Thread( jobScheduler::runJob );
-        checkpointerStarter.start();
+        Future<?> checkpointerStarter = executor.submit( jobScheduler::runJob );
 
         checkPointerLatch.await();
         scheduler.stop();
-        checkpointerStarter.join();
+        checkpointerStarter.get();
 
         assertTrue( "Checkpointer should be created.", checkPointer.isCheckpointCreated() );
         assertTrue( "Limiter should be enabled in the end.", ioLimiter.isLimitEnabled() );
@@ -319,11 +336,17 @@ public class CheckPointSchedulerTest
         {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public long lastCheckPointedTransactionId()
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static class CheckableIOLimiter implements IOLimiter
     {
-        private volatile boolean limitEnabled = false;
+        private volatile boolean limitEnabled;
 
         @Override
         public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException
@@ -384,6 +407,12 @@ public class CheckPointSchedulerTest
         public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
         {
             throw new UnsupportedOperationException( "This should have not been called" );
+        }
+
+        @Override
+        public long lastCheckPointedTransactionId()
+        {
+            return 0;
         }
 
         boolean isCheckpointCreated()

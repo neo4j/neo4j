@@ -29,7 +29,7 @@ public interface MoveAfterCopy
 
     static MoveAfterCopy moveReplaceExisting()
     {
-        return (moves, fromDirectory, toDirectory) ->
+        return ( moves, fromDirectory, toDirectory ) ->
         {
             Iterable<FileMoveAction> itr = moves::iterator;
             for ( FileMoveAction move : itr )

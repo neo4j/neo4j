@@ -21,14 +21,15 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -42,7 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link SchemaIndexProvider} for a\
- * {@link #getPopulator(long, IndexDescriptor, IndexConfiguration, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(long, IndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -87,40 +88,62 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(long, IndexDescriptor, IndexConfiguration, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(long, IndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
 {
+    public interface Monitor
+    {
+        Monitor EMPTY = new Monitor.Adaptor();
+
+        class Adaptor implements Monitor
+        {
+            @Override
+            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+            {   // no-op
+            }
+        }
+
+        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
+
+        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
+    }
+
     public static final SchemaIndexProvider NO_INDEX_PROVIDER =
-            new SchemaIndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1 )
+            new SchemaIndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {
                 private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
                 private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
 
                 @Override
                 public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-                                                        IndexConfiguration config, IndexSamplingConfig samplingConfig )
+                                                        IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+                public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
                                                     IndexSamplingConfig samplingConfig )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( long indexId )
+                public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
                 {
                     return InternalIndexState.POPULATING;
                 }
 
                 @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
-                        PageCache pageCache, LabelScanStoreProvider labelScanStoreProvider )
+                        PageCache pageCache )
                 {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
@@ -134,25 +157,35 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
     protected final int priority;
     private final Descriptor providerDescriptor;
+    private final IndexDirectoryStructure.Factory directoryStructureFactory;
+    private final IndexDirectoryStructure directoryStructure;
 
-    protected SchemaIndexProvider( Descriptor descriptor, int priority )
+    protected SchemaIndexProvider( SchemaIndexProvider copySource )
     {
+        this( copySource.providerDescriptor, copySource.priority, copySource.directoryStructureFactory );
+    }
+
+    protected SchemaIndexProvider( Descriptor descriptor, int priority,
+            IndexDirectoryStructure.Factory directoryStructureFactory )
+    {
+        this.directoryStructureFactory = directoryStructureFactory;
         assert descriptor != null;
         this.priority = priority;
         this.providerDescriptor = descriptor;
+        this.directoryStructure = directoryStructureFactory.forProvider( descriptor );
     }
 
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+    public abstract IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
                                                  IndexSamplingConfig samplingConfig );
 
     /**
      * Used for updating an index once initial population has completed.
      */
     public abstract IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-            IndexConfiguration config, IndexSamplingConfig samplingConfig ) throws IOException;
+                                                     IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
@@ -167,7 +200,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
-    public abstract InternalIndexState getInitialState( long indexId );
+    public abstract InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor );
 
     /**
      * @return a description of this index provider
@@ -205,30 +238,29 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     public int hashCode()
     {
         int result = priority;
-        result = 31 * result + (providerDescriptor != null ? providerDescriptor.hashCode() : 0);
+        result = 31 * result + providerDescriptor.hashCode();
         return result;
     }
 
     /**
-     * Get schema index store root directory in specified store.
-     * @param storeDir store root directory
-     * @return shema index store root directory
+     * @return {@link IndexDirectoryStructure} for this schema index provider. From it can be retrieved directories
+     * for individual indexes.
      */
-    public File getSchemaIndexStoreDirectory( File storeDir )
+    public IndexDirectoryStructure directoryStructure()
     {
-        return new File( new File( new File( storeDir, "schema" ), "index" ), getProviderDescriptor().getKey() );
+        return directoryStructure;
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-            LabelScanStoreProvider labelScanStoreProvider );
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
 
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.
-     * @return
+     *
+     * @return {@link ResourceIterator} over all meta files for this index provider.
      */
     public ResourceIterator<File> snapshotMetaFiles()
     {
-        return Iterators.emptyIterator();
+        return Iterators.emptyResourceIterator();
     }
 
     public static class Descriptor
@@ -238,15 +270,15 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
         public Descriptor( String key, String version )
         {
-            if (key == null)
+            if ( key == null )
             {
                 throw new IllegalArgumentException( "null provider key prohibited" );
             }
-            if (key.length() == 0)
+            if ( key.length() == 0 )
             {
                 throw new IllegalArgumentException( "empty provider key prohibited" );
             }
-            if (version == null)
+            if ( version == null )
             {
                 throw new IllegalArgumentException( "null provider version prohibited" );
             }

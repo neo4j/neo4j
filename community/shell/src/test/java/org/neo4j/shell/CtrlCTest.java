@@ -42,14 +42,7 @@ public class CtrlCTest
         public Cancelable install( Runnable action )
         {
             installed = true;
-            return new Cancelable()
-            {
-                @Override
-                public void cancel()
-                {
-                    installed = false;
-                }
-            };
+            return () -> installed = false;
         }
     }
 

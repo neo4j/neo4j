@@ -23,5 +23,5 @@ public enum CapabilityType
 {
     FORMAT,
     STORE,
-    INDEX;
+    INDEX
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -34,11 +35,15 @@ public interface IndexPopulator
 {
     /**
      * Remove all data in the index and paves the way for populating an index.
+     *
+     * @throws IOException on I/O error.
      */
     void create() throws IOException;
 
     /**
      * Closes and deletes this index.
+     *
+     * @throws IOException on I/O error.
      */
     void drop() throws IOException;
 
@@ -50,10 +55,14 @@ public interface IndexPopulator
      * of {@link #verifyDeferredConstraints(PropertyAccessor)}.
      *
      * @param updates batch of node property updates that needs to be inserted. Node ids will be retrieved using
-     * {@link NodePropertyUpdate#getNodeId()} method and property values will be retrieved using
-     * {@link NodePropertyUpdate#getValueAfter()} method.
+     * {@link IndexEntryUpdate#getEntityId()} method and property values will be retrieved using
+     * {@link IndexEntryUpdate#values()} method.
+     * @throws IndexEntryConflictException if this is a uniqueness index and any of the updates are detected
+     * to violate that constraint. Implementations may choose to not detect in this call, but instead do one efficient
+     * pass over the index in {@link #verifyDeferredConstraints(PropertyAccessor)}.
+     * @throws IOException on I/O error.
      */
-    void add( Collection<NodePropertyUpdate> updates )
+    void add( Collection<? extends IndexEntryUpdate<?>> updates )
             throws IndexEntryConflictException, IOException;
 
     /**
@@ -77,7 +86,7 @@ public interface IndexPopulator
      * from committing transactions, which needs to be applied as well. This populator will only receive updates
      * for nodes that it already has seen. Updates coming in here must be applied idempotently as the same data
      * may have been {@link #add(Collection) added previously}.
-     * Updates can come in two different {@link NodePropertyUpdate#getUpdateMode() modes}.
+     * Updates can come in two different {@link IndexEntryUpdate#updateMode()} modes}.
      * <ol>
      *   <li>{@link UpdateMode#ADDED} means that there's an added property to a node already seen by this
      *   populator and so needs to be added. Note that this addition needs to be applied idempotently.
@@ -88,6 +97,11 @@ public interface IndexPopulator
      *   has been removed and need to be removed from this index as well. Note that this removal needs to be
      *   applied idempotently.</li>
      * </ol>
+     *
+     * @param accessor accesses property data if implementation needs to be able look up property values while populating.
+     * @return an {@link IndexUpdater} which will funnel changes that happen concurrently with index population
+     * into the population and incorporating them as part of the index population.
+     * @throws IOException on I/O error.
      */
     IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException;
 
@@ -95,7 +109,13 @@ public interface IndexPopulator
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link SchemaIndexProvider#getInitialState(long)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link SchemaIndexProvider#getInitialState(long, IndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
+     *
+     * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
+     * be marked as {@link InternalIndexState#ONLINE}, otherwise {@code false} where index should be marked as
+     * {@link InternalIndexState#FAILED} and the failure, previously handed to this populator using {@link #markAsFailed(String)}
+     * should be stored and made available for later requests from {@link SchemaIndexProvider#getPopulationFailure(long)}.
+     * @throws IOException on I/O error.
      */
     void close( boolean populationCompletedSuccessfully ) throws IOException;
 
@@ -110,19 +130,15 @@ public interface IndexPopulator
     void markAsFailed( String failure ) throws IOException;
 
     /**
-     * Add the given {@link NodePropertyUpdate update} to the sampler for this index.
+     * Add the given {@link IndexEntryUpdate update} to the sampler for this index.
      *
      * @param update update to include in sample
      */
-    void includeSample( NodePropertyUpdate update );
+    void includeSample( IndexEntryUpdate<?> update );
 
     /**
-     * Configure specific type of sampling that should be used during index population.
-     * Depends from type of node scan that is used during index population
-     * @param onlineSampling should online (sampling based on index population and updates) be used
+     * @return {@link IndexSample} from samples collected by {@link #includeSample(IndexEntryUpdate)} calls.
      */
-    void configureSampling( boolean onlineSampling );
-
     IndexSample sampleResult();
 
     class Adapter implements IndexPopulator
@@ -138,7 +154,8 @@ public interface IndexPopulator
         }
 
         @Override
-        public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException,
+                IOException
         {
         }
 
@@ -159,12 +176,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void includeSample( NodePropertyUpdate update )
-        {
-        }
-
-        @Override
-        public void configureSampling( boolean onlineSampling )
+        public void includeSample( IndexEntryUpdate<?> update )
         {
         }
 

@@ -27,8 +27,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Inherited
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Target( ElementType.TYPE )
+@Retention( RetentionPolicy.RUNTIME )
 public @interface State
 {
     Strategy value();
@@ -48,7 +48,8 @@ public @interface State
             @Override
             public <Key> ActiveState<Key> open( ReadableState<Key> store, File file )
             {
-                return new ConcurrentMapState<Key>( store, file ) {
+                return new ConcurrentMapState<Key>( store, file )
+                {
                     @Override
                     protected boolean hasChanges()
                     {

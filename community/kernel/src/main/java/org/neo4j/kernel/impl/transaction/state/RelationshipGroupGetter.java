@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -27,19 +27,20 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 
 public class RelationshipGroupGetter
 {
-    private final RecordStore<RelationshipGroupRecord> store;
+    private final IdSequence idGenerator;
 
-    public RelationshipGroupGetter( RecordStore<RelationshipGroupRecord> store )
+    public RelationshipGroupGetter( IdSequence idGenerator )
     {
-        this.store = store;
+        this.idGenerator = idGenerator;
     }
 
     public RelationshipGroupPosition getRelationshipGroup( NodeRecord node, int type,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
-        RecordProxy<Long, RelationshipGroupRecord, Integer> previous = null, current = null;
+        RecordProxy<RelationshipGroupRecord, Integer> previous = null;
+        RecordProxy<RelationshipGroupRecord, Integer> current;
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             current = relGroupRecords.getOrLoad( groupId, null );
@@ -61,15 +62,15 @@ public class RelationshipGroupGetter
         return new RelationshipGroupPosition( previous, null );
     }
 
-    public RecordProxy<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
-            NodeRecord node, int type, RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords  )
+    public RecordProxy<RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
+            NodeRecord node, int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords  )
     {
         RelationshipGroupPosition existingGroup = getRelationshipGroup( node, type, relGroupRecords );
-        RecordProxy<Long, RelationshipGroupRecord, Integer> change = existingGroup.group();
+        RecordProxy<RelationshipGroupRecord, Integer> change = existingGroup.group();
         if ( change == null )
         {
             assert node.isDense() : "Node " + node + " should have been dense at this point";
-            long id = store.nextId();
+            long id = idGenerator.nextId();
             change = relGroupRecords.create( id, type );
             RelationshipGroupRecord record = change.forChangingData();
             record.setInUse( true );
@@ -77,7 +78,7 @@ public class RelationshipGroupGetter
             record.setOwningNode( node.getId() );
 
             // Attach it...
-            RecordProxy<Long, RelationshipGroupRecord, Integer> closestPreviousChange = existingGroup.closestPrevious();
+            RecordProxy<RelationshipGroupRecord, Integer> closestPreviousChange = existingGroup.closestPrevious();
             if ( closestPreviousChange != null )
             {   // ...after the closest previous one
                 RelationshipGroupRecord closestPrevious = closestPreviousChange.forChangingLinkage();
@@ -103,21 +104,22 @@ public class RelationshipGroupGetter
 
     public static class RelationshipGroupPosition
     {
-        private final RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious, group;
+        private final RecordProxy<RelationshipGroupRecord, Integer> closestPrevious;
+        private final RecordProxy<RelationshipGroupRecord, Integer> group;
 
-        public RelationshipGroupPosition( RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious,
-                RecordProxy<Long, RelationshipGroupRecord, Integer> group )
+        public RelationshipGroupPosition( RecordProxy<RelationshipGroupRecord, Integer> closestPrevious,
+                RecordProxy<RelationshipGroupRecord, Integer> group )
         {
             this.closestPrevious = closestPrevious;
             this.group = group;
         }
 
-        public RecordProxy<Long, RelationshipGroupRecord, Integer> group()
+        public RecordProxy<RelationshipGroupRecord, Integer> group()
         {
             return group;
         }
 
-        public RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious()
+        public RecordProxy<RelationshipGroupRecord, Integer> closestPrevious()
         {
             return closestPrevious;
         }

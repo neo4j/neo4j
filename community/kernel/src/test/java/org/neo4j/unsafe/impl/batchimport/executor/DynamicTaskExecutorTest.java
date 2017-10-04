@@ -29,10 +29,9 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.Race;
-import org.neo4j.test.RepeatRule;
-import org.neo4j.test.RepeatRule.Repeat;
+import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.test.rule.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -263,14 +262,10 @@ public class DynamicTaskExecutorTest
         // WHEN
         try ( OtherThreadExecutor<Void> closer = new OtherThreadExecutor<>( "closer", null ) )
         {
-            Future<Void> shutdown = closer.executeDontWait( new WorkerCommand<Void,Void>()
+            Future<Void> shutdown = closer.executeDontWait( state ->
             {
-                @Override
-                public Void doWork( Void state ) throws Exception
-                {
-                    executor.close();
-                    return null;
-                }
+                executor.close();
+                return null;
             } );
             while ( !closer.waitUntilWaiting().isAt( DynamicTaskExecutor.class, "close" ) )
             {

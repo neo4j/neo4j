@@ -17,13 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.configuration;
 
 import java.util.Map;
+
+import javax.annotation.Nonnull;
 
 import org.neo4j.logging.Log;
 
 public interface ConfigurationMigrator
 {
-    Map<String, String> apply(Map<String, String> rawConfiguration, Log log);
+    @Nonnull
+    Map<String,String> apply( @Nonnull Map<String,String> rawConfiguration, @Nonnull Log log );
 }

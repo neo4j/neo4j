@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
@@ -52,9 +52,9 @@ public class ClusterRule extends ExternalResource
     private Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
     private Map<String,String> readReplicaParams = stringMap();
     private Map<String,IntFunction<String>> instanceReadReplicaParams = new HashMap<>();
-    private String recordFormat = StandardV3_0.NAME;
+    private String recordFormat = Standard.LATEST_NAME;
     private IpFamily ipFamily = IPV4;
-    private boolean useWildcard = false;
+    private boolean useWildcard;
 
     public ClusterRule( Class<?> testClass )
     {
@@ -201,6 +201,12 @@ public class ClusterRule extends ExternalResource
     public ClusterRule withRecordFormat( String recordFormat )
     {
         this.recordFormat = recordFormat;
+        return this;
+    }
+
+    public ClusterRule withClusterDirectory( File clusterDirectory )
+    {
+        this.clusterDirectory = clusterDirectory;
         return this;
     }
 

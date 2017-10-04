@@ -25,7 +25,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -46,14 +45,14 @@ import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.management.repr.JmxDomainRepresentation;
 import org.neo4j.server.rest.management.repr.JmxMBeanRepresentation;
 import org.neo4j.server.rest.management.repr.ServiceDefinitionRepresentation;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.OutputFormat;
 
-@Path(JmxService.ROOT_PATH)
+@Path( JmxService.ROOT_PATH )
 public class JmxService implements AdvertisableService
 {
     public static final String ROOT_PATH = "server/jmx";
@@ -84,7 +83,7 @@ public class JmxService implements AdvertisableService
     }
 
     @GET
-    @Path(DOMAINS_PATH)
+    @Path( DOMAINS_PATH )
     public Response listDomains() throws NullPointerException
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -93,8 +92,8 @@ public class JmxService implements AdvertisableService
     }
 
     @GET
-    @Path(DOMAIN_TEMPLATE)
-    public Response getDomain( @PathParam("domain") String domainName )
+    @Path( DOMAIN_TEMPLATE )
+    public Response getDomain( @PathParam( "domain" ) String domainName )
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
@@ -113,8 +112,8 @@ public class JmxService implements AdvertisableService
     }
 
     @GET
-    @Path(BEAN_TEMPLATE)
-    public Response getBean( @PathParam("domain") String domainName, @PathParam("objectName") String objectName )
+    @Path( BEAN_TEMPLATE )
+    public Response getBean( @PathParam( "domain" ) String domainName, @PathParam( "objectName" ) String objectName )
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
@@ -140,9 +139,9 @@ public class JmxService implements AdvertisableService
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path(QUERY_PATH)
-    @SuppressWarnings("unchecked")
+    @Consumes( MediaType.APPLICATION_JSON )
+    @Path( QUERY_PATH )
+    @SuppressWarnings( "unchecked" )
     public Response queryBeans( String query )
     {
         try
@@ -175,17 +174,17 @@ public class JmxService implements AdvertisableService
     }
 
     @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @Path(QUERY_PATH)
-    public Response formQueryBeans( @FormParam("value") String data )
+    @Produces( MediaType.APPLICATION_JSON )
+    @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
+    @Path( QUERY_PATH )
+    public Response formQueryBeans( @FormParam( "value" ) String data )
     {
         return queryBeans( data );
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(KERNEL_NAME_PATH)
+    @Produces( MediaType.APPLICATION_JSON )
+    @Path( KERNEL_NAME_PATH )
     public Response currentKernelInstance( @Context Database database )
     {
         Kernel kernelBean = database.getGraph().getDependencyResolver().resolveDependency( JmxKernelExtension.class )

@@ -55,6 +55,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -165,9 +166,11 @@ public class HighAvailabilityModeSwitcherTest
         SwitchToMaster switchToMaster = mock( SwitchToMaster.class );
 
         when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ),
-                any( CancellationRequest.class ) ) ).thenAnswer( invocationOnMock -> {
+                any( CancellationRequest.class ) ) )
+                .thenAnswer( invocationOnMock ->
+                {
                     switching.countDown();
-                    CancellationRequest cancel = (CancellationRequest) invocationOnMock.getArguments()[3];
+                    CancellationRequest cancel = invocationOnMock.getArgument( 3 );
                     if ( firstSwitch.get() )
                     {
                         while ( !cancel.cancellationRequested() )
@@ -234,18 +237,19 @@ public class HighAvailabilityModeSwitcherTest
 
                 when( executor.submit( any( Runnable.class ) ) ).thenAnswer(
                         (Answer<Future<?>>) invocation ->
-                                realExecutor.submit( (Runnable) () ->
-                                        ((Runnable) invocation.getArguments()[0]).run() ) );
+                                realExecutor.submit( () -> ((Runnable) invocation.getArgument( 0 )).run() ) );
 
                 when( executor.schedule( any( Runnable.class ), anyLong(), any( TimeUnit.class ) ) ).thenAnswer(
-                        (Answer<Future<?>>) invocation -> {
-                            realExecutor.submit( (Callable<Void>) () -> {
+                        (Answer<Future<?>>) invocation ->
+                        {
+                            realExecutor.submit( (Callable<Void>) () ->
+                            {
                                 firstMasterAvailableHandled.countDown();
 
                                 // wait until the second masterIsAvailable comes and then call switchToSlave
                                 // method
                                 secondMasterAvailableComes.await();
-                                ((Runnable) invocation.getArguments()[0]).run();
+                                ((Runnable) invocation.getArgument( 0 )).run();
                                 secondMasterAvailableHandled.countDown();
                                 return null;
                             } );
@@ -316,14 +320,16 @@ public class HighAvailabilityModeSwitcherTest
         toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
 
         when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ), any(
-                CancellationRequest.class ) ) ).thenAnswer( invocation -> {
+                CancellationRequest.class ) ) ).thenAnswer( invocation ->
+                {
                     firstCallMade.countDown();
                     waitForSecondMessage.await();
                     throw new MismatchingStoreIdException( StoreId.DEFAULT, StoreId.DEFAULT );
-                } ).thenAnswer( invocation -> {
-                    secondCallMade.countDown();
-                    return URI.create( "ha://server3" );
-                } );
+                } ).thenAnswer( invocation ->
+                    {
+                        secondCallMade.countDown();
+                        return URI.create( "ha://server3" );
+                    } );
 
         // When
 
@@ -434,7 +440,7 @@ public class HighAvailabilityModeSwitcherTest
     {
         // Given
         SwitchToSlaveCopyThenBranch switchToSlave = mock( SwitchToSlaveCopyThenBranch.class );
-        when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ),
+        when( switchToSlave.switchToSlave( any( LifeSupport.class ), isNull(), any( URI.class ),
                 any( CancellationRequest.class ) ) ).thenReturn( URI.create( "http://localhost" ) );
         ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
         Election election = mock( Election.class );
@@ -451,8 +457,9 @@ public class HighAvailabilityModeSwitcherTest
             {
                 ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
 
-                doAnswer( invocation -> {
-                    ((Runnable) invocation.getArguments()[0]).run();
+                doAnswer( invocation ->
+                {
+                    ((Runnable) invocation.getArgument( 0 )).run();
                     modeSwitchHappened.countDown();
                     return mock( Future.class );
                 } ).when( executor ).submit( any( Runnable.class ) );

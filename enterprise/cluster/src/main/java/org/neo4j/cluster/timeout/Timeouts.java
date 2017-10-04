@@ -36,7 +36,7 @@ import org.neo4j.cluster.com.message.MessageType;
  */
 public class Timeouts implements MessageSource
 {
-    private long now = 0;
+    private long now;
 
     private MessageProcessor receiver;
     private TimeoutStrategy timeoutStrategy;
@@ -52,7 +52,7 @@ public class Timeouts implements MessageSource
     @Override
     public void addMessageProcessor( MessageProcessor messageProcessor )
     {
-        if(receiver != null)
+        if ( receiver != null )
         {
             throw new UnsupportedOperationException( "Timeouts does not yet support multiple message processors" );
         }

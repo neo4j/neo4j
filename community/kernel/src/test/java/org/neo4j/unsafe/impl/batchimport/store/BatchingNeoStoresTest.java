@@ -28,12 +28,13 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
@@ -44,8 +45,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
@@ -68,10 +67,10 @@ public class BatchingNeoStoresTest
         // WHEN
         try
         {
-            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.empty(),
+            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(),
                     NullLogProvider.getInstance() );
             BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
-                    NullLogService.getInstance(), EMPTY, Config.empty() );
+                    NullLogService.getInstance(), EMPTY, Config.defaults() );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )
@@ -86,12 +85,12 @@ public class BatchingNeoStoresTest
     {
         // GIVEN
         int size = 10;
-        Config config = new Config( stringMap(
+        Config config = Config.defaults( stringMap(
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( size ),
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( size ) ) );
 
         // WHEN
-        RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
+        RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats,
                 DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
@@ -104,7 +103,8 @@ public class BatchingNeoStoresTest
 
     private void someDataInTheDatabase()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fsr.get() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsr.get() ) )
                 .newImpermanentDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {

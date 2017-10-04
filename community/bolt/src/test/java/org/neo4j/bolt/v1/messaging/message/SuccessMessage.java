@@ -20,14 +20,13 @@
 package org.neo4j.bolt.v1.messaging.message;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
-
-import java.util.Map;
+import org.neo4j.values.virtual.MapValue;
 
 public class SuccessMessage implements ResponseMessage
 {
-    private final Map<String,Object> metadata;
+    private final MapValue metadata;
 
-    public SuccessMessage( Map<String,Object> metadata )
+    public SuccessMessage( MapValue metadata )
     {
         this.metadata = metadata;
     }
@@ -70,7 +69,7 @@ public class SuccessMessage implements ResponseMessage
                '}';
     }
 
-    public Map<String,Object> meta()
+    public MapValue meta()
     {
         return metadata;
     }

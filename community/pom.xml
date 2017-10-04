@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>community-build</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Community Build</name>
   <packaging>pom</packaging>
@@ -18,39 +18,31 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>community-build</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs-plugin.skip>true</docs-plugin.skip>
-    <componentversion.skip>true</componentversion.skip>
   </properties>
-
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j</url>
-  </scm>
 
   <modules>
     <module>common</module>
+    <module>configuration</module>
     <module>resource</module>
     <module>collections</module>
     <module>primitive-collections</module>
     <module>graphdb-api</module>
     <module>unsafe</module>
     <module>io</module>
+    <module>kernel-api</module>
     <module>csv</module>
     <module>logging</module>
     <module>security</module>
     <module>neo4j-slf4j</module>
     <module>codegen</module>
+    <module>index</module>
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>
-    <module>monitor-logging</module>
     <module>lucene-index</module>
     <module>lucene-index-upgrade</module>
     <module>graph-algo</module>
-    <module>graph-matching</module>
     <module>neo4j</module>
     <module>neo4j-community</module>
     <module>shell</module>
@@ -65,6 +57,8 @@
     <module>dbms</module>
     <module>command-line</module>
     <module>procedure-compiler</module>
+    <module>values</module>
+    <module>ssl</module>
   </modules>
 
   <licenses>

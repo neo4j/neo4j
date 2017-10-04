@@ -25,8 +25,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -41,6 +39,14 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NeoStoreConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
@@ -69,7 +75,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
@@ -126,7 +131,7 @@ public class ExecutionOrderIntegrationTest
 
     private Config getTuningConfiguration()
     {
-        return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+        return Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
                 GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
     }
 
@@ -140,7 +145,7 @@ public class ExecutionOrderIntegrationTest
         private final Map<String, Throwable> data = new HashMap<>();
         private final Map<String, Integer> duplicates = new HashMap<>();
 
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+        @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
         void log( PendingReferenceCheck<?> check, InvocationOnMock invocation )
         {
             Method method = invocation.getMethod();
@@ -174,43 +179,6 @@ public class ExecutionOrderIntegrationTest
         }
     }
 
-    private static void assertSameChecks( Map<String, Throwable> singlePassChecks,
-                                          Map<String, Throwable> multiPassChecks )
-    {
-        if ( !singlePassChecks.keySet().equals( multiPassChecks.keySet() ) )
-        {
-            Map<String, Throwable> missing = new HashMap<>( singlePassChecks );
-            Map<String, Throwable> extras = new HashMap<>( multiPassChecks );
-            missing.keySet().removeAll( multiPassChecks.keySet() );
-            extras.keySet().removeAll( singlePassChecks.keySet() );
-
-            StringBuilder headers = new StringBuilder("\n");
-            StringWriter diff = new StringWriter();
-            PrintWriter writer = new PrintWriter( diff );
-            if ( !missing.isEmpty() )
-            {
-                writer.append( "These expected checks were missing:\n" );
-                for ( Map.Entry<String, Throwable> check : missing.entrySet() )
-                {
-                    writer.append( "  " );
-                    headers.append( "Missing: " ).append( check.getKey() ).append( "\n" );
-                    check.getValue().printStackTrace( writer );
-                }
-            }
-            if ( !extras.isEmpty() )
-            {
-                writer.append( "These extra checks were not expected:\n" );
-                for ( Map.Entry<String, Throwable> check : extras.entrySet() )
-                {
-                    writer.append( "  " );
-                    headers.append( "Unexpected: " ).append( check.getKey() ).append( "\n" );
-                    check.getValue().printStackTrace( writer );
-                }
-            }
-            fail( headers.toString() + diff.toString() );
-        }
-    }
-
     private static class LogDecorator implements CheckDecorator
     {
         private final InvocationLog log;
@@ -232,64 +200,57 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
-                OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
+        public OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> decorateNeoStoreChecker(
+                OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
-                OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
+        public OwningRecordCheck<NodeRecord, NodeConsistencyReport> decorateNodeChecker(
+                OwningRecordCheck<NodeRecord, NodeConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
-                OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
+        public OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> decorateRelationshipChecker(
+                OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> decoratePropertyChecker(
-                RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
+        public RecordCheck<PropertyRecord, PropertyConsistencyReport> decoratePropertyChecker(
+                RecordCheck<PropertyRecord, PropertyConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
-                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
+        public RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+                RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
-                RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+                RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
-                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
+        public RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
-                RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
-        public RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
-                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker )
+        public RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
+                RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -337,7 +298,7 @@ public class ExecutionOrderIntegrationTest
             this.log = log;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public void dispatch( PendingReferenceCheck<T> reporter )
         {
@@ -353,7 +314,7 @@ public class ExecutionOrderIntegrationTest
         private final PendingReferenceCheck<T> reporter;
         private final InvocationLog log;
 
-        public ReporterSpy( RecordReference<T> reference, PendingReferenceCheck<T> reporter, InvocationLog log )
+        ReporterSpy( RecordReference<T> reference, PendingReferenceCheck<T> reporter, InvocationLog log )
         {
             this.reference = reference;
             this.reporter = reporter;

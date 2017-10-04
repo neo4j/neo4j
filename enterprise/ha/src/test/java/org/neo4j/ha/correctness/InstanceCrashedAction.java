@@ -40,7 +40,7 @@ public class InstanceCrashedAction implements ClusterAction
     @Override
     public String toString()
     {
-        return "[CRASH "+instanceUri+"]";
+        return "[CRASH " + instanceUri + "]";
     }
 
     @Override

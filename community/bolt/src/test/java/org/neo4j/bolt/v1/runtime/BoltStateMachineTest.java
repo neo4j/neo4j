@@ -22,8 +22,8 @@ package org.neo4j.bolt.v1.runtime;
 import org.junit.Test;
 
 import java.time.Clock;
-import java.util.Collections;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -77,7 +77,7 @@ public class BoltStateMachineTest
             verifyOneResponse( initialState, BoltStateMachine::ackFailure );
             verifyOneResponse( initialState, BoltStateMachine::reset );
             verifyOneResponse( initialState,
-                    ( machine, recorder ) -> machine.run( "statement", emptyMap(), recorder ) );
+                    ( machine, recorder ) -> machine.run( "statement", EMPTY_PARAMS, recorder ) );
             verifyOneResponse( initialState, BoltStateMachine::discardAll );
             verifyOneResponse( initialState, BoltStateMachine::pullAll );
         }
@@ -144,7 +144,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachineWithTransaction( READY );
 
         // ...and an open result
-        machine.run( "RETURN 1", emptyMap(), nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
 
         // Then
         assertThat( machine, canReset() );
@@ -157,7 +157,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachine( READY );
 
         // ...and an open result
-        machine.run( "RETURN 1", emptyMap(), nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
 
         // Then
         assertThat( machine, canReset() );
@@ -183,7 +183,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachine( FAILED );
 
         // When
-        machine.run( "ROLLBACK", emptyMap(), nullResponseHandler() );
+        machine.run( "ROLLBACK", EMPTY_PARAMS, nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( FAILED ) );
@@ -430,7 +430,7 @@ public class BoltStateMachineTest
         machine.state = READY;
 
         // When & Then
-        assertException( () -> machine.run( "THIS WILL BE IGNORED", Collections.emptyMap(), nullResponseHandler() ),
+        assertException( () -> machine.run( "THIS WILL BE IGNORED", EMPTY_PARAMS, nullResponseHandler() ),
                 BoltConnectionAuthFatality.class, "Auth expired!" );
     }
 
@@ -468,7 +468,7 @@ public class BoltStateMachineTest
         assertTrue( machine.ctx.closed );
 
         //But someone runs a query and thus opens a new transaction
-        statementProcessor.run( "RETURN 1", Collections.emptyMap() );
+        statementProcessor.run( "RETURN 1", EMPTY_PARAMS );
         assertThat( statementProcessor.ctx.currentTransaction, notNullValue() );
 
         // Then, when we close again we should make sure the transaction is closed againg
@@ -481,12 +481,25 @@ public class BoltStateMachineTest
     {
         // Given
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
-        final BoltStateMachine machine = new BoltStateMachine( spi, null, Clock.systemUTC() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        final BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC() );
 
         // When
         machine.close();
 
         // Then
         verify( spi ).onTerminate( machine );
+    }
+
+    @Test
+    public void shouldCloseBoltChannelWhenClosed()
+    {
+        BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC() );
+
+        machine.close();
+
+        verify( boltChannel ).close();
     }
 }

@@ -44,11 +44,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -62,9 +65,14 @@ public class FileUtils
 {
     private static final int WINDOWS_RETRY_COUNT = 5;
 
+    private FileUtils()
+    {
+        throw new AssertionError();
+    }
+
     public static void deleteRecursively( File directory ) throws IOException
     {
-        if ( ! directory.exists() )
+        if ( !directory.exists() )
         {
             return;
         }
@@ -132,12 +140,12 @@ public class FileUtils
         if ( !toMove.exists() )
         {
             throw new FileNotFoundException( "Source file[" + toMove.getAbsolutePath()
-                    + "] not found" );
+                                             + "] not found" );
         }
         if ( target.exists() )
         {
             throw new IOException( "Target file[" + target.getAbsolutePath()
-                    + "] already exists" );
+                                   + "] already exists" );
         }
 
         if ( toMove.renameTo( target ) )
@@ -257,7 +265,7 @@ public class FileUtils
         //noinspection ResultOfMethodCallIgnored
         dstFile.getParentFile().mkdirs();
         try ( FileInputStream input = new FileInputStream( srcFile );
-              FileOutputStream output = new FileOutputStream( dstFile ); )
+              FileOutputStream output = new FileOutputStream( dstFile ) )
         {
             int bufferSize = 1024;
             byte[] buffer = new byte[bufferSize];
@@ -279,7 +287,7 @@ public class FileUtils
         copyRecursively( fromDirectory, toDirectory, null );
     }
 
-    public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter) throws IOException
+    public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter ) throws IOException
     {
         for ( File fromFile : fromDirectory.listFiles( filter ) )
         {
@@ -313,12 +321,12 @@ public class FileUtils
 
     public static BufferedReader newBufferedFileReader( File file, Charset charset ) throws FileNotFoundException
     {
-        return new BufferedReader( new InputStreamReader( new FileInputStream( file ), charset) );
+        return new BufferedReader( new InputStreamReader( new FileInputStream( file ), charset ) );
     }
 
     public static PrintWriter newFilePrintWriter( File file, Charset charset ) throws FileNotFoundException
     {
-        return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset) );
+        return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset ) );
     }
 
     public static File path( String root, String... path )
@@ -333,6 +341,91 @@ public class FileUtils
             root = new File( root, part );
         }
         return root;
+    }
+
+    /**
+     * Attempts to discern if the given path is mounted on a device that can likely sustain a very high IO throughput.
+     * <p>
+     * A high IO device is expected to have negligible seek time, if any, and be able to service multiple IO requests
+     * in parallel.
+     *
+     * @param pathOnDevice Any path, hypothetical or real, that once fully resolved, would exist on a storage device
+     * that either supports high IO, or not.
+     * @param defaultHunch The default hunch for whether the device supports high IO or not. This will be returned if
+     * we otherwise have no clue about the nature of the storage device.
+     * @return Our best-effort estimate for whether or not this device supports a high IO workload.
+     */
+    public static boolean highIODevice( Path pathOnDevice, boolean defaultHunch )
+    {
+        // This method has been manually tested and correctly identifies the high IO volumes on our test servers.
+        if ( SystemUtils.IS_OS_MAC )
+        {
+            // Most macs have flash storage, so let's assume true for them.
+            return true;
+        }
+
+        if ( SystemUtils.IS_OS_LINUX )
+        {
+            try
+            {
+                FileStore fileStore = Files.getFileStore( pathOnDevice );
+                String name = fileStore.name();
+                if ( name.equals( "tmpfs" ) || name.equals( "hugetlbfs" ) )
+                {
+                    // This is a purely in-memory device. It doesn't get faster than this.
+                    return true;
+                }
+
+                if ( name.startsWith( "/dev/nvme" ) )
+                {
+                    // This is probably an NVMe device. Anything on that protocol is most likely very fast.
+                    return true;
+                }
+
+                Path device = Paths.get( name ).toRealPath(); // Use toRealPath to resolve any symlinks.
+                Path deviceName = device.getName( device.getNameCount() - 1 );
+
+                Path rotational = rotationalPathFor( deviceName );
+                if ( Files.exists( rotational ) )
+                {
+                    return readFirstCharacter( rotational ) == '0';
+                }
+                else
+                {
+                    String namePart = deviceName.toString();
+                    int len = namePart.length();
+                    while ( Character.isDigit( namePart.charAt( len - 1 ) ) )
+                    {
+                        len--;
+                    }
+                    deviceName = Paths.get( namePart.substring( 0, len ) );
+                    rotational = rotationalPathFor( deviceName );
+                    if ( Files.exists( rotational ) )
+                    {
+                        return readFirstCharacter( rotational ) == '0';
+                    }
+                }
+            }
+            catch ( Exception e )
+            {
+                return defaultHunch;
+            }
+        }
+
+        return defaultHunch;
+    }
+
+    private static Path rotationalPathFor( Path deviceName )
+    {
+        return Paths.get( "/sys/block" ).resolve( deviceName ).resolve( "queue" ).resolve( "rotational" );
+    }
+
+    private static int readFirstCharacter( Path file ) throws IOException
+    {
+        try ( InputStream in = Files.newInputStream( file, StandardOpenOption.READ ) )
+        {
+            return in.read();
+        }
     }
 
     /**
@@ -422,19 +515,12 @@ public class FileUtils
 
     public static LineListener echo( final PrintStream target )
     {
-        return new LineListener()
-        {
-            @Override
-            public void line( String line )
-            {
-                target.println( line );
-            }
-        };
+        return target::println;
     }
 
     public static void readTextFile( File file, LineListener listener ) throws IOException
     {
-        try(BufferedReader reader = new BufferedReader( new FileReader( file ) );)
+        try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
         {
             String line;
             while ( (line = reader.readLine()) != null )
@@ -466,7 +552,7 @@ public class FileUtils
             {
                 if ( tries >= WINDOWS_RETRY_COUNT )
                 {
-                    throw new MaybeWindowsMemoryMappedFileReleaseProblem(e);
+                    throw new MaybeWindowsMemoryMappedFileReleaseProblem( e );
                 }
                 waitAndThenTriggerGC();
                 deleteFileWithRetries( file, tries + 1 );
@@ -480,28 +566,21 @@ public class FileUtils
 
     private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
     {
-        return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
-    }
-
-    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
-    {
-        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
-        {
-            super(e);
-        }
+        return e.getMessage()
+                .contains( "The process cannot access the file because it is being used by another process." );
     }
 
     /**
-    * Given a directory and a path under it, return filename of the path
-    * relative to the directory.
-    *
-    * @param baseDir The base directory, containing the storeFile
-    * @param storeFile The store file path, must be contained under
-    * <code>baseDir</code>
-    * @return The relative path of <code>storeFile</code> to
-    * <code>baseDir</code>
-    * @throws IOException As per {@link File#getCanonicalPath()}
-    */
+     * Given a directory and a path under it, return filename of the path
+     * relative to the directory.
+     *
+     * @param baseDir The base directory, containing the storeFile
+     * @param storeFile The store file path, must be contained under
+     * <code>baseDir</code>
+     * @return The relative path of <code>storeFile</code> to
+     * <code>baseDir</code>
+     * @throws IOException As per {@link File#getCanonicalPath()}
+     */
     public static String relativePath( File baseDir, File storeFile )
             throws IOException
     {
@@ -537,9 +616,9 @@ public class FileUtils
         long filePosition = position;
         long expectedEndPosition = filePosition + src.limit() - src.position();
         int bytesWritten;
-        while((filePosition += (bytesWritten = channel.write( src, filePosition ))) < expectedEndPosition)
+        while ( (filePosition += bytesWritten = channel.write( src, filePosition )) < expectedEndPosition )
         {
-            if( bytesWritten <= 0 )
+            if ( bytesWritten <= 0 )
             {
                 throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
             }
@@ -550,9 +629,9 @@ public class FileUtils
     {
         long bytesToWrite = src.limit() - src.position();
         int bytesWritten;
-        while((bytesToWrite -= (bytesWritten = channel.write( src ))) > 0)
+        while ( (bytesToWrite -= bytesWritten = channel.write( src )) > 0 )
         {
-            if( bytesWritten <= 0 )
+            if ( bytesWritten <= 0 )
             {
                 throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
             }
@@ -564,11 +643,20 @@ public class FileUtils
         OpenOption[] options;
         switch ( mode )
         {
-        case "r": options = new OpenOption[]{READ}; break;
-        case "rw": options = new OpenOption[] {CREATE, READ, WRITE}; break;
-        case "rws": options = new OpenOption[] {CREATE, READ, WRITE, SYNC}; break;
-        case "rwd": options = new OpenOption[] {CREATE, READ, WRITE, DSYNC}; break;
-        default: throw new IllegalArgumentException( "Unsupported mode: " + mode );
+        case "r":
+            options = new OpenOption[]{READ};
+            break;
+        case "rw":
+            options = new OpenOption[]{CREATE, READ, WRITE};
+            break;
+        case "rws":
+            options = new OpenOption[]{CREATE, READ, WRITE, SYNC};
+            break;
+        case "rwd":
+            options = new OpenOption[]{CREATE, READ, WRITE, DSYNC};
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported mode: " + mode );
         }
         return options;
     }
@@ -585,6 +673,7 @@ public class FileUtils
 
     /**
      * Check if directory is empty.
+     *
      * @param directory - directory to check
      * @return false if directory exists and empty, true otherwise.
      * @throws IllegalArgumentException if specified directory represent a file
@@ -614,12 +703,50 @@ public class FileUtils
         OpenOption[] options;
         if ( append )
         {
-            options = new OpenOption[] {CREATE, WRITE, APPEND};
+            options = new OpenOption[]{CREATE, WRITE, APPEND};
         }
         else
         {
-            options = new OpenOption[] {CREATE, WRITE};
+            options = new OpenOption[]{CREATE, WRITE};
         }
         return Files.newOutputStream( path, options );
+    }
+
+    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
+    {
+        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
+        {
+            super( e );
+        }
+    }
+
+    /**
+     * Calculates the size of a given directory or file given the provided abstract filesystem.
+     *
+     * @param fs the filesystem abstraction to use
+     * @param path to the file or directory.
+     * @return the size, in bytes, of the file or the total size of the content in the directory, including
+     * subdirectories.
+     */
+    public static long size( FileSystemAbstraction fs, File path )
+    {
+        if ( fs.isDirectory( path ) )
+        {
+            long size = 0L;
+            File[] files = fs.listFiles( path );
+            if ( files == null )
+            {
+                return 0L;
+            }
+            for ( File child : files )
+            {
+                size += size( fs, child );
+            }
+            return size;
+        }
+        else
+        {
+            return fs.getFileSize( path );
+        }
     }
 }

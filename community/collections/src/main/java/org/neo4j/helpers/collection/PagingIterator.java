@@ -53,7 +53,7 @@ public class PagingIterator<T> extends CachingIterator<T>
      */
     public int page()
     {
-        return position()/pageSize;
+        return position() / pageSize;
     }
 
     /**
@@ -66,7 +66,7 @@ public class PagingIterator<T> extends CachingIterator<T>
     public int page( int newPage )
     {
         int previousPage = page();
-        position( newPage*pageSize );
+        position( newPage * pageSize );
         return previousPage;
     }
 
@@ -86,7 +86,7 @@ public class PagingIterator<T> extends CachingIterator<T>
         page( page() );
         return new PrefetchingIterator<T>()
         {
-            private final int end = position()+pageSize;
+            private final int end = position() + pageSize;
 
             @Override
             protected T fetchNextOrNull()

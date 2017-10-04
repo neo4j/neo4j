@@ -34,7 +34,8 @@ import java.util.function.Function;
 public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
 {
     private final CopyOnWriteArraySet<LogProvider> logProviders;
-    private final Map<DuplicatingLog, Map<LogProvider, Log>> duplicatingLogCache = Collections.synchronizedMap( new WeakHashMap<DuplicatingLog, Map<LogProvider, Log>>() );
+    private final Map<DuplicatingLog,Map<LogProvider,Log>> duplicatingLogCache =
+            Collections.synchronizedMap( new WeakHashMap<DuplicatingLog,Map<LogProvider,Log>>() );
 
     /**
      * @param logProviders A list of {@link LogProvider} instances that messages should be duplicated to
@@ -67,17 +68,13 @@ public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
     @Override
     protected DuplicatingLog buildLog( final Class loggingClass )
     {
-        return buildLog( logProvider -> {
-            return logProvider.getLog( loggingClass );
-        } );
+        return buildLog( logProvider -> logProvider.getLog( loggingClass ) );
     }
 
     @Override
     protected DuplicatingLog buildLog( final String name )
     {
-        return buildLog( logProvider -> {
-            return logProvider.getLog( name );
-        } );
+        return buildLog( logProvider -> logProvider.getLog( name ) );
     }
 
     private DuplicatingLog buildLog( Function<LogProvider, Log> logConstructor )

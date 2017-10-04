@@ -32,6 +32,8 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,14 +52,14 @@ public class BoltQueryLoggingIT
         String tmpDir = createTempDir().getAbsolutePath();
         this.neo4j = new Neo4jRule()
             .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( ServerSettings.certificates_directory.name(), tmpDir )
+            .withConfig( LegacySslPolicyConfig.certificates_directory.name(), tmpDir )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
             .withConfig( GraphDatabaseSettings.logs_directory, tmpDir )
             .withConfig( GraphDatabaseSettings.log_queries, "true")
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).type, "BOLT" )
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).enabled, "true" )
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).address, "localhost:8776" )
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).encryption_level, "DISABLED" );
+            .withConfig( new BoltConnector( "bolt" ).type, "BOLT" )
+            .withConfig( new BoltConnector( "bolt" ).enabled, "true" )
+            .withConfig( new BoltConnector( "bolt" ).address, "localhost:8776" )
+            .withConfig( new BoltConnector( "bolt" ).encryption_level, "DISABLED" );
     }
 
     @Test
@@ -180,13 +182,14 @@ public class BoltQueryLoggingIT
 
     private static byte[] read( DataInputStream dataIn, int howMany ) throws IOException
     {
-        assert( howMany > 0 );
+        assert howMany > 0;
 
         byte[] buffer = new byte[howMany];
         int offset = 0;
-        while (offset < howMany) {
-            int read = dataIn.read( buffer, offset, howMany-offset );
-            if (read == 0)
+        while ( offset < howMany )
+        {
+            int read = dataIn.read( buffer, offset, howMany - offset );
+            if ( read == 0 )
             {
                 Thread.yield();
             }

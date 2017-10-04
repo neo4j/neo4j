@@ -51,9 +51,9 @@ public class IoThroughputStat implements Stat
     public long asLong()
     {
         long endTime = this.endTime != 0 ? this.endTime : currentTimeMillis();
-        long totalTime = endTime-startTime;
-        int seconds = (int) (totalTime/1000);
-        return seconds > 0 ? position/seconds : -1;
+        long totalTime = endTime - startTime;
+        int seconds = (int) (totalTime / 1000);
+        return seconds > 0 ? position / seconds : -1;
     }
 
     @Override

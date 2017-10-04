@@ -465,14 +465,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
         catch ( final IllegalProtocolVersionException e )
         {   // Version mismatch, fail with a good exception back to the client
-            submitSilent( targetCallExecutor, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    writeFailureResponse( e, newChunkingBuffer( channel ) );
-                }
-            } );
+            submitSilent( targetCallExecutor, () -> writeFailureResponse( e, newChunkingBuffer( channel ) ) );
             return null;
         }
         return (byte) (header[0] & 0x1);
@@ -630,7 +623,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         final ChannelBuffer buffer;
         final RequestType<T> type;
 
-        public PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
+        PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
         {
             this.type = type;
             this.context = context;

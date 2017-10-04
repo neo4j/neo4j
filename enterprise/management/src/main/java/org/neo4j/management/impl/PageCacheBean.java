@@ -28,7 +28,7 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.management.PageCache;
 
-@Service.Implementation(ManagementBeanProvider.class)
+@Service.Implementation( ManagementBeanProvider.class )
 public final class PageCacheBean extends ManagementBeanProvider
 {
     public PageCacheBean()

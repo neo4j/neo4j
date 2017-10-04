@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 /**
  * Takes an Iterator and chops it up into array batches downstream.
  */
-public abstract class IteratorBatcherStep<T> extends IoProducerStep
+public abstract class IteratorBatcherStep<T> extends PullingProducerStep
 {
     private final Iterator<T> data;
     private final Class<T> itemClass;

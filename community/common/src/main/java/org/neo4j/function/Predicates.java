@@ -19,8 +19,10 @@
  */
 package org.neo4j.function;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -31,6 +33,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
+import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
+import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
+
 /**
  * Constructors for basic {@link Predicate} types
  */
@@ -40,8 +45,12 @@ public class Predicates
 
     private static final Predicate FALSE = item -> false;
 
-    private static final Predicate NOT_NULL = item -> item != null;
+    private static final Predicate NOT_NULL = Objects::nonNull;
     private static final int DEFAULT_POLL_INTERVAL = 20;
+
+    private Predicates()
+    {
+    }
 
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysTrue()
@@ -69,7 +78,8 @@ public class Predicates
 
     public static <T> Predicate<T> all( final Iterable<Predicate<T>> predicates )
     {
-        return item -> {
+        return item ->
+        {
             for ( Predicate<T> predicate : predicates )
             {
                 if ( !predicate.test( item ) )
@@ -89,7 +99,8 @@ public class Predicates
 
     public static <T> Predicate<T> any( final Iterable<Predicate<T>> predicates )
     {
-        return item -> {
+        return item ->
+        {
             for ( Predicate<T> predicate : predicates )
             {
                 if ( predicate.test( item ) )
@@ -108,7 +119,8 @@ public class Predicates
 
     public static <T> Predicate<T> instanceOfAny( final Class... classes )
     {
-        return item -> {
+        return item ->
+        {
             if ( item != null )
             {
                 for ( Class clazz : classes )
@@ -146,7 +158,7 @@ public class Predicates
     public static <TYPE> TYPE await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout,
             TimeUnit timeoutUnit ) throws TimeoutException
     {
-        return awaitEx( supplier::get, predicate::test, timeout, timeoutUnit );
+        return awaitEx( throwingSupplier( supplier ), throwingPredicate( predicate ), timeout, timeoutUnit );
     }
 
     public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,EXCEPTION> supplier,
@@ -158,8 +170,8 @@ public class Predicates
         return composed.lastInput();
     }
 
-    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,EXCEPTION> supplier,
-            ThrowingPredicate<TYPE,EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit )
+    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,? extends EXCEPTION> supplier,
+            ThrowingPredicate<TYPE, ? extends EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit )
             throws TimeoutException, EXCEPTION
     {
         Suppliers.ThrowingCapturingSupplier<TYPE,EXCEPTION> composed = Suppliers.compose( supplier, predicate );
@@ -194,16 +206,16 @@ public class Predicates
         }
     }
 
-    public static boolean tryAwait( Supplier<Boolean> condition, long timeout, TimeUnit timeoutUnit, long pollInterval,
-            TimeUnit pollUnit )
-    {
-        return tryAwaitEx( condition::get, timeout, timeoutUnit, pollInterval, pollUnit );
-    }
-
     public static <EXCEPTION extends Exception> boolean tryAwaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
             long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit ) throws EXCEPTION
     {
-        long deadlineMillis = System.currentTimeMillis() + timeoutUnit.toMillis( timeout );
+        return tryAwaitEx( condition, timeout, timeoutUnit, pollInterval, pollUnit, Clock.systemUTC() );
+    }
+
+    public static <EXCEPTION extends Exception> boolean tryAwaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
+            long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit, Clock clock ) throws EXCEPTION
+    {
+        long deadlineMillis = clock.millis() + timeoutUnit.toMillis( timeout );
         long pollIntervalNanos = pollUnit.toNanos( pollInterval );
 
         do
@@ -214,7 +226,7 @@ public class Predicates
             }
             LockSupport.parkNanos( pollIntervalNanos );
         }
-        while ( System.currentTimeMillis() < deadlineMillis );
+        while ( clock.millis() < deadlineMillis );
         return false;
     }
 
@@ -232,6 +244,7 @@ public class Predicates
         while ( true );
     }
 
+    @SafeVarargs
     public static <T> Predicate<T> in( final T... allowed )
     {
         return in( Arrays.asList( allowed ) );
@@ -239,12 +252,13 @@ public class Predicates
 
     public static <T> Predicate<T> not( Predicate<T> predicate )
     {
-        return (t) -> !predicate.test( t );
+        return t -> !predicate.test( t );
     }
 
     public static <T> Predicate<T> in( final Iterable<T> allowed )
     {
-        return item -> {
+        return item ->
+        {
             for ( T allow : allowed )
             {
                 if ( allow.equals( item ) )
@@ -256,5 +270,20 @@ public class Predicates
         };
     }
 
-    public static IntPredicate ALWAYS_TRUE_INT = (value) -> true;
+    public static IntPredicate ALWAYS_TRUE_INT = v -> true;
+
+    public static IntPredicate any( int[] values )
+    {
+        return v ->
+        {
+            for ( int value : values )
+            {
+                if ( v == value )
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }
 }

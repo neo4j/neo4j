@@ -26,7 +26,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
@@ -46,12 +46,12 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
     private Set<T> removedElements;
     private Predicate<T> filter;
 
-    public SuperDiffSets()
+    SuperDiffSets()
     {
         this( null, null );
     }
 
-    public SuperDiffSets( Set<T> addedElements, Set<T> removedElements )
+    SuperDiffSets( Set<T> addedElements, Set<T> removedElements )
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;
@@ -59,7 +59,7 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
 
     @Override
     public void accept( DiffSetsVisitor<T> visitor )
-            throws ConstraintValidationKernelException, CreateConstraintFailureException
+            throws ConstraintValidationException, CreateConstraintFailureException
     {
         for ( T element : added( false ) )
         {
@@ -208,7 +208,7 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
 
     private Set<T> resultSet( Set<T> coll )
     {
-        return coll == null ? Collections.<T>emptySet() : Collections.unmodifiableSet( coll );
+        return coll == null ? Collections.emptySet() : Collections.unmodifiableSet( coll );
     }
 
     public boolean unRemove( T item )
@@ -218,11 +218,11 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
 
     public void clear()
     {
-        if(addedElements != null)
+        if ( addedElements != null )
         {
             addedElements.clear();
         }
-        if(removedElements != null)
+        if ( removedElements != null )
         {
             removedElements.clear();
         }
@@ -250,13 +250,8 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
         {
             return false;
         }
-        if ( removedElements != null ? !removedElements.equals( diffSets.removedElements ) : diffSets.removedElements
-                != null )
-        {
-            return false;
-        }
-
-        return true;
+        return removedElements != null ? removedElements.equals( diffSets.removedElements )
+                                       : diffSets.removedElements == null;
     }
 
     @Override

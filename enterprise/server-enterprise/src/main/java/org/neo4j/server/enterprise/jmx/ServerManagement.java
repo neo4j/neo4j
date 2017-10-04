@@ -35,7 +35,8 @@ public final class ServerManagement implements ServerManagementMBean
     @Override
     public synchronized void restartServer()
     {
-        final Log log = server.getDatabase().getGraph().getDependencyResolver().resolveDependency( LogService.class ).getUserLog( getClass() );
+        final Log log = server.getDatabase().getGraph().getDependencyResolver().resolveDependency( LogService.class )
+                .getUserLog( getClass() );
 
         Thread thread = new Thread( "Restart server thread" )
         {

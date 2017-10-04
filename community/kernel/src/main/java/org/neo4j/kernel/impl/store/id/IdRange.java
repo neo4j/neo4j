@@ -53,7 +53,18 @@ public class IdRange
     @Override
     public String toString()
     {
-        return "IdRange[" + rangeStart + "-" + (rangeStart+rangeLength-1) + ", defrag " + Arrays.toString( defragIds ) + "]";
+        return "IdRange[" + rangeStart + "-" + (rangeStart + rangeLength - 1) + ", defrag " +
+                Arrays.toString( defragIds ) + "]";
+    }
+
+    public int totalSize()
+    {
+        return defragIds.length + rangeLength;
+    }
+
+    public IdRangeIterator iterator()
+    {
+        return new IdRangeIterator( this );
     }
 
     @Override
@@ -77,5 +88,10 @@ public class IdRange
     public int hashCode()
     {
         return Objects.hash( defragIds, rangeStart, rangeLength );
+    }
+
+    public long getHighId()
+    {
+        return rangeStart + rangeLength;
     }
 }

@@ -25,5 +25,5 @@ public enum TestLabels implements Label
 {
     LABEL_ONE,
     LABEL_TWO,
-    LABEL_THREE;
+    LABEL_THREE
 }

@@ -28,29 +28,37 @@ import java.io.IOException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure;
 
 public class ConstraintIndexFailureIT
 {
+    private static final String INJECTED_FAILURE = "Injected failure";
+
     @Rule
     public final TestDirectory storeDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
     {
         // given
         dbWithConstraint();
-        storeIndexFailure( "Injected failure" );
+        storeIndexFailure( INJECTED_FAILURE );
 
         // when
         GraphDatabaseService db = startDatabase();
@@ -65,8 +73,10 @@ public class ConstraintIndexFailureIT
             // then
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getCause(), instanceOf( UnableToValidateConstraintKernelException.class ) );
-                assertThat( e.getCause().getCause().getMessage(), equalTo( "The index is in a failed state: 'Injected failure'.") );
+                assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
+                assertThat( e.getCause().getCause().getMessage(), allOf(
+                        containsString( "The index is in a failed state:" ),
+                        containsString( INJECTED_FAILURE ) ) );
             }
         }
         finally
@@ -100,10 +110,12 @@ public class ConstraintIndexFailureIT
 
     private void storeIndexFailure( String failure ) throws IOException
     {
-        File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
+        File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.directory() )
+                .forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
         PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
-                .withIndexRootFolder( luceneRootDirectory )
-                .withIndexIdentifier( "1" ).build();
+                .withFileSystem( fileSystemRule.get() )
+                .withIndexFolder( luceneIndexDirectory )
+                .build();
         indexStorage.storeIndexFailure( failure );
     }
 }

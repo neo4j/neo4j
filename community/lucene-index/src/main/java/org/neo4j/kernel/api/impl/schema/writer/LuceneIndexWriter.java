@@ -33,7 +33,7 @@ public interface LuceneIndexWriter
 {
     void addDocument( Document document ) throws IOException;
 
-    void addDocuments( Iterable<Document> document ) throws IOException;
+    void addDocuments( int numDocs, Iterable<Document> document ) throws IOException;
 
     void updateDocument( Term term, Document document ) throws IOException;
 

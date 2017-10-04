@@ -81,12 +81,7 @@ public class Vote
         {
             return false;
         }
-        if ( !voteCredentials.equals( vote.voteCredentials ) )
-        {
-            return false;
-        }
-
-        return true;
+        return voteCredentials.equals( vote.voteCredentials );
     }
 
     @Override

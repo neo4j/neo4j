@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.After;
-
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public class EphemeralFileSystemAbstractionTest extends FileSystemAbstractionTest
@@ -29,11 +27,5 @@ public class EphemeralFileSystemAbstractionTest extends FileSystemAbstractionTes
     protected FileSystemAbstraction buildFileSystemAbstraction()
     {
         return new EphemeralFileSystemAbstraction();
-    }
-
-    @After
-    public void tearDown()
-    {
-        ((EphemeralFileSystemAbstraction) fsa).shutdown();
     }
 }

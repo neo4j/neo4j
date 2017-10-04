@@ -33,6 +33,10 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
  */
 public class RecordDistributor
 {
+    private RecordDistributor()
+    {
+    }
+
     public static <RECORD> void distributeRecords(
             int numberOfThreads,
             String workerNames,
@@ -58,14 +62,10 @@ public class RecordDistributor
         }
 
         final int[] recsProcessed = new int[numberOfThreads];
-        RecordConsumer<RECORD> recordConsumer = new RecordConsumer<RECORD>()
+        RecordConsumer<RECORD> recordConsumer = ( record, qIndex ) ->
         {
-            @Override
-            public void accept( RECORD record, int qIndex ) throws InterruptedException
-            {
-                recordQ[qIndex].put( record );
-                recsProcessed[qIndex]++;
-            }
+            recordQ[qIndex].put( record );
+            recsProcessed[qIndex]++;
         };
 
         try

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Rule;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -26,12 +28,11 @@ import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Rule;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -43,9 +44,7 @@ import org.neo4j.test.server.SharedServerTestBase;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.web.Surface.PATH_NODES;
 import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
@@ -56,8 +55,6 @@ import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
-    protected static final String NODES = "http://localhost:7474/db/data/node/";
-
     @Rule
     public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
@@ -125,12 +122,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     protected static String getDataUri()
     {
-        return "http://localhost:7474/db/data/";
+        return "http://localhost:" + getLocalHttpPort() + "/db/data/";
     }
 
     protected String getDatabaseUri()
     {
-        return "http://localhost:7474/db/";
+        return "http://localhost:" + getLocalHttpPort() + "/db/";
     }
 
     protected String getNodeUri( Node node )
@@ -189,7 +186,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         Node[] nodes = {};
         ArrayList<Node> result = new ArrayList<>();
-        for (String name : names)
+        for ( String name : names )
         {
             result.add( getNode( name ) );
         }
@@ -212,14 +209,16 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public String getPropertiesUri( Relationship rel )
     {
-        return getRelationshipUri(rel)+  "/properties";
-    }
-    public String getPropertiesUri( Node node )
-    {
-        return getNodeUri( node )+  "/properties";
+        return getRelationshipUri( rel ) + "/properties";
     }
 
-    public RESTRequestGenerator gen() {
+    public String getPropertiesUri( Node node )
+    {
+        return getNodeUri( node ) + "/properties";
+    }
+
+    public RESTRequestGenerator gen()
+    {
         return gen.get();
     }
 
@@ -277,5 +276,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
+    }
+
+    public static int getLocalHttpPort()
+    {
+        ConnectorPortRegister connectorPortRegister = server().getDatabase().getGraph().getDependencyResolver()
+                .resolveDependency( ConnectorPortRegister.class );
+        return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 }

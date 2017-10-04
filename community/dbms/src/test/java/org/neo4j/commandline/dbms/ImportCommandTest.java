@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -65,16 +65,19 @@ public class ImportCommandTest
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
                 .thenReturn( mock( Importer.class ) );
 
-        ImportCommand importCommand =
-                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
-                        mockImporterFactory );
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        {
+            ImportCommand importCommand =
+                    new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld,
+                            mockImporterFactory );
 
-        String[] arguments = {"--database=foo", "--from=bar"};
+            String[] arguments = {"--database=foo", "--from=bar"};
 
-        importCommand.execute( arguments );
+            importCommand.execute( arguments );
 
-        verify( mockImporterFactory )
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) );
+            verify( mockImporterFactory ).getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ),
+                    any( OutsideWorld.class ) );
+        }
     }
 
     @Test
@@ -122,58 +125,66 @@ public class ImportCommandTest
     @Test
     public void requiresDatabaseArgument() throws Exception
     {
-        ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                        new NullOutsideWorld() );
+        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
+        {
+            ImportCommand importCommand =
+                    new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                            outsideWorld );
 
-        String[] arguments = {"--mode=database", "--from=bar"};
-        try
-        {
-            importCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "database" ) );
+            String[] arguments = {"--mode=database", "--from=bar"};
+            try
+            {
+                importCommand.execute( arguments );
+                fail( "Should have thrown an exception." );
+            }
+            catch ( IncorrectUsage e )
+            {
+                assertThat( e.getMessage(), containsString( "database" ) );
+            }
         }
     }
 
     @Test
     public void failIfInvalidModeSpecified() throws Exception
     {
-        ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                        new NullOutsideWorld() );
+        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
+        {
+            ImportCommand importCommand =
+                    new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                            outsideWorld );
 
-        String[] arguments = {"--mode=foo", "--database=bar", "--from=baz"};
-        try
-        {
-            importCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "foo" ) );
+            String[] arguments = {"--mode=foo", "--database=bar", "--from=baz"};
+            try
+            {
+                importCommand.execute( arguments );
+                fail( "Should have thrown an exception." );
+            }
+            catch ( IncorrectUsage e )
+            {
+                assertThat( e.getMessage(), containsString( "foo" ) );
+            }
         }
     }
 
     @Test
     public void failIfDestinationDatabaseAlreadyExists() throws Exception
     {
-        Path homeDir = testDir.directory( "home" ).toPath();
-        ImportCommand importCommand =
-                new ImportCommand( homeDir, testDir.directory( "conf" ).toPath(), new NullOutsideWorld() );
+        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
+        {
+            Path homeDir = testDir.directory( "home" ).toPath();
+            ImportCommand importCommand = new ImportCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld );
 
-        putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ) );
-        String[] arguments = {"--mode=csv", "--database=existing.db"};
-        try
-        {
-            importCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getMessage(), containsString( "already contains a database" ) );
+            putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ) );
+            String[] arguments = {"--mode=csv", "--database=existing.db"};
+            try
+            {
+                importCommand.execute( arguments );
+                fail( "Should have thrown an exception." );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e.getMessage(), containsString( "already contains a database" ) );
+            }
         }
     }
 
@@ -194,9 +205,24 @@ public class ImportCommandTest
                             "                          [--relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">]%n" +
                             "                          [--id-type=<STRING|INTEGER|ACTUAL>]%n" +
                             "                          [--input-encoding=<character-set>]%n" +
+                            "                          [--ignore-extra-columns[=<true|false>]]%n" +
+                            "                          [--ignore-duplicate-nodes[=<true|false>]]%n" +
+                            "                          [--ignore-missing-nodes[=<true|false>]]%n" +
+                            "                          [--multiline-fields[=<true|false>]]%n" +
+                            "                          [--delimiter=<delimiter-character>]%n" +
+                            "                          [--array-delimiter=<array-delimiter-character>]%n" +
+                            "                          [--quote=<quotation-character>]%n" +
+                            "                          [--max-memory=<max-memory-that-importer-can-use>]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
+                            "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "Import a collection of CSV files with --mode=csv (default), or a database from a%n" +
                             "pre-3.0 installation with --mode=database.%n" +
@@ -236,7 +262,31 @@ public class ImportCommandTest
                             "      https://neo4j.com/docs/operations-manual/current/tools/import/%n" +
                             "      [default:STRING]%n" +
                             "  --input-encoding=<character-set>%n" +
-                            "      Character set that input data is encoded in. [default:UTF-8]%n" ),
+                            "      Character set that input data is encoded in. [default:UTF-8]%n" +
+                            "  --ignore-extra-columns=<true|false>%n" +
+                            "      If un-specified columns should be ignored during the import.%n" +
+                            "      [default:false]%n" +
+                            "  --ignore-duplicate-nodes=<true|false>%n" +
+                            "      If duplicate nodes should be ignored during the import. [default:false]%n" +
+                            "  --ignore-missing-nodes=<true|false>%n" +
+                            "      If relationships referring to missing nodes should be ignored during the%n" +
+                            "      import. [default:false]%n" +
+                            "  --multiline-fields=<true|false>%n" +
+                            "      Whether or not fields from input source can span multiple lines, i.e.%n" +
+                            "      contain newline characters. [default:false]%n" +
+                            "  --delimiter=<,>%n" +
+                            "      Delimiter character between values in CSV data. [default:,]%n" +
+                            "  --array-delimiter=<,>%n" +
+                            "      Delimiter character between array elements within a value in CSV data.%n" +
+                            "      [default:;]%n" +
+                            "  --quote=<quotation-character>%n" +
+                            "      Character to treat as quotation character for values in CSV data. Quotes%n" +
+                            "      can be escaped as per RFC 4180 by doubling them, for example \"\" would be%n" +
+                            "      interpreted as a literal \". You cannot escape using \\. [default:\"]%n" +
+                            "  --max-memory=<max-memory-that-importer-can-use>%n" +
+                            "      Maximum memory that neo4j-admin can use for various data structures and%n" +
+                            "      caching to improve performance. Values can be plain numbers, like 10000000%n" +
+                            "      or e.g. 20G for 20 gigabyte, or even e.g. 70%%. [default:90%%]%n"),
                     baos.toString() );
         }
     }

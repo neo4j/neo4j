@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,10 +31,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -58,11 +58,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-@RunWith(Suite.class)
-@SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class})
+@RunWith( Suite.class )
+@SuiteClasses( {IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class} )
 public class IdGeneratorRebuildFailureEmulationTest
 {
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static final class FailureBeforeRebuild extends IdGeneratorRebuildFailureEmulationTest
     {
         @Override
@@ -110,7 +110,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Before
     public void initialize()
@@ -121,7 +121,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        Config config = new Config( params, GraphDatabaseSettings.class );
+        Config config = Config.defaults( params );
         factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
     }
@@ -210,23 +210,20 @@ public class IdGeneratorRebuildFailureEmulationTest
     {
         void disposeAndAssertNoOpenFiles() throws Exception
         {
-            //Collection<String> open = openFiles();
-            //assertTrue( "Open files: " + open, open.isEmpty() );
             assertNoOpenFiles();
-            super.shutdown();
+            super.close();
         }
 
         @Override
-        public void shutdown()
+        public void close()
         {
-            // no-op, it's pretty odd to have EphemeralFileSystemAbstraction implement Lifecycle by default
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     private class Database extends ImpermanentGraphDatabase
     {
-        public Database( File storeDir )
+        Database( File storeDir )
         {
             super( storeDir );
         }
@@ -237,9 +234,10 @@ public class IdGeneratorRebuildFailureEmulationTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade facade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                        GraphDatabaseFacade facade )
                 {
-                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, facade )
+                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies, facade )
                     {
                         @Override
                         protected FileSystemAbstraction createFileSystemAbstraction()

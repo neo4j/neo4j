@@ -31,7 +31,9 @@ public abstract class ListWriter
     ListWriter newList( RepresentationType type )
     {
         if ( type.listName == null )
+        {
             throw new IllegalStateException( "Invalid list type: " + type );
+        }
         return newList( type.listName );
     }
 

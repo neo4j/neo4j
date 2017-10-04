@@ -20,8 +20,11 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.storable.Value;
 
 public class DelegatingIndexReader implements IndexReader
 {
@@ -33,52 +36,9 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator seek( Object value )
+    public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        return delegate.seek( value );
-    }
-
-    @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
-    {
-        return delegate.rangeSeekByNumberInclusive( lower, upper );
-    }
-
-    @Override
-    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-                                                    String upper, boolean includeUpper )
-    {
-        return delegate.rangeSeekByString( lower, includeLower, upper, includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-    {
-        return delegate.rangeSeekByPrefix( prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator scan()
-    {
-        return delegate.scan();
-    }
-
-    @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
-    {
-        return delegate.containsString( exactTerm );
-    }
-
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
-    {
-        return delegate.endsWith( suffix );
-    }
-
-    @Override
-    public long countIndexedNodes( long nodeId, Object propertyValue )
-    {
-        return delegate.countIndexedNodes( nodeId, propertyValue );
+        return delegate.countIndexedNodes( nodeId, propertyValues );
     }
 
     @Override
@@ -88,9 +48,21 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    {
+        return delegate.query( predicates );
+    }
+
+    @Override
     public void close()
     {
         delegate.close();
+    }
+
+    @Override
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    {
+        return delegate.hasFullNumberPrecision( predicates );
     }
 
     @Override

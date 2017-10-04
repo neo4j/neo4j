@@ -460,7 +460,7 @@ public class NodeRecordCheckTest
 
     private void assertDynamicRecordChain( DynamicRecord... records )
     {
-        if ( records.length > 0)
+        if ( records.length > 0 )
         {
             for ( int i = 1; i < records.length; i++ )
             {
@@ -473,7 +473,7 @@ public class NodeRecordCheckTest
     private class NotUsedReusableRecordsAllocator extends ReusableRecordsAllocator
     {
 
-        public NotUsedReusableRecordsAllocator( int recordSize, Collection<DynamicRecord> records )
+        NotUsedReusableRecordsAllocator( int recordSize, Collection<DynamicRecord> records )
         {
             super( recordSize, records );
         }

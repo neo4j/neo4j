@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.helper.RepeatUntilCallable;
 
 class WorkLoad extends RepeatUntilCallable
@@ -54,7 +55,7 @@ class WorkLoad extends RepeatUntilCallable
             }
             tx.success();
         }
-        catch ( DatabaseShutdownException | TransactionFailureException e )
+        catch ( DatabaseShutdownException | TransactionFailureException | TransientFailureException e )
         {
             // whatever let's go on with the workload
         }

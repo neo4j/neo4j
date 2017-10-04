@@ -77,9 +77,8 @@ public class RoleSerializationTest
         RoleSerialization serialization = new RoleSerialization();
 
         // When
-        List<RoleRecord> deserialized = serialization.deserializeRecords( UTF8.encode(
-                ("admin:Bob,Steve\n" +
-                 "publisher:Kelly,Marie\n") ) );
+        List<RoleRecord> deserialized = serialization.deserializeRecords(
+                UTF8.encode( "admin:Bob,Steve\n" + "publisher:Kelly,Marie\n" ) );
 
         // Then
         assertThat( deserialized, equalTo( asList(

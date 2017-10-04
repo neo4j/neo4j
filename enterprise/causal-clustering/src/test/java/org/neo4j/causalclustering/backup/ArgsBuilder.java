@@ -24,38 +24,38 @@ import java.util.LinkedList;
 
 public class ArgsBuilder
 {
-    private LinkedList<String> args = new LinkedList<>(  );
+    private LinkedList<String> args = new LinkedList<>();
 
     public static ArgsBuilder args()
     {
         return new ArgsBuilder();
     }
 
-    public ArgsBuilder homeDir( File homeDir)
+    public ArgsBuilder homeDir( File homeDir )
     {
         args.add( String.format( "--home-dir=%s", homeDir.getPath() ) );
         return this;
     }
 
-    public ArgsBuilder database( String databaseName)
+    public ArgsBuilder database( String databaseName )
     {
         args.add( String.format( "--database=%s", databaseName ) );
         return this;
     }
 
-    public ArgsBuilder seed( String seed)
+    public ArgsBuilder seed( String seed )
     {
         args.add( String.format( "--cluster-seed=%s", seed ) );
         return this;
     }
 
-    public ArgsBuilder config( File config)
+    public ArgsBuilder config( File config )
     {
         args.add( String.format( "--config=%s", config.getPath() ) );
         return this;
     }
 
-    public ArgsBuilder from( File from)
+    public ArgsBuilder from( File from )
     {
         args.add( String.format( "--from=%s", from.getPath() ) );
         return this;

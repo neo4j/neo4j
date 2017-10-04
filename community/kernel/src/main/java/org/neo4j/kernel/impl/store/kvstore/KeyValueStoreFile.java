@@ -75,7 +75,9 @@ public class KeyValueStoreFile implements Closeable
      */
     public boolean scan( SearchKey search, KeyValueVisitor visitor ) throws IOException
     {
-        BigEndianByteArrayBuffer searchKey = buffer( keySize ), key = buffer( keySize ), value = buffer( valueSize );
+        BigEndianByteArrayBuffer searchKey = buffer( keySize );
+        BigEndianByteArrayBuffer key = buffer( keySize );
+        BigEndianByteArrayBuffer value = buffer( valueSize );
         search.searchKey( searchKey );
         int page = findPage( searchKey, pageCatalogue );
         if ( page < 0 || (page >= pageCatalogue.length / (keySize * 2)) )
@@ -251,8 +253,10 @@ public class KeyValueStoreFile implements Closeable
             // look at the low mark for the page
             int cmp = compare( key.buffer, catalogue, mid * key.size() * 2 );
             if ( cmp == 0 )
-            {// this page starts with the key
-                max = mid; // the previous page might also contain mid the key
+            {
+                // this page starts with the key
+                // the previous page might also contain mid the key
+                max = mid;
             }
             if ( cmp > 0 )
             {
@@ -286,7 +290,8 @@ public class KeyValueStoreFile implements Closeable
     private int findByteOffset( PageCursor cursor, BigEndianByteArrayBuffer searchKey, BigEndianByteArrayBuffer key,
             BigEndianByteArrayBuffer value ) throws IOException
     {
-        int entrySize = searchKey.size() + value.size(), last = maxPage( file.pageSize(), entrySize, totalEntries );
+        int entrySize = searchKey.size() + value.size();
+        int last = maxPage( file.pageSize(), entrySize, totalEntries );
         int firstEntry = (cursor.getCurrentPageId() == 0) ? headerEntries : 0; // skip header in first page
         int entryCount = totalEntries % (file.pageSize() / entrySize);
         // If the last page is full, 'entryCount' will be 0 at this point.

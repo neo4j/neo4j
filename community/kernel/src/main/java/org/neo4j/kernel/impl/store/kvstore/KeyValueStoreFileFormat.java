@@ -99,17 +99,18 @@ public abstract class KeyValueStoreFileFormat
         }
         final BigEndianByteArrayBuffer specifier = new BigEndianByteArrayBuffer( format );
         HeaderField<?>[] headerFields = headerFieldsForFormat( formatSpecifier );
-        return new MetadataCollector( pageSize / (keySize + valueSize), headerFields )
+        return new MetadataCollector( pageSize / (keySize + valueSize), headerFields, specifier )
         {
             @Override
             boolean verifyFormatSpecifier( ReadableBuffer value )
             {
                 int size = value.size();
-                if ( size == specifier.size() )
+                ReadableBuffer expectedFormat = expectedFormat();
+                if ( size == expectedFormat.size() )
                 {
                     for ( int i = 0; i < size; i++ )
                     {
-                        if ( value.getByte( i ) != specifier.getByte( i ) )
+                        if ( value.getByte( i ) != expectedFormat.getByte( i ) )
                         {
                             return false;
                         }

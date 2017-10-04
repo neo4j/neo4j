@@ -39,19 +39,24 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.loop;
 
 public class Neo4jMatchers
 {
+    private Neo4jMatchers()
+    {
+    }
+
     public static <T> Matcher<? super T> inTx( final GraphDatabaseService db, final Matcher<T> inner )
     {
         return inTx( db, inner, false );
@@ -135,7 +140,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Node> hasNoLabels()
     {
-        return hasLabels( emptySetOf( String.class ) );
+        return hasLabels( emptySet() );
     }
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabels( final Set<String> expectedLabels )
@@ -224,10 +229,10 @@ public class Neo4jMatchers
     {
         return new TypeSafeDiagnosingMatcher<Iterator<Long>>()
         {
-            int len = 0;
+            int len;
 
-            String actualText = null;
-            String expectedText = null;
+            String actualText;
+            String expectedText;
 
             @Override
             protected boolean matchesSafely( Iterator<Long> expected, Description actualDescription )
@@ -333,9 +338,9 @@ public class Neo4jMatchers
             return expected.equals( readValue );
         }
 
-        private String formatValue(Object v)
+        private String formatValue( Object v )
         {
-            if (v instanceof String)
+            if ( v instanceof String )
             {
                 return String.format("'%s'", v.toString());
             }
@@ -387,7 +392,7 @@ public class Neo4jMatchers
                                                               final Object propertyValue,
                                                               final GraphDatabaseService db )
     {
-        return new Deferred<Node>(db)
+        return new Deferred<Node>( db )
         {
             @Override
             protected Iterable<Node> manifest()
@@ -601,7 +606,7 @@ public class Neo4jMatchers
             protected boolean matchesSafely( Deferred<?> deferred, Description description )
             {
                 Collection<?> collection = deferred.collection();
-                if(!collection.isEmpty())
+                if ( !collection.isEmpty() )
                 {
                     description.appendText( "was " + collection.toString() );
                     return false;
@@ -618,20 +623,25 @@ public class Neo4jMatchers
         };
     }
 
-    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
+    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String... properties )
     {
-        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, property );
+        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, properties );
 
         waitForIndex( beansAPI, indexDef );
         return indexDef;
     }
 
-    public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, Label label, String property )
+    public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, Label label, String... properties )
     {
         IndexDefinition indexDef;
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
+            IndexCreator indexCreator = beansAPI.schema().indexFor( label );
+            for ( String property : properties )
+            {
+                indexCreator = indexCreator.on( property );
+            }
+            indexDef = indexCreator.create();
             tx.success();
         }
         return indexDef;

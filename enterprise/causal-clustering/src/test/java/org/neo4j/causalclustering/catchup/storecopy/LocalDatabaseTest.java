@@ -25,10 +25,9 @@ import org.mockito.InOrder;
 import java.io.File;
 import java.time.Clock;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -39,10 +38,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class LocalDatabaseTest
 {
@@ -132,6 +132,27 @@ public class LocalDatabaseTest
         inOrder.verify( dataSourceManager ).stop();
     }
 
+    @Test
+    public void doNotRestartServicesIfAlreadyStarted() throws Throwable
+    {
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+        FileSystemWatcherService watcherService = mock( FileSystemWatcherService.class );
+        LocalDatabase localDatabase = newLocalDatabase( newAvailabilityGuard(), dataSourceManager, watcherService );
+
+        localDatabase.start();
+
+        verify( dataSourceManager ).start();
+        verify( watcherService ).start();
+        reset( dataSourceManager );
+        reset( watcherService );
+
+        localDatabase.start();
+        localDatabase.start();
+
+        verify( dataSourceManager, times( 0 ) ).start();
+        verify( watcherService, times( 0 ) ).start();
+    }
+
     private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard )
     {
         return newLocalDatabase( availabilityGuard, mock( DataSourceManager.class ) );
@@ -140,9 +161,15 @@ public class LocalDatabaseTest
     private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard,
             DataSourceManager dataSourceManager )
     {
+        return newLocalDatabase( availabilityGuard, dataSourceManager, FileSystemWatcherService.EMPTY_WATCHER );
+    }
+
+    private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard,
+            DataSourceManager dataSourceManager, FileSystemWatcherService fileWatcher )
+    {
         return new LocalDatabase( new File( "." ), mock( StoreFiles.class ), dataSourceManager,
-                mock( PageCache.class, RETURNS_MOCKS ), mock( FileSystemAbstraction.class ),
-                () -> mock( DatabaseHealth.class ), availabilityGuard, NullLogProvider.getInstance() );
+                () -> mock( DatabaseHealth.class ), fileWatcher, availabilityGuard,
+                NullLogProvider.getInstance() );
     }
 
     private static AvailabilityGuard newAvailabilityGuard()

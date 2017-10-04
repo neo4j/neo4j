@@ -43,7 +43,10 @@ abstract class AdvancedManagementSupport extends ManagementSupport
     @Override
     protected String getBeanName( Class<?> beanInterface )
     {
-        if ( beanInterface == DynamicMBean.class ) return ConfigurationBean.CONFIGURATION_MBEAN_NAME;
+        if ( beanInterface == DynamicMBean.class )
+        {
+            return ConfigurationBean.CONFIGURATION_MBEAN_NAME;
+        }
         return KernelProxy.beanName( beanInterface );
     }
 

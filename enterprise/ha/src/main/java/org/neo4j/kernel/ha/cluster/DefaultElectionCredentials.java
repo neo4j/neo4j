@@ -107,8 +107,8 @@ public final class DefaultElectionCredentials implements ElectionCredentials, Ex
     @Override
     public String toString()
     {
-        return "DefaultElectionCredentials[serverId="+serverId +
+        return "DefaultElectionCredentials[serverId=" + serverId +
                 ", latestTxId=" + latestTxId +
-                ", currentWinner=" + currentWinner+"]";
+                ", currentWinner=" + currentWinner + "]";
     }
 }

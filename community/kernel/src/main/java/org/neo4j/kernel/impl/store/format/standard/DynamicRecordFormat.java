@@ -37,7 +37,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     public DynamicRecordFormat()
     {
         super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, 0x10/*the inUse bit is the lsb in the second nibble*/,
-                StandardFormatSettings.DYNAMIC_RECORD_MAXIMUM_ID_BITS );
+                StandardFormatSettings.DYNAMIC_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -134,7 +134,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             long nextBlock = record.getNextBlock();
             int highByteInFirstInteger = nextBlock == Record.NO_NEXT_BLOCK.intValue() ? 0
                     : (int) ((nextBlock & 0xF00000000L) >> 8);
-            highByteInFirstInteger |= (Record.IN_USE.byteValue() << 28);
+            highByteInFirstInteger |= Record.IN_USE.byteValue() << 28;
             highByteInFirstInteger |= (record.isStartRecord() ? 0 : 1) << 31;
 
             /*

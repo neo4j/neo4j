@@ -19,13 +19,14 @@
  */
 package org.neo4j.graphalgo.impl.ancestor;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterators;
 
 import static org.neo4j.graphdb.traversal.BranchState.NO_STATE;
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
@@ -35,6 +36,10 @@ import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
  */
 public class AncestorsUtil
 {
+    private AncestorsUtil()
+    {
+    }
+
     /**
      *
      * @param nodeSet Set of nodes for which the LCA will be found.
@@ -64,13 +69,15 @@ public class AncestorsUtil
     {
         LinkedList<Node> ancestors = new LinkedList<Node>();
         ancestors.add( node );
-        Iterator<Relationship> relIterator = expander.expand( singleNodePath( node ), NO_STATE ).iterator();
+        ResourceIterator<Relationship> relIterator =
+                Iterators.asResourceIterator( expander.expand( singleNodePath( node ), NO_STATE ).iterator() );
         while ( relIterator.hasNext() )
         {
             Relationship rel = relIterator.next();
             node = rel.getOtherNode( node );
             ancestors.add( node );
-            relIterator = expander.expand( singleNodePath( node ), NO_STATE ).iterator();
+            relIterator.close();
+            relIterator = Iterators.asResourceIterator( expander.expand( singleNodePath( node ), NO_STATE ).iterator() );
         }
         return ancestors;
     }
@@ -92,15 +99,18 @@ public class AncestorsUtil
                     return;
                 }
             }
-            Iterator<Relationship> relIt = expander.expand( singleNodePath( currentNode ), NO_STATE ).iterator();
-            if ( relIt.hasNext() )
+            try ( ResourceIterator<Relationship> relIt = Iterators.asResourceIterator(
+                    expander.expand( singleNodePath( currentNode ), NO_STATE ).iterator() ) )
             {
-                Relationship rel = relIt.next();
-                currentNode = rel.getOtherNode( currentNode );
-            }
-            else
-            {
-                currentNode = null;
+                if ( relIt.hasNext() )
+                {
+                    Relationship rel = relIt.next();
+                    currentNode = rel.getOtherNode( currentNode );
+                }
+                else
+                {
+                    currentNode = null;
+                }
             }
         }
     }

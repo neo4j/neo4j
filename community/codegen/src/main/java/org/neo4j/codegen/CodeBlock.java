@@ -63,6 +63,11 @@ public class CodeBlock implements AutoCloseable
         return clazz;
     }
 
+    public CodeBlock parent()
+    {
+        return parent;
+    }
+
     @Override
     public void close()
     {
@@ -154,40 +159,27 @@ public class CodeBlock implements AutoCloseable
         return block;
     }
 
-    public CodeBlock whileLoop( Expression...tests )
+    public CodeBlock whileLoop( Expression test )
     {
-        emitter.beginWhile( tests );
+        emitter.beginWhile( test );
         return new CodeBlock( this );
     }
 
-    public CodeBlock ifStatement( Expression...tests )
+    public CodeBlock ifStatement( Expression test )
     {
-        emitter.beginIf( tests );
+        emitter.beginIf( test );
         return new CodeBlock( this );
     }
 
-    public CodeBlock ifNotStatement( Expression...tests )
+    public CodeBlock block()
     {
-        emitter.beginIfNot( tests );
-        return new CodeBlock( this );
-    }
-
-    public CodeBlock ifNullStatement( Expression...tests )
-    {
-        emitter.beginIfNull( tests );
-        return new CodeBlock( this );
-    }
-
-    public CodeBlock ifNonNullStatement( Expression...tests )
-    {
-        emitter.beginIfNonNull( tests );
+        emitter.beginBlock();
         return new CodeBlock( this );
     }
 
     public void tryCatch( Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception )
     {
-        emitter.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ),
-                this );
+        emitter.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ), this );
     }
 
     public void returns()

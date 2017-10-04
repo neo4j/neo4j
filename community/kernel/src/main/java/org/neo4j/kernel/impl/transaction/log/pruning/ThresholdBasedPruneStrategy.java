@@ -97,7 +97,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
          * This if statement does nothing more complicated than checking if the next-to-last log would be prunned
          * and simply skipping it if so.
          */
-        if ( upper == upToLogVersion - 1)
+        if ( upper == upToLogVersion - 1 )
         {
             upper--;
         }

@@ -32,32 +32,36 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -66,7 +70,6 @@ public class LuceneSchemaIndexPopulatorTest
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
 
-    private IndexDescriptor indexDescriptor;
     private IndexStoreView indexStoreView;
     private LuceneSchemaIndexProvider provider;
     private Directory directory;
@@ -74,7 +77,8 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
-    private final int propertyKeyId = 666;
+    private static final int propertyKeyId = 666;
+    private static final IndexDescriptor index = IndexDescriptorFactory.forLabel( 42, propertyKeyId );
 
     @Before
     public void before() throws Exception
@@ -82,15 +86,12 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, testDir.directory( "folder" ),
-                NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
-        indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
+        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
+                SchemaIndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
-        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
-        indexPopulator = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
+        indexPopulator = provider.getPopulator( indexId, index, samplingConfig );
         indexPopulator.create();
-        indexPopulator.configureSampling( true );
     }
 
     @After
@@ -148,7 +149,7 @@ public class LuceneSchemaIndexPopulatorTest
         addUpdate( indexPopulator, 1, "value" );
         addUpdate( indexPopulator, 2, "value" );
         addUpdate( indexPopulator, 3, "value" );
-        updatePopulator( indexPopulator, asList( remove( 2, "value" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "value" ) ), indexStoreView );
 
         // THEN
         assertIndexedValues(
@@ -161,7 +162,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( change( 1, "1", "1a" ) ), indexStoreView );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -195,7 +196,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( remove( 2, "2" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "2" ) ), indexStoreView );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -245,29 +246,29 @@ public class LuceneSchemaIndexPopulatorTest
 
     private static class Hit
     {
-        private final Object value;
+        private final Value value;
         private final Long[] nodeIds;
 
         Hit( Object value, Long... nodeIds )
         {
-            this.value = value;
+            this.value = Values.of( value );
             this.nodeIds = nodeIds;
         }
     }
 
-    private NodePropertyUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
-        return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
+        return IndexQueryHelper.add( nodeId, index.schema(), value );
     }
 
-    private NodePropertyUpdate change( long nodeId, Object valueBefore, Object valueAfter )
+    private IndexEntryUpdate<?> change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return NodePropertyUpdate.change( nodeId, 0, valueBefore, new long[0], valueAfter, new long[0] );
+        return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
-    private NodePropertyUpdate remove( long nodeId, Object removedValue )
+    private IndexEntryUpdate<?> remove( long nodeId, Object removedValue )
     {
-        return NodePropertyUpdate.remove( nodeId, 0, removedValue, new long[0] );
+        return IndexQueryHelper.remove( nodeId, index.schema(), removedValue );
     }
 
     private void assertIndexedValues( Hit... expectedHits ) throws IOException
@@ -291,7 +292,7 @@ public class LuceneSchemaIndexPopulatorTest
     private void switchToVerification() throws IOException
     {
         indexPopulator.close( true );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId, index ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }
@@ -299,18 +300,18 @@ public class LuceneSchemaIndexPopulatorTest
     private static void addUpdate( IndexPopulator populator, long nodeId, Object value )
             throws IOException, IndexEntryConflictException
     {
-        populator.add( Collections.singletonList( NodePropertyUpdate.add( nodeId, 0, value, new long[]{0} ) ) );
+        populator.add( singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ) );
     }
 
     private static void updatePopulator(
             IndexPopulator populator,
-            Iterable<NodePropertyUpdate> updates,
+            Iterable<IndexEntryUpdate<?>> updates,
             PropertyAccessor accessor )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
         {
-            for ( NodePropertyUpdate update :  updates )
+            for ( IndexEntryUpdate<?> update :  updates )
             {
                 updater.process( update );
             }

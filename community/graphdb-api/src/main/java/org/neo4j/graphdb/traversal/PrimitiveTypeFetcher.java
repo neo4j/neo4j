@@ -50,8 +50,12 @@ enum PrimitiveTypeFetcher
         {
             Set<Node> nodes = new HashSet<>();
             for ( Node node : source.reverseNodes() )
+            {
                 if ( !nodes.add( node ) )
+                {
                     return true;
+                }
+            }
             return false;
         }
     },
@@ -75,8 +79,12 @@ enum PrimitiveTypeFetcher
         {
             Set<Relationship> relationships = new HashSet<>();
             for ( Relationship relationship : source.reverseRelationships() )
+            {
                 if ( !relationships.add( relationship ) )
+                {
                     return true;
+                }
+            }
             return false;
         }
     };

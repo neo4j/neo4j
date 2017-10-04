@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.core.consensus.roles;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
@@ -48,7 +48,7 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class CandidateTest
 {
     private MemberId myself = member( 0 );

@@ -40,7 +40,6 @@ import javax.ws.rs.core.Response.Status;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status.Request;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.api.exceptions.Status.Schema;
 import org.neo4j.kernel.api.exceptions.Status.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.plugins.ConfigAdapter;
@@ -68,7 +66,6 @@ import org.neo4j.test.server.EntityOutputFormat;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.parseLong;
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -108,7 +105,7 @@ public class RestfulGraphDatabaseTest
                         new JsonFormat(),
                         output,
                         new DatabaseActions( new LeaseManager( Clocks.fakeClock() ), true, database.getGraph() ),
-                        new ConfigAdapter( new Config( emptyMap(), ServerSettings.class, GraphDatabaseSettings.class ) )
+                        new ConfigAdapter( Config.defaults() )
                 )
         );
     }
@@ -164,7 +161,7 @@ public class RestfulGraphDatabaseTest
         return UTF8.decode( bytes );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static List<String> entityAsList( Response response )
             throws JsonParseException
     {
@@ -241,14 +238,14 @@ public class RestfulGraphDatabaseTest
 
         assertTrue( map.containsKey( "self" ) );
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreatedWithArrays()
             throws Exception
     {
@@ -528,7 +525,7 @@ public class RestfulGraphDatabaseTest
 
         checkContentTypeCharsetUtf8( response );
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
@@ -893,7 +890,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipProperties()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
-        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
+        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", "bar" ) );
 
         Response response = service.deleteAllRelationshipProperties( relationshipId );
         assertEquals( 204, response.getStatus() );
@@ -923,7 +920,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith204WhenRemovingRelationshipProperty()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
-        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
+        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", "bar" ) );
 
         Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
 
@@ -1134,7 +1131,8 @@ public class RestfulGraphDatabaseTest
     @Test
     public void uniquelyIndexedNodeGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws Exception
     {
-        final String key = "somekey", value = "somevalue";
+        final String key = "somekey";
+        String value = "somevalue";
 
         Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
@@ -1155,7 +1153,8 @@ public class RestfulGraphDatabaseTest
     @Test
     public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedNodes() throws Exception
     {
-        final String key = "a_key", value = "a value";
+        final String key = "a_key";
+        String value = "a value";
 
         Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
@@ -1255,7 +1254,8 @@ public class RestfulGraphDatabaseTest
     public void uniquelyIndexedRelationshipGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws
             Exception
     {
-        final String key = "somekey", value = "somevalue";
+        final String key = "somekey";
+        String value = "somevalue";
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
@@ -1281,7 +1281,8 @@ public class RestfulGraphDatabaseTest
     @Test
     public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedRelationships() throws Exception
     {
-        final String key = "a_key", value = "a value";
+        final String key = "a_key";
+        String value = "a value";
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
@@ -1411,7 +1412,7 @@ public class RestfulGraphDatabaseTest
         assertTrue( map.containsKey( "self" ) );
     }
 
-    private void checkContentTypeCharsetUtf8(Response response)
+    private void checkContentTypeCharsetUtf8( Response response )
     {
         assertTrue( response.getMetadata()
                 .getFirst( HttpHeaders.CONTENT_TYPE ).toString().contains( "UTF-8" ));
@@ -2004,7 +2005,7 @@ public class RestfulGraphDatabaseTest
         assertThat( labels, not( hasItem( "DEAD" ) ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private void addRemoveAutoindexProperties( String type ) throws JsonParseException
     {
         Response response = service.getAutoIndexedProperties( type );
@@ -2058,7 +2059,7 @@ public class RestfulGraphDatabaseTest
         assertFalse( Boolean.parseBoolean( entityAsString( response ) ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private String singleErrorCode( Response response ) throws JsonParseException
     {
         String json = entityAsString( response );

@@ -51,7 +51,8 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
             throw new RuntimeException( "Test setup failed to create temporary directory", e );
         }
 
-        return settings -> {
+        return settings ->
+        {
             settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
             settings.put( GraphDatabaseSettings.logs_directory.name(), homeDir.toAbsolutePath().toString() );
         };

@@ -42,4 +42,10 @@ public class DeadSimpleLogVersionRepository implements LogVersionRepository
     {
         return logVersion;
     }
+
+    @Override
+    public void setCurrentLogVersion( long version )
+    {
+        this.logVersion = version;
+    }
 }

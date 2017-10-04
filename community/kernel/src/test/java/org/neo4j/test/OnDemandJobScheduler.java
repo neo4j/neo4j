@@ -27,10 +27,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
+import static org.neo4j.scheduler.JobScheduler.Group.NO_METADATA;
 
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {
@@ -43,7 +43,7 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
         this( true );
     }
 
-    public OnDemandJobScheduler( boolean removeJobsAfterExecution)
+    public OnDemandJobScheduler( boolean removeJobsAfterExecution )
     {
         this.removeJobsAfterExecution = removeJobsAfterExecution;
     }
@@ -51,14 +51,7 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     @Override
     public Executor executor( Group group )
     {
-        return new Executor()
-        {
-            @Override
-            public void execute( Runnable command )
-            {
-                jobs.add( command );
-            }
-        };
+        return command -> jobs.add( command );
     }
 
     @Override

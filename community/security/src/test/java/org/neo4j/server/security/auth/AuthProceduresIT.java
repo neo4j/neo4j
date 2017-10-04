@@ -68,6 +68,23 @@ public class AuthProceduresIT
     private BasicAuthManager authManager;
     private BasicSecurityContext admin;
 
+    @Before
+    public void setup() throws InvalidAuthTokenException, IOException
+    {
+        fs = new EphemeralFileSystemAbstraction();
+        db = (GraphDatabaseAPI) createGraphDatabase( fs );
+        authManager = db.getDependencyResolver().resolveDependency( BasicAuthManager.class );
+        admin = login( "neo4j", "neo4j" );
+        admin.subject().setPasswordChangeNoLongerRequired();
+    }
+
+    @After
+    public void cleanup() throws Exception
+    {
+        db.shutdown();
+        fs.close();
+    }
+
     //---------- change password -----------
 
     @Test
@@ -77,7 +94,7 @@ public class AuthProceduresIT
         // Given
         assertEmpty( admin, "CALL dbms.changePassword('abc')" );
 
-        assert( authManager.getUser( "neo4j" ).credentials().matchesPassword( "abc" ) );
+        assert authManager.getUser( "neo4j" ).credentials().matchesPassword( "abc" );
     }
 
     @Test
@@ -105,7 +122,8 @@ public class AuthProceduresIT
         BasicSecurityContext user = login("andres", "banana");
 
         // Then
-        assertFail( user, "CALL dbms.procedures", "The credentials you provided were valid, but must be changed before you can use this instance." );
+        assertFail( user, "CALL dbms.procedures",
+                "The credentials you provided were valid, but must be changed before you can use this instance." );
     }
 
     //---------- create user -----------
@@ -229,33 +247,16 @@ public class AuthProceduresIT
     @Test
     public void shouldShowCurrentUser() throws Exception
     {
-        assertSuccess( admin, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( admin, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
 
         authManager.newUser( "andres", "123", false );
         BasicSecurityContext andres = login( "andres", "123" );
-        assertSuccess( andres, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( andres, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );
     }
 
     //---------- utility -----------
-
-    @Before
-    public void setup() throws InvalidAuthTokenException, IOException
-    {
-        fs = new EphemeralFileSystemAbstraction();
-        db = (GraphDatabaseAPI) createGraphDatabase( fs );
-        authManager = db.getDependencyResolver().resolveDependency( BasicAuthManager.class );
-        admin = login( "neo4j", "neo4j" );
-        admin.subject().setPasswordChangeNoLongerRequired();
-    }
-
-    @After
-    public void cleanup() throws Exception
-    {
-        db.shutdown();
-        fs.shutdown();
-    }
 
     private GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs ) throws IOException
     {
@@ -287,15 +288,19 @@ public class AuthProceduresIT
 
     private void assertEmpty( BasicSecurityContext subject, String query )
     {
-        assertThat(
-                execute( subject, query, r -> { assert(!r.hasNext() ); } ),
+        assertThat( execute( subject, query, r ->
+                {
+                    assert !r.hasNext();
+                } ),
                 equalTo( "" ) );
     }
 
     private void assertFail( BasicSecurityContext subject, String query, String partOfErrorMsg )
     {
-        assertThat(
-                execute( subject, query, r -> { assert(!r.hasNext() ); } ),
+        assertThat( execute( subject, query, r ->
+                {
+                    assert !r.hasNext();
+                } ),
                 containsString( partOfErrorMsg ) );
     }
 
@@ -350,7 +355,8 @@ public class AuthProceduresIT
     }
 
     @SuppressWarnings( "unchecked" )
-    public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
+    public static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+            Map<String,Object> expected )
     {
         List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
 

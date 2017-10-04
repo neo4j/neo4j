@@ -37,6 +37,10 @@ public class PropertyValueComparison
         }
     };
 
+    private PropertyValueComparison()
+    {
+    }
+
     // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!
 
     // This compares two values that have the same super type according to that super type's comparator
@@ -52,12 +56,12 @@ public class PropertyValueComparison
 
     public enum SuperType
     {
-        OTHER( 0, Limit.inclusive( LOWEST_OBJECT ), Limit.<Object>exclusive( "" ) ),
-        STRING( 1, Limit.<Object>inclusive( "" ), Limit.<Object>exclusive( false ) ),
-        BOOLEAN( 2, Limit.<Object>inclusive( false ), Limit.<Object>inclusive( true ) ),
+        OTHER( 0, Limit.inclusive( LOWEST_OBJECT ), Limit.exclusive( "" ) ),
+        STRING( 1, Limit.inclusive( "" ), Limit.exclusive( false ) ),
+        BOOLEAN( 2, Limit.inclusive( false ), Limit.inclusive( true ) ),
 
         // Keep this last so that Double.NaN is the largest value
-        NUMBER( 3, Limit.<Object>inclusive( Double.NEGATIVE_INFINITY ), Limit.<Object>inclusive( Double.NaN ) );
+        NUMBER( 3, Limit.inclusive( Double.NEGATIVE_INFINITY ), Limit.inclusive( Double.NaN ) );
 
         public final int typeId;
         public final Limit<Object> lowLimit;
@@ -103,14 +107,7 @@ public class PropertyValueComparison
             return OTHER;
         }
 
-        public static Comparator<SuperType> TYPE_ID_COMPARATOR = new Comparator<SuperType>()
-        {
-            @Override
-            public int compare( SuperType left, SuperType right )
-            {
-                return left.typeId - right.typeId;
-            }
-        };
+        public static Comparator<SuperType> TYPE_ID_COMPARATOR = ( left, right ) -> left.typeId - right.typeId;
     }
 
     public static final class Limit<T>
@@ -187,7 +184,7 @@ public class PropertyValueComparison
 
     private static class NumberPropertyValueComparator extends PropertyValueComparator<Number>
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public int compare( Number left, Number right )
         {

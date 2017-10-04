@@ -164,15 +164,8 @@ public class Dijkstra implements PathFinder<WeightedPath>
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
         final Traverser traverser = traverser( start, end, interest );
-        return new Iterable<WeightedPath>()
-        {
-            @Override
-            public Iterator<WeightedPath> iterator()
-            {
-                return new WeightedPathIterator( traverser.iterator(), costEvaluator, epsilon,
-                        interest );
-            }
-        };
+        return () -> new WeightedPathIterator( traverser.iterator(), costEvaluator, epsilon,
+                interest );
     }
 
     private Traverser traverser( Node start, final Node end, PathInterest<Double> interest )
@@ -191,11 +184,12 @@ public class Dijkstra implements PathFinder<WeightedPath>
                     interest.stopAfterLowestCost() );
             dijkstraEvaluator = new DijkstraEvaluator( shortestSoFar, end, costEvaluator );
         }
-        return (lastTraverser = new MonoDirectionalTraversalDescription( )
+        lastTraverser = new MonoDirectionalTraversalDescription( )
                 .uniqueness( Uniqueness.NODE_PATH )
                 .expand( dijkstraExpander, stateFactory )
                 .order( new DijkstraSelectorFactory( interest, costEvaluator ) )
-                .evaluator( dijkstraEvaluator ).traverse( start ) );
+                .evaluator( dijkstraEvaluator ).traverse( start );
+        return lastTraverser;
     }
 
     @Override

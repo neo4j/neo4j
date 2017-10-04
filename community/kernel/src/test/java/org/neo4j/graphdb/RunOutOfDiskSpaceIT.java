@@ -43,6 +43,10 @@ public class RunOutOfDiskSpaceIT
 {
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
     public void shouldPropagateIOExceptions() throws Exception
@@ -148,8 +152,4 @@ public class RunOutOfDiskSpaceIT
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
 }

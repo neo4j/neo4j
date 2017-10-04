@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -60,11 +61,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class RelationshipGroupStoreTest
 {
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule( false );
+    public PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
     private File directory;
@@ -81,12 +83,13 @@ public class RelationshipGroupStoreTest
     }
 
     @After
-    public void after()
+    public void after() throws IOException
     {
-        if(db != null)
+        if ( db != null )
         {
             db.shutdown();
         }
+        fs.close();
     }
 
     @Test
@@ -98,7 +101,7 @@ public class RelationshipGroupStoreTest
     @Test
     public void createWithCustomThreshold() throws Exception
     {
-        createAndVerify( defaultThreshold*2 );
+        createAndVerify( defaultThreshold * 2 );
     }
 
     @Test
@@ -166,7 +169,7 @@ public class RelationshipGroupStoreTest
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( directory, new Config( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
+        return new StoreFactory( directory, Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
                 fs, NullLogProvider.getInstance() );
     }
 
@@ -197,12 +200,15 @@ public class RelationshipGroupStoreTest
     @Test
     public void verifyRecordsForDenseNodeWithOneRelType() throws Exception
     {
-        // TODO test on a lower level instead
-
         newDb( 2 );
 
         Node node;
-        Relationship rel1, rel2, rel3, rel4, rel5, rel6;
+        Relationship rel1;
+        Relationship rel2;
+        Relationship rel3;
+        Relationship rel4;
+        Relationship rel5;
+        Relationship rel6;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
@@ -231,12 +237,15 @@ public class RelationshipGroupStoreTest
     @Test
     public void verifyRecordsForDenseNodeWithTwoRelTypes() throws Exception
     {
-        // TODO test on a lower level instead
-
         newDb( 2 );
 
         Node node;
-        Relationship rel1, rel2, rel3, rel4, rel5, rel6;
+        Relationship rel1;
+        Relationship rel2;
+        Relationship rel3;
+        Relationship rel4;
+        Relationship rel5;
+        Relationship rel6;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
@@ -257,11 +266,13 @@ public class RelationshipGroupStoreTest
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
         assertFalse( groupRecord.getNext() == -1 );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
+        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(),
+                rel2.getId(), rel3.getId() );
 
         RelationshipGroupRecord otherGroupRecord = RecordStore.getRecord( groupStore, groupRecord.getNext() );
         assertEquals( -1, otherGroupRecord.getNext() );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(), rel5.getId(), rel6.getId() );
+        assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(),
+                rel5.getId(), rel6.getId() );
     }
 
     @Test
@@ -301,8 +312,8 @@ public class RelationshipGroupStoreTest
     public void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
     {
         AtomicBoolean nextReadIsInconsistent = new AtomicBoolean( false );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
+        PageCache pageCache = pageCacheRule.getPageCache( fs,
+                config().withInconsistentReads( nextReadIsInconsistent ) );
         StoreFactory factory = factory( null, pageCache );
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )

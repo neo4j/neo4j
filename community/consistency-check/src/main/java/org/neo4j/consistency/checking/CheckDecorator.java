@@ -19,8 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NeoStoreConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -37,36 +43,33 @@ public interface CheckDecorator
      */
     void prepare();
 
-    OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
-            OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker );
+    OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> decorateNeoStoreChecker(
+            OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> checker );
 
-    OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
-            OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker );
+    OwningRecordCheck<NodeRecord, NodeConsistencyReport> decorateNodeChecker(
+            OwningRecordCheck<NodeRecord, NodeConsistencyReport> checker );
 
-    OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
-            OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker );
+    OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> decorateRelationshipChecker(
+            OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
 
-    RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> decoratePropertyChecker(
-            RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker );
+    RecordCheck<PropertyRecord, PropertyConsistencyReport> decoratePropertyChecker(
+            RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
 
-    RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
-            RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker );
+    RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+            RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
 
-    RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
-            RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker );
+    RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+            RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
 
-    RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
-            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker );
+    RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
+            RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
 
-    RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
-            RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker );
+    RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker );
 
-    RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
-            RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
+    CheckDecorator NONE = new Adapter();
 
-    static CheckDecorator NONE = new Adapter();
-
-    static class Adapter implements CheckDecorator
+    class Adapter implements CheckDecorator
     {
         @Override
         public void prepare()
@@ -74,57 +77,50 @@ public interface CheckDecorator
         }
 
         @Override
-        public OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
-                OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
+        public OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> decorateNeoStoreChecker(
+                OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> checker )
         {
             return checker;
         }
 
         @Override
-        public OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
-                OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
+        public OwningRecordCheck<NodeRecord, NodeConsistencyReport> decorateNodeChecker(
+                OwningRecordCheck<NodeRecord, NodeConsistencyReport> checker )
         {
             return checker;
         }
 
         @Override
-        public OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
-                OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
+        public OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> decorateRelationshipChecker(
+                OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker )
         {
             return checker;
         }
 
         @Override
-        public RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> decoratePropertyChecker(
-                RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
+        public RecordCheck<PropertyRecord, PropertyConsistencyReport> decoratePropertyChecker(
+                RecordCheck<PropertyRecord, PropertyConsistencyReport> checker )
         {
             return checker;
         }
 
         @Override
-        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
-                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
+        public RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+                RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker )
         {
             return checker;
         }
 
         @Override
-        public RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
-                RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+                RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker )
         {
             return checker;
         }
 
         @Override
-        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
-                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
-        {
-            return checker;
-        }
-
-        @Override
-        public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
-                RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
+        public RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker )
         {
             return checker;
         }
@@ -137,7 +133,7 @@ public interface CheckDecorator
         }
     }
 
-    static class ChainCheckDecorator implements CheckDecorator
+    class ChainCheckDecorator implements CheckDecorator
     {
         private final CheckDecorator[] decorators;
 
@@ -156,10 +152,10 @@ public interface CheckDecorator
         }
 
         @Override
-        public OwningRecordCheck<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
-                OwningRecordCheck<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport> checker )
+        public OwningRecordCheck<NeoStoreRecord,NeoStoreConsistencyReport> decorateNeoStoreChecker(
+                OwningRecordCheck<NeoStoreRecord,NeoStoreConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateNeoStoreChecker( checker );
             }
@@ -167,10 +163,10 @@ public interface CheckDecorator
         }
 
         @Override
-        public OwningRecordCheck<NodeRecord,ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
-                OwningRecordCheck<NodeRecord,ConsistencyReport.NodeConsistencyReport> checker )
+        public OwningRecordCheck<NodeRecord,NodeConsistencyReport> decorateNodeChecker(
+                OwningRecordCheck<NodeRecord,NodeConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateNodeChecker( checker );
             }
@@ -178,10 +174,10 @@ public interface CheckDecorator
         }
 
         @Override
-        public OwningRecordCheck<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
-                OwningRecordCheck<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> checker )
+        public OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> decorateRelationshipChecker(
+                OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateRelationshipChecker( checker );
             }
@@ -189,10 +185,10 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> decoratePropertyChecker(
-                RecordCheck<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> checker )
+        public RecordCheck<PropertyRecord,PropertyConsistencyReport> decoratePropertyChecker(
+                RecordCheck<PropertyRecord,PropertyConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decoratePropertyChecker( checker );
             }
@@ -200,10 +196,10 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<PropertyKeyTokenRecord,ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
-                RecordCheck<PropertyKeyTokenRecord,ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
+        public RecordCheck<PropertyKeyTokenRecord,PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
+                RecordCheck<PropertyKeyTokenRecord,PropertyKeyTokenConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decoratePropertyKeyTokenChecker( checker );
             }
@@ -212,10 +208,10 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
-                RecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+                RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateRelationshipTypeTokenChecker( checker );
             }
@@ -223,23 +219,12 @@ public interface CheckDecorator
         }
 
         @Override
-        public RecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
-                RecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport> checker )
+        public RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateLabelTokenChecker( checker );
-            }
-            return checker;
-        }
-
-        @Override
-        public RecordCheck<NodeRecord,ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
-                RecordCheck<NodeRecord,ConsistencyReport.LabelsMatchReport> checker )
-        {
-            for ( CheckDecorator decorator: decorators)
-            {
-                checker = decorator.decorateLabelMatchChecker( checker );
             }
             return checker;
         }
@@ -248,7 +233,7 @@ public interface CheckDecorator
         public RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
                 RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateRelationshipGroupChecker( checker );
             }

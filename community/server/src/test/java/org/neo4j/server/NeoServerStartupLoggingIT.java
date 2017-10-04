@@ -74,7 +74,7 @@ public class NeoServerStartupLoggingIT extends ExclusiveServerTestBase
         // Check the server is alive
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
-        final JaxRsResponse response = new RestRequest(server.baseUri(), nonRedirectingClient).get();
+        final JaxRsResponse response = new RestRequest( server.baseUri(), nonRedirectingClient ).get();
         assertThat( response.getStatus(), is( greaterThan( 199 ) ) );
 
     }

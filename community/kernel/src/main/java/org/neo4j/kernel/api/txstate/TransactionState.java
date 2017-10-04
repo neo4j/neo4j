@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxState} for implementation details.
@@ -51,18 +49,19 @@ public interface TransactionState extends ReadableTransactionState
 
     void nodeDoDelete( long nodeId );
 
-    void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty );
+    void nodeDoAddProperty( long nodeId, int newPropertyKeyId, Value value );
 
-    void relationshipDoReplaceProperty( long relationshipId,
-                                        Property replacedProperty, DefinedProperty newProperty );
+    void nodeDoChangeProperty( long nodeId, int propertyKeyId, Value replacedValue, Value newValue );
 
-    void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty );
+    void relationshipDoReplaceProperty( long relationshipId, int propertyKeyId, Value replacedValue, Value newValue );
 
-    void nodeDoRemoveProperty( long nodeId, DefinedProperty removedProperty );
+    void graphDoReplaceProperty( int propertyKeyId, Value replacedValue, Value newValue );
 
-    void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty );
+    void nodeDoRemoveProperty( long nodeId, int propertyKeyId, Value removedValue );
 
-    void graphDoRemoveProperty( DefinedProperty removedProperty );
+    void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId, Value removedValue );
+
+    void graphDoRemoveProperty( int propertyKeyId, Value removedValue );
 
     void nodeDoAddLabel( int labelId, long nodeId );
 
@@ -80,25 +79,17 @@ public interface TransactionState extends ReadableTransactionState
 
     void indexRuleDoAdd( IndexDescriptor descriptor );
 
-    void constraintIndexRuleDoAdd( IndexDescriptor descriptor );
-
     void indexDoDrop( IndexDescriptor descriptor );
 
-    void constraintIndexDoDrop( IndexDescriptor descriptor );
+    boolean indexDoUnRemove( IndexDescriptor constraint );
 
-    void constraintDoAdd( UniquenessConstraint constraint, long indexId );
+    void constraintDoAdd( ConstraintDescriptor constraint );
 
-    void constraintDoAdd( NodePropertyExistenceConstraint constraint );
+    void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId );
 
-    void constraintDoAdd( RelationshipPropertyExistenceConstraint constraint );
+    void constraintDoDrop( ConstraintDescriptor constraint );
 
-    void constraintDoDrop( NodePropertyConstraint constraint );
+    boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
-    void constraintDoDrop( RelationshipPropertyConstraint constraint );
-
-    boolean constraintDoUnRemove( NodePropertyConstraint constraint );
-
-    boolean constraintIndexDoUnRemove( IndexDescriptor index );
-
-    void indexDoUpdateProperty( IndexDescriptor descriptor, long nodeId, DefinedProperty before, DefinedProperty after );
+    void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
 }

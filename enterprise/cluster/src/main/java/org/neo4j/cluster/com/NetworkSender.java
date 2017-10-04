@@ -65,6 +65,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
@@ -101,8 +104,8 @@ public class NetworkSender
 
     // Sending
     // One executor for each receiving instance, so that one blocking instance cannot block others receiving messages
-    private final Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
-    private final Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
+    private final Map<URI, ExecutorService> senderExecutors = new HashMap<>();
+    private final Set<URI> failedInstances = new HashSet<>(); // Keeps track of what instances we have failed to open
     // connections to
     private ClientBootstrap clientBootstrap;
 
@@ -112,7 +115,7 @@ public class NetworkSender
     private final Log msgLog;
     private URI me;
 
-    private final Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
+    private final Map<URI, Channel> connections = new ConcurrentHashMap<>();
     private final Listeners<NetworkChannelsListener> listeners = new Listeners<>();
 
     private volatile boolean paused;
@@ -181,15 +184,20 @@ public class NetworkSender
         {
             executorService.shutdown();
         }
+        long totalWaitTime = 0;
+        long maxWaitTime = SECONDS.toMillis( 5 );
         for ( Map.Entry<URI, ExecutorService> entry : senderExecutors.entrySet() )
         {
             URI targetAddress = entry.getKey();
             ExecutorService executorService = entry.getValue();
 
-            if ( !executorService.awaitTermination( 50, TimeUnit.SECONDS ) )
+            long start = currentTimeMillis();
+            if ( !executorService.awaitTermination( maxWaitTime - totalWaitTime, MILLISECONDS ) )
             {
                 msgLog.warn( "Could not shut down send executor towards: " + targetAddress );
+                break;
             }
+            totalWaitTime += currentTimeMillis() - start;
         }
         senderExecutors.clear();
 
@@ -224,7 +232,7 @@ public class NetworkSender
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
-        if (!paused)
+        if ( !paused )
         {
             if ( message.hasHeader( Message.TO ) )
             {
@@ -239,7 +247,7 @@ public class NetworkSender
         return true;
     }
 
-    public void setPaused(boolean paused)
+    public void setPaused( boolean paused )
     {
         this.paused = paused;
     }
@@ -263,75 +271,67 @@ public class NetworkSender
             senderExecutors.put( to, senderExecutor );
         }
 
-        senderExecutor.submit( new Runnable()
+        senderExecutor.submit( () ->
         {
-            @Override
-            public void run()
+            Channel channel = getChannel( to );
+
+            try
             {
-                Channel channel = getChannel( to );
-
-                try
+                if ( channel == null )
                 {
-                    if ( channel == null )
-                    {
-                        channel = openChannel( to );
-                        openedChannel( to, channel );
+                    channel = openChannel( to );
+                    openedChannel( to, channel );
 
-                        // Instance could be connected to, remove any marker of it being failed
-                        failedInstances.remove( to );
-                    }
+                    // Instance could be connected to, remove any marker of it being failed
+                    failedInstances.remove( to );
                 }
-                catch ( Exception e )
+            }
+            catch ( Exception e )
+            {
+                // Only print out failure message on first fail
+                if ( !failedInstances.contains( to ) )
                 {
-                    // Only print out failure message on first fail
-                    if ( !failedInstances.contains( to ) )
-                    {
-                        msgLog.warn( e.getMessage() );
-                        failedInstances.add( to );
-                    }
-
-                    return;
+                    msgLog.warn( e.getMessage() );
+                    failedInstances.add( to );
                 }
 
-                try
+                return;
+            }
+
+            try
+            {
+                // Set FROM header
+                message.setHeader( Message.FROM, me.toASCIIString() );
+
+                msgLog.debug( "Sending to " + to + ": " + message );
+
+                ChannelFuture future = channel.write( message );
+                future.addListener( future1 ->
                 {
-                    // Set FROM header
-                    message.setHeader( Message.FROM, me.toASCIIString() );
+                    monitor.sentMessage( message );
 
-                    msgLog.debug( "Sending to " + to + ": " + message );
-
-                    ChannelFuture future = channel.write( message );
-                    future.addListener( new ChannelFutureListener()
+                    if ( !future1.isSuccess() )
                     {
-                        @Override
-                        public void operationComplete( ChannelFuture future ) throws Exception
-                        {
-                            monitor.sentMessage( message );
+                        msgLog.debug( "Unable to write " + message + " to " + future1.getChannel(),
+                                future1.getCause() );
+                        closedChannel( future1.getChannel() );
 
-                            if ( !future.isSuccess() )
-                            {
-                                msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
-                                        future.getCause() );
-                                closedChannel( future.getChannel() );
-
-                                // Try again
-                                send( message );
-                            }
-                        }
-                    } );
-                }
-                catch ( Exception e )
+                        // Try again
+                        send( message );
+                    }
+                } );
+            }
+            catch ( Exception e )
+            {
+                if ( Exceptions.contains( e, ClosedChannelException.class ) )
                 {
-                    if( Exceptions.contains(e, ClosedChannelException.class ))
-                    {
-                        msgLog.warn( "Could not send message, because the connection has been closed." );
-                    }
-                    else
-                    {
-                        msgLog.warn( "Could not send message", e );
-                    }
-                    channel.close();
+                    msgLog.warn( "Could not send message, because the connection has been closed." );
                 }
+                else
+                {
+                    msgLog.warn( "Could not send message", e );
+                }
+                channel.close();
             }
         } );
     }
@@ -450,7 +450,7 @@ public class NetworkSender
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
             {
                 // If we keep getting the same exception, only output the first one
-                if (lastException != null && !lastException.getClass().equals( cause.getClass() ))
+                if ( lastException != null && !lastException.getClass().equals( cause.getClass() ) )
                 {
                     msgLog.error( "Receive exception:", cause );
                     lastException = cause;
@@ -461,9 +461,9 @@ public class NetworkSender
         @Override
         public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
         {
-            if (lastException != null)
+            if ( lastException != null )
             {
-                msgLog.error( "Recovered from:", lastException);
+                msgLog.error( "Recovered from:", lastException );
                 lastException = null;
             }
             super.writeComplete( ctx, e );

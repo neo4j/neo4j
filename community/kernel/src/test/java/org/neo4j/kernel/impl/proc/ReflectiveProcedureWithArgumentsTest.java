@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -187,8 +188,8 @@ public class ReflectiveProcedureWithArgumentsTest
     public static class ClassWithProcedureWithDefaults
     {
         @Procedure
-        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "a") String a , @Name( value = "b", defaultValue = "42") long b, @Name( value = "c",
-                defaultValue = "3.14") double c)
+        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "a" ) String a,
+                @Name( value = "b", defaultValue = "42" ) long b, @Name( value = "c", defaultValue = "3.14" ) double c )
         {
             return Stream.empty();
         }
@@ -197,7 +198,8 @@ public class ReflectiveProcedureWithArgumentsTest
     public static class ClassWithProcedureWithMisplacedDefault
     {
         @Procedure
-        public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a , @Name( value = "b", defaultValue = "42") long b, @Name( "c" ) Object c)
+        public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a,
+                @Name( value = "b", defaultValue = "42" ) long b, @Name( "c" ) Object c )
         {
             return Stream.empty();
         }
@@ -206,7 +208,7 @@ public class ReflectiveProcedureWithArgumentsTest
     public static class ClassWithProcedureWithBadlyTypedDefault
     {
         @Procedure
-        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two") long b)
+        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two" ) long b )
         {
             return Stream.empty();
         }
@@ -214,6 +216,7 @@ public class ReflectiveProcedureWithArgumentsTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), new ComponentRegistry(),
+                NullLog.getInstance(), ProcedureConfig.DEFAULT ).compileProcedure( clazz, Optional.empty(), true );
     }
 }

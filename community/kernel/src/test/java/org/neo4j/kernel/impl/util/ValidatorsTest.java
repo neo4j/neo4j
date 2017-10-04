@@ -59,7 +59,7 @@ public class ValidatorsTest
             Validators.inList(new String[] { "foo", "bar", "baz" }).validate( "qux" );
             fail( "Should have failed to find item in list." );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             assertThat( e.getMessage(), containsString( "'qux' found but must be one of: [foo, bar, baz]." ) );
         }
@@ -68,7 +68,7 @@ public class ValidatorsTest
         {
             Validators.inList(new String[] { "foo", "bar", "baz" }).validate( "bar" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             fail( "Should have found item in list." );
         }

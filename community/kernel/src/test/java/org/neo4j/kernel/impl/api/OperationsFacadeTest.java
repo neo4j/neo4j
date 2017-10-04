@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,14 +26,12 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
-import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 
@@ -43,8 +40,7 @@ public class OperationsFacadeTest
 {
     private final String LABEL1 = "Label1";
     private final String PROP1 = "Prop1";
-    private final int LABEL1_ID = 1;
-    private final int PROP1_ID = 2;
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 2 );
 
     @Mock
     private KernelStatement kernelStatement;
@@ -58,59 +54,18 @@ public class OperationsFacadeTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    @Before
-    public void setUp() throws Exception
-    {
-        operationsFacade.initialize( statementOperationParts );
-    }
-
     @Test
-    public void testThrowExceptionWhenIndexNotFoundByLabelAndProperty() throws SchemaRuleNotFoundException
+    public void testThrowExceptionWhenIndexNotFound() throws SchemaRuleNotFoundException
     {
         setupSchemaReadOperations();
 
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
-        expectedException.expect( IndexSchemaRuleNotFoundException.class );
+        expectedException.expect( SchemaRuleNotFoundException.class );
         expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "Index for label 'Label1' and property 'Prop1' not found." ) );
+                "No index was found for :Label1(Prop1)." ) );
 
-        operationsFacade.indexGetForLabelAndPropertyKey( LABEL1_ID, PROP1_ID );
-    }
-
-    @Test
-    public void testThrowExceptionWhenDuplicateUniqueIndexFound()
-            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
-    {
-        SchemaReadOperations readOperations = setupSchemaReadOperations();
-        Mockito.when( readOperations
-                .uniqueIndexesGetForLabel( Mockito.any( KernelStatement.class ), Mockito.eq( LABEL1_ID ) ) )
-                .thenReturn( Iterators.iterator( new IndexDescriptor( LABEL1_ID, PROP1_ID ),
-                        new IndexDescriptor( LABEL1_ID, PROP1_ID ) ) );
-        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
-
-        expectedException.expect( DuplicateIndexSchemaRuleException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "Multiple uniqueness indexes found for label 'Label1' and property 'Prop1'." ) );
-
-        operationsFacade.uniqueIndexGetForLabelAndPropertyKey( LABEL1_ID, PROP1_ID );
-    }
-
-    @Test
-    public void testThrowExceptionWhenUniqueIndexNotFound()
-            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
-    {
-        SchemaReadOperations readOperations = setupSchemaReadOperations();
-        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
-        Mockito.when( readOperations
-                .uniqueIndexesGetForLabel( Mockito.any( KernelStatement.class ), Mockito.eq( LABEL1_ID ) ) )
-                .thenReturn( Iterators.<IndexDescriptor>emptyIterator() );
-
-        expectedException.expect( IndexSchemaRuleNotFoundException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "Uniqueness index for label 'Label1' and property 'Prop1' not found." ) );
-
-        operationsFacade.uniqueIndexGetForLabelAndPropertyKey( LABEL1_ID, PROP1_ID );
+        operationsFacade.indexGetForSchema( descriptor );
     }
 
     private SchemaReadOperations setupSchemaReadOperations()
@@ -123,8 +78,8 @@ public class OperationsFacadeTest
     private TokenNameLookup getDefaultTokenNameLookup()
     {
         TokenNameLookup tokenNameLookup = Mockito.mock( TokenNameLookup.class );
-        Mockito.when( tokenNameLookup.labelGetName( LABEL1_ID ) ).thenReturn( LABEL1 );
-        Mockito.when( tokenNameLookup.propertyKeyGetName( PROP1_ID ) ).thenReturn( PROP1 );
+        Mockito.when( tokenNameLookup.labelGetName( descriptor.getLabelId() ) ).thenReturn( LABEL1 );
+        Mockito.when( tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) ).thenReturn( PROP1 );
         return tokenNameLookup;
     }
 

@@ -31,6 +31,10 @@ import java.util.zip.ZipInputStream;
 
 public class Unzip
 {
+    private Unzip()
+    {
+    }
+
     public static File unzip( Class<?> testClass, String resource, File targetDirectory ) throws IOException
     {
         InputStream source = testClass.getResourceAsStream( resource );

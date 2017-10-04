@@ -20,18 +20,17 @@
 package org.neo4j.bolt.v1.messaging.message;
 
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 public class RunMessage implements RequestMessage
 {
-    private static Map<String, Object> EMPTY_PARAMETERS = new HashMap<>();
+    private static MapValue EMPTY_PARAMETERS = VirtualValues.EMPTY_MAP;
 
     /**
      * Factory method for obtaining RUN messages.
      */
-    public static RunMessage run( String statement, Map<String, Object> parameters )
+    public static RunMessage run( String statement, MapValue parameters )
     {
         return new RunMessage( statement, parameters );
     }
@@ -46,15 +45,15 @@ public class RunMessage implements RequestMessage
     }
 
     private final String statement;
-    private final Map<String, Object> params;
+    private final MapValue params;
 
-    private RunMessage( String statement, Map<String, Object> params )
+    private RunMessage( String statement, MapValue params )
     {
         this.statement = statement;
         this.params = params;
     }
 
-    public Map<String, Object> params()
+    public MapValue params()
     {
         return params;
     }

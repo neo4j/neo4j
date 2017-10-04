@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import java.lang.reflect.Member;
-import java.lang.reflect.Modifier;
-
 import org.mozilla.javascript.ClassShutter;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.WrapFactory;
+
+import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
 
 public class WhiteListJavaWrapper extends WrapFactory
 {
@@ -38,42 +38,34 @@ public class WhiteListJavaWrapper extends WrapFactory
         this.classShutter = classShutter;
     }
 
-    public static class JavascriptJavaObject extends NativeJavaObject
-    {
-        public JavascriptJavaObject( Scriptable scope, Object javaObject, Class type )
-        {
-            // we pass 'null' to object. NativeJavaObject uses
-            // passed 'type' to reflect fields and methods when
-            // object is null.
-            super(scope, null, type);
-
-            // Now, we set actual object. 'javaObject' is protected
-            // field of NativeJavaObject.
-            this.javaObject = javaObject;
-        }
-    }
-
     /*
      * Majority of code below from Rhino source, written by A. Sundararajan.
      */
     @Override
-    public Scriptable wrapAsJavaObject(Context cx, Scriptable scope, Object javaObject, Class staticType) {
+    public Scriptable wrapAsJavaObject( Context cx, Scriptable scope, Object javaObject, Class staticType )
+    {
 
-        if (javaObject instanceof ClassLoader) {
+        if ( javaObject instanceof ClassLoader )
+        {
 
             throw new SecurityException( "Class loaders cannot be accessed in this environment." );
 
-        } else
+        }
+        else
         {
             String name = null;
-            if (javaObject instanceof Class) {
-                name = ((Class)javaObject).getName();
-            } else if (javaObject instanceof Member ) {
+            if ( javaObject instanceof Class )
+            {
+                name = ((Class) javaObject).getName();
+            }
+            else if ( javaObject instanceof Member )
+            {
                 Member member = (Member) javaObject;
                 // Check member access. Don't allow reflective access to
                 // non-public members. Note that we can't call checkMemberAccess
                 // because that expects exact stack depth!
-                if (!Modifier.isPublic( member.getModifiers() )) {
+                if ( !Modifier.isPublic( member.getModifiers() ) )
+                {
                     return null;
                 }
                 name = member.getDeclaringClass().getName();
@@ -82,11 +74,15 @@ public class WhiteListJavaWrapper extends WrapFactory
             // Now, make sure that no ClassShutter prevented Class or Member
             // of it is accessed reflectively. Note that ClassShutter may
             // prevent access to a class, even though SecurityManager permit.
-            if (name != null) {
-                if (!classShutter.visibleToScripts(name)) {
-                    throw new SecurityException( "'"+name+"' cannot be accessed in this environment." );
-                } else {
-                    return new NativeJavaObject(scope, javaObject, staticType);
+            if ( name != null )
+            {
+                if ( !classShutter.visibleToScripts( name ) )
+                {
+                    throw new SecurityException( "'" + name + "' cannot be accessed in this environment." );
+                }
+                else
+                {
+                    return new NativeJavaObject( scope, javaObject, staticType );
                 }
             }
         }
@@ -94,7 +90,8 @@ public class WhiteListJavaWrapper extends WrapFactory
         // we have got some non-reflective object.
         Class dynamicType = javaObject.getClass();
         String name = dynamicType.getName();
-        if (!classShutter.visibleToScripts(name)) {
+        if ( !classShutter.visibleToScripts( name ) )
+        {
             // Object of some sensitive class (such as sun.net.www.*
             // objects returned from public method of java.net.URL class.
             // We expose this object as though it is an object of some
@@ -107,35 +104,57 @@ public class WhiteListJavaWrapper extends WrapFactory
             // example, method return type known from signature. The dynamic
             // type would be the actual Class of the actual returned object.
             // If the staticType is an interface, we just use that type.
-            if (staticType != null && staticType.isInterface()) {
+            if ( staticType != null && staticType.isInterface() )
+            {
                 type = staticType;
-            } else {
+            }
+            else
+            {
                 // dynamicType is always a class type and never an interface.
                 // find an accessible super class of the dynamic type.
-                while (true) {
+                while ( true )
+                {
                     dynamicType = dynamicType.getSuperclass();
 
-                    if(dynamicType != null)
+                    if ( dynamicType != null )
                     {
                         name = dynamicType.getName();
-                        if (classShutter.visibleToScripts(name)) {
+                        if ( classShutter.visibleToScripts( name ) )
+                        {
                             type = dynamicType;
                             break;
                         }
-                    } else
+                    }
+                    else
                     {
                         break;
                     }
                 }
                 // atleast java.lang.Object has to be accessible. So, when
                 // we reach here, type variable should not be null.
-                assert type != null:
-                        "even java.lang.Object is not accessible?";
+                assert type != null : "even java.lang.Object is not accessible?";
             }
             // create custom wrapper with the 'safe' type.
-            return new JavascriptJavaObject(scope, javaObject, type);
-        } else {
-            return new NativeJavaObject(scope, javaObject, staticType);
+            return new JavascriptJavaObject( scope, javaObject, type );
+        }
+        else
+        {
+            return new NativeJavaObject( scope, javaObject, staticType );
+        }
+    }
+
+    public static class JavascriptJavaObject extends NativeJavaObject
+    {
+        public JavascriptJavaObject( Scriptable scope, Object javaObject, Class type )
+        {
+            // we pass 'null' to object. NativeJavaObject uses
+            // passed 'type' to reflect fields and methods when
+            // object is null.
+            super( scope, null, type );
+
+            // Now, we set actual object. 'javaObject' is protected
+            // field of NativeJavaObject.
+            this.javaObject = javaObject;
         }
     }
 }

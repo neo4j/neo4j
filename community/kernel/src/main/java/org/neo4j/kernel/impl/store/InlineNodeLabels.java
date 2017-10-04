@@ -157,7 +157,7 @@ public class InlineNodeLabels implements NodeLabels
 
     private static long combineLabelCountAndLabelStorage( byte labelCount, long labelBits )
     {
-        return ((((long)labelCount) << 36) | labelBits);
+        return ((long)labelCount << 36) | labelBits;
     }
 
     private static byte labelCount( long labelField )

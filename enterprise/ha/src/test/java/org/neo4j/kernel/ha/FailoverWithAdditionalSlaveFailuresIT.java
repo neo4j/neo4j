@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -38,13 +40,15 @@ import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assume.assumeTrue;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
 @RunWith( Parameterized.class )
 public class FailoverWithAdditionalSlaveFailuresIT
 {
+    @Rule
+    public TestName name = new TestName();
+
     @Rule
     public LoggerRule logger = new LoggerRule();
     @Rule
@@ -54,8 +58,9 @@ public class FailoverWithAdditionalSlaveFailuresIT
     private int clusterSize;
     private int[] slavesToFail;
 
-    @Parameters( name = "{index} clusterSize:{0}")
-    public static Collection<Object[]> data() {
+    @Parameters
+    public static Collection<Object[]> data()
+    {
         return Arrays.asList(new Object[][] {
                 {5, new int[]{1}},
                 {5, new int[]{2}},
@@ -100,7 +105,8 @@ public class FailoverWithAdditionalSlaveFailuresIT
 
     private void testFailoverWithAdditionalSlave( int clusterSize, int[] slaveIndexes ) throws Throwable
     {
-        ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) ).
+        File root = dir.cleanDirectory( "testcluster_" + name.getMethodName() );
+        ClusterManager manager = new ClusterManager.Builder().withRootDirectory( root ).
                 withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .build();
 
@@ -148,7 +154,7 @@ public class FailoverWithAdditionalSlaveFailuresIT
         HighlyAvailableGraphDatabase slave = null;
 
         List<HighlyAvailableGraphDatabase> excluded = new ArrayList<>();
-        while( slaveOrder-->0 )
+        while ( slaveOrder-- > 0 )
         {
             slave = cluster.getAnySlave( toArray( excluded ) );
             excluded.add( slave );

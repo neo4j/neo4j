@@ -126,25 +126,25 @@ public class EvaluatorFactory
     private abstract static class ScriptedEvaluator
     {
         private final ScriptExecutor executor;
-        private final Map<String, Object> scriptContext = new HashMap<>(1);
+        private final Map<String,Object> scriptContext = new HashMap<>( 1 );
 
         ScriptedEvaluator( ScriptExecutor executor )
         {
             this.executor = executor;
         }
 
-        protected boolean evalPosition(Path path)
+        protected boolean evalPosition( Path path )
         {
             scriptContext.put( "position", path );
 
             Object out = executor.execute( scriptContext );
 
-            if(out instanceof Boolean)
+            if ( out instanceof Boolean )
             {
-                return (Boolean)out;
+                return (Boolean) out;
             }
 
-            throw new EvaluationException("Provided script did not return a boolean value.");
+            throw new EvaluationException( "Provided script did not return a boolean value." );
         }
     }
 

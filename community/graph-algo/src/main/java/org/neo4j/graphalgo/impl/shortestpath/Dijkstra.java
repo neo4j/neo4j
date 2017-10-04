@@ -35,6 +35,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Dijkstra class. This class can be used to perform shortest path computations
@@ -58,19 +61,20 @@ public class Dijkstra<CostType> implements
 {
     protected CostType startCost; // starting cost for both the start node and
     // the end node
-    protected Node startNode, endNode;
+    protected Node startNode;
+    protected Node endNode;
     protected RelationshipType[] costRelationTypes;
     protected Direction relationDirection;
-    protected CostEvaluator<CostType> costEvaluator = null;
-    protected CostAccumulator<CostType> costAccumulator = null;
-    protected Comparator<CostType> costComparator = null;
-    protected boolean calculateAllShortestPaths = false;
+    protected CostEvaluator<CostType> costEvaluator;
+    protected CostAccumulator<CostType> costAccumulator;
+    protected Comparator<CostType> costComparator;
+    protected boolean calculateAllShortestPaths;
     // Limits
     protected long maxRelationShipsToTraverse = -1;
-    protected long numberOfTraversedRelationShips = 0;
+    protected long numberOfTraversedRelationShips;
     protected long maxNodesToTraverse = -1;
-    protected long numberOfNodesTraversed = 0;
-    protected CostType maxCost = null;
+    protected long numberOfNodesTraversed;
+    protected CostType maxCost;
 
     /**
      * @return True if the set limits for the calculation has been reached (but
@@ -83,12 +87,8 @@ public class Dijkstra<CostType> implements
         {
             return true;
         }
-        if ( maxNodesToTraverse >= 0
-             && numberOfNodesTraversed >= maxNodesToTraverse )
-        {
-            return true;
-        }
-        return false;
+        return maxNodesToTraverse >= 0
+               && numberOfNodesTraversed >= maxNodesToTraverse;
     }
 
     protected boolean limitReached( CostType cost1, CostType cost2 )
@@ -108,8 +108,8 @@ public class Dijkstra<CostType> implements
     }
 
     // Result data
-    protected boolean doneCalculation = false;
-    protected Set<Node> foundPathsMiddleNodes = null;
+    protected boolean doneCalculation;
+    protected Set<Node> foundPathsMiddleNodes;
     protected CostType foundPathsCost;
     protected HashMap<Node, List<Relationship>> predecessors1 = new HashMap<Node, List<Relationship>>();
     protected HashMap<Node, List<Relationship>> predecessors2 = new HashMap<Node, List<Relationship>>();
@@ -176,14 +176,14 @@ public class Dijkstra<CostType> implements
         protected HashMap<Node, CostType> otherDistances;
         // Flag that indicates if we should follow egdes in the opposite
         // direction instead
-        protected boolean backwards = false;
+        protected boolean backwards;
         // The priority queue
         protected DijkstraPriorityQueue<CostType> queue;
         // "Done" flags. The first is set to true when a node is found that is
         // contained in both myDistances and otherDistances. This means the
         // calculation has found one of the shortest paths.
-        protected boolean oneShortestPathHasBeenFound = false;
-        protected boolean allShortestPathsHasBeenFound = false;
+        protected boolean oneShortestPathHasBeenFound;
+        protected boolean allShortestPathsHasBeenFound;
 
         public DijstraIterator( Node startNode,
                 HashMap<Node, List<Relationship>> predecessors,
@@ -315,100 +315,93 @@ public class Dijkstra<CostType> implements
                 // Otherwise, follow all edges from this node
                 for ( RelationshipType costRelationType : costRelationTypes )
                 {
-                    for ( Relationship relationship : currentNode.getRelationships(
-                            costRelationType, getDirection() ) )
+                    ResourceIterable<Relationship> relationships = Iterables.asResourceIterable(
+                            currentNode.getRelationships( costRelationType, getDirection() ) );
+                    try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
                     {
-                        if ( limitReached() )
+                        while ( iterator.hasNext() )
                         {
-                            break;
-                        }
-                        ++numberOfTraversedRelationShips;
-                        // Target node
-                        Node target = relationship.getOtherNode( currentNode );
-                        // Find out if an eventual path would go in the opposite
-                        // direction of the edge
-                        boolean backwardsEdge = relationship.getEndNode().equals(
-                                currentNode )
-                                                ^ backwards;
-                        CostType newCost = costAccumulator.addCosts(
-                                currentCost, costEvaluator.getCost(
-                                        relationship,
-                                        backwardsEdge ? Direction.INCOMING
-                                                : Direction.OUTGOING ) );
-                        // Already done with target node?
-                        if ( myDistances.containsKey( target ) )
-                        {
-                            // Have we found a better cost for a node which is
-                            // already
-                            // calculated?
-                            if ( costComparator.compare(
-                                    myDistances.get( target ), newCost ) > 0 )
+                            Relationship relationship = iterator.next();
+                            if ( limitReached() )
                             {
-                                throw new RuntimeException(
-                                        "Cycle with negative costs found." );
+                                break;
                             }
-                            // Equally good path found?
-                            else if ( calculateAllShortestPaths
-                                      && costComparator.compare(
-                                              myDistances.get( target ),
-                                              newCost ) == 0 )
+                            ++numberOfTraversedRelationShips;
+                            // Target node
+                            Node target = relationship.getOtherNode( currentNode );
+                            // Find out if an eventual path would go in the opposite
+                            // direction of the edge
+                            boolean backwardsEdge = relationship.getEndNode().equals( currentNode ) ^ backwards;
+                            CostType newCost = costAccumulator.addCosts( currentCost, costEvaluator
+                                    .getCost( relationship, backwardsEdge ? Direction.INCOMING : Direction.OUTGOING ) );
+                            // Already done with target node?
+                            if ( myDistances.containsKey( target ) )
                             {
-                                // Put it in predecessors
-                                List<Relationship> myPredecessors = predecessors.get( currentNode );
-                                // Dont do it if this relation is already in
-                                // predecessors (other direction)
-                                if ( myPredecessors == null
-                                     || !myPredecessors.contains( relationship ) )
+                                // Have we found a better cost for a node which is
+                                // already
+                                // calculated?
+                                if ( costComparator.compare( myDistances.get( target ), newCost ) > 0 )
                                 {
-                                    List<Relationship> predList = predecessors.get( target );
-                                    if ( predList == null )
+                                    throw new RuntimeException( "Cycle with negative costs found." );
+                                }
+                                // Equally good path found?
+                                else if ( calculateAllShortestPaths &&
+                                        costComparator.compare( myDistances.get( target ), newCost ) == 0 )
+                                {
+                                    // Put it in predecessors
+                                    List<Relationship> myPredecessors = predecessors.get( currentNode );
+                                    // Dont do it if this relation is already in
+                                    // predecessors (other direction)
+                                    if ( myPredecessors == null || !myPredecessors.contains( relationship ) )
                                     {
-                                        // This only happens if we get back to
-                                        // the
-                                        // start node, which is just bogus
-                                    }
-                                    else
-                                    {
-                                        predList.add( relationship );
+                                        List<Relationship> predList = predecessors.get( target );
+                                        if ( predList == null )
+                                        {
+                                            // This only happens if we get back to
+                                            // the
+                                            // start node, which is just bogus
+                                        }
+                                        else
+                                        {
+                                            predList.add( relationship );
+                                        }
                                     }
                                 }
+                                continue;
                             }
-                            continue;
-                        }
-                        // Have we found a better cost for this node?
-                        if ( !mySeen.containsKey( target )
-                             || costComparator.compare( mySeen.get( target ),
-                                     newCost ) > 0 )
-                        {
-                            // Put it in the queue
-                            if ( !mySeen.containsKey( target ) )
+                            // Have we found a better cost for this node?
+                            if ( !mySeen.containsKey( target ) ||
+                                    costComparator.compare( mySeen.get( target ), newCost ) > 0 )
                             {
-                                queue.insertValue( target, newCost );
+                                // Put it in the queue
+                                if ( !mySeen.containsKey( target ) )
+                                {
+                                    queue.insertValue( target, newCost );
+                                }
+                                // or update the entry. (It is important to keep
+                                // these
+                                // cases apart to limit the size of the queue)
+                                else
+                                {
+                                    queue.decreaseValue( target, newCost );
+                                }
+                                // Update it
+                                mySeen.put( target, newCost );
+                                // Put it in predecessors
+                                List<Relationship> predList = new LinkedList<Relationship>();
+                                predList.add( relationship );
+                                predecessors.put( target, predList );
                             }
-                            // or update the entry. (It is important to keep
-                            // these
-                            // cases apart to limit the size of the queue)
-                            else
+                            // Have we found an equal cost for (additonal path to)
+                            // this
+                            // node?
+                            else if ( calculateAllShortestPaths &&
+                                    costComparator.compare( mySeen.get( target ), newCost ) == 0 )
                             {
-                                queue.decreaseValue( target, newCost );
+                                // Put it in predecessors
+                                List<Relationship> predList = predecessors.get( target );
+                                predList.add( relationship );
                             }
-                            // Update it
-                            mySeen.put( target, newCost );
-                            // Put it in predecessors
-                            List<Relationship> predList = new LinkedList<Relationship>();
-                            predList.add( relationship );
-                            predecessors.put( target, predList );
-                        }
-                        // Have we found an equal cost for (additonal path to)
-                        // this
-                        // node?
-                        else if ( calculateAllShortestPaths
-                                  && costComparator.compare(
-                                          mySeen.get( target ), newCost ) == 0 )
-                        {
-                            // Put it in predecessors
-                            List<Relationship> predList = predecessors.get( target );
-                            predList.add( relationship );
                         }
                     }
                 }

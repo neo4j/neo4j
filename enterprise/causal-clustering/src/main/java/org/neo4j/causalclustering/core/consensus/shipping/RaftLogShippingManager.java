@@ -31,9 +31,9 @@ import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.core.consensus.outcome.ShipCommand;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 
@@ -57,7 +57,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     private LeaderContext lastLeaderContext;
 
     private boolean running;
-    private boolean stopped = false;
+    private boolean stopped;
 
     public RaftLogShippingManager( Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                                    ReadableRaftLog raftLog,
@@ -94,7 +94,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
      */
     public synchronized void resume( LeaderContext initialLeaderContext )
     {
-        if( stopped )
+        if ( stopped )
         {
             return;
         }
@@ -149,7 +149,9 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     public synchronized void onMembershipChanged()
     {
         if ( lastLeaderContext == null || !running )
+        {
             return;
+        }
 
         HashSet<MemberId> toBeRemoved = new HashSet<>( logShippers.keySet() );
         toBeRemoved.removeAll( membership.replicationMembers() );
@@ -157,7 +159,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         for ( MemberId member : toBeRemoved )
         {
             RaftLogShipper logShipper = logShippers.remove( member );
-            if( logShipper != null )
+            if ( logShipper != null )
             {
                 logShipper.stop();
             }

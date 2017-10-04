@@ -41,12 +41,12 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -82,7 +82,7 @@ public class LdapCachingTest
 
         fakeTicker = new FakeTicker();
         authManager = new MultiRealmAuthManager( internalFlatFileRealm, realms,
-                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10), securityLog, false );
+                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10 ), securityLog, false );
         authManager.init();
         authManager.start();
 
@@ -92,7 +92,7 @@ public class LdapCachingTest
 
     private Config getLdapConfig()
     {
-        return new Config( stringMap(
+        return Config.defaults( stringMap(
                 SecuritySettings.native_authentication_enabled.name(), "false",
                 SecuritySettings.native_authorization_enabled.name(), "false",
                 SecuritySettings.ldap_authentication_enabled.name(), "true",
@@ -202,8 +202,8 @@ public class LdapCachingTest
 
     private class TestRealm extends LdapRealm
     {
-        private boolean authenticationFlag = false;
-        private boolean authorizationFlag = false;
+        private boolean authenticationFlag;
+        private boolean authorizationFlag;
 
         boolean takeAuthenticationFlag()
         {
@@ -229,7 +229,7 @@ public class LdapCachingTest
         @Override
         public String getName()
         {
-            return "TestRealm wrapping "+ super.getName();
+            return "TestRealm wrapping " + super.getName();
         }
 
         @Override

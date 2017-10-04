@@ -43,6 +43,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -100,7 +101,9 @@ public class DatabaseActionsTest
     @BeforeClass
     public static void createDb() throws IOException
     {
-        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
+                .newGraphDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
         actions = new TransactionWrappedDatabaseActions( new LeaseManager( Clocks.fakeClock() ), database.getGraph() );
@@ -140,7 +143,7 @@ public class DatabaseActionsTest
     {
         NodeRepresentation noderep = actions.createNode( Collections.emptyMap() );
 
-        try (Transaction tx = database.getGraph().beginTx())
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             assertNotNull( database.getGraph().getNodeById( noderep.getId() ) );
         }
@@ -170,7 +173,7 @@ public class DatabaseActionsTest
         }
     }
 
-    @Test(expected = PropertyValueException.class)
+    @Test( expected = PropertyValueException.class )
     public void shouldFailOnTryingToStoreMixedArraysAsAProperty() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
@@ -202,7 +205,7 @@ public class DatabaseActionsTest
         properties.put( "foo", "bar" );
         properties.put( "baz", 17 );
         actions.setAllNodeProperties( nodeId, properties );
-        try (Transaction tx = database.getGraph().beginTx())
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Node node = database.getGraph().getNodeById( nodeId );
             assertHasProperties( node, properties );
@@ -407,7 +410,7 @@ public class DatabaseActionsTest
         actions.removeNodeProperty( nodeId, "foo" );
     }
 
-    @Test(expected = NoSuchPropertyException.class)
+    @Test( expected = NoSuchPropertyException.class )
     public void shouldReturnFalseIfNodePropertyNotRemoved() throws Exception
     {
         Map<String, Object> properties = new HashMap<>();
@@ -578,7 +581,7 @@ public class DatabaseActionsTest
     public void shouldRemoveRelationProperties() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "foo", "bar" );
         map.put( "baz", 22 );
         graphdbHelper.setRelationshipProperties( relId, map );
@@ -593,7 +596,7 @@ public class DatabaseActionsTest
     public void shouldRemoveRelationshipProperty() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "foo", "bar" );
         map.put( "baz", 22 );
         graphdbHelper.setRelationshipProperties( relId, map );
@@ -603,7 +606,7 @@ public class DatabaseActionsTest
                 .size() );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private void verifyRelReps( int expectedSize, ListRepresentation repr )
     {
         List<Object> relreps = serialize( repr );
@@ -686,7 +689,7 @@ public class DatabaseActionsTest
 
         for ( Object indexedNode : indexedNodes )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> serialized = (Map<String, Object>) indexedNode;
             NodeRepresentationTest.verifySerialisation( serialized );
             assertNotNull( serialized.get( "indexed" ) );
@@ -950,7 +953,7 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
             RelationshipRepresentationTest.verifySerialisation( map );
         }
@@ -970,7 +973,7 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
@@ -992,21 +995,21 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Collection<Object> relationships = (Collection<Object>) map.get( "relationships" );
             for ( Object rel : relationships )
             {
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 Map<String, Object> relationship = (Map<String, Object>) rel;
                 RelationshipRepresentationTest.verifySerialisation( relationship );
             }
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Collection<Object> nodes = (Collection<Object>) map.get( "nodes" );
             for ( Object n : nodes )
             {
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 Map<String, Object> node = (Map<String, Object>) n;
                 NodeRepresentationTest.verifySerialisation( node );
             }
@@ -1099,7 +1102,7 @@ public class DatabaseActionsTest
         }
     }
 
-    @Test(expected = NotFoundException.class)
+    @Test( expected = NotFoundException.class )
     public void shouldHandleNoFoundPathsCorrectly()
     {
         long[] nodes = createMoreComplexGraph();
@@ -1115,7 +1118,7 @@ public class DatabaseActionsTest
     {
         // GIVEN
         long node = actions.createNode( null ).getId();
-        Collection<String> labels = new ArrayList<String>();
+        Collection<String> labels = new ArrayList<>();
         String labelName = "Wonk";
         labels.add( labelName );
 
@@ -1149,7 +1152,8 @@ public class DatabaseActionsTest
     {
         // GIVEN
         long node = graphdbHelper.createNode();
-        String labelName1 = "LabelOne", labelName2 = "labelTwo";
+        String labelName1 = "LabelOne";
+        String labelName2 = "labelTwo";
         graphdbHelper.addLabelToNode( node, labelName1 );
         graphdbHelper.addLabelToNode( node, labelName2 );
 
@@ -1171,7 +1175,8 @@ public class DatabaseActionsTest
     public void getNodesWithLabel() throws Exception
     {
         // GIVEN
-        String label1 = "first", label2 = "second";
+        String label1 = "first";
+        String label2 = "second";
         long node1 = graphdbHelper.createNode( label( label1 ) );
         long node2 = graphdbHelper.createNode( label( label1 ), label( label2 ) );
         graphdbHelper.createNode( label( label2 ) );
@@ -1184,13 +1189,14 @@ public class DatabaseActionsTest
         }
 
         // THEN
-        assertEquals( asSet( node1, node2 ), Iterables.asSet( Iterables.map( from -> {
+        assertEquals( asSet( node1, node2 ), Iterables.asSet( Iterables.map( from ->
+        {
             Map<?, ?> nodeMap = (Map<?, ?>) from;
             return nodeUriToId( (String) nodeMap.get( "self" ) );
         }, representation ) ) );
     }
 
-    @Test(expected =/*THEN*/IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void getNodesWithLabelAndSeveralPropertiesShouldFail() throws Exception
     {
         // WHEN
@@ -1202,7 +1208,7 @@ public class DatabaseActionsTest
         assertEquals( numPaths, result.size() );
         for ( Object path : result )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> serialized = (Map<String, Object>) path;
             assertTrue( serialized.get( "start" )
                     .toString()
@@ -1218,7 +1224,8 @@ public class DatabaseActionsTest
     public void shouldCreateSchemaIndex() throws Exception
     {
         // GIVEN
-        String labelName = "person", propertyKey = "name";
+        String labelName = "person";
+        String propertyKey = "name";
 
         // WHEN
         actions.createSchemaIndex( labelName, Arrays.asList( propertyKey ) );
@@ -1236,7 +1243,8 @@ public class DatabaseActionsTest
     public void shouldDropSchemaIndex() throws Exception
     {
         // GIVEN
-        String labelName = "user", propertyKey = "login";
+        String labelName = "user";
+        String propertyKey = "login";
         IndexDefinition index = graphdbHelper.createSchemaIndex( labelName, propertyKey );
 
         // WHEN
@@ -1254,7 +1262,8 @@ public class DatabaseActionsTest
     public void shouldGetSchemaIndexes() throws Exception
     {
         // GIVEN
-        String labelName = "mylabel", propertyKey = "name";
+        String labelName = "mylabel";
+        String propertyKey = "name";
         graphdbHelper.createSchemaIndex( labelName, propertyKey );
 
         // WHEN
@@ -1275,7 +1284,8 @@ public class DatabaseActionsTest
     public void shouldCreatePropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "person", propertyKey = "name";
+        String labelName = "person";
+        String propertyKey = "name";
 
         // WHEN
         actions.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
@@ -1293,7 +1303,8 @@ public class DatabaseActionsTest
     public void shouldDropPropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "user", propertyKey = "login";
+        String labelName = "user";
+        String propertyKey = "login";
         ConstraintDefinition index = graphdbHelper.createPropertyUniquenessConstraint( labelName,
                 asList( propertyKey ) );
 
@@ -1309,7 +1320,8 @@ public class DatabaseActionsTest
     public void dropNonExistentConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "user", propertyKey = "login";
+        String labelName = "user";
+        String propertyKey = "login";
         ConstraintDefinition constraint = graphdbHelper.createPropertyUniquenessConstraint( labelName,
                 asList( propertyKey ) );
 
@@ -1328,7 +1340,8 @@ public class DatabaseActionsTest
     public void shouldGetPropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "mylabel", propertyKey = "name";
+        String labelName = "mylabel";
+        String propertyKey = "name";
         graphdbHelper.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
 
         // WHEN

@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -28,8 +28,11 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Lang
+  Apache Commons Text
   Caffeine cache
   ConcurrentLinkedHashMap
+  Data Mapper for Jackson
+  Jackson
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -44,7 +47,10 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ASM Analysis
   ASM Core
+  ASM Tree
+  ASM Util
   Scala Compiler
 
 Bouncy Castle License

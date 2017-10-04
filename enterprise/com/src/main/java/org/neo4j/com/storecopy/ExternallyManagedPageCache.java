@@ -22,14 +22,12 @@ package org.neo4j.com.storecopy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -95,23 +93,24 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public int maxCachedPages()
+    public long maxCachedPages()
     {
         return delegate.maxCachedPages();
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    public FileSystemAbstraction getCachedFileSystem()
     {
-        return delegate.streamFilesRecursive( directory );
+        return delegate.getCachedFileSystem();
     }
 
     /**
      * Create a GraphDatabaseFactory that will build EmbeddedGraphDatabase instances that all use the given page cache.
      */
-    public static GraphDatabaseFactoryWithPageCacheFactory graphDatabaseFactoryWithPageCache( final PageCache delegatePageCache )
+    public static GraphDatabaseFactoryWithPageCacheFactory graphDatabaseFactoryWithPageCache(
+            final PageCache delegatePageCache )
     {
-        return new GraphDatabaseFactoryWithPageCacheFactory( delegatePageCache);
+        return new GraphDatabaseFactoryWithPageCacheFactory( delegatePageCache );
     }
 
     public static class GraphDatabaseFactoryWithPageCacheFactory extends GraphDatabaseFactory
@@ -124,19 +123,21 @@ public class ExternallyManagedPageCache implements PageCache
         }
 
         @Override
-        protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+        protected GraphDatabaseService newDatabase( File storeDir, Config config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                        GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                    return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                     {
 
                         @Override
-                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers )
+                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
+                                LogService logging, Tracers tracers )
                         {
                             return new ExternallyManagedPageCache( delegatePageCache );
                         }

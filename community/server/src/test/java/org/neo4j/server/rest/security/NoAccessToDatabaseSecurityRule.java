@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 
 public class NoAccessToDatabaseSecurityRule implements SecurityRule
 {
-    private static boolean wasInvoked = false;
+    private static boolean wasInvoked;
 
     public static boolean wasInvoked()
     {

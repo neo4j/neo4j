@@ -84,19 +84,7 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      */
     public T withIndexRootFolder( File indexRootFolder )
     {
-        storageBuilder.withIndexRootFolder( indexRootFolder );
-        return (T) this;
-    }
-
-    /**
-     * Specify index identifier
-     *
-     * @param indexIdentifier identifier
-     * @return index builder
-     */
-    public T withIndexIdentifier( String indexIdentifier )
-    {
-        storageBuilder.withIndexIdentifier( indexIdentifier );
+        storageBuilder.withIndexFolder( indexRootFolder );
         return (T) this;
     }
 

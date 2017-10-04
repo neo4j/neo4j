@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core.consensus.roles;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMachineBuilder;
@@ -40,10 +40,10 @@ import org.neo4j.time.FakeClock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteRequest;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteResponse;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.CANDIDATE;
@@ -52,7 +52,7 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class ElectionTest
 {
     private MemberId myself = member( 0 );
@@ -79,7 +79,7 @@ public class ElectionTest
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 
@@ -91,8 +91,13 @@ public class ElectionTest
         assertEquals( 1, raft.term() );
         assertEquals( LEADER, raft.currentRole() );
 
-        verify( outbound ).send( eq( member1 ), isA( RaftMessages.AppendEntries.Request.class ) );
-        verify( outbound ).send( eq( member2 ), isA( RaftMessages.AppendEntries.Request.class ) );
+        /*
+         * We require atLeast here because RaftMachine has its own scheduled service, which can spuriously wake up and
+         * send empty entries. These are fine and have no bearing on the correctness of this test, but can cause it
+         * fail if we expect exactly 2 of these messages
+         */
+        verify( outbound, atLeast( 1 ) ).send( eq( member1 ), isA( RaftMessages.AppendEntries.Request.class ) );
+        verify( outbound, atLeast( 1 ) ).send( eq( member2 ), isA( RaftMessages.AppendEntries.Request.class ) );
     }
 
     @Test
@@ -112,7 +117,7 @@ public class ElectionTest
 
         raft.installCoreState(
                 new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 ) ) ));
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 

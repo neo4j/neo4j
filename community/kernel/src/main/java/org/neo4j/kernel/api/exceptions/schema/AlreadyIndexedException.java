@@ -21,20 +21,20 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 
 public class AlreadyIndexedException extends SchemaKernelException
 {
     private static final String NO_CONTEXT_FORMAT = "Already indexed %s.";
 
-    private static final String INDEX_CONTEXT_FORMAT = "There already exists an index for label '%s' on property '%s'.";
-    private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index for label '%s' on property '%s'. " +
+    private static final String INDEX_CONTEXT_FORMAT = "There already exists an index for label '%s' on %s.";
+    private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index for label '%s' on %s. " +
                                                             "A constraint cannot be created until the index has been dropped.";
 
-    private final IndexDescriptor descriptor;
+    private final LabelSchemaDescriptor descriptor;
     private final OperationContext context;
 
-    public AlreadyIndexedException( IndexDescriptor descriptor, OperationContext context )
+    public AlreadyIndexedException( LabelSchemaDescriptor descriptor, OperationContext context )
     {
         super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, null, descriptor ) );
 
@@ -42,16 +42,15 @@ public class AlreadyIndexedException extends SchemaKernelException
         this.context = context;
     }
 
-    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup, IndexDescriptor descriptor )
+    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup,
+            LabelSchemaDescriptor descriptor )
     {
         switch ( context )
         {
             case INDEX_CREATION:
-                return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT,
-                        descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+                return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT, descriptor );
             case CONSTRAINT_CREATION:
-                return messageWithLabelAndPropertyName( tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT,
-                        descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+                return messageWithLabelAndPropertyName( tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT, descriptor );
             default:
                 return String.format( NO_CONTEXT_FORMAT, descriptor );
         }

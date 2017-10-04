@@ -28,6 +28,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -41,6 +42,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class KernelTest
 {
@@ -52,13 +54,12 @@ public class KernelTest
         ThreadToStatementContextBridge stmtBridge =
                 db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+                Statement statement = stmtBridge.get() )
         {
-            Statement statement = stmtBridge.get();
-
             try
             {
-                statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
+                statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( 1, 1 ) );
                 fail( "expected exception here" );
             }
             catch ( InvalidTransactionTypeKernelException e )
@@ -70,19 +71,20 @@ public class KernelTest
         db.shutdown();
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
         @Override
         protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             Function<PlatformModule,EditionModule> factory =
-                    ( platformModule ) -> new CommunityEditionModule( platformModule )
+                    platformModule -> new CommunityEditionModule( platformModule )
                     {
                         @Override
                         protected SchemaWriteGuard createSchemaWriteGuard()
                         {
-                            return () -> {
+                            return () ->
+                            {
                                 throw new InvalidTransactionTypeKernelException(
                                         "Creation or deletion of constraints is not possible while running in a HA cluster. " +
                                                 "In order to do that, please restart in non-HA mode and propagate the database copy" +
@@ -93,9 +95,11 @@ public class KernelTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,  factory )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                        GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade );
+                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies,
+                            graphDatabaseFacade );
                 }
             }.initFacade( storeDir, params, dependencies, this );
         }

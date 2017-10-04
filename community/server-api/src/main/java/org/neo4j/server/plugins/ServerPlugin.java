@@ -119,7 +119,8 @@ public abstract class ServerPlugin
             {
                 throw new IllegalArgumentException( "Name contains illegal characters" );
             }
-        } catch ( UnsupportedEncodingException e )
+        }
+        catch ( UnsupportedEncodingException e )
         {
             throw new Error( "UTF-8 should be supported", e );
         }

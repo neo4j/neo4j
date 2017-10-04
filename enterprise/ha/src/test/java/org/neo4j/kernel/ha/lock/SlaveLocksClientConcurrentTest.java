@@ -36,9 +36,11 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
@@ -76,7 +78,7 @@ public class SlaveLocksClientConcurrentTest
     public void setUp()
     {
         master = mock( Master.class, new LockedOnMasterAnswer() );
-        lockManager = new ForsetiLockManager( ResourceTypes.values() );
+        lockManager = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
         requestContextFactory = mock( RequestContextFactory.class );
         availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), mock( Log.class ) );
 
@@ -118,7 +120,7 @@ public class SlaveLocksClientConcurrentTest
     {
         private final Response lockResult;
 
-        public LockedOnMasterAnswer()
+        LockedOnMasterAnswer()
         {
             lockResult = Mockito.mock( Response.class );
             when( lockResult.response() ).thenReturn( new LockResult( LockStatus.OK_LOCKED ) );
@@ -136,7 +138,7 @@ public class SlaveLocksClientConcurrentTest
         private final CountDownLatch resourceLatch;
         private final CountDownLatch resourceReleaseLatch;
 
-        public WaitLatchAnswer( CountDownLatch resourceLatch, CountDownLatch resourceReleaseLatch )
+        WaitLatchAnswer( CountDownLatch resourceLatch, CountDownLatch resourceReleaseLatch )
         {
             this.resourceLatch = resourceLatch;
             this.resourceReleaseLatch = resourceReleaseLatch;
@@ -157,7 +159,7 @@ public class SlaveLocksClientConcurrentTest
 
     private class ResourceWriter extends ResourceWorker
     {
-        public ResourceWriter( SlaveLocksClient locksClient, ResourceType resourceType, long id )
+        ResourceWriter( SlaveLocksClient locksClient, ResourceType resourceType, long id )
         {
             super( locksClient, resourceType, id );
         }
@@ -165,7 +167,7 @@ public class SlaveLocksClientConcurrentTest
         @Override
         public void run()
         {
-            locksClient.acquireExclusive( resourceType, id );
+            locksClient.acquireExclusive( LockTracer.NONE, resourceType, id );
             locksClient.close();
         }
     }
@@ -175,8 +177,8 @@ public class SlaveLocksClientConcurrentTest
         private final CountDownLatch resourceLatch;
         private final CountDownLatch resourceReleaseLatch;
 
-        public ResourceReader( SlaveLocksClient locksClient, ResourceType resourceType, long id, CountDownLatch
-                resourceLatch, CountDownLatch resourceReleaseLatch )
+        ResourceReader( SlaveLocksClient locksClient, ResourceType resourceType, long id, CountDownLatch resourceLatch,
+                CountDownLatch resourceReleaseLatch )
         {
             super( locksClient, resourceType, id );
             this.resourceLatch = resourceLatch;
@@ -189,7 +191,7 @@ public class SlaveLocksClientConcurrentTest
             try
             {
                 resourceLatch.await();
-                locksClient.acquireShared( resourceType, id );
+                locksClient.acquireShared( LockTracer.NONE, resourceType, id );
                 resourceReleaseLatch.countDown();
                 locksClient.close();
             }
@@ -206,7 +208,7 @@ public class SlaveLocksClientConcurrentTest
         protected final ResourceType resourceType;
         protected final long id;
 
-        public ResourceWorker( SlaveLocksClient locksClient, ResourceType resourceType, long id )
+        ResourceWorker( SlaveLocksClient locksClient, ResourceType resourceType, long id )
         {
             this.locksClient = locksClient;
             this.resourceType = resourceType;

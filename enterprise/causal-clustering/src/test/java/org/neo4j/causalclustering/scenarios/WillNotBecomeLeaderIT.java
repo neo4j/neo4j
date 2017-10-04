@@ -41,7 +41,8 @@ public class WillNotBecomeLeaderIT
     @Rule
     public final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 )
-                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() )
+                    .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
 
     @Rule
     public ExpectedException exceptionMatcher = ExpectedException.none();
@@ -52,7 +53,7 @@ public class WillNotBecomeLeaderIT
         // given
         int leaderId = 0;
 
-        clusterRule.withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, ( x ) ->
+        clusterRule.withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, x ->
         {
             if ( x == leaderId )
             {

@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 
 public class LogEntryParserDispatcherV6Test
 {
@@ -122,18 +121,6 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldParseEmptyEntry() throws IOException
-    {
-        // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.EMPTY );
-        final LogEntry logEntry = parser.parse( version, new InMemoryClosableChannel(), marker, commandReader );
-
-        // then
-        assertNull( logEntry );
-        assertFalse( parser.skip() );
-    }
-
-    @Test
     public void shouldParseCheckPointEntry() throws IOException
     {
         // given
@@ -154,31 +141,11 @@ public class LogEntryParserDispatcherV6Test
         assertFalse( parser.skip() );
     }
 
-    @Test( expected = IllegalArgumentException.class)
-    public void shouldThrowWhenParsingPrepareEntry() throws IOException
+    @Test( expected = IllegalArgumentException.class )
+    public void shouldThrowWhenParsingUnknownEntry() throws IOException
     {
         // when
-        version.entryParser( LogEntryByteCodes.TX_PREPARE );
-
-        // then
-        // it should throw exception
-    }
-
-    @Test( expected = IllegalArgumentException.class)
-    public void shouldThrowWhenParsingTwoPhaseCommitEntry() throws IOException
-    {
-        // when
-        version.entryParser( LogEntryByteCodes.TX_2P_COMMIT );
-
-        // then
-        // it should throw exception
-    }
-
-    @Test( expected = IllegalArgumentException.class)
-    public void shouldThrowWhenParsingDoneEntry() throws IOException
-    {
-        // when
-        version.entryParser( LogEntryByteCodes.DONE );
+        version.entryParser( (byte)42 ); // unused, at lest for now
 
         // then
         // it should throw exception

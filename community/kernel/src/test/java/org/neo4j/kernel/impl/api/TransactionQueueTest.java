@@ -82,9 +82,9 @@ public class TransactionQueueTest
 
         // THEN
         verify( applier, times( 1 ) ).apply( any(), any() );
-        for ( int i = 0; i < txs.length-1; i++ )
+        for ( int i = 0; i < txs.length - 1; i++ )
         {
-            assertEquals( txs[i+1], txs[i].next() );
+            assertEquals( txs[i + 1], txs[i].next() );
         }
     }
 }

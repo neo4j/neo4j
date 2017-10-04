@@ -20,11 +20,21 @@
 package org.neo4j.backup;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import javax.annotation.Nonnull;
 
+import org.neo4j.OnlineBackupCommandSection;
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
+
+import static java.lang.String.format;
 
 public class OnlineBackupCommandProvider extends AdminCommand.Provider
 {
@@ -34,30 +44,55 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public Arguments allArguments()
     {
-        return OnlineBackupCommand.arguments();
+        return BackupCommandArgumentHandler.arguments();
     }
 
     @Override
+    @Nonnull
     public String description()
     {
-        return "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must have" +
-                " been configured on the server beforehand. " +
-                "See https://neo4j.com/docs/operations-manual/current/backup/ for more details.";
+        return format( "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must " +
+                "have been configured on the server beforehand.%n" +
+                "%n" +
+                "All consistency checks except 'cc-graph' can be quite expensive so it may be useful to turn them off" +
+                " for very large databases. Increasing the heap size can also be a good idea." +
+                " See 'neo4j-admin help' for details.%n" +
+                "%n" +
+                "For more information see: https://neo4j.com/docs/operations-manual/current/backup/" );
     }
 
     @Override
+    @Nonnull
     public String summary()
     {
         return "Perform an online backup from a running Neo4j enterprise server.";
     }
 
     @Override
+    @Nonnull
+    public AdminCommandSection commandSection()
+    {
+        return OnlineBackupCommandSection.instance();
+    }
+
+    @Override
+    @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new OnlineBackupCommand(
-                new BackupService( outsideWorld.errorStream() ), homeDir, configDir,
-                new ConsistencyCheckService(), outsideWorld );
+        LogProvider logProvider = NullLogProvider.getInstance();
+        Monitors monitors = new Monitors();
+
+        OnlineBackupContextLoader onlineBackupContextLoader =
+                new OnlineBackupContextLoader( new BackupCommandArgumentHandler(), new OnlineBackupCommandConfigLoader( homeDir, configDir ) );
+        BackupModuleResolveAtRuntime backupModuleResolveAtRuntime = new BackupModuleResolveAtRuntime( outsideWorld, logProvider, monitors );
+
+        return new OnlineBackupCommand( outsideWorld,
+                onlineBackupContextLoader,
+                new CommunityBackupSupportingClassesFactory( backupModuleResolveAtRuntime ),
+                new BackupFlowFactory( backupModuleResolveAtRuntime )
+        );
     }
 }

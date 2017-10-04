@@ -29,6 +29,10 @@ import static org.neo4j.csv.reader.ThreadAheadReadable.threadAhead;
  */
 public class CharSeekers
 {
+    private CharSeekers()
+    {
+    }
+
     /**
      * Instantiates a {@link BufferedCharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      *

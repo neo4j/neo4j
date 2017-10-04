@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -38,7 +39,7 @@ import static org.neo4j.helpers.collection.MapUtil.trimToList;
 public abstract class AbstractUserRepository extends LifecycleAdapter implements UserRepository
 {
     /** Quick lookup of users by name */
-    private final Map<String, User> usersByName = new ConcurrentHashMap<>();
+    private final Map<String,User> usersByName = new ConcurrentHashMap<>();
 
     /** Master list of users */
     protected volatile List<User> users = new ArrayList<>();
@@ -65,7 +66,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     {
         assertValidUsername( user.name() );
 
-        synchronized (this)
+        synchronized ( this )
         {
             // Check for existing user
             for ( User other : users )
@@ -90,7 +91,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
             assertValidUsername( user.name() );
         }
 
-        synchronized (this)
+        synchronized ( this )
         {
             users.clear();
 
@@ -117,7 +118,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
                     "' to '" + updatedUser.name() + "' failed. Changing a roles name is not allowed." );
         }
 
-        synchronized (this)
+        synchronized ( this )
         {
             // Copy-on-write for the users list
             List<User> newUsers = new ArrayList<>();
@@ -128,7 +129,8 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
                 {
                     foundUser = true;
                     newUsers.add( updatedUser );
-                } else
+                }
+                else
                 {
                     newUsers.add( other );
                 }

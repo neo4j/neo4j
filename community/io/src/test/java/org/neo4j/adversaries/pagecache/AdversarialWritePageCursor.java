@@ -302,8 +302,20 @@ class AdversarialWritePageCursor extends DelegatingPageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
+    public PageCursor openLinkedCursor( long pageId ) throws IOException
     {
         return linkedCursor = new AdversarialWritePageCursor( delegate.openLinkedCursor( pageId ), adversary );
+    }
+
+    @Override
+    public void zapPage()
+    {
+        delegate.zapPage();
+    }
+
+    @Override
+    public boolean isWriteLocked()
+    {
+        return true;
     }
 }

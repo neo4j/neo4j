@@ -19,6 +19,10 @@
  */
 package org.neo4j.server;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -30,18 +34,13 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -49,7 +48,6 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class HttpsAccessIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
-    private String httpsUri;
 
     @After
     public void stopTheServer()
@@ -60,23 +58,21 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
     @Before
     public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
     {
-        server = server().withHttpsEnabled()
+        server = serverOnRandomPorts().withHttpsEnabled()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
-        httpsUri = server.httpsUri().get().toASCIIString();
 
         // Because we are generating a non-CA-signed certificate, we need to turn off verification in the client.
         // This is ironic, since there is no proper verification on the CA side in the first place, but I digress.
 
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager()
         {
-            public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
+            public void checkClientTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
             {
             }
 
-            public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
+            public void checkServerTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
             {
             }
 
@@ -84,7 +80,8 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
             {
                 return null;
             }
-        }};
+        }
+        };
 
         // Install the all-trusting trust manager
         SSLContext sc = SSLContext.getInstance( "TLS" );
@@ -100,7 +97,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
 
         // Then
         assertThat( server.httpsIsEnabled(), is( true ) );
-        assertThat( GET(httpsUri).status(), is( 200 ) );
+        assertThat( GET(server.baseUri().toString()).status(), is( 200 ) );
     }
 
     @Test
@@ -110,11 +107,11 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         server.start();
 
         // When
-        HTTP.Response response = POST( httpsUri + "db/data/transaction",
-                quotedJson( "{'statements':[]}" ) );
+        String baseUri = server.baseUri().toString();
+        HTTP.Response response = POST( baseUri + "db/data/transaction", quotedJson( "{'statements':[]}" ) );
 
         // Then
-        assertThat( response.location(), startsWith( httpsUri ) );
-        assertThat( response.get( "commit" ).asText(), startsWith( httpsUri ));
+        assertThat( response.location(), startsWith( baseUri ) );
+        assertThat( response.get( "commit" ).asText(), startsWith( baseUri ) );
     }
 }

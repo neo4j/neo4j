@@ -26,6 +26,10 @@ import java.lang.Thread.State;
 
 public class DumpVmInformation
 {
+    private DumpVmInformation()
+    {
+    }
+
     public static void dumpVmInfo( File directory ) throws IOException
     {
         File file = new File( directory, "main-vm-dump-" + System.currentTimeMillis() );
@@ -38,7 +42,9 @@ public class DumpVmInformation
         finally
         {
             if ( out != null )
+            {
                 out.close();
+            }
         }
     }
 
@@ -47,7 +53,9 @@ public class DumpVmInformation
         // Find the top thread group
         ThreadGroup topThreadGroup = Thread.currentThread().getThreadGroup();
         while ( topThreadGroup.getParent() != null )
+        {
             topThreadGroup = topThreadGroup.getParent();
+        }
 
         // Get all the thread groups under the top.
         ThreadGroup[] allGroups = new ThreadGroup[1000];
@@ -57,7 +65,9 @@ public class DumpVmInformation
         for ( ThreadGroup group : allGroups )
         {
             if ( group == null )
+            {
                 break;
+            }
             dumpThreadGroupInfo( group, out );
         }
         dumpThreadGroupInfo( topThreadGroup, out );
@@ -65,7 +75,7 @@ public class DumpVmInformation
 
     public static void dumpThreadGroupInfo( ThreadGroup tg, PrintStream out )
     {
-        String parentName = (tg.getParent() == null ? null : tg.getParent().getName());
+        String parentName = tg.getParent() == null ? null : tg.getParent().getName();
         // Dump thread group info.
         out.println( "---- GROUP:" + tg.getName() +
                 (parentName != null ? " parent:" + parentName : "" ) +
@@ -78,7 +88,9 @@ public class DumpVmInformation
         for ( Thread thread : allThreads )
         {
             if ( thread == null )
+            {
                 break;
+            }
             out.println(
                     "\"" + thread.getName() + "\"" +
                     (thread.isDaemon() ? " daemon" : "") +

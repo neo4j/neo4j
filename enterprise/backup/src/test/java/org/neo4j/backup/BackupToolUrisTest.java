@@ -41,11 +41,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-
-@RunWith(Enclosed.class)
+@RunWith( Enclosed.class )
 public class BackupToolUrisTest
 {
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class ValidUriTests extends UriTests
     {
         public ValidUriTests( String host, Integer port )
@@ -91,7 +90,7 @@ public class BackupToolUrisTest
             newBackupTool().run( args );
 
             // Then
-            verify( backupService ).doIncrementalBackupOrFallbackToFull(
+            verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
                     eq( new File( "/var/backup/graph" ) ),
@@ -103,7 +102,7 @@ public class BackupToolUrisTest
         }
     }
 
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class InvalidUriTests extends UriTests
     {
         public InvalidUriTests( String host, Integer port )
@@ -148,11 +147,11 @@ public class BackupToolUrisTest
                 assertThat( e.getMessage(), equalTo( BackupTool.WRONG_FROM_ADDRESS_SYNTAX ) );
             }
 
-            verifyZeroInteractions( backupService, systemOut );
+            verifyZeroInteractions( backupProtocolService, systemOut );
         }
     }
 
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class IPv6UriTests extends UriTests
     {
         public IPv6UriTests( String host, Integer port )
@@ -195,7 +194,7 @@ public class BackupToolUrisTest
             newBackupTool().run( args );
 
             // Then
-            verify( backupService ).doIncrementalBackupOrFallbackToFull(
+            verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
                     eq( new File( "/var/backup/graph" ) ),
@@ -213,7 +212,7 @@ public class BackupToolUrisTest
         final Integer port;
         final String uri;
 
-        final BackupService backupService;
+        final BackupProtocolService backupProtocolService;
         final PrintStream systemOut;
 
         UriTests( String host, Integer port )
@@ -222,7 +221,7 @@ public class BackupToolUrisTest
             this.host = host.replace( "ha://", "" ).replace( "single://", "" );
             this.port = (port == null) ? BackupServer.DEFAULT_PORT : port;
 
-            this.backupService = mock( BackupService.class );
+            this.backupProtocolService = mock( BackupProtocolService.class );
             this.systemOut = mock( PrintStream.class );
         }
 
@@ -238,7 +237,7 @@ public class BackupToolUrisTest
 
         BackupTool newBackupTool() throws Exception
         {
-            return spy( new BackupTool( backupService, systemOut ) );
+            return spy( new BackupTool( backupProtocolService, systemOut ) );
         }
     }
 }

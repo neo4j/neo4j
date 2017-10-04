@@ -24,10 +24,12 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.util.Arrays;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
@@ -53,7 +55,7 @@ public class HaBeanIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( HaBeanIT.class )
-            .withInstanceSetting( setting( "jmx.port", STRING, (String) null ), intBase( 9912 ) )
+            .withInstanceSetting( setting( "jmx.port", STRING, Settings.NO_DEFAULT ), intBase( 9912 ) )
             .withInstanceSetting( HaSettings.ha_server, stringWithIntBase( ":", 1136 ) )
             .withInstanceSetting( GraphDatabaseSettings.forced_kernel_id, stringWithIntBase( "kernel", 0 ) );
 

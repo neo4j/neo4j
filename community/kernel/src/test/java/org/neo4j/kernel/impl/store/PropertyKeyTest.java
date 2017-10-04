@@ -57,7 +57,7 @@ public class PropertyKeyTest
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir );
 
         // When
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             Node node = db.getNodeById( nodeId );
@@ -76,7 +76,9 @@ public class PropertyKeyTest
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         for ( int i = 0; i < count; i++ )
+        {
             properties.put( "key:" + i, "value" );
+        }
         return properties;
     }
 }

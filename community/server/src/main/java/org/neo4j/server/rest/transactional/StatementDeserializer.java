@@ -39,24 +39,24 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableMap;
 import static org.codehaus.jackson.JsonToken.END_ARRAY;
 import static org.codehaus.jackson.JsonToken.END_OBJECT;
 import static org.codehaus.jackson.JsonToken.FIELD_NAME;
 import static org.codehaus.jackson.JsonToken.START_ARRAY;
 import static org.codehaus.jackson.JsonToken.START_OBJECT;
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StatementDeserializer extends PrefetchingIterator<Statement>
 {
-    private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
+    private static final JsonFactory JSON_FACTORY =
+            new JsonFactory().setCodec( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private static final Map<String, Object> NO_PARAMETERS = unmodifiableMap( map() );
-    private static final Iterator<Neo4jError> NO_ERRORS = emptyIterator();
 
     private final JsonParser input;
     private State state;
-    private List<Neo4jError> errors = null;
+    private List<Neo4jError> errors;
 
     private enum State
     {
@@ -80,7 +80,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
     public Iterator<Neo4jError> errors()
     {
-        return errors == null ? NO_ERRORS : errors.iterator();
+        return errors == null ? emptyIterator() : errors.iterator();
     }
 
     @Override
@@ -140,7 +140,8 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                     if ( statement == null )
                     {
-                        addError( new Neo4jError( Status.Request.InvalidFormat, new DeserializationException( "No statement provided." ) ) );
+                        addError( new Neo4jError( Status.Request.InvalidFormat,
+                                new DeserializationException( "No statement provided." ) ) );
                         return null;
                     }
                     return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters, includeStats,
@@ -165,7 +166,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             addError( new Neo4jError( Status.Network.CommunicationError, e ) );
             return null;
         }
-        catch ( Exception e)
+        catch ( Exception e )
         {
             addError( new Neo4jError( Status.General.UnknownError, e ) );
             return null;
@@ -178,13 +179,13 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         input.readValueAs( Object.class );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static Map<String, Object> readMap( JsonParser input ) throws IOException
     {
         return input.readValueAs( Map.class );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static List<Object> readArray( JsonParser input ) throws IOException
     {
         return input.readValueAs( List.class );

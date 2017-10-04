@@ -26,31 +26,44 @@ import java.util.function.BiFunction;
  */
 public interface Register
 {
-    interface CopyableDoubleLongRegister extends DoubleLong.Copyable, DoubleLong.Out {}
-    interface DoubleLongRegister extends DoubleLong.In, CopyableDoubleLongRegister {}
+    interface CopyableDoubleLongRegister extends DoubleLong.Copyable, DoubleLong.Out
+    {
+    }
+
+    interface DoubleLongRegister extends DoubleLong.In, CopyableDoubleLongRegister
+    {
+    }
+
     interface DoubleLong
     {
         interface In
         {
             long readFirst();
+
             long readSecond();
         }
 
         interface Copyable
         {
             void copyTo( DoubleLong.Out target );
+
             boolean hasValues( long first, long second );
-            boolean satisfies( BiFunction<java.lang.Long, java.lang.Long, Boolean> condition );
+
+            boolean satisfies( BiFunction<java.lang.Long,java.lang.Long,Boolean> condition );
         }
 
         interface Out
         {
             void write( long first, long second );
+
             void increment( long firstDelta, long secondDelta );
         }
     }
 
-    interface LongRegister extends Long.In, Long.Out {}
+    interface LongRegister extends Long.In, Long.Out
+    {
+    }
+
     interface Long
     {
         interface In
@@ -61,11 +74,15 @@ public interface Register
         interface Out
         {
             void write( long value );
+
             long increment( long delta );
         }
     }
 
-    interface IntRegister extends Int.In, Int.Out {}
+    interface IntRegister extends Int.In, Int.Out
+    {
+    }
+
     interface Int
     {
         interface In
@@ -76,11 +93,15 @@ public interface Register
         interface Out
         {
             void write( int value );
+
             int increment( int delta );
         }
     }
 
-    interface ObjectRegister<T> extends Object.In<T>, Object.Out<T> {}
+    interface ObjectRegister<T> extends Object.In<T>, Object.Out<T>
+    {
+    }
+
     interface Object
     {
         interface In<T>
@@ -90,7 +111,7 @@ public interface Register
 
         interface Out<T>
         {
-            void write(T value);
+            void write( T value );
         }
 
     }

@@ -37,12 +37,16 @@ public interface RawIterator<T,EXCEPTION extends Exception>
 
     T next() throws EXCEPTION;
 
-    default void remove() { throw new UnsupportedOperationException(); }
+    default void remove()
+    {
+        throw new UnsupportedOperationException();
+    }
 
-    static RawIterator<Object,Exception> EMPTY = RawIterator.of();
+    RawIterator<Object,Exception> EMPTY = RawIterator.of();
 
     @SuppressWarnings( "unchecked" )
-    static <T, EXCEPTION extends Exception> RawIterator<T, EXCEPTION> empty() {
+    static <T, EXCEPTION extends Exception> RawIterator<T,EXCEPTION> empty()
+    {
         return (RawIterator<T,EXCEPTION>) EMPTY;
     }
 
@@ -50,7 +54,7 @@ public interface RawIterator<T,EXCEPTION extends Exception>
     {
         return new RawIterator<T,EX>()
         {
-            private int position = 0;
+            private int position;
 
             @Override
             public boolean hasNext() throws EX

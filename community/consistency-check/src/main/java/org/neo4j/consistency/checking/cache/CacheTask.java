@@ -81,7 +81,7 @@ public abstract class CacheTask extends ConsistencyCheckerTask
                     NodeRecord node = nodeRecords.next();
                     if ( node.inUse() )
                     {
-                        fields[CacheSlots.NextRelationhip.SLOT_RELATIONSHIP_ID] = node.getNextRel();
+                        fields[CacheSlots.NextRelationship.SLOT_RELATIONSHIP_ID] = node.getNextRel();
                         client.putToCache( node.getId(), fields );
                     }
                 }
@@ -109,7 +109,7 @@ public abstract class CacheTask extends ConsistencyCheckerTask
             CacheAccess.Client client = cacheAccess.client();
             for ( long nodeId = 0; nodeId < nodeStore.getHighId(); nodeId++ )
             {
-                if ( client.getFromCache( nodeId, CacheSlots.NextRelationhip.SLOT_FIRST_IN_TARGET ) == 0 )
+                if ( client.getFromCache( nodeId, CacheSlots.NextRelationship.SLOT_FIRST_IN_TARGET ) == 0 )
                 {
                     // TODO reuse record instances?
                     NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );

@@ -55,22 +55,14 @@ public class ClusterContextTest
         final InstanceId me = new InstanceId( 1 );
         final InstanceId winner = new InstanceId( 2 );
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
-                >iterable(
+        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -106,22 +98,14 @@ public class ClusterContextTest
         final InstanceId winner = new InstanceId( 2 );
         final InstanceId elector = new InstanceId( 2 );
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
-                >iterable(
+        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -150,22 +134,14 @@ public class ClusterContextTest
         final InstanceId winner = new InstanceId( 2 );
         final InstanceId elector = new InstanceId( 2 );
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
-                >iterable(
+        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config
@@ -200,21 +176,14 @@ public class ClusterContextTest
         final InstanceId winner = new InstanceId( 2 );
         final InstanceId elector = new InstanceId( 2 );
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config

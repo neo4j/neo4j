@@ -22,34 +22,33 @@ package org.neo4j.kernel.impl.util;
 import org.junit.After;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.test.ReflectionUtil;
-
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.THREAD_ID;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 import static org.neo4j.test.ReflectionUtil.replaceValueInPrivateField;
 
 public class Neo4jJobSchedulerTest
@@ -77,25 +76,24 @@ public class Neo4jJobSchedulerTest
         life.shutdown();
     }
 
-    @Test
+    // Tests schedules a recurring job to run 5 times with 100ms in between.
+    // The timeout of 10s should be enough.
+    @Test( timeout = 10_000 )
     public void shouldRunRecurringJob() throws Throwable
     {
         // Given
-        long period = 1_000;
-        int count = 2;
+        long period = 100;
+        int count = 5;
         life.start();
 
         // When
         scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
-        awaitFirstInvocation();
-        sleep( period * count - period / 2 );
+        awaitInvocationCount( count );
         scheduler.shutdown();
 
-        // Then
+        // Then assert that the recurring job was stopped (when the scheduler was shut down)
         int actualInvocations = invocations.get();
-        assertEquals( count, actualInvocations );
-
-        sleep( period );
+        sleep( period * 2 );
         assertThat( invocations.get(), equalTo( actualInvocations ) );
     }
 
@@ -112,46 +110,22 @@ public class Neo4jJobSchedulerTest
         // When
         jobHandle.cancel( false );
 
+        try
+        {
+            jobHandle.waitTermination();
+            fail( "Task should be terminated" );
+        }
+        catch ( CancellationException ingored )
+        {
+            // task should be canceled
+        }
+
         // Then
         int recorded = invocations.get();
         sleep( period * 100 );
-        assertThat( invocations.get(), equalTo( recorded ) );
-    }
-
-    @Test
-    public void shouldRunJobInNewThread() throws Throwable
-    {
-        // Given
-        life.start();
-
-        // We start a thread that will signal when it's running, and remain running until we tell it to stop.
-        // This way we can check and make sure a thread with the name we expect is live and well
-        final CountDownLatch threadStarted = new CountDownLatch( 1 );
-        final CountDownLatch unblockThread = new CountDownLatch( 1 );
-
-        // When
-        scheduler.schedule( new JobScheduler.Group( "MyGroup", NEW_THREAD ),
-                waitForLatch( threadStarted, unblockThread ), stringMap( THREAD_ID, "MyTestThread" ) );
-        threadStarted.await();
-
-        // Then
-        try
-        {
-            String threadName = "neo4j.MyGroup-MyTestThread";
-            for ( String name : threadNames() )
-            {
-                if ( name.equals( threadName ) )
-                {
-                    return;
-                }
-            }
-            fail( "Expected a thread named '" + threadName + "' in " + threadNames() );
-
-        }
-        finally
-        {
-            unblockThread.countDown();
-        }
+        // we can have task that is already running during cancellation so lets count it as well
+        assertThat( invocations.get(),
+                both( greaterThanOrEqualTo( recorded ) ).and( lessThanOrEqualTo( recorded + 1 ) ) );
     }
 
     @Test
@@ -165,14 +139,10 @@ public class Neo4jJobSchedulerTest
 
         long time = System.nanoTime();
 
-        scheduler.schedule( new JobScheduler.Group( "group", POOLED ), new Runnable()
+        scheduler.schedule( new JobScheduler.Group( "group" ), () ->
         {
-            @Override
-            public void run()
-            {
-                runTime.set( System.nanoTime() );
-                latch.countDown();
-            }
+            runTime.set( System.nanoTime() );
+            latch.countDown();
         }, 100, TimeUnit.MILLISECONDS );
 
         latch.await();
@@ -211,37 +181,41 @@ public class Neo4jJobSchedulerTest
         }
     }
 
-    private List<String> threadNames()
+    @Test
+    public void shouldNotifyCancelListeners() throws Exception
     {
-        List<String> names = new ArrayList<>();
-        for ( Thread thread : Thread.getAllStackTraces().keySet() )
-        {
-            names.add( thread.getName() );
-        }
-        return names;
-    }
+        // GIVEN
+        Neo4jJobScheduler neo4jJobScheduler = new Neo4jJobScheduler();
+        neo4jJobScheduler.init();
 
-    private Runnable waitForLatch( final CountDownLatch threadStarted, final CountDownLatch runUntil )
-    {
-        return () ->
+        // WHEN
+        AtomicBoolean halted = new AtomicBoolean();
+        Runnable job = () ->
         {
-            try
+            while ( !halted.get() )
             {
-                threadStarted.countDown();
-                runUntil.await();
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
+                LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
         };
+        JobHandle handle = neo4jJobScheduler.schedule( indexPopulation, job );
+        handle.registerCancelListener( mayBeInterrupted -> halted.set( true ) );
+        handle.cancel( false );
+
+        // THEN
+        assertTrue( halted.get() );
+        neo4jJobScheduler.shutdown();
     }
 
-    private void awaitFirstInvocation()
+    private void awaitFirstInvocation() throws InterruptedException
     {
-        while ( invocations.get() == 0 )
-        {   // Wait for the job to start running
-            Thread.yield();
+        awaitInvocationCount( 1 );
+    }
+
+    private void awaitInvocationCount( int count ) throws InterruptedException
+    {
+        while ( invocations.get() < count )
+        {
+            Thread.sleep( 10 );
         }
     }
 }

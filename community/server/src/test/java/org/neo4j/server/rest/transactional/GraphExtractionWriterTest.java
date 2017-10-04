@@ -34,6 +34,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Property;
@@ -43,6 +44,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.GraphMock.path;
@@ -57,7 +59,8 @@ public class GraphExtractionWriterTest
     private final Node n3 = node( 42, properties( property( "name", "n3" ) ), "Foo", "Bar" );
     private final Relationship r1 = relationship( 7, n1, "ONE", n2, property( "name", "r1" ) );
     private final Relationship r2 = relationship( 8, n1, "TWO", n3, property( "name", "r2" ) );
-    private final TransactionStateChecker checker = new TransactionStateChecker( id -> false, id -> false );
+    private final TransactionStateChecker checker = new TransactionStateChecker( mock( Statement.class ),
+            id -> false, id -> false );
 
     @Test
     public void shouldExtractNodesFromRow() throws Exception
@@ -113,7 +116,8 @@ public class GraphExtractionWriterTest
     public void shouldExtractGraphFromMapInTheRow() throws Exception
     {
         // given
-        Map<String, Object> row = new HashMap<>(), map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         row.put( "map", map );
         map.put( "r1", r1 );
         map.put( "r2", r2 );
@@ -148,7 +152,8 @@ public class GraphExtractionWriterTest
     public void shouldExtractGraphFromListInMapInTheRow() throws Exception
     {
         // given
-        Map<String, Object> row = new HashMap<>(), map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         List<Object> list = new ArrayList<>();
         map.put( "list", list );
         row.put( "map", map );
@@ -167,7 +172,8 @@ public class GraphExtractionWriterTest
     public void shouldExtractGraphFromMapInListInTheRow() throws Exception
     {
         // given
-        Map<String, Object> row = new HashMap<>(), map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         List<Object> list = new ArrayList<>();
         list.add( map );
         row.put( "list", list );
@@ -210,7 +216,7 @@ public class GraphExtractionWriterTest
         JsonNode nodes = result.get( "graph" ).get( "nodes" );
         assertEquals( "there should be 3 nodes", 3, nodes.size() );
         assertNode( "17", nodes, asList( "Foo" ), property( "name", "n1" ) );
-        assertNode( "666", nodes, Arrays.<String>asList(), property( "name", "n2" ) );
+        assertNode( "666", nodes, Arrays.asList(), property( "name", "n2" ) );
         assertNode( "42", nodes, asList( "Foo", "Bar" ), property( "name", "n3" ) );
     }
 

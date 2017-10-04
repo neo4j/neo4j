@@ -20,11 +20,12 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
-import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -32,24 +33,25 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 
 public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
 {
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
-            "Read replica mode is not allowed with custom IO integrations";
-
-    public ReadReplicaGraphDatabase( File storeDir, Map<String,String> params, Dependencies dependencies )
+    protected ReadReplicaGraphDatabase()
     {
-        this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
-    public ReadReplicaGraphDatabase( File storeDir, Map<String,String> params, Dependencies dependencies,
-            DiscoveryServiceFactory discoveryServiceFactory )
+    public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies )
     {
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( new Config( params ), CUSTOM_IO_EXCEPTION_MESSAGE );
+        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory(), new MemberId( UUID.randomUUID() ) );
+    }
+
+    public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies,
+            DiscoveryServiceFactory discoveryServiceFactory, MemberId memberId )
+    {
         Function<PlatformModule,EditionModule> factory =
-                ( platformModule ) -> new EnterpriseReadReplicaEditionModule( platformModule, discoveryServiceFactory );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.READ_REPLICA, factory ).initFacade( storeDir, params, dependencies, this );
+                platformModule -> new EnterpriseReadReplicaEditionModule( platformModule,
+                        discoveryServiceFactory, memberId );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.READ_REPLICA, factory ).initFacade( storeDir, config,
+                dependencies, this );
     }
 }

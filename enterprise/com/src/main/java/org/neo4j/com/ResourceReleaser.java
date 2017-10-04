@@ -24,13 +24,9 @@ package org.neo4j.com;
  */
 public interface ResourceReleaser
 {
-    public void release();
+    void release();
 
-    public static final ResourceReleaser NO_OP = new ResourceReleaser()
+    ResourceReleaser NO_OP = () ->
     {
-        public void release()
-        {
-            // What it says on the box
-        }
     };
 }

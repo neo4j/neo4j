@@ -19,7 +19,6 @@
  */
 package org.neo4j.tooling.procedure;
 
-import org.neo4j.tooling.procedure.procedures.valid.Procedures;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,6 +28,8 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.tooling.procedure.procedures.valid.Procedures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,6 +39,8 @@ public class ProcedureTest
 
     private static final Class<?> PROCEDURES_CLASS = Procedures.class;
 
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public Neo4jRule graphDb = new Neo4jRule().withProcedure( PROCEDURES_CLASS );
     private String procedureNamespace = PROCEDURES_CLASS.getPackage().getName();
@@ -77,13 +80,28 @@ public class ProcedureTest
     }
 
     @Test
+    public void calls_procedures_with_different_modes_returning_void()
+    {
+        try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
+                Session session = driver.session() )
+        {
+            session.run( "CALL " + procedureNamespace + ".performsWrites()" );
+            session.run( "CALL " + procedureNamespace + ".defaultMode()" );
+            session.run( "CALL " + procedureNamespace + ".readMode()" );
+            session.run( "CALL " + procedureNamespace + ".writeMode()" );
+            session.run( "CALL " + procedureNamespace + ".schemaMode()" );
+            session.run( "CALL " + procedureNamespace + ".dbmsMode()" );
+        }
+    }
+
+    @Test
     public void calls_procedures_with_simple_input_type_returning_record_with_primitive_fields()
     {
         try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
                 Session session = driver.session() )
         {
 
-            assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput11('string')" ).single() ).isNotNull();
+            assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput11('string') YIELD field04 AS p RETURN p" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput12(42)" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput13(42)" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput14(4.2)" ).single() ).isNotNull();

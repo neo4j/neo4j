@@ -23,7 +23,7 @@ class StubCollector extends MetadataCollector
 {
     StubCollector( int entriesPerPage, String... header )
     {
-        super( entriesPerPage, headerFields( header ) );
+        super( entriesPerPage, headerFields( header ), BigEndianByteArrayBuffer.buffer( 0 ) );
     }
 
     @Override
@@ -34,7 +34,7 @@ class StubCollector extends MetadataCollector
 
     static HeaderField<byte[]>[] headerFields( String[] keys )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         HeaderField<byte[]>[] fields = new HeaderField[keys.length];
         for ( int i = 0; i < keys.length; i++ )
         {

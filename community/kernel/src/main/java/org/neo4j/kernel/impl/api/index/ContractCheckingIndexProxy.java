@@ -136,10 +136,14 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     public Future<Void> drop() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
+        {
             return super.drop();
+        }
 
         if ( State.STARTING.equals( state.get() ) )
+        {
             throw new IllegalStateException( "Concurrent drop while creating index" );
+        }
 
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
@@ -154,10 +158,14 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     public Future<Void> close() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
+        {
             return super.close();
+        }
 
         if ( state.compareAndSet( State.STARTING, State.CLOSED ) )
+        {
             throw new IllegalStateException( "Concurrent close while creating index" );
+        }
 
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
@@ -185,10 +193,14 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             openCalls.incrementAndGet();
             // ensure that the previous increment actually gets seen by closers
             if ( State.CLOSED.equals( state.get() ) )
-                throw new IllegalStateException("Cannot call " + name + "() after index has been closed" );
+            {
+                throw new IllegalStateException( "Cannot call " + name + "() after index has been closed" );
+            }
         }
         else
-            throw new IllegalStateException("Cannot call " + name + "() when index state is " + state.get() );
+        {
+            throw new IllegalStateException( "Cannot call " + name + "() when index state is " + state.get() );
+        }
     }
 
     private void closeCall()

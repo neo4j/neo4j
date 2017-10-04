@@ -28,18 +28,18 @@ import java.util.Optional;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.ServerControls;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.AbstractNeoServer;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class InProcessServerControls implements ServerControls
 {
     private final File serverFolder;
     private final AbstractNeoServer server;
     private final Closeable additionalClosable;
+    private ConnectorPortRegister connectorPortRegister;
 
     public InProcessServerControls( File serverFolder, AbstractNeoServer server, Closeable additionalClosable )
     {
@@ -51,8 +51,8 @@ public class InProcessServerControls implements ServerControls
     @Override
     public URI boltURI()
     {
-        AdvertisedSocketAddress address = server.getConfig().get( boltConnector( "0" ).advertised_address );
-        return URI.create( "bolt://" + address.getHostname() + ":" + address.getPort() );
+        HostnamePort boltHostNamePort = connectorPortRegister.getLocalAddress( "bolt" );
+        return URI.create( "bolt://" + boltHostNamePort.getHost() + ":" + boltHostNamePort.getPort() );
     }
 
     @Override
@@ -70,12 +70,14 @@ public class InProcessServerControls implements ServerControls
     public void start()
     {
         this.server.start();
+        this.connectorPortRegister = server.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
     @Override
     public void close()
     {
         server.stop();
+        this.connectorPortRegister = null;
         try
         {
             additionalClosable.close();
@@ -86,7 +88,7 @@ public class InProcessServerControls implements ServerControls
         }
         try
         {
-            if( looksLikeMd5Hash( serverFolder.getName() ) )
+            if ( looksLikeMd5Hash( serverFolder.getName() ) )
             {
                 FileUtils.deleteRecursively( serverFolder );
             }

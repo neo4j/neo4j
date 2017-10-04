@@ -39,7 +39,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.backup.OnlineBackup;
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -51,6 +50,7 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -67,7 +67,7 @@ import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
 
 @Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class RollingUpgradeIT
 {
     private static final int CLUSTER_SIZE = 3;
@@ -245,7 +245,7 @@ public class RollingUpgradeIT
                 server_id.name(), "" + serverId,
                 cluster_server.name(), localhost + ":" + (5000 + serverId),
                 ha_server.name(), localhost + ":" + (6000 + serverId),
-                GraphDatabaseSettings.allow_store_upgrade.name(), "true",
+                GraphDatabaseSettings.allow_upgrade.name(), "true",
                 GraphDatabaseSettings.pagecache_memory.name(), "8m",
                 OnlineBackupSettings.online_backup_server.name(), localhost + ":" + backupPort( serverId ),
                 initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
@@ -259,7 +259,7 @@ public class RollingUpgradeIT
 
     private int backupPort( int serverId )
     {
-        return (6362+serverId);
+        return 6362 + serverId;
     }
 
     private void rollOverToNewVersion() throws Exception
@@ -290,7 +290,7 @@ public class RollingUpgradeIT
             throws Exception
     {
         String storeDir = legacyDb.getStoreDir();
-        if ( i == 0)
+        if ( i == 0 )
         {
             storeDir += "new";
         }
@@ -363,7 +363,7 @@ public class RollingUpgradeIT
             debug( "Starting standalone db " + dbIndex + " to run upgrade" );
             tempDbForUpgrade = new TestGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( storeDir )
-                    .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                    .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                     .newGraphDatabase();
         }
         finally
@@ -383,7 +383,7 @@ public class RollingUpgradeIT
 
     public void doComplexLoad( GraphDatabaseAPI db, long center )
     {
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node central = db.getNodeById( center );
 
@@ -438,7 +438,7 @@ public class RollingUpgradeIT
             {
                 relationship.setProperty( "relProp", "relProp" + relationship.getId() + "-" + largestCreated );
                 Node end = relationship.getEndNode();
-                end.setProperty( "nodeProp", "nodeProp" + end.getId() + "-" + largestCreated  );
+                end.setProperty( "nodeProp", "nodeProp" + end.getId() + "-" + largestCreated );
             }
 
             tx.success();
@@ -448,13 +448,13 @@ public class RollingUpgradeIT
     public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode ) throws InterruptedException
     {
         db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node center = db.getNodeById( centralNode );
             long maxRelId = -1;
             for ( Relationship relationship : center.getRelationships() )
             {
-                if (relationship.getId() > maxRelId )
+                if ( relationship.getId() > maxRelId )
                 {
                     maxRelId = relationship.getId();
                 }
@@ -464,38 +464,40 @@ public class RollingUpgradeIT
             for ( Relationship relationship : center.getRelationships( type1 ) )
             {
                 typeCount++;
-                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                if ( !relationship.getProperty( "relProp" )
+                        .equals( "relProp" + relationship.getId() + "-" + maxRelId ) )
                 {
-                    fail( "damn");
+                    fail( "damn" );
                 }
                 Node other = relationship.getEndNode();
-                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp" + other.getId() + "-" + maxRelId ) )
                 {
-                    fail("double damn");
+                    fail( "double damn" );
                 }
             }
             if ( typeCount != 100 )
             {
-                fail("tripled damn");
+                fail( "tripled damn" );
             }
 
             typeCount = 0;
             for ( Relationship relationship : center.getRelationships( type2 ) )
             {
                 typeCount++;
-                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                if ( !relationship.getProperty( "relProp" )
+                        .equals( "relProp" + relationship.getId() + "-" + maxRelId ) )
                 {
-                    fail( "damn");
+                    fail( "damn" );
                 }
                 Node other = relationship.getEndNode();
-                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp" + other.getId() + "-" + maxRelId ) )
                 {
-                    fail("double damn");
+                    fail( "double damn" );
                 }
             }
             if ( typeCount != 100 )
             {
-                fail("tripled damn");
+                fail( "tripled damn" );
             }
             tx.success();
         }

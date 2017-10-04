@@ -105,7 +105,7 @@ public class ClusterIpFamilyIT
         int numberOfNodes = 10;
 
         // when
-        CoreClusterMember leader = DataCreator.createNodes( cluster, numberOfNodes );
+        CoreClusterMember leader = DataCreator.createEmptyNodes( cluster, numberOfNodes );
 
         // then
         assertEquals( numberOfNodes, countNodes( leader ) );

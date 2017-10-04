@@ -39,22 +39,22 @@ public class PaxosInstance
         p1_ready,
         p2_pending,
         closed,
-        delivered;
+        delivered
     }
     PaxosInstanceStore store;
 
-    InstanceId id = null;
+    InstanceId id;
     State state = State.empty;
-    long ballot = 0;
+    long ballot;
     List<URI> acceptors;
     List<ProposerMessage.PromiseState> promises = new ArrayList<ProposerMessage.PromiseState>();
     List<ProposerMessage.AcceptedState> accepts = new ArrayList<ProposerMessage.AcceptedState>();
     List<ProposerMessage.RejectAcceptState> rejectedAccepts = new ArrayList<ProposerMessage.RejectAcceptState>();
     Object value_1;
-    long phase1Ballot = 0;
+    long phase1Ballot;
     Object value_2;
     // This is true iff the acceptors did not already have a value for this instance
-    boolean clientValue = false;
+    boolean clientValue;
     String conversationIdHeader;
 
     public PaxosInstance( PaxosInstanceStore store, InstanceId instanceId )
@@ -176,16 +176,16 @@ public class PaxosInstance
         return acceptors;
     }
 
-    public PaxosInstance snapshot(PaxosInstanceStore store)
+    public PaxosInstance snapshot( PaxosInstanceStore store )
     {
         PaxosInstance snap = new PaxosInstance( store, id );
 
         snap.state = state;
         snap.ballot = ballot;
-        snap.acceptors = acceptors == null ? null : new ArrayList<>(acceptors);
-        snap.promises = promises == null ? null : new ArrayList<>(promises);
-        snap.accepts = accepts == null ? null : new ArrayList<>(accepts);
-        snap.rejectedAccepts = rejectedAccepts == null ? null : new ArrayList<>(rejectedAccepts);
+        snap.acceptors = acceptors == null ? null : new ArrayList<>( acceptors );
+        snap.promises = promises == null ? null : new ArrayList<>( promises );
+        snap.accepts = accepts == null ? null : new ArrayList<>( accepts );
+        snap.rejectedAccepts = rejectedAccepts == null ? null : new ArrayList<>( rejectedAccepts );
         snap.value_1 = value_1;
         snap.phase1Ballot = phase1Ballot;
         snap.value_2 = value_2;
@@ -201,7 +201,7 @@ public class PaxosInstance
         try
         {
             Object toStringValue1 = null;
-            if (value_1 != null)
+            if ( value_1 != null )
             {
                 if ( value_1 instanceof Payload )
                 {
@@ -214,7 +214,7 @@ public class PaxosInstance
             }
 
             Object toStringValue2 = null;
-            if (value_2 != null)
+            if ( value_2 != null )
             {
                 if ( value_2 instanceof Payload )
                 {

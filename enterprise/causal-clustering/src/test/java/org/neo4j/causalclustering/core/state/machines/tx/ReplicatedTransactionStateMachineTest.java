@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -49,6 +50,7 @@ import static org.mockito.Mockito.when;
 public class ReplicatedTransactionStateMachineTest
 {
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
+    private final CommandIndexTracker commandIndexTracker = mock( CommandIndexTracker.class );
     private final int batchSize = 16;
 
     @Test
@@ -63,7 +65,7 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         ReplicatedTransactionStateMachine stateMachine =
-                new ReplicatedTransactionStateMachine( lockState( lockSessionId ), batchSize, logProvider );
+                new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( lockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
@@ -88,12 +90,13 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         final ReplicatedTransactionStateMachine stateMachine =
-                new ReplicatedTransactionStateMachine( lockState( currentLockSessionId ), batchSize, logProvider );
+                new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
         // when
-        stateMachine.applyCommand( tx, 0, result -> {
+        stateMachine.applyCommand( tx, 0, result ->
+        {
             // then
             called.set( true );
             try
@@ -129,13 +132,14 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = createFakeTransactionCommitProcess( txId );
 
         ReplicatedTransactionStateMachine stateMachine =
-                new ReplicatedTransactionStateMachine( lockState( currentLockSessionId ), batchSize, logProvider );
+                new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
 
         // when
-        stateMachine.applyCommand( tx, 0, result -> {
+        stateMachine.applyCommand( tx, 0, result ->
+        {
             // then
             called.set( true );
             try
@@ -157,8 +161,9 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         when( localCommitProcess.commit(
                 any( TransactionToApply.class), any( CommitEvent.class ), any( TransactionApplicationMode.class ) )
-        ).thenAnswer( invocation -> {
-            TransactionToApply txToApply = (TransactionToApply) invocation.getArguments()[0];
+        ).thenAnswer( invocation ->
+        {
+            TransactionToApply txToApply = invocation.getArgument( 0 );
             txToApply.commitment( new FakeCommitment( txId, mock( TransactionIdStore.class ) ), txId );
             txToApply.commitment().publishAsCommitted();
             txToApply.commitment().publishAsClosed();

@@ -21,92 +21,82 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.RecordIdIterator;
-
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
- * A {@link RecordCursor} is used during the life cycle of this {@link Step}, e.g. between
+ * A {@link PageCursor} is used during the life cycle of this {@link Step}, e.g. between
  * {@link #start(int)} and {@link #close()}.
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProducerStep
+public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<PrimitiveLongIterator>
 {
-    protected final RecordStore<RECORD> store;
-    protected final RECORD record;
-    protected final RecordCursor<RECORD> cursor;
-    protected final long highId;
-    private final RecordIdIterator ids;
+    private final RecordStore<RECORD> store;
     private final Class<RECORD> klass;
-    private final int recordSize;
-    // volatile since written by processing threads and read by execution monitor
-    private volatile long count;
+    private final Predicate<RECORD> filter;
+    private final int batchSize;
 
     @SuppressWarnings( "unchecked" )
-    public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            RecordIdIterator ids )
+    public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
+            RecordStore<RECORD> store, Predicate<RECORD> filter )
     {
-        super( control, config );
+        super( control, ">", config, parallelReading( config, inRecordWritingStage ) ? 0 : 1 );
         this.store = store;
-        this.ids = ids;
+        this.filter = filter;
         this.klass = (Class<RECORD>) store.newRecord().getClass();
-        this.recordSize = store.getRecordSize();
-        this.cursor = store.newRecordCursor( record = store.newRecord() );
-        this.highId = store.getHighId();
+        this.batchSize = config.batchSize();
+    }
+
+    private static boolean parallelReading( Configuration config, boolean inRecordWritingStage )
+    {
+        return (inRecordWritingStage && config.parallelRecordReadsWhenWriting())
+                || (!inRecordWritingStage && config.parallelRecordReads());
     }
 
     @Override
     public void start( int orderingGuarantees )
     {
-        cursor.acquire( 0, CHECK );
-        super.start( orderingGuarantees );
+        super.start( orderingGuarantees | ORDER_SEND_DOWNSTREAM );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
-    protected Object nextBatchOrNull( long ticket, int batchSize )
+    protected void process( PrimitiveLongIterator idRange, BatchSender sender ) throws Throwable
     {
-        PrimitiveLongIterator ids;
-        while ( (ids = this.ids.nextBatch()) != null )
+        if ( !idRange.hasNext() )
         {
-            RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
-            int i = 0;
-            while ( ids.hasNext() )
+            return;
+        }
+
+        long id = idRange.next();
+        RECORD record = store.newRecord();
+        RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
+        int i = 0;
+        try ( RecordCursor cursor = store.newRecordCursor( record ).acquire( id, RecordLoad.CHECK ) )
+        {
+            boolean hasNext = true;
+            while ( hasNext )
             {
-                if ( cursor.next( ids.next() ) && !IdValidator.isReservedId( record.getId() ) )
+                if ( cursor.next( id ) && !IdValidator.isReservedId( record.getId() ) && (filter == null || filter.test( record )) )
                 {
                     batch[i++] = (RECORD) record.clone();
                 }
-            }
-
-            if ( i > 0 )
-            {
-                count += i;
-                return i == batchSize ? batch : Arrays.copyOf( batch, i );
+                if ( hasNext = idRange.hasNext() )
+                {
+                    id = idRange.next();
+                }
             }
         }
-        return null;
-    }
 
-    @Override
-    public void close() throws Exception
-    {
-        super.close();
-        cursor.close();
-    }
-
-    @Override
-    protected long position()
-    {
-        return count * recordSize;
+        sender.send( i == batchSize ? batch : Arrays.copyOf( batch, i ) );
     }
 }

@@ -19,34 +19,39 @@
  */
 package org.neo4j.bolt.v1.messaging.example;
 
-import java.util.Collections;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.VirtualValues;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.bolt.v1.messaging.example.Support.NO_LABELS;
+import static org.neo4j.values.storable.Values.stringArray;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 public class Nodes
 {
-    public static final Node ALICE = new ValueNode(
+    public static final NodeValue ALICE = nodeValue(
             1001L,
-            asList( label( "Person" ), label( "Employee" ) ),
-            map( "name", "Alice", "age", 33L ) );
-    public static final Node BOB = new ValueNode(
+            stringArray( "Person", "Employee" ),
+            VirtualValues.map( new String[]{"name", "age"},
+                    new AnyValue[]{stringValue( "Alice" ), Values.longValue( 33L )} ) );
+    public static final NodeValue BOB = nodeValue(
             1002L,
-            asList( label( "Person" ), label( "Employee" ) ),
-            map( "name", "Bob", "age", 44L ) );
-    public static final Node CAROL = new ValueNode(
+            stringArray( "Person", "Employee" ),
+            VirtualValues.map( new String[]{"name", "age"},
+                    new AnyValue[]{stringValue( "Bob" ), Values.longValue( 44L )} ) );
+    public static final NodeValue CAROL = nodeValue(
             1003L,
-            Collections.singletonList( label( "Person" ) ),
-            map( "name", "Carol" ) );
-    public static final Node DAVE = new ValueNode(
+            stringArray( "Person" ),
+            VirtualValues.map( new String[]{"name"},
+                    new AnyValue[]{stringValue( "Carol" )} ) );
+    public static final NodeValue DAVE = nodeValue(
             1004L,
-            NO_LABELS,
-            map( "name", "Dave" ) );
+            stringArray(),
+            VirtualValues.map( new String[]{"name"},
+                    new AnyValue[]{stringValue( "Dave" )} ) );
 
+    private Nodes()
+    {
+    }
 }

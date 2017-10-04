@@ -23,11 +23,15 @@ import org.neo4j.function.Factory;
 
 public class UniqueStrings
 {
+    private UniqueStrings()
+    {
+    }
+
     public static Factory<String> withPrefix( final String prefix )
     {
         return new Factory<String>()
         {
-            private int next = 0;
+            private int next;
 
             @Override
             public String newInstance()

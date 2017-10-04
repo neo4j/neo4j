@@ -19,22 +19,21 @@
  */
 package org.neo4j.desktop.config.portable;
 
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import java.util.function.Function;
 
 class VariableSubstitutor
 {
     private static final Pattern DEFAULT_PATTERN = Pattern.compile( "\\$\\{([^\\}]+)\\}" );
     private final Pattern pattern;
 
-    public VariableSubstitutor( Pattern pattern )
+    private VariableSubstitutor( Pattern pattern )
     {
         this.pattern = pattern;
     }
 
-    public VariableSubstitutor()
+    VariableSubstitutor()
     {
         this( DEFAULT_PATTERN );
     }
@@ -49,7 +48,7 @@ class VariableSubstitutor
         StringBuilder result = new StringBuilder(  );
         Matcher matcher = pattern.matcher( input );
         int cur = 0;
-        while (matcher.find( cur ))
+        while ( matcher.find( cur ) )
         {
             result.append( input.substring( cur, matcher.start() ) );
             result.append( substitutionFunction.apply( matcher.group( 1 ) ) );

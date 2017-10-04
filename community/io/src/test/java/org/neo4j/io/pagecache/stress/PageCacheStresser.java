@@ -93,7 +93,8 @@ public class PageCacheStresser
 
     private void execute( List<RecordStresser> recordStressers ) throws InterruptedException, ExecutionException
     {
-        ExecutorService executorService = Executors.newFixedThreadPool( numberOfThreads, r -> {
+        ExecutorService executorService = Executors.newFixedThreadPool( numberOfThreads, r ->
+        {
             Thread thread = Executors.defaultThreadFactory().newThread( r );
             thread.setDaemon( true );
             return thread;

@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.helpers;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-
-import org.apache.commons.io.FileUtils;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -38,6 +36,11 @@ import org.neo4j.server.NeoServer;
 
 public class ServerHelper
 {
+
+    private ServerHelper()
+    {
+    }
+
     public static void cleanTheDatabase( final NeoServer server )
     {
         if ( server == null )
@@ -100,34 +103,13 @@ public class ServerHelper
         {
             builder = builder.persistent();
         }
+        builder.onRandomPorts();
         NeoServer server = builder
                 .usingDataDir( path != null ? path.getAbsolutePath() : null )
                 .build();
 
-        checkServerCanStart( server.baseUri().getHost(), server.baseUri().getPort() );
-
         server.start();
         return server;
-    }
-
-    private static void checkServerCanStart( String host, int port ) throws IOException
-    {
-        ServerSocket serverSocket = null;
-        try
-        {
-            serverSocket = new ServerSocket( port, 1, InetAddress.getByName( host ) );
-        }
-        catch ( IOException ex )
-        {
-            throw new RuntimeException( "Unable to start server on " + host + ":" + port, ex );
-        }
-        finally
-        {
-            if ( serverSocket != null )
-            {
-                serverSocket.close();
-            }
-        }
     }
 
     private static void rollbackAllOpenTransactions( NeoServer server )
@@ -139,7 +121,7 @@ public class ServerHelper
     {
         private final GraphDatabaseAPI db;
 
-        public DeleteAllData( GraphDatabaseAPI db )
+        DeleteAllData( GraphDatabaseAPI db )
         {
             this.db = db;
         }
@@ -215,7 +197,7 @@ public class ServerHelper
     {
         private final GraphDatabaseAPI db;
 
-        public DeleteAllSchema( GraphDatabaseAPI db )
+        DeleteAllSchema( GraphDatabaseAPI db )
         {
             this.db = db;
         }

@@ -24,7 +24,7 @@ final class ValueLookup<Value> extends ValueSink
     private final AbstractKeyValueStore.Reader<Value> reader;
     private Value value;
 
-    public ValueLookup( AbstractKeyValueStore.Reader<Value> reader )
+    ValueLookup( AbstractKeyValueStore.Reader<Value> reader )
     {
         this.reader = reader;
     }

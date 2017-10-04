@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -28,6 +28,7 @@ Apache Software License, Version 2.0
   airline
   Apache Commons Compress
   Apache Commons Lang
+  Apache Commons Text
   Guava: Google Core Libraries for Java
   javax.inject
   Lucene codecs
@@ -36,4 +37,9 @@ Apache Software License, Version 2.0
   Lucene Memory
   Lucene QueryParsers
   Netty
+  Netty/All-in-One
+
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 

@@ -51,6 +51,10 @@ public class Variables
      */
     public static final String TITLE_MAX_LENGTH = "TITLE_MAX_LENGTH";
 
+    private Variables()
+    {
+    }
+
     /**
      * @param key a variable name
      * @throws org.neo4j.shell.ShellException if key doesn't match a valid identifier name
@@ -58,9 +62,11 @@ public class Variables
     public static void checkIsValidVariableName( String key ) throws
         ShellException
     {
-        if (!isIdentifier( key ) ) throw new ShellException(
-                key + " is no valid variable name. May only contain " +
-                        "alphanumeric characters and underscores.");
+        if ( !isIdentifier( key ) )
+        {
+            throw new ShellException( key + " is no valid variable name. May only contain " +
+                    "alphanumeric characters and underscores." );
+        }
     }
 
     public static boolean isIdentifier( String key )

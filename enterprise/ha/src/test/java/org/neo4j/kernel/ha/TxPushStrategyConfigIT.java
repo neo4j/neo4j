@@ -112,7 +112,8 @@ public class TxPushStrategyConfigIT
             createTransactionOnMaster( cluster );
         }
 
-        long min = -1, max = -1;
+        long min = -1;
+        long max = -1;
         for ( GraphDatabaseAPI db : cluster.getAllMembers() )
         {
             long tx = getLastTx( db );
@@ -286,7 +287,8 @@ public class TxPushStrategyConfigIT
                     }
                 } );
 
-        template.execute( transaction -> {
+        template.execute( transaction ->
+        {
             monitorListener.clear();
             db.createNode();
         } );
@@ -309,12 +311,15 @@ public class TxPushStrategyConfigIT
 
         public void format( StringBuilder failures, long txId )
         {
-            if ( txId < this.txId - this.missed || txId > this.txId)
+            if ( txId < this.txId - this.missed || txId > this.txId )
             {
                 if ( failures.length() > 0 )
+                {
                     failures.append( ", " );
-                failures.append( String.format( "tx id on server:%d, expected [%d] but was [%d]",
-                        serverId.toIntegerIndex(), this.txId, txId ) );
+                }
+                failures.append(
+                        String.format( "tx id on server:%d, expected [%d] but was [%d]", serverId.toIntegerIndex(),
+                                this.txId, txId ) );
             }
         }
     }

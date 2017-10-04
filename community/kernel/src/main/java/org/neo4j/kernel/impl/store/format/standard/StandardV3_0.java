@@ -42,7 +42,8 @@ public class StandardV3_0 extends BaseRecordFormats
 
     public StandardV3_0()
     {
-        super( STORE_VERSION, 6, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_5 );
+        super( STORE_VERSION, StoreVersion.STANDARD_V3_0.introductionVersion(), 6, Capability.SCHEMA,
+                Capability.DENSE_NODES, Capability.LUCENE_5 );
     }
 
     @Override

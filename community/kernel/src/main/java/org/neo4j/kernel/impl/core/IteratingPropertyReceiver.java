@@ -41,7 +41,7 @@ public class IteratingPropertyReceiver<P extends StorageProperty> extends Prefet
     {
         if ( writeCursor >= properties.length )
         {
-            properties = Arrays.copyOf( properties, properties.length*2 );
+            properties = Arrays.copyOf( properties, properties.length * 2 );
         }
         properties[writeCursor++] = property;
     }

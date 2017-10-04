@@ -24,7 +24,7 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.IoProducerStep;
+import org.neo4j.unsafe.impl.batchimport.staging.PullingProducerStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.neo4j.helpers.collection.Iterators.prefetching;
@@ -33,7 +33,7 @@ import static org.neo4j.helpers.collection.Iterators.prefetching;
  * Reads {@link RelationshipGroupRecord group records} from {@link RelationshipGroupCache}, sending
  * them downstream in batches.
  */
-public class ReadGroupsFromCacheStep extends IoProducerStep
+public class ReadGroupsFromCacheStep extends PullingProducerStep
 {
     private final int itemSize;
     private final PrefetchingIterator<RelationshipGroupRecord> data;

@@ -41,14 +41,14 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.count;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class IndexTxStateLookupTest
 {
     private static final String TRIGGER_LAZY = "this is supposed to be a really long property to trigger lazy loading";
     private static final Random random = new Random();
 
-    @SuppressWarnings("RedundantStringConstructorCall")
-    @Parameterized.Parameters(name = "store=<{0}> lookup=<{1}>")
+    @SuppressWarnings( "RedundantStringConstructorCall" )
+    @Parameterized.Parameters( name = "store=<{0}> lookup=<{1}>" )
     public static Iterable<Object[]> parameters()
     {
         List<Object[]> parameters = new ArrayList<>();
@@ -113,7 +113,8 @@ public class IndexTxStateLookupTest
 
     private static Object[] randomNumbers( int length, Class<?> lhsType, Class<?> rhsType )
     {
-        Object lhs = Array.newInstance( lhsType, length ), rhs = Array.newInstance( rhsType, length );
+        Object lhs = Array.newInstance( lhsType, length );
+        Object rhs = Array.newInstance( rhsType, length );
         for ( int i = 0; i < length; i++ )
         {
             int value = random.nextInt( 128 );

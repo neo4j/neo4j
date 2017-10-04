@@ -64,12 +64,12 @@ public class PortRangeSocketBinderTest
         HostnamePort localhost = new HostnamePort( "localhost", 9000, 9002 );
         ServerBootstrap bootstrap = mock( ServerBootstrap.class );
 
-        when( bootstrap.bind( new InetSocketAddress( "localhost", 9000 ) ) ).thenThrow(
-                new ChannelException("Failed to bind to: 9000") );
-        when( bootstrap.bind( new InetSocketAddress( "localhost", 9001 ) ) ).thenThrow(
-                new ChannelException("Failed to bind to: 9001") );
-        when( bootstrap.bind( new InetSocketAddress( "localhost", 9002 ) ) ).thenThrow(
-                new ChannelException("Failed to bind to: 9002") );
+        when( bootstrap.bind( new InetSocketAddress( "localhost", 9000 ) ) )
+                .thenThrow( new ChannelException( "Failed to bind to: 9000" ) );
+        when( bootstrap.bind( new InetSocketAddress( "localhost", 9001 ) ) )
+                .thenThrow( new ChannelException( "Failed to bind to: 9001" ) );
+        when( bootstrap.bind( new InetSocketAddress( "localhost", 9002 ) ) )
+                .thenThrow( new ChannelException( "Failed to bind to: 9002" ) );
 
         try
         {
@@ -84,7 +84,8 @@ public class PortRangeSocketBinderTest
         }
     }
 
-    private int suppressedExceptions( Throwable throwable ) {
+    private int suppressedExceptions( Throwable throwable )
+    {
         int suppressed = 0;
         for ( Throwable ignored : throwable.getSuppressed() )
         {

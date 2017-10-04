@@ -24,9 +24,9 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 public interface LockOperations
 {
-    void acquireExclusive( KernelStatement state, ResourceType resourceType, long resourceId );
-    void acquireShared( KernelStatement state, ResourceType resourceType, long resourceId );
+    void acquireExclusive( KernelStatement state, ResourceType resourceType, long... ids );
+    void acquireShared( KernelStatement state, ResourceType resourceType, long... ids );
 
-    void releaseExclusive( KernelStatement statement, ResourceType type, long id );
-    void releaseShared( KernelStatement statement, ResourceType type, long id );
+    void releaseExclusive( KernelStatement statement, ResourceType type, long... ids );
+    void releaseShared( KernelStatement statement, ResourceType type, long... ids );
 }

@@ -205,12 +205,7 @@ public class Message<MESSAGETYPE extends MessageType>
         {
             return false;
         }
-        if ( payload != null ? !payload.equals( message.payload ) : message.payload != null )
-        {
-            return false;
-        }
-
-        return true;
+        return payload != null ? payload.equals( message.payload ) : message.payload == null;
     }
 
     @Override

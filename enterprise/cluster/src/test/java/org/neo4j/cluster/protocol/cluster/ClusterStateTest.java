@@ -105,7 +105,7 @@ public class ClusterStateTest
         ClusterContext context = mock( ClusterContext.class );
         Map<InstanceId, URI> existingMembers = members( 1, 2 );
         when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
-        when( context.getJoiningInstances() ).thenReturn( Collections.<URI>emptyList() );
+        when( context.getJoiningInstances() ).thenReturn( Collections.emptyList() );
         when( context.hasJoinBeenDenied() ).thenReturn( true );
         when( context.getJoinDeniedConfigurationResponseState() )
                 .thenReturn( configurationResponseState( existingMembers ) );
@@ -245,7 +245,7 @@ public class ClusterStateTest
 
     private ConfigurationResponseState configurationResponseState( Map<InstanceId, URI> existingMembers )
     {
-        return new ConfigurationResponseState( Collections.<String,InstanceId>emptyMap(),
+        return new ConfigurationResponseState( Collections.emptyMap(),
                 existingMembers, null, "ClusterStateTest" );
     }
 
@@ -273,7 +273,7 @@ public class ClusterStateTest
 
     private URI uri( int i )
     {
-        return URI.create( "http://localhost:" + (6000+i) + "?serverId=" + i );
+        return URI.create( "http://localhost:" + (6000 + i) + "?serverId=" + i );
     }
 
     private InstanceId id( int i )
@@ -281,7 +281,7 @@ public class ClusterStateTest
         return new InstanceId( i );
     }
 
-    private static class ConfigurationResponseStateMatcher extends ArgumentMatcher<ConfigurationResponseState>
+    private static class ConfigurationResponseStateMatcher implements ArgumentMatcher<ConfigurationResponseState>
     {
         private Map<InstanceId, URI> members;
 
@@ -292,10 +292,9 @@ public class ClusterStateTest
         }
 
         @Override
-        public boolean matches( Object argument )
+        public boolean matches( ConfigurationResponseState argument )
         {
-            ConfigurationResponseState arg = (ConfigurationResponseState) argument;
-            return arg.getMembers().equals( this.members );
+            return argument.getMembers().equals( this.members );
         }
     }
 }

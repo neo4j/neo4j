@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
+import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
 import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
@@ -53,10 +55,12 @@ public class CoreStateMachines
     private final ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
 
+    private final DummyMachine benchmarkMachine;
+
     private final LocalDatabase localDatabase;
     private final RecoverConsensusLogIndex consensusLogIndexRecovery;
 
-    private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
+    private final CommandDispatcher dispatcher = new StateMachineCommandDispatcher();
     private volatile boolean runningBatch;
 
     CoreStateMachines(
@@ -66,6 +70,7 @@ public class CoreStateMachines
             ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
             ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine,
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
+            DummyMachine benchmarkMachine,
             LocalDatabase localDatabase,
             RecoverConsensusLogIndex consensusLogIndexRecovery )
     {
@@ -75,6 +80,7 @@ public class CoreStateMachines
         this.propertyKeyTokenStateMachine = propertyKeyTokenStateMachine;
         this.replicatedLockTokenStateMachine = replicatedLockTokenStateMachine;
         this.idAllocationStateMachine = idAllocationStateMachine;
+        this.benchmarkMachine = benchmarkMachine;
         this.localDatabase = localDatabase;
         this.consensusLogIndexRecovery = consensusLogIndexRecovery;
     }
@@ -84,7 +90,7 @@ public class CoreStateMachines
         localDatabase.assertHealthy( IllegalStateException.class );
         assert !runningBatch;
         runningBatch = true;
-        return currentBatch;
+        return dispatcher;
     }
 
     public long getLastAppliedIndex()
@@ -178,6 +184,12 @@ public class CoreStateMachines
         {
             replicatedTxStateMachine.ensuredApplied();
             replicatedLockTokenStateMachine.applyCommand( lockRequest, commandIndex, callback );
+        }
+
+        @Override
+        public void dispatch( DummyRequest dummyRequest, long commandIndex, Consumer<Result> callback )
+        {
+            benchmarkMachine.applyCommand( dummyRequest, commandIndex, callback );
         }
 
         @Override

@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 
 public class DuplicatePropertyTest
@@ -48,7 +47,7 @@ public class DuplicatePropertyTest
 
         NodeRecord master = records.add( inUse( new NodeRecord( 1, false, -1, 1 ) ) );
 
-        PropertyRecord propertyRecord = inUse( new PropertyRecord(1) );
+        PropertyRecord propertyRecord = inUse( new PropertyRecord( 1 ) );
         PropertyBlock firstBlock = new PropertyBlock();
         firstBlock.setSingleBlock( 1 );
         firstBlock.setKeyIndexId( 1 );

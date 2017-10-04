@@ -45,7 +45,7 @@ import org.neo4j.udc.UsageData;
 import static org.neo4j.udc.UsageDataKeys.Features.http_cypher_endpoint;
 import static org.neo4j.udc.UsageDataKeys.features;
 
-@Path("/cypher")
+@Path( "/cypher" )
 public class CypherService
 {
 
@@ -78,17 +78,19 @@ public class CypherService
     }
 
     @POST
-    @SuppressWarnings({"unchecked", "ParameterCanBeLocal"})
-    public Response cypher(String body,
+    @SuppressWarnings( {"unchecked", "ParameterCanBeLocal"} )
+    public Response cypher( String body,
                            @Context HttpServletRequest request,
                            @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats,
                            @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
-                           @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
+                           @QueryParam( PROFILE_PARAM ) boolean profile ) throws BadInputException
+    {
 
         usage.get( features ).flag( http_cypher_endpoint );
         Map<String,Object> command = input.readMap( body );
 
-        if( !command.containsKey(QUERY_KEY) ) {
+        if ( !command.containsKey( QUERY_KEY ) )
+        {
             return output.badRequest( new InvalidArgumentsException( "You have to provide the 'query' parameter." ) );
         }
 
@@ -102,7 +104,7 @@ public class CypherService
         }
         catch ( ClassCastException e )
         {
-            return output.badRequest( new IllegalArgumentException("Parameters must be a JSON map") );
+            return output.badRequest( new IllegalArgumentException( "Parameters must be a JSON map" ) );
         }
 
         try
@@ -139,10 +141,11 @@ public class CypherService
         }
         catch ( Throwable e )
         {
-            if (e.getCause() instanceof CypherException)
+            if ( e.getCause() instanceof CypherException )
             {
                 return output.badRequest( e.getCause() );
-            } else
+            }
+            else
             {
                 return output.badRequest( e );
             }

@@ -86,7 +86,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "b", "d", "cost", (float) 1 );
-        graph.makeEdge( "a", "c", "cost", (int) 1 );
+        graph.makeEdge( "a", "c", "cost", 1 );
         graph.makeEdge( "c", "d", "cost", (long) 1 );
         graph.makeEdge( "d", "e", "cost", (short) 1 );
         graph.makeEdge( "e", "f", "cost", (byte) 1 );
@@ -110,7 +110,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "a", "f", "cost", (float) 1 );
         graph.makeEdge( "b", "c", "cost", (long) 1 );
-        graph.makeEdge( "f", "g", "cost", (int) 1 );
+        graph.makeEdge( "f", "g", "cost", 1 );
         graph.makeEdge( "c", "d", "cost", (short) 1 );
         graph.makeEdge( "g", "h", "cost", (byte) 1 );
         graph.makeEdge( "d", "e", "cost", (float) 1 );
@@ -133,7 +133,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "b", "cost", (double) 0 );
         graph.makeEdge( "b", "c", "cost", (float) 0 );
         graph.makeEdge( "c", "d", "cost", (long) 0 );
-        graph.makeEdge( "d", "e", "cost", (int) 0 );
+        graph.makeEdge( "d", "e", "cost", 0 );
         graph.makeEdge( "e", "f", "cost", (byte) 0 );
         graph.makeEdge( "f", "g", "cost", (float) 0 );
         graph.makeEdge( "g", "h", "cost", (short) 0 );
@@ -147,7 +147,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "w", "b", "cost", (double) 1 );
         graph.makeEdge( "x", "b", "cost", (float) 2 );
         graph.makeEdge( "y", "b", "cost", (long) 1 );
-        graph.makeEdge( "z", "b", "cost", (int) 1 );
+        graph.makeEdge( "z", "b", "cost", 1 );
         graph.makeEdge( "zz", "z", "cost", (double) 0 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "zz" );
         assertTrue( dijkstra.getPathsAsNodes().size() == 3 );
@@ -178,7 +178,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "w", "b", "cost", (double) 1 );
         graph.makeEdge( "x", "b", "cost", (float) 2 );
         graph.makeEdge( "y", "b", "cost", (long) 1 );
-        graph.makeEdge( "z", "b", "cost", (int) 1 );
+        graph.makeEdge( "z", "b", "cost", 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
         assertTrue( dijkstra.getPathsAsNodes().size() == 3 );
         assertTrue( dijkstra.getCost() == 1.0 );
@@ -193,7 +193,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "b", "cost", (double) 0 );
         graph.makeEdge( "z", "y", "cost", (float) 0 );
         graph.makeEdge( "y", "b", "cost", (long) 1 );
-        graph.makeEdge( "z", "b", "cost", (int) 1 );
+        graph.makeEdge( "z", "b", "cost", 1 );
         graph.makeEdge( "y", "a", "cost", (byte) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
         List<List<Node>> paths = dijkstra.getPathsAsNodes();
@@ -207,7 +207,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,z", "cost",
             (double) 1 );
         graph.makeEdge( "a", "b2", "cost", (double) 4 );
-        graph.makeEdge( "b2", "c", "cost", (int) -2 );
+        graph.makeEdge( "b2", "c", "cost", -2 );
         Dijkstra<Double> dijkstra = new Dijkstra<Double>( 0.0, graph
             .getNode( "a" ), graph.getNode( "z" ),
             CommonEvaluators.doubleCostEvaluator( "cost" ),
@@ -233,14 +233,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             0.0,
             graph.getNode( "a" ),
             graph.getNode( "e" ),
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                    Direction direction )
-                {
-                    return 1.0;
-                }
-            }, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
+                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
             MyRelTypes.R1 );
         // path discovery flags
         boolean pathBD = false;
@@ -324,14 +317,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             0.0,
             graph.getNode( "a" ),
             graph.getNode( "e" ),
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                    Direction direction )
-                {
-                    return 1.0;
-                }
-            }, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
+                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
             MyRelTypes.R1 );
         // path discovery flags
         boolean pathBD = false;

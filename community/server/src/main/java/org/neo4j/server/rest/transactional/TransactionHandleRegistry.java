@@ -230,9 +230,12 @@ public class TransactionHandleRegistry implements TransactionRegistry
             TransactionTerminationHandle handle = marker.getActiveTransaction().getTerminationHandle();
             handle.terminate();
 
-            try {
+            try
+            {
                 return acquire( id );
-            } catch (InvalidConcurrentTransactionAccess exception) {
+            }
+            catch ( InvalidConcurrentTransactionAccess exception )
+            {
                 // We could not acquire the transaction. Let the other request clean up.
                 return null;
             }
@@ -247,7 +250,8 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     public void rollbackSuspendedTransactionsIdleSince( final long oldestLastActiveTime )
     {
-        rollbackSuspended( item -> {
+        rollbackSuspended( item ->
+        {
             try
             {
                 SuspendedTransaction transaction = item.getSuspendedTransaction();
@@ -267,7 +271,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         for ( Map.Entry<Long, TransactionMarker> entry : registry.entrySet() )
         {
             TransactionMarker marker = entry.getValue();
-            if (marker.isSuspended() && predicate.test(marker))
+            if ( marker.isSuspended() && predicate.test( marker ) )
             {
                 candidateTransactionIdsToRollback.add( entry.getKey() );
             }
@@ -288,7 +292,9 @@ public class TransactionHandleRegistry implements TransactionRegistry
             try
             {
                 handle.forceRollback();
-                log.info( format( "Transaction with id %d has been automatically rolled back.", id ) );
+                log.info(
+                        format( "Transaction with id %d has been automatically rolled back due to transaction timeout.",
+                                id ) );
             }
             catch ( Throwable e )
             {

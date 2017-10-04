@@ -30,7 +30,7 @@ public class DynamicLongArrayTest
     {
         // GIVEN
         long defaultValue = 0;
-        LongArray array = NumberArrayFactory.AUTO.newDynamicLongArray( 10, defaultValue );
+        LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, defaultValue );
         array.set( 4, 5 );
 
         // WHEN
@@ -44,7 +44,7 @@ public class DynamicLongArrayTest
     public void shouldChunksAsNeeded() throws Exception
     {
         // GIVEN
-        LongArray array = NumberArrayFactory.AUTO.newDynamicLongArray( 10, 0 );
+        LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, 0 );
 
         // WHEN
         long index = 243;

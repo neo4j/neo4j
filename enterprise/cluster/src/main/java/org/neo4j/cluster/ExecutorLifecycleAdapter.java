@@ -53,7 +53,7 @@ public class ExecutorLifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
-        if (executor != null)
+        if ( executor != null )
         {
             executor.shutdown();
             executor.awaitTermination( 30, TimeUnit.SECONDS );
@@ -69,8 +69,10 @@ public class ExecutorLifecycleAdapter
     @Override
     public void execute( Runnable command )
     {
-        if (executor != null)
+        if ( executor != null )
+        {
             executor.execute( command );
+        }
         else
         {
             command.run();

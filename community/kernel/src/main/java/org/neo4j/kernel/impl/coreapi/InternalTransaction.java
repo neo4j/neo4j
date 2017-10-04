@@ -19,13 +19,20 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.SecurityContext;
 
 public interface InternalTransaction extends Transaction
 {
     KernelTransaction.Type transactionType();
+
     SecurityContext securityContext();
+
     KernelTransaction.Revertable overrideWith( SecurityContext context );
+
+    Optional<Status> terminationReason();
 }

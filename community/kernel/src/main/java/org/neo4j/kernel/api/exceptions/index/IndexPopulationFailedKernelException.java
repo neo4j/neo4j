@@ -19,25 +19,27 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
+import java.util.Arrays;
+
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 
 public class IndexPopulationFailedKernelException extends KernelException
 {
-    private static final String FORMAT_MESSAGE = "Failed to populate index for %s [labelId: %d, propertyKeyId %d]";
+    private static final String FORMAT_MESSAGE = "Failed to populate index for %s [labelId: %d, properties %s]";
 
-    public IndexPopulationFailedKernelException( IndexDescriptor descriptor, String indexUserDescription,
-                                                 Throwable cause )
+    public IndexPopulationFailedKernelException( LabelSchemaDescriptor descriptor, String indexUserDescription,
+            Throwable cause )
     {
         super( Status.Schema.IndexCreationFailed, cause, FORMAT_MESSAGE, indexUserDescription,
-                descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+                descriptor.getLabelId(), Arrays.toString( descriptor.getPropertyIds() ) );
     }
 
-    public IndexPopulationFailedKernelException( IndexDescriptor descriptor, String indexUserDescription,
-                                                 String message )
+    public IndexPopulationFailedKernelException( LabelSchemaDescriptor descriptor, String indexUserDescription,
+            String message )
     {
         super( Status.Schema.IndexCreationFailed, FORMAT_MESSAGE + ", due to " + message,
-               indexUserDescription, descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+                indexUserDescription, descriptor.getLabelId(), Arrays.toString( descriptor.getPropertyIds() ) );
     }
 }

@@ -45,6 +45,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthToken;
@@ -53,12 +54,13 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
-import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
@@ -95,7 +97,8 @@ public class QueryLoggerIT
         logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
         logFilename = new File( logsDirectory, "query.log" );
         AssertableLogProvider inMemoryLog = new AssertableLogProvider();
-        databaseBuilder = new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystem.get() )
+        databaseBuilder = new TestEnterpriseGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem.get() ) )
                 .setInternalLogProvider( inMemoryLog )
                 .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() );
     }
@@ -152,7 +155,7 @@ public class QueryLoggerIT
                 ResourceIterator::close );
 
         // Set meta data and execute query in transaction
-        try (InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ))
+        try ( InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ) )
         {
             graph.execute( "CALL dbms.setTXMetaData( { User: 'Johan' } )", Collections.emptyMap() );
             graph.execute( "CALL dbms.procedures() YIELD name RETURN name", Collections.emptyMap() ).close();
@@ -162,7 +165,7 @@ public class QueryLoggerIT
         }
 
         // Ensure that old meta data is not retained
-        try (InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ))
+        try ( InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ) )
         {
             graph.execute( "CALL dbms.setTXMetaData( { Location: 'Sweden' } )", Collections.emptyMap() );
             graph.execute( "MATCH ()-[r]-() RETURN count(r)", Collections.emptyMap() ).close();
@@ -199,8 +202,7 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s - {}", querySource(
-                AUTH_DISABLED.username() ), QUERY ) ) );
+        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s - {}", clientConnectionInfo(), QUERY ) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
@@ -225,16 +227,17 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        QuerySource querySource = querySource( AUTH_DISABLED.username() );
         assertThat( logLines.get( 0 ), endsWith( String.format(
-                " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}} - {}",
-                querySource, query) ) );
+                " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: ['Jake', 'Eddie', 'Susannah']}}"
+                        + " - {}",
+                clientConnectionInfo(),
+                query ) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
-    private QuerySource querySource( String username )
+    private String clientConnectionInfo()
     {
-        return QueryEngineProvider.describe().append( username );
+        return ClientConnectionInfo.EMBEDDED_CONNECTION.withUsername( AUTH_DISABLED.username() ).asConnectionDetails();
     }
 
     @Test
@@ -252,9 +255,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
-                endsWith( String.format(
-                        " ms: %s - %s - {ids: [0, 1, 2]} - {}",
-                        querySource( AUTH_DISABLED.username() ), query) ) );
+                endsWith( String.format( " ms: %s - %s - {ids: [0, 1, 2]} - {}", clientConnectionInfo(), query ) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
@@ -267,8 +268,8 @@ public class QueryLoggerIT
 
         executeQueryAndShutdown( database );
 
-        expectedException.expect( FileNotFoundException.class );
-        readAllLines( logFilename );
+        List<String> strings = readAllLines( logFilename );
+        assertEquals( 0, strings.size() );
     }
 
     @Test
@@ -344,7 +345,7 @@ public class QueryLoggerIT
         try ( InternalTransaction tx = database
                 .beginTransaction( KernelTransaction.Type.explicit, neo ) )
         {
-            Result res = database.execute( tx, query, Collections.emptyMap() );
+            Result res = database.execute( tx, query, VirtualValues.EMPTY_MAP );
             res.close();
             tx.success();
         }
@@ -359,6 +360,33 @@ public class QueryLoggerIT
                 containsString(  "CALL dbms.security.changePassword(******)") ) ;
         assertThat( logLines.get( 0 ),not( containsString( "abc123" ) ) );
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
+    }
+
+    @Test
+    public void canBeEnabledAndDisabledAtRuntime() throws Exception
+    {
+        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .newGraphDatabase();
+
+        database.execute( QUERY ).close();
+
+        List<String> strings = readAllLines( logFilename );
+        assertEquals( 0, strings.size() );
+
+        database.execute( "CALL dbms.setConfigValue('" + GraphDatabaseSettings.log_queries.name() + "', 'true')" ).close();
+        database.execute( QUERY ).close();
+
+        // Both config change and query should exist
+        strings = readAllLines( logFilename );
+        assertEquals( 2, strings.size() );
+
+        database.execute( "CALL dbms.setConfigValue('" + GraphDatabaseSettings.log_queries.name() + "', 'false')" ).close();
+        database.execute( QUERY ).close();
+
+        // Value should not change when disabled
+        strings = readAllLines( logFilename );
+        assertEquals( 2, strings.size() );
     }
 
     private void executeQueryAndShutdown( GraphDatabaseService database )

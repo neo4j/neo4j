@@ -33,5 +33,5 @@ public interface MaxCostEvaluator<T>
      * @param currentCost the cost to be checked
      * @return true if the maximum Cost is less that currentCost
      */
-    public boolean maxCostExceeded( T currentCost );
+    boolean maxCostExceeded( T currentCost );
 }

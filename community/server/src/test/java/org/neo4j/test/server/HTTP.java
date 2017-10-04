@@ -19,13 +19,6 @@
  */
 package org.neo4j.test.server;
 
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
@@ -33,18 +26,23 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.codehaus.jackson.JsonNode;
 
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Collections.unmodifiableMap;
-
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -56,10 +54,15 @@ public class HTTP
 
     private static final Builder BUILDER = new Builder().withHeaders( "Accept", "application/json" );
     private static final Client CLIENT;
-    static {
+    static
+    {
         DefaultClientConfig defaultClientConfig = new DefaultClientConfig();
         defaultClientConfig.getProperties().put( ClientConfig.PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE );
         CLIENT = Client.create( defaultClientConfig );
+    }
+
+    private HTTP()
+    {
     }
 
     public static Builder withHeaders( String... kvPairs )
@@ -67,9 +70,9 @@ public class HTTP
         return BUILDER.withHeaders( kvPairs );
     }
 
-    public static Builder withBaseUri( String baseUri )
+    public static Builder withBaseUri( URI baseUri )
     {
-        return BUILDER.withBaseUri( baseUri );
+        return BUILDER.withBaseUri( baseUri.toString() );
     }
 
     public static Response POST( String uri )
@@ -104,7 +107,7 @@ public class HTTP
 
         private Builder()
         {
-            this( Collections.<String, String>emptyMap(), "" );
+            this( Collections.emptyMap(), "" );
         }
 
         private Builder( Map<String, String> headers, String baseUri )
@@ -163,9 +166,9 @@ public class HTTP
 
         public Response request( String method, String uri, Object payload )
         {
-            if(payload == null)
+            if ( payload == null )
             {
-                return request(method, uri);
+                return request( method, uri );
             }
             String jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom(
                     payload );
@@ -245,7 +248,7 @@ public class HTTP
                     "unable to provide location. Status code was: " + status() );
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public <T> T content()
         {
             try
@@ -268,7 +271,7 @@ public class HTTP
             return get(key).asText();
         }
 
-        public JsonNode get(String fieldName) throws JsonParseException
+        public JsonNode get( String fieldName ) throws JsonParseException
         {
             return JsonHelper.jsonNode( entity ).get( fieldName );
         }

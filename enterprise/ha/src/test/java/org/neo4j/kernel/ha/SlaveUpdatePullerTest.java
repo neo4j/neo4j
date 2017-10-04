@@ -23,11 +23,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.OngoingStubbing;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -43,9 +42,9 @@ import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.is;
@@ -88,7 +87,7 @@ public class SlaveUpdatePullerTest
     public void setUp() throws Throwable
     {
         when( requestContextFactory.newRequestContext() ).thenReturn( new RequestContext( 42, 42, 42, 42, 42 ) );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000L );
+        when( config.get( HaSettings.pull_interval ) ).thenReturn( Duration.ofSeconds( 1 ) );
         when( config.get( ClusterSettings.server_id ) ).thenReturn( instanceId );
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
         jobScheduler.init();
@@ -122,7 +121,7 @@ public class SlaveUpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( master, times( 1 ) ).pullUpdates( ArgumentMatchers.any() );
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
@@ -142,7 +141,7 @@ public class SlaveUpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( master, times( 1 ) ).pullUpdates( ArgumentMatchers.any() );
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
@@ -151,7 +150,7 @@ public class SlaveUpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( master, times( 2 ) ).pullUpdates( ArgumentMatchers.any() );
         verify( monitor, times( 2 ) ).pulledUpdates( anyLong() );
     }
 
@@ -193,14 +192,10 @@ public class SlaveUpdatePullerTest
         // GIVEN
         Condition condition = mock( Condition.class );
 
-        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( new Answer<Boolean>()
+        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( invocation ->
         {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                updatePuller.stop();
-                return false;
-            }
+            updatePuller.stop();
+            return false;
         } );
 
         // WHEN

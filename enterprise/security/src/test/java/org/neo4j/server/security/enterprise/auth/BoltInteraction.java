@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
@@ -44,6 +45,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -53,6 +55,11 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -69,25 +76,32 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
 {
-    protected final HostnamePort address = new HostnamePort( "localhost:7687" );
     private final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
-    private EphemeralFileSystemAbstraction fileSystem;
+    private FileSystemAbstraction fileSystem;
     private EnterpriseAuthManager authManager;
 
-    BoltInteraction( Map<String, String> config ) throws IOException
+    BoltInteraction( Map<String,String> config ) throws IOException
+    {
+        this( config, EphemeralFileSystemAbstraction::new );
+    }
+
+    BoltInteraction( Map<String,String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws IOException
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
-        fileSystem = new EphemeralFileSystemAbstraction();
+        fileSystem = fileSystemSupplier.get();
         server = new Neo4jWithSocket( getClass(),
                 factory,
                 () -> fileSystem,
-                settings -> {
+                settings ->
+                {
                     settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
                     settings.putAll( config );
                 } );
-        server.ensureDatabase( r -> {} );
+        server.ensureDatabase( r ->
+        {
+        } );
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
@@ -132,11 +146,11 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         try
         {
-            subject.client.send( TransportTestUtil.chunk( RunMessage.run( call, params ), PullAllMessage.pullAll() ) );
+            subject.client.send( TransportTestUtil.chunk( RunMessage.run( call, ValueUtils.asMapValue( params ) ), PullAllMessage.pullAll() ) );
             resultConsumer.accept( collectResults( subject.client ) );
             return "";
         }
-        catch (Exception e)
+        catch ( Exception e )
         {
             return e.getMessage();
         }
@@ -156,7 +170,8 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
             subject.client.disconnect();
             subject.client = connectionFactory.newInstance();
         }
-        subject.client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+        subject.client.connect( server.lookupDefaultConnector() )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1",
                         map( REALM_KEY, NATIVE_REALM, PRINCIPAL, username, CREDENTIALS, password,
                                 SCHEME_KEY, BASIC_SCHEME ) ) ) );
@@ -193,7 +208,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         subjects.clear();
         server.graphDatabaseService().shutdown();
-        fileSystem.shutdown();
+        fileSystem.close();
     }
 
     @Override
@@ -221,9 +236,15 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     }
 
     @Override
-    public String getConnectionDetails()
+    public String getConnectionProtocol()
     {
-        return "bolt-session";
+        return "bolt";
+    }
+
+    @Override
+    public HostnamePort lookupConnector( String connectorKey )
+    {
+        return server.lookupConnector( connectorKey );
     }
 
     private static BoltResult collectResults( TransportConnection client ) throws Exception
@@ -234,12 +255,16 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
 
         if ( message instanceof SuccessMessage )
         {
-            Map<String,Object> metadata = ((SuccessMessage) message).meta();
-            fieldNames = (List<String>) metadata.get( "fields" );
+            MapValue metadata = ((SuccessMessage) message).meta();
+            ListValue fieldNameValues = (ListValue) metadata.get( "fields" );
+            for ( AnyValue value : fieldNameValues )
+            {
+                fieldNames.add( ((TextValue) value).stringValue() );
+            }
         }
         else if ( message instanceof FailureMessage )
         {
-            FailureMessage failMessage = ((FailureMessage) message);
+            FailureMessage failMessage = (FailureMessage) message;
             // drain ignoredMessage, ack failure, get successMessage
             TransportTestUtil.receiveOneResponseMessage( client );
             client.send( TransportTestUtil.chunk( reset() ) );
@@ -265,7 +290,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
 
         if ( message instanceof FailureMessage )
         {
-            FailureMessage failMessage = ((FailureMessage) message);
+            FailureMessage failMessage = (FailureMessage) message;
             // ack failure, get successMessage
             client.send( TransportTestUtil.chunk( reset() ) );
             TransportTestUtil.receiveOneResponseMessage( client );
@@ -293,8 +318,9 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         {
             if ( result instanceof SuccessMessage )
             {
-                Map<String,Object> meta = ((SuccessMessage) result).meta();
-                if ( meta.containsKey( "credentials_expired" ) && meta.get( "credentials_expired" ).equals( true ) )
+                MapValue meta = ((SuccessMessage) result).meta();
+                if ( meta.containsKey( "credentials_expired" ) &&
+                     meta.get( "credentials_expired" ).equals( Values.TRUE ) )
                 {
                     loginResult = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
                 }
@@ -327,7 +353,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
 
     static class BoltResult implements ResourceIterator<Map<String,Object>>
     {
-        private int index = 0;
+        private int index;
         private List<Map<String,Object>> data;
 
         BoltResult( List<Map<String,Object>> data )

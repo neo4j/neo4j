@@ -32,7 +32,8 @@ import org.neo4j.tools.dump.inconsistency.Inconsistencies;
  * <pre>
  * ERROR: The referenced relationship record is not in use.
  *     Node[3496089,used=true,rel=14833798,prop=13305361,labels=Inline(0x1000000006:[6]),light,secondaryUnitId=-1]
- *     Inconsistent with: Relationship[14833798,used=false,source=0,target=0,type=0,sPrev=0,sNext=0,tPrev=0,tNext=0,prop=0,secondaryUnitId=-1,!sFirst,!tFirst]
+ *     Inconsistent with: Relationship[14833798,used=false,source=0,target=0,type=0,sPrev=0,sNext=0,tPrev=0,tNext=0,
+ *     prop=0,secondaryUnitId=-1,!sFirst,!tFirst]
  * </pre>
  */
 public class InconsistencyReportReader
@@ -46,7 +47,7 @@ public class InconsistencyReportReader
 
     public void read( File file ) throws IOException
     {
-        try ( BufferedReader reader = new BufferedReader( new FileReader( file )) )
+        try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
         {
             read( reader );
         }
@@ -138,7 +139,7 @@ public class InconsistencyReportReader
         return -1;
     }
 
-    private static int min(int... values)
+    private static int min( int... values )
     {
         int min = Integer.MAX_VALUE;
         for ( int value : values )

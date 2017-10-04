@@ -19,9 +19,9 @@
  */
 package org.neo4j.consistency.repair;
 
-import static java.lang.String.format;
-
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+
+import static java.lang.String.format;
 
 public enum RelationshipChainDirection
 {
@@ -39,11 +39,11 @@ public enum RelationshipChainDirection
 
     public RelationshipChainField fieldFor( long nodeId, RelationshipRecord rel )
     {
-        if (rel.getFirstNode() == nodeId)
+        if ( rel.getFirstNode() == nodeId )
         {
             return first;
         }
-        else if (rel.getSecondNode() == nodeId)
+        else if ( rel.getSecondNode() == nodeId )
         {
             return second;
         }

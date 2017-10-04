@@ -34,7 +34,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
@@ -42,15 +45,13 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
-import static java.lang.String.format;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.tools.console.input.ConsoleUtil.NULL_PRINT_STREAM;
 
 public class DatabaseRebuildToolTest
@@ -171,10 +172,10 @@ public class DatabaseRebuildToolTest
 
     private long lastAppliedTx( File storeDir )
     {
-        try
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( fileSystem ) )
         {
-            return MetaDataStore.getRecord( createPageCache( new DefaultFileSystemAbstraction() ),
-                    new File( storeDir, MetaDataStore.DEFAULT_NAME ),
+            return MetaDataStore.getRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.LAST_TRANSACTION_ID );
         }
         catch ( IOException e )
@@ -195,13 +196,15 @@ public class DatabaseRebuildToolTest
 
     private void databaseWithSomeTransactions( File dir )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
+                .newGraphDatabase();
         Node[] nodes = new Node[10];
         for ( int i = 0; i < nodes.length; i++ )
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( label( "Label_" + (i%2) ) );
+                Node node = db.createNode( label( "Label_" + (i % 2) ) );
                 setProperties( node, i );
                 nodes[i] = node;
                 tx.success();
@@ -211,15 +214,15 @@ public class DatabaseRebuildToolTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Relationship relationship =
-                        nodes[i%nodes.length].createRelationshipTo( nodes[(i+1)%nodes.length], withName( "TYPE_" + (i%3) ) );
+                Relationship relationship = nodes[i % nodes.length]
+                        .createRelationshipTo( nodes[(i + 1) % nodes.length], withName( "TYPE_" + (i % 3) ) );
                 setProperties( relationship, i );
                 tx.success();
             }
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = nodes[nodes.length-1];
+            Node node = nodes[nodes.length - 1];
             for ( Relationship relationship : node.getRelationships() )
             {
                 relationship.delete();

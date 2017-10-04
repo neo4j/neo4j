@@ -101,7 +101,7 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         private final PrimitiveIntHashSet other;
         private boolean equal = true;
 
-        public IntKeyEquality( PrimitiveIntHashSet that )
+        IntKeyEquality( PrimitiveIntHashSet that )
         {
             this.other = that;
         }
@@ -134,7 +134,7 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         @Override
         public boolean visited( int value ) throws RuntimeException
         {
-            hash += DEFAULT_HASHING.hash( value );
+            hash += DEFAULT_HASHING.hashSingleValueToInt( value );
             return false;
         }
 
@@ -142,6 +142,21 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         public int hashCode()
         {
             return hash;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            HashCodeComputer that = (HashCodeComputer) o;
+            return hash == that.hash;
         }
     }
 

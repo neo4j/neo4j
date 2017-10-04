@@ -33,6 +33,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -162,11 +163,16 @@ public final class UnsafeUtil
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }
 
+    private UnsafeUtil()
+    {
+    }
+
     private static Unsafe getUnsafe()
     {
         try
         {
-            PrivilegedExceptionAction<Unsafe> getUnsafe = () -> {
+            PrivilegedExceptionAction<Unsafe> getUnsafe = () ->
+            {
                 try
                 {
                     return Unsafe.getUnsafe();
@@ -250,6 +256,16 @@ public final class UnsafeUtil
     }
 
     /**
+     * Atomically add the given delta to the long field, and return its previous value.
+     * <p>
+     * This has the memory visibility semantics of a volatile read followed by a volatile write.
+     */
+    public static long getAndAddLong( Object obj, long offset, long delta )
+    {
+        return unsafe.getAndAddLong( obj, offset, delta );
+    }
+
+    /**
      * Orders loads before the fence, with loads and stores after the fence.
      */
     public static void loadFence()
@@ -263,6 +279,14 @@ public final class UnsafeUtil
     public static void storeFence()
     {
         unsafe.storeFence();
+    }
+
+    /**
+     * Orders loads and stores before the fence, with loads and stores after the fence.
+     */
+    public static void fullFence()
+    {
+        unsafe.fullFence();
     }
 
     /**
@@ -288,7 +312,7 @@ public final class UnsafeUtil
     }
 
     /**
-     * Same as getAndAddInt, but for object references.
+     * Atomically return the current object reference value, and exchange it with the given new reference value.
      */
     public static Object getAndSetObject( Object obj, long offset, Object newValue )
     {
@@ -407,7 +431,7 @@ public final class UnsafeUtil
     }
 
     private static final ConcurrentSkipListMap<Long, Long> pointers = new ConcurrentSkipListMap<>();
-    private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS? new FreeTrace[4096] : null;
+    private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeTraceCounter = new AtomicLong();
 
     private static void addAllocatedPointer( long pointer, long sizeInBytes )
@@ -432,7 +456,7 @@ public final class UnsafeUtil
         if ( size == null )
         {
             StringBuilder sb = new StringBuilder( format( "Bad free: 0x%x, valid pointers are:", pointer ) );
-            pointers.forEach( (k,v) -> sb.append( '\n' ).append( k ) );
+            pointers.forEach( ( k, v ) -> sb.append( '\n' ).append( k ) );
             throw new AssertionError( sb.toString() );
         }
         long count = freeTraceCounter.getAndIncrement();
@@ -450,38 +474,44 @@ public final class UnsafeUtil
 
     private static void doCheckAccess( long pointer, int size )
     {
-        long now = System.nanoTime();
         Map.Entry<Long,Long> fentry = pointers.floorEntry( pointer + size );
-        Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
         if ( fentry == null || fentry.getKey() + fentry.getValue() < pointer + size )
         {
-            long faddr = fentry == null? 0 : fentry.getKey();
-            long fsize = fentry == null? 0 : fentry.getValue();
-            long foffset = pointer - (faddr + fsize);
-            long caddr = centry == null? 0 : centry.getKey();
-            long csize = centry == null? 0 : centry.getValue();
-            long coffset = caddr - (pointer + size);
-            boolean floorIsNearest = foffset < coffset;
-            long naddr = floorIsNearest? faddr : caddr;
-            long nsize = floorIsNearest? fsize : csize;
-            long noffset = floorIsNearest? foffset : coffset;
-            List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
-                                                .filter( trace -> trace != null )
-                                                .filter( trace -> trace.contains( pointer ) )
-                                                .sorted()
-                                                .collect( Collectors.toList() );
-            AssertionError error = new AssertionError( format(
-                    "Bad access at address 0x%x with size %s, nearest valid allocation is " +
-                    "0x%x (%s bytes, off by %s bytes). " +
-                    "Recent relevant frees (of %s) are attached as suppressed exceptions.",
-                    pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
-            for ( FreeTrace recentFree : recentFrees )
-            {
-                recentFree.referenceTime = now;
-                error.addSuppressed( recentFree );
-            }
-            throw error;
+            Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
+            throwBadAccess( pointer, size, fentry, centry );
         }
+    }
+
+    private static void throwBadAccess( long pointer, int size, Map.Entry<Long,Long> fentry,
+                                        Map.Entry<Long,Long> centry )
+    {
+        long now = System.nanoTime();
+        long faddr = fentry == null ? 0 : fentry.getKey();
+        long fsize = fentry == null ? 0 : fentry.getValue();
+        long foffset = pointer - (faddr + fsize);
+        long caddr = centry == null ? 0 : centry.getKey();
+        long csize = centry == null ? 0 : centry.getValue();
+        long coffset = caddr - (pointer + size);
+        boolean floorIsNearest = foffset < coffset;
+        long naddr = floorIsNearest ? faddr : caddr;
+        long nsize = floorIsNearest ? fsize : csize;
+        long noffset = floorIsNearest ? foffset : coffset;
+        List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
+                                            .filter( Objects::nonNull )
+                                            .filter( trace -> trace.contains( pointer ) )
+                                            .sorted()
+                                            .collect( Collectors.toList() );
+        AssertionError error = new AssertionError( format(
+                "Bad access to address 0x%x with size %s, nearest valid allocation is " +
+                "0x%x (%s bytes, off by %s bytes). " +
+                "Recent relevant frees (of %s) are attached as suppressed exceptions.",
+                pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
+        for ( FreeTrace recentFree : recentFrees )
+        {
+            recentFree.referenceTime = now;
+            error.addSuppressed( recentFree );
+        }
+        throw error;
     }
 
     /**
@@ -995,8 +1025,8 @@ public final class UnsafeUtil
      */
     public static void putShortByteWiseLittleEndian( long p, short value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value      ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8 ) );
+        UnsafeUtil.putByte( p, (byte) value );
+        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
     }
 
     /**
@@ -1010,7 +1040,7 @@ public final class UnsafeUtil
      */
     public static void putIntByteWiseLittleEndian( long p, int value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value       ) );
+        UnsafeUtil.putByte( p, (byte) value );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
         UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
         UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
@@ -1027,7 +1057,7 @@ public final class UnsafeUtil
      */
     public static void putLongByteWiseLittleEndian( long p, long value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value       ) );
+        UnsafeUtil.putByte( p, (byte) value );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
         UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
         UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );

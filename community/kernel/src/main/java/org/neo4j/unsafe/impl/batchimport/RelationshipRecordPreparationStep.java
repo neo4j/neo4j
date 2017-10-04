@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
@@ -36,12 +37,14 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_
 public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
+    private final Collector badCollector;
 
     public RelationshipRecordPreparationStep( StageControl control, Configuration config,
-            BatchingRelationshipTypeTokenRepository relationshipTypeRepository )
+            BatchingRelationshipTypeTokenRepository relationshipTypeRepository, Collector badCollector )
     {
         super( control, "RECORDS", config, 0 );
         this.relationshipTypeRepository = relationshipTypeRepository;
+        this.badCollector = badCollector;
     }
 
     @Override
@@ -55,9 +58,10 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
             InputRelationship batchRelationship = batch.input[i];
             long startNodeId = batch.ids[idIndex++];
             long endNodeId = batch.ids[idIndex++];
-            if ( startNodeId == ID_NOT_FOUND || endNodeId == ID_NOT_FOUND )
+            boolean hasType = batchRelationship.hasType();
+            if ( startNodeId == ID_NOT_FOUND || endNodeId == ID_NOT_FOUND || !hasType )
             {
-                relationship.setInUse( false );
+                collectBadRelationship( batchRelationship, startNodeId, endNodeId, hasType );
             }
             else
             {
@@ -72,10 +76,29 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
                 relationship.setSecondNode( endNodeId );
 
                 int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
-                    relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
+                relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
                 relationship.setType( typeId );
             }
         }
         sender.send( batch );
+    }
+
+    private void collectBadRelationship( InputRelationship batchRelationship, long startNodeId, long endNodeId, boolean hasType )
+    {
+        if ( !hasType )
+        {
+            badCollector.collectBadRelationship( batchRelationship, null );
+        }
+        else
+        {
+            if ( startNodeId == ID_NOT_FOUND )
+            {
+                badCollector.collectBadRelationship( batchRelationship, batchRelationship.startNode() );
+            }
+            if ( endNodeId == ID_NOT_FOUND )
+            {
+                badCollector.collectBadRelationship( batchRelationship, batchRelationship.endNode() );
+            }
+        }
     }
 }

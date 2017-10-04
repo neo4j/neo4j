@@ -19,12 +19,13 @@
  */
 package org.neo4j.causalclustering.core.consensus.election;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.causalclustering.messaging.TestNetwork;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.TestNetwork;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,6 +48,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class ElectionPerformanceIT
 {
+    @Ignore( "This belongs better in a benchmarking suite." )
     @Test
     public void electionPerformance_NormalConditions() throws Throwable
     {
@@ -93,6 +95,7 @@ public class ElectionPerformanceIT
         assertThat( result.timeoutCount, is( 0L ) );
     }
 
+    @Ignore( "This belongs better in a benchmarking suite." )
     @Test
     public void electionPerformance_RapidConditions() throws Throwable
     {
@@ -133,7 +136,7 @@ public class ElectionPerformanceIT
 
         if ( result.collisionCount > 10 )
         {
-            assertThat( result.collidingAverage, lessThan( 5.0*electionTimeout ) );
+            assertThat( result.collidingAverage, lessThan( 5.0 * electionTimeout ) );
         }
         assertThat( result.timeoutCount, lessThanOrEqualTo( 1L ) ); // for GC or whatever reason
     }

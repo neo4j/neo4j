@@ -93,7 +93,7 @@ public class StandardRecordFormat extends RecordFormat
         final short fill1;
         final long fill2;
 
-        public StandardRecord( File file, int recordId )
+        StandardRecord( File file, int recordId )
         {
             this.type = 42;
             this.file = file;
@@ -110,10 +110,10 @@ public class StandardRecordFormat extends RecordFormat
             fill2 = d;
         }
 
-        public StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2 )
+        StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2 )
         {
             this.type = type;
-            this.file = fileName == 0? null : new File( new String( new byte[] {fileName} ) );
+            this.file = fileName == 0 ? null : new File( new String( new byte[]{fileName} ) );
             this.fill1 = fill1;
             this.recordId = recordId;
             this.fill2 = fill2;
@@ -123,17 +123,18 @@ public class StandardRecordFormat extends RecordFormat
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
+            {
+                return false;
+            }
 
             StandardRecord record = (StandardRecord) o;
 
-            return type == record.type
-                   && recordId == record.recordId
-                   && fill1 == record.fill1
-                   && fill2 == record.fill2
-                   && filesEqual( record );
+            return type == record.type && recordId == record.recordId && fill1 == record.fill1 &&
+                    fill2 == record.fill2 && filesEqual( record );
 
         }
 
@@ -166,8 +167,8 @@ public class StandardRecordFormat extends RecordFormat
 
         private static int xorshift( int x )
         {
-            x ^= (x << 6);
-            x ^= (x >>> 21);
+            x ^= x << 6;
+            x ^= x >>> 21;
             return x ^ (x << 7);
         }
 

@@ -46,7 +46,7 @@ public class ClusterDatabaseInfoProvider
     public ClusterDatabaseInfo getInfo()
     {
         ClusterMember currentMember = members.getCurrentMember();
-        if (currentMember == null)
+        if ( currentMember == null )
         {
             return null;
         }

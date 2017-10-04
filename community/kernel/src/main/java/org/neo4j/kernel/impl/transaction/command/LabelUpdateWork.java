@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -49,7 +48,7 @@ public class LabelUpdateWork implements Work<Supplier<LabelScanWriter>,LabelUpda
     @Override
     public void apply( Supplier<LabelScanWriter> labelScanStore )
     {
-        Collections.sort( labelUpdates, SORT_BY_NODE_ID );
+        labelUpdates.sort( SORT_BY_NODE_ID );
         try ( LabelScanWriter writer = labelScanStore.get() )
         {
             for ( NodeLabelUpdate update : labelUpdates )

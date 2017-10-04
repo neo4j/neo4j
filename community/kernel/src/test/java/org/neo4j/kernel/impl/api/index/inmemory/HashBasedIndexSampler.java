@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,9 +29,9 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 
 public class HashBasedIndexSampler implements IndexSampler
 {
-    private final Map<Object,Set<Long>> data;
+    private final Map<List<Object>,Set<Long>> data;
 
-    public HashBasedIndexSampler( Map<Object,Set<Long>> data )
+    public HashBasedIndexSampler( Map<List<Object>,Set<Long>> data )
     {
         this.data = data;
     }
@@ -45,7 +46,7 @@ public class HashBasedIndexSampler implements IndexSampler
 
         long uniqueValues = 0;
         long indexSize = 0;
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
             Set<Long> nodeIds = entry.getValue();
             if ( !nodeIds.isEmpty() )

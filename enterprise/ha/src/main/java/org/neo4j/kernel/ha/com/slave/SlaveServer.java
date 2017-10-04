@@ -40,7 +40,8 @@ public class SlaveServer extends Server<Slave, Void>
     public static final ProtocolVersion SLAVE_PROTOCOL_VERSION =
             new ProtocolVersion( (byte) 1, INTERNAL_PROTOCOL_VERSION );
 
-    public SlaveServer( Slave requestTarget, Configuration config, LogProvider logProvider, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    public SlaveServer( Slave requestTarget, Configuration config, LogProvider logProvider,
+            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( requestTarget, config, logProvider, DEFAULT_FRAME_LENGTH, SLAVE_PROTOCOL_VERSION, ALWAYS_MATCH,
                 Clocks.systemClock(), byteCounterMonitor, requestMonitor );

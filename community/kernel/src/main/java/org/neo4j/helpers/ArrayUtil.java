@@ -22,6 +22,7 @@ package org.neo4j.helpers;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.function.Function;
+
 import static java.util.Arrays.copyOf;
 
 /**
@@ -33,7 +34,8 @@ public abstract class ArrayUtil
     {
         assert array.getClass().isArray() : array + " is not an array";
 
-        int length = Array.getLength( array ), result = length;
+        int length = Array.getLength( array );
+        int result = length;
         for ( int i = 0; i < length; i++ )
         {
             result = 31 * result + Array.get( array, i ).hashCode();
@@ -197,34 +199,6 @@ public abstract class ArrayUtil
             return ((double[]) array).clone();
         }
         throw new IllegalArgumentException( "Not an array type: " + array.getClass() );
-    }
-
-    public static boolean approximatelyEqual( double[] that, double[] other, double tolerance )
-    {
-        if ( that == other )
-        {
-            return true;
-        }
-
-        if ( ( null == that ) || ( null == other ) )
-        {
-            return false;
-        }
-
-        if ( that.length != other.length )
-        {
-            return false;
-        }
-
-        for ( int i = 0; i < that.length; i++ )
-        {
-            if ( Math.abs( other[i] - that[i] ) > tolerance )
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -417,7 +391,7 @@ public abstract class ArrayUtil
     public static <T> T[] concat( T first, T... additional )
     {
         @SuppressWarnings( "unchecked" )
-        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), additional.length+1 );
+        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), additional.length + 1 );
         result[0] = first;
         System.arraycopy( additional, 0, result, 1, additional.length );
         return result;
@@ -434,7 +408,7 @@ public abstract class ArrayUtil
     public static <T> T[] concat( T[] initial, T... additional )
     {
         @SuppressWarnings( "unchecked" )
-        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), initial.length+additional.length );
+        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), initial.length + additional.length );
         System.arraycopy( initial, 0, result, 0, initial.length );
         System.arraycopy( additional, 0, result, initial.length, additional.length );
         return result;
@@ -474,14 +448,24 @@ public abstract class ArrayUtil
             int index = indexOf( result, candidate );
             if ( index != -1 )
             {
-                if ( index+1 < length )
+                if ( index + 1 < length )
                 {   // not the last one
-                    result[index] = result[length-1];
+                    result[index] = result[length - 1];
                 }
                 length--;
             }
         }
         return length == result.length ? result : Arrays.copyOf( result, length );
+    }
+
+    public static <T> void reverse( T[] array )
+    {
+        for ( int low = 0, high = array.length - 1; high - low > 0; low++, high-- )
+        {
+            T lowItem = array[low];
+            array[low] = array[high];
+            array[high] = lowItem;
+        }
     }
 
     private ArrayUtil()

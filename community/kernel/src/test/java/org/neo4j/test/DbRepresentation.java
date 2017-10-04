@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.neo4j.graphdb.Direction;
@@ -56,7 +57,7 @@ public class DbRepresentation
     public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
     {
         int retryCount = 5;
-        while( true )
+        while ( true )
         {
             try ( Transaction ignore = db.beginTx() )
             {
@@ -66,12 +67,13 @@ public class DbRepresentation
                     NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
                     result.nodes.put( node.getId(), nodeRep );
                     result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
-                    result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+                    result.highestRelationshipId =
+                            Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
 
                 }
                 return result;
             }
-            catch( TransactionFailureException e )
+            catch ( TransactionFailureException e )
             {
                 if ( retryCount-- < 0 )
                 {
@@ -83,7 +85,7 @@ public class DbRepresentation
 
     public static DbRepresentation of( File storeDir )
     {
-        return of( storeDir, true, Config.empty() );
+        return of( storeDir, true, Config.defaults() );
     }
 
     public static DbRepresentation of( File storeDir, Config config )
@@ -94,11 +96,7 @@ public class DbRepresentation
     public static DbRepresentation of( File storeDir, boolean includeIndexes, Config config )
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
-        Map<String,String> params = config.getParams();
-        for ( Map.Entry<String,String> entry : params.entrySet() )
-        {
-            builder.setConfig( entry.getKey(), entry.getValue() );
-        }
+        builder.setConfig( config.getRaw() );
 
         GraphDatabaseService db = builder.newGraphDatabase();
         try
@@ -135,7 +133,9 @@ public class DbRepresentation
         for ( Long id : other.nodes.keySet() )
         {
             if ( !nodes.containsKey( id ) )
-            { diff.add( "Other has node " + id + " which I don't" ); }
+            {
+                diff.add( "Other has node " + id + " which I don't" );
+            }
         }
         return diffList;
     }
@@ -183,15 +183,17 @@ public class DbRepresentation
                 Index<Node> tempIndex = db.index().forNodes( indexName );
                 for ( Map.Entry<String,Serializable> property : properties.props.entrySet() )
                 {
-                    IndexHits<Node> content = tempIndex.get( property.getKey(), property.getValue() );
-                    if ( content.hasNext() )
+                    try ( IndexHits<Node> content = tempIndex.get( property.getKey(), property.getValue() ) )
                     {
-                        for ( Node hit : content )
+                        if ( content.hasNext() )
                         {
-                            if ( hit.getId() == id )
+                            for ( Node hit : content )
                             {
-                                thisIndex.put( property.getKey(), property.getValue() );
-                                break;
+                                if ( hit.getId() == id )
+                                {
+                                    thisIndex.put( property.getKey(), property.getValue() );
+                                    break;
+                                }
                             }
                         }
                     }
@@ -210,7 +212,9 @@ public class DbRepresentation
         private void compareIndex( NodeRep other, DiffReport diff )
         {
             if ( other.index == index )
-            { return; }
+            {
+                return;
+            }
             Collection<String> allIndexes = new HashSet<>();
             allIndexes.addAll( index.keySet() );
             allIndexes.addAll( other.index.keySet() );
@@ -253,10 +257,14 @@ public class DbRepresentation
         protected void compareWith( NodeRep other, DiffReport diff )
         {
             if ( other.id != id )
-            { diff.add( "Id differs mine:" + id + ", other:" + other.id ); }
+            {
+                diff.add( "Id differs mine:" + id + ", other:" + other.id );
+            }
             properties.compareWith( other.properties, diff );
             if ( index != null && other.index != null )
-            { compareIndex( other, diff ); }
+            {
+                compareIndex( other, diff );
+            }
             compareRelationships( other, diff );
         }
 
@@ -276,7 +284,9 @@ public class DbRepresentation
             for ( Long id : other.outRelationships.keySet() )
             {
                 if ( !outRelationships.containsKey( id ) )
-                { diff.add( "Other has relationship " + id + " which I don't" ); }
+                {
+                    diff.add( "Other has relationship " + id + " which I don't" );
+                }
             }
         }
 
@@ -288,8 +298,27 @@ public class DbRepresentation
             result += outRelationships.hashCode() * 13;
             result += id * 17;
             if ( index != null )
-            { result += index.hashCode() * 19; }
+            {
+                result += index.hashCode() * 19;
+            }
             return result;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            NodeRep nodeRep = (NodeRep) o;
+            return id == nodeRep.id && Objects.equals( properties, nodeRep.properties ) &&
+                    Objects.equals( outRelationships, nodeRep.outRelationships ) &&
+                    Objects.equals( index, nodeRep.index );
         }
 
         @Override
@@ -331,7 +360,9 @@ public class DbRepresentation
         {
             boolean equals = props.equals( other.props );
             if ( !equals )
-            { diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props ); }
+            {
+                diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props );
+            }
             return equals;
         }
 
@@ -339,6 +370,21 @@ public class DbRepresentation
         public int hashCode()
         {
             return props.hashCode();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            PropertiesRep that = (PropertiesRep) o;
+            return Objects.equals( props, that.props );
         }
 
         @Override
@@ -357,7 +403,7 @@ public class DbRepresentation
     {
         private final Collection<String> collection;
 
-        public CollectionDiffReport( Collection<String> collection )
+        CollectionDiffReport( Collection<String> collection )
         {
             this.collection = collection;
         }

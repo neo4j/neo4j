@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.Flushable;
@@ -35,6 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.neo4j.adversaries.Adversary;
@@ -43,6 +45,7 @@ import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -55,12 +58,11 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -74,6 +76,9 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 public class BatchingTransactionAppenderConcurrencyTest
 {
+
+    private static final long MILLISECONDS_TO_WAIT = TimeUnit.SECONDS.toMillis( 10 );
+
     private enum ChannelCommand
     {
         emptyBufferIntoChannelAndClearIt,
@@ -96,8 +101,11 @@ public class BatchingTransactionAppenderConcurrencyTest
         executor = null;
     }
 
+    private final LifeRule life = new LifeRule();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public final LifeRule life = new LifeRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( life );
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFile logFile = mock( LogFile.class );
@@ -105,7 +113,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10 );
     private final LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
-    private final IdOrderingQueue legacyIndexTransactionOrdering = IdOrderingQueue.BYPASS;
+    private final IdOrderingQueue explicitIndexTransactionOrdering = IdOrderingQueue.BYPASS;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final Semaphore forceSemaphore = new Semaphore( 0 );
 
@@ -150,19 +158,15 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    appender.forceAfterAppend( logAppendEvent );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                appender.forceAfterAppend( logAppendEvent );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }
@@ -197,7 +201,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         forceSemaphore.acquire();
 
         Thread otherThread = fork( runnable );
-        awaitThreadState( otherThread, 5000, Thread.State.TIMED_WAITING );
+        awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
 
         assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );
         assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
@@ -232,7 +236,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         }
         for ( Thread otherThread : otherThreads )
         {
-            awaitThreadState( otherThread, 5000, Thread.State.TIMED_WAITING );
+            awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
         }
 
         assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );
@@ -261,18 +265,17 @@ public class BatchingTransactionAppenderConcurrencyTest
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
                 failMethod( BatchingTransactionAppender.class, "force" ) );
         EphemeralFileSystemAbstraction efs = new EphemeralFileSystemAbstraction();
-        life.add( asLifecycle( efs ) ); // <-- so that it gets automatically shut down after the test
         File directory = new File( "dir" ).getCanonicalFile();
         efs.mkdirs( directory );
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
+        life.add( new FileSystemLifecycleAdapter( fs ) );
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, kibiBytes( 10 ), transactionIdStore::getLastCommittedTransactionId,
-                new DeadSimpleLogVersionRepository( 0 ), new PhysicalLogFile.Monitor.Adapter(),
-                logHeaderCache ) );
-        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
-                logFile, logRotation, transactionMetadataCache, transactionIdStore,
-                legacyIndexTransactionOrdering, databaseHealth ) );
+                new DeadSimpleLogVersionRepository( 0 ), new PhysicalLogFile.Monitor.Adapter(), logHeaderCache ) );
+        final BatchingTransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
+                        explicitIndexTransactionOrdering, databaseHealth ) );
         life.start();
 
         // WHEN
@@ -315,26 +318,13 @@ public class BatchingTransactionAppenderConcurrencyTest
         race.go();
     }
 
-    private Lifecycle asLifecycle( final EphemeralFileSystemAbstraction efs )
-    {
-        return new LifecycleAdapter()
-        {
-            @Override
-            public void shutdown() throws Throwable
-            {
-                efs.shutdown();
-            }
-        };
-    }
-
     protected TransactionToApply tx()
     {
         NodeRecord before = new NodeRecord( 0 );
         NodeRecord after = new NodeRecord( 0 );
         after.setInUse( true );
-        Command.NodeCommand nodeCommand = new Command.NodeCommand(before, after);
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
-                asList( (Command) nodeCommand ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( before, after );
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( nodeCommand ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return new TransactionToApply( tx );
     }
@@ -348,6 +338,6 @@ public class BatchingTransactionAppenderConcurrencyTest
     private BatchingTransactionAppender createTransactionAppender()
     {
         return new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, databaseHealth );
+                transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering, databaseHealth );
     }
 }

@@ -21,16 +21,12 @@ package org.neo4j.kernel.configuration;
 
 import org.junit.Test;
 
-import java.util.List;
-
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.MapUtil;
 
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -42,43 +38,12 @@ public class GroupConfigTest
         assertThat( connector(0).enabled.name(), equalTo( "dbms.connector.0.enabled" ) );
     }
 
-    @Test
-    public void shouldProvideConvenientWayToEnumerateGroups() throws Throwable
-    {
-        // Given
-        Config config = new Config( MapUtil.stringMap(
-            connector( 0 ).enabled.name(), "true",
-
-            connector( 1 ).enabled.name(), "false",
-            connector( 1 ).name.name(), "Cat Stevens",
-
-            connector( 3 ).enabled.name(), "false"
-        ) );
-
-        // When
-        List<ConnectorExample> groups = config.view( enumerate( ConnectorExample.class ) )
-                .map( ConnectorExample::new )
-                .collect( toList() );
-
-        // Then
-        assertThat( groups.size(), equalTo( 3 ) );
-        assertThat( config.get( groups.get( 0 ).enabled ), equalTo( true ));
-        assertThat( config.get( groups.get( 0 ).name ), equalTo( "Bob Dylan" ));
-
-        assertThat( config.get( groups.get( 1 ).enabled ), equalTo( false ));
-        assertThat( config.get( groups.get( 1 ).name ), equalTo( "Cat Stevens" ));
-
-        assertThat( config.get( groups.get( 2 ).enabled ), equalTo( false ));
-        assertThat( config.get( groups.get( 2 ).name ), equalTo( "Bob Dylan" ));
-
-    }
-
     static ConnectorExample connector( int key )
     {
         return new ConnectorExample( Integer.toString(key) );
     }
 
-    @Group("dbms.connector")
+    @Group( "dbms.connector" )
     static class ConnectorExample
     {
         public final Setting<Boolean> enabled;
@@ -86,10 +51,10 @@ public class GroupConfigTest
 
         private final GroupSettingSupport group;
 
-        public ConnectorExample( String key )
+        ConnectorExample( String key )
         {
             group = new GroupSettingSupport( ConnectorExample.class, key );
-            this.enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
+            this.enabled = group.scope( setting( "enabled", BOOLEAN, FALSE ) );
             this.name = group.scope( setting( "name", STRING, "Bob Dylan" ) );
         }
     }

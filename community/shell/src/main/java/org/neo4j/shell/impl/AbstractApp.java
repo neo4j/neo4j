@@ -74,7 +74,9 @@ public abstract class AbstractApp implements App
     public void setServer( AppShellServer server )
     {
         if ( this.server != null )
+        {
             throw new IllegalStateException( "Server already set" );
+        }
         this.server = server;
     }
 

@@ -24,7 +24,7 @@ package org.neo4j.kernel.impl.util.statistics;
  */
 public class IntCounter
 {
-    private int count = 0;
+    private int count;
 
     public int value()
     {

@@ -54,6 +54,12 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
+    public String introductionVersion()
+    {
+        return actual.introductionVersion();
+    }
+
+    @Override
     public int generation()
     {
         return actual.generation();

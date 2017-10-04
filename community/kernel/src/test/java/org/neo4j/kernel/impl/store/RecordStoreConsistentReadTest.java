@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.internal.AssumptionViolatedException;
 
 import java.io.File;
 import java.util.Collection;
@@ -45,11 +46,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
 {
@@ -57,7 +61,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     protected static final int ID = 1;
 
     @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule( false );
+    public static final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
 
     private FileSystemAbstraction fs;
     private AtomicBoolean nextReadIsInconsistent;
@@ -69,10 +73,16 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         nextReadIsInconsistent = new AtomicBoolean();
     }
 
+    @After
+    public void tearDown() throws Exception
+    {
+        fs.close();
+    }
+
     private NeoStores storeFixture()
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
+        PageCache pageCache = pageCacheRule.getPageCache( fs,
+                config().withInconsistentReads( nextReadIsInconsistent ) );
         File storeDir = new File( "stores" );
         StoreFactory factory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
         NeoStores neoStores = factory.openAllNeoStores( true );
@@ -433,7 +443,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             record.setInUse( true );
             PropertyBlock block = new PropertyBlock();
             DynamicRecordAllocator stringAllocator = new ReusableRecordsAllocator( 64, new DynamicRecord( 7 ) );
-            String value = "a string too large to fit in the property block itself";
+            Value value = Values.of( "a string too large to fit in the property block itself" );
             PropertyStore.encodeValue( block, 6, value, stringAllocator, null );
             if ( light )
             {
@@ -472,14 +482,14 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertNotNull( "expectedRecord", expectedRecord );
             assertThat( "getDeletedRecords", actualRecord.getDeletedRecords(), is( expectedRecord.getDeletedRecords() ) );
             assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
-            assertThat( "getNodeId", actualRecord.getNodeId(), is( expectedRecord.getNodeId() ) );
+            assertThat( "getEntityId", actualRecord.getNodeId(), is( expectedRecord.getNodeId() ) );
             assertThat( "getPrevProp", actualRecord.getPrevProp(), is( expectedRecord.getPrevProp() ) );
             assertThat( "getRelId", actualRecord.getRelId(), is( expectedRecord.getRelId() ) );
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
             assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
 
-            List<PropertyBlock> actualBlocks = Iterables.asList( (Iterable<PropertyBlock>) actualRecord );
-            List<PropertyBlock> expectedBlocks = Iterables.asList( (Iterable<PropertyBlock>) expectedRecord );
+            List<PropertyBlock> actualBlocks = Iterables.asList( actualRecord );
+            List<PropertyBlock> expectedBlocks = Iterables.asList( expectedRecord );
             assertThat( "getPropertyBlocks().size", actualBlocks.size(), is( expectedBlocks.size() ) );
             for ( int i = 0; i < actualBlocks.size(); i++ )
             {
@@ -493,11 +503,16 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         {
             assertThat( "[" + index + "]getKeyIndexId", actualBlock.getKeyIndexId(),
                     is( expectedBlock.getKeyIndexId() ) );
-            assertThat( "[" + index + "]getSingleValueBlock", actualBlock.getSingleValueBlock(), is( expectedBlock.getSingleValueBlock() ) );
-            assertThat( "[" + index + "]getSingleValueByte", actualBlock.getSingleValueByte(), is( expectedBlock.getSingleValueByte() ) );
-            assertThat( "[" + index + "]getSingleValueInt", actualBlock.getSingleValueInt(), is( expectedBlock.getSingleValueInt() ) );
-            assertThat( "[" + index + "]getSingleValueLong", actualBlock.getSingleValueLong(), is( expectedBlock.getSingleValueLong() ) );
-            assertThat( "[" + index + "]getSingleValueShort", actualBlock.getSingleValueShort(), is( expectedBlock.getSingleValueShort() ) );
+            assertThat( "[" + index + "]getSingleValueBlock", actualBlock.getSingleValueBlock(),
+                    is( expectedBlock.getSingleValueBlock() ) );
+            assertThat( "[" + index + "]getSingleValueByte", actualBlock.getSingleValueByte(),
+                    is( expectedBlock.getSingleValueByte() ) );
+            assertThat( "[" + index + "]getSingleValueInt", actualBlock.getSingleValueInt(),
+                    is( expectedBlock.getSingleValueInt() ) );
+            assertThat( "[" + index + "]getSingleValueLong", actualBlock.getSingleValueLong(),
+                    is( expectedBlock.getSingleValueLong() ) );
+            assertThat( "[" + index + "]getSingleValueShort", actualBlock.getSingleValueShort(),
+                    is( expectedBlock.getSingleValueShort() ) );
             assertThat( "[" + index + "]getSize", actualBlock.getSize(), is( expectedBlock.getSize() ) );
             assertThat( "[" + index + "]getType", actualBlock.getType(), is( expectedBlock.getType() ) );
             assertThat( "[" + index + "]isLight", actualBlock.isLight(), is( expectedBlock.isLight() ) );
@@ -511,14 +526,22 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             {
                 DynamicRecord actualValueRecord = actualValueRecords.get( i );
                 DynamicRecord expectedValueRecord = expectedValueRecords.get( i );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getData", actualValueRecord.getData(), is( expectedValueRecord.getData() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getLength", actualValueRecord.getLength(), is( expectedValueRecord.getLength() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getNextBlock", actualValueRecord.getNextBlock(), is( expectedValueRecord.getNextBlock() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getType", actualValueRecord.getType(), is( expectedValueRecord.getType() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getId", actualValueRecord.getId(), is( expectedValueRecord.getId() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getId(), is( expectedValueRecord.getId() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]isStartRecord", actualValueRecord.isStartRecord(), is( expectedValueRecord.isStartRecord() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]inUse", actualValueRecord.inUse(), is( expectedValueRecord.inUse() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getData", actualValueRecord.getData(),
+                        is( expectedValueRecord.getData() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getLength", actualValueRecord.getLength(),
+                        is( expectedValueRecord.getLength() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getNextBlock", actualValueRecord.getNextBlock(),
+                        is( expectedValueRecord.getNextBlock() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getType", actualValueRecord.getType(),
+                        is( expectedValueRecord.getType() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getId", actualValueRecord.getId(),
+                        is( expectedValueRecord.getId() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getId(),
+                        is( expectedValueRecord.getId() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]isStartRecord", actualValueRecord.isStartRecord(),
+                        is( expectedValueRecord.isStartRecord() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]inUse", actualValueRecord.inUse(),
+                        is( expectedValueRecord.inUse() ) );
             }
         }
     }

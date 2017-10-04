@@ -19,41 +19,67 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import com.hazelcast.spi.properties.GroupProperty;
+
+import java.util.logging.Level;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider )
+            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
+            TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
-        configureHazelcast( config );
-        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider );
+        configureHazelcast( config, logProvider );
+        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver,
+                topologyServiceRetryStrategy );
     }
 
     @Override
-    public TopologyService readReplicaDiscoveryService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler )
+    public TopologyService topologyService( Config config, LogProvider logProvider,
+                                            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
+                                            TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
-        configureHazelcast( config );
-        return new HazelcastClient( new HazelcastClientConnector( config ), jobScheduler, logProvider, config );
+        configureHazelcast( config, logProvider );
+        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, hostnameResolver ), jobScheduler,
+                logProvider, config, myself, topologyServiceRetryStrategy );
     }
 
-    private static void configureHazelcast( Config config )
+    private static void configureHazelcast( Config config, LogProvider logProvider )
     {
         // tell hazelcast to not phone home
-        System.setProperty( "hazelcast.phone.home.enabled", "false" );
-        System.setProperty( "hazelcast.socket.server.bind.any", "false" );
+        GroupProperty.PHONE_HOME_ENABLED.setSystemProperty( "false" );
+        GroupProperty.SOCKET_BIND_ANY.setSystemProperty( "false" );
+
+        String licenseKey = config.get( CausalClusteringSettings.hazelcast_license_key );
+        if ( licenseKey != null )
+        {
+            GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty( licenseKey );
+        }
 
         // Make hazelcast quiet
         if ( config.get( CausalClusteringSettings.disable_middleware_logging ) )
         {
             // This is clunky, but the documented programmatic way doesn't seem to work
-            System.setProperty( "hazelcast.logging.type", "none" );
+            GroupProperty.LOGGING_TYPE.setSystemProperty( "none" );
+        }
+        else
+        {
+            HazelcastLogging.enable( logProvider, new HazelcastLogLevel( config ) );
+        }
+    }
+
+    private static class HazelcastLogLevel extends Level
+    {
+        HazelcastLogLevel( Config config )
+        {
+            super( "HAZELCAST", config.get( CausalClusteringSettings.middleware_logging_level ) );
         }
     }
 }

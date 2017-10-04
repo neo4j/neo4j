@@ -22,9 +22,6 @@ package org.neo4j.cluster.protocol.snapshot;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 
-/**
- * TODO
- */
 public class SnapshotContext
 {
     private SnapshotProvider snapshotProvider;
@@ -37,7 +34,7 @@ public class SnapshotContext
         this.learnerContext = learnerContext;
     }
 
-    public void setSnapshotProvider( SnapshotProvider snapshotProvider)
+    public void setSnapshotProvider( SnapshotProvider snapshotProvider )
     {
         this.snapshotProvider = snapshotProvider;
     }

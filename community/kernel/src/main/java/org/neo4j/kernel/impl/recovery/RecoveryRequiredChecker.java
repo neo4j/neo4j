@@ -24,17 +24,16 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
-import org.neo4j.kernel.recovery.PositionToRecoverFrom;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 
-import static org.neo4j.kernel.recovery.PositionToRecoverFrom.NO_MONITOR;
+import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 
 /**
  * An external tool that can determine if a given store will need recovery.
@@ -43,31 +42,27 @@ public class RecoveryRequiredChecker
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
+    private final Monitors monitors;
 
-    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache )
+    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Monitors monitors )
     {
         this.fs = fs;
         this.pageCache = pageCache;
+        this.monitors = monitors;
     }
 
     public boolean isRecoveryRequiredAt( File dataDir ) throws IOException
     {
-        File neoStore = new File( dataDir, MetaDataStore.DEFAULT_NAME );
-        boolean noStoreFound = !NeoStores.isStorePresent( pageCache, dataDir );
-
         // We need config to determine where the logical log files are
-        if ( noStoreFound )
+        if ( !NeoStores.isStorePresent( pageCache, dataDir ) )
         {
             // No database in the specified directory.
             return false;
         }
 
-        long logVersion = MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
-
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        return new PositionToRecoverFrom( finder, NO_MONITOR ).apply( logVersion ) != LogPosition.UNSPECIFIED;
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, reader, monitors );
+        return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
 }

@@ -30,8 +30,12 @@ public enum StandardGraphs implements GraphDefinition, RelationshipType
     {
         public Node create( GraphDatabaseService graphdb )
         {
-            Node start = graphdb.createNode(), end = graphdb.createNode();
-            Node a = graphdb.createNode(), b = graphdb.createNode(), c = graphdb.createNode(), d = graphdb.createNode();
+            Node start = graphdb.createNode();
+            Node end = graphdb.createNode();
+            Node a = graphdb.createNode();
+            Node b = graphdb.createNode();
+            Node c = graphdb.createNode();
+            Node d = graphdb.createNode();
             start.createRelationshipTo( a, this );
             start.createRelationshipTo( b, this );
             a.createRelationshipTo( c, this );
@@ -47,7 +51,8 @@ public enum StandardGraphs implements GraphDefinition, RelationshipType
     {
         public Node create( GraphDatabaseService graphdb )
         {
-            Node start = graphdb.createNode(), end = graphdb.createNode();
+            Node start = graphdb.createNode();
+            Node end = graphdb.createNode();
             start.createRelationshipTo( end, this );
             end.createRelationshipTo( start, this );
             return end;

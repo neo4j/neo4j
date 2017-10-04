@@ -41,7 +41,7 @@ public abstract class AbstractIntHopScotchCollection<VALUE> extends AbstractHopS
             @Override
             protected boolean fetchNext()
             {
-                return longIterator.hasNext() ? next( (int) longIterator.next() ) : false;
+                return longIterator.hasNext() && next( (int) longIterator.next() );
             }
         };
     }

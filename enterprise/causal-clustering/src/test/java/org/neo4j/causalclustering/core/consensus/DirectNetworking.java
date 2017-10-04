@@ -86,7 +86,7 @@ public class DirectNetworking
         }
 
         @Override
-        public synchronized void send( MemberId to, final RaftMessages.RaftMessage message )
+        public synchronized void send( MemberId to, final RaftMessages.RaftMessage message, boolean block )
         {
             if ( canDeliver( to ) )
             {

@@ -52,8 +52,8 @@ import java.util.Map;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.index.impl.lucene.legacy.AbstractIndexHits;
-import org.neo4j.index.impl.lucene.legacy.EmptyIndexHits;
+import org.neo4j.index.impl.lucene.explicit.EmptyIndexHits;
+import org.neo4j.kernel.impl.api.explicitindex.AbstractIndexHits;
 
 /**
  * Collector to record per-segment {@code DocIdSet}s and {@code LeafReaderContext}s for every
@@ -453,7 +453,7 @@ public class DocValuesCollector extends SimpleCollector
         /** Total number of hits */
         public final int totalHits;
 
-        public MatchingDocs( LeafReaderContext context, DocIdSet docIdSet, int totalHits, float[] scores )
+        MatchingDocs( LeafReaderContext context, DocIdSet docIdSet, int totalHits, float[] scores )
         {
             this.context = context;
             this.docIdSet = docIdSet;
@@ -499,7 +499,7 @@ public class DocValuesCollector extends SimpleCollector
     {
         private final DocIdSetBuilder bits;
 
-        public Docs( int maxDoc )
+        Docs( int maxDoc )
         {
             bits = new DocIdSetBuilder( maxDoc );
         }
@@ -521,9 +521,9 @@ public class DocValuesCollector extends SimpleCollector
     {
 
         private final float[] scores;
-        private int index = 0;
+        private int index;
 
-        public ReplayingScorer( float[] scores )
+        ReplayingScorer( float[] scores )
         {
             super( null );
             this.scores = scores;
@@ -758,7 +758,7 @@ public class DocValuesCollector extends SimpleCollector
         private LeafReaderContext currentContext;
         private int currentDocID;
 
-        public TopDocsValuesIterator( TopDocs docs, LeafReaderContext[] contexts, String field )
+        TopDocsValuesIterator( TopDocs docs, LeafReaderContext[] contexts, String field )
         {
             super( docs.totalHits );
             this.field = field;

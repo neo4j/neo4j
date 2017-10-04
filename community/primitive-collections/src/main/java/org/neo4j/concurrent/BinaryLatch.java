@@ -25,14 +25,14 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * This class is similar in many ways to a CountDownLatch(1).
- *
+ * <p>
  * The main difference is that instances of this specialized latch implementation are much quicker to allocate and
  * construct. Each instance also takes up less memory on the heap, and enqueueing wait nodes on the latch is faster.
- *
+ * <p>
  * There are two reasons why this class is faster to construct: 1. it performs no volatile write during its
  * construction, and 2. it does not need to allocate an internal Sync object, like CountDownLatch does.
  */
-public final class BinaryLatch
+public class BinaryLatch
 {
     private static class Node
     {
@@ -85,7 +85,7 @@ public final class BinaryLatch
 
     /**
      * Wait for the latch to be released, blocking the current thread if necessary.
-     *
+     * <p>
      * This method returns immediately if the latch has already been released.
      */
     public void await()
@@ -115,7 +115,7 @@ public final class BinaryLatch
                 // It looks like the latch hasn't yet been released, so we are going to park. Before that, we must
                 // assign a non-null value to our next pointer, so other threads will know that we have been properly
                 // enqueued. We use the 'end' sentinel as a marker when there's otherwise no other next node.
-                waiter.next = state == null? end : state;
+                waiter.next = state == null ? end : state;
                 do
                 {
                     // Park may wake up spuriously, so we have to loop on it until we observe from the state of the

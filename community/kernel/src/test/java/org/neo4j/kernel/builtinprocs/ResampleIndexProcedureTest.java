@@ -25,20 +25,23 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
 
 public class ResampleIndexProcedureTest
 {
@@ -83,14 +86,30 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
+        verify( operations ).indexGetForSchema( SchemaDescriptorFactory.forLabel( 123, 456 ) );
+    }
+
+    @Test
+    public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
+            throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
+    {
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0, 1 );
+        when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
+        when( operations.propertyKeyGetForName( "name" ) ).thenReturn( 0 );
+        when( operations.propertyKeyGetForName( "lastName" ) ).thenReturn( 1 );
+        when( operations.indexGetForSchema( SchemaDescriptorFactory.forLabel( 123, 0, 1 ) ) )
+                .thenReturn( index );
+
+        procedure.resampleIndex( ":Person(name, lastName)" );
+
+        verify( operations ).indexGetForSchema( SchemaDescriptorFactory.forLabel( 123, 0, 1 ) );
     }
 
     @Test
@@ -100,8 +119,8 @@ public class ResampleIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenThrow( new IndexSchemaRuleNotFoundException( -1, -1 ) );
+        when( operations.indexGetForSchema( any() ) ).thenThrow(
+                new SchemaRuleNotFoundException( INDEX_RULE, SchemaDescriptorFactory.forLabel( 0, 0 ) ) );
 
         try
         {
@@ -115,13 +134,14 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldTriggerResampling() throws SchemaRuleNotFoundException, ProcedureException
+    public void shouldTriggerResampling()
+            throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
-        IndexDescriptor index = new IndexDescriptor( 123, 456 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) ).thenReturn( index );
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        verify( indexingService ).triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 }

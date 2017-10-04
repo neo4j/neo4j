@@ -31,7 +31,8 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 /**
  * Used for online operation of an index.
@@ -55,8 +56,6 @@ public interface IndexAccessor extends Closeable
      * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
      */
     IndexUpdater newUpdater( IndexUpdateMode mode );
-
-    void flush() throws IOException;
 
     /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
@@ -116,11 +115,6 @@ public interface IndexAccessor extends Closeable
         }
 
         @Override
-        public void flush()
-        {
-        }
-
-        @Override
         public void force()
         {
         }
@@ -163,7 +157,7 @@ public interface IndexAccessor extends Closeable
         @Override
         public ResourceIterator<File> snapshotFiles()
         {
-            return emptyIterator();
+            return emptyResourceIterator();
         }
 
         @Override
@@ -192,12 +186,6 @@ public interface IndexAccessor extends Closeable
         public IndexUpdater newUpdater( IndexUpdateMode mode )
         {
             return delegate.newUpdater( mode );
-        }
-
-        @Override
-        public void flush() throws IOException
-        {
-            delegate.flush();
         }
 
         @Override

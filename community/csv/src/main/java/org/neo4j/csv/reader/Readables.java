@@ -286,7 +286,7 @@ public class Readables
 
     public static CharReadable sources( Reader... sources ) throws IOException
     {
-        return new MultiReadable( iterator( sources, IOFunctions.<Reader>identity() ) );
+        return new MultiReadable( iterator( sources, IOFunctions.identity() ) );
     }
 
     public static CharReadable sources( RawIterator<Reader,IOException> sources ) throws IOException

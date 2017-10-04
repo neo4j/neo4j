@@ -31,6 +31,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -258,10 +259,16 @@ public class PhysicalLogFile implements LogFile, Lifecycle
     @Override
     public ReadableLogChannel getReader( LogPosition position ) throws IOException
     {
+        return getReader( position, readerLogVersionBridge );
+    }
+
+    @Override
+    public ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge ) throws IOException
+    {
         PhysicalLogVersionedStoreChannel logChannel =
                 openForVersion( logFiles, fileSystem, position.getLogVersion(), false );
         logChannel.position( position.getByteOffset() );
-        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge );
+        return new ReadAheadLogChannel( logChannel, logVersionBridge );
     }
 
     public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalLogFiles logFiles,
@@ -272,7 +279,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
 
         if ( !fileSystem.fileExists( fileToOpen ) )
         {
-            throw new FileNotFoundException( String.format( "File does not exist [%s]",
+            throw new FileNotFoundException( format( "File does not exist [%s]",
                     fileToOpen.getCanonicalPath() ) );
         }
 
@@ -283,14 +290,17 @@ public class PhysicalLogFile implements LogFile, Lifecycle
 
             ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
-            assert header != null && header.logVersion == version;
-            PhysicalLogVersionedStoreChannel result =
-                    new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
-            return result;
+            if ( (header == null) || (header.logVersion != version) )
+            {
+                throw new IllegalStateException(
+                        format( "Unexpected log file header. Expected header version: %d, actual header: %s", version,
+                                header != null ? header.toString() : "null header." ) );
+            }
+            return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
         }
         catch ( FileNotFoundException cause )
         {
-            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]",
+            throw Exceptions.withCause( new FileNotFoundException( format( "File could not be opened [%s]",
                     fileToOpen.getCanonicalPath() ) ), cause );
         }
         catch ( Throwable unexpectedError )
@@ -344,27 +354,33 @@ public class PhysicalLogFile implements LogFile, Lifecycle
             Long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
             if ( previousLogLastTxId == null )
             {
-                LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
-                assert logVersion == header.logVersion;
-                logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
-                previousLogLastTxId = header.lastCommittedTxId;
+                LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ), false );
+                if ( header != null )
+                {
+                    assert logVersion == header.logVersion;
+                    logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
+                    previousLogLastTxId = header.lastCommittedTxId;
+                }
             }
 
-            long lowTransactionId = previousLogLastTxId + 1;
-            LogPosition position = LogPosition.start( logVersion );
-            if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
+            if ( previousLogLastTxId != null )
             {
-                break;
+                long lowTransactionId = previousLogLastTxId + 1;
+                LogPosition position = LogPosition.start( logVersion );
+                if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
+                {
+                    break;
+                }
+                highTransactionId = previousLogLastTxId;
             }
             logVersion--;
-            highTransactionId = previousLogLastTxId;
         }
     }
 
     @Override
     public File currentLogFile()
     {
-        return logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
+        return logFiles.getHighestLogFile();
     }
 
     @Override

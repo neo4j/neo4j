@@ -87,7 +87,7 @@ public class NodeRelationshipCacheTest
     public void shouldReportCorrectNumberOfDenseNodes() throws Exception
     {
         // GIVEN
-        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 5, 100, base );
+        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, 100, base );
         cache.setHighNodeId( 26 );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
@@ -113,7 +113,7 @@ public class NodeRelationshipCacheTest
         int nodeCount = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.OFF_HEAP, 20, 100, base );
         cache.setHighNodeId( nodeCount );
-        incrementRandomCounts( cache, nodeCount, nodeCount*20 );
+        incrementRandomCounts( cache, nodeCount, nodeCount * 20 );
 
         // Test sparse node semantics
         {
@@ -133,13 +133,13 @@ public class NodeRelationshipCacheTest
     public void shouldObserveFirstRelationshipAsEmptyInEachDirection() throws Exception
     {
         // GIVEN
-        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, 100, base );
+        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
         int nodes = 100;
         int typeId = 5;
         Direction[] directions = Direction.values();
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
         cache.setForwardScan( true, true );
-        cache.setHighNodeId( nodes+1 );
+        cache.setHighNodeId( nodes + 1 );
         for ( int i = 0; i < nodes; i++ )
         {
             assertEquals( -1L, cache.getFirstRel( nodes, groupVisitor ) );
@@ -170,7 +170,7 @@ public class NodeRelationshipCacheTest
     public void shouldResetCountAfterGetOnDenseNodes() throws Exception
     {
         // GIVEN
-        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, 100, base );
+        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
         long nodeId = 0;
         int typeId = 3;
         cache.setHighNodeId( 1 );
@@ -315,7 +315,7 @@ public class NodeRelationshipCacheTest
 
         {
             // WHEN (sparse)
-            NodeChangeVisitor visitor = (nodeId, array) ->
+            NodeChangeVisitor visitor = ( nodeId, array ) ->
             {
                 // THEN (sparse)
                 assertTrue( "Unexpected sparse change reported for " + nodeId, keySparseChanged.remove( nodeId ) );
@@ -327,7 +327,7 @@ public class NodeRelationshipCacheTest
 
         {
             // WHEN (dense)
-            NodeChangeVisitor visitor = (nodeId, array) ->
+            NodeChangeVisitor visitor = ( nodeId, array ) ->
             {
                 // THEN (dense)
                 assertTrue( "Unexpected dense change reported for " + nodeId, keyDenseChanged.remove( nodeId ) );
@@ -419,24 +419,6 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldHaveSparseNodesWithBigCounts() throws Exception
-    {
-        // GIVEN
-        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
-        long nodeId = 1;
-        int typeId = 10;
-        cache.setHighNodeId( nodeId + 1 );
-
-        // WHEN
-        long highCount = NodeRelationshipCache.MAX_COUNT - 100;
-        cache.setCount( nodeId, highCount, typeId, OUTGOING );
-        long nextHighCount = cache.incrementCount( nodeId );
-
-        // THEN
-        assertEquals( highCount + 1, nextHighCount );
-    }
-
-    @Test
     public void shouldHaveDenseNodesWithBigCounts() throws Exception
     {
         // A count of a dense node follow a different path during import, first there's counting per node
@@ -487,17 +469,13 @@ public class NodeRelationshipCacheTest
             }
         }
         AtomicInteger visitCount = new AtomicInteger();
-        GroupVisitor visitor = new GroupVisitor()
+        GroupVisitor visitor = ( nodeId1, typeId, out, in, loop ) ->
         {
-            @Override
-            public long visit( long nodeId, int typeId, long out, long in, long loop )
-            {
-                visitCount.incrementAndGet();
-                assertEquals( firstRelationshipIds.get( Pair.of( typeId, OUTGOING ) ).longValue(), out );
-                assertEquals( firstRelationshipIds.get( Pair.of( typeId, INCOMING ) ).longValue(), in );
-                assertEquals( firstRelationshipIds.get( Pair.of( typeId, BOTH ) ).longValue(), loop );
-                return 0;
-            }
+            visitCount.incrementAndGet();
+            assertEquals( firstRelationshipIds.get( Pair.of( typeId, OUTGOING ) ).longValue(), out );
+            assertEquals( firstRelationshipIds.get( Pair.of( typeId, INCOMING ) ).longValue(), in );
+            assertEquals( firstRelationshipIds.get( Pair.of( typeId, BOTH ) ).longValue(), loop );
+            return 0;
         };
         cache.getFirstRel( nodeId, visitor );
 
@@ -551,6 +529,24 @@ public class NodeRelationshipCacheTest
         }
     }
 
+    @Test
+    public void shouldHaveSparseNodesWithBigCounts() throws Exception
+    {
+        // GIVEN
+        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
+        long nodeId = 1;
+        int typeId = 10;
+        cache.setHighNodeId( nodeId + 1 );
+
+        // WHEN
+        long highCount = NodeRelationshipCache.MAX_COUNT - 100;
+        cache.setCount( nodeId, highCount, typeId, OUTGOING );
+        long nextHighCount = cache.incrementCount( nodeId );
+
+        // THEN
+        assertEquals( highCount + 1, nextHighCount );
+    }
+
     private void testNode( NodeRelationshipCache link, long node, Direction direction )
     {
         int typeId = 0; // doesn't matter here because it's all sparse
@@ -575,7 +571,7 @@ public class NodeRelationshipCacheTest
     private long incrementRandomCounts( NodeRelationshipCache link, int nodeCount, int i )
     {
         long highestSeenCount = 0;
-        while ( i --> 0 )
+        while ( i-- > 0 )
         {
             long node = random.nextInt( nodeCount );
             highestSeenCount = max( highestSeenCount, link.incrementCount( node ) );

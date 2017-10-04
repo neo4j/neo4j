@@ -49,7 +49,7 @@ public class ReusableIteratorCostume<T> implements Iterator<T>
     @Override
     public T next()
     {
-        return items[offset+cursor++];
+        return items[offset + cursor++];
     }
 
     @Override

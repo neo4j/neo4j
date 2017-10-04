@@ -40,7 +40,7 @@ public final class TestServerBuilders
     /**
      * Create a builder capable of starting an in-process Neo4j instance, running in a subdirectory of the specified directory.
      */
-    public static TestServerBuilder newInProcessBuilder(File workingDirectory)
+    public static TestServerBuilder newInProcessBuilder( File workingDirectory )
     {
         return new InProcessServerBuilder( workingDirectory );
     }

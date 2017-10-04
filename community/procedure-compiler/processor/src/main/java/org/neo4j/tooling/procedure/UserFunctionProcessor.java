@@ -20,105 +20,44 @@
 package org.neo4j.tooling.procedure;
 
 import com.google.auto.service.AutoService;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.MessagePrinter;
-import org.neo4j.tooling.procedure.validators.DuplicatedProcedureValidator;
-import org.neo4j.tooling.procedure.visitors.UserFunctionVisitor;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
-import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
-import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementVisitor;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.visitors.FunctionVisitor;
+import org.neo4j.tooling.procedure.visitors.UserFunctionVisitor;
+
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
 @AutoService( Processor.class )
-public class UserFunctionProcessor extends AbstractProcessor
+public class UserFunctionProcessor extends DuplicationAwareBaseProcessor<UserFunction>
 {
-    private static final Class<UserFunction> userFunctionType = UserFunction.class;
-    private final Set<Element> visitedFunctions = new LinkedHashSet<>();
 
-    private ElementVisitor<Stream<CompilationMessage>,Void> visitor;
-    private MessagePrinter messagePrinter;
-    private Function<Collection<Element>,Stream<CompilationMessage>> duplicationPredicate;
+    private static final Class<UserFunction> SUPPORTED_ANNOTATION_TYPE = UserFunction.class;
 
-    public static Optional<String> getCustomName( UserFunction function )
+    public UserFunctionProcessor()
     {
-        String name = function.name();
-        if ( !name.isEmpty() )
+        super( SUPPORTED_ANNOTATION_TYPE, customNameExtractor(), processingEnvironment ->
         {
-            return Optional.of( name );
-        }
-        String value = function.value();
-        if ( !value.isEmpty() )
-        {
-            return Optional.of( value );
-        }
-        return Optional.empty();
+            Elements elementUtils = processingEnvironment.getElementUtils();
+            Types typeUtils = processingEnvironment.getTypeUtils();
+            TypeMirrorUtils typeMirrorUtils = new TypeMirrorUtils( typeUtils, elementUtils );
+
+            return new UserFunctionVisitor(
+                    new FunctionVisitor<>( SUPPORTED_ANNOTATION_TYPE, typeUtils, elementUtils, typeMirrorUtils,
+                            customNameExtractor(),
+                            processingEnvironment.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) ) );
+        } );
     }
 
-    @Override
-    public Set<String> getSupportedAnnotationTypes()
+    private static Function<UserFunction,Optional<String>> customNameExtractor()
     {
-        Set<String> types = new HashSet<>();
-        types.add( userFunctionType.getName() );
-        return types;
-    }
-
-    @Override
-    public SourceVersion getSupportedSourceVersion()
-    {
-        return SourceVersion.RELEASE_8;
-    }
-
-    @Override
-    public synchronized void init( ProcessingEnvironment processingEnv )
-    {
-        super.init( processingEnv );
-        Types typeUtils = processingEnv.getTypeUtils();
-        Elements elementUtils = processingEnv.getElementUtils();
-
-        visitedFunctions.clear();
-        messagePrinter = new MessagePrinter( processingEnv.getMessager() );
-        visitor = new UserFunctionVisitor( typeUtils, elementUtils, new TypeMirrorUtils( typeUtils, elementUtils ) );
-        duplicationPredicate = new DuplicatedProcedureValidator<>( elementUtils, userFunctionType,
-                UserFunctionProcessor::getCustomName );
-    }
-
-    @Override
-    public boolean process( Set<? extends TypeElement> annotations, RoundEnvironment roundEnv )
-    {
-        processElements( roundEnv );
-        if ( roundEnv.processingOver() )
-        {
-            duplicationPredicate.apply( visitedFunctions ).forEach( messagePrinter::print );
-        }
-        return false;
-    }
-
-    private void processElements( RoundEnvironment roundEnv )
-    {
-        Set<? extends Element> functions = roundEnv.getElementsAnnotatedWith( userFunctionType );
-        visitedFunctions.addAll( functions );
-        functions.stream().flatMap( this::validate ).forEachOrdered( messagePrinter::print );
-    }
-
-    private Stream<CompilationMessage> validate( Element element )
-    {
-        return visitor.visit( element );
+        return function -> CustomNameExtractor.getName( function::name, function::value );
     }
 }

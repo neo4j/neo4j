@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.util;
 public class SynchronizedArrayIdOrderingQueue implements IdOrderingQueue
 {
     private long[] queue;
-    private int offerIndex, headIndex; // absolute indexes, mod:ed on access
+    private int offerIndex;
+    private int headIndex;
 
     public SynchronizedArrayIdOrderingQueue( int initialMaxSize )
     {
@@ -36,15 +37,16 @@ public class SynchronizedArrayIdOrderingQueue implements IdOrderingQueue
         {
             extendArray();
         }
-        assert offerIndex == headIndex || (offerIndex-1)%queue.length < value : "Was offered ids out-of-order, " + value +
-                " whereas last offered was " + ((offerIndex-1)%queue.length);
-        queue[(offerIndex++)%queue.length] = value;
+        assert offerIndex == headIndex || (offerIndex - 1) % queue.length < value :
+                "Was offered ids out-of-order, " + value + " whereas last offered was " +
+                        ((offerIndex - 1) % queue.length);
+        queue[(offerIndex++) % queue.length] = value;
     }
 
     @Override
     public synchronized void waitFor( long value ) throws InterruptedException
     {
-        while ( offerIndex == headIndex /*empty*/ || queue[headIndex%queue.length] != value /*head is not our id*/ )
+        while ( offerIndex == headIndex /*empty*/ || queue[headIndex % queue.length] != value /*head is not our id*/ )
         {
             wait();
         }
@@ -53,10 +55,11 @@ public class SynchronizedArrayIdOrderingQueue implements IdOrderingQueue
     @Override
     public synchronized void removeChecked( long expectedValue )
     {
-        if ( queue[headIndex%queue.length] != expectedValue )
+        if ( queue[headIndex % queue.length] != expectedValue )
         {
-            throw new IllegalStateException( "Was about to remove head and expected it to be " +
-                    expectedValue + ", but it was " + queue[headIndex] );
+            throw new IllegalStateException(
+                    "Was about to remove head and expected it to be " + expectedValue + ", but it was " +
+                            queue[headIndex] );
         }
         headIndex++;
         notifyAll();
@@ -71,10 +74,10 @@ public class SynchronizedArrayIdOrderingQueue implements IdOrderingQueue
     private void extendArray()
     {
         long[] newQueue = new long[queue.length << 1];
-        int length = offerIndex-headIndex;
+        int length = offerIndex - headIndex;
         for ( int i = 0; i < length; i++ )
         {
-            newQueue[i] = queue[(headIndex+i)%queue.length];
+            newQueue[i] = queue[(headIndex + i) % queue.length];
         }
 
         queue = newQueue;

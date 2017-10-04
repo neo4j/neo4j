@@ -21,49 +21,67 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.helpers.Numbers;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.NodeItem;
 
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
- * Cursor for a single node.
+ * Base cursor for nodes.
  */
-public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
+public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
 {
-    private long nodeId;
+    private final NodeRecord nodeRecord;
     private final Consumer<StoreSingleNodeCursor> instanceCache;
 
-    public StoreSingleNodeCursor( NodeRecord nodeRecord,
-            NeoStores neoStores,
-            StoreStatement storeStatement,
-            Consumer<StoreSingleNodeCursor> instanceCache,
-            RecordCursors cursors,
-            LockService lockService )
+    private final LockService lockService;
+    private final RecordCursors recordCursors;
+
+    private long nodeId = StatementConstants.NO_SUCH_NODE;
+    private long[] labels;
+
+    public StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
+            RecordCursors recordCursors, LockService lockService )
     {
-        super( nodeRecord, neoStores, storeStatement, cursors, lockService );
+        this.nodeRecord = nodeRecord;
+        this.recordCursors = recordCursors;
+        this.lockService = lockService;
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init( long nodeId, AssertOpen assertOpen )
+    public StoreSingleNodeCursor init( long nodeId )
     {
-        initialize( assertOpen );
         this.nodeId = nodeId;
+        return this;
+    }
+
+    @Override
+    public NodeItem get()
+    {
         return this;
     }
 
     @Override
     public boolean next()
     {
+        labels = null;
         if ( nodeId != StatementConstants.NO_SUCH_NODE )
         {
             try
             {
-                return cursors.node().next( nodeId, nodeRecord, CHECK );
+                return recordCursors.node().next( nodeId, nodeRecord, CHECK );
             }
             finally
             {
@@ -77,6 +95,100 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
     @Override
     public void close()
     {
+        labels = null;
+        nodeRecord.clear();
         instanceCache.accept( this );
+    }
+
+    @Override
+    public long id()
+    {
+        return nodeRecord.getId();
+    }
+
+    @Override
+    public PrimitiveIntSet labels()
+    {
+        ensureLabels();
+        return PrimitiveIntCollections.asSet( labels, Numbers::safeCastLongToInt );
+    }
+
+    private void ensureLabels()
+    {
+        if ( labels == null )
+        {
+            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
+        }
+    }
+
+    @Override
+    public boolean hasLabel( int labelId )
+    {
+        ensureLabels();
+        for ( long label : labels )
+        {
+            if ( safeCastLongToInt( label ) == labelId )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isDense()
+    {
+        return nodeRecord.isDense();
+    }
+
+    @Override
+    public long nextGroupId()
+    {
+        assert isDense();
+        return nextRelationshipId();
+    }
+
+    @Override
+    public long nextRelationshipId()
+    {
+        return nodeRecord.getNextRel();
+    }
+
+    @Override
+    public long nextPropertyId()
+    {
+        return nodeRecord.getNextProp();
+    }
+
+    @Override
+    public Lock lock()
+    {
+        Lock lock = lockService.acquireNodeLock( nodeRecord.getId(), LockService.LockType.READ_LOCK );
+        if ( lockService != NO_LOCK_SERVICE )
+        {
+            boolean success = false;
+            try
+            {
+                // It's safer to re-read the node record here, specifically nextProp, after acquiring the lock
+                if ( !recordCursors.node().next( nodeRecord.getId(), nodeRecord, CHECK ) )
+                {
+                    // So it looks like the node has been deleted. The current behavior of NodeStore#loadRecord
+                    // is to only set the inUse field on loading an unused record. This should (and will)
+                    // change to be more of a centralized behavior by the stores. Anyway, setting this pointer
+                    // to the primitive equivalent of null the property cursor will just look empty from the
+                    // outside and the releasing of the lock will be done as usual.
+                    nodeRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+                }
+                success = true;
+            }
+            finally
+            {
+                if ( !success )
+                {
+                    lock.release();
+                }
+            }
+        }
+        return lock;
     }
 }

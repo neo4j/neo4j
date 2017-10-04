@@ -106,7 +106,7 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
         private PrimitiveIntObjectHashMap other;
         private boolean equal = true;
 
-        public IntObjEquality( PrimitiveIntObjectHashMap that )
+        IntObjEquality( PrimitiveIntObjectHashMap that )
         {
             this.other = that;
         }
@@ -140,7 +140,7 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
         @Override
         public boolean visited( int key, T value ) throws RuntimeException
         {
-            hash += DEFAULT_HASHING.hash( key + value.hashCode() );
+            hash += DEFAULT_HASHING.hashSingleValueToInt( key + value.hashCode() );
             return false;
         }
 
@@ -148,6 +148,21 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
         public int hashCode()
         {
             return hash;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            HashCodeComputer<?> that = (HashCodeComputer<?>) o;
+            return hash == that.hash;
         }
     }
 }

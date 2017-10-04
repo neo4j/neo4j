@@ -51,6 +51,10 @@ import static org.neo4j.csv.reader.Readables.files;
  */
 public class DataFactories
 {
+    private DataFactories()
+    {
+    }
+
     /**
      * Creates a {@link DataFactory} where data exists in multiple files. If the first line of the first file is a header,
      * {@link #defaultFormatNodeFileHeader()} can be used to extract that.
@@ -257,7 +261,7 @@ public class DataFactories
             if ( rawHeaderField != null && (typeIndex = rawHeaderField.lastIndexOf( ':' )) != -1 )
             {   // Specific type given
                 name = typeIndex > 0 ? rawHeaderField.substring( 0, typeIndex ) : null;
-                type = rawHeaderField.substring( typeIndex+1 );
+                type = rawHeaderField.substring( typeIndex + 1 );
                 int groupNameStartIndex = type.indexOf( '(' );
                 if ( groupNameStartIndex != -1 )
                 {   // Specific group given also
@@ -267,7 +271,7 @@ public class DataFactories
                                 "' is invalid, format expected to be 'name:TYPE(group)' " +
                                 "where TYPE and (group) are optional" );
                     }
-                    groupName = type.substring( groupNameStartIndex+1, type.length()-1 );
+                    groupName = type.substring( groupNameStartIndex + 1, type.length() - 1 );
                     type = type.substring( 0, groupNameStartIndex );
                 }
             }

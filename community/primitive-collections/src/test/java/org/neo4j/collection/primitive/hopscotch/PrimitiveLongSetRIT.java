@@ -19,12 +19,12 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -40,7 +40,6 @@ import org.neo4j.test.randomized.TestResource;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -88,39 +87,18 @@ public class PrimitiveLongSetRIT
 
     private Printable given()
     {
-        return new Printable()
-        {
-            @Override
-            public void print( LinePrinter out )
-            {
-                out.println( PrimitiveLongSet.class.getSimpleName() + " set = " +
-                        Primitive.class.getSimpleName() + ".longSet();" );
-            }
-        };
+        return out -> out.println( PrimitiveLongSet.class.getSimpleName() + " set = " +
+                           Primitive.class.getSimpleName() + ".longSet();" );
     }
 
     private ActionFactory<Sets,String> actionFactory( final Random random )
     {
-        return new ActionFactory<Sets,String>()
-        {
-            @Override
-            public Action<Sets,String> apply( Sets from )
-            {
-                return generateAction( random, from );
-            }
-        };
+        return from -> generateAction( random, from );
     }
 
     private TargetFactory<Sets> setFactory()
     {
-        return new TargetFactory<Sets>()
-        {
-            @Override
-            public Sets newInstance()
-            {
-                return new Sets();
-            }
-        };
+        return () -> new Sets();
     }
 
     protected Action<Sets,String> generateAction( Random random, Sets from )
@@ -154,7 +132,7 @@ public class PrimitiveLongSetRIT
 
     private long randomExisting( Random random, Set<Long> existing )
     {
-        int index = random.nextInt( existing.size() )+1;
+        int index = random.nextInt( existing.size() ) + 1;
         Iterator<Long> iterator = existing.iterator();
         long value = 0;
         for ( int i = 0; i < index; i++ )
@@ -206,11 +184,10 @@ public class PrimitiveLongSetRIT
                 out.println( format( "boolean added = %s", addition ) );
                 out.println( format( "boolean existsAfter = set.contains( %dL );", value ) );
                 out.println( format( "assert%s( \"%s\", existedBefore );", capitilize( alreadyExisting ),
-                        value + " should " + (alreadyExisting?"":"not ") + "exist before adding here" ) );
+                        value + " should " + (alreadyExisting ? "" : "not ") + "exist before adding here" ) );
                 out.println( format( "assert%s( \"%s\", added );", capitilize( !alreadyExisting ),
-                        value + " should " + (!alreadyExisting?"":"not ") + "be reported as added here" ) );
-                out.println( format( "assertTrue( \"%s\", existsAfter );",
-                        value + " should exist" ) );
+                        value + " should " + (!alreadyExisting ? "" : "not ") + "be reported as added here" ) );
+                out.println( format( "assertTrue( \"%s\", existsAfter );", value + " should exist" ) );
             }
             else
             {
@@ -260,9 +237,9 @@ public class PrimitiveLongSetRIT
                 out.println( format( "boolean removed = %s", removal ) );
                 out.println( format( "boolean existsAfter = set.contains( %dL );", value ) );
                 out.println( format( "assert%s( \"%s\", existedBefore );", capitilize( alreadyExisting ),
-                        value + " should " + (alreadyExisting?"":"not ") + "exist before removing here" ) );
+                        value + " should " + (alreadyExisting ? "" : "not ") + "exist before removing here" ) );
                 out.println( format( "assert%s( \"%s\", removed );", capitilize( alreadyExisting ),
-                        value + " should " + (alreadyExisting?"":"not ") + "be reported as removed here" ) );
+                        value + " should " + (alreadyExisting ? "" : "not ") + "be reported as removed here" ) );
                 out.println( format( "assertFalse( \"%s\", existsAfter );",
                         value + " should not exist" ) );
             }

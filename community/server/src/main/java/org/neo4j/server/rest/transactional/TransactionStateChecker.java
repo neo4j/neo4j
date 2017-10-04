@@ -20,15 +20,19 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
-public class TransactionStateChecker
+public class TransactionStateChecker implements AutoCloseable
 {
+    private final Statement statement;
     private final IsNodeDeletedInCurrentTx nodeCheck;
     private final IsRelationshipDeletedInCurrentTx relCheck;
 
-    TransactionStateChecker( IsNodeDeletedInCurrentTx nodeCheck, IsRelationshipDeletedInCurrentTx relCheck )
+    TransactionStateChecker( Statement statement, IsNodeDeletedInCurrentTx nodeCheck,
+            IsRelationshipDeletedInCurrentTx relCheck )
     {
+        this.statement = statement;
         this.nodeCheck = nodeCheck;
         this.relCheck = relCheck;
     }
@@ -40,10 +44,17 @@ public class TransactionStateChecker
         KernelStatement kernelStatement = (KernelStatement) topLevelTransactionBoundToThisThread.acquireStatement();
 
         return new TransactionStateChecker(
+                kernelStatement,
                 nodeId -> kernelStatement.hasTxStateWithChanges() &&
                           kernelStatement.txState().nodeIsDeletedInThisTx( nodeId ),
                 relId -> kernelStatement.hasTxStateWithChanges() &&
                          kernelStatement.txState().relationshipIsDeletedInThisTx( relId ) );
+    }
+
+    @Override
+    public void close()
+    {
+        statement.close();
     }
 
     public boolean isNodeDeletedInCurrentTx( long id )

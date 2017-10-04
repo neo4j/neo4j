@@ -81,6 +81,10 @@ public class IdMappers
         }
     }
 
+    private IdMappers()
+    {
+    }
+
     /**
      * An {@link IdMapper} that doesn't touch the input ids, but just asserts that node ids arrive in ascending order.
      * This is for advanced usage and puts constraints on the input in that all node ids given as input

@@ -21,28 +21,21 @@ package org.neo4j.commandline.admin.security;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
-import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.User;
 
-import static org.neo4j.server.security.auth.UserManager.INITIAL_USER_NAME;
+import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 
 public class SetInitialPasswordCommand implements AdminCommand
 {
@@ -119,17 +112,8 @@ public class SetInitialPasswordCommand implements AdminCommand
 
     Config loadNeo4jConfig()
     {
-        ConfigLoader configLoader = new ConfigLoader( settings() );
-        return configLoader.loadOfflineConfig(
-                Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
-    }
-
-    private static List<Class<?>> settings()
-    {
-        List<Class<?>> settings = new ArrayList<>();
-        settings.add( GraphDatabaseSettings.class );
-        settings.add( DatabaseManagementSystemSettings.class );
-        return settings;
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile() )
+                .withHome( homeDir.toFile() )
+                .withConnectorsDisabled().build();
     }
 }

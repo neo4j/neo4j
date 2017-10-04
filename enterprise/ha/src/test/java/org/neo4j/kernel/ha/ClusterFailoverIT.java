@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -46,8 +46,9 @@ public class ClusterFailoverIT
     // parameters
     private int clusterSize;
 
-    @Parameters( name = "clusterSize:{0}")
-    public static Collection<Object[]> data() {
+    @Parameters( name = "clusterSize:{0}" )
+    public static Collection<Object[]> data()
+    {
         return Arrays.asList(new Object[][] {
                 { 3 },
                 { 4 },

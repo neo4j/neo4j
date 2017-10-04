@@ -22,7 +22,6 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
@@ -35,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.internal.matchers.Any;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
@@ -87,9 +87,10 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authentication_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.ldap_authentication_cache_enabled ) ).thenReturn( false );
-        when( config.get( SecuritySettings.ldap_connection_timeout ) ).thenReturn( 1000L );
-        when( config.get( SecuritySettings.ldap_read_timeout ) ).thenReturn( 1000L );
+        when( config.get( SecuritySettings.ldap_connection_timeout ) ).thenReturn( Duration.ofSeconds( 1 ) );
+        when( config.get( SecuritySettings.ldap_read_timeout ) ).thenReturn( Duration.ofSeconds( 1 ) );
         when( config.get( SecuritySettings.ldap_authorization_connection_pooling ) ).thenReturn( true );
+        when( config.get( SecuritySettings.ldap_authentication_use_samaccountname ) ).thenReturn( false );
     }
 
     @Test
@@ -401,8 +402,7 @@ public class LdapRealmTest
         // When
         assertException( () -> realm.queryForAuthenticationInfo(
                 new ShiroAuthToken( map( "principal", "olivia", "credentials", "123" ) ), jndiLdapContectFactory ),
-                NamingException.class, ""
-            );
+                NamingException.class );
 
         // Then
         verify( securityLog ).error( contains(
@@ -439,7 +439,7 @@ public class LdapRealmTest
 
         // When
         assertException( () -> realm.doGetAuthorizationInfo( new SimplePrincipalCollection( "olivia", "LdapRealm" ) ),
-                AuthProviderFailedException.class, "" );
+                AuthProviderFailedException.class );
 
         // Then
         verify( securityLog ).error( contains( "{LdapRealm}: Failed to get authorization info: " +

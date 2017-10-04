@@ -58,9 +58,9 @@ public class DesktopModel
     {
         serverConfigurator.refresh();
 
-        for(DesktopModelListener listener : listeners)
+        for ( DesktopModelListener listener : listeners )
         {
-            listener.desktopModelChanged(this);
+            listener.desktopModelChanged( this );
         }
 
         return serverConfigurator.configuration();
@@ -97,7 +97,7 @@ public class DesktopModel
         return serverConfigurator.getConfigurationsFile();
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     public void prepareGraphDirectoryForStart() throws UnsuitableDirectoryException
     {
         File databaseDirectory = new File( serverConfigurator.getDatabaseDirectory() );
@@ -143,7 +143,7 @@ public class DesktopModel
 
         for ( String fileName : fileNames )
         {
-            if ( fileName.startsWith( "neostore" ) || fileName.equals( "neo4j.conf" ) )
+            if ( fileName.startsWith( "neostore" ) || fileName.equals( Config.DEFAULT_CONFIG_FILE_NAME ) )
             {
                 return;
             }
@@ -178,8 +178,8 @@ public class DesktopModel
     {
         if ( data != null )
         {
-            try( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
-                 PrintWriter writer = new PrintWriter( file ) )
+            try ( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
+                    PrintWriter writer = new PrintWriter( file ) )
             {
                 String input = reader.readLine();
                 while ( input != null )

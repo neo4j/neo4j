@@ -44,8 +44,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
@@ -55,14 +53,16 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Randoms;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -76,13 +76,10 @@ import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
@@ -96,27 +93,24 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 public class MultipleIndexPopulationStressIT
 {
     private static final String[] TOKENS = new String[]{"One", "Two", "Three", "Four"};
-    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
 
     private final RandomRule random = new RandomRule();
     private final CleanupRule cleanup = new CleanupRule();
     private final RepeatRule repeat = new RepeatRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( random ).around( repeat ).around( directory )
-                                                .around( cleanup );
-
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                                                .around( cleanup ).around( fileSystemRule );
 
     @Test
-    @RepeatRule.Repeat( times = 10 )
     public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception
     {
         prepareAndRunTest( false, 10, TimeUnit.SECONDS.toMillis( 5 ) );
     }
 
     @Test
-    @RepeatRule.Repeat( times = 10 )
     public void populateMultipleIndexWithSeveralNodesMultiThreaded() throws Exception
     {
         prepareAndRunTest( true, 10, TimeUnit.SECONDS.toMillis( 5 ) );
@@ -148,7 +142,7 @@ public class MultipleIndexPopulationStressIT
     private void readConfigAndRunTest( boolean multiThreaded ) throws Exception
     {
         // GIVEN a database with random data in it
-        int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
+        int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "200k" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
         prepareAndRunTest( multiThreaded, nodeCount, duration );
     }
@@ -171,7 +165,7 @@ public class MultipleIndexPopulationStressIT
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Result result = cc.runFullConsistencyCheck( directory.graphDbDir(),
-                new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
+                Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
         dropIndexes();
@@ -181,7 +175,6 @@ public class MultipleIndexPopulationStressIT
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
                 .newGraphDatabase();
         try
@@ -191,7 +184,8 @@ public class MultipleIndexPopulationStressIT
             ExecutorService executor = cleanup.add( Executors.newCachedThreadPool() );
             for ( int i = 0; i < 10; i++ )
             {
-                executor.submit( () -> {
+                executor.submit( () ->
+                {
                     Randoms random = new Randoms();
                     while ( !end.get() )
                     {
@@ -302,11 +296,11 @@ public class MultipleIndexPopulationStressIT
 
     private void createRandomData( int count ) throws IOException
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         RecordFormats recordFormats =
                 RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
-        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fs,
-                DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats );
+        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
+                null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats );
         importer.doImport( new RandomDataInput( count ) );
     }
 
@@ -372,7 +366,7 @@ public class MultipleIndexPopulationStressIT
     {
         private final int count;
 
-        public RandomDataInput( int count )
+        RandomDataInput( int count )
         {
             this.count = count;
         }
@@ -390,7 +384,7 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public IdMapper idMapper()
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
         {
             return IdMappers.actual();
         }
@@ -406,7 +400,7 @@ public class MultipleIndexPopulationStressIT
         {
             try
             {
-                return new BadCollector( fs.openAsOutputStream(
+                return new BadCollector( fileSystemRule.get().openAsOutputStream(
                         new File( directory.graphDbDir(), "bad" ), false ), 0, 0 );
             }
             catch ( IOException e )

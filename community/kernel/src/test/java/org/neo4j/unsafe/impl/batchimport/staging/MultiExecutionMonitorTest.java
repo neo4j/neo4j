@@ -78,7 +78,7 @@ public class MultiExecutionMonitorTest
         private int timesPolled;
         private final String name;
 
-        public TestableMonitor( Clock clock, long interval, TimeUnit unit, String name )
+        TestableMonitor( Clock clock, long interval, TimeUnit unit, String name )
         {
             super( clock, interval, unit );
             this.name = name;

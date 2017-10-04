@@ -24,6 +24,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 public class RandomMutationFactory
 {
+    private RandomMutationFactory()
+    {
+    }
+
     public static RandomMutation defaultRandomMutation( long nodeCount, GraphDatabaseService db )
     {
         return new SimpleRandomMutation( nodeCount, db, new LabelMutation( db ), new PropertyMutation( db ) );

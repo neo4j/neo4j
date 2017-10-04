@@ -36,7 +36,7 @@ class EntryCursor implements IOCursor<EntryRecord>
 {
     private final Segments segments;
     private IOCursor<EntryRecord> cursor;
-    private ValueRange<Long,SegmentFile> segmentRange = null;
+    private ValueRange<Long,SegmentFile> segmentRange;
     private long currentIndex;
 
     private long limit = Long.MAX_VALUE;

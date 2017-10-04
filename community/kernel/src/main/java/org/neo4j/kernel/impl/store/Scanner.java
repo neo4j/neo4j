@@ -35,6 +35,10 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
  */
 public class Scanner
 {
+    private Scanner()
+    {
+    }
+
     @SafeVarargs
     public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store,
             final Predicate<? super R>... filters )
@@ -55,7 +59,7 @@ public class Scanner
         private final RecordCursor<R> cursor;
         private final Predicate<? super R>[] filters;
 
-        public Scan( RecordStore<R> store, boolean forward, final Predicate<? super R>... filters )
+        Scan( RecordStore<R> store, boolean forward, final Predicate<? super R>... filters )
         {
             this.filters = filters;
             this.ids = new StoreIdIterator( store, forward );

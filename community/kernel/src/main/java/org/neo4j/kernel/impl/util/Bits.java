@@ -125,7 +125,7 @@ public final class Bits implements Cloneable
      *
      * @return the underlying long values that has got all the bits applied.
      */
-    @SuppressWarnings("EI_EXPOSE_REP")
+    @SuppressWarnings( "EI_EXPOSE_REP" )
     public long[] getLongs()
     {
         return longs;
@@ -175,11 +175,6 @@ public final class Bits implements Cloneable
             }
         }
         return builder.toString();
-    }
-
-    public static String numberToString( long value, int numberOfBytes )
-    {
-        return numberToString( new StringBuilder(), value, numberOfBytes ).toString();
     }
 
     public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
@@ -285,11 +280,11 @@ public final class Bits implements Cloneable
         int lowBitInLong = writePosition % 64;
         int lowBitsAvailable = 64 - lowBitInLong;
         long lowValueMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) );
-        longs[lowLongIndex] |= (((value) & lowValueMask) << lowBitInLong);
+        longs[lowLongIndex] |= (value & lowValueMask) << lowBitInLong;
         if ( steps > lowBitsAvailable )
         {   // High bits
             long highValueMask = rightOverflowMask( steps - lowBitsAvailable );
-            longs[lowLongIndex + 1] |= ((value) >>> lowBitsAvailable) & highValueMask;
+            longs[lowLongIndex + 1] |= (value >>> lowBitsAvailable) & highValueMask;
         }
         writePosition += steps;
         return this;
@@ -360,7 +355,7 @@ public final class Bits implements Cloneable
         if ( steps > lowBitsAvailable )
         {   // High bits
             long highLongMask = rightOverflowMask( steps - lowBitsAvailable );
-            result |= ((longs[lowLongIndex + 1] & highLongMask) << lowBitsAvailable);
+            result |= (longs[lowLongIndex + 1] & highLongMask) << lowBitsAvailable;
         }
         readPosition += steps;
         return result;

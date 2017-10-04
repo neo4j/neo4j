@@ -61,14 +61,7 @@ public class BashVariableInterpreterTest
     public void customInterpreter() throws Exception
     {
         // GIVEN
-        interpreter.addReplacer( "test", new Replacer()
-        {
-            @Override
-            public String getReplacement( ShellServer server, Session session ) throws ShellException
-            {
-                return "Hello";
-            }
-        } );
+        interpreter.addReplacer( "test", ( server, session ) -> "Hello" );
 
         // WHEN
         String interpreted = interpreter.interpret( "\\test world", server, session );

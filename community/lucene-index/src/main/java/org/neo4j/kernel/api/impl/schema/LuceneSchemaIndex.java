@@ -42,10 +42,11 @@ import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.singletonMap;
 
@@ -58,16 +59,16 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private static final String ONLINE = "online";
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
 
-    private final IndexConfiguration config;
+    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
-    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration config,
+    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, IndexPartitionFactory partitionFactory )
     {
         super( indexStorage, partitionFactory );
-        this.config = config;
+        this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
     }
 
@@ -85,22 +86,27 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
                                                 : createPartitionedReader( partitions );
     }
 
+    public IndexDescriptor getDescriptor()
+    {
+        return descriptor;
+    }
+
     /**
      * Verifies uniqueness of property values present in this index.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
+     * @param propertyKeyIds the ids of the properties to verify.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[])
      */
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
         flush( true );
         try ( UniquenessVerifier verifier = createUniquenessVerifier() )
         {
-            verifier.verify( accessor, propertyKeyId );
+            verifier.verify( accessor, propertyKeyIds );
         }
     }
 
@@ -108,18 +114,18 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
      * Verifies uniqueness of updated property values.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
-     * @param updatedPropertyValues the values to check uniqueness for.
+     * @param propertyKeyIds the ids of the properties to verify.
+     * @param updatedValueTuples the values to check uniqueness for.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int, List)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[], List)
      */
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
             throws IOException, IndexEntryConflictException
     {
         try ( UniquenessVerifier verifier = createUniquenessVerifier() )
         {
-            verifier.verify( accessor, propertyKeyId, updatedPropertyValues );
+            verifier.verify( accessor, propertyKeyIds, updatedValueTuples );
         }
     }
 
@@ -193,7 +199,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private SimpleIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        return new SimpleIndexReader( singlePartition.acquireSearcher(), config, samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( singlePartition.acquireSearcher(), descriptor, samplingConfig, taskCoordinator );
     }
 
     private UniquenessVerifier createSimpleUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
@@ -206,7 +212,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private PartitionedIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedIndexReader( searchers, config, samplingConfig, taskCoordinator );
+        return new PartitionedIndexReader( searchers, descriptor, samplingConfig, taskCoordinator );
     }
 
     private UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException

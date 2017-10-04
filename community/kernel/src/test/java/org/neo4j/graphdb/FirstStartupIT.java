@@ -43,13 +43,13 @@ public class FirstStartupIT
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // Then
-        try(Transaction ignore = db.beginTx())
+        try ( Transaction ignore = db.beginTx() )
         {
-            assertEquals(0, count( db.getAllNodes() ));
-            assertEquals(0, count( db.getAllRelationships() ));
-            assertEquals(0, count( db.getAllRelationshipTypes() ));
-            assertEquals(0, count( db.getAllLabels() ));
-            assertEquals(0, count( db.getAllPropertyKeys() ));
+            assertEquals( 0, count( db.getAllNodes() ) );
+            assertEquals( 0, count( db.getAllRelationships() ) );
+            assertEquals( 0, count( db.getAllRelationshipTypes() ) );
+            assertEquals( 0, count( db.getAllLabels() ) );
+            assertEquals( 0, count( db.getAllPropertyKeys() ) );
         }
 
         db.shutdown();

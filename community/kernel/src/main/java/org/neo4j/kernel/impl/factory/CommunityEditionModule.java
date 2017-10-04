@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
+import java.time.Clock;
+import java.util.function.Predicate;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -30,7 +33,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -43,6 +48,7 @@ import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
@@ -56,6 +62,7 @@ import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -84,15 +91,26 @@ public class CommunityEditionModule extends EditionModule
         LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
 
-        this.accessCapability = config.get( GraphDatabaseSettings.read_only )? new ReadOnly() : new CanWrite();
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherService );
+        life.add( watcherService );
+
+        this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
+
+        lockManager = dependencies.satisfyDependency( createLockManager( config, platformModule.clock, logging ) );
         statementLocksFactory = createStatementLocksFactory( lockManager, config, logging );
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
-        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
+        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
+
+        createIdComponents( platformModule, dependencies, createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
@@ -110,7 +128,7 @@ public class CommunityEditionModule extends EditionModule
 
         schemaWriteGuard = createSchemaWriteGuard();
 
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = createSchemaRuleVerifier();
 
@@ -118,13 +136,19 @@ public class CommunityEditionModule extends EditionModule
 
         ioLimiter = IOLimiter.unlimited();
 
-        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
-
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
+    }
+
+    static Predicate<String> fileWatcherFileNameFilter()
+    {
+        return Predicates.any(
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME )
+        );
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
@@ -144,11 +168,11 @@ public class CommunityEditionModule extends EditionModule
 
     protected SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {};
+        return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
-    protected TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,
-                                                          IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -160,8 +184,8 @@ public class CommunityEditionModule extends EditionModule
         }
     }
 
-    protected TokenCreator createPropertyKeyCreator( Config config, DataSourceManager dataSourceManager,
-                                                     IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createPropertyKeyCreator( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -173,8 +197,8 @@ public class CommunityEditionModule extends EditionModule
         }
     }
 
-    protected TokenCreator createLabelIdCreator( Config config, DataSourceManager dataSourceManager,
-                                                 IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createLabelIdCreator( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -186,44 +210,45 @@ public class CommunityEditionModule extends EditionModule
         }
     }
 
-    protected KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+    private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
             Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
     {
         return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
 
-    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
+    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         return new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
     }
 
-    public static Locks createLockManager( Config config, LogService logging )
+    public static Locks createLockManager( Config config, Clock clock, LogService logging )
     {
         String key = config.get( GraphDatabaseFacadeFactory.Configuration.lock_manager );
         for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
-            if ( candidateId.equals( key ) )
+            if ( key.equals( candidateId ) )
             {
-                return candidate.newInstance( ResourceTypes.values() );
+                return candidate.newInstance( config, clock, ResourceTypes.values() );
             }
             else if ( key.equals( "" ) )
             {
                 logging.getInternalLog( CommunityEditionModule.class )
                         .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
-                return candidate.newInstance( ResourceTypes.values() );
+                return candidate.newInstance( config, clock, ResourceTypes.values() );
             }
         }
 
         if ( key.equals( "community" ) )
         {
-            return new CommunityLockManger();
+            return new CommunityLockManger( config, clock );
         }
         else if ( key.equals( "" ) )
         {
             logging.getInternalLog( CommunityEditionModule.class )
                     .info( "No locking implementation specified, defaulting to 'community'" );
-            return new CommunityLockManger();
+            return new CommunityLockManger( config, clock );
         }
 
         throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
@@ -234,10 +259,11 @@ public class CommunityEditionModule extends EditionModule
         return TransactionHeaderInformationFactory.DEFAULT;
     }
 
-    protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-                                     final DependencyResolver dependencyResolver )
+    private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
+            final DependencyResolver dependencyResolver )
     {
-        life.addLifecycleListener( ( instance, from, to ) -> {
+        life.addLifecycleListener( ( instance, from, to ) ->
+        {
             if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
             {
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
@@ -262,6 +288,7 @@ public class CommunityEditionModule extends EditionModule
         else
         {
             platformModule.life.add( platformModule.dependencies.satisfyDependency( AuthManager.NO_AUTH ) );
+            platformModule.life.add( platformModule.dependencies.satisfyDependency( UserManagerSupplier.NO_AUTH ) );
         }
     }
 }

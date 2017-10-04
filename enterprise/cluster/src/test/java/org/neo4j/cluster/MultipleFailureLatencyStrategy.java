@@ -30,30 +30,34 @@ public class MultipleFailureLatencyStrategy
 {
     private final NetworkLatencyStrategy[] strategies;
 
-    public MultipleFailureLatencyStrategy(NetworkLatencyStrategy... strategies)
+    public MultipleFailureLatencyStrategy( NetworkLatencyStrategy... strategies )
     {
         this.strategies = strategies;
     }
 
-    public <T extends NetworkLatencyStrategy> T getStrategy(Class<T> strategyClass)
+    public <T extends NetworkLatencyStrategy> T getStrategy( Class<T> strategyClass )
     {
-        for( NetworkLatencyStrategy strategy : strategies )
+        for ( NetworkLatencyStrategy strategy : strategies )
         {
-            if (strategyClass.isInstance( strategy ))
+            if ( strategyClass.isInstance( strategy ) )
+            {
                 return (T) strategy;
+            }
         }
-        throw new IllegalArgumentException( " No strategy of type "+strategyClass.getName()+" found" );
+        throw new IllegalArgumentException( " No strategy of type " + strategyClass.getName() + " found" );
     }
 
     @Override
-    public long messageDelay(Message<? extends MessageType> message, String serverIdTo)
+    public long messageDelay( Message<? extends MessageType> message, String serverIdTo )
     {
         long totalDelay = 0;
-        for (NetworkLatencyStrategy strategy : strategies)
+        for ( NetworkLatencyStrategy strategy : strategies )
         {
-            long delay = strategy.messageDelay(message, serverIdTo);
-            if (delay == LOST )
+            long delay = strategy.messageDelay( message, serverIdTo );
+            if ( delay == LOST )
+            {
                 return delay;
+            }
             totalDelay += delay;
         }
 

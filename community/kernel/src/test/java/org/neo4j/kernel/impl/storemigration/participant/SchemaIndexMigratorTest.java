@@ -25,11 +25,11 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -38,26 +38,28 @@ import static org.mockito.Mockito.when;
 public class SchemaIndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
+    private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
-    private final LabelScanStoreProvider labelScanStoreProvider = mock( LabelScanStoreProvider.class );
     private final File storeDir = new File( "store" );
     private final File migrationDir = new File( "migrationDir" );
 
-    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
+    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, schemaIndexProvider );
 
     @Test
     public void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
     {
+        IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
+        File indexProviderRootDirectory = new File( storeDir, "just-some-directory" );
+        when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
+        when( schemaIndexProvider.directoryStructure() ).thenReturn( directoryStructure );
         when( schemaIndexProvider.getProviderDescriptor() )
                 .thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
-        migrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+        migrator.migrate( storeDir, migrationDir, progressReporter, StandardV2_3.STORE_VERSION,
                 StandardV3_0.STORE_VERSION );
 
         migrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_0.STORE_VERSION );
 
-        verify( fs ).deleteRecursively( schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir ) );
-        verify( fs ).deleteRecursively( labelScanStoreProvider.getStoreDirectory( storeDir ) );
+        verify( fs ).deleteRecursively( indexProviderRootDirectory );
     }
 }

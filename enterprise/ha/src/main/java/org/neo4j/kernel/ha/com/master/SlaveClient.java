@@ -54,7 +54,7 @@ public class SlaveClient extends Client<Slave> implements Slave
                         LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
-                Protocol.DEFAULT_FRAME_LENGTH, HaSettings.read_timeout.apply( from -> null ), maxConcurrentChannels,
+                Protocol.DEFAULT_FRAME_LENGTH, HaSettings.read_timeout.apply( from -> null ).toMillis(), maxConcurrentChannels,
                 chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor, entryReader );
         this.machineId = machineId;
     }
@@ -62,7 +62,8 @@ public class SlaveClient extends Client<Slave> implements Slave
     @Override
     public Response<Void> pullUpdates( final long upToAndIncludingTxId )
     {
-        return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, buffer -> {
+        return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, buffer ->
+        {
             writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
             buffer.writeLong( upToAndIncludingTxId );
         }, Protocol.VOID_DESERIALIZER );
@@ -76,7 +77,8 @@ public class SlaveClient extends Client<Slave> implements Slave
 
     public enum SlaveRequestType implements RequestType<Slave>
     {
-        PULL_UPDATES( (TargetCaller<Slave,Void>) ( master, context, input, target ) -> {
+        PULL_UPDATES( (TargetCaller<Slave,Void>) ( master, context, input, target ) ->
+        {
             readString( input ); // And discard
             return master.pullUpdates( input.readLong() );
         }, VOID_SERIALIZER );
@@ -84,7 +86,7 @@ public class SlaveClient extends Client<Slave> implements Slave
         private final TargetCaller caller;
         private final ObjectSerializer serializer;
 
-        private SlaveRequestType( TargetCaller caller, ObjectSerializer serializer )
+        SlaveRequestType( TargetCaller caller, ObjectSerializer serializer )
         {
             this.caller = caller;
             this.serializer = serializer;

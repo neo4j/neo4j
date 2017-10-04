@@ -69,8 +69,8 @@ public class NodeTest
 
         // Expect
         exception.expect( ConstraintViolationException.class );
-        exception.expectMessage( "Cannot delete node<"+node.getId()+">, because it still has relationships. " +
-                                 "To delete this node, you must first delete its relationships." );
+        exception.expectMessage( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+                "To delete this node, you must first delete its relationships." );
 
         // When I commit
         tx.success();
@@ -104,7 +104,7 @@ public class NodeTest
         node.delete();
         try
         {
-            node.setProperty( "key1", new Integer( 1 ) );
+            node.setProperty( "key1", 1 );
             fail( "Adding stuff to deleted node should throw exception" );
         }
         catch ( Exception e )
@@ -113,25 +113,47 @@ public class NodeTest
     }
 
     @Test
-    public void testNodeAddProperty()
+    public void testNodeAddPropertyWithNullKey()
     {
         Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
         try
         {
-            node1.setProperty( null, null );
-            fail( "Null argument should result in exception." );
+            node1.setProperty( null, "bar" );
+            fail( "Null key should result in exception." );
         }
         catch ( IllegalArgumentException ignored )
         {
         }
+    }
+
+    @Test
+    public void testNodeAddPropertyWithNullValue()
+    {
+        Node node1 = getGraphDb().createNode();
+        try
+        {
+            node1.setProperty( "foo", null );
+            fail( "Null value should result in exception." );
+        }
+        catch ( IllegalArgumentException ignored )
+        {
+        }
+        tx.failure();
+    }
+
+    @Test
+    public void testNodeAddProperty()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+
         String key1 = "key1";
         String key2 = "key2";
         String key3 = "key3";
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         // add property
         node1.setProperty( key1, int1 );
@@ -148,8 +170,6 @@ public class NodeTest
         assertEquals( string1, node2.getProperty( key1 ) );
         assertEquals( string2, node1.getProperty( key2 ) );
         assertEquals( int2, node2.getProperty( key2 ) );
-
-//        getTransaction().failure();
     }
 
     @Test
@@ -157,10 +177,10 @@ public class NodeTest
     {
         String key1 = "key1";
         String key2 = "key2";
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -212,7 +232,7 @@ public class NodeTest
         {
             // must mark as rollback only
         }
- //       getTransaction().failure();
+        //       getTransaction().failure();
     }
 
     @Test
@@ -321,7 +341,7 @@ public class NodeTest
         keys.next();
         keys.next();
         keys.next();
-        Map<String, Object> properties = node1.getAllProperties();
+        Map<String,Object> properties = node1.getAllProperties();
         assertTrue( properties.get( key1 ).equals( int1 ) );
         assertTrue( properties.get( key2 ).equals( int2 ) );
         assertTrue( properties.get( key3 ).equals( string ) );

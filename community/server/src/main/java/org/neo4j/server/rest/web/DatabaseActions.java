@@ -107,6 +107,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
 public class DatabaseActions
@@ -229,14 +230,8 @@ public class DatabaseActions
 
     public Representation getAllPropertyKeys()
     {
-        Collection<ValueRepresentation> propKeys = Iterables.asSet( map( new Function<String,ValueRepresentation>()
-        {
-            @Override
-            public ValueRepresentation apply( String key )
-            {
-                return ValueRepresentation.string( key );
-            }
-        }, graphDb.getAllPropertyKeys() ) );
+        Collection<ValueRepresentation> propKeys =
+                Iterables.asSet( map( key -> ValueRepresentation.string( key ), graphDb.getAllPropertyKeys() ) );
 
         return new ListRepresentation( RepresentationType.STRING, propKeys );
     }
@@ -383,7 +378,7 @@ public class DatabaseActions
 
         graphDb.index().forNodes( indexName );
         return new NodeIndexRepresentation( indexName,
-                Collections.<String,String>emptyMap() );
+                Collections.emptyMap() );
     }
 
     public IndexRepresentation createRelationshipIndex(
@@ -405,7 +400,7 @@ public class DatabaseActions
 
         graphDb.index().forRelationships( indexName );
         return new RelationshipIndexRepresentation( indexName,
-                Collections.<String,String>emptyMap() );
+                Collections.emptyMap() );
     }
 
     public void removeNodeIndex( String indexName )
@@ -432,8 +427,10 @@ public class DatabaseActions
     {
         Index<Node> index = graphDb.index().forNodes( indexName );
         Node expectedNode = graphDb.getNodeById( nodeId );
-        IndexHits<Node> hits = index.get( key, value );
-        return iterableContains( hits, expectedNode );
+        try ( IndexHits<Node> hits = index.get( key, value ) )
+        {
+            return iterableContains( hits, expectedNode );
+        }
     }
 
     public boolean relationshipIsIndexed( String indexName, String key, Object value, long relationshipId )
@@ -441,8 +438,10 @@ public class DatabaseActions
 
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
         Relationship expectedNode = graphDb.getRelationshipById( relationshipId );
-        IndexHits<Relationship> hits = index.get( key, value );
-        return iterableContains( hits, expectedNode );
+        try ( IndexHits<Relationship> hits = index.get( key, value ) )
+        {
+            return iterableContains( hits, expectedNode );
+        }
     }
 
     private <T> boolean iterableContains( Iterable<T> iterable,
@@ -511,7 +510,7 @@ public class DatabaseActions
         out( Direction.OUTGOING );
         final Direction internal;
 
-        private RelationshipDirection( Direction internal )
+        RelationshipDirection( Direction internal )
         {
             this.internal = internal;
         }
@@ -523,7 +522,8 @@ public class DatabaseActions
             PropertyValueException
     {
 
-        Node start, end;
+        Node start;
+        Node end;
         try
         {
             start = node( startNodeId );
@@ -680,7 +680,7 @@ public class DatabaseActions
         index.add( relationship, key, value );
         return new IndexedEntityRepresentation( relationship, key, value,
                 new RelationshipIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public IndexedEntityRepresentation addToNodeIndex( String indexName, String key, String value, long nodeId )
@@ -690,7 +690,7 @@ public class DatabaseActions
         index.add( node, key, value );
         return new IndexedEntityRepresentation( node, key, value,
                 new NodeIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public void removeFromNodeIndex( String indexName, String key, String value, long id )
@@ -733,7 +733,7 @@ public class DatabaseActions
         Node node = graphDb.getNodeById( id );
         return new IndexedEntityRepresentation( node, key, value,
                 new NodeIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public IndexedEntityRepresentation getIndexedRelationship(
@@ -746,7 +746,7 @@ public class DatabaseActions
         Relationship node = graphDb.getRelationshipById( id );
         return new IndexedEntityRepresentation( node, key, value,
                 new RelationshipIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public ListRepresentation getIndexedNodes( String indexName, final String key,
@@ -801,14 +801,14 @@ public class DatabaseActions
 
     private ListRepresentation toListNodeRepresentation()
     {
-        return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList() );
+        return new ListRepresentation( RepresentationType.NODE, Collections.emptyList() );
     }
 
     private ListRepresentation toListNodeRepresentation( final IndexHits<Node> result, final IndexResultOrder order )
     {
         if ( result == null )
         {
-            return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList() );
+            return new ListRepresentation( RepresentationType.NODE, Collections.emptyList() );
         }
         final IterableWrapper<Representation,Node> results = new IterableWrapper<Representation,Node>( result )
         {
@@ -828,7 +828,7 @@ public class DatabaseActions
 
     private ListRepresentation toListRelationshipRepresentation()
     {
-        return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList() );
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.emptyList() );
     }
 
     private ListRepresentation toListRelationshipRepresentation( final IndexHits<Relationship> result,
@@ -836,7 +836,7 @@ public class DatabaseActions
     {
         if ( result == null )
         {
-            return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList() );
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.emptyList() );
         }
         final IterableWrapper<Representation,Relationship> results = new IterableWrapper<Representation,
                 Relationship>( result )
@@ -896,7 +896,7 @@ public class DatabaseActions
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,
-                new NodeIndexRepresentation( indexName, Collections.<String,String>emptyMap() ) ), created );
+                new NodeIndexRepresentation( indexName, Collections.emptyMap() ) ), created );
     }
 
     public Pair<IndexedEntityRepresentation,Boolean> getOrCreateIndexedRelationship(
@@ -942,13 +942,14 @@ public class DatabaseActions
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,
-                        new RelationshipIndexRepresentation( indexName, Collections.<String,String>emptyMap() ) ),
+                        new RelationshipIndexRepresentation( indexName, Collections.emptyMap() ) ),
                 created );
     }
 
     private class UniqueRelationshipFactory extends UniqueFactory.UniqueRelationshipFactory
     {
-        private final Node start, end;
+        private final Node start;
+        private final Node end;
         private final RelationshipType type;
         private final Map<String,Object> properties;
 
@@ -1094,12 +1095,18 @@ public class DatabaseActions
     private ListRepresentation toListPathRepresentation( final Iterable<Path> paths,
             final TraverserReturnType returnType )
     {
-        final IterableWrapper<Representation,Path> result = new IterableWrapper<Representation,Path>( paths )
+        IterableWrapper<Representation,Path> result = new IterableWrapper<Representation,Path>( paths )
         {
             @Override
             protected Representation underlyingObjectToObject( Path position )
             {
                 return returnType.toRepresentation( position );
+            }
+
+            @Override
+            public Iterator<Representation> iterator()
+            {
+                return newResourceIterator( () -> paths.forEach( Path::close ), super.iterator() );
             }
         };
         return new ListRepresentation( returnType.repType, result );
@@ -1215,8 +1222,7 @@ public class DatabaseActions
         @SuppressWarnings( "rawtypes" )
         private PathRepresentationCreator representationCreator = PATH_REPRESENTATION_CREATOR;
 
-        public FindParams( final long startId, final long endId,
-                final Map<String,Object> map )
+        FindParams( final long startId, final long endId, final Map<String,Object> map )
         {
             this.startId = startId;
             this.endId = endId;
@@ -1361,7 +1367,7 @@ public class DatabaseActions
         abstract QueryContext updateQueryContext( QueryContext original );
     }
 
-    private final IndexResultOrder getOrdering( String order )
+    private IndexResultOrder getOrdering( String order )
     {
         if ( INDEX_ORDER.equalsIgnoreCase( order ) )
         {
@@ -1435,14 +1441,8 @@ public class DatabaseActions
     public ListRepresentation getAllLabels( boolean inUse )
     {
         ResourceIterable<Label> labels = inUse ? graphDb.getAllLabelsInUse() : graphDb.getAllLabels();
-        Collection<ValueRepresentation> labelNames = Iterables.asSet( map( new Function<Label,ValueRepresentation>()
-        {
-            @Override
-            public ValueRepresentation apply( Label label )
-            {
-                return ValueRepresentation.string( label.name() );
-            }
-        }, labels ) );
+        Collection<ValueRepresentation> labelNames = Iterables.asSet( map(
+                label -> ValueRepresentation.string( label.name() ), labels ) );
 
         return new ListRepresentation( RepresentationType.STRING, labelNames );
     }
@@ -1460,34 +1460,18 @@ public class DatabaseActions
     public ListRepresentation getSchemaIndexes()
     {
         Iterable<IndexDefinition> definitions = graphDb.schema().getIndexes();
-        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition,
-                IndexDefinitionRepresentation>()
-        {
-            @Override
-            public IndexDefinitionRepresentation apply( IndexDefinition definition )
-            {
-                return new IndexDefinitionRepresentation( definition,
-                        graphDb.schema().getIndexState( definition ),
-                        graphDb.schema().getIndexPopulationProgress( definition ) );
-            }
-        }, definitions );
+        Iterable<IndexDefinitionRepresentation> representations = map( definition -> new IndexDefinitionRepresentation( definition,
+                graphDb.schema().getIndexState( definition ),
+                graphDb.schema().getIndexPopulationProgress( definition ) ), definitions );
         return new ListRepresentation( RepresentationType.INDEX_DEFINITION, representations );
     }
 
     public ListRepresentation getSchemaIndexes( String labelName )
     {
         Iterable<IndexDefinition> definitions = graphDb.schema().getIndexes( label( labelName ) );
-        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition,
-                IndexDefinitionRepresentation>()
-        {
-            @Override
-            public IndexDefinitionRepresentation apply( IndexDefinition definition )
-            {
-                return new IndexDefinitionRepresentation( definition,
-                        graphDb.schema().getIndexState( definition ),
-                        graphDb.schema().getIndexPopulationProgress( definition ) );
-            }
-        }, definitions );
+        Iterable<IndexDefinitionRepresentation> representations = map( definition -> new IndexDefinitionRepresentation( definition,
+                graphDb.schema().getIndexState( definition ),
+                graphDb.schema().getIndexPopulationProgress( definition ) ), definitions );
         return new ListRepresentation( RepresentationType.INDEX_DEFINITION, representations );
     }
 
@@ -1627,16 +1611,12 @@ public class DatabaseActions
 
     private Iterable<ConstraintDefinition> filteredNodeConstraints( String labelName, final ConstraintType type )
     {
-        return filter( item -> {
-            return item.isConstraintType( type );
-        }, graphDb.schema().getConstraints( label( labelName ) ) );
+        return filter( item -> item.isConstraintType( type ), graphDb.schema().getConstraints( label( labelName ) ) );
     }
 
     private Iterable<ConstraintDefinition> filteredRelationshipConstraints( String typeName, final ConstraintType type )
     {
-        return filter( item -> {
-            return item.isConstraintType( type );
-        }, graphDb.schema().getConstraints( RelationshipType.withName( typeName ) ) );
+        return filter( item -> item.isConstraintType( type ), graphDb.schema().getConstraints( RelationshipType.withName( typeName ) ) );
     }
 
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
@@ -1666,7 +1646,7 @@ public class DatabaseActions
     public ListRepresentation getLabelConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredNodeConstraints( labelName, Predicates.<ConstraintDefinition>alwaysTrue() ) ) );
+                filteredNodeConstraints( labelName, Predicates.alwaysTrue() ) ) );
     }
 
     public Representation getLabelUniquenessConstraints( String labelName )

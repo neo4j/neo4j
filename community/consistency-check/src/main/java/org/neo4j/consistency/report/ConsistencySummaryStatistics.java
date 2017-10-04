@@ -31,7 +31,8 @@ public class ConsistencySummaryStatistics
     private final Map<RecordType, AtomicInteger> inconsistentRecordCount =
             new EnumMap<RecordType, AtomicInteger>( RecordType.class );
     private final AtomicInteger totalInconsistencyCount = new AtomicInteger();
-    private final AtomicLong errorCount = new AtomicLong(), warningCount = new AtomicLong();
+    private final AtomicLong errorCount = new AtomicLong();
+    private final AtomicLong warningCount = new AtomicLong();
 
     public ConsistencySummaryStatistics()
     {

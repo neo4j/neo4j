@@ -48,13 +48,12 @@ public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
     long get( long index );
 
     /**
-     * Swaps values from {@code fromIndex} to {@code toIndex}, as many items as {@code count} specifies.
+     * Swaps values from {@code fromIndex} to {@code toIndex}.
      *
      * @param fromIndex index to swap from.
      * @param toIndex index to swap to.
-     * @param count number of items to swap.
      */
-    void swap( long fromIndex, long toIndex, int count );
+    void swap( long fromIndex, long toIndex );
 
     /**
      * Sets {@code value} at the specified {@code index}.

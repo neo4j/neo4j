@@ -28,6 +28,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
+import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
+import org.neo4j.unsafe.batchinsert.internal.IndexConfigStoreProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -45,41 +47,49 @@ public final class BatchInserters
      */
     public static BatchInserter inserter( File storeDir ) throws IOException
     {
-        return inserter( storeDir, stringMap() );
+        DefaultFileSystemAbstraction fileSystem = createFileSystem();
+        BatchInserter batchInserter = inserter( storeDir, fileSystem, stringMap() );
+        return new FileSystemClosingBatchInserter( batchInserter, (IndexConfigStoreProvider) batchInserter, fileSystem );
     }
 
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs ) throws IOException
     {
-        return inserter( storeDir, fs, stringMap(), (Iterable) Service.load( KernelExtensionFactory.class )  );
+        return inserter( storeDir, fs, stringMap(), loadKernelExtension() );
     }
 
-    /**
-     * Get a {@link BatchInserter} given a store directory.
-     *
-     * @param storeDir the store directory
-     * @param config configuration settings to use
-     * @return a new {@link BatchInserter}
-     * @throws IOException if there is an IO error
-     */
     public static BatchInserter inserter( File storeDir, Map<String,String> config ) throws IOException
     {
-        return inserter( storeDir, new DefaultFileSystemAbstraction(), config, (Iterable) Service.load( KernelExtensionFactory.class ) );
+        DefaultFileSystemAbstraction fileSystem = createFileSystem();
+        BatchInserter inserter = inserter( storeDir, fileSystem, config, loadKernelExtension() );
+        return new FileSystemClosingBatchInserter( inserter, (IndexConfigStoreProvider) inserter, fileSystem );
     }
 
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
     {
-        return inserter( storeDir, fs, config, (Iterable) Service.load( KernelExtensionFactory.class )  );
+        return inserter( storeDir, fs, config, loadKernelExtension() );
     }
 
     public static BatchInserter inserter( File storeDir,
-                                          Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
-        return new BatchInserterImpl( storeDir, new DefaultFileSystemAbstraction(), config, kernelExtensions );
+        DefaultFileSystemAbstraction fileSystem = createFileSystem();
+        BatchInserterImpl inserter = new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
+        return new FileSystemClosingBatchInserter( inserter, inserter, fileSystem );
     }
 
-    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
-                                          Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem, Map<String,String> config,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
+    }
+
+    private static DefaultFileSystemAbstraction createFileSystem()
+    {
+        return new DefaultFileSystemAbstraction();
+    }
+
+    private static Iterable loadKernelExtension()
+    {
+        return Service.load( KernelExtensionFactory.class );
     }
 }

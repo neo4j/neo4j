@@ -78,7 +78,8 @@ public class SegmentFileTest
     @Test
     public void shouldReportCorrectInitialValues() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, version, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, version,
+                contentMarshal, logProvider, segmentHeader ) )
         {
             assertEquals( 0, segment.header().version() );
 
@@ -92,7 +93,8 @@ public class SegmentFileTest
     @Test
     public void shouldBeAbleToWriteAndRead() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             segment.write( 0, entry1 );
@@ -112,7 +114,8 @@ public class SegmentFileTest
     @Test
     public void shouldBeAbleToReadFromOffset() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             segment.write( 0, entry1 );
@@ -135,7 +138,8 @@ public class SegmentFileTest
     @Test
     public void shouldBeAbleToRepeatedlyReadWrittenValues() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             segment.write( 0, entry1 );
@@ -165,7 +169,8 @@ public class SegmentFileTest
     @Test
     public void shouldBeAbleToCloseOnlyAfterWriterIsClosed() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             assertFalse( segment.tryClose() );
@@ -181,7 +186,8 @@ public class SegmentFileTest
     @Test
     public void shouldCallDisposeHandlerAfterLastReaderIsClosed() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             IOCursor<EntryRecord> cursor0 = segment.getCursor( 0 );
@@ -205,7 +211,8 @@ public class SegmentFileTest
     @Test
     public void shouldHandleReaderPastEndCorrectly() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             segment.write( 0, entry1 );
@@ -230,7 +237,9 @@ public class SegmentFileTest
     public void shouldHaveIdempotentCloseMethods() throws Exception
     {
         // given
-        SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader );
+        SegmentFile segment =
+                create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider,
+                        segmentHeader );
         IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
 
         // when
@@ -247,7 +256,8 @@ public class SegmentFileTest
     @Test
     public void shouldCatchDoubleCloseReaderErrors() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
@@ -274,7 +284,8 @@ public class SegmentFileTest
         when( reader.channel() ).thenReturn( channel );
         when( readerPool.acquire( anyLong(), anyLong() ) ).thenReturn( reader );
 
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             // given
             IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
@@ -301,7 +312,8 @@ public class SegmentFileTest
     @Test
     public void shouldPruneReaderPoolOnClose() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
+                logProvider, segmentHeader ) )
         {
             segment.write( 0, entry1 );
             segment.flush();

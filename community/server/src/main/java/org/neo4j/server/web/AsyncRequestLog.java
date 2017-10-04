@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.web;
 
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,11 +33,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
-
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 import org.neo4j.concurrent.AsyncEvents;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -78,8 +78,8 @@ public class AsyncRequestLog
                 swallowExceptions( request, HttpServletRequest::getQueryString );
         int statusCode = response.getStatus();
         long length = response.getContentLength();
-        String referer = swallowExceptions( request, ( HttpServletRequest r ) -> (r.getHeader( "Referer" )) );
-        String userAgent = swallowExceptions( request, ( HttpServletRequest r ) -> (r.getHeader( "User-Agent" )) );
+        String referer = swallowExceptions( request, ( HttpServletRequest r ) -> r.getHeader( "Referer" ) );
+        String userAgent = swallowExceptions( request, ( HttpServletRequest r ) -> r.getHeader( "User-Agent" ) );
         long requestTimeStamp = request.getTimeStamp();
         long now = System.currentTimeMillis();
         long serviceTime = requestTimeStamp < 0 ? -1 : now - requestTimeStamp;

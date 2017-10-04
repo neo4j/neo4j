@@ -58,7 +58,7 @@ public interface ExecutionMonitor
     /**
      * Base implementation with most methods defaulting to not doing anything.
      */
-    public abstract class Adapter implements ExecutionMonitor
+    abstract class Adapter implements ExecutionMonitor
     {
         private final Clock clock;
         private final long intervalMillis;

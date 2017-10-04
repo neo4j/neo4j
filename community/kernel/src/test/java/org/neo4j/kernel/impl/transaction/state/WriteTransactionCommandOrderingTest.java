@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -135,15 +135,15 @@ public class WriteTransactionCommandOrderingTest
     {
         RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 
-        RecordChanges<Integer,LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
-        RecordChanges<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
+        RecordChanges<LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
                 mock( RecordChanges.class );
-        RecordChanges<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
-        RecordChanges<Long,NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class );
-        RecordChanges<Long,RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
-        RecordChanges<Long,PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
-        RecordChanges<Long,RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
-        RecordChanges<Long,SchemaRecord,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
+        RecordChanges<PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
+        RecordChanges<NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
+        RecordChanges<PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
+        RecordChanges<SchemaRecord,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
 
         when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
         when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
@@ -154,19 +154,19 @@ public class WriteTransactionCommandOrderingTest
         when( recordChangeSet.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
         when( recordChangeSet.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
 
-        List<RecordProxy<Long,NodeRecord,Void>> nodeChanges = new LinkedList<>();
+        List<RecordProxy<NodeRecord,Void>> nodeChanges = new LinkedList<>();
 
-        RecordChange<Long,NodeRecord,Void> deletedNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> deletedNode = mock( RecordChange.class );
         when( deletedNode.getBefore() ).thenReturn( inUseNode() );
         when( deletedNode.forReadingLinkage() ).thenReturn( missingNode() );
         nodeChanges.add( deletedNode );
 
-        RecordChange<Long,NodeRecord,Void> createdNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> createdNode = mock( RecordChange.class );
         when( createdNode.getBefore() ).thenReturn( missingNode() );
         when( createdNode.forReadingLinkage() ).thenReturn( createdNode() );
         nodeChanges.add( createdNode );
 
-        RecordChange<Long,NodeRecord,Void> updatedNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> updatedNode = mock( RecordChange.class );
         when( updatedNode.getBefore() ).thenReturn( inUseNode() );
         when( updatedNode.forReadingLinkage() ).thenReturn( inUseNode() );
         nodeChanges.add( updatedNode );
@@ -176,19 +176,19 @@ public class WriteTransactionCommandOrderingTest
         when( recordChangeSet.changeSize() ).thenReturn( 3 );
 
         when( labelTokenChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Integer,LabelTokenRecord,Void>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( relationshipTypeTokenChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Integer,RelationshipTypeTokenRecord,Void>>emptyList() );
+                Collections.emptyList() );
         when( propertyKeyTokenChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Integer,PropertyKeyTokenRecord,Void>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( relationshipRecordChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Long,RelationshipRecord,Void>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( propertyRecordChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Long,PropertyRecord,PrimitiveRecord>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( relationshipGroupChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Long,RelationshipGroupRecord,Integer>>emptyList() );
+                Collections.emptyList() );
         when( schemaRuleChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Long,SchemaRecord,SchemaRule>>emptyList() );
+                Collections.emptyList() );
 
         NeoStores neoStores = mock( NeoStores.class );
         when( neoStores.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
@@ -203,10 +203,10 @@ public class WriteTransactionCommandOrderingTest
     {
         private final AtomicReference<List<String>> currentRecording;
 
-        public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
+        RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, null, null,
-                    StandardV3_0.RECORD_FORMATS );
+            super( null, Config.defaults(), null, null, NullLogProvider.getInstance(), null, null, null,
+                    Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -217,12 +217,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
-        {
-        }
-
-        @Override
-        protected void loadStorage()
+        protected void checkAndLoadStorage( boolean createIfNotExists )
         {
         }
     }
@@ -231,9 +226,9 @@ public class WriteTransactionCommandOrderingTest
     {
         private final AtomicReference<List<String>> currentRecording;
 
-        public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
+        RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, StandardV3_0.RECORD_FORMATS );
+            super( null, Config.defaults(), null, null, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -244,12 +239,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
-        {
-        }
-
-        @Override
-        protected void loadStorage()
+        protected void checkAndLoadStorage( boolean createIfNotExists )
         {
         }
 
@@ -266,9 +256,9 @@ public class WriteTransactionCommandOrderingTest
     {
         private final AtomicReference<List<String>> currentRecording;
 
-        public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
+        RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), StandardV3_0.RECORD_FORMATS );
+            super( null, Config.defaults(), null, null, NullLogProvider.getInstance(), Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -279,14 +269,10 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
+        protected void checkAndLoadStorage( boolean createIfNotExists )
         {
         }
 
-        @Override
-        protected void loadStorage()
-        {
-        }
     }
 
     private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter

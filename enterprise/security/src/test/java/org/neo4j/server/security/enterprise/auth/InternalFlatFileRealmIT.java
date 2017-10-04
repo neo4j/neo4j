@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.CharArrayReader;
@@ -34,7 +33,9 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
@@ -43,10 +44,8 @@ import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,9 +58,6 @@ public class InternalFlatFileRealmIT
     File userStoreFile;
     File roleStoreFile;
 
-    @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-
     TestJobScheduler jobScheduler = new TestJobScheduler();
     LogProvider logProvider = NullLogProvider.getInstance();
     InternalFlatFileRealm realm;
@@ -72,7 +68,7 @@ public class InternalFlatFileRealmIT
     @Before
     public void setup() throws Throwable
     {
-        fs = new EvilFileSystem( fsRule.get() );
+        fs = new EvilFileSystem( new EphemeralFileSystemAbstraction() );
         userStoreFile = new File( "dbms", "auth" );
         roleStoreFile = new File( "dbms", "roles" );
         final UserRepository userRepository = new FileUserRepository( fs, userStoreFile, logProvider );
@@ -91,9 +87,10 @@ public class InternalFlatFileRealmIT
     }
 
     @After
-    public void teardown() throws Throwable
+    public void tearDown() throws Throwable
     {
         realm.shutdown();
+        fs.close();
     }
 
     @Test
@@ -183,7 +180,7 @@ public class InternalFlatFileRealmIT
         {
             assertThat( e.getMessage(), containsString(
                     "Unable to load valid flat file repositories! Attempts failed with:" ) );
-            File authFile = new File("dbms/auth");
+            File authFile = new File( "dbms/auth" );
             assertThat( e.getMessage(), containsString( "Failed to read authentication file: " + authFile ) );
             assertThat( e.getMessage(), containsString( "Role-auth file combination not valid" ) );
         }
@@ -240,11 +237,11 @@ public class InternalFlatFileRealmIT
         {
             if ( fileName.equals( userStoreFile ) )
             {
-                return LARGE_NUMBER+1 - userStoreVersions.size();
+                return LARGE_NUMBER + 1 - userStoreVersions.size();
             }
             if ( fileName.equals( roleStoreFile ) )
             {
-                return LARGE_NUMBER+1 - roleStoreVersions.size();
+                return LARGE_NUMBER + 1 - roleStoreVersions.size();
             }
             return super.lastModifiedTime( fileName );
         }

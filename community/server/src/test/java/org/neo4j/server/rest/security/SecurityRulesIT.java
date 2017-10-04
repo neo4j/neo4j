@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.net.URI;
-import javax.ws.rs.core.MediaType;
-
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.net.URI;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
@@ -80,7 +80,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     public void should401WithBasicChallengeWhenASecurityRuleFails()
             throws Exception
     {
-        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName() )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
@@ -98,7 +98,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     public void should401WithBasicChallengeIfAnyOneOfTheRulesFails()
             throws Exception
     {
-        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName(),
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
@@ -118,7 +118,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     public void shouldInvokeAllSecurityRules() throws Exception
     {
         // given
-        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().withSecurityRules(
                 NoAccessToDatabaseSecurityRule.class.getCanonicalName())
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
@@ -136,7 +136,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     public void shouldRespondWith201IfAllTheRulesPassWhenCreatingANode()
             throws Exception
     {
-        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
@@ -173,7 +173,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
             throws Exception
     {
         String mountPoint = "/protected/tree/starts/here" + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
-        server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
+        server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         mountPoint )
                 .withSecurityRules(
@@ -211,7 +211,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     {
         String mountPoint = "/protected/wildcard_replacement/x/y/z/something/else/more_wildcard_replacement/a/b/c" +
                 "/final/bit";
-        server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
+        server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         mountPoint )
                 .withSecurityRules(
@@ -237,7 +237,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     public void should403WhenAuthenticatedButForbidden()
             throws Exception
     {
-        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyForbiddenSecurityRule.class.getCanonicalName(),
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )

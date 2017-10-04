@@ -84,7 +84,7 @@ public class TestClockCache
 
     private static class ClockCacheTest<K, E> extends ClockCache<K, E>
     {
-        private E cleanedElement = null;
+        private E cleanedElement;
 
         ClockCacheTest( String name, int maxSize )
         {

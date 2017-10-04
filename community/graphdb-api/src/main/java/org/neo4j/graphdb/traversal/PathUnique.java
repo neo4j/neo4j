@@ -34,7 +34,7 @@ class PathUnique extends AbstractUniquenessFilter
         while ( source.length() > 0 )
         {
             source = source.parent();
-            if (type.idEquals(source, idToCompare))
+            if ( type.idEquals( source, idToCompare ) )
             {
                 return false;
             }

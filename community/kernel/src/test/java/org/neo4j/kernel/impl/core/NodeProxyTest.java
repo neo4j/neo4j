@@ -259,50 +259,42 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         final CountDownLatch start = new CountDownLatch( 1 );
         final AtomicBoolean writerDone = new AtomicBoolean();
 
-        Runnable writer = new Runnable()
+        Runnable writer = () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                awaitLatch( start );
+                int propertyKey = 0;
+                while ( propertyKey < propertiesCount )
                 {
-                    awaitLatch( start );
-                    int propertyKey = 0;
-                    while ( propertyKey < propertiesCount )
+                    try ( Transaction tx = db.beginTx() )
                     {
-                        try ( Transaction tx = db.beginTx() )
+                        Node node = db.getNodeById( nodeId );
+                        for ( int i = 0; i < 10 && propertyKey < propertiesCount; i++, propertyKey++ )
                         {
-                            Node node = db.getNodeById( nodeId );
-                            for ( int i = 0; i < 10 && propertyKey < propertiesCount; i++, propertyKey++ )
-                            {
-                                node.setProperty( "property-" + propertyKey, UUID.randomUUID().toString() );
-                            }
-                            tx.success();
+                            node.setProperty( "property-" + propertyKey, UUID.randomUUID().toString() );
                         }
+                        tx.success();
                     }
-                }
-                finally
-                {
-                    writerDone.set( true );
                 }
             }
-        };
-        Runnable reader = new Runnable()
-        {
-            @Override
-            public void run()
+            finally
             {
-                try ( Transaction tx = db.beginTx() )
+                writerDone.set( true );
+            }
+        };
+        Runnable reader = () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.getNodeById( nodeId );
+                awaitLatch( start );
+                while ( !writerDone.get() )
                 {
-                    Node node = db.getNodeById( nodeId );
-                    awaitLatch( start );
-                    while ( !writerDone.get() )
-                    {
-                        int size = node.getAllProperties().size();
-                        assertThat( size, greaterThan( 0 ) );
-                    }
-                    tx.success();
+                    int size = node.getAllProperties().size();
+                    assertThat( size, greaterThan( 0 ) );
                 }
+                tx.success();
             }
         };
 

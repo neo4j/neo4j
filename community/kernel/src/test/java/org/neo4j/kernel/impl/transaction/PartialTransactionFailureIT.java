@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -38,8 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -85,9 +83,10 @@ public class PartialTransactionFailureIT
                 new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                            GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -100,7 +99,10 @@ public class PartialTransactionFailureIT
             }
         };
 
-        Node a, b, c, d;
+        Node a;
+        Node b;
+        Node c;
+        Node d;
         try ( Transaction tx = db.beginTx() )
         {
             a = db.createNode();
@@ -175,33 +177,29 @@ public class PartialTransactionFailureIT
             final Node y,
             final CountDownLatch latch )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
-                    tx.success();
-                    latch.await();
-                    db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-                    db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                            new SimpleTriggerInfo( "test" )
-                    );
-                }
-                catch ( Exception ignore )
-                {
-                    // We don't care about our transactions failing, as long as we
-                    // can recover our database to a consistent state.
-                }
+                x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
+                tx.success();
+                latch.await();
+                db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+                db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                        new SimpleTriggerInfo( "test" )
+                );
+            }
+            catch ( Exception ignore )
+            {
+                // We don't care about our transactions failing, as long as we
+                // can recover our database to a consistent state.
             }
         };
     }
 
     private static class TestEmbeddedGraphDatabase extends EmbeddedGraphDatabase
     {
-        public TestEmbeddedGraphDatabase( File storeDir, Map<String, String> params )
+        TestEmbeddedGraphDatabase( File storeDir, Map<String,String> params )
         {
             super( storeDir,
                     params,
@@ -211,9 +209,6 @@ public class PartialTransactionFailureIT
         private static GraphDatabaseFacadeFactory.Dependencies dependencies()
         {
             GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-            state.setKernelExtensions( Arrays.asList(
-                    new InMemoryIndexProviderFactory(),
-                    new InMemoryLabelScanStoreExtension() ) );
             return state.databaseDependencies();
         }
     }

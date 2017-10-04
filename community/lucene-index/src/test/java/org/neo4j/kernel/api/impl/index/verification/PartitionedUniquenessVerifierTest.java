@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -34,11 +34,14 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 
 @RunWith( MockitoJUnitRunner.class )
 public class PartitionedUniquenessVerifierTest
@@ -68,7 +71,7 @@ public class PartitionedUniquenessVerifierTest
         PartitionedUniquenessVerifier verifier = createPartitionedVerifier();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        verifier.verify( propertyAccessor, 42, Arrays.asList( "a", "b" ) );
+        verifier.verify( propertyAccessor, new int[]{42}, valueTupleList( "a", "b" ) );
 
         verifySearchInvocations( searcher1, "a", "b" );
         verifySearchInvocations( searcher2, "a", "b" );
@@ -90,7 +93,7 @@ public class PartitionedUniquenessVerifierTest
         for ( Object value : values )
         {
             verify( searcher.getIndexSearcher() ).search(
-                    eq( LuceneDocumentStructure.newSeekQuery( value ) ),
+                    eq( LuceneDocumentStructure.newSeekQuery( new Value[]{Values.of( value )} ) ),
                     any( DuplicateCheckingCollector.class ) );
         }
     }

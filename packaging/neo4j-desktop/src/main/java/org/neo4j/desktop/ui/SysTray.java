@@ -19,7 +19,12 @@
  */
 package org.neo4j.desktop.ui;
 
-import java.awt.*;
+
+import java.awt.AWTException;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -66,14 +71,7 @@ public class SysTray
         PopupMenu popUpMenu = createPopupMenu();
         trayIcon.setPopupMenu( popUpMenu );
 
-        trayIcon.addActionListener( new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                listener.open();
-            }
-        } );
+        trayIcon.addActionListener( e -> listener.open() );
 
         trayIcon.addMouseListener( new MouseAdapter()
         {
@@ -91,23 +89,9 @@ public class SysTray
         MenuItem menuItemOpen = new MenuItem( "Open" );
         MenuItem menuItemExit = new MenuItem( "Exit" );
 
-        menuItemOpen.addActionListener( new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent actionEvent )
-            {
-                listener.open();
-            }
-        } );
+        menuItemOpen.addActionListener( actionEvent -> listener.open() );
 
-        menuItemExit.addActionListener( new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent actionEvent )
-            {
-                listener.exit();
-            }
-        } );
+        menuItemExit.addActionListener( actionEvent -> listener.exit() );
 
         popUpMenu.add( menuItemOpen );
         popUpMenu.add( menuItemExit );

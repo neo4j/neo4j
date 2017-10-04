@@ -29,7 +29,7 @@ public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray
     private final int[] array;
     private final int defaultValue;
 
-    public HeapIntArray( int length, int defaultValue, int base )
+    public HeapIntArray( int length, int defaultValue, long base )
     {
         super( 4, base );
         this.defaultValue = defaultValue;
@@ -59,16 +59,5 @@ public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray
     public void clear()
     {
         Arrays.fill( array, defaultValue );
-    }
-
-    @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        for ( int i = 0; i < numberOfEntries; i++ )
-        {
-            int fromValue = get( fromIndex+i );
-            set( fromIndex+i, get( toIndex+i ) );
-            set( toIndex+i, fromValue );
-        }
     }
 }

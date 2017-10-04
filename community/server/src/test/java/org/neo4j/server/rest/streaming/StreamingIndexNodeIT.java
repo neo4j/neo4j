@@ -26,7 +26,8 @@ import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 public class StreamingIndexNodeIT extends IndexNodeIT
 {
     @Override
-    public RESTRequestGenerator gen() {
+    public RESTRequestGenerator gen()
+    {
         return super.gen().withHeader(StreamingJsonFormat.STREAM_HEADER, "true");
     }
 }

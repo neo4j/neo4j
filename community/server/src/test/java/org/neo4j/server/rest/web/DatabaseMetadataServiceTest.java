@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,6 +55,12 @@ public class DatabaseMetadataServiceTest
             relId = node.createRelationshipTo( db.createNode(), withName( "c" ) ).getId();
             tx.success();
         }
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
     }
 
     @Test

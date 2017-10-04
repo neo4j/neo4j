@@ -19,33 +19,28 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.junit.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class RepresentationFormatRepositoryTest
@@ -85,9 +80,9 @@ public class RepresentationFormatRepositoryTest
     {
         final Response.ResponseBuilder responseBuilder = mock( Response.ResponseBuilder.class );
         // no streaming
-        when( responseBuilder.entity( anyString() ) ).thenReturn( responseBuilder );
+        when( responseBuilder.entity( any(byte[].class) ) ).thenReturn( responseBuilder );
         Mockito.verify( responseBuilder, never() ).entity( isA( StreamingOutput.class ) );
-        when( responseBuilder.type( Matchers.<MediaType> any() ) ).thenReturn( responseBuilder );
+        when( responseBuilder.type( ArgumentMatchers.<MediaType>any() ) ).thenReturn( responseBuilder );
         when( responseBuilder.build() ).thenReturn( null );
         OutputFormat format = repository.outputFormat( asList( MediaType.TEXT_HTML_TYPE ),
                 new URI( "http://some.host" ), streamingHeader() );
@@ -115,17 +110,13 @@ public class RepresentationFormatRepositoryTest
     private Response.ResponseBuilder mockResponsBuilder( Response response, final AtomicReference<StreamingOutput> ref )
     {
         final Response.ResponseBuilder responseBuilder = mock( Response.ResponseBuilder.class );
-        when( responseBuilder.entity( Matchers.isA( StreamingOutput.class ) ) ).thenAnswer(
-                new Answer<Response.ResponseBuilder>()
+        when( responseBuilder.entity( ArgumentMatchers.isA( StreamingOutput.class ) ) ).thenAnswer(
+                invocationOnMock ->
                 {
-                    @Override
-                    public Response.ResponseBuilder answer( InvocationOnMock invocationOnMock ) throws Throwable
-                    {
-                        ref.set( (StreamingOutput) invocationOnMock.getArguments()[0] );
-                        return responseBuilder;
-                    }
+                    ref.set( invocationOnMock.getArgument( 0 ) );
+                    return responseBuilder;
                 } );
-        when( responseBuilder.type( Matchers.<MediaType> any() ) ).thenReturn( responseBuilder );
+        when( responseBuilder.type( ArgumentMatchers.<MediaType>any() ) ).thenReturn( responseBuilder );
         when( responseBuilder.build() ).thenReturn( response );
         return responseBuilder;
     }

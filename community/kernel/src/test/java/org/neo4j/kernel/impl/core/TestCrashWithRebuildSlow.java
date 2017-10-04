@@ -41,6 +41,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -56,37 +57,43 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
-import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised
  */
 public class TestCrashWithRebuildSlow
 {
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     // for dumping data about failing build
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
         File storeDir = new File( "dir" ).getAbsoluteFile();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+                .setFileSystem( fs.get() ).newImpermanentDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
+                .newGraphDatabase();
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
         Map<IdType,Long> highIdsBeforeCrash = getHighIds( db );
+
+        // Make sure all of our changes are actually written to the files, since any background flushing could
+        // mess up the check-sums in non-deterministic ways
+        db.getDependencyResolver().resolveDependency( PageCache.class ).flushAndForce();
 
         long checksumBefore = fs.get().checksum();
         long checksumBefore2 = fs.get().checksum();
 
         assertThat( checksumBefore, Matchers.equalTo( checksumBefore2 ) );
 
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( db ) );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( db::shutdown );
 
         long snapshotChecksum = snapshot.checksum();
         if ( snapshotChecksum != checksumBefore )
@@ -139,6 +146,7 @@ public class TestCrashWithRebuildSlow
         finally
         {
             newDb.shutdown();
+            snapshot.close();
         }
     }
 
@@ -158,7 +166,7 @@ public class TestCrashWithRebuildSlow
                 nodes.add( node );
                 if ( previous != null )
                 {
-                    previous.createRelationshipTo( node, MyRelTypes.TEST );
+                    Relationship rel = previous.createRelationshipTo( node, MyRelTypes.TEST );
                 }
                 previous = node;
             }
@@ -200,14 +208,10 @@ public class TestCrashWithRebuildSlow
         final Map<IdType,Long> highIds = new HashMap<>();
         NeoStores neoStores = db.getDependencyResolver().resolveDependency(
                 RecordStorageEngine.class ).testAccessNeoStores();
-        Visitor<CommonAbstractStore,RuntimeException> visitor = new Visitor<CommonAbstractStore,RuntimeException>()
+        Visitor<CommonAbstractStore,RuntimeException> visitor = store ->
         {
-            @Override
-            public boolean visit( CommonAbstractStore store ) throws RuntimeException
-            {
-                highIds.put( store.getIdType(), store.getHighId() );
-                return true;
-            }
+            highIds.put( store.getIdType(), store.getHighId() );
+            return true;
         };
         neoStores.visitStore( visitor );
         return highIds;

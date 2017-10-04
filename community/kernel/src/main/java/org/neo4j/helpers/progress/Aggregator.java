@@ -28,28 +28,28 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class Aggregator
 {
-    private final Map<ProgressListener.MultiPartProgressListener, ProgressListener.MultiPartProgressListener.State> states =
+    private final Map<ProgressListener, ProgressListener.MultiPartProgressListener.State> states =
             new ConcurrentHashMap<>();
-    private Indicator indicator;
-    @SuppressWarnings("unused"/*accessed through updater*/)
+    private final Indicator indicator;
+    @SuppressWarnings( "unused"/*accessed through updater*/ )
     private volatile long progress;
-    @SuppressWarnings("unused"/*accessed through updater*/)
+    @SuppressWarnings( "unused"/*accessed through updater*/ )
     private volatile int last;
     private static final AtomicLongFieldUpdater<Aggregator> PROGRESS = newUpdater( Aggregator.class, "progress" );
     private static final AtomicIntegerFieldUpdater<Aggregator> LAST =
             AtomicIntegerFieldUpdater.newUpdater( Aggregator.class, "last" );
-    private long totalCount = 0;
+    private long totalCount;
     private final Completion completion = new Completion();
 
-    public Aggregator( Indicator indicator )
+    Aggregator( Indicator indicator )
     {
         this.indicator = indicator;
     }
 
-    synchronized void add( ProgressListener.MultiPartProgressListener progress )
+    synchronized void add( ProgressListener progress, long totalCount )
     {
         states.put( progress, ProgressListener.MultiPartProgressListener.State.INIT );
-        this.totalCount += progress.totalCount;
+        this.totalCount += totalCount;
     }
 
     synchronized Completion initialize()

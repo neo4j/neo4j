@@ -27,28 +27,24 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class CypherOldEndpointIT extends AbstractRestFunctionalTestBase
 {
-    private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
+    private final HTTP.Builder http = HTTP.withBaseUri( server().baseUri() );
 
     @Test
     public void periodicCommitTest() throws Exception
     {
-        ServerTestUtils.withCSVFile(2, new ServerTestUtils.BlockWithCSVFileURL() {
-            @Override
-            public void execute( String url )
-            {
-                // begin
-                HTTP.Response begin = http.POST(
-                        "/db/data/cypher",
-                        quotedJson( "{ 'query': 'USING PERIODIC COMMIT 100 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ();' }" )
-                );
-                assertThat( begin.status(), equalTo( 200 ) );
-            }
-        });
+        ServerTestUtils.withCSVFile(2, url ->
+        {
+            // begin
+            HTTP.Response begin = http.POST(
+                    "db/data/cypher",
+                    quotedJson( "{ 'query': 'USING PERIODIC COMMIT 100 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ();' }" )
+            );
+            assertThat( begin.status(), equalTo( 200 ) );
+        } );
     }
 }
 

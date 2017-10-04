@@ -53,7 +53,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     public void canCreateRelationshipBetweenTwoNodesWithLoopsThenDeleteOneOfTheNodesAndItsRelationships()
             throws Exception
     {
-        Node source = getGraphDb().createNode(), target = getGraphDb().createNode();
+        Node source = getGraphDb().createNode();
+        Node target = getGraphDb().createNode();
         source.createRelationshipTo( source, TEST );
         target.createRelationshipTo( target, TEST );
         source.createRelationshipTo( target, TEST );
@@ -200,7 +201,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         // Given
         GraphDatabaseService db = getGraphDb();
         Node node;
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
             node.createRelationshipTo( node, DynamicRelationshipType.withName( "MAYOR_OF" ) );
@@ -214,8 +215,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
         // Expect
         exception.expect( ConstraintViolationException.class );
-        exception.expectMessage( "Cannot delete node<"+node.getId()+">, because it still has relationships. " +
-                                 "To delete this node, you must first delete its relationships." );
+        exception.expectMessage( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+                "To delete this node, you must first delete its relationships." );
 
         // When I commit
         tx.close();
@@ -287,7 +288,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         final int max = 1 << size;
         return () -> new PrefetchingIterator<boolean[]>()
         {
-            int pos = 0;
+            int pos;
 
             @Override
             protected boolean[] fetchNextOrNull()
@@ -340,7 +341,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         boolean[] loops = new boolean[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            loops[i] = (i == loop);
+            loops[i] = i == loop;
         }
         verifyRelationships( message, root, loops, relationships );
     }

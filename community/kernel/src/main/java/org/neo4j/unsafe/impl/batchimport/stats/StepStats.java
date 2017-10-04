@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
+
 /**
  * Provides stats about a {@link Step}.
  */
@@ -61,8 +63,8 @@ public class StepStats implements StatsProvider
                 {
                     if ( !arrayContains( keys, providerKey ) )
                     {
-                        keys = Arrays.copyOf( keys, keys.length+1 );
-                        keys[keys.length-1] = providerKey;
+                        keys = Arrays.copyOf( keys, keys.length + 1 );
+                        keys[keys.length - 1] = providerKey;
                     }
                 }
             }

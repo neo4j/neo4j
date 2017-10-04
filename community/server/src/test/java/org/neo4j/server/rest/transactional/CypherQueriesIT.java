@@ -19,37 +19,21 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.junit.Test;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherQueriesIT extends AbstractRestFunctionalTestBase
 {
-    @Test
-    public void runningInCompiledRuntime() throws JsonParseException
-    {
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 200 )
-                .payload( quotedJson(
-                        "{ 'statements': [ { 'statement': 'CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n' } ] }" ) )
-                .post( getDataUri() + "transaction/commit" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors( result );
-    }
-
     @Test
     public void runningWithGeometryTypes() throws JsonParseException
     {
@@ -67,7 +51,7 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
 
     private void assertNoErrors( Map<String, Object> response )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
         assertFalse( errors.hasNext() );
     }

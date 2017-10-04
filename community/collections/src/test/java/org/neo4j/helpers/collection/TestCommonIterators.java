@@ -67,14 +67,16 @@ public class TestCommonIterators
             caching.previous();
             fail( "Should throw exception" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
 
         try
         {
             caching.current();
             fail( "Should throw exception" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
 
         // Next and previous
         assertEquals( 0, caching.position() );
@@ -108,7 +110,8 @@ public class TestCommonIterators
             caching.position( -1 );
             fail( "Shouldn't be able to set a lower value than 0" );
         }
-        catch ( IllegalArgumentException e ) { /* Good */ }
+        catch ( IllegalArgumentException e )
+        { /* Good */ }
         assertEquals( (Integer) 0, caching.current() );
         assertEquals( 0, caching.position( 3 ) );
         try
@@ -116,7 +119,8 @@ public class TestCommonIterators
             caching.current();
             fail( "Shouldn't be able to call current() after a call to position(int)" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
         assertTrue( caching.hasNext() );
         assertEquals( (Integer) 3, caching.next() );
         assertEquals( (Integer) 3, caching.current() );
@@ -134,7 +138,8 @@ public class TestCommonIterators
             caching.position( 9 );
             fail( "Shouldn't be able to set a position which is too big" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
         assertEquals( 3, caching.position( 8 ) );
         assertTrue( caching.hasPrevious() );
         assertFalse( caching.hasNext() );
@@ -143,7 +148,8 @@ public class TestCommonIterators
             caching.next();
             fail( "Shouldn't be able to go beyond last item" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
         assertEquals( 8, caching.position() );
         assertEquals( (Integer) 7, caching.previous() );
         assertEquals( (Integer) 6, caching.previous() );
@@ -183,7 +189,7 @@ public class TestCommonIterators
         for ( int i = 0; i < size; i++ )
         {
             assertTrue( page.hasNext() );
-            assertEquals( (Integer) (i+plus), page.next() );
+            assertEquals( (Integer) (i + plus), page.next() );
         }
         assertFalse( page.hasNext() );
     }
@@ -202,7 +208,8 @@ public class TestCommonIterators
             Iterables.first( Arrays.asList() );
             fail( "Should fail" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
 
         // first Iterator
         assertEquals( object, Iterators.first( Arrays.asList( object, object2 ).iterator() ) );
@@ -212,7 +219,8 @@ public class TestCommonIterators
             Iterators.first( Arrays.asList().iterator() );
             fail( "Should fail" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
 
         // firstOrNull Iterable
         assertEquals( object, Iterables.firstOrNull( Arrays.asList( object, object2 ) ) );
@@ -239,7 +247,8 @@ public class TestCommonIterators
             Iterables.last( Arrays.asList() );
             fail( "Should fail" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
 
         // last Iterator
         assertEquals( object2, Iterators.last( Arrays.asList( object, object2 ).iterator() ) );
@@ -249,7 +258,8 @@ public class TestCommonIterators
             Iterators.last( Arrays.asList().iterator() );
             fail( "Should fail" );
         }
-        catch ( NoSuchElementException e ) { /* Good */ }
+        catch ( NoSuchElementException e )
+        { /* Good */ }
 
         // lastOrNull Iterable
         assertEquals( object2, Iterables.lastOrNull( Arrays.asList( object, object2 ) ) );
@@ -275,13 +285,15 @@ public class TestCommonIterators
             Iterables.single( Arrays.asList() );
             fail( "Should fail" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( Exception e )
+        { /* Good */ }
         try
         {
             Iterables.single( Arrays.asList( object, object2 ) );
             fail( "Should fail" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( Exception e )
+        { /* Good */ }
 
         // single Iterator
         assertEquals( object, Iterators.single( Arrays.asList( object ).iterator() ) );
@@ -290,13 +302,15 @@ public class TestCommonIterators
             Iterators.single( Arrays.asList().iterator() );
             fail( "Should fail" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( Exception e )
+        { /* Good */ }
         try
         {
             Iterators.single( Arrays.asList( object, object2 ).iterator() );
             fail( "Should fail" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( Exception e )
+        { /* Good */ }
 
         // singleOrNull Iterable
         assertEquals( object, Iterables.singleOrNull( Arrays.asList( object ) ) );
@@ -306,7 +320,8 @@ public class TestCommonIterators
             Iterables.singleOrNull( Arrays.asList( object, object2 ) );
             fail( "Should fail" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( Exception e )
+        { /* Good */ }
 
         // singleOrNull Iterator
         assertEquals( object, Iterators.singleOrNull( Arrays.asList( object ).iterator() ) );
@@ -316,7 +331,8 @@ public class TestCommonIterators
             Iterators.singleOrNull( Arrays.asList( object, object2 ).iterator() );
             fail( "Should fail" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( Exception e )
+        { /* Good */ }
     }
 
     @Test

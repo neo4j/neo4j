@@ -26,6 +26,10 @@ import java.util.regex.Pattern;
 
 public class StringMatcherIgnoresNewlines
 {
+    private StringMatcherIgnoresNewlines()
+    {
+    }
+
     public static Matcher<String> containsStringIgnoreNewlines( String substring )
     {
         return new StringContains( substring )

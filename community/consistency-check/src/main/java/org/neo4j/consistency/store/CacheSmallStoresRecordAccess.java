@@ -34,7 +34,7 @@ public class CacheSmallStoresRecordAccess extends DelegatingRecordAccess
                                          RelationshipTypeTokenRecord[] relationshipTypes,
                                          LabelTokenRecord[] labels )
     {
-        super(delegate);
+        super( delegate );
         this.propertyKeys = propertyKeys;
         this.relationshipTypes = relationshipTypes;
         this.labels = labels;

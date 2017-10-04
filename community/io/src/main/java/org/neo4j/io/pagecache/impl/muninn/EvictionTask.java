@@ -28,7 +28,7 @@ package org.neo4j.io.pagecache.impl.muninn;
  */
 final class EvictionTask extends BackgroundTask
 {
-    public EvictionTask( MuninnPageCache pageCache )
+    EvictionTask( MuninnPageCache pageCache )
     {
         super( pageCache );
     }

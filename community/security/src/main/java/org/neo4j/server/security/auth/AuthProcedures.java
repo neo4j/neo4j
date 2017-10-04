@@ -26,9 +26,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -91,10 +93,18 @@ public class AuthProcedures
     }
 
     @Description( "Show the current user." )
-    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
+    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
         return Stream.of( userResultForName( securityContext.subject().username() ) );
+    }
+
+    @Deprecated
+    @Description( "Show the current user. Deprecated by dbms.showCurrentUser." )
+    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS, deprecatedBy = "dbms.showCurrentUser" )
+    public Stream<UserResult> showCurrentUserDeprecated() throws InvalidArgumentsException, IOException
+    {
+        return showCurrentUser();
     }
 
     @Description( "List all local users." )
@@ -130,7 +140,10 @@ public class AuthProcedures
         {
             this.username = username;
             this.flags = new ArrayList<>();
-            for ( String f : flags ) {this.flags.add( f );}
+            for ( String f : flags )
+            {
+                this.flags.add( f );
+            }
         }
     }
 }

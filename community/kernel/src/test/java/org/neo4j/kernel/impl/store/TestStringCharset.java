@@ -59,7 +59,9 @@ public enum TestStringCharset
                     {
                         chars[i] = (char) (0x20 + random.nextInt( 0xC0 ));
                         if ( chars[i] > 0x7f )
-                        { chars[i] += 0x20; }
+                        {
+                            chars[i] += 0x20;
+                        }
                     }
                     return new String( chars );
                 }

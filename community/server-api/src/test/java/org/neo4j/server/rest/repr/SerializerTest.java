@@ -19,24 +19,28 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 import java.net.URI;
 
-import org.junit.Test;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 public class SerializerTest
 {
 
     @Test
-    public void shouldPrependBaseUriToRelativePaths() {
+    public void shouldPrependBaseUriToRelativePaths()
+    {
         String baseUrl = "http://baseurl/";
-        Serializer serializer = new Serializer(URI.create( baseUrl ), null){};
+        Serializer serializer = new Serializer( URI.create( baseUrl ), null )
+        {
+            // empty
+        };
 
         String aRelativeUrl = "/path/path/path";
-        assertThat(serializer.relativeUri( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ));
-        assertThat(serializer.relativeTemplate( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ));
+        assertThat( serializer.relativeUri( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ) );
+        assertThat( serializer.relativeTemplate( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ) );
     }
 
 }

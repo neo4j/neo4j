@@ -187,4 +187,7 @@ public class GraphDatabaseServiceFacadeMethods
                 // TODO: INDEX
         ) );
 
+    private GraphDatabaseServiceFacadeMethods()
+    {
+    }
 }

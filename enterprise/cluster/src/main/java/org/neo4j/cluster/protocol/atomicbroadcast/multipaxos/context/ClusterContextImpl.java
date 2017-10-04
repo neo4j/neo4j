@@ -383,7 +383,8 @@ class ClusterContextImpl
          * Maps the keyset of contacting instances from InstanceId to strings, collects them in a Set and joins them
          * in a string with the appropriate separator
          */
-        return String.join( DISCOVERY_HEADER_SEPARATOR, contactingInstances.keySet().stream().map( InstanceId::toString ).collect( Collectors.toSet() ) );
+        return String.join( DISCOVERY_HEADER_SEPARATOR,
+                contactingInstances.keySet().stream().map( InstanceId::toString ).collect( Collectors.toSet() ) );
     }
 
     private Set<InstanceId> parseDiscoveryHeader( String discoveryHeader )
@@ -396,7 +397,7 @@ class ClusterContextImpl
             {
                 result.add( new InstanceId( Integer.parseInt( instanceId.trim() ) ) );
             }
-            catch( NumberFormatException e )
+            catch ( NumberFormatException e )
             {
                 /*
                  * This will happen if the message did not contain a DISCOVERY header. There are two reasons for this.
@@ -514,7 +515,7 @@ class ClusterContextImpl
                                         HeartbeatContextImpl snapshotHeartbeatContext )
     {
         return new ClusterContextImpl( me, commonStateSnapshot, logging, timeouts,
-                joiningInstances == null ? null : new ArrayList<>( asList(joiningInstances)),
+                joiningInstances == null ? null : new ArrayList<>( asList( joiningInstances ) ),
                 joinDeniedConfigurationResponseState == null ? null : joinDeniedConfigurationResponseState.snapshot(),
                 executor, objectOutputStreamFactory, objectInputStreamFactory, snapshotLearnerContext,
                 snapshotHeartbeatContext, config );
@@ -559,12 +560,7 @@ class ClusterContextImpl
         {
             return false;
         }
-        if ( learnerContext != null ? !learnerContext.equals( that.learnerContext ) : that.learnerContext != null )
-        {
-            return false;
-        }
-
-        return true;
+        return learnerContext != null ? learnerContext.equals( that.learnerContext ) : that.learnerContext == null;
     }
 
     @Override

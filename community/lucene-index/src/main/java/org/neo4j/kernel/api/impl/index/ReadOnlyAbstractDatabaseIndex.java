@@ -35,7 +35,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneInde
 {
     protected T luceneIndex;
 
-    public ReadOnlyAbstractDatabaseIndex(T luceneIndex )
+    public ReadOnlyAbstractDatabaseIndex( T luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }

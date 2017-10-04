@@ -85,4 +85,8 @@ public class ConstraintDefinitionFacadeMethods
                     DROP,
                     IS_CONSTRAINT_TYPE
             ) );
+
+    private ConstraintDefinitionFacadeMethods()
+    {
+    }
 }

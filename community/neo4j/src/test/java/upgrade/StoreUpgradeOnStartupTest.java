@@ -23,64 +23,59 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 
 @RunWith( Parameterized.class )
 public class StoreUpgradeOnStartupTest
 {
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    public RuleChain ruleChain = RuleChain.outerRule( testDir )
+            .around( fileSystemRule ).around( pageCacheRule );
+
     @Parameterized.Parameter( 0 )
     public String version;
 
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private FileSystemAbstraction fileSystem;
     private File workingDirectory;
     private StoreVersionCheck check;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
     {
-        return Arrays.asList(
-                StandardV2_0.STORE_VERSION,
-                StandardV2_1.STORE_VERSION,
-                StandardV2_2.STORE_VERSION,
+        return Collections.singletonList(
                 StandardV2_3.STORE_VERSION
         );
     }
@@ -88,13 +83,12 @@ public class StoreUpgradeOnStartupTest
     @Before
     public void setup() throws IOException
     {
+        fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         workingDirectory = testDir.directory( "working_" + version );
         check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
-        prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
-        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
-                allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
     }
 
     @Test
@@ -107,7 +101,6 @@ public class StoreUpgradeOnStartupTest
         // then
         assertTrue( "Some store files did not have the correct version",
                 checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
-        assertTrue( allStoreFilesHaveNoTrailer( fileSystem, workingDirectory ) );
         assertConsistentStore( workingDirectory );
     }
 
@@ -115,7 +108,7 @@ public class StoreUpgradeOnStartupTest
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        makeDbNotCleanlyShutdown();
+        removeCheckPointFromTxLog( fileSystem, workingDirectory );
         try
         {
             // when
@@ -131,24 +124,11 @@ public class StoreUpgradeOnStartupTest
         }
     }
 
-    private void makeDbNotCleanlyShutdown() throws IOException
-    {
-        if ( StandardV2_3.STORE_VERSION.equals( version ) )
-        {
-            removeCheckPointFromTxLog( fileSystem, workingDirectory );
-        }
-        else
-        {
-            File file = new File( workingDirectory, "neostore.propertystore.db.index.keys" );
-            truncateFile( fileSystem, file, "StringPropertyStore " + version );
-        }
-    }
-
     private GraphDatabaseService createGraphDatabaseService()
     {
         return new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( workingDirectory )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .newGraphDatabase();
     }
 }

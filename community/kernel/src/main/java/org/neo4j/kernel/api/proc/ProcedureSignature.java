@@ -46,6 +46,7 @@ public class ProcedureSignature
     private final Optional<String> deprecated;
     private final String[] allowed;
     private final Optional<String> description;
+    private final Optional<String> warning;
 
     public ProcedureSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
@@ -53,7 +54,8 @@ public class ProcedureSignature
             Mode mode,
             Optional<String> deprecated,
             String[] allowed,
-            Optional<String> description )
+            Optional<String> description,
+            Optional<String> warning )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -62,6 +64,7 @@ public class ProcedureSignature
         this.deprecated = deprecated;
         this.allowed = allowed;
         this.description = description;
+        this.warning = warning;
     }
 
     public QualifiedName name()
@@ -69,14 +72,20 @@ public class ProcedureSignature
         return name;
     }
 
-    public Mode mode() { return mode; }
+    public Mode mode()
+    {
+        return mode;
+    }
 
     public Optional<String> deprecated()
     {
         return deprecated;
     }
 
-    public String[] allowed() { return allowed; }
+    public String[] allowed()
+    {
+        return allowed;
+    }
 
     public List<FieldSignature> inputSignature()
     {
@@ -98,19 +107,26 @@ public class ProcedureSignature
         return description;
     }
 
+    public Optional<String> warning()
+    {
+        return warning;
+    }
+
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
 
         ProcedureSignature that = (ProcedureSignature) o;
-
-        return
-           name.equals( that.name ) &&
-           inputSignature.equals( that.inputSignature ) &&
-           outputSignature.equals( that.outputSignature ) &&
-           isVoid() == that.isVoid();
+        return name.equals( that.name ) && inputSignature.equals( that.inputSignature ) &&
+                outputSignature.equals( that.outputSignature ) && isVoid() == that.isVoid();
     }
 
     @Override
@@ -143,6 +159,7 @@ public class ProcedureSignature
         private Optional<String> deprecated = Optional.empty();
         private String[] allowed = new String[0];
         private Optional<String> description = Optional.empty();
+        private Optional<String> warning = Optional.empty();
 
         public Builder( String[] namespace, String name )
         {
@@ -155,13 +172,13 @@ public class ProcedureSignature
             return this;
         }
 
-        public Builder description(String description)
+        public Builder description( String description )
         {
             this.description = Optional.of( description );
             return this;
         }
 
-        public Builder deprecatedBy(String deprecated)
+        public Builder deprecatedBy( String deprecated )
         {
             this.deprecated = Optional.of( deprecated );
             return this;
@@ -170,14 +187,14 @@ public class ProcedureSignature
         /** Define an input field */
         public Builder in( String name, AnyType type )
         {
-            inputSignature.add( new FieldSignature( name, type) );
+            inputSignature.add( FieldSignature.inputField( name, type ) );
             return this;
         }
 
         /** Define an output field */
         public Builder out( String name, AnyType type )
         {
-            outputSignature.add( new FieldSignature( name, type ) );
+            outputSignature.add( FieldSignature.outputField( name, type ) );
             return this;
         }
 
@@ -193,15 +210,23 @@ public class ProcedureSignature
             return this;
         }
 
+        public Builder warning( String warning )
+        {
+            this.warning = Optional.of( warning );
+            return this;
+        }
+
         public ProcedureSignature build()
         {
-            return new ProcedureSignature(name, inputSignature, outputSignature, mode, deprecated, allowed, description );
+            return new ProcedureSignature( name, inputSignature, outputSignature, mode, deprecated, allowed,
+                    description, warning );
         }
     }
 
-    public static Builder procedureSignature(String ... namespaceAndName)
+    public static Builder procedureSignature( String... namespaceAndName )
     {
-        String[] namespace = namespaceAndName.length > 1 ? Arrays.copyOf( namespaceAndName, namespaceAndName.length - 1 ) : new String[0];
+        String[] namespace = namespaceAndName.length > 1 ?
+                             Arrays.copyOf( namespaceAndName, namespaceAndName.length - 1 ) : new String[0];
         String name = namespaceAndName[namespaceAndName.length - 1];
         return procedureSignature( namespace, name );
     }
@@ -211,12 +236,12 @@ public class ProcedureSignature
         return new Builder( name.namespace(), name.name() );
     }
 
-    public static Builder procedureSignature(String[] namespace, String name)
+    public static Builder procedureSignature( String[] namespace, String name )
     {
-        return new Builder(namespace, name);
+        return new Builder( namespace, name );
     }
 
-    public static QualifiedName procedureName( String ... namespaceAndName)
+    public static QualifiedName procedureName( String... namespaceAndName )
     {
         return procedureSignature( namespaceAndName ).build().name();
     }

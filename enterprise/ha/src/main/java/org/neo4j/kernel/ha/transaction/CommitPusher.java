@@ -31,10 +31,10 @@ import java.util.concurrent.FutureTask;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.masterTransactionPushing;
+import static org.neo4j.scheduler.JobScheduler.Groups.masterTransactionPushing;
 
 public class CommitPusher extends LifecycleAdapter
 {
@@ -44,16 +44,9 @@ public class CommitPusher extends LifecycleAdapter
         private final Slave slave;
         private final long txId;
 
-        public PullUpdateFuture( Slave slave, long txId )
+        PullUpdateFuture( Slave slave, long txId )
         {
-            super( new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    return null;
-                }
-            } );
+            super( () -> null );
             this.slave = slave;
             this.txId = txId;
         }
@@ -118,7 +111,7 @@ public class CommitPusher extends LifecycleAdapter
         {
             if ( e.getCause() instanceof RuntimeException )
             {
-                throw ((RuntimeException) e.getCause());
+                throw (RuntimeException) e.getCause();
             }
             else
             {

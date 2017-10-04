@@ -19,15 +19,14 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.System.getProperty;
 import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
 
 /**
@@ -39,14 +38,17 @@ import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
  */
 public class MuninnPageCacheStressIT
 {
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+
     @Test
-    public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
+    public void shouldHandleTheStressOfManyManyEvictions() throws Exception
     {
         DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
-        Condition condition = numberOfEvictions( monitor, 1_000_000 );
+        Condition condition = numberOfEvictions( monitor, 100_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
-                .withWorkingDirectory( new File( getProperty( "java.io.tmpdir" ) ) )
+                .withWorkingDirectory( testDirectory.directory() )
                 .with( monitor )
                 .with( condition )
                 .build();

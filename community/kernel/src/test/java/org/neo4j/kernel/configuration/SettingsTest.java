@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -44,14 +48,12 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
-import static org.neo4j.kernel.configuration.Settings.basePath;
-import static org.neo4j.kernel.configuration.Settings.isFile;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
@@ -62,6 +64,9 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class SettingsTest
 {
+    @Rule
+    public ExpectedException expect = ExpectedException.none();
+
     @Test
     public void parsesAbsolutePaths()
     {
@@ -75,15 +80,9 @@ public class SettingsTest
     public void doesntAllowRelativePaths()
     {
         File relativePath = new File( "some/path" );
-        try
-        {
-            Settings.PATH.apply( relativePath.toString() );
-            fail( "Expected an exception" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
+
+        expect.expect( IllegalArgumentException.class );
+        Settings.PATH.apply( relativePath.toString() );
     }
 
     @Test
@@ -91,14 +90,14 @@ public class SettingsTest
     {
         File theDefault = new File( "/some/path" ).getAbsoluteFile();
         Setting<File> setting = pathSetting( "some.setting", theDefault.getAbsolutePath() );
-        assertThat( setting.from( Config.empty() ), is( theDefault ) );
+        assertThat( Config.defaults().get( setting ), is( theDefault ) );
     }
 
     @Test
     public void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
     {
         Setting<File> setting = pathSetting( "some.setting", NO_DEFAULT );
-        assertThat( setting.from( Config.empty() ), is( nullValue() ) );
+        assertThat( Config.defaults().get( setting ), is( nullValue() ) );
     }
 
     @Test
@@ -116,15 +115,8 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "bar" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "bar" ) ) );
     }
 
     @Test
@@ -162,48 +154,33 @@ public class SettingsTest
     @Test
     public void testMin()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3", min( 2 ) );
+        Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "1" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
-
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "1" ) ) );
     }
 
     @Test
     public void testMax()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3", max( 5 ) );
+        Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( max( 5 ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "7" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "7" ) ) );
     }
 
     @Test
     public void testRange()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3", range( 2, 5 ) );
+        Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( range( 2, 5 ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
@@ -233,43 +210,56 @@ public class SettingsTest
     @Test
     public void testMatches()
     {
-        Setting<String> setting = setting( "foo", STRING, "abc", matches( "a*b*c*" ) );
+        Setting<String> setting = buildSetting( "foo", STRING, "abc" ).constraint(  matches( "a*b*c*" ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "aaabbbccc" ) ) ), equalTo( "aaabbbccc" ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "cba" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "cba" ) ) );
     }
 
-    @Test( expected = InvalidSettingException.class )
+    @Test
     public void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
-        Setting<Long> setting = setting( "foo.bar", DURATION, "1s", min( DURATION.apply( "3s" ) ) );
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "1s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
+        expect.expect( InvalidSettingException.class );
         setting.apply( map( stringMap() ) );
     }
 
-    @Test( expected = InvalidSettingException.class )
+    @Test
     public void testDurationWithValueNotWithinConstraint()
     {
-        Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
+        expect.expect( InvalidSettingException.class );
         setting.apply( map( stringMap( "foo.bar", "2s" ) ) );
     }
 
     @Test
     public void testDuration()
     {
-        Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
-        assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( 4000L ) );
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s").constraint( min( DURATION.apply( "3s" ) ) ).build();
+        assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( Duration.ofSeconds( 4 ) ) );
+    }
+
+    @Test
+    public void badDurationMissingNumber() throws Exception
+    {
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
+        expect.expect( InvalidSettingException.class );
+        expect.expectMessage( "Missing numeric value" );
+        setting.apply( map( stringMap( "foo.bar", "ms" ) ) );
+    }
+
+    @Test
+    public void badDurationInvalidUnit() throws Exception
+    {
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
+        expect.expect( InvalidSettingException.class );
+        expect.expectMessage( "Unrecognized unit 'gigaseconds'" );
+        setting.apply( map( stringMap( "foo.bar", "2gigaseconds" ) ) );
     }
 
     @Test
@@ -282,38 +272,20 @@ public class SettingsTest
     }
 
     @Test
-    public void testMandatory()
-    {
-        Setting<Integer> setting = setting( "foo", INTEGER, MANDATORY );
-
-        // Check that missing mandatory setting throws exception
-        try
-        {
-            setting.apply( map( stringMap() ) );
-            fail();
-        }
-        catch ( Exception e )
-        {
-            // Ok
-        }
-    }
-
-    @Test
     public void testPaths()
     {
         File directory = new File( "myDirectory" );
-        Setting<File> home = setting( "home", PATH, directory.getAbsolutePath() );
-        Setting<File> config = setting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath(),
-                basePath( home ), isFile );
+        Setting<File> config = buildSetting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath() ).constraint(
+                isFile ).build();
         assertThat( config.apply( map( stringMap() ) ).getAbsolutePath(),
-            equalTo( new File( directory, "config.properties" ).getAbsolutePath() ) );
+                equalTo( new File( directory, "config.properties" ).getAbsolutePath() ) );
     }
 
     @Test
     public void testInheritOneLevel()
     {
         Setting<Integer> root = setting( "root", INTEGER, "4" );
-        Setting<Integer> setting = setting( "foo", INTEGER, root );
+        Setting<Integer> setting = buildSetting( "foo", INTEGER ).inherits( root ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "1" ) ) ), equalTo( 1 ) );
@@ -325,10 +297,10 @@ public class SettingsTest
     {
         // Test hierarchies
         Setting<String> a = setting( "A", STRING, "A" ); // A defaults to A
-        Setting<String> b = setting( "B", STRING, "B", a ); // B defaults to B unless A is defined
-        Setting<String> c = setting( "C", STRING, "C", b ); // C defaults to C unless B is defined
-        Setting<String> d = setting( "D", STRING, b ); // D defaults to B
-        Setting<String> e = setting( "E", STRING, d ); // E defaults to D (hence B)
+        Setting<String> b = buildSetting( "B", STRING, "B" ).inherits( a ).build(); // B defaults to B unless A is defined
+        Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( b ).build(); // C defaults to C unless B is defined
+        Setting<String> d = buildSetting( "D", STRING ).inherits( b ).build(); // D defaults to B
+        Setting<String> e = buildSetting( "E", STRING ).inherits( d ).build(); // E defaults to D (hence B)
 
         assertThat( c.apply( map( stringMap( "C", "X" ) ) ), equalTo( "X" ) );
         assertThat( c.apply( map( stringMap( "B", "X" ) ) ), equalTo( "X" ) );
@@ -337,17 +309,6 @@ public class SettingsTest
 
         assertThat( d.apply( map( stringMap() ) ), equalTo( "B" ) );
         assertThat( e.apply( map( stringMap() ) ), equalTo( "B" ) );
-
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void testMandatoryApplyToInherited()
-    {
-        // Check that mandatory settings fail even in inherited cases
-        Setting<String> x = setting( "X", STRING, NO_DEFAULT );
-        Setting<String> y = setting( "Y", STRING, MANDATORY, x );
-
-        y.apply( always -> null );
     }
 
     @Test
@@ -375,8 +336,28 @@ public class SettingsTest
         assertThat( uri.apply( always -> null ).toString(), equalTo( "/db/data" ) );
     }
 
-    public static <From, To> Function<From, To> map( final Map<From, To> map )
+    @Test
+    public void onlySingleInheritanceShouldBeAllowed() throws Exception
     {
-        return from -> map.get( from );
+        Setting<String> a = setting( "A", STRING, "A" );
+        Setting<String> b = setting( "B", STRING, "B" );
+        expect.expect( AssertionError.class );
+        Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build();
     }
+
+    public static <From, To> Function<From,To> map( final Map<From,To> map )
+    {
+        return map::get;
+    }
+
+    private static BiFunction<File,Function<String,String>,File> isFile = ( path, settings ) ->
+    {
+        if ( path.exists() && !path.isFile() )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "%s must point to a file, not a directory", path.toString() ) );
+        }
+
+        return path;
+    };
 }

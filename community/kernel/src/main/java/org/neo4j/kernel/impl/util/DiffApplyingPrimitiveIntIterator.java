@@ -108,7 +108,7 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
 
     private boolean computeNextFromAddedElements()
     {
-        return addedElementsIterator.hasNext() ? next( (Integer) addedElementsIterator.next() ) : false;
+        return addedElementsIterator.hasNext() && next( (Integer) addedElementsIterator.next() );
     }
 
     @Override

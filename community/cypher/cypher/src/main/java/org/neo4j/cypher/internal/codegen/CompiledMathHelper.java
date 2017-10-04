@@ -23,8 +23,8 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.cypher.internal.frontend.v3_1.ArithmeticException;
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException;
+import org.neo4j.cypher.internal.util.v3_4.ArithmeticException;
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
 
 /**
  * This is a helper class used by compiled plans for doing basic math operations
@@ -49,11 +49,6 @@ public final class CompiledMathHelper
         if ( lhs == null || rhs == null )
         {
             return null;
-        }
-
-        if ( lhs instanceof String || rhs instanceof String )
-        {
-            return String.valueOf( lhs ) + String.valueOf( rhs );
         }
 
         //List addition
@@ -81,6 +76,11 @@ public final class CompiledMathHelper
             result.add( lhs );
             result.addAll( rhsList );
             return result;
+        }
+
+        if ( lhs instanceof String || rhs instanceof String )
+        {
+            return String.valueOf( lhs ) + String.valueOf( rhs );
         }
 
         // array addition
@@ -119,14 +119,14 @@ public final class CompiledMathHelper
                 {
                     throw new ArithmeticException(
                             String.format( "result of %d + %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
                 }
             }
             // other numbers we cannot add
         }
 
-        throw new CypherTypeException( "Cannot add " + lhs.getClass().getSimpleName() +
-                                       " and " + rhs.getClass().getSimpleName(), null );
+        throw new CypherTypeException(
+                String.format( "Don't know how to add `%s` and `%s`", lhs, rhs), null );
     }
 
     public static Object subtract( Object lhs, Object rhs )
@@ -156,7 +156,7 @@ public final class CompiledMathHelper
                 {
                     throw new ArithmeticException(
                             String.format( "result of %d - %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
                 }
             }
             // other numbers we cannot subtract
@@ -193,7 +193,7 @@ public final class CompiledMathHelper
                 {
                     throw new ArithmeticException(
                             String.format( "result of %d * %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
                 }
             }
             // other numbers we cannot multiply
@@ -252,11 +252,11 @@ public final class CompiledMathHelper
 
         if ( lhs instanceof Number && rhs instanceof Number )
         {
-            if ( lhs instanceof Double || rhs instanceof Double)
+            if ( lhs instanceof Double || rhs instanceof Double )
             {
                 return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
             }
-            else if (lhs instanceof Float || rhs instanceof Float )
+            else if ( lhs instanceof Float || rhs instanceof Float )
             {
                 return ((Number) lhs).floatValue() % ((Number) rhs).floatValue();
             }

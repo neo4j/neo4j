@@ -27,6 +27,11 @@ import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
 
 public class Followers
 {
+
+    private Followers()
+    {
+    }
+
     // TODO: This method is inefficient.. we should not have to update this state by a complete
     // TODO: iteration each time. Instead it should be updated as a direct response to each
     // TODO: append response.

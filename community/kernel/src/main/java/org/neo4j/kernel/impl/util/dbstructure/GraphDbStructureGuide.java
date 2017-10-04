@@ -31,30 +31,24 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
 public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {
-    private static RelationshipType WILDCARD_REL_TYPE = new RelationshipType()
-    {
-        @Override
-        public String name()
-        {
-            return "";
-        }
-    };
+    private static RelationshipType WILDCARD_REL_TYPE = () -> "";
 
     private final GraphDatabaseService db;
     private final ThreadToStatementContextBridge bridge;
@@ -88,9 +82,10 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             showSchema( visitor, read );
             showStatistics( visitor, read );
         }
-        catch (KernelException e)
+        catch ( KernelException e )
         {
-            throw new IllegalStateException( "Kernel exception when traversing database schema structure and statistics.  This is not expected to happen.", e );
+            throw new IllegalStateException( "Kernel exception when traversing database schema structure and statistics. " +
+                    "This is not expected to happen.", e );
         }
     }
 
@@ -133,57 +128,41 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         TokenNameLookup nameLookup = new StatementTokenNameLookup( read );
 
         showIndices( visitor, read, nameLookup );
-        showUniqueIndices( visitor, read, nameLookup );
         showUniqueConstraints( visitor, read, nameLookup );
     }
 
-    private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
+    private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup )
+            throws IndexNotFoundKernelException
     {
-        Iterator<IndexDescriptor> indexDescriptors = read.indexesGetAll();
-        while ( indexDescriptors.hasNext() )
+        for ( IndexDescriptor descriptor : loop( IndexDescriptor.sortByType( read.indexesGetAll() ) ) )
         {
-            IndexDescriptor descriptor = indexDescriptors.next();
-            String userDescription = descriptor.userDescription( nameLookup );
+            String userDescription = descriptor.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
             long size = read.indexSize( descriptor );
-            visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage, size );
-        }
-    }
-
-    private void showUniqueIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
-
-    {
-        Iterator<IndexDescriptor> indexDescriptors = read.uniqueIndexesGetAll();
-        while ( indexDescriptors.hasNext() )
-        {
-            IndexDescriptor descriptor = indexDescriptors.next();
-            String userDescription = descriptor.userDescription( nameLookup );
-            double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
-            long size = read.indexSize( descriptor );
-            visitor.visitUniqueIndex( descriptor, userDescription, uniqueValuesPercentage, size );
+            visitor.visitIndex( descriptor, userDescription, uniqueValuesPercentage, size );
         }
     }
 
     private void showUniqueConstraints( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup )
     {
-        Iterator<PropertyConstraint> constraints = read.constraintsGetAll();
+        Iterator<ConstraintDescriptor> constraints = read.constraintsGetAll();
         while ( constraints.hasNext() )
         {
-            PropertyConstraint constraint = constraints.next();
-            String userDescription = constraint.userDescription( nameLookup );
+            ConstraintDescriptor constraint = constraints.next();
+            String userDescription = constraint.prettyPrint( nameLookup );
 
-            if ( constraint instanceof UniquenessConstraint )
+            if ( constraint instanceof UniquenessConstraintDescriptor )
             {
-                visitor.visitUniqueConstraint( (UniquenessConstraint) constraint, userDescription );
+                visitor.visitUniqueConstraint( (UniquenessConstraintDescriptor) constraint, userDescription );
             }
-            else if ( constraint instanceof NodePropertyExistenceConstraint )
+            else if ( constraint instanceof NodeExistenceConstraintDescriptor )
             {
-                NodePropertyExistenceConstraint existenceConstraint = (NodePropertyExistenceConstraint) constraint;
+                NodeExistenceConstraintDescriptor existenceConstraint = (NodeExistenceConstraintDescriptor) constraint;
                 visitor.visitNodePropertyExistenceConstraint( existenceConstraint, userDescription );
             }
-            else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
+            else if ( constraint instanceof RelExistenceConstraintDescriptor )
             {
-                RelationshipPropertyExistenceConstraint existenceConstraint = (RelationshipPropertyExistenceConstraint) constraint;
+                RelExistenceConstraintDescriptor existenceConstraint = (RelExistenceConstraintDescriptor) constraint;
                 visitor.visitRelationshipPropertyExistenceConstraint( existenceConstraint, userDescription );
             }
             else
@@ -250,17 +229,21 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         visitor.visitRelCount( ANY_LABEL, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void leftSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
+    private void leftSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId,
+            RelationshipType relType, int relTypeId )
     {
-        String userDescription = format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
+        String userDescription =
+                format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
         long amount = read.countsForRelationship( labelId, relTypeId, ANY_LABEL );
 
         visitor.visitRelCount( labelId, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void rightSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
+    private void rightSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId,
+            RelationshipType relType, int relTypeId )
     {
-        String userDescription = format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
+        String userDescription =
+                format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
         long amount = read.countsForRelationship( ANY_LABEL, relTypeId, labelId );
 
         visitor.visitRelCount( ANY_LABEL, relTypeId, labelId, userDescription, amount );

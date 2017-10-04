@@ -170,7 +170,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      */
     static class StateChangedTransactionFailureException extends TransactionFailureException implements Status.HasStatus
     {
-        public StateChangedTransactionFailureException( String msg )
+        StateChangedTransactionFailureException( String msg )
         {
             super( msg );
         }

@@ -21,6 +21,7 @@ package org.neo4j.server.rest.discovery;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Answers;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,7 +31,11 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
@@ -50,6 +55,7 @@ public class DiscoveryServiceTest
     private AdvertisedSocketAddress boltAddress;
     private URI dataUri;
     private URI managementUri;
+    private final NeoServer neoServer = mock( NeoServer.class, Answers.RETURNS_DEEP_STUBS.get() );
 
     @Before
     public void setUp() throws URISyntaxException
@@ -58,29 +64,32 @@ public class DiscoveryServiceTest
         boltAddress = new AdvertisedSocketAddress( "www.example.com", 7687 );
         dataUri = new URI( "/data" );
         managementUri = new URI( "/management" );
+
+        // Setup NeoServer
+        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
+        when( portRegister.getLocalAddress( "bolt" ) ).thenReturn( new HostnamePort( "localhost", 7687 ) );
+        when( neoServer.getDatabase().getGraph().getDependencyResolver().resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegister );
     }
 
     private Config mockConfig() throws URISyntaxException
     {
-        Config config = Config.defaults();
-
         HashMap<String,String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(),
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).advertised_address.name(),
                 boltAddress.toString() );
         settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
         settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
 
-        config.augment( settings );
-        return config;
+        return Config.defaults( settings );
     }
 
     private DiscoveryService testDiscoveryService() throws URISyntaxException
     {
         Config mockConfig = mockConfig();
-        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ) );
+        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
+                neoServer );
     }
 
     @Test
@@ -136,7 +145,7 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com:5435";
         DiscoveryService ds = new DiscoveryService( mockConfig,
-                new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ) );
+                new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ), neoServer );
 
         Response response = ds.redirectToBrowser();
 

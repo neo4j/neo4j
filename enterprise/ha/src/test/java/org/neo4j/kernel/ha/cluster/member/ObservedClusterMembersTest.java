@@ -79,9 +79,9 @@ public class ObservedClusterMembersTest
         new ObservedClusterMembers( logProvider, cluster, heartbeat, clusterMemberEvents, null );
 
         // then
-        verify( cluster ).addClusterListener( Mockito.<ClusterListener>any() );
-        verify( heartbeat ).addHeartbeatListener( Mockito.<HeartbeatListener>any() );
-        verify( clusterMemberEvents ).addClusterMemberListener( Mockito.<ClusterMemberListener>any() );
+        verify( cluster ).addClusterListener( Mockito.any() );
+        verify( heartbeat ).addHeartbeatListener( Mockito.any() );
+        verify( clusterMemberEvents ).addClusterMemberListener( Mockito.any() );
     }
 
     @Test

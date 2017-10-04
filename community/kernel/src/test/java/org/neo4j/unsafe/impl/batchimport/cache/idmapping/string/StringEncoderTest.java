@@ -49,7 +49,8 @@ public class StringEncoderTest
 
         // WHEN
         PrimitiveLongSet encoded = Primitive.longSet();
-        int total = 1_000, duplicates = 0;
+        int total = 1_000;
+        int duplicates = 0;
         for ( int i = 0; i < total; i++ )
         {
             // THEN
@@ -68,7 +69,7 @@ public class StringEncoderTest
         char[] chars = new char[length];
         for ( int i = 0; i < length; i++ )
         {
-            int ch = 'a' + (i%20);
+            int ch = 'a' + (i % 20);
             chars[i] = (char) ch;
         }
         return new String( chars );

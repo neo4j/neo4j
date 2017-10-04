@@ -19,16 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Iterator;
+import java.util.Arrays;
 
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -38,15 +32,26 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 
-import static org.neo4j.helpers.collection.Iterators.loop;
+import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class DataIntegrityValidatingStatementOperations implements
     KeyWriteOperations,
@@ -90,7 +95,8 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void labelCreateForName( KernelStatement state, String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException
+    public void labelCreateForName( KernelStatement state, String labelName, int id )
+            throws IllegalTokenNameException, TooManyLabelsException
     {
         keyWriteDelegate.labelCreateForName( state, labelName, id );
     }
@@ -108,164 +114,145 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKey )
-            throws AlreadyIndexedException, AlreadyConstrainedException
+    public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
-        checkIndexExistence( state, OperationContext.INDEX_CREATION, labelId, propertyKey );
-        return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );
+        assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
+        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, descriptor );
+        return schemaWriteDelegate.indexCreate( state, descriptor );
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
     {
         try
         {
-            assertIsNotUniqueIndex( descriptor, schemaReadDelegate.uniqueIndexesGetForLabel(
-                    state, descriptor.getLabelId() ) );
-            assertIndexExists( descriptor, schemaReadDelegate.indexesGetForLabel( state, descriptor.getLabelId() ) );
+            IndexDescriptor existingIndex =
+                    schemaReadDelegate.indexGetForSchema( state, index.schema() );
+
+            if ( existingIndex == null )
+            {
+                throw new NoSuchIndexException( index.schema() );
+            }
+
+            if ( existingIndex.type() == UNIQUE )
+            {
+                if ( schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, existingIndex ) != null )
+                {
+                    throw new IndexBelongsToConstraintException( index.schema() );
+                }
+            }
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
-            throw new DropIndexFailureException( descriptor, e );
+            throw new DropIndexFailureException( index.schema(), e );
         }
-        schemaWriteDelegate.indexDrop( state, descriptor );
+        schemaWriteDelegate.indexDrop( state, index );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
     {
-        schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
+        schemaWriteDelegate.uniqueIndexDrop( state, index );
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKey )
-            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate(
+            KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
-        Iterator<NodePropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
-                state, labelId, propertyKey );
-        while ( constraints.hasNext() )
-        {
-            PropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof UniquenessConstraint )
-            {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
-                        new StatementTokenNameLookup( state.readOperations() ) );
-            }
-        }
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
+        assertConstraintDoesNotExist( state, constraint );
+
+        // It is not allowed to create node key constraints on indexed label/property pairs
+        assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
+
+        return schemaWriteDelegate.nodeKeyConstraintCreate( state, descriptor );
+    }
+
+    @Override
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
+            KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
+    {
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        assertConstraintDoesNotExist( state, constraint );
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        checkIndexExistence( state, OperationContext.CONSTRAINT_CREATION, labelId, propertyKey );
+        assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
 
-        return schemaWriteDelegate.uniquePropertyConstraintCreate( state, labelId, propertyKey );
+        return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
-            int propertyKey ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( KernelStatement state,
+            LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException
     {
-        Iterator<NodePropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
-                state, labelId, propertyKey );
-        while ( constraints.hasNext() )
-        {
-            NodePropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof NodePropertyExistenceConstraint )
-            {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
-                        new StatementTokenNameLookup( state.readOperations() ) );
-            }
-        }
-
-        return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, labelId, propertyKey );
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
+        assertConstraintDoesNotExist( state, constraint );
+        return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate( KernelStatement state,
+            RelationTypeSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException
     {
-        Iterator<RelationshipPropertyConstraint> constraints = schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey(
-                state, relTypeId, propertyKeyId );
-        while ( constraints.hasNext() )
-        {
-            RelationshipPropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof RelationshipPropertyExistenceConstraint )
-            {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
-                        new StatementTokenNameLookup( state.readOperations() ) );
-            }
-        }
-
-        return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, relTypeId, propertyKeyId );
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
+        assertConstraintDoesNotExist( state, constraint );
+        return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException
+    public void constraintDrop( KernelStatement state, ConstraintDescriptor descriptor ) throws DropConstraintFailureException
     {
         try
         {
-            assertConstraintExists( constraint, schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
-                    state, constraint.label(), constraint.propertyKey() ) );
+            assertConstraintExists( state, descriptor );
         }
         catch ( NoSuchConstraintException e )
         {
-            throw new DropConstraintFailureException( constraint, e );
+            throw new DropConstraintFailureException( descriptor , e );
         }
-        schemaWriteDelegate.constraintDrop( state, constraint );
+        schemaWriteDelegate.constraintDrop( state, descriptor );
     }
 
-    @Override
-    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
-            throws DropConstraintFailureException
-    {
-        try
-        {
-            assertConstraintExists( constraint, schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey(
-                    state, constraint.relationshipType(), constraint.propertyKey() ) );
-        }
-        catch ( NoSuchConstraintException e )
-        {
-            throw new DropConstraintFailureException( constraint, e );
-        }
-        schemaWriteDelegate.constraintDrop( state, constraint );
-    }
-
-    private void checkIndexExistence( KernelStatement state, OperationContext context, int labelId, int propertyKey )
+    private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
+            LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )
+        IndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );
+        if ( existingIndex != null )
         {
-            if ( descriptor.getPropertyKeyId() == propertyKey )
+            // OK so we found a matching constraint index. We check whether or not it has an owner
+            // because this may have been a left-over constraint index from a previously failed
+            // constraint creation, due to crash or similar, hence the missing owner.
+            if ( existingIndex.type() == UNIQUE )
+            {
+                if ( context != CONSTRAINT_CREATION || constraintIndexHasOwner( state, existingIndex ) )
+                {
+                    throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
+                            context, new StatementTokenNameLookup( state.readOperations() ) );
+                }
+            }
+            else
             {
                 throw new AlreadyIndexedException( descriptor, context );
-            }
-        }
-        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId ) ) )
-        {
-            if ( descriptor.getPropertyKeyId() == propertyKey )
-            {
-                // OK so we found a matching constraint index. We check whether or not it has an owner
-                // because this may have been a left-over constraint index from a previously failed
-                // constraint creation, due to crash or similar, hence the missing owner.
-                if ( context != OperationContext.CONSTRAINT_CREATION || constraintIndexHasOwner( state, descriptor ) )
-                {
-                    throw new AlreadyConstrainedException(
-                            new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), context,
-                            new StatementTokenNameLookup( state.readOperations() ) );
-                }
             }
         }
     }
 
     private boolean constraintIndexHasOwner( KernelStatement state, IndexDescriptor descriptor )
     {
-        try
-        {
-            return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            throw new IllegalStateException( "Unexpectedly index " + descriptor +
-                    " wasn't found right after getting it", e );
-        }
+        return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
     }
 
     private String checkValidTokenName( String name ) throws IllegalTokenNameException
@@ -277,44 +264,32 @@ public class DataIntegrityValidatingStatementOperations implements
         return name;
     }
 
-    private void assertIsNotUniqueIndex( IndexDescriptor descriptor, Iterator<IndexDescriptor> uniqueIndexes )
-            throws IndexBelongsToConstraintException
-
+    private void assertConstraintDoesNotExist( KernelStatement state, ConstraintDescriptor constraint )
+            throws AlreadyConstrainedException
     {
-        while ( uniqueIndexes.hasNext() )
+        if ( schemaReadDelegate.constraintExists( state, constraint ) )
         {
-            IndexDescriptor uniqueIndex = uniqueIndexes.next();
-            if ( uniqueIndex.getPropertyKeyId() == descriptor.getPropertyKeyId() )
-            {
-                throw new IndexBelongsToConstraintException( descriptor );
-            }
+            throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
+                    new StatementTokenNameLookup( state.readOperations() ) );
         }
     }
 
-    private void assertIndexExists( IndexDescriptor descriptor, Iterator<IndexDescriptor> indexes )
-            throws NoSuchIndexException
-    {
-        for ( IndexDescriptor existing : loop( indexes ) )
-        {
-            if ( existing.getPropertyKeyId() == descriptor.getPropertyKeyId() )
-            {
-                return;
-            }
-        }
-        throw new NoSuchIndexException( descriptor );
-    }
-
-    private <C extends PropertyConstraint> void assertConstraintExists( C constraint, Iterator<C> existingConstraints )
+    private void assertConstraintExists( KernelStatement state, ConstraintDescriptor constraint )
             throws NoSuchConstraintException
     {
-        while ( existingConstraints.hasNext() )
+        if ( !schemaReadDelegate.constraintExists( state, constraint ) )
         {
-            C existing = existingConstraints.next();
-            if ( existing.equals( constraint ) )
-            {
-                return;
-            }
+            throw new NoSuchConstraintException( constraint );
         }
-        throw new NoSuchConstraintException( constraint );
+    }
+
+    private void assertValidDescriptor( SchemaDescriptor descriptor, OperationContext context )
+            throws RepeatedPropertyInCompositeSchemaException
+    {
+        int numUnique = Arrays.stream( descriptor.getPropertyIds() ).distinct().toArray().length;
+        if ( numUnique != descriptor.getPropertyIds().length )
+        {
+            throw new RepeatedPropertyInCompositeSchemaException( descriptor, context );
+        }
     }
 }

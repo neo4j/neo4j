@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.extension.dependency;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensions;
 
 import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
@@ -37,27 +37,26 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
  */
 public class HighestSelectionStrategy implements DependencyResolver.SelectionStrategy
 {
-    private static final DependencyResolver.SelectionStrategy instance = new HighestSelectionStrategy();
-
-    public static DependencyResolver.SelectionStrategy getInstance()
-    {
-        return instance;
-    }
+    public static final DependencyResolver.SelectionStrategy INSTANCE = new HighestSelectionStrategy();
 
     private HighestSelectionStrategy()
     {
     }
 
-    public <T> T select( Class<T> type, Iterable<T> candidates )
-            throws IllegalArgumentException
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException
     {
-        List<Comparable> all = (List<Comparable>) Iterables.asList( candidates );
-        if ( all.isEmpty() )
+        List<T> sorted = (List<T>) StreamSupport.stream( candidates.spliterator(), false )
+                .map( ts -> (Comparable<T>) ts )
+                .sorted()
+                .collect( Collectors.toList() );
+
+        if ( sorted.isEmpty() )
         {
             throw new IllegalArgumentException( "Could not resolve dependency of type: " +
-                                                type.getName() + ". " + servicesClassPathEntryInformation() );
+                    type.getName() + ". " + servicesClassPathEntryInformation() );
         }
-        Collections.sort( all );
-        return (T) all.get( all.size() - 1 );
+        return sorted.get( sorted.size() - 1 );
     }
 }

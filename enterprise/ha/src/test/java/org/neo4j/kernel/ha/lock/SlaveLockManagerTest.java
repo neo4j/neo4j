@@ -69,7 +69,8 @@ public class SlaveLockManagerTest
     @Test
     public void doesNotCreateClientsAfterShutdown() throws Throwable
     {
-        SlaveLockManager slaveLockManager = newSlaveLockManager( new CommunityLockManger() );
+        SlaveLockManager slaveLockManager =
+                newSlaveLockManager( new CommunityLockManger( Config.defaults(), Clocks.systemClock() ) );
 
         assertNotNull( slaveLockManager.newClient() );
 
@@ -89,6 +90,6 @@ public class SlaveLockManagerTest
     private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
         return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard,
-                NullLogProvider.getInstance(), Config.empty() );
+                NullLogProvider.getInstance(), Config.defaults() );
     }
 }

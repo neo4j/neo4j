@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -40,23 +42,35 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public abstract class KernelIntegrationTest
 {
-    @SuppressWarnings("deprecation")
+    protected final TestDirectory testDir = TestDirectory.testDirectory();
+    protected final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( fileSystemRule );
+    @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
-    protected ThreadToStatementContextBridge statementContextSupplier;
+    ThreadToStatementContextBridge statementContextSupplier;
     protected KernelAPI kernel;
     protected IndexingService indexingService;
 
     private KernelTransaction transaction;
     private Statement statement;
-    private EphemeralFileSystemAbstraction fs;
     private DbmsOperations dbmsOperations;
+
+    protected Statement statementInNewTransaction( SecurityContext securityContext ) throws KernelException
+    {
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, securityContext );
+        statement = transaction.acquireStatement();
+        return statement;
+    }
 
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
@@ -67,7 +81,7 @@ public abstract class KernelIntegrationTest
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.writeToken() );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.write() );
         statement = transaction.acquireStatement();
         return statement.dataWriteOperations();
     }
@@ -131,7 +145,6 @@ public abstract class KernelIntegrationTest
     @Before
     public void setup()
     {
-        fs = new EphemeralFileSystemAbstraction();
         startDb();
     }
 
@@ -139,38 +152,36 @@ public abstract class KernelIntegrationTest
     public void cleanup() throws Exception
     {
         stopDb();
-        fs.shutdown();
     }
 
     protected void startDb()
     {
-        db = (GraphDatabaseAPI) createGraphDatabase( fs );
+        db = (GraphDatabaseAPI) createGraphDatabase();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         dbmsOperations = db.getDependencyResolver().resolveDependency( DbmsOperations.class );
     }
 
-    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    protected GraphDatabaseService createGraphDatabase()
     {
-        TestGraphDatabaseBuilder graphDatabaseBuilder = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory()
-                .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder();
+        GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
+                .newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
         return configure( graphDatabaseBuilder ).newGraphDatabase();
     }
 
-    protected TestGraphDatabaseBuilder configure( TestGraphDatabaseBuilder graphDatabaseBuilder )
+    protected GraphDatabaseBuilder configure( GraphDatabaseBuilder graphDatabaseBuilder )
     {
         return graphDatabaseBuilder;
     }
 
-    protected void dbWithNoCache() throws TransactionFailureException
+    void dbWithNoCache() throws TransactionFailureException
     {
         stopDb();
         startDb();
     }
 
-    protected void stopDb() throws TransactionFailureException
+    private void stopDb() throws TransactionFailureException
     {
         if ( transaction != null )
         {

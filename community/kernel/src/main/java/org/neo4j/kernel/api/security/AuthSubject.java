@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.security;
 
-import java.io.IOException;
-
-import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-
 public interface AuthSubject
 {
     void logout();
@@ -32,16 +27,8 @@ public interface AuthSubject
     AuthenticationResult getAuthenticationResult();
 
     /**
-     * Set the password for the AuthSubject
-     * @param password The new password
-     * @param requirePasswordChange
-     * @throws IOException If the new credentials cannot be serialized to disk.
-     * @throws InvalidArgumentsException If the new password is invalid.
-     */
-    void setPassword( String password, boolean requirePasswordChange ) throws IOException, InvalidArgumentsException;
-
-    /**
-     * Changes the {@link AuthenticationResult} status to {@link AuthenticationResult#SUCCESS SUCCESS} if it was {@link AuthenticationResult#PASSWORD_CHANGE_REQUIRED PASSWORD_CHANGE_REQUIRED}.
+     * Changes the {@link AuthenticationResult} status to {@link AuthenticationResult#SUCCESS SUCCESS}
+     * if it was {@link AuthenticationResult#PASSWORD_CHANGE_REQUIRED PASSWORD_CHANGE_REQUIRED}.
      * This allows users that changed their password to become authorized for continued processing.
      */
     void setPasswordChangeNoLongerRequired();
@@ -58,16 +45,6 @@ public interface AuthSubject
      */
     String username();
 
-//    /**
-//     * Ensure that the provided username is the name of an existing user known to the system.
-//     *
-//     * @param username a username
-//     * @throws InvalidArgumentsException if the provided user name is not the name of an existing user
-//     */
-//    default void ensureUserExistsWithName( String username ) throws InvalidArgumentsException {
-//        throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
-//    }
-
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
@@ -82,13 +59,6 @@ public interface AuthSubject
         public AuthenticationResult getAuthenticationResult()
         {
             return AuthenticationResult.FAILURE;
-        }
-
-        @Override
-        public void setPassword( String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
-        {
-            throw new AuthorizationViolationException( "Anonymous cannot change password" );
         }
 
         @Override
@@ -130,12 +100,6 @@ public interface AuthSubject
         public AuthenticationResult getAuthenticationResult()
         {
             return AuthenticationResult.SUCCESS;
-        }
-
-        @Override
-        public void setPassword( String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
-        {
         }
 
         @Override

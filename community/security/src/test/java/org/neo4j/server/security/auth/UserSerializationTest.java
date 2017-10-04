@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;
@@ -66,18 +68,18 @@ public class UserSerializationTest
         byte[] hash2 = new byte[] { (byte) 0x0e, (byte) 0x1f, (byte) 0xff, (byte) 0xc2, (byte) 0x3e };
 
         // When
-        List<User> deserialized = serialization.deserializeRecords( UTF8.encode(
-                ("Mike:SHA-256,FE0056C37E,A543:\n" +
-                        "Steve:SHA-256,FE0056C37E,A543:nice_guy,password_change_required\n" +
-                        "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n") ) );
+        List<User> deserialized = serialization.deserializeRecords( UTF8.encode( "Mike:SHA-256,FE0056C37E,A543:\n" +
+                "Steve:SHA-256,FE0056C37E,A543:nice_guy,password_change_required\n" +
+                "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n" ) );
 
         // Then
-        assertThat( deserialized, equalTo( asList(
-                new User.Builder( "Mike", new Credential( salt1, hash1 )).build(),
-                new User.Builder( "Steve", new Credential( salt1, hash1 ))
-                        .withRequiredPasswordChange( true ).withFlag("nice_guy").build(),
-                new User.Builder( "Bob", new Credential( salt2, hash2 ))
-                        .withRequiredPasswordChange( true ).build()
+        assertThat( deserialized, equalTo(
+                asList( new User.Builder( "Mike", new Credential( salt1, hash1 ) ).build(),
+                        new User.Builder( "Steve", new Credential( salt1, hash1 ) )
+                            .withRequiredPasswordChange( true ).withFlag("nice_guy").build(),
+                        new User.Builder( "Bob", new Credential( salt2, hash2 ) )
+                                .withRequiredPasswordChange( true )
+                                .build()
         ) ) );
     }
 }

@@ -39,6 +39,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.metrics.output.EventReporter;
+import org.neo4j.metrics.source.causalclustering.CatchUpMetrics;
 import org.neo4j.metrics.source.causalclustering.CoreMetrics;
 import org.neo4j.metrics.source.causalclustering.ReadReplicaMetrics;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
@@ -197,11 +198,13 @@ public class Neo4jMetricsBuilder
             if ( mode == OperationalMode.core )
             {
                 life.add( new CoreMetrics( dependencies.monitors(), registry, dependencies.raft() ) );
+                life.add( new CatchUpMetrics( dependencies.monitors(), registry ) );
                 result = true;
             }
             else if ( mode == OperationalMode.read_replica )
             {
                 life.add( new ReadReplicaMetrics( dependencies.monitors(), registry ) );
+                life.add( new CatchUpMetrics( dependencies.monitors(), registry ) );
                 result = true;
             }
             else

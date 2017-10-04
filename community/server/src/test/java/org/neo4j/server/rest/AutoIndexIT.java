@@ -19,10 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import java.util.List;
-
 import org.junit.Test;
 
+import java.util.List;
+
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -148,15 +151,14 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
         }
         try ( Transaction tx = graphdb().beginTx() )
         {
-            gen.get()
-                    .expectedStatus( 405 )
-                    .payload( createJsonStringFor( getRelationshipUri( data.get()
-                            .get( "I" )
-                            .getRelationships()
-                            .iterator()
-                            .next() ), "name", "I" ) )
-                    .post( postRelationshipIndexUri( indexName ) )
-                    .entity();
+            ResourceIterable<Relationship> relationships =
+                    (ResourceIterable<Relationship>) data.get().get( "I" ).getRelationships();
+            try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
+            {
+                gen.get().expectedStatus( 405 )
+                        .payload( createJsonStringFor( getRelationshipUri( resourceIterator.next() ), "name", "I" ) )
+                        .post( postRelationshipIndexUri( indexName ) ).entity();
+            }
         }
     }
 
@@ -206,12 +208,13 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
 
         try ( Transaction tx = graphdb().beginTx() )
         {
-            long id = data.get()
-                    .get( "I" )
-                    .getRelationships()
-                    .iterator()
-                    .next()
-                    .getId();
+            ResourceIterable<Relationship> relationshipIterable =
+                    (ResourceIterable<Relationship>) data.get().get( "I" ).getRelationships();
+            long id;
+            try ( ResourceIterator<Relationship> resourceIterator = relationshipIterable.iterator() )
+            {
+                id = resourceIterator.next().getId();
+            }
             String indexName = graphdb().index()
                     .getRelationshipAutoIndexer()
                     .getAutoIndex()

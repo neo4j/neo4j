@@ -38,7 +38,7 @@ class Worker implements Runnable
     private final Monitor monitor;
     private final int numOpsPerTx;
 
-    public Worker( GraphDatabaseService db, RandomMutation randomMutation, Monitor monitor, int numOpsPerTx )
+    Worker( GraphDatabaseService db, RandomMutation randomMutation, Monitor monitor, int numOpsPerTx )
     {
         this.db = db;
         this.randomMutation = randomMutation;

@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
-
-import java.util.ArrayList;
-import java.util.Iterator;
 
 public class PathRepresentation<P extends Path> extends ObjectRepresentation // implements
                                                                              // ExtensibleRepresentation
@@ -37,22 +37,6 @@ public class PathRepresentation<P extends Path> extends ObjectRepresentation // 
         super( RepresentationType.PATH );
         this.path = path;
     }
-
-    /*
-    @Override
-    public String getIdentity()
-    {
-        StringBuilder result = new StringBuilder( Long.toString( path.startNode().getId() ) );
-        String sep = "+";
-        for ( Relationship rel : path.relationships() )
-        {
-            result.append( sep ).append( Long.toString( rel.getId() ) );
-            sep = "-";
-        }
-        result.append( "+" ).append( Long.toString( path.endNode().getId() ) );
-        return result.toString();
-    }
-    */
 
     protected P getPath()
     {
@@ -117,13 +101,17 @@ public class PathRepresentation<P extends Path> extends ObjectRepresentation // 
         Node startNode;
         Node endNode = nodeIterator.next();
 
-        while ( relationshipIterator.hasNext() ) {
+        while ( relationshipIterator.hasNext() )
+        {
             rel = relationshipIterator.next();
             startNode = endNode;
             endNode = nodeIterator.next();
-            if ( rel.getStartNode().equals(startNode) && rel.getEndNode().equals(endNode) ) {
+            if ( rel.getStartNode().equals(startNode) && rel.getEndNode().equals(endNode) )
+            {
                 directionStrings.add( "->" );
-            } else {
+            }
+            else
+            {
                 directionStrings.add( "<-" );
             }
         }

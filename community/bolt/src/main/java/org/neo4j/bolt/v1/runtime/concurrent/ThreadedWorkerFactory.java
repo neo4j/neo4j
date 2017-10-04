@@ -21,16 +21,17 @@ package org.neo4j.bolt.v1.runtime.concurrent;
 
 import java.time.Clock;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.THREAD_ID;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.sessionWorker;
+import static org.neo4j.scheduler.JobScheduler.Group.THREAD_ID;
+import static org.neo4j.scheduler.JobScheduler.Groups.sessionWorker;
 
 /**
  * A {@link WorkerFactory} implementation that creates one thread for every session started, requests are then executed
@@ -45,21 +46,23 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.sessionWorker;
  */
 public class ThreadedWorkerFactory implements WorkerFactory
 {
-    private BoltFactory connector;
-    private JobScheduler scheduler;
-    private LogService logging;
+    private final BoltFactory connector;
+    private final JobScheduler scheduler;
+    private final LogService logging;
+    private final Clock clock;
 
-    public ThreadedWorkerFactory( BoltFactory connector, JobScheduler scheduler, LogService logging )
+    public ThreadedWorkerFactory( BoltFactory connector, JobScheduler scheduler, LogService logging, Clock clock )
     {
         this.connector = connector;
         this.scheduler = scheduler;
         this.logging = logging;
+        this.clock = clock;
     }
 
     @Override
-    public BoltWorker newWorker( String connectionDescriptor, Runnable onClose )
+    public BoltWorker newWorker( BoltChannel boltChannel )
     {
-        BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, Clock.systemUTC() );
+        BoltStateMachine machine = connector.newMachine( boltChannel, clock );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );
 
         scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );

@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -57,19 +59,15 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        node1.createRelationshipTo( node2,  MyRelTypes.TEST );
+        node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel1.delete();
         newTransaction();
-        assertTrue( node1.getRelationships().iterator().hasNext() );
-        assertTrue( node2.getRelationships().iterator().hasNext() );
-        assertTrue( node1.getRelationships(
-            MyRelTypes.TEST ).iterator().hasNext() );
-        assertTrue( node2.getRelationships(
-            MyRelTypes.TEST ).iterator().hasNext() );
-        assertTrue( node1.getRelationships(
-            MyRelTypes.TEST, Direction.OUTGOING ).iterator().hasNext() );
-        assertTrue( node2.getRelationships(
-            MyRelTypes.TEST, Direction.INCOMING ).iterator().hasNext() );
+        assertHasNext( (ResourceIterable<Relationship>) node1.getRelationships() );
+        assertHasNext( (ResourceIterable<Relationship>) node2.getRelationships() );
+        assertHasNext( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST ) );
+        assertHasNext( (ResourceIterable<Relationship>) node2.getRelationships( MyRelTypes.TEST ) );
+        assertHasNext( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
+        assertHasNext( (ResourceIterable<Relationship>) node2.getRelationships( MyRelTypes.TEST, Direction.INCOMING ) );
     }
 
     @Test
@@ -88,9 +86,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         newTransaction();
         allGetRelationshipMethods( node1, Direction.OUTGOING );
         allGetRelationshipMethods( node2, Direction.INCOMING );
-        node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ).iterator().next().delete();
-        node1.getRelationships( MyRelTypes.TEST_TRAVERSAL, Direction.OUTGOING ).iterator().next().delete();
-        node1.getRelationships( MyRelTypes.TEST2, Direction.OUTGOING ).iterator().next().delete();
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST_TRAVERSAL, Direction.OUTGOING ) );
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST2, Direction.OUTGOING ) );
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
         node1.createRelationshipTo( node2, MyRelTypes.TEST2 );
@@ -123,12 +121,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         newTransaction();
         allGetRelationshipMethods2( node1, Direction.OUTGOING );
         allGetRelationshipMethods2( node2, Direction.INCOMING );
-        node1.getRelationships( MyRelTypes.TEST,
-            Direction.OUTGOING ).iterator().next().delete();
-        node1.getRelationships( MyRelTypes.TEST_TRAVERSAL,
-            Direction.OUTGOING ).iterator().next().delete();
-        node1.getRelationships( MyRelTypes.TEST2,
-            Direction.OUTGOING ).iterator().next().delete();
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST_TRAVERSAL, Direction.OUTGOING ) );
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST2, Direction.OUTGOING ) );
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
         node1.createRelationshipTo( node2, MyRelTypes.TEST2 );
@@ -161,11 +156,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         newTransaction();
         allGetRelationshipMethods3( node1, Direction.OUTGOING );
         allGetRelationshipMethods3( node2, Direction.INCOMING );
-        node1.getRelationships( MyRelTypes.TEST,
-            Direction.OUTGOING ).iterator().next().delete();
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         int count = 0;
-        for ( Relationship rel : node1.getRelationships( MyRelTypes.TEST_TRAVERSAL,
-            Direction.OUTGOING ) )
+        for ( Relationship rel : node1.getRelationships( MyRelTypes.TEST_TRAVERSAL, Direction.OUTGOING ) )
         {
             if ( count == 1 )
             {
@@ -173,8 +166,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             }
             count++;
         }
-        node1.getRelationships( MyRelTypes.TEST2,
-            Direction.OUTGOING ).iterator().next().delete();
+        deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( MyRelTypes.TEST2, Direction.OUTGOING ) );
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
         node1.createRelationshipTo( node2, MyRelTypes.TEST2 );
@@ -220,8 +212,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 1, node.getRelationships( MyRelTypes.TEST_TRAVERSAL ) );
         countRelationships( 1, node.getRelationships( MyRelTypes.TEST, dir ) );
         countRelationships( 1, node.getRelationships( MyRelTypes.TEST2, dir ) );
-        countRelationships( 1, node.getRelationships(
-            MyRelTypes.TEST_TRAVERSAL, dir ) );
+        countRelationships( 1, node.getRelationships( MyRelTypes.TEST_TRAVERSAL, dir ) );
     }
 
     private void allGetRelationshipMethods3( Node node, Direction dir )
@@ -237,8 +228,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 2, node.getRelationships( MyRelTypes.TEST_TRAVERSAL ) );
         countRelationships( 2, node.getRelationships( MyRelTypes.TEST, dir ) );
         countRelationships( 2, node.getRelationships( MyRelTypes.TEST2, dir ) );
-        countRelationships( 2, node.getRelationships(
-            MyRelTypes.TEST_TRAVERSAL, dir ) );
+        countRelationships( 2, node.getRelationships( MyRelTypes.TEST_TRAVERSAL, dir ) );
     }
 
     private void countRelationships( int expectedCount, Iterable<Relationship> rels )
@@ -251,46 +241,46 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( expectedCount, count );
     }
 
+    private void deleteFirst( ResourceIterable<Relationship> iterable )
+    {
+        try ( ResourceIterator<Relationship> iterator = iterable.iterator() )
+        {
+            iterator.next().delete();
+        }
+    }
+
     @Test
     public void testRelationshipCreateAndDelete()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
-        Relationship relationship = node1.createRelationshipTo( node2,
-            MyRelTypes.TEST );
+        Relationship relationship = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship[] relArray1 = getRelationshipArray( node1.getRelationships() );
         Relationship[] relArray2 = getRelationshipArray( node2.getRelationships() );
         assertEquals( 1, relArray1.length );
         assertEquals( relationship, relArray1[0] );
         assertEquals( 1, relArray2.length );
         assertEquals( relationship, relArray2[0] );
-        relArray1 = getRelationshipArray( node1
-            .getRelationships( MyRelTypes.TEST ) );
+        relArray1 = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST ) );
         assertEquals( 1, relArray1.length );
         assertEquals( relationship, relArray1[0] );
-        relArray2 = getRelationshipArray( node2
-            .getRelationships( MyRelTypes.TEST ) );
+        relArray2 = getRelationshipArray( node2.getRelationships( MyRelTypes.TEST ) );
         assertEquals( 1, relArray2.length );
         assertEquals( relationship, relArray2[0] );
-        relArray1 = getRelationshipArray( node1.getRelationships(
-            MyRelTypes.TEST, Direction.OUTGOING ) );
+        relArray1 = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         assertEquals( 1, relArray1.length );
-        relArray2 = getRelationshipArray( node2.getRelationships(
-            MyRelTypes.TEST, Direction.INCOMING ) );
+        relArray2 = getRelationshipArray( node2.getRelationships( MyRelTypes.TEST, Direction.INCOMING ) );
         assertEquals( 1, relArray2.length );
-        relArray1 = getRelationshipArray( node1.getRelationships(
-            MyRelTypes.TEST, Direction.INCOMING ) );
+        relArray1 = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, Direction.INCOMING ) );
         assertEquals( 0, relArray1.length );
-        relArray2 = getRelationshipArray( node2.getRelationships(
-            MyRelTypes.TEST, Direction.OUTGOING ) );
+        relArray2 = getRelationshipArray( node2.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         assertEquals( 0, relArray2.length );
         relationship.delete();
         node2.delete();
         node1.delete();
     }
 
-    private Relationship[] getRelationshipArray(
-        Iterable<Relationship> relsIterable )
+    private Relationship[] getRelationshipArray( Iterable<Relationship> relsIterable )
     {
         ArrayList<Relationship> relList = new ArrayList<>();
         for ( Relationship rel : relsIterable )
@@ -327,8 +317,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
-        Relationship relationship = node1.createRelationshipTo( node2,
-            MyRelTypes.TEST );
+        Relationship relationship = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         relationship.delete();
         try
         {
@@ -343,20 +332,50 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
+    public void testRelationshipAddPropertyWithNullKey()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+
+        try
+        {
+            rel1.setProperty( null, "bar" );
+            fail( "Null key should result in exception." );
+        }
+        catch ( IllegalArgumentException e )
+        {   // OK
+        }
+
+    }
+
+    @Test
+    public void testRelationshipAddPropertyWithNullValue()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+
+        try
+        {
+            rel1.setProperty( "foo", null );
+            fail( "Null value should result in exception." );
+        }
+        catch ( IllegalArgumentException e )
+        {   // OK
+        }
+
+        getTransaction().failure();
+    }
+
+    @Test
     public void testRelationshipAddProperty()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
-        try
-        {
-            rel1.setProperty( null, null );
-            fail( "Null argument should result in exception." );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
+
         Integer int1 = new Integer( 1 );
         Integer int2 = new Integer( 2 );
         String string1 = new String( "1" );
@@ -554,7 +573,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertTrue( rel1.hasProperty( key2 ) );
         assertTrue( rel1.hasProperty( key3 ) );
 
-        Map<String, Object> properties = rel1.getAllProperties();
+        Map<String,Object> properties = rel1.getAllProperties();
         assertTrue( properties.get( key1 ).equals( int1 ) );
         assertTrue( properties.get( key2 ).equals( int2 ) );
         assertTrue( properties.get( key3 ).equals( string ) );
@@ -624,17 +643,14 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Relationship[] relArray = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel2, relArray[0] );
-        relArray = getRelationshipArray( node1.getRelationships(
-            MyRelTypes.TEST, Direction.INCOMING ) );
+        relArray = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, Direction.INCOMING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel3, relArray[0] );
 
-        relArray = getRelationshipArray( node2.getRelationships(
-            MyRelTypes.TEST, Direction.OUTGOING ) );
+        relArray = getRelationshipArray( node2.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel3, relArray[0] );
-        relArray = getRelationshipArray( node2.getRelationships(
-            MyRelTypes.TEST, Direction.INCOMING ) );
+        relArray = getRelationshipArray( node2.getRelationships( MyRelTypes.TEST, Direction.INCOMING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel2, relArray[0] );
 
@@ -700,14 +716,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         assertTrue( rel.isType( MyRelTypes.TEST ) );
-        assertTrue( rel.isType( new RelationshipType()
-        {
-            @Override
-            public String name()
-            {
-                return MyRelTypes.TEST.name();
-            }
-        } ) );
+        assertTrue( rel.isType( () -> MyRelTypes.TEST.name() ) );
         assertFalse( rel.isType( MyRelTypes.TEST_TRAVERSAL ) );
         rel.delete();
         node1.delete();
@@ -816,8 +825,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( 40000, count );
 
         count = 0;
-        for ( @SuppressWarnings( "unused" )
-        Relationship r1 : hub.getRelationships() )
+        for ( @SuppressWarnings( "unused" ) Relationship r1 : hub.getRelationships() )
         {
             count += Iterables.count( hub.getRelationships() );
         }
@@ -853,11 +861,12 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         Node node = getGraphDb().createNode();
         Node otherNode = getGraphDb().createNode();
-        RelationshipType[] types = new RelationshipType[] {withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )};
+        RelationshipType[] types =
+                new RelationshipType[]{withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )};
         int count = 30; // 30*4 > 100 (rel grabSize)
-        for ( int i = 0; i < types.length*count; i++ )
+        for ( int i = 0; i < types.length * count; i++ )
         {
-            node.createRelationshipTo( otherNode, types[i%types.length] );
+            node.createRelationshipTo( otherNode, types[i % types.length] );
         }
         newTransaction();
         int delCount = 0;
@@ -865,11 +874,15 @@ public class TestRelationship extends AbstractNeo4jTestCase
         while ( delCount < count )
         {
             loopCount++;
-            for ( Relationship rel : node.getRelationships( types[1] ) )
+            ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) node.getRelationships( types[1] );
+            ResourceIterator<Relationship> iterator = relationships.iterator();
+            while ( iterator.hasNext() )
             {
+                Relationship rel = iterator.next();
                 rel.delete();
-                if ( ++delCount == count/2 )
+                if ( ++delCount == count / 2 )
                 {
+                    iterator.close();
                     newTransaction();
                 }
             }
@@ -881,7 +894,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void getAllRelationships() throws Exception
     {
-        Set<Relationship> existingRelationships = Iterables.addToCollection( getGraphDb().getAllRelationships(), new HashSet<>() );
+        Set<Relationship> existingRelationships =
+                Iterables.addToCollection( getGraphDb().getAllRelationships(), new HashSet<>() );
 
         Set<Relationship> createdRelationships = new HashSet<>();
         Node node = getGraphDb().createNode();
@@ -898,7 +912,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
         int count = 0;
         for ( Relationship rel : getGraphDb().getAllRelationships() )
         {
-            assertTrue( "Unexpected rel " + rel + ", expected one of " + allRelationships, allRelationships.contains( rel ) );
+            assertTrue( "Unexpected rel " + rel + ", expected one of " + allRelationships,
+                    allRelationships.contains( rel ) );
             count++;
         }
         assertEquals( allRelationships.size(), count );
@@ -951,7 +966,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
             tx.success();
         }
         // WHEN
-        long one, two;
+        long one;
+        long two;
         try ( Transaction tx = db.beginTx() )
         {
             one = Iterables.count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
@@ -1002,7 +1018,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
     }
 
-    @Test(expected = NotFoundException.class)
+    @Test( expected = NotFoundException.class )
     public void deletionOfAlreadyDeletedRelationshipShouldThrow()
     {
         // Given
@@ -1025,6 +1041,14 @@ public class TestRelationship extends AbstractNeo4jTestCase
         {
             relationship.delete();
             tx.success();
+        }
+    }
+
+    private void assertHasNext( ResourceIterable<Relationship> relationships )
+    {
+        try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
+        {
+            assertTrue( iterator.hasNext() );
         }
     }
 }

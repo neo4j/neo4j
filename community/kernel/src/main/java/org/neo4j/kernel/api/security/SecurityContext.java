@@ -50,7 +50,7 @@ public interface SecurityContext
     }
 
     /** Allows all operations. */
-    SecurityContext AUTH_DISABLED = new AuthDisabled(AccessMode.Static.FULL);
+    SecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
 
     final class AuthDisabled implements SecurityContext
     {
@@ -102,7 +102,7 @@ public interface SecurityContext
         {
             return new AuthDisabled( mode );
         }
-    };
+    }
 
     final class Frozen implements SecurityContext
     {

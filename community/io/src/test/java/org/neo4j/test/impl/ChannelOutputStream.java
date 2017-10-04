@@ -34,7 +34,9 @@ public class ChannelOutputStream extends OutputStream
     {
         this.channel = channel;
         if ( append )
+        {
             this.channel.position( this.channel.size() );
+        }
     }
 
     @Override
@@ -55,11 +57,12 @@ public class ChannelOutputStream extends OutputStream
     @Override
     public void write( byte[] b, int off, int len ) throws IOException
     {
-        int written = 0, index = off;
+        int written = 0;
+        int index = off;
         while ( written < len )
         {
             buffer.clear();
-            buffer.put( b, index, Math.min( len-written, buffer.capacity() ) );
+            buffer.put( b, index, Math.min( len - written, buffer.capacity() ) );
             buffer.flip();
             written += channel.write( buffer );
         }

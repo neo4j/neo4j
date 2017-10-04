@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -40,7 +40,7 @@ import static java.lang.String.format;
  * was of the same format. This version actually specified command version, i.e. just versions of one of the
  * log entry types. This was a bit clunky and forced format specification to be passed in from outside,
  * based on the log that was read and so updated every time a new log was opened.
- *   Starting with Neo4j version 2.1 a one-byte log entry version was introduced with every single log entry.
+ *   Starting with Neo4j version 2.1 a one-byte log version field was introduced with every single log entry.
  * This allowed for more flexible reading and simpler code. Versions started with negative number to be able to
  * distinguish the new format from the non-versioned format. So observing the log entry type, which was the first
  * byte in each log entry being negative being negative was a signal for the new format and that the type actually
@@ -56,54 +56,39 @@ import static java.lang.String.format;
  * the log entry version will be bumped.
  * The process of making an update to log entry or command format is to:
  * <ol>
- * <li>Copy {@link PhysicalLogCommandReaderV2_2_4} or similar and modify the new copy</li>
+ * <li>Copy {@link PhysicalLogCommandReaderV3_0_2} or similar and modify the new copy</li>
  * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy if entry layout has changed</li>
- * <li>Add an entry in this enum, like {@link #V2_2_4} pointing to the above new classes</li>
+ * <li>Add an entry in this enum, like {@link #V3_0_10} pointing to the above new classes, version needs to be negative
+ * to detect log files from older versions of neo4j</li>
  * <li>Modify {@link StorageCommand#serialize(WritableChannel)}.
  * Also {@link LogEntryWriter} (if log entry layout has changed) with required changes</li>
  * <li>Change {@link #CURRENT} to point to the newly created version</li>
  * </ol>
  * Everything apart from that should just work and Neo4j should automatically support the new version as well.
- *
- * We need to keep going the negative version number route until all supported versions have negative
- * version numbers. Then we can have the next version be positive and we should get rid of the:
- * read, check < 0, read again thing in {@link VersionAwareLogEntryReader}.
  */
 public enum LogEntryVersion
 {
-    // as of 2013-02-09: neo4j 2.0 Labels & Indexing
-    V2_0( 0, LogEntryParsersV2_0.class ),
-    // as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
-    V2_1( -1, LogEntryParsersV2_1.class ),
-    // as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
-    V2_2( -2, LogEntryParsersV2_2.class ),
-    // as of 2015-07-23: neo4j 2.2.4 legacy index command header has bigger id space
-    // -4 is correct, -3 can be found in some 2.3 milestones that's why we play it safe
-    V2_2_4( -4, LogEntryParsersV2_2_4.class ),
     V2_3( -5, LogEntryParsersV2_3.class ),
     V3_0( -6, LogEntryParsersV2_3.class ),
-    // as of 2016-05-27: neo4j 2.2.10 legacy index IndexDefineCommand maps write size as short instead of byte
-    // -7 is picked, -5 and -6 can be found in the future (2.3 and 3.0)
-    // log entry layout hasn't changed since 2_2_4 so just use that one
-    V2_2_10( -7, LogEntryParsersV2_2_4.class ),
-    // as of 2016-05-30: neo4j 2.3.5 legacy index IndexDefineCommand maps write size as short instead of byte
-    // See comment for V2.2.10 for version number explanation
+    // as of 2016-05-30: neo4j 2.3.5 explicit index IndexDefineCommand maps write size as short instead of byte
     // log entry layout hasn't changed since 2_3 so just use that one
     V2_3_5( -8, LogEntryParsersV2_3.class ),
-    // as of 2016-05-30: neo4j 3.0.2 legacy index IndexDefineCommand maps write size as short instead of byte
-    // See comment for V2.2.10 for version number explanation
+    // as of 2016-05-30: neo4j 3.0.2 explicit index IndexDefineCommand maps write size as short instead of byte
     // log entry layout hasn't changed since 2_3 so just use that one
     V3_0_2( -9, LogEntryParsersV2_3.class ),
     // as of 2017-05-26: the records in command log entries include a bit that specifies if the command is serialised
     // using a fixed-width reference format, or not. This change is technically backwards compatible, so we bump the
     // log version to prevent mixed-version clusters from forming.
     V3_0_10( -10, LogEntryParsersV2_3.class );
+    // Method moreRecentVersionExists() relies on the fact that we have negative numbers, thus next version to use is -11
 
     public static final LogEntryVersion CURRENT = V3_0_10;
+    private static final byte LOWEST_VERSION = (byte)-V2_3.byteCode();
     private static final LogEntryVersion[] ALL = values();
-    private static final LogEntryVersion[] LOOKUP_BY_VERSION = new LogEntryVersion[ALL.length + 1]; // pessimistic size
+    private static final LogEntryVersion[] LOOKUP_BY_VERSION;
     static
     {
+        LOOKUP_BY_VERSION = new LogEntryVersion[(-CURRENT.byteCode()) + 1]; // pessimistic size
         for ( LogEntryVersion version : ALL )
         {
             put( LOOKUP_BY_VERSION, -version.byteCode(), version );
@@ -148,22 +133,44 @@ public enum LogEntryVersion
     }
 
     /**
-     * Return the correct {@link LogEntryVersion} for the given {@code version} code read from f.ex a log entry.
+     * Check if a more recent version of the log entry format exists and can be handled.
+     *
+     * @param version to compare against latest version
+     * @return {@code true} if a more recent log entry version exists
+     */
+    public static boolean moreRecentVersionExists( LogEntryVersion version )
+    {
+        return version.version > CURRENT.version; // reverted do to negative version numbers
+    }
+
+    /**
+     * Return the correct {@link LogEntryVersion} for the given {@code version} code read from e.g. a log entry.
      * Lookup is fast and can be made inside critical paths, no need for externally caching the returned
      * {@link LogEntryVersion} instance per the input arguments.
      *
      * @param version log entry version
-     * long as we still support those versions.
      */
     public static LogEntryVersion byVersion( byte version )
     {
-        byte flattenedVersion = (byte) -version;
+        byte positiveVersion = (byte) -version;
 
-        if ( flattenedVersion >= 0 && flattenedVersion < LOOKUP_BY_VERSION.length )
+        if ( positiveVersion >= LOWEST_VERSION && positiveVersion < LOOKUP_BY_VERSION.length )
         {
-            return LOOKUP_BY_VERSION[flattenedVersion];
+            return LOOKUP_BY_VERSION[positiveVersion];
         }
-        throw new IllegalArgumentException( "Unrecognized log entry version " + version );
+        byte positiveCurrentVersion = (byte) -CURRENT.byteCode();
+        if ( positiveVersion > positiveCurrentVersion )
+        {
+            throw new UnsupportedLogVersionException( String.format(
+                    "Transaction logs contains entries with prefix %d, and the highest supported prefix is %d. This " +
+                            "indicates that the log files originates from a newer version of neo4j.",
+                    positiveVersion, positiveCurrentVersion ) );
+        }
+        throw new UnsupportedLogVersionException( String.format(
+                "Transaction logs contains entries with prefix %d, and the lowest supported prefix is %d. This " +
+                        "indicates that the log files originates from an older version of neo4j, which we don't support " +
+                        "migrations from.",
+                positiveVersion, LOWEST_VERSION ) );
     }
 
     private static void put( LogEntryVersion[] array, int index, LogEntryVersion version )

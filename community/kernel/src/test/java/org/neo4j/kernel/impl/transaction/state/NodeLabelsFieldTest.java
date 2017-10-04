@@ -58,9 +58,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.kernel.impl.util.Bits.bits;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeLabelsFieldTest
 {
@@ -102,7 +101,8 @@ public class NodeLabelsFieldTest
     public void shouldInlineTwoSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30;
+        long labelId1 = 10;
+        long labelId2 = 30;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -117,7 +117,9 @@ public class NodeLabelsFieldTest
     public void shouldInlineThreeSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30, labelId3 = 4095;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 4095;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -132,7 +134,10 @@ public class NodeLabelsFieldTest
     public void shouldInlineFourSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30, labelId3 = 45, labelId4 = 60;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 45;
+        long labelId4 = 60;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2, labelId3 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -147,7 +152,11 @@ public class NodeLabelsFieldTest
     public void shouldInlineFiveSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30, labelId3 = 45, labelId4 = 60, labelId5 = 61;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 45;
+        long labelId4 = 60;
+        long labelId5 = 61;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2, labelId3, labelId4 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -163,7 +172,9 @@ public class NodeLabelsFieldTest
     public void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace() throws Exception
     {
         // GIVEN -- the upper limit for a label ID for 3 labels would be 36b/3 - 1 = 12b - 1 = 4095
-        long labelId1 = 10, labelId2 = 30, labelId3 = 4096;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 4096;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -192,7 +203,7 @@ public class NodeLabelsFieldTest
 
         // THEN
         assertTrue( changedDynamicRecords.containsAll( initialRecords ) );
-        assertEquals( initialRecords.size()+1, changedDynamicRecords.size() );
+        assertEquals( initialRecords.size() + 1, changedDynamicRecords.size() );
     }
 
     @Test
@@ -224,7 +235,7 @@ public class NodeLabelsFieldTest
         // WHEN
         List<DynamicRecord> changedDynamicRecords = Iterables.addToCollection(
                 nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ),
-                new ArrayList<DynamicRecord>() );
+                new ArrayList<>() );
 
         // THEN
         assertEquals( initialRecords, changedDynamicRecords );
@@ -243,7 +254,7 @@ public class NodeLabelsFieldTest
 
         List<DynamicRecord> changedDynamicRecords = Iterables.addToCollection(
                 nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ),
-                new ArrayList<DynamicRecord>() );
+                new ArrayList<>() );
 
         // WHEN
         Pair<Long,long[]> changedPair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( changedDynamicRecords,
@@ -357,7 +368,8 @@ public class NodeLabelsFieldTest
     public void removingNonExistentInlinedLabelShouldFail() throws Exception
     {
         // GIVEN
-        int labelId1 = 1, labelId2 = 2;
+        int labelId1 = 1;
+        int labelId2 = 2;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -483,18 +495,18 @@ public class NodeLabelsFieldTest
 
     private long inlinedLabelsLongRepresentation( long... labelIds )
     {
-        long header = (long)labelIds.length << 36;
-        byte bitsPerLabel = (byte) (36/labelIds.length);
+        long header = (long) labelIds.length << 36;
+        byte bitsPerLabel = (byte) (36 / labelIds.length);
         Bits bits = bits( 5 );
         for ( long labelId : labelIds )
         {
             bits.put( labelId, bitsPerLabel );
         }
-        return header|bits.getLongs()[0];
+        return header | bits.getLongs()[0];
     }
 
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NodeStore nodeStore;
@@ -504,7 +516,7 @@ public class NodeLabelsFieldTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        Config config = new Config( stringMap( GraphDatabaseSettings.label_block_size.name(), "60" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
@@ -522,7 +534,7 @@ public class NodeLabelsFieldTest
         NodeRecord node = new NodeRecord( 0, false, 0, 0 );
         if ( labels.length > 0 )
         {
-            node.setLabelField( inlinedLabelsLongRepresentation( labels ), Collections.<DynamicRecord>emptyList() );
+            node.setLabelField( inlinedLabelsLongRepresentation( labels ), Collections.emptyList() );
         }
         return node;
     }
@@ -553,7 +565,7 @@ public class NodeLabelsFieldTest
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
         {
-            result[i] = 255-i;
+            result[i] = 255 - i;
         }
         Arrays.sort( result );
         return result;
@@ -564,7 +576,7 @@ public class NodeLabelsFieldTest
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
         {
-            result[i] = Integer.MAX_VALUE-i;
+            result[i] = Integer.MAX_VALUE - i;
         }
         Arrays.sort( result );
         return result;
@@ -585,8 +597,6 @@ public class NodeLabelsFieldTest
 
     private static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
-        return Iterables.map( from -> {
-            return itemClass.cast( from.clone() );
-        }, items );
+        return Iterables.map( from -> itemClass.cast( from.clone() ), items );
     }
 }

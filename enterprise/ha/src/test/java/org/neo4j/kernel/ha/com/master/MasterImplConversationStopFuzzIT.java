@@ -55,13 +55,13 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.time.Clocks;
 
@@ -93,8 +93,9 @@ public class MasterImplConversationStopFuzzIT
     private final LifeSupport life = new LifeSupport();
     private final ExecutorService executor = Executors.newFixedThreadPool( numberOfWorkers + 1 );
     private final JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
-    private final Config config = new Config( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
-    private final Locks locks = new ForsetiLockManager( ResourceTypes.NODE, ResourceTypes.SCHEMA );
+    private final Config config = Config.defaults( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
+    private final Locks locks = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(),
+            ResourceTypes.NODE, ResourceTypes.LABEL );
 
     private static MasterExecutionStatistic executionStatistic = new MasterExecutionStatistic();
 
@@ -297,7 +298,7 @@ public class MasterImplConversationStopFuzzIT
             return worker.random.nextInt( numberOfResources );
         }
 
-        public SlaveEmulatorWorker( MasterImpl master, int clientNumber)
+        SlaveEmulatorWorker( MasterImpl master, int clientNumber )
         {
             this.machineId = clientNumber;
             this.random = new Random( machineId );
@@ -431,7 +432,7 @@ public class MasterImplConversationStopFuzzIT
         private volatile boolean running = true;
         private final ConversationManager conversationManager;
 
-        public ConversationKiller( ConversationManager conversationManager )
+        ConversationKiller( ConversationManager conversationManager )
         {
             this.conversationManager = conversationManager;
         }
@@ -471,11 +472,12 @@ public class MasterImplConversationStopFuzzIT
         }
     }
 
-    private class ExposedConversationManager extends ConversationManager {
+    private class ExposedConversationManager extends ConversationManager
+    {
 
         private TimedRepository<RequestContext,Conversation> conversationStore;
 
-        public ExposedConversationManager( ConversationSPI spi, Config config, int activityCheckInterval,
+        ExposedConversationManager( ConversationSPI spi, Config config, int activityCheckInterval,
                 int lockTimeoutAddition )
         {
             super( spi, config, activityCheckInterval, lockTimeoutAddition );

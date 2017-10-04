@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -47,14 +48,15 @@ public class IdReuseTest
 {
     @Rule
     public DatabaseRule dbRule = new EnterpriseDatabaseRule()
-            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP );
+            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP )
+            .withSetting( GraphDatabaseSettings.record_id_batch_size, "1" );
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
 
@@ -65,7 +67,7 @@ public class IdReuseTest
 
         // When
         Node node;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
 
@@ -73,7 +75,7 @@ public class IdReuseTest
         }
 
         // Then
-        assertThat(node.getId(), equalTo(0L));
+        assertThat( node.getId(), equalTo( 0L ) );
     }
 
     @Test
@@ -81,8 +83,9 @@ public class IdReuseTest
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Node node1, node2;
-        try (Transaction tx = db.beginTx())
+        Node node1;
+        Node node2;
+        try ( Transaction tx = db.beginTx() )
         {
             node1 = db.createNode();
             node2 = db.createNode();
@@ -90,7 +93,7 @@ public class IdReuseTest
             tx.success();
         }
 
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             node1.createRelationshipTo( node2, RelationshipType.withName( "LIKE" ) );
 
@@ -101,17 +104,17 @@ public class IdReuseTest
 
         // When
         Relationship relationship;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
-            node1 = db.getNodeById(node1.getId());
-            node2 = db.getNodeById(node2.getId());
+            node1 = db.getNodeById( node1.getId() );
+            node2 = db.getNodeById( node2.getId() );
             relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "LIKE" ) );
 
             tx.success();
         }
 
         // Then
-        assertThat(relationship.getId(), equalTo(0L));
+        assertThat( relationship.getId(), equalTo( 0L ) );
     }
 
     @Test

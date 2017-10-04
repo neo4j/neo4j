@@ -22,7 +22,6 @@ package org.neo4j.bolt.v1.transport.integration;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,13 +36,11 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Arrays.asList;
@@ -52,7 +49,6 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
@@ -68,6 +64,9 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "unchecked" )
 @RunWith( Parameterized.class )
@@ -80,31 +79,31 @@ public class TransportSessionIT
     @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
+    private HostnamePort address;
 
     private TransportConnection client;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> transports()
+    public static Collection<Factory<TransportConnection>> transports()
     {
-        return asList(
-                new Object[]{
-                        (Factory<TransportConnection>) SocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) WebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureWebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                } );
+        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
+                SecureWebSocketConnection::new );
+    }
+
+    @Before
+    public void setup()
+    {
+        this.client = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        if ( client != null )
+        {
+            client.disconnect();
+        }
     }
 
     @Test
@@ -147,9 +146,9 @@ public class TransportSessionIT
                 msgSuccess(
                         allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
                                 hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( equalTo( 1L ), equalTo( 1L ) ) ),
-                msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
-                msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
                 msgSuccess( allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
@@ -184,15 +183,15 @@ public class TransportSessionIT
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1", emptyMap() ),
-                        run( "INVALID" ),
+                        run( "QINVALID" ),
                         pullAll() ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
-                        String.format( "Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))%n" +
-                                       "\"INVALID\"%n" +
+                        String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
+                                       "\"QINVALID\"%n" +
                                        " ^" ) ), msgIgnored() ) );
 
         // When
@@ -202,7 +201,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
                 msgSuccess() ) );
     }
 
@@ -222,7 +221,7 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
                         hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( equalTo( 2L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
                 msgSuccess() ) );
 
         // When
@@ -234,7 +233,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
                         hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( Matchers.equalTo( "Test" ) ) ),
+                msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
                 msgSuccess()
         ) );
     }
@@ -328,7 +327,7 @@ public class TransportSessionIT
         // Then
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
                 msgSuccess( allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
@@ -354,9 +353,9 @@ public class TransportSessionIT
                                 "The provided label is not in the database.",
                                 "One of the labels in your query is not available in the database, " +
                                 "make sure you didn't misspell it or that the label is available when " +
-                                "you run this statement in your application (the missing label name is is: " +
+                                "you run this statement in your application (the missing label name is: " +
                                 "THIS_IS_NOT_A_LABEL)",
-                                SeverityLevel.WARNING, new InputPosition( 9, 1, 10 ) ) ) ) );
+                                SeverityLevel.WARNING, new InputPosition( 17, 1, 18 ) ) ) ) );
 
     }
 
@@ -377,38 +376,8 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
                         hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( nullValue() ) ),
+                msgRecord( eqRecord( equalTo( NO_VALUE ) ) ),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );
-    }
-
-    @Test
-    public void shouldFailNicelyOnBinary() throws Throwable
-    {
-        //Given
-        GraphDatabaseService db = server.graphDatabaseService();
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            node.setProperty( "binary", new byte[]{(byte) 0xB0, 0x17} );
-            tx.success();
-        }
-
-        // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", emptyMap() ),
-                        run( "MATCH (n) RETURN n.binary" ),
-                        pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
-                msgSuccess(),
-                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n.binary" ) ) ),
-                        hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( nullValue() ) ),
-                msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt" ) ) );
     }
 
     private byte[] bytes( int... ints )
@@ -425,11 +394,10 @@ public class TransportSessionIT
     public void shouldFailNicelyOnNullKeysInMap() throws Throwable
     {
         //Given
-        GraphDatabaseService db = server.graphDatabaseService();
         HashMap<String,Object> params = new HashMap<>();
         HashMap<String,Object> inner = new HashMap<>();
-        inner.put(null, 42L);
-        inner.put("foo", 1337L);
+        inner.put( null, 42L );
+        inner.put( "foo", 1337L );
         params.put( "p", inner );
 
         // When
@@ -437,15 +405,16 @@ public class TransportSessionIT
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1", emptyMap() ),
-                        run( "RETURN {p}", params ),
+                        run( "RETURN {p}", ValueUtils.asMapValue( params ) ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string."),
-                msgIgnored()));
+                msgFailure( Status.Request.Invalid,
+                        "Value `null` is not supported as key in maps, must be a non-nullable string." ),
+                msgIgnored() ) );
 
         client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
 
@@ -453,7 +422,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
                 msgSuccess() ) );
     }
 
@@ -472,22 +441,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgFailure( Status.Schema.IndexDropFailed, "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)."),
-                msgIgnored()) );
-    }
-
-    @Before
-    public void setup()
-    {
-        this.client = cf.newInstance();
-    }
-
-    @After
-    public void teardown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
+                msgFailure( Status.Schema.IndexDropFailed,
+                        "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)." ),
+                msgIgnored() ) );
     }
 }

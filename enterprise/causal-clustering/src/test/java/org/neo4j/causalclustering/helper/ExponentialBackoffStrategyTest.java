@@ -33,7 +33,7 @@ public class ExponentialBackoffStrategyTest
     {
         // given
         ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
-        RetryStrategy.Timeout timeout = strategy.newTimeout();
+        TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
         for ( int i = 0; i < NUMBER_OF_ACCESSES; i++ )
@@ -50,7 +50,7 @@ public class ExponentialBackoffStrategyTest
     {
         // given
         ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
-        RetryStrategy.Timeout timeout = strategy.newTimeout();
+        TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
         for ( int i = 0; i < NUMBER_OF_ACCESSES; i++ )
@@ -68,7 +68,7 @@ public class ExponentialBackoffStrategyTest
         // given
         long upperBound = (1 << NUMBER_OF_ACCESSES) - 5;
         ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, upperBound, MILLISECONDS );
-        RetryStrategy.Timeout timeout = strategy.newTimeout();
+        TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
         for ( int i = 0; i < NUMBER_OF_ACCESSES; i++ )

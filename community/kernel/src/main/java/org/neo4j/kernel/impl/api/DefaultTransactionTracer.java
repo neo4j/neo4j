@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -51,14 +51,7 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
 
     private long startTimeNanos;
 
-    private final LogRotateEvent logRotateEvent = new LogRotateEvent()
-    {
-        @Override
-        public void close()
-        {
-            updateCountersAndNotifyListeners();
-        }
-    };
+    private final LogRotateEvent logRotateEvent = this::updateCountersAndNotifyListeners;
 
     private final LogAppendEvent logAppendEvent = new LogAppendEvent()
     {
@@ -144,7 +137,7 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
         }
 
         @Override
-        public void setTransactionType( String transactionTypeName )
+        public void setTransactionWriteState( String transactionWriteState )
         {
         }
 
@@ -189,7 +182,8 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
         counter.incrementAndGet();
         long lastEventTime = clock.nanos() - startTimeNanos;
         accumulatedTotalTimeNanos.addAndGet( lastEventTime );
-        jobScheduler.schedule( JobScheduler.Groups.metricsEvent, () -> {
+        jobScheduler.schedule( JobScheduler.Groups.metricsEvent, () ->
+        {
             long millis = TimeUnit.NANOSECONDS.toMillis( lastEventTime );
             monitor.lastLogRotationEventDuration( millis );
         } );

@@ -19,11 +19,9 @@
  */
 package org.neo4j.server.modules;
 
-import org.hamcrest.Description;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
 
 import java.net.URI;
 import java.util.List;
@@ -35,6 +33,8 @@ import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyString;
@@ -65,7 +65,7 @@ public class DBMSModuleTest
 
         module.start();
 
-        verify( webServer ).addJAXRSClasses( anyList(), anyString(), anyCollection() );
+        verify( webServer ).addJAXRSClasses( anyList(), anyString(), isNull() );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -84,20 +84,18 @@ public class DBMSModuleTest
 
         module.start();
 
-        verify( webServer ).addJAXRSClasses( anyList(), anyString(), anyCollection() );
-        verify( webServer, never() ).addJAXRSClasses( Matchers.argThat( new ArgumentMatcher<List<String>>()
+        verify( webServer ).addJAXRSClasses( anyList(), anyString(), isNull() );
+        verify( webServer, never() ).addJAXRSClasses( argThat( new ArgumentMatcher<List<String>>()
         {
             @Override
-            public boolean matches( Object argument )
+            public boolean matches( List<String> argument )
             {
-                List<String> argumentList = (List<String>) argument;
-                return argumentList.contains( UserService.class.getName() );
+                return argument.contains( UserService.class.getName() );
             }
 
-            @Override
-            public void describeTo( Description description )
+            public String toString()
             {
-                description.appendText( "<List containing " + UserService.class.getName() + ">" );
+                return "<List containing " + UserService.class.getName() + ">";
             }
         } ), anyString(), anyCollection() );
     }

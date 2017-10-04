@@ -20,23 +20,21 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
-import java.time.Clock;
-import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -45,60 +43,54 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
     private NeoStoreDataSource dataSource;
-    private TransactionStats transactionMonitor;
 
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
+    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, PageCache pageCache )
     {
-        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
-                new CommunityIdTypeConfigurationProvider();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        NullLogService logService = NullLogService.getInstance();
-        return getDataSource( storeDir, fs, idGeneratorFactory, idTypeConfigurationProvider, pageCache,
-                additionalConfig, databaseHealth, logService );
+        return getDataSource( storeDir, fs, pageCache, new Dependencies() );
     }
 
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
-            PageCache pageCache, Map<String, String> additionalConfig, DatabaseHealth databaseHealth,
-            LogService logService )
+    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
+            DependencyResolver otherCustomOverriddenDependencies )
     {
-        if ( dataSource != null )
-        {
-            dataSource.stop();
-            dataSource.shutdown();
-        }
-        final Config config = new Config( stringMap( additionalConfig ), GraphDatabaseSettings.class );
+        shutdownAnyRunning();
 
         StatementLocksFactory locksFactory = mock( StatementLocksFactory.class );
         StatementLocks statementLocks = mock( StatementLocks.class );
@@ -109,9 +101,26 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
-        transactionMonitor = mock( TransactionStats.class );
-        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                idConfigurationProvider,
+
+        Dependencies mutableDependencies = new Dependencies( otherCustomOverriddenDependencies );
+        Config config = dependency( mutableDependencies, Config.class, deps -> Config.defaults() );
+        LogService logService = dependency( mutableDependencies, LogService.class,
+                deps -> new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() ) );
+        IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,
+                deps -> new DefaultIdGeneratorFactory( fs ) );
+        IdTypeConfigurationProvider idConfigurationProvider = dependency( mutableDependencies,
+                IdTypeConfigurationProvider.class, deps -> new CommunityIdTypeConfigurationProvider() );
+        DatabaseHealth databaseHealth = dependency( mutableDependencies, DatabaseHealth.class,
+                deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                        NullLogProvider.getInstance().getLog( DatabaseHealth.class ) ) );
+        SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
+        TransactionMonitor transactionMonitor =
+                dependency( mutableDependencies, TransactionMonitor.class, deps -> new TransactionStats() );
+        AvailabilityGuard availabilityGuard = dependency( mutableDependencies, AvailabilityGuard.class,
+                deps -> new AvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ),
+                        NullLog.getInstance() ) );
+
+        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
@@ -123,41 +132,55 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
-                IOLimiter.unlimited(), Clock.systemUTC(), new CanWrite() );
-
+                IOLimiter.unlimited(),
+                availabilityGuard, clock,
+                new CanWrite(), new StoreCopyCheckPointMutex(),
+                RecoveryCleanupWorkCollector.IMMEDIATE,
+                new BufferedIdController(
+                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
+                        idConfigurationProvider ), jobScheduler ),
+                OperationalMode.single );
         return dataSource;
     }
 
-    public TransactionStats getTransactionMonitor()
+    private <T> T dependency( Dependencies dependencies, Class<T> type,
+            Function<DependencyResolver,T> defaultSupplier )
     {
-        return transactionMonitor;
+        try
+        {
+            return dependencies.resolveDependency( type );
+        }
+        catch ( IllegalArgumentException | UnsatisfiedDependencyException e )
+        {
+            return dependencies.satisfyDependency( defaultSupplier.apply( dependencies ) );
+        }
     }
 
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Map<String,String> additionalConfig )
+    private void shutdownAnyRunning()
     {
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
-                NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
-        return getDataSource( storeDir, fs, pageCache, additionalConfig, databaseHealth );
+        if ( dataSource != null )
+        {
+            dataSource.stop();
+            dataSource.shutdown();
+        }
+    }
+
+    @Override
+    protected void after( boolean successful ) throws Throwable
+    {
+        shutdownAnyRunning();
     }
 
     private DependencyResolver dependencyResolverForNoIndexProvider()
     {
         return new DependencyResolver.Adapter()
         {
-            private final LabelScanStoreProvider labelScanStoreProvider =
-                    new LabelScanStoreProvider( new InMemoryLabelScanStore(), 10 );
-
             @Override
             public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
             {
                 if ( SchemaIndexProvider.class.isAssignableFrom( type ) )
                 {
                     return type.cast( SchemaIndexProvider.NO_INDEX_PROVIDER );
-                }
-                else if ( LabelScanStoreProvider.class.isAssignableFrom( type ) )
-                {
-                    return type.cast( labelScanStoreProvider );
                 }
                 throw new IllegalArgumentException( type.toString() );
             }

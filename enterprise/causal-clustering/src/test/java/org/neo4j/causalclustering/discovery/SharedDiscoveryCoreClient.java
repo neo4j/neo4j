@@ -36,7 +36,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final MemberId member;
-    private final CoreAddresses coreAddresses;
+    private final CoreServerInfo coreServerInfo;
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
 
@@ -47,7 +47,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
         this.member = member;
-        this.coreAddresses = extractAddresses( config );
+        this.coreServerInfo = extractCoreServerInfo( config );
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -67,7 +67,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void start() throws InterruptedException
     {
-        sharedDiscoveryService.registerCoreMember( member, coreAddresses, this );
+        sharedDiscoveryService.registerCoreMember( member, coreServerInfo, this );
         log.info( "Registered core server %s", member );
         sharedDiscoveryService.waitForClusterFormation();
         log.info( "Cluster formed" );
@@ -89,7 +89,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
     {
-        return coreTopology.find( upstream ).map( CoreAddresses::getCatchupServer );
+        return coreTopology.find( upstream )
+                .map( info -> Optional.of( info.getCatchupServer() ) )
+                .orElseGet( () -> readReplicaTopology.find( upstream )
+                        .map( ReadReplicaInfo::getCatchupServer ) );
     }
 
     @Override
@@ -114,12 +117,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         this.readReplicaTopology = readReplicaTopology;
     }
 
-    private static CoreAddresses extractAddresses( Config config )
+    private static CoreServerInfo extractCoreServerInfo( Config config )
     {
         AdvertisedSocketAddress raftAddress = config.get( CausalClusteringSettings.raft_advertised_address );
         AdvertisedSocketAddress transactionSource = config.get( CausalClusteringSettings.transaction_advertised_address );
         ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
 
-        return new CoreAddresses( raftAddress, transactionSource, clientConnectorAddresses );
+        return new CoreServerInfo( raftAddress, transactionSource, clientConnectorAddresses );
     }
 }

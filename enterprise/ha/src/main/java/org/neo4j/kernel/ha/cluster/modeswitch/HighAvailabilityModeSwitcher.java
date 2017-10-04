@@ -264,7 +264,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private void switchToMaster()
     {
         final CancellationHandle cancellationHandle = new CancellationHandle();
-        startModeSwitching( () -> {
+        startModeSwitching( () ->
+        {
             if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
             {
                 return;
@@ -398,7 +399,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.error( "Error while trying to switch to slave", t );
 
                     // Try again later
-                    wait.set( (1 + wait.get() * 2) ); // Exponential backoff
+                    wait.set( 1 + wait.get() * 2 ); // Exponential backoff
                     wait.set( Math.min( wait.get(), 5 * 60 ) ); // Wait maximum 5 minutes
 
                     modeSwitcherFuture = modeSwitcherExecutor.schedule( this, wait.get(), TimeUnit.SECONDS );
@@ -413,7 +414,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         msgLog.info( "I am %s, moving to pending", instanceId );
 
-        startModeSwitching( () -> {
+        startModeSwitching( () ->
+        {
             if ( cancellationHandle.cancellationRequested() )
             {
                 msgLog.info( "Switch to pending cancelled on start." );
@@ -446,7 +448,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         msgLog.info( "I am %s, moving to detached", instanceId );
 
-        startModeSwitching( () -> {
+        startModeSwitching( () ->
+        {
             if ( cancellationHandle.cancellationRequested() )
             {
                 msgLog.info( "Switch to pending cancelled on start." );
@@ -508,7 +511,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private static class CancellationHandle implements CancellationRequest
     {
-        private volatile boolean cancelled = false;
+        private volatile boolean cancelled;
 
         @Override
         public boolean cancellationRequested()

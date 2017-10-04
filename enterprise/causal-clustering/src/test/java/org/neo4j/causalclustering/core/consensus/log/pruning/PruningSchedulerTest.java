@@ -19,11 +19,20 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.pruning;
 
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.causalclustering.core.state.RaftLogPruner;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.OnDemandJobScheduler;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -31,21 +40,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
-
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.OnDemandJobScheduler;
+import static org.neo4j.scheduler.JobScheduler.Groups.raftLogPruning;
 
 public class PruningSchedulerTest
 {
-    private final LogPruner logPruner = mock( LogPruner.class );
+    private final RaftLogPruner logPruner = mock( RaftLogPruner.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
 
     @Test
@@ -126,17 +125,20 @@ public class PruningSchedulerTest
         verifyNoMoreInteractions( logPruner );
     }
 
-    @Test
+    @Test( timeout = 5000 )
     public void shouldWaitOnStopUntilTheRunningCheckpointIsDone() throws Throwable
     {
         // given
         final AtomicReference<Throwable> ex = new AtomicReference<>();
-        final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
-        LogPruner logPruner = () ->
+        RaftLogPruner logPruner = new RaftLogPruner( null, null )
         {
-            checkPointerLatch.startAndWaitForAllToStart();
-            checkPointerLatch.waitForAllToFinish();
+            @Override
+            public void prune() throws IOException
+            {
+                checkPointerLatch.startAndWaitForAllToStart();
+                checkPointerLatch.waitForAllToFinish();
+            }
         };
 
         final PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
@@ -164,7 +166,6 @@ public class PruningSchedulerTest
                 try
                 {
                     scheduler.stop();
-                    stoppedCompleted.set( true );
                 }
                 catch ( Throwable throwable )
                 {
@@ -175,18 +176,10 @@ public class PruningSchedulerTest
 
         stopper.start();
 
-        Thread.sleep( 10 );
-
-        // then
-        assertFalse( stoppedCompleted.get() );
-
         checkPointerLatch.finish();
         runCheckPointer.join();
 
-        Thread.sleep( 150 );
-
-        assertTrue( stoppedCompleted.get() );
-        stopper.join(); // just in case
+        stopper.join();
 
         assertNull( ex.get() );
     }

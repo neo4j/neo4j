@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.spi;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 
 public interface KernelContext
 {
-    FileSystemAbstraction fileSystem();
 
     File storeDir();
 

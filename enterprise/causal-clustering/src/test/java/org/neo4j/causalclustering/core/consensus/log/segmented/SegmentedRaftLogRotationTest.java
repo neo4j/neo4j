@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.consensus.log.segmented;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,13 +30,12 @@ import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
 import org.neo4j.causalclustering.core.consensus.log.DummyRaftableContentSerializer;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
@@ -46,12 +46,13 @@ public class SegmentedRaftLogRotationTest
 {
     private static final int ROTATE_AT_SIZE_IN_BYTES = 100;
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final LifeRule life = new LifeRule( true );
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final LifeRule life = new LifeRule( true );
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
+                                          .around( fileSystemRule ).around( life );
 
     @Test
     public void shouldRotateOnAppendWhenRotateSizeIsReached() throws Exception
@@ -61,7 +62,7 @@ public class SegmentedRaftLogRotationTest
         log.append( new RaftLogEntry( 0, replicatedStringOfBytes( ROTATE_AT_SIZE_IN_BYTES ) ) );
 
         // Then
-        File[] files = fileSystem.listFiles( testDirectory.directory() );
+        File[] files = fileSystemRule.get().listFiles( testDirectory.directory() );
         assertEquals( 2, files.length );
     }
 
@@ -102,7 +103,7 @@ public class SegmentedRaftLogRotationTest
         CoreLogPruningStrategy pruningStrategy =
                 new CoreLogPruningStrategyFactory( raft_log_pruning_strategy.getDefaultValue(), logProvider )
                         .newInstance();
-        return new SegmentedRaftLog( fileSystem, testDirectory.directory(), rotateAtSize,
+        return new SegmentedRaftLog( fileSystemRule.get(), testDirectory.directory(), rotateAtSize,
                 new DummyRaftableContentSerializer(), logProvider, 0, Clocks.fakeClock(), new OnDemandJobScheduler(),
                 pruningStrategy );
     }

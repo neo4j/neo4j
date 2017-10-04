@@ -21,11 +21,12 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.Direction;
+
+import static java.util.Collections.emptyIterator;
 
 /**
  * Represents the transactional changes to a node:
@@ -41,28 +42,23 @@ public interface NodeState extends PropertyContainerState
     interface Visitor extends PropertyContainerState.Visitor
     {
         void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationKernelException;
+                throws ConstraintValidationException;
     }
 
     ReadableDiffSets<Integer> labelDiffSets();
-
-    RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels );
-
-    RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels );
 
     int augmentDegree( Direction direction, int degree );
 
     int augmentDegree( Direction direction, int degree, int typeId );
 
-    void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException;
+    void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
 
-    PrimitiveIntIterator relationshipTypes();
-
-    UpdateTriState labelState( int labelId );
+    PrimitiveIntSet relationshipTypes();
 
     long getId();
 
     PrimitiveLongIterator getAddedRelationships( Direction direction );
 
     PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
+
 }

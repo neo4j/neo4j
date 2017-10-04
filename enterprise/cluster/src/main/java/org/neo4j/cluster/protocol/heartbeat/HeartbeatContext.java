@@ -38,9 +38,9 @@ public interface HeartbeatContext
     /**
      * @return True iff the node was suspected
      */
-    boolean alive( final InstanceId node );
+    boolean alive( InstanceId node );
 
-    void suspect( final InstanceId node );
+    void suspect( InstanceId node );
 
     void suspicions( InstanceId from, Set<InstanceId> suspicions );
 

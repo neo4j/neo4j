@@ -19,7 +19,9 @@
  */
 package org.neo4j.tooling;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.function.Function;
@@ -32,6 +34,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
+
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 public class CsvOutput implements BatchImporter
 {
@@ -53,7 +57,7 @@ public class CsvOutput implements BatchImporter
     @Override
     public void doImport( Input input ) throws IOException
     {
-        consume( "nodes.csv", input.nodes(), nodeHeader, (node) ->
+        consume( "nodes.csv", input.nodes(), nodeHeader, node ->
         {
             deserialization.clear();
             for ( Header.Entry entry : nodeHeader.entries() )
@@ -74,7 +78,7 @@ public class CsvOutput implements BatchImporter
             }
             return deserialization.materialize();
         } );
-        consume( "relationships.csv", input.relationships(), relationshipHeader, (relationship) ->
+        consume( "relationships.csv", input.relationships(), relationshipHeader, relationship ->
         {
             deserialization.clear();
             for ( Header.Entry entry : relationshipHeader.entries() )
@@ -107,7 +111,7 @@ public class CsvOutput implements BatchImporter
         {
             if ( properties[i].equals( key ) )
             {
-                return properties[i+1];
+                return properties[i + 1];
             }
         }
         return null;
@@ -141,6 +145,7 @@ public class CsvOutput implements BatchImporter
 
     private PrintStream file( String name ) throws IOException
     {
-        return new PrintStream( new File( targetDirectory, name ) );
+        return new PrintStream( new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, name ) ),
+                (int) mebiBytes( 1 ) ) );
     }
 }

@@ -110,7 +110,7 @@ public class FeatureToggles
      * @param defaultValue the default value of the flag if the system property is not assigned.
      * @return the parsed value of the system property, or the default value.
      */
-    public static double getDouble(Class<?> location, String name, double defaultValue)
+    public static double getDouble( Class<?> location, String name, double defaultValue )
     {
         try
         {

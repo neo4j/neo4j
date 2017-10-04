@@ -41,7 +41,7 @@ public class RawIteratorTest
     public List<Integer> list( RawIterator<Integer, RuntimeException> iter )
     {
         LinkedList<Integer> out = new LinkedList<>();
-        while(iter.hasNext())
+        while ( iter.hasNext() )
         {
             out.add( iter.next() );
         }

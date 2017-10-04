@@ -50,6 +50,10 @@ import org.neo4j.graphdb.traversal.Evaluation;
 public class UserScriptClassWhiteList
 {
 
+    private UserScriptClassWhiteList()
+    {
+    }
+
     public static Set<String> getWhiteList()
     {
         HashSet<String> safe = new HashSet<String>();

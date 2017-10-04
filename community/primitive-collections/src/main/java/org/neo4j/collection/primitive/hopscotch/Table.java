@@ -200,5 +200,5 @@ public interface Table<VALUE> extends AutoCloseable
      * Free any resources
      */
     @Override
-    public void close();
+    void close();
 }

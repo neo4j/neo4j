@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
+
+import scala.util.Try
 
 trait ParsedQuery {
-  def isPeriodicCommit: Boolean
-  def plan(transactionContext: TransactionalContextWrapperv3_1, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any])
-  def hasErrors: Boolean
+  protected def trier: Try[{ def isPeriodicCommit: Boolean }]
+  def plan(transactionContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any])
+  final def isPeriodicCommit: Boolean = trier.map(_.isPeriodicCommit).getOrElse(false)
+  final def hasErrors: Boolean = trier.isFailure
+  final def onError[T](f: Throwable => T): Option[T] = trier.failed.toOption.map(f)
 }

@@ -20,7 +20,6 @@
 package org.neo4j.logging.slf4j;
 
 import java.util.function.Consumer;
-
 import javax.annotation.Nonnull;
 
 import org.neo4j.logging.AbstractLog;
@@ -52,7 +51,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.debug( message );
                 }
@@ -61,7 +60,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message, @Nonnull Throwable throwable )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.debug( message, throwable );
                 }
@@ -70,7 +69,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String format, @Nonnull Object... arguments )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.debug( convertFormat(format), arguments );
                 }
@@ -79,7 +78,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void bulk( @Nonnull Consumer<Logger> consumer )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     consumer.accept( this );
                 }
@@ -91,7 +90,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.info( message );
                 }
@@ -100,7 +99,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message, @Nonnull Throwable throwable )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.info( message, throwable );
                 }
@@ -109,7 +108,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String format, @Nonnull Object... arguments )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.info( convertFormat(format), arguments );
                 }
@@ -118,7 +117,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void bulk( @Nonnull Consumer<Logger> consumer )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     consumer.accept( this );
                 }
@@ -130,7 +129,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.warn( message );
                 }
@@ -139,7 +138,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message, @Nonnull Throwable throwable )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.warn( message, throwable );
                 }
@@ -148,7 +147,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String format, @Nonnull Object... arguments )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.warn( convertFormat(format), arguments );
                 }
@@ -157,7 +156,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void bulk( @Nonnull Consumer<Logger> consumer )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     consumer.accept( this );
                 }
@@ -169,7 +168,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.error( message );
                 }
@@ -178,7 +177,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String message, @Nonnull Throwable throwable )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.error( message, throwable );
                 }
@@ -187,7 +186,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void log( @Nonnull String format, @Nonnull Object... arguments )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     slf4jLogger.error( convertFormat(format), arguments );
                 }
@@ -196,7 +195,7 @@ public class Slf4jLog extends AbstractLog
             @Override
             public void bulk( @Nonnull Consumer<Logger> consumer )
             {
-                synchronized (lock)
+                synchronized ( lock )
                 {
                     consumer.accept( this );
                 }
@@ -241,13 +240,13 @@ public class Slf4jLog extends AbstractLog
     @Override
     public void bulk( @Nonnull Consumer<Log> consumer )
     {
-        synchronized (lock)
+        synchronized ( lock )
         {
             consumer.accept( this );
         }
     }
 
-    private String convertFormat(String format)
+    private String convertFormat( String format )
     {
         return format.replace( "%s", "{}" );
     }

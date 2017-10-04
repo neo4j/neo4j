@@ -29,7 +29,6 @@ import java.util.TreeMap;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.output.EventReporter;
@@ -38,7 +37,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.Collections.emptySortedMap;
 
 @Documented( ".Database LogRotation Metrics" )
-public class LogRotationMetrics extends LifecycleAdapter implements Lifecycle
+public class LogRotationMetrics extends LifecycleAdapter
 {
     private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";
 
@@ -60,7 +59,8 @@ public class LogRotationMetrics extends LifecycleAdapter implements Lifecycle
         this.registry = registry;
         this.monitors = monitors;
         this.logRotationMonitor = logRotationMonitor;
-        this.listener = ( durationMillis ) -> {
+        this.listener = durationMillis ->
+        {
             final SortedMap<String,Gauge> gauges = new TreeMap<>();
             gauges.put( LOG_ROTATION_DURATION, () -> durationMillis );
             reporter.report( gauges, emptySortedMap(), emptySortedMap(), emptySortedMap(), emptySortedMap() );

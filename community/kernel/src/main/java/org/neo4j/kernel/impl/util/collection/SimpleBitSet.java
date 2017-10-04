@@ -27,20 +27,20 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 
 /**
  * A basic bitset.
- *
+ * <p>
  * Represented using an automatically expanding long array, with one bit per key.
- *
+ * <p>
  * Performance:
- *  * put, remove, contains, size: O(1)
- *  * clear: O(size/64)
- *
+ * * put, remove, contains, size: O(1)
+ * * clear: O(size/64)
+ * <p>
  * Concurrency semantics:
- *  * Concurrent writes synchronise and is thread-safe
- *  * Concurrent reads are thread-safe and will not observe torn writes, but may become
- *    out of date as soon as the operation returns
- *  * Concurrent reads during write is thread-safe
- *  * Bulk operations appear atomic to concurrent readers
- *  * Only caveat being that the iterator is not thread-safe
+ * * Concurrent writes synchronise and is thread-safe
+ * * Concurrent reads are thread-safe and will not observe torn writes, but may become
+ * out of date as soon as the operation returns
+ * * Concurrent reads during write is thread-safe
+ * * Bulk operations appear atomic to concurrent readers
+ * * Only caveat being that the iterator is not thread-safe
  */
 public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
 {
@@ -51,14 +51,16 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     {
         int initialCapacity = size / 64;
         int capacity = 1;
-        while (capacity < initialCapacity)
+        while ( capacity < initialCapacity )
+        {
             capacity <<= 1;
+        }
         long stamp = writeLock();
         data = new long[capacity];
         unlockWrite( stamp );
     }
 
-    public boolean contains(int key)
+    public boolean contains( int key )
     {
         int idx = key >>> 6;
         boolean result;
@@ -76,8 +78,8 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     {
         long stamp = writeLock();
         int idx = key >>> 6;
-        ensureCapacity(idx);
-        data[idx] = data[idx] | (1L<< (key & 63));
+        ensureCapacity( idx );
+        data[idx] = data[idx] | (1L << (key & 63));
         unlockWrite( stamp );
     }
 
@@ -85,8 +87,10 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     {
         long stamp = writeLock();
         ensureCapacity( other.data.length - 1 );
-        for(int i=0;i<data.length && i<other.data.length;i++)
+        for ( int i = 0; i < data.length && i < other.data.length; i++ )
+        {
             data[i] = data[i] | other.data[i];
+        }
         unlockWrite( stamp );
     }
 
@@ -94,9 +98,9 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     {
         long stamp = writeLock();
         int idx = key >>> 6;
-        if(data.length > idx)
+        if ( data.length > idx )
         {
-            data[idx] = data[idx] & ~(1L<< (key & 63));
+            data[idx] = data[idx] & ~(1L << (key & 63));
         }
         unlockWrite( stamp );
     }
@@ -104,8 +108,10 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     public void remove( SimpleBitSet other )
     {
         long stamp = writeLock();
-        for(int i=0;i<data.length;i++)
+        for ( int i = 0; i < data.length; i++ )
+        {
             data[i] = data[i] & ~other.data[i];
+        }
         unlockWrite( stamp );
     }
 
@@ -126,7 +132,7 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
                 len = findNewLength( idx, len );
                 data = new long[len];
             }
-            data[idx] = data[idx] | (1L<< (key & 63));
+            data[idx] = data[idx] | (1L << (key & 63));
             lastCheckPointKey = key;
             checkPoint = tryConvertToOptimisticRead( stamp );
         }
@@ -145,8 +151,10 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     public int size()
     {
         int size = 0;
-        for(int i=0;i<data.length;i++)
+        for ( int i = 0; i < data.length; i++ )
+        {
             size += Long.bitCount( data[i] );
+        }
         return size;
     }
 
@@ -164,13 +172,15 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     {
         return new PrimitiveIntIterator()
         {
-            private int next = 0;
+            private int next;
             private final int size = data.length * 64;
 
             {
                 // Prefetch first
-                while( next < size && !contains( next ) )
+                while ( next < size && !contains( next ) )
+                {
                     next++;
+                }
             }
 
             @Override
@@ -184,7 +194,10 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
             {
                 int current = next;
                 next++;
-                while( next < size && !contains( next ) ) next++;
+                while ( next < size && !contains( next ) )
+                {
+                    next++;
+                }
                 return current;
             }
         };

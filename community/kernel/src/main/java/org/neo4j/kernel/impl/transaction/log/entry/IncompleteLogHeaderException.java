@@ -46,9 +46,10 @@ public class IncompleteLogHeaderException extends IOException
         StringBuilder builder = new StringBuilder( "Unable to read log version and last committed tx" );
         if ( file != null )
         {
-            builder.append( " from '" + file.getAbsolutePath() + "'" );
+            builder.append( " from '" ).append( file.getAbsolutePath() ).append( "'" );
         }
-        builder.append( ". Was only able to read " + readSize + " bytes, but was expecting " + LOG_HEADER_SIZE );
+        builder.append( ". Was only able to read " ).append( readSize ).append( " bytes, but was expecting " )
+               .append( LOG_HEADER_SIZE );
         return builder.toString();
     }
 }

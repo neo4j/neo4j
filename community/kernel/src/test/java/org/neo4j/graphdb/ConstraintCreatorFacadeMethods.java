@@ -27,7 +27,7 @@ import static java.util.Collections.unmodifiableCollection;
 public class ConstraintCreatorFacadeMethods
 {
     private static final FacadeMethod<ConstraintCreator> UNIQUE =
-        new FacadeMethod<ConstraintCreator>( "ConstraintCreator unique()")
+            new FacadeMethod<ConstraintCreator>( "ConstraintCreator unique()" )
         {
             @Override
             public void call( ConstraintCreator self )
@@ -51,4 +51,8 @@ public class ConstraintCreatorFacadeMethods
                     UNIQUE,
                     CREATE
             ) );
+
+    private ConstraintCreatorFacadeMethods()
+    {
+    }
 }

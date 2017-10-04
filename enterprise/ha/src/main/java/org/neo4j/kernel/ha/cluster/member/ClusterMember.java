@@ -39,7 +39,7 @@ public class ClusterMember
 
     public ClusterMember( InstanceId instanceId )
     {
-        this( instanceId, Collections.<String,URI>emptyMap(), StoreId.DEFAULT, true );
+        this( instanceId, Collections.emptyMap(), StoreId.DEFAULT, true );
     }
 
     public ClusterMember( InstanceId instanceId, Map<String,URI> roles, StoreId storeId, boolean alive )
@@ -121,7 +121,7 @@ public class ClusterMember
 
     ClusterMember unavailable()
     {
-        return new ClusterMember( this.instanceId, Collections.<String,URI>emptyMap(), storeId, this.alive );
+        return new ClusterMember( this.instanceId, Collections.emptyMap(), storeId, this.alive );
     }
 
     ClusterMember unavailableAs( String role )

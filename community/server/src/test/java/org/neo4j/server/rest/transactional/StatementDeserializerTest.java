@@ -40,7 +40,7 @@ import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 public class StatementDeserializerTest
 {
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldDeserializeSingleStatement() throws Exception
     {
         // Given
@@ -67,9 +67,8 @@ public class StatementDeserializerTest
 
         String json = "{ \"timeout\" : 200, \"statements\" : [ { \"statement\" : \"ignored\", \"parameters\" : {}} ] }";
 
-        assertYieldsErrors( json,
-                new Neo4jError( Status.Request.InvalidFormat,
-                        new DeserializationException( "Unable to deserialize request. Expected first field to be 'statements', but was 'timeout'." )));
+        assertYieldsErrors( json, new Neo4jError( Status.Request.InvalidFormat, new DeserializationException(
+                "Unable to deserialize request. Expected first field to be 'statements', but was 'timeout'." ) ) );
     }
 
     @Test
@@ -144,7 +143,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldDeserializeMultipleStatements() throws Exception
     {
         // Given

@@ -23,17 +23,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -54,8 +54,9 @@ public class ClusterTransactionIT
     public void setUp() throws Exception
     {
         cluster = clusterRule.withCluster( clusterOfSize( 3 ) )
-                             .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
-                             .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
+                             .withSharedSetting( HaSettings.tx_push_factor, "2" )
+                             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                             .startCluster();
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
     }
@@ -76,36 +77,28 @@ public class ClusterTransactionIT
         cluster.sync();
 
         // When
-        final FutureTask<Boolean> result = new FutureTask<>( new Callable<Boolean>()
+        final FutureTask<Boolean> result = new FutureTask<>( () ->
         {
-            @Override
-            public Boolean call() throws Exception
+            try ( Transaction tx = slave.beginTx() )
             {
-                try ( Transaction tx = slave.beginTx() )
-                {
-                    tx.acquireWriteLock( slave.getNodeById( nodeId ) );
-                }
-                catch ( Exception e )
-                {
-                    return contains( e, TransactionFailureException.class );
-                }
-                // Fail otherwise
-                return false;
+                tx.acquireWriteLock( slave.getNodeById( nodeId ) );
             }
+            catch ( Exception e )
+            {
+                return contains( e, TransactionFailureException.class );
+            }
+            // Fail otherwise
+            return false;
         } );
 
         master.getDependencyResolver()
                 .resolveDependency( LifeSupport.class )
-                .addLifecycleListener( new LifecycleListener()
+                .addLifecycleListener( ( instance, from, to ) ->
                 {
-                    @Override
-                    public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
+                    if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
+                         to == LifecycleStatus.STOPPED )
                     {
-                        if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
-                             to == LifecycleStatus.STOPPED )
-                        {
-                            result.run();
-                        }
+                        result.run();
                     }
                 } );
 

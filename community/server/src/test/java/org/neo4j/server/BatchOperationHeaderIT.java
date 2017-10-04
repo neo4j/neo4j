@@ -19,16 +19,17 @@
  */
 package org.neo4j.server;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.PrettyJSON;
 import org.neo4j.server.rest.RestRequest;
@@ -36,8 +37,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.dummy.web.service.DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 
 public class BatchOperationHeaderIT extends ExclusiveServerTestBase
@@ -50,8 +50,9 @@ public class BatchOperationHeaderIT extends ExclusiveServerTestBase
     @Before
     public void cleanTheDatabase() throws IOException
     {
-        server = server().withThirdPartyJaxRsPackage( "org.dummy.web.service",
-                DUMMY_WEB_SERVICE_MOUNT_POINT ).usingDataDir( folder.getRoot().getAbsolutePath() ).build();
+        server = serverOnRandomPorts()
+                .withThirdPartyJaxRsPackage( "org.dummy.web.service", DUMMY_WEB_SERVICE_MOUNT_POINT )
+                .usingDataDir( folder.getRoot().getAbsolutePath() ).build();
         server.start();
     }
 
@@ -67,6 +68,8 @@ public class BatchOperationHeaderIT extends ExclusiveServerTestBase
     @Test
     public void shouldPassHeaders() throws Exception
     {
+        int httpPort = getLocalHttpPort();
+
         String jsonData = new PrettyJSON()
                 .array()
                 .object()
@@ -78,7 +81,7 @@ public class BatchOperationHeaderIT extends ExclusiveServerTestBase
                 .toString();
 
         JaxRsResponse response = new RestRequest( null, "user", "pass" )
-                .post( "http://localhost:7474/db/data/batch", jsonData );
+                .post( server.baseUri() + "db/data/batch", jsonData );
 
         assertEquals( 200, response.getStatus() );
 
@@ -100,7 +103,14 @@ public class BatchOperationHeaderIT extends ExclusiveServerTestBase
         assertEquals( "Basic dXNlcjpwYXNz", res.get( "Authorization" ) );
         assertEquals( "application/json", res.get( "Accept" ) );
         assertEquals( "application/json", res.get( "Content-Type" ) );
-        assertEquals( "localhost:7474", res.get( "Host" ) );
+        assertEquals( "localhost:" + httpPort, res.get( "Host" ) );
         assertEquals( "keep-alive", res.get( "Connection" ) );
+    }
+
+    private int getLocalHttpPort()
+    {
+        ConnectorPortRegister connectorPortRegister = server.getDatabase().getGraph().getDependencyResolver()
+                .resolveDependency( ConnectorPortRegister.class );
+        return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 }

@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene54.Lucene54Codec;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.PooledConcurrentMergeScheduler;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
-import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
+import org.neo4j.index.impl.lucene.explicit.LuceneDataSource;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
@@ -55,6 +57,9 @@ public final class IndexWriterConfigs
     private static final double POPULATION_RAM_BUFFER_SIZE_MB = FeatureToggles.getDouble( IndexWriterConfigs.class,
             "population.ram.buffer.size", 50 );
 
+    private static final boolean CUSTOM_MERGE_SCHEDULER =
+            FeatureToggles.flag( IndexWriterConfigs.class, "custom.merge.scheduler", true );
+
     /**
      * Default postings format for schema and label scan store indexes.
      */
@@ -67,7 +72,13 @@ public final class IndexWriterConfigs
 
     public static IndexWriterConfig standard()
     {
-        IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
+        Analyzer analyzer = LuceneDataSource.KEYWORD_ANALYZER;
+        return standard( analyzer );
+    }
+
+    public static IndexWriterConfig standard( Analyzer analyzer )
+    {
+        IndexWriterConfig writerConfig = new IndexWriterConfig( analyzer );
 
         writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS );
         writerConfig.setMaxBufferedDeleteTerms( MAX_BUFFERED_DELETE_TERMS );
@@ -83,6 +94,10 @@ public final class IndexWriterConfigs
                 return CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT ? blockTreeOrdsPostingsFormat : postingFormat;
             }
         });
+        if ( CUSTOM_MERGE_SCHEDULER )
+        {
+            writerConfig.setMergeScheduler( new PooledConcurrentMergeScheduler() );
+        }
 
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );
@@ -95,7 +110,13 @@ public final class IndexWriterConfigs
 
     public static IndexWriterConfig population()
     {
-        IndexWriterConfig writerConfig = standard();
+        Analyzer analyzer = LuceneDataSource.KEYWORD_ANALYZER;
+        return population( analyzer );
+    }
+
+    public static IndexWriterConfig population( Analyzer analyzer )
+    {
+        IndexWriterConfig writerConfig = standard( analyzer );
         writerConfig.setMaxBufferedDocs( POPULATION_MAX_BUFFERED_DOCS );
         writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
         return writerConfig;

@@ -27,6 +27,6 @@ class CannotWriteException extends Exception
 {
     CannotWriteException( Path file )
     {
-        super( format("Could not write to: %s", file.toAbsolutePath().toString() ));
+        super( format( "Could not write to: %s", file.toAbsolutePath().toString() ) );
     }
 }

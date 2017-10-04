@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.io.IOException;
-import javax.ws.rs.core.HttpHeaders;
-
 import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -75,7 +75,8 @@ public class UsersIT extends ExclusiveServerTestBase
     @Test
     @Documented( "User status on first access\n" +
                  "\n" +
-                 "On first access, and using the default password, the user status will indicate that the users password requires changing." )
+                 "On first access, and using the default password, the user status will indicate " +
+                 "that the users password requires changing." )
     public void user_status_first_access() throws JsonParseException, IOException
     {
         // Given
@@ -97,7 +98,8 @@ public class UsersIT extends ExclusiveServerTestBase
     @Test
     @Documented( "Changing the user password\n" +
                  "\n" +
-                 "Given that you know the current password, you can ask the server to change a users password. You can choose any\n" +
+                 "Given that you know the current password, you can ask the server to change a users password. " +
+                 "You can choose any\n" +
                  "password you like, as long as it is different from the current password." )
     public void change_password() throws JsonParseException, IOException
     {
@@ -112,10 +114,12 @@ public class UsersIT extends ExclusiveServerTestBase
                 .post( server.baseUri().resolve( "/user/neo4j/password" ).toString() );
 
         // Then the new password should work
-        assertEquals( 200, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) ).GET( dataURL() ).status() );
+        assertEquals( 200, HTTP.withHeaders( HttpHeaders.AUTHORIZATION,
+                challengeResponse( "neo4j", "secret" ) ).GET( dataURL() ).status() );
 
         // Then the old password should not be invalid
-        assertEquals( 401, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) ).POST( dataURL() ).status() );
+        assertEquals( 401, HTTP.withHeaders( HttpHeaders.AUTHORIZATION,
+                challengeResponse( "neo4j", "neo4j" ) ).POST( dataURL() ).status() );
     }
 
     @Test
@@ -136,12 +140,15 @@ public class UsersIT extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if(server != null) {server.stop();}
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 
-    public void startServer(boolean authEnabled) throws IOException
+    public void startServer( boolean authEnabled ) throws IOException
     {
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
         server.start();
@@ -178,7 +185,7 @@ public class UsersIT extends ExclusiveServerTestBase
         return server.baseUri().resolve( "user/" + username + "/password" ).toString();
     }
 
-    private String base64(String value)
+    private String base64( String value )
     {
         return UTF8.decode( Base64.encode( value ) );
     }

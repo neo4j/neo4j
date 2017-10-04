@@ -28,7 +28,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Collections;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -37,7 +36,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -50,6 +48,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 @RunWith( Enclosed.class )
 public class HAClusterStartupIT
@@ -102,12 +101,12 @@ public class HAClusterStartupIT
                     }
 
                     // (2) BuiltInProcedures from enterprise
-                    try( InternalTransaction tx = gdb.beginTransaction(
+                    try ( InternalTransaction tx = gdb.beginTransaction(
                         KernelTransaction.Type.explicit,
                         EnterpriseSecurityContext.AUTH_DISABLED
                     ) )
                     {
-                        Result result = gdb.execute( tx, "CALL dbms.listQueries()", Collections.emptyMap() );
+                        Result result = gdb.execute( tx, "CALL dbms.listQueries()", EMPTY_MAP );
                         assertTrue( result.hasNext() );
                         result.close();
 
@@ -242,7 +241,7 @@ public class HAClusterStartupIT
 
     private static void deleteAllLogsOn( File storeDirectory )
     {
-        File[] files = storeDirectory.listFiles( new LogFiles.LogicalLogFilenameFilter() );
+        File[] files = storeDirectory.listFiles( LogFiles.FILENAME_FILTER );
         assertNotNull( files );
         for ( File file : files )
         {

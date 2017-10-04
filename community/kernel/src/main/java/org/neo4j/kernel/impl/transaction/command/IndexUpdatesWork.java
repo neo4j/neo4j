@@ -25,12 +25,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.concurrent.Work;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 /**
  * Combines {@link IndexUpdates} from multiple transactions into one bigger job.
  */
-public class IndexUpdatesWork implements Work<IndexingService,IndexUpdatesWork>
+public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdatesWork>
 {
     private final List<IndexUpdates> updates = new ArrayList<>();
 
@@ -56,7 +56,7 @@ public class IndexUpdatesWork implements Work<IndexingService,IndexUpdatesWork>
     }
 
     @Override
-    public void apply( IndexingService material )
+    public void apply( IndexingUpdateService material )
     {
         try
         {
@@ -73,25 +73,16 @@ public class IndexUpdatesWork implements Work<IndexingService,IndexUpdatesWork>
         return new IndexUpdates()
         {
             @Override
-            public Iterator<NodePropertyUpdate> iterator()
+            public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
             {
-                return new NestingIterator<NodePropertyUpdate,IndexUpdates>( updates.iterator() )
+                return new NestingIterator<IndexEntryUpdate<LabelSchemaDescriptor>,IndexUpdates>( updates.iterator() )
                 {
                     @Override
-                    protected Iterator<NodePropertyUpdate> createNestedIterator( IndexUpdates item )
+                    protected Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> createNestedIterator( IndexUpdates item )
                     {
                         return item.iterator();
                     }
                 };
-            }
-
-            @Override
-            public void collectUpdatedNodeIds( PrimitiveLongSet target )
-            {
-                for ( IndexUpdates indexUpdates : updates )
-                {
-                    indexUpdates.collectUpdatedNodeIds( target );
-                }
             }
 
             @Override

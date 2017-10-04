@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>3.1.8-SNAPSHOT</version>
+        <version>3.4.0-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
 
@@ -20,10 +20,6 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
-        <short-name>harness-enterprise</short-name>
-        <version-package>server.impl.api</version-package>
-        <bundle.namespace>org.neo4j.server.enterprise</bundle.namespace>
-        <docs-plugin.skip>true</docs-plugin.skip>
         <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     </properties>
 
@@ -115,5 +111,14 @@
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-com</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
     </dependencies>
+
 </project>

@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.arguments;
 
+import org.apache.commons.text.WordUtils;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -30,8 +32,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.text.WordUtils;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.common.Database;
@@ -151,7 +151,8 @@ public class Arguments
         List<String> lines = Arrays.asList( text.split( "\r?\n" ) );
 
         return lines.stream()
-                .map( l -> WordUtils.wrap( l, lineLength ) )
+                .map( l ->
+                        l.length() > lineLength ? WordUtils.wrap( l, lineLength ) : l )
                 .collect( Collectors.joining( NEWLINE ) );
     }
 

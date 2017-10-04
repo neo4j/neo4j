@@ -26,7 +26,6 @@ import java.net.URL;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -41,7 +40,7 @@ public class FileURLAccessRuleTest
     {
         try
         {
-            URLAccessRules.fileAccess().validate( Config.empty(), new URL( "file://foo/bar/baz" ) );
+            URLAccessRules.fileAccess().validate( Config.defaults(), new URL( "file://foo/bar/baz" ) );
             fail( "expected exception not thrown " );
         }
         catch ( URLAccessValidationError error )
@@ -56,7 +55,7 @@ public class FileURLAccessRuleTest
     {
         try
         {
-            URLAccessRules.fileAccess().validate( Config.empty(), new URL( "file:///bar/baz?q=foo" ) );
+            URLAccessRules.fileAccess().validate( Config.defaults(), new URL( "file:///bar/baz?q=foo" ) );
             fail( "expected exception not thrown " );
         }
         catch ( URLAccessValidationError error )
@@ -69,7 +68,7 @@ public class FileURLAccessRuleTest
     public void shouldThrowWhenFileAccessIsDisabled() throws Exception
     {
         final URL url = new URL( "file:///bar/baz.csv" );
-        final Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.allow_file_urls.name(), "false" ) );
+        final Config config = Config.defaults( GraphDatabaseSettings.allow_file_urls, "false" );
         try
         {
             URLAccessRules.fileAccess().validate( config, url );
@@ -85,8 +84,7 @@ public class FileURLAccessRuleTest
     public void shouldThrowWhenRelativePathIsOutsideImportDirectory() throws Exception
     {
         File importDir = new File( "/tmp/neo4jtest" ).getAbsoluteFile();
-        final Config config = new Config(
-                MapUtil.stringMap( GraphDatabaseSettings.load_csv_file_url_root.name(), importDir.toString() ) );
+        final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, importDir.toString() );
         try
         {
             URLAccessRules.fileAccess().validate( config, new URL( "file:///../baz.csv" ) );
@@ -102,8 +100,7 @@ public class FileURLAccessRuleTest
     public void shouldAdjustURLToWithinImportDirectory() throws Exception
     {
         final URL url = new File( "/bar/baz.csv" ).toURI().toURL();
-        final Config config = new Config(
-                MapUtil.stringMap( GraphDatabaseSettings.load_csv_file_url_root.name(), "/var/lib/neo4j/import" ) );
+        final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, "/var/lib/neo4j/import" );
         URL accessURL = URLAccessRules.fileAccess().validate( config, url );
         URL expected = new File( "/var/lib/neo4j/import/bar/baz.csv" ).toURI().toURL();
         assertEquals( expected, accessURL );

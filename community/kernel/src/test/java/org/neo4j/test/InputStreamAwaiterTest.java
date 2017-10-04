@@ -129,7 +129,7 @@ public class InputStreamAwaiterTest
     {
         private final Ticker ticker;
         private final byte[][] chunks;
-        private int chunk = 0;
+        private int chunk;
 
         MockInputStream( Ticker ticker, String... chunks )
         {

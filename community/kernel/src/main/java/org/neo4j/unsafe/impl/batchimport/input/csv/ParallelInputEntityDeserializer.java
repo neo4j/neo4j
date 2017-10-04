@@ -29,8 +29,8 @@ import java.util.function.Supplier;
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.ProcessingSource;
-import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.csv.reader.Source.Chunk;
+import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
@@ -93,7 +93,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             boolean deferredValidation = decorator.isMutable();
             Decorator<ENTITY> batchDecorator = deferredValidation ? noDecorator() : decorator;
             Validator<ENTITY> batchValidator = deferredValidation ? emptyValidator() : validator;
-            processing = new TicketedProcessing<>( "Parallel input parser", maxProcessors, (seeker, header) ->
+            processing = new TicketedProcessing<>( "Parallel input parser", maxProcessors, ( seeker, header ) ->
             {
                 // Create a local deserializer for this chunk with NO decoration/validation,
                 // this will happen in an orderly fashion in our post-processor below and done like this
@@ -200,7 +200,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
                     // Reset the base numbers if we're venturing into a new source. We rely on the fact that
                     // the ProcessingSource spawning the chunks which have been processed into entities
                     // don't mix entities from different sources in the same batch.
-                    ENTITY lastEntity = batch[batch.length-1];
+                    ENTITY lastEntity = batch[batch.length - 1];
                     if ( currentSourceDescription == null ||
                             !currentSourceDescription.equals( lastEntity.sourceDescription() ) )
                     {
@@ -298,7 +298,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public long position()
     {
-        return last.position();
+        return source.position();
     }
 
     @Override

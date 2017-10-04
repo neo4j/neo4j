@@ -38,7 +38,7 @@ class Description implements ExecutionPlanDescription
 {
     private final org.neo4j.cypher.internal.PlanDescription description;
 
-    public Description( PlanDescription description )
+    Description( PlanDescription description )
     {
         this.description = description;
     }
@@ -112,6 +112,18 @@ class Description implements ExecutionPlanDescription
             public long getDbHits()
             {
                 return statistics.getDbHits();
+            }
+
+            @Override
+            public long getPageCacheHits()
+            {
+                return statistics.getPageCacheHits();
+            }
+
+            @Override
+            public long getPageCacheMisses()
+            {
+                return statistics.getPageCacheMisses();
             }
 
             @Override

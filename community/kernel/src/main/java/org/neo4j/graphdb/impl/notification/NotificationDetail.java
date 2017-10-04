@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface NotificationDetail
 {
@@ -30,30 +32,40 @@ public interface NotificationDetail
 
     final class Factory
     {
+        private Factory()
+        {
+        }
+
         public static NotificationDetail deprecatedName( final String oldName, final String newName )
         {
             return createDeprecationNotificationDetail( oldName, newName );
         }
 
-        public static NotificationDetail index( final String labelName, final String propertyKeyName )
+        public static NotificationDetail index( final String labelName, final String... propertyKeyNames )
         {
             return createNotificationDetail( "hinted index",
-                    String.format( "index on :%s(%s)", labelName, propertyKeyName ), true );
+                    String.format( "index on :%s(%s)", labelName,
+                            Arrays.stream( propertyKeyNames ).collect( Collectors.joining( "," ) ) ), true );
         }
 
         public static NotificationDetail label( final String labelName )
         {
-            return createNotificationDetail( "the missing label name is", labelName, true );
+            return createNotificationDetail( "the missing label name", labelName, true );
         }
 
         public static NotificationDetail relationshipType( final String relType )
         {
-            return createNotificationDetail( "the missing relationship type is", relType, true );
+            return createNotificationDetail( "the missing relationship type", relType, true );
+        }
+
+        public static NotificationDetail procedureWarning( final String procedure, final String warning )
+        {
+            return createProcedureWarningNotificationDetail( procedure, warning );
         }
 
         public static NotificationDetail propertyName( final String name )
         {
-            return createNotificationDetail( "the missing property name is", name, true );
+            return createNotificationDetail( "the missing property name", name, true );
         }
 
         public static NotificationDetail joinKey( List<String> identifiers )
@@ -88,6 +100,84 @@ public interface NotificationDetail
         public static NotificationDetail indexSeekOrScan( Set<String> labels )
         {
             return createNotificationDetail( labels, "indexed label", "indexed labels" );
+        }
+
+        public static NotificationDetail startDeprecated( String message )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return "START";
+                }
+
+                @Override
+                public String value()
+                {
+                    return message;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return message;
+                }
+            };
+        }
+
+        public static NotificationDetail deprecatedField( final String procedure, final String field )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return procedure;
+                }
+
+                @Override
+                public String value()
+                {
+                    return field;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format( "'%s' returned by '%s' is no longer supported.", field, procedure );
+                }
+            };
+        }
+
+        public static NotificationDetail bindingVarLengthRelationship( final String element )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return element;
+                }
+
+                @Override
+                public String value()
+                {
+                    return String.format(
+                            "Binding a variable length relationship pattern to a variable ('%s') is deprecated and "
+                                    + "will be unsupported in a future version. The recommended way is to bind the "
+                                    + "whole path to a variable, then extract the relationships:%n"
+                                    + "\tMATCH p = (...)-[...]-(...)%n"
+                                    + "\tWITH *, relationships(p) AS %s",
+                            element, element );
+                }
+
+                @Override
+                public String toString()
+                {
+                    return value();
+                }
+            };
         }
 
         private static NotificationDetail createNotificationDetail( Set<String> elements, String singularTerm,
@@ -159,6 +249,30 @@ public interface NotificationDetail
                     {
                         return String.format( "'%s' has been replaced by '%s'", oldName, newName );
                     }
+                }
+            };
+        }
+
+        private static NotificationDetail createProcedureWarningNotificationDetail( String procedure, String warning )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return procedure;
+                }
+
+                @Override
+                public String value()
+                {
+                    return warning;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format( warning, procedure );
                 }
             };
         }

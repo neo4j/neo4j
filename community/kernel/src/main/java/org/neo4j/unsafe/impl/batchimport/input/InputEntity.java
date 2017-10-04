@@ -107,7 +107,7 @@ public abstract class InputEntity implements SourceTraceability
                 }
             }
         }
-        return properties.length/2 + otherProperties.length/2 - collidingKeys;
+        return properties.length / 2 + otherProperties.length / 2 - collidingKeys;
     }
 
     private void updateProperty( Object key, Object value, UpdateBehaviour behaviour )
@@ -118,7 +118,7 @@ public abstract class InputEntity implements SourceTraceability
             Object existingKey = properties[i++];
             if ( existingKey == null )
             {
-                free = i-1;
+                free = i - 1;
                 break;
             }
             if ( existingKey.equals( key ) )
@@ -180,7 +180,7 @@ public abstract class InputEntity implements SourceTraceability
         toStringFields( fields );
 
         StringBuilder builder = new StringBuilder( "%s:" );
-        Object[] arguments = new Object[fields.size()+1];
+        Object[] arguments = new Object[fields.size() + 1];
         int cursor = 0;
         arguments[cursor++] = getClass().getSimpleName();
         for ( Pair<String, ?> item : fields )

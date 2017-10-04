@@ -35,7 +35,7 @@ class PreorderBreadthFirstSelector implements BranchSelector
     private TraversalBranch current;
     private final PathExpander expander;
 
-    public PreorderBreadthFirstSelector( TraversalBranch startSource, PathExpander expander )
+    PreorderBreadthFirstSelector( TraversalBranch startSource, PathExpander expander )
     {
         this.current = startSource;
         this.expander = expander;

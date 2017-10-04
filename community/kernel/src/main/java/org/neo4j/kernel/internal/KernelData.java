@@ -59,8 +59,10 @@ public abstract class KernelData
 
     private static synchronized void removeInstance( String instanceId )
     {
-        if (instances.remove( instanceId ) == null)
-            throw new IllegalArgumentException( "No kernel found with instance id "+instanceId );
+        if ( instances.remove( instanceId ) == null )
+        {
+            throw new IllegalArgumentException( "No kernel found with instance id " + instanceId );
+        }
     }
 
     private final String instanceId;

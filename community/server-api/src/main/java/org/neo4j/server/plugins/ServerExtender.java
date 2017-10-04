@@ -47,7 +47,10 @@ public final class ServerExtender
     Iterable<PluginPoint> getExtensionsFor( Class<?> type )
     {
         Map<String, PluginPoint> ext = targetToPluginMap.get( type );
-        if ( ext == null ) return Collections.emptyList();
+        if ( ext == null )
+        {
+            return Collections.emptyList();
+        }
         return ext.values();
     }
 
@@ -84,7 +87,10 @@ public final class ServerExtender
     void addExtension( Class<?> type, PluginPoint plugin )
     {
         Map<String, PluginPoint> ext = targetToPluginMap.get( type );
-        if ( ext == null ) throw new IllegalStateException( "Cannot extend " + type );
+        if ( ext == null )
+        {
+            throw new IllegalStateException( "Cannot extend " + type );
+        }
         add( ext, plugin );
     }
 

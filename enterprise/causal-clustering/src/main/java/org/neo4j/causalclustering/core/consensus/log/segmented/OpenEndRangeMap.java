@@ -69,9 +69,13 @@ class OpenEndRangeMap<K extends Comparable<K>, V>
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
+            {
+                return false;
+            }
             ValueRange<?,?> that = (ValueRange<?,?>) o;
             return Objects.equals( limit, that.limit ) &&
                    Objects.equals( value, that.value );
@@ -87,8 +91,8 @@ class OpenEndRangeMap<K extends Comparable<K>, V>
     private final TreeMap<K,V> tree = new TreeMap<>();
 
     /* We optimize by keeping the open end range directly accessible. */
-    private K endKey = null;
-    private V endValue = null;
+    private K endKey;
+    private V endValue;
 
     Collection<V> replaceFrom( K from, V value )
     {
@@ -142,7 +146,7 @@ class OpenEndRangeMap<K extends Comparable<K>, V>
             itr.remove();
         }
 
-        if( tree.isEmpty() )
+        if ( tree.isEmpty() )
         {
             endKey = null;
             endValue = null;

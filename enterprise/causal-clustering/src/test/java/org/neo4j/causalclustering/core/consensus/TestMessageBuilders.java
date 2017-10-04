@@ -26,6 +26,10 @@ import org.neo4j.causalclustering.core.consensus.vote.VoteResponseBuilder;
 
 public class TestMessageBuilders
 {
+    private TestMessageBuilders()
+    {
+    }
+
     public static AppendEntriesRequestBuilder appendEntriesRequest()
     {
         return new AppendEntriesRequestBuilder();

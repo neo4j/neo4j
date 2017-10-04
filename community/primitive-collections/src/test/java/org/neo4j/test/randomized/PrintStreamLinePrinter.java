@@ -50,6 +50,6 @@ public class PrintStreamLinePrinter implements LinePrinter
     @Override
     public LinePrinter indent()
     {
-        return new PrintStreamLinePrinter( out, indentation+1 );
+        return new PrintStreamLinePrinter( out, indentation + 1 );
     }
 }

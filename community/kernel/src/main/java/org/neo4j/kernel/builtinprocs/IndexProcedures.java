@@ -30,10 +30,12 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
 public class IndexProcedures implements AutoCloseable
 {
@@ -53,14 +55,23 @@ public class IndexProcedures implements AutoCloseable
     {
         IndexSpecifier index = parse( indexSpecification );
         int labelId = getLabelId( index.label() );
-        int propertyKeyId = getPropertyKeyId( index.property() );
-        waitUntilOnline( getIndex( labelId, propertyKeyId, index ), index, timeout, timeoutUnits );
+        int[] propertyKeyIds = getPropertyIds( index.properties() );
+        waitUntilOnline( getIndex( labelId, propertyKeyIds, index ), index, timeout, timeoutUnits );
     }
 
     public void resampleIndex( String indexSpecification ) throws ProcedureException
     {
         IndexSpecifier index = parse( indexSpecification );
-        triggerSampling( getIndex( getLabelId( index.label() ), getPropertyKeyId( index.property() ), index ) );
+        int labelId = getLabelId( index.label() );
+        int[] propertyKeyIds = getPropertyIds( index.properties() );
+        try
+        {
+            triggerSampling( getIndex( labelId, propertyKeyIds, index ) );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( e.status(), e.getMessage(), e );
+        }
     }
 
     public void resampleOutdatedIndexes()
@@ -76,30 +87,37 @@ public class IndexProcedures implements AutoCloseable
     private int getLabelId( String labelName ) throws ProcedureException
     {
         int labelId = operations.labelGetForName( labelName );
-        if ( labelId == ReadOperations.NO_SUCH_LABEL )
+        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
         {
             throw new ProcedureException( Status.Schema.LabelAccessFailed, "No such label %s", labelName );
         }
         return labelId;
     }
 
-    private int getPropertyKeyId( String propertyKeyName ) throws ProcedureException
+    private int[] getPropertyIds( String[] propertyKeyNames ) throws ProcedureException
     {
-        int propertyKeyId = operations.propertyKeyGetForName( propertyKeyName );
-        if ( propertyKeyId == ReadOperations.NO_SUCH_PROPERTY_KEY )
+        int[] propertyKeyIds = new int[propertyKeyNames.length];
+        for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
-            throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed,
-                    "No such property key %s", propertyKeyName );
+
+            int propertyKeyId = operations.propertyKeyGetForName( propertyKeyNames[i] );
+            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s",
+                        propertyKeyNames );
+            }
+            propertyKeyIds[i] = propertyKeyId;
         }
-        return propertyKeyId;
+        return propertyKeyIds;
     }
 
-    private IndexDescriptor getIndex( int labelId, int propertyKeyId, IndexSpecifier index ) throws
+    private IndexDescriptor getIndex( int labelId, int[] propertyKeyIds, IndexSpecifier index ) throws
             ProcedureException
     {
         try
         {
-            return operations.indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            return operations
+                    .indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -107,8 +125,8 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void waitUntilOnline( IndexDescriptor index, IndexSpecifier indexDescription, long timeout, TimeUnit
-            timeoutUnits )
+    private void waitUntilOnline( IndexDescriptor index, IndexSpecifier indexDescription,
+            long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
         try
@@ -152,9 +170,9 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void triggerSampling( IndexDescriptor index )
+    private void triggerSampling( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
-        indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        indexingService.triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 
     @Override

@@ -3,20 +3,19 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <properties>
-    <short-name>codegen</short-name>
-    <bundle.namespace>org.neo4j.codegen</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <asm.version>5.2</asm.version>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-codegen</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>Neo4j - Code Generator</name>
@@ -53,7 +52,22 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>5.0.4</version>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <version>${asm.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -75,4 +89,40 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!--
+         The ASM library is notorious for making breaking changes to their API, so
+         we shade (embed) it under an org.neo4j package root to avoid version clashes.
+        -->
+        <executions>
+          <execution>
+            <id>build-shaded-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <artifactId>maven-shade-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <configuration>
+          <artifactSet>
+            <includes>
+              <include>org.ow2.asm:*</include>
+            </includes>
+          </artifactSet>
+          <relocations>
+            <relocation>
+              <pattern>org.objectweb.asm</pattern>
+              <shadedPattern>org.neo4j.codegen.asm</shadedPattern>
+            </relocation>
+          </relocations>
+          <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

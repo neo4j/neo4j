@@ -19,13 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -39,15 +33,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.stream.Collectors.joining;
@@ -69,7 +57,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 {
     static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
-    static final String BATCH_SIZE_NAME = "batch_size";
     static final String MAXIMUM_NUMBER_OF_WORKERS_NAME = "population_workers_maximum";
 
     private static final String EOL = System.lineSeparator();
@@ -80,11 +67,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
             getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
-    private final int BATCH_SIZE = FeatureToggles.getInteger( getClass(), BATCH_SIZE_NAME, 10_000 );
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final ExecutorService executor;
-    private final Map<IndexPopulation,List<NodePropertyUpdate>> batchedUpdates = new HashMap<>();
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -92,7 +77,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
      */
-    public BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
     {
         super( storeView, logProvider );
         this.executor = createThreadPool();
@@ -121,15 +106,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     @Override
-    protected IndexPopulation createPopulation( IndexPopulator populator,
-            IndexDescriptor descriptor, IndexConfiguration config, SchemaIndexProvider.Descriptor providerDescriptor,
-            FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
-    {
-        return new BatchingIndexPopulation( populator, descriptor, config, providerDescriptor, flipper,
-                failedIndexProxyFactory, indexUserDescription );
-    }
-
-    @Override
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
         log.debug( "Populating from queue." + EOL + this );
@@ -142,9 +118,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     @Override
     public String toString()
     {
-        String updatesString = batchedUpdates.values()
+        String updatesString = populations
                 .stream()
-                .map( entry -> entry.size() + " updates" )
+                .map( population -> population.batchedUpdates.size() + " updates" )
                 .collect( joining( ", ", "[", "]" ) );
 
         return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
@@ -174,64 +150,18 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
-     * Add given {@link NodePropertyUpdate update} to the list of updates already present for the given
-     * {@link IndexPopulation population}. Flushes all updates if {@link #BATCH_SIZE} is reached.
+     * Insert the given batch of updates into the index defined by the given {@link IndexPopulation}.
      *
      * @param population the index population.
-     * @param updates updates to add to the batch.
      */
-    private void batchUpdate( IndexPopulation population, Collection<NodePropertyUpdate> updates )
-    {
-        List<NodePropertyUpdate> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
-        batch.addAll( updates );
-        flushIfNeeded( population, batch );
-    }
-
-    /**
-     * Insert given list of updates to the index if {@link #BATCH_SIZE} is reached.
-     *
-     * @param population the index population.
-     * @param batch the list of updates for the index.
-     */
-    private void flushIfNeeded( IndexPopulation population, List<NodePropertyUpdate> batch )
-    {
-        if ( batch.size() >= BATCH_SIZE )
-        {
-            batchedUpdates.remove( population );
-            flush( population, batch );
-        }
-    }
-
-    /**
-     * Insert all batched updates into corresponding indexes.
-     */
-    private void flushAll()
-    {
-        Iterator<Map.Entry<IndexPopulation,List<NodePropertyUpdate>>> entries = batchedUpdates.entrySet().iterator();
-        while ( entries.hasNext() )
-        {
-            Map.Entry<IndexPopulation,List<NodePropertyUpdate>> entry = entries.next();
-            IndexPopulation population = entry.getKey();
-            List<NodePropertyUpdate> updates = entry.getValue();
-            entries.remove();
-            if ( updates != null && !updates.isEmpty() )
-            {
-                flush( population, updates );
-            }
-        }
-    }
-
-    /**
-     * Insert the given batch of updates into the index defined by the given {@link IndexDescriptor}.
-     *
-     * @param population the index population.
-     * @param batch the list of updates to insert.
-     */
-    private void flush( IndexPopulation population, List<NodePropertyUpdate> batch )
+    @Override
+    protected void flush( IndexPopulation population )
     {
         activeTasks.incrementAndGet();
+        Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
 
-        executor.execute( () -> {
+        executor.execute( () ->
+        {
             try
             {
                 population.populator.add( batch );
@@ -293,11 +223,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         log.warn( "Interrupted while waiting for index population tasks to complete." + EOL + this );
     }
 
-    private List<NodePropertyUpdate> newBatch()
-    {
-        return new ArrayList<>( BATCH_SIZE );
-    }
-
     private ExecutorService createThreadPool()
     {
         int threads = getNumberOfPopulationWorkers();
@@ -334,40 +259,16 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
-     * An {@link IndexPopulation} that does not insert updates one by one into the index but instead adds them to the
-     * map containing batches of updates for each index.
-     */
-    private class BatchingIndexPopulation extends IndexPopulation
-    {
-        BatchingIndexPopulation( IndexPopulator populator, IndexDescriptor descriptor, IndexConfiguration config,
-                SchemaIndexProvider.Descriptor providerDescriptor, FlippableIndexProxy flipper,
-                FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
-        {
-            super( populator, descriptor, config, providerDescriptor, flipper, failedIndexProxyFactory,
-                    indexUserDescription );
-        }
-
-        @Override
-        protected void addApplicable( Collection<NodePropertyUpdate> updates ) throws IOException,
-                IndexEntryConflictException
-        {
-            batchUpdate( this, updates );
-        }
-    }
-
-    /**
      * A delegating {@link StoreScan} implementation that flushes all pending updates and terminates the executor after
      * the delegate store scan completes.
      *
      * @param <E> type of the exception this store scan might get.
      */
-    private class BatchingStoreScan<E extends Exception> implements StoreScan<E>
+    private class BatchingStoreScan<E extends Exception> extends DelegatingStoreScan<E>
     {
-        final StoreScan<E> delegate;
-
         BatchingStoreScan( StoreScan<E> delegate )
         {
-            this.delegate = delegate;
+            super( delegate );
         }
 
         @Override
@@ -375,7 +276,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         {
             try
             {
-                delegate.run();
+                super.run();
                 log.info( "Completed node store scan. " +
                           "Flushing all pending updates." + EOL + BatchingMultipleIndexPopulator.this );
                 flushAll();
@@ -393,31 +294,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
                 throw scanError;
             }
             shutdownExecutor( false );
-        }
-
-        @Override
-        public void stop()
-        {
-            delegate.stop();
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexUpdater updater, NodePropertyUpdate update,
-                long currentlyIndexedNodeId )
-        {
-            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
-        }
-
-        @Override
-        public PopulationProgress getProgress()
-        {
-            return delegate.getProgress();
-        }
-
-        @Override
-        public void configure( List<IndexPopulation> populations )
-        {
-            delegate.configure( populations );
         }
     }
 }

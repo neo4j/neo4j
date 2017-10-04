@@ -19,6 +19,14 @@
  */
 package org.neo4j.com;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBufferFactory;
+import org.jboss.netty.buffer.ChannelBufferIndexFinder;
+import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,14 +36,6 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferFactory;
-import org.jboss.netty.buffer.ChannelBufferIndexFinder;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
 
 /**
  * A decorator around a {@link ChannelBuffer} which adds the ability to transfer
@@ -96,7 +96,8 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private byte[] header( byte continuation )
     {
         byte[] header = new byte[2];
-        header[0] = (byte)((internalProtocolVersion << 2) | ((failure?OUTCOME_FAILURE:OUTCOME_SUCCESS) << 1) | continuation );
+        header[0] = (byte)((internalProtocolVersion << 2) | ((failure ? OUTCOME_FAILURE : OUTCOME_SUCCESS) << 1) |
+                continuation );
         header[1] = applicationProtocolVersion;
         return header;
     }
@@ -532,7 +533,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     {
         // Note: This is wasteful, it should pack as much data as possible into the current chunk before sending it off.
         // Refactor when there is time.
-        if ( writerIndex()+bytesPlus >= capacity )
+        if ( writerIndex() + bytesPlus >= capacity )
         {
             setContinuation( CONTINUATION_MORE );
             writeCurrentChunk();
@@ -549,7 +550,9 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private void writeCurrentChunk()
     {
         if ( !channel.isOpen() || !channel.isConnected() || !channel.isBound() )
+        {
             throw new ComException( "Channel has been closed, so no need to try to write to it anymore. Client closed it?" );
+        }
 
         waitForClientToCatchUpOnReadingChunks();
         ChannelFuture future = channel.write( buffer );

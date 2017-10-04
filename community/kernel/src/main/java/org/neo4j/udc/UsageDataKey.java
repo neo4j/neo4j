@@ -34,17 +34,17 @@ public class UsageDataKey<Type>
     /** When key is requested and no value exists, a default value is generated and inserted using this */
     private final Supplier<Type> defaultVal;
 
-    public static <T> UsageDataKey<T> key(String name)
+    public static <T> UsageDataKey<T> key( String name )
     {
-        return key(name, null);
+        return key( name, null );
     }
 
-    public static <T> UsageDataKey<T> key(String name, T defaultVal)
+    public static <T> UsageDataKey<T> key( String name, T defaultVal )
     {
-        return new UsageDataKey<>( name, singleton(defaultVal) );
+        return new UsageDataKey<>( name, singleton( defaultVal ) );
     }
 
-    public static <T> UsageDataKey<T> key(String name, Supplier<T> defaultVal)
+    public static <T> UsageDataKey<T> key( String name, Supplier<T> defaultVal )
     {
         return new UsageDataKey<>( name, defaultVal );
     }
@@ -69,9 +69,13 @@ public class UsageDataKey<Type>
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         UsageDataKey<?> key = (UsageDataKey<?>) o;
 

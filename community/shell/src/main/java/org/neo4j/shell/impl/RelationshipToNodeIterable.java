@@ -21,25 +21,26 @@ package org.neo4j.shell.impl;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.helpers.collection.MappingResourceIterator;
 
-public class RelationshipToNodeIterable extends IterableWrapper<Node, Relationship>
+public class RelationshipToNodeIterable extends MappingResourceIterator<Node, Relationship>
 {
     private final Node fromNode;
 
-    public RelationshipToNodeIterable( Iterable<Relationship> iterableToWrap, Node fromNode )
+    private RelationshipToNodeIterable( ResourceIterable<Relationship> iterableToWrap, Node fromNode )
     {
-        super( iterableToWrap );
+        super( iterableToWrap.iterator() );
         this.fromNode = fromNode;
     }
 
     @Override
-    protected Node underlyingObjectToObject( Relationship rel )
+    protected Node map( Relationship rel )
     {
         return rel.getOtherNode( fromNode );
     }
 
-    public static Iterable<Node> wrap( Iterable<Relationship> relationships, Node fromNode )
+    public static MappingResourceIterator<Node,Relationship> wrap( ResourceIterable<Relationship> relationships, Node fromNode )
     {
         return new RelationshipToNodeIterable( relationships, fromNode );
     }

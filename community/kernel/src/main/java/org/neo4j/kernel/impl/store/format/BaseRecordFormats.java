@@ -36,18 +36,27 @@ public abstract class BaseRecordFormats implements RecordFormats
     private final int generation;
     private final Capability[] capabilities;
     private final String storeVersion;
+    private final String introductionVersion;
 
-    protected BaseRecordFormats( String storeVersion, int generation, Capability... capabilities )
+    protected BaseRecordFormats( String storeVersion, String introductionVersion, int generation,
+            Capability... capabilities )
     {
         this.storeVersion = storeVersion;
         this.generation = generation;
         this.capabilities = capabilities;
+        this.introductionVersion = introductionVersion;
     }
 
     @Override
     public String storeVersion()
     {
         return storeVersion;
+    }
+
+    @Override
+    public String introductionVersion()
+    {
+        return introductionVersion;
     }
 
     @Override

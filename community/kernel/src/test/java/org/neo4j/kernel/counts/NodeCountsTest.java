@@ -47,6 +47,15 @@ public class NodeCountsTest
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
+    private Supplier<Statement> statementSupplier;
+
+    @Before
+    public void setUp()
+    {
+        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class );
+    }
+
     @Test
     public void shouldReportNumberOfNodesInAnEmptyGraph() throws Exception
     {
@@ -203,15 +212,9 @@ public class NodeCountsTest
 
     private long countsForNode()
     {
-        return statementSupplier.get().readOperations().countsForNode( ReadOperations.ANY_LABEL );
-    }
-
-    private Supplier<Statement> statementSupplier;
-
-    @Before
-    public void exposeGuts()
-    {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                              .resolveDependency( ThreadToStatementContextBridge.class );
+        try ( Statement statement = statementSupplier.get() )
+        {
+            return statement.readOperations().countsForNode( ReadOperations.ANY_LABEL );
+        }
     }
 }

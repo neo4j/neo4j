@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 
 /**
  * The current (December 2014) usage of this interface expects the {@code end*} methods to be idempotent.

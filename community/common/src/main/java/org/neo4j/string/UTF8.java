@@ -31,6 +31,7 @@ public class UTF8
     public static final Function<String, byte[]> encode = UTF8::encode;
 
     public static final Function<byte[], String> decode = UTF8::decode;
+    public static final int MINIMUM_SERIALISED_LENGTH_BYTES = Integer.BYTES;
 
     public static byte[] encode( String string )
     {
@@ -51,9 +52,21 @@ public class UTF8
     {
         // Currently only one key is supported although the data format supports multiple
         int count = source.getInt();
+        int remaining = source.remaining();
+        if ( count > remaining )
+        {
+            throw badStringFormatException( count, remaining );
+        }
         byte[] data = new byte[count];
         source.get( data );
         return UTF8.decode( data );
+    }
+
+    private static IllegalArgumentException badStringFormatException( int count, int remaining )
+    {
+        return new IllegalArgumentException(
+                "Bad string format; claims string is " + count + " bytes long, " +
+                "but only " + remaining + " bytes remain in buffer" );
     }
 
     public static void putEncodedStringInto( String text, ByteBuffer target )

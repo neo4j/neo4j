@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.scripting;
 
+import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Test;
-
 public class TestScriptExecutorFactoryRepository
 {
 
-    @Test(expected = NoSuchScriptLanguageException.class)
+    @Test( expected = NoSuchScriptLanguageException.class )
     public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages() throws Exception
     {
         // Given

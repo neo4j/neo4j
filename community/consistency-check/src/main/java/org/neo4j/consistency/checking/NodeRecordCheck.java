@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.sort;
-
 import static org.neo4j.helpers.ArrayUtil.union;
 
 public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
@@ -219,9 +218,9 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
                 boolean outOfOrder = false;
                 for ( int i = 1; i < labelIds.length; i++ )
                 {
-                    if ( labelIds[i -1] > labelIds[i])
+                    if ( labelIds[i - 1] > labelIds[i] )
                     {
-                        engine.report().labelsOutOfOrder( labelIds[i-1], labelIds[i] );
+                        engine.report().labelsOutOfOrder( labelIds[i - 1], labelIds[i] );
                         outOfOrder = true;
                     }
                 }
@@ -273,7 +272,8 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
                 }
 
                 @Override
-                public void onWellFormedChain( long[] labelIds, CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine, RecordAccess records )
+                public void onWellFormedChain( long[] labelIds,
+                        CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, RecordAccess records )
                 {
                     validateLabelIds( labelIds, engine, records );
                 }

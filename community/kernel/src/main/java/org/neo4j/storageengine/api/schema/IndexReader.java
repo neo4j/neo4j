@@ -23,7 +23,9 @@ package org.neo4j.storageengine.api.schema;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.values.storable.Value;
 
 /**
  * Reader for an index. Must honor repeatable reads, which means that if a lookup is executed multiple times the
@@ -32,121 +34,37 @@ import org.neo4j.graphdb.Resource;
 public interface IndexReader extends Resource
 {
     /**
-     * Searches this index for a certain value.
-     *
-     * @param value property value to search for.
-     * @return ids of matching nodes.
+     * @param nodeId node id to match.
+     * @param propertyValues property values to match.
+     * @return number of index entries for the given {@code nodeId} and {@code propertyValues}.
      */
-    PrimitiveLongIterator seek( Object value );
-
-    /**
-     * Searches this index for numerics values between {@code lower} and {@code upper}.
-     *
-     * @param lower lower numeric bound of search (inclusive).
-     * @param upper upper numeric bound of search (inclusive).
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper );
-
-    /**
-     * Searches this index for string values between {@code lower} and {@code upper}.
-     *
-     * @param lower lower numeric bound of search.
-     * @param includeLower whether or not lower bound is inclusive.
-     * @param upper upper numeric bound of search.
-     * @param includeUpper whether or not upper bound is inclusive.
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper );
-
-    /**
-     * Searches this index for string values starting with {@code prefix}.
-     *
-     * @param prefix prefix that matching strings must start with.
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator rangeSeekByPrefix( String prefix );
-
-    /**
-     * Scans this index returning all nodes.
-     *
-     * @return node ids in index.
-     */
-    PrimitiveLongIterator scan();
-
-    /**
-     * Searches this index for string values containing the exact search string.
-     *
-     * @param exactTerm the exact string to search for in the index
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator containsString( String exactTerm );
-
-    /**
-     * Searches this index for string values ending with the suffix search string.
-     *
-     * @param suffix the string to search for in the index
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator endsWith( String suffix );
-
-    /**
-     * @param nodeId node if to match.
-     * @param propertyValue property value to match.
-     * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
-     */
-    long countIndexedNodes( long nodeId, Object propertyValue );
+    long countIndexedNodes( long nodeId, Value... propertyValues );
 
     IndexSampler createSampler();
 
+    /**
+     * Queries the index for the given {@link IndexQuery} predicates.
+     *
+     * @param predicates the predicates to query for.
+     * @return the matching entity IDs.
+     */
+    PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
+
+    /**
+     * @param predicates query to determine whether or not index has full number precision for.
+     * @return whether or not this reader will only return 100% matching results from {@link #query(IndexQuery...)}
+     * when calling with predicates involving numbers, such as {@link IndexQuery#exact(int, Object)}
+     * w/ a {@link Number} or {@link IndexQuery#range(int, Number, boolean, Number, boolean)}.
+     * If {@code false} is returned this means that the caller of {@link #query(IndexQuery...)} will have to
+     * do additional filtering, double-checking of actual property values, externally.
+     */
+    boolean hasFullNumberPrecision( IndexQuery... predicates );
+
     IndexReader EMPTY = new IndexReader()
     {
-        @Override
-        public PrimitiveLongIterator seek( Object value )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-                                                        String upper, boolean includeUpper )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator scan()
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator containsString( String exactTerm )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator endsWith(String suffix)
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
         // Used for checking index correctness
         @Override
-        public long countIndexedNodes( long nodeId, Object propertyValue )
+        public long countIndexedNodes( long nodeId, Value... propertyValues )
         {
             return 0;
         }
@@ -158,8 +76,20 @@ public interface IndexReader extends Resource
         }
 
         @Override
+        public PrimitiveLongIterator query( IndexQuery[] predicates )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
         public void close()
         {
+        }
+
+        @Override
+        public boolean hasFullNumberPrecision( IndexQuery... predicates )
+        {
+            return true;
         }
     };
 }

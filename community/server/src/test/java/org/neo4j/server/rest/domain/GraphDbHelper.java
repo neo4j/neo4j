@@ -92,7 +92,7 @@ public class GraphDbHelper
 
     public Map<String, Object> getNodeProperties( long nodeId )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ))
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
         {
             Node node = database.getGraph().getNodeById( nodeId );
             Map<String, Object> allProperties = node.getAllProperties();
@@ -140,7 +140,7 @@ public class GraphDbHelper
 
     public void deleteNode( long id )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ))
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
         {
             Node node = database.getGraph().getNodeById( id );
             node.delete();
@@ -150,12 +150,11 @@ public class GraphDbHelper
 
     public long createRelationship( String type, long startNodeId, long endNodeId )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ))
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             Node startNode = database.getGraph().getNodeById( startNodeId );
             Node endNode = database.getGraph().getNodeById( endNodeId );
-            Relationship relationship = startNode.createRelationshipTo( endNode,
-                    RelationshipType.withName( type ) );
+            Relationship relationship = startNode.createRelationshipTo( endNode, RelationshipType.withName( type ) );
             tx.success();
             return relationship.getId();
         }
@@ -201,7 +200,7 @@ public class GraphDbHelper
 
     public Relationship getRelationship( long relationshipId )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ))
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             tx.success();
@@ -211,7 +210,7 @@ public class GraphDbHelper
 
     public void addNodeToIndex( String indexName, String key, Object value, long id )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ))
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
         {
             database.getGraph().index().forNodes( indexName ).add( database.getGraph().getNodeById( id ), key, value );
             tx.success();
@@ -273,7 +272,7 @@ public class GraphDbHelper
 
     public String[] getNodeIndexes()
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ))
+        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
         {
             return database.getGraph().index().nodeIndexNames();
         }
@@ -283,7 +282,8 @@ public class GraphDbHelper
     {
         try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
         {
-            Index<Node> index = database.getGraph().index().forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+            Index<Node> index = database.getGraph().index()
+                    .forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
             transaction.success();
             return index;
         }
@@ -302,25 +302,24 @@ public class GraphDbHelper
 
     public String[] getRelationshipIndexes()
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ))
+        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            return database.getGraph().index()
-                    .relationshipIndexNames();
+            return database.getGraph().index().relationshipIndexNames();
         }
     }
 
     public long getFirstNode()
     {
-        try (Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ))
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
         {
             try
             {
-                Node referenceNode = database.getGraph().getNodeById(0L);
+                Node referenceNode = database.getGraph().getNodeById( 0L );
 
                 tx.success();
                 return referenceNode.getId();
             }
-            catch(NotFoundException e)
+            catch ( NotFoundException e )
             {
                 Node newNode = database.getGraph().createNode();
                 tx.success();
@@ -331,7 +330,7 @@ public class GraphDbHelper
 
     public Index<Relationship> createRelationshipIndex( String named )
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ))
+        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
         {
             RelationshipIndex relationshipIndex = database.getGraph().index()
                     .forRelationships( named );
@@ -380,7 +379,8 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Iterable<ConstraintDefinition> definitions = Iterables.filter( item -> {
+            Iterable<ConstraintDefinition> definitions = Iterables.filter( item ->
+            {
                 if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
                 {
                     Iterable<String> keys = item.getPropertyKeys();
@@ -414,7 +414,7 @@ public class GraphDbHelper
 
     public long getLabelCount( long nodeId )
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ))
+        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
         {
             return count( database.getGraph().getNodeById( nodeId ).getLabels());
         }

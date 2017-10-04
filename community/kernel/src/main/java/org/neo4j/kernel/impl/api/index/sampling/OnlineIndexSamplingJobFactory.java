@@ -38,9 +38,9 @@ public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
     }
 
     @Override
-    public IndexSamplingJob create( IndexProxy indexProxy )
+    public IndexSamplingJob create( long indexId, IndexProxy indexProxy )
     {
         final String indexUserDescription = indexProxy.getDescriptor().userDescription( nameLookup );
-        return new OnlineIndexSamplingJob( indexProxy, storeView, indexUserDescription, logProvider );
+        return new OnlineIndexSamplingJob( indexId, indexProxy, storeView, indexUserDescription, logProvider );
     }
 }

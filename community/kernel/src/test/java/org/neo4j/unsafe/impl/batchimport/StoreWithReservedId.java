@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -82,12 +83,14 @@ public final class StoreWithReservedId
             R record )
     {
         RecordCursor<R> cursor = mock( RecordCursor.class );
-        when( cursor.next( anyInt() ) ).thenAnswer( invocation -> {
-            long id = (long) invocation.getArguments()[0];
+        when( cursor.next( anyInt() ) ).thenAnswer( invocation ->
+        {
+            long id = invocation.getArgument( 0 );
             long realId = (id == highId - 1) ? IdGeneratorImpl.INTEGER_MINUS_ONE : id;
             record.setId( realId );
             return true;
         } );
+        when( cursor.acquire( anyLong(), any() ) ).thenReturn( cursor );
         return cursor;
     }
 }

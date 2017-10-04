@@ -26,11 +26,13 @@ import org.hamcrest.TypeSafeMatcher;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
@@ -47,20 +49,71 @@ import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.transport.integration.TestNotification;
+import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.helpers.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 
+@SuppressWarnings( "unchecked" )
 public class MessageMatchers
 {
+    private MessageMatchers()
+    {
+    }
+
+    private static Map<String,Object> toRawMap( MapValue mapValue )
+    {
+        Deserializer deserializer = new Deserializer();
+        HashMap<String,Object> map = new HashMap<>( mapValue.size() );
+        for ( Map.Entry<String,AnyValue> entry : mapValue.entrySet() )
+        {
+            entry.getValue().writeTo( deserializer );
+            map.put( entry.getKey(), deserializer.value() );
+        }
+        return map;
+    }
+
+    private static class Deserializer extends BaseToObjectValueWriter<RuntimeException>
+    {
+
+        @Override
+        protected Node newNodeProxyById( long id )
+        {
+            return null;
+        }
+
+        @Override
+        protected Relationship newRelationshipProxyById( long id )
+        {
+            return null;
+        }
+
+        @Override
+        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
+        {
+            return null;
+        }
+
+        @Override
+        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        {
+            return null;
+        }
+    }
 
     public static Matcher<List<ResponseMessage>> equalsMessages( final Matcher<ResponseMessage>... messageMatchers )
     {
@@ -75,7 +128,10 @@ public class MessageMatchers
                 }
                 for ( int i = 0; i < messageMatchers.length; i++ )
                 {
-                    if ( !messageMatchers[i].matches( messages.get( i ) ) ) { return false; }
+                    if ( !messageMatchers[i].matches( messages.get( i ) ) )
+                    {
+                        return false;
+                    }
                 }
                 return true;
             }
@@ -89,7 +145,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<ResponseMessage> hasNotification( Notification notification)
+    public static Matcher<ResponseMessage> hasNotification( Notification notification )
     {
         return new TypeSafeMatcher<ResponseMessage>()
         {
@@ -97,15 +153,16 @@ public class MessageMatchers
             protected boolean matchesSafely( ResponseMessage t )
             {
                 assertThat( t, instanceOf( SuccessMessage.class ) );
-                Map<String,Object> meta = ((SuccessMessage) t).meta();
-                assertThat(meta, Matchers.hasKey("notifications"));
+                Map<String,Object> meta = toRawMap( ((SuccessMessage) t).meta() );
+
+                assertThat( meta.containsKey( "notifications" ), is( true ) );
                 Set<Notification> notifications =
-                        ((List<Map<String, Object>>)meta.get( "notifications" ))
+                        ((List<Map<String,Object>>) meta.get( "notifications" ))
                                 .stream()
                                 .map( TestNotification::fromMap )
                                 .collect( Collectors.toSet() );
 
-                assertThat( notifications, Matchers.contains( notification ));
+                assertThat( notifications, Matchers.contains( notification ) );
                 return true;
             }
 
@@ -125,7 +182,7 @@ public class MessageMatchers
             protected boolean matchesSafely( ResponseMessage t )
             {
                 assertThat( t, instanceOf( SuccessMessage.class ) );
-                assertThat( ((SuccessMessage) t).meta(), equalTo( metadata ) );
+                assertThat( toRawMap( ((SuccessMessage) t).meta() ), equalTo( metadata ) );
                 return true;
             }
 
@@ -145,7 +202,8 @@ public class MessageMatchers
             protected boolean matchesSafely( ResponseMessage t )
             {
                 assertThat( t, instanceOf( SuccessMessage.class ) );
-                assertThat( ((SuccessMessage) t).meta(), matcher );
+                Map<String,Object> actual = toRawMap( ((SuccessMessage) t).meta() );
+                assertThat( actual, matcher );
                 return true;
             }
 
@@ -217,7 +275,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<ResponseMessage> msgRecord( final Matcher<Record> matcher )
+    public static Matcher<ResponseMessage> msgRecord( final Matcher<QueryResult.Record> matcher )
     {
         return new TypeSafeMatcher<ResponseMessage>()
         {
@@ -244,7 +302,7 @@ public class MessageMatchers
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final BoltRequestMessageWriter packer = new BoltRequestMessageWriter( new Neo4jPack.Packer( new
-                BufferedChannelOutput( rawData )), NO_BOUNDARY_HOOK );
+                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK );
 
         for ( RequestMessage message : messages )
         {
@@ -259,7 +317,7 @@ public class MessageMatchers
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final BoltResponseMessageWriter packer = new BoltResponseMessageWriter( new Neo4jPack.Packer( new
-                BufferedChannelOutput( rawData )), NO_BOUNDARY_HOOK );
+                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK, NullBoltMessageLogger.getInstance() );
 
         for ( ResponseMessage message : messages )
         {
@@ -318,7 +376,7 @@ public class MessageMatchers
     private static BoltRequestMessageReader requestReader( byte[] bytes )
     {
         return new BoltRequestMessageReader(
-                    new Neo4jPack.Unpacker( new BufferedChannelInput( 128 ).reset( new ArrayByteChannel( bytes ) ) ) );
+                new Neo4jPack.Unpacker( new BufferedChannelInput( 128 ).reset( new ArrayByteChannel( bytes ) ) ) );
     }
 
     private static BoltResponseMessageReader responseReader( byte[] bytes )

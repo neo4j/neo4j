@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
@@ -29,18 +30,16 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     private long lockStamp;
     MuninnReadPageCursor nextCursor;
 
-    MuninnReadPageCursor( CursorPool.CursorSets cursorSets, long victimPage )
+    MuninnReadPageCursor( CursorPool.CursorSets cursorSets, long victimPage, PageCursorTracer pageCursorTracer )
     {
-        super( victimPage );
+        super( victimPage, pageCursorTracer );
         this.cursorSets = cursorSets;
     }
 
     @Override
     protected void unpinCurrentPage()
     {
-        MuninnPage p = page;
-
-        if ( p != null )
+        if ( pinnedPageRef != 0 )
         {
             pinEvent.done();
         }
@@ -64,30 +63,31 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected boolean tryLockPage( MuninnPage page )
+    protected boolean tryLockPage( long pageRef )
     {
-        lockStamp = page.tryOptimisticReadLock();
+        lockStamp = pagedFile.tryOptimisticReadLock( pageRef );
         return true;
     }
 
     @Override
-    protected void unlockPage( MuninnPage page )
+    protected void unlockPage( long pageRef )
     {
     }
 
     @Override
-    protected void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
+    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
     {
-        reset( page );
-        page.incrementUsage();
+        reset( pageRef );
+        pagedFile.incrementUsage( pageRef );
     }
 
     @Override
-    protected void convertPageFaultLock( MuninnPage page )
+    protected void convertPageFaultLock( long pageRef )
     {
-        lockStamp = page.unlockExclusive();
+        lockStamp = pagedFile.unlockExclusive( pageRef );
     }
 
+    @Override
     protected void releaseCursor()
     {
         nextCursor = cursorSets.readCursors;
@@ -97,14 +97,33 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        MuninnPage p = page;
-        boolean needsRetry = p != null && !p.validateReadLock( lockStamp );
-        needsRetry |= linkedCursor != null && linkedCursor.shouldRetry();
-        if ( needsRetry )
+        MuninnReadPageCursor cursor = this;
+        do
         {
-            startRetry();
+            long pageRef = cursor.pinnedPageRef;
+            if ( pageRef != 0 && !pagedFile.validateReadLock( pageRef, cursor.lockStamp ) )
+            {
+                startRetryLinkedChain();
+                return true;
+            }
+            cursor = (MuninnReadPageCursor) cursor.linkedCursor;
         }
-        return needsRetry;
+        while ( cursor != null );
+        return false;
+    }
+
+    private void startRetryLinkedChain() throws IOException
+    {
+        MuninnReadPageCursor cursor = this;
+        do
+        {
+            if ( cursor.pinnedPageRef != 0 )
+            {
+                cursor.startRetry();
+            }
+            cursor = (MuninnReadPageCursor) cursor.linkedCursor;
+        }
+        while ( cursor != null );
     }
 
     private void startRetry() throws IOException
@@ -112,11 +131,11 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         setOffset( 0 );
         checkAndClearBoundsFlag();
         clearCursorException();
-        lockStamp = page.tryOptimisticReadLock();
+        lockStamp = pagedFile.tryOptimisticReadLock( pinnedPageRef );
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still
         // the page we're actually interested in:
-        if ( !page.isBoundTo( pagedFile.swapper, currentPageId ) )
+        if ( !pagedFile.isBoundTo( pinnedPageRef, pagedFile.swapperId, currentPageId ) )
         {
             // This is no longer the page we're interested in, so we have
             // to redo the pinning.
@@ -129,7 +148,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             // First, forget about this page in case pin() throws and the cursor
             // is closed; we don't want unpinCurrentPage() to try unlocking
             // this page.
-            page = null;
+            pinnedPageRef = 0;
             // Then try pin again.
             pin( currentPageId, false );
         }
@@ -161,6 +180,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor
 
     @Override
     public void putShort( short value )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
+    public void zapPage()
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
     }

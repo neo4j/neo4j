@@ -19,26 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 public interface CountsOperations
 {
-    /** @see org.neo4j.kernel.api.CountsRead#countsForNode(int) */
+    /** @see org.neo4j.kernel.api.ReadOperations#countsForNode(int) */
     long countsForNode( KernelStatement statement, int labelId );
 
-    /** @see org.neo4j.kernel.api.CountsRead#countsForNodeWithoutTxState(int) */
+    /** @see org.neo4j.kernel.api.ReadOperations#countsForNodeWithoutTxState(int) */
     long countsForNodeWithoutTxState( KernelStatement statement, int labelId );
 
-    /** @see org.neo4j.kernel.api.CountsRead#countsForRelationship(int, int, int) */
+    /** @see org.neo4j.kernel.api.ReadOperations#countsForRelationship(int, int, int) */
     long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId );
 
-    /** @see org.neo4j.kernel.api.CountsRead#countsForRelationshipWithoutTxState(int, int, int) */
+    /** @see org.neo4j.kernel.api.ReadOperations#countsForRelationshipWithoutTxState(int, int, int) */
     long countsForRelationshipWithoutTxState( KernelStatement statement, int startLabelId, int typeId, int endLabelId );
 
     DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, IndexDescriptor index,
-            DoubleLongRegister target );
+            DoubleLongRegister target ) throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target );
+    DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException;
 }

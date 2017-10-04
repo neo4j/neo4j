@@ -49,6 +49,18 @@ public class AncestorTestCase implements GraphHolder
     public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
     private static GraphDatabaseService gdb;
 
+    @BeforeClass
+    public static void before()
+    {
+        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+    }
+
+    @AfterClass
+    public static void after()
+    {
+        gdb.shutdown();
+    }
+
     @Test
     @Graph( { "root contains child1", "child1 contains child11",
             "child1 contains child12", "root contains child2",
@@ -133,16 +145,6 @@ public class AncestorTestCase implements GraphHolder
         return gdb;
     }
 
-    @BeforeClass
-    public static void before()
-    {
-        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-    }
-    @AfterClass
-    public static void after()
-    {
-        gdb.shutdown();
-    }
     enum Rels implements RelationshipType
     {
         contains

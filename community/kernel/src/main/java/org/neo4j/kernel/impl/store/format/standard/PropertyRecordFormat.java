@@ -40,7 +40,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 
     public PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, StandardFormatSettings.PROPERTY_RECORD_MAXIMUM_ID_BITS );
+        super( fixedRecordSize( RECORD_SIZE ), 0, StandardFormatSettings.PROPERTY_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -89,7 +89,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
                 cursor.setCursorException( "PropertyRecord claims to have more property blocks than can fit in a record" );
                 return;
             }
-            while ( additionalBlocks --> 0 )
+            while ( additionalBlocks-- > 0 )
             {
                 record.addLoadedBlock( cursor.getLong() );
             }

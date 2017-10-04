@@ -26,6 +26,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -34,6 +35,7 @@ import org.neo4j.collection.PrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.logging.Log;
 
@@ -89,8 +91,9 @@ public class ProcedureJarLoader
         while ( classes.hasNext() )
         {
             Class<?> next = classes.next();
-            target.addAllProcedures( compiler.compileProcedure( next ) );
+            target.addAllProcedures( compiler.compileProcedure( next, Optional.empty(), false ) );
             target.addAllFunctions( compiler.compileFunction( next ) );
+            target.addAllAggregationFunctions( compiler.compileAggregationFunction( next ) );
         }
         return target;
     }
@@ -164,6 +167,7 @@ public class ProcedureJarLoader
     {
         private final List<CallableProcedure> procedures = new ArrayList<>();
         private final List<CallableUserFunction> functions = new ArrayList<>();
+        private final List<CallableUserAggregationFunction> aggregationFunctions = new ArrayList<>();
 
         public void add( CallableProcedure proc )
         {
@@ -185,6 +189,11 @@ public class ProcedureJarLoader
             return functions;
         }
 
+        public List<CallableUserAggregationFunction> aggregationFunctions()
+        {
+            return aggregationFunctions;
+        }
+
         public void addAllProcedures( List<CallableProcedure> callableProcedures )
         {
             procedures.addAll( callableProcedures );
@@ -193,6 +202,11 @@ public class ProcedureJarLoader
         public void addAllFunctions( List<CallableUserFunction> callableFunctions )
         {
             functions.addAll( callableFunctions );
+        }
+
+        public void addAllAggregationFunctions( List<CallableUserAggregationFunction> callableFunctions )
+        {
+            aggregationFunctions.addAll( callableFunctions );
         }
 
         private static Callables EMPTY = new Callables();

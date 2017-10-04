@@ -44,7 +44,7 @@ public class VersionedHashMapTest
         assertThat(map.containsKey( 21 ), equalTo(false));
         assertThat(map.containsKey( 23 ), equalTo(false));
 
-        assertThat(map.get(22), equalTo((Object)true));
+        assertThat(map.get(22), equalTo( true ));
         assertThat(map.containsValue( true ), equalTo(true));
         assertThat(map.containsValue( false ), equalTo(false));
     }
@@ -64,7 +64,7 @@ public class VersionedHashMapTest
         assertThat(map.containsKey( 21 ), equalTo(false));
         assertThat(map.containsKey( 23 ), equalTo(false));
 
-        assertThat(map.get(22), equalTo((Object)false));
+        assertThat(map.get(22), equalTo( false ));
         assertThat(map.containsValue( false ), equalTo(true));
         assertThat(map.containsValue( true ), equalTo(false));
     }
@@ -104,7 +104,7 @@ public class VersionedHashMapTest
         int count = 0;
         for ( Object k : map.keySet() )
         {
-            if(!added)
+            if ( !added )
             {
                 added = true;
                 for ( int i = 0; i < 10; i++ )
@@ -162,7 +162,7 @@ public class VersionedHashMapTest
         // When
         int count = 0;
         Iterator<Map.Entry<Object,Object>> it = map.entrySet().iterator();
-        while(it.hasNext())
+        while ( it.hasNext() )
         {
             it.next();
             it.remove();
@@ -192,7 +192,7 @@ public class VersionedHashMapTest
         int count = 0;
         for ( int i = 0; i < 128; i++ )
         {
-            assertThat(map.get(i), equalTo((Object)i));
+            assertThat(map.get(i), equalTo( i ));
             count++;
         }
         assertThat(count, equalTo(128));
@@ -202,7 +202,7 @@ public class VersionedHashMapTest
     public void shouldAllowRemovalsWhileIteratingEvenInFaceOfResizing() throws Exception
     {
         // Given
-        VersionedHashMap<Object, Object> map = new VersionedHashMap<>(16, 5.0f);
+        VersionedHashMap<Object,Object> map = new VersionedHashMap<>( 16, 5.0f );
         for ( int i = 0; i < 128; i++ )
         {
             map.put( i, true );

@@ -22,22 +22,32 @@ package org.neo4j.bolt.v1.runtime.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class BoltConnectionAuthIT
 {
     private static final String USER_AGENT = "BoltConnectionAuthIT/0.0";
+    private static final BoltChannel boltChannel = mock( BoltChannel.class );
 
+//    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR = new BoltConnectionDescriptor(
+//            new InetSocketAddress( "testClient", 56789 ),
+//            new InetSocketAddress( "testServer", 7468 ) );
     @Rule
     public SessionRule env = new SessionRule().withAuthEnabled( true );
 
@@ -46,7 +56,7 @@ public class BoltConnectionAuthIT
     {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-        BoltStateMachine machine = env.newMachine( "test" );
+        BoltStateMachine machine = env.newMachine( boltChannel );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
@@ -54,10 +64,10 @@ public class BoltConnectionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j" ), recorder );
-        machine.run( "CREATE ()", map(), recorder );
+        machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", true ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", TRUE ) );
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.CredentialsExpired ) );
     }
 
@@ -66,7 +76,11 @@ public class BoltConnectionAuthIT
     {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-        BoltStateMachine machine = env.newMachine( "test" );
+//<<<<<<< 24278c4de3ee849106c96df999c3269a90db8c73
+//        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+//=======
+        BoltStateMachine machine = env.newMachine( boltChannel );
+//>>>>>>> Bolt message logging
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         String version = "Neo4j/" + Version.getNeo4jVersion();
         // When
@@ -74,17 +88,17 @@ public class BoltConnectionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j" ), recorder );
-        machine.run( "CREATE ()", map(), recorder );
+        machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "server", version ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "server", stringValue( version ) ) );
     }
 
     @Test
     public void shouldCloseConnectionAfterAuthenticationFailure() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "test" );
+        BoltStateMachine machine = env.newMachine( boltChannel );
 
         // When... then
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -101,7 +115,7 @@ public class BoltConnectionAuthIT
     @Test
     public void shouldBeAbleToActOnSessionWhenUpdatingCredentials() throws Throwable
     {
-        BoltStateMachine machine = env.newMachine( "test" );
+        BoltStateMachine machine = env.newMachine( boltChannel );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // when
@@ -110,8 +124,8 @@ public class BoltConnectionAuthIT
                 "principal", "neo4j",
                 "credentials", "neo4j",
                 "new_credentials", "secret"
-                ), recorder );
-        machine.run( "CREATE ()", map(), recorder );
+        ), recorder );
+        machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // then
         assertThat( recorder.nextResponse(), succeeded() );

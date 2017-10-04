@@ -45,7 +45,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
 
         createGraph( "a TO b", "b TO c", "d TO e", "e TO f" );
 
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             TraversalDescription basicTraverser = getGraphDb().traversalDescription().evaluator( Evaluators.atDepth(2) );
 
@@ -73,14 +73,15 @@ public class TestTraversalWithIterable extends TraversalTestBase
 
         createGraph( "a FIRST d", "a TO b", "b TO c", "d TO e", "e TO f" );
 
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             TraversalDescription firstTraverser = getGraphDb().traversalDescription()
                     .relationships( RelationshipType.withName( "FIRST" ) )
                     .evaluator( Evaluators.toDepth( 1 ) );
             final Iterable<Path> firstResult = firstTraverser.traverse( getNodeWithName( "a" ) );
 
-            Iterable<Node> startNodesForNestedTraversal = new IterableWrapper<Node, Path>(firstResult) {
+            Iterable<Node> startNodesForNestedTraversal = new IterableWrapper<Node,Path>( firstResult )
+            {
                 @Override
                 protected Node underlyingObjectToObject( Path path )
                 {

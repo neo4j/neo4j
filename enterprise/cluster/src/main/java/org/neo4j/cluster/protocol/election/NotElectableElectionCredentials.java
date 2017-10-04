@@ -46,11 +46,7 @@ public final class NotElectableElectionCredentials implements ElectionCredential
         {
             return false;
         }
-        if ( !(obj instanceof NotElectableElectionCredentials) )
-        {
-            return false;
-        }
-        return true;
+        return obj instanceof NotElectableElectionCredentials;
     }
 
     @Override

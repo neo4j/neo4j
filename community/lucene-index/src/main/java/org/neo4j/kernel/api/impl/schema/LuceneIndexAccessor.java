@@ -22,19 +22,19 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
 public class LuceneIndexAccessor implements IndexAccessor
 {
@@ -59,10 +59,10 @@ public class LuceneIndexAccessor implements IndexAccessor
         switch ( mode )
         {
         case ONLINE:
-            return new LuceneIndexUpdater( writer, false );
+            return new LuceneIndexUpdater( false );
 
         case RECOVERY:
-            return new LuceneIndexUpdater( writer, true );
+            return new LuceneIndexUpdater( true );
 
         default:
             throw new IllegalArgumentException( "Unsupported update mode: " + mode );
@@ -79,12 +79,6 @@ public class LuceneIndexAccessor implements IndexAccessor
     public void force() throws IOException
     {
         luceneIndex.markAsOnline();
-        luceneIndex.maybeRefreshBlocking();
-    }
-
-    @Override
-    public void flush() throws IOException
-    {
         luceneIndex.maybeRefreshBlocking();
     }
 
@@ -123,77 +117,73 @@ public class LuceneIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.getPropertyKeyId() );
+        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyIds() );
     }
 
     private class LuceneIndexUpdater implements IndexUpdater
     {
         private final boolean isRecovery;
-        private final LuceneIndexWriter writer;
+        private boolean hasChanges;
 
-        private LuceneIndexUpdater( LuceneIndexWriter indexWriter, boolean isRecovery )
+        private LuceneIndexUpdater( boolean isRecovery )
         {
             this.isRecovery = isRecovery;
-            this.writer = indexWriter;
         }
 
         @Override
-        public void process( NodePropertyUpdate update ) throws IOException
+        public void process( IndexEntryUpdate<?> update ) throws IOException
         {
-            switch ( update.getUpdateMode() )
+            // we do not support adding partial entries
+            assert update.indexKey().schema().equals( descriptor.schema() );
+
+            switch ( update.updateMode() )
             {
             case ADDED:
                 if ( isRecovery )
                 {
-                    addRecovered( update.getNodeId(), update.getValueAfter() );
+                    addRecovered( update.getEntityId(), update.values() );
                 }
                 else
                 {
-                    add( update.getNodeId(), update.getValueAfter() );
+                    add( update.getEntityId(), update.values() );
                 }
                 break;
             case CHANGED:
-                change( update.getNodeId(), update.getValueAfter() );
+                change( update.getEntityId(), update.values() );
                 break;
             case REMOVED:
-                remove( update.getNodeId() );
+                remove( update.getEntityId() );
                 break;
             default:
                 throw new UnsupportedOperationException();
             }
+            hasChanges = true;
         }
 
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-            luceneIndex.maybeRefreshBlocking();
+            if ( hasChanges )
+            {
+                luceneIndex.maybeRefreshBlocking();
+            }
         }
 
-        @Override
-        public void remove( PrimitiveLongSet nodeIds ) throws IOException
-        {
-            nodeIds.visitKeys( nodeId -> {
-                remove( nodeId );
-                return false;
-            } );
-        }
-
-        private void addRecovered( long nodeId, Object value ) throws IOException
-        {
-
-            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
-        }
-
-        private void add( long nodeId, Object value ) throws IOException
-        {
-            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
-        }
-
-        private void change( long nodeId, Object value ) throws IOException
+        private void addRecovered( long nodeId, Value[] values ) throws IOException
         {
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+        }
+
+        private void add( long nodeId, Value[] values ) throws IOException
+        {
+            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+        }
+
+        private void change( long nodeId, Value[] values ) throws IOException
+        {
+            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
         protected void remove( long nodeId ) throws IOException
@@ -202,4 +192,3 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
     }
 }
-

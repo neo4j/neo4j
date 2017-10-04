@@ -56,7 +56,7 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
     protected OwnerQueueElement<Thread> acquire( LockedEntity key )
     {
         OwnerQueueElement<Thread> suggestion = new OwnerQueueElement<>( currentThread() );
-        for(;;)
+        for ( ; ; )
         {
             OwnerQueueElement<Thread> owner = locks.putIfAbsent( key, suggestion );
             if ( owner == null )
@@ -85,7 +85,7 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
     }
 
     @Override
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     protected void release( LockedEntity key, OwnerQueueElement<Thread> ownerQueueElement )
     {
         if ( 0 == --ownerQueueElement.count )
@@ -137,7 +137,8 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
          * In the first element, head will point to the next waiting element, and tail is where we enqueue new elements.
          * In the waiting elements, head will point to the first element, and tail to the next element.
          */
-        private OwnerQueueElement<OWNER> head = this, tail = this;
+        private OwnerQueueElement<OWNER> head = this;
+        private OwnerQueueElement<OWNER> tail = this;
 
         /**
          * Return true if the item was enqueued, or false if this LockOwner is dead.
@@ -171,7 +172,7 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
             }
             try
             {
-                return (this.owner = first.owner);
+                return this.owner = first.owner;
             }
             finally
             {

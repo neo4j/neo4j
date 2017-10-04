@@ -72,7 +72,7 @@ public class ReplicatedLockTokenStateMachine implements StateMachine<ReplicatedL
 
     private ReplicatedLockTokenState state()
     {
-        if ( state == null)
+        if ( state == null )
         {
             state = storage.getInitialState();
         }

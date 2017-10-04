@@ -20,8 +20,8 @@
 package org.neo4j.cluster.com.message;
 
 /**
- * This is used to process a single message to or from a {@link org.neo4j.cluster.statemachine.StateMachine}. They can be chained internally if needed,
- * so that one processor delegates to one or more other processors.
+ * This is used to process a single message to or from a {@link org.neo4j.cluster.statemachine.StateMachine}.
+ * They can be chained internally if needed, so that one processor delegates to one or more other processors.
  */
 public interface MessageProcessor
 {

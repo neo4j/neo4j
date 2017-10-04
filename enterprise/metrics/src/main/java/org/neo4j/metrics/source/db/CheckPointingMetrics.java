@@ -34,7 +34,6 @@ import org.neo4j.metrics.output.EventReporter;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.Collections.emptySortedMap;
 
-
 @Documented( ".Database Checkpointing Metrics" )
 public class CheckPointingMetrics extends LifecycleAdapter
 {
@@ -58,7 +57,8 @@ public class CheckPointingMetrics extends LifecycleAdapter
         this.registry = registry;
         this.monitors = monitors;
         this.checkPointerMonitor = checkPointerMonitor;
-        this.listener = ( durationMillis ) -> {
+        this.listener = durationMillis ->
+        {
             TreeMap<String,Gauge> gauges = new TreeMap<>();
             gauges.put( CHECK_POINT_DURATION, () -> durationMillis );
             reporter.report( gauges, emptySortedMap(), emptySortedMap(), emptySortedMap(), emptySortedMap() );

@@ -55,6 +55,10 @@ public class Primitive
     public static final int DEFAULT_HEAP_CAPACITY = 1 << 4;
     public static final int DEFAULT_OFFHEAP_CAPACITY = 1 << 20;
 
+    private Primitive()
+    {
+    }
+
     // Some example would be...
     public static PrimitiveLongSet longSet()
     {
@@ -167,6 +171,26 @@ public class Primitive
             public long next()
             {
                 return longs[i++];
+            }
+        };
+    }
+
+    public static PrimitiveIntIterator iterator( final int... ints )
+    {
+        return new PrimitiveIntIterator()
+        {
+            int i;
+
+            @Override
+            public boolean hasNext()
+            {
+                return i < ints.length;
+            }
+
+            @Override
+            public int next()
+            {
+                return ints[i++];
             }
         };
     }

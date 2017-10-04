@@ -186,16 +186,7 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
 
         PhysicalLogVersionedStoreChannel that = (PhysicalLogVersionedStoreChannel) o;
 
-        if ( version != that.version )
-        {
-            return false;
-        }
-        if ( !delegateChannel.equals( that.delegateChannel ) )
-        {
-            return false;
-        }
-
-        return true;
+        return version == that.version && delegateChannel.equals( that.delegateChannel );
     }
 
     @Override

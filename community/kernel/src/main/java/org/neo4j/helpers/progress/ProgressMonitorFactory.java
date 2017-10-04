@@ -94,27 +94,47 @@ public abstract class ProgressMonitorFactory
     public static class MultiPartBuilder
     {
         private Aggregator aggregator;
-        private Set<String> parts = new HashSet<String>();
-        private Completion completion = null;
+        private Set<String> parts = new HashSet<>();
+        private Completion completion;
 
         private MultiPartBuilder( ProgressMonitorFactory factory, String process )
         {
-            this.aggregator = new Aggregator(factory.newIndicator( process ));
+            this.aggregator = new Aggregator( factory.newIndicator( process ) );
         }
 
         public ProgressListener progressForPart( String part, long totalCount )
+        {
+            assertNotBuilt();
+            assertUniquePart( part );
+            ProgressListener.MultiPartProgressListener progress =
+                    new ProgressListener.MultiPartProgressListener( aggregator, part, totalCount );
+            aggregator.add( progress, totalCount );
+            return progress;
+        }
+
+        public ProgressListener progressForUnknownPart( String part )
+        {
+            assertNotBuilt();
+            assertUniquePart( part );
+            ProgressListener progress = ProgressListener.NONE;
+            aggregator.add( progress, 0 );
+            return progress;
+        }
+
+        private void assertUniquePart( String part )
+        {
+            if ( !parts.add( part ) )
+            {
+                throw new IllegalArgumentException( String.format( "Part '%s' has already been defined.", part ) );
+            }
+        }
+
+        private void assertNotBuilt()
         {
             if ( aggregator == null )
             {
                 throw new IllegalStateException( "Builder has been completed." );
             }
-            if ( !parts.add( part ) )
-            {
-                throw new IllegalArgumentException( String.format( "Part '%s' has already been defined.", part ) );
-            }
-            ProgressListener.MultiPartProgressListener progress = new ProgressListener.MultiPartProgressListener( aggregator, part, totalCount );
-            aggregator.add( progress );
-            return progress;
         }
 
         public Completion build()

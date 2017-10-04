@@ -37,17 +37,22 @@ import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.StreamFilesRecursive;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 /**
  * Used by the robustness suite to check for partial failures.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings( "unchecked" )
 public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
 {
     private final FileSystemAbstraction delegate;
@@ -62,6 +67,13 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     {
         this.adversary = adversary;
         this.delegate = delegate;
+    }
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        adversary.injectFailure( UnsupportedOperationException.class, IOException.class );
+        return new AdversarialFileWatcher( delegate.fileWatcher(), adversary );
     }
 
     public StoreChannel open( File fileName, String mode ) throws IOException
@@ -190,7 +202,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
             Function<Class<K>, K> creator )
     {
         ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
-        if (fileSystem == null)
+        if ( fileSystem == null )
         {
             fileSystem = creator.apply( clazz );
             fileSystem = adversarialProxy( fileSystem, clazz );
@@ -221,20 +233,29 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         delegate.deleteFileOrThrow( file );
     }
 
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
+    }
+
     private <K extends ThirdPartyFileSystem> ThirdPartyFileSystem adversarialProxy(
             final ThirdPartyFileSystem fileSystem,
             Class<K> clazz )
     {
-        InvocationHandler handler = new InvocationHandler()
+        InvocationHandler handler = ( proxy, method, args ) ->
         {
-            @Override
-            public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
-            {
-                adversary.injectFailure( (Class<? extends Throwable>[]) method.getExceptionTypes() );
-                return method.invoke( fileSystem, args );
-            }
+            adversary.injectFailure( (Class<? extends Throwable>[]) method.getExceptionTypes() );
+            return method.invoke( fileSystem, args );
         };
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         return (ThirdPartyFileSystem) Proxy.newProxyInstance( loader, new Class[] { clazz }, handler );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        adversary.injectFailure( IOException.class, SecurityException.class );
+        delegate.close();
     }
 }

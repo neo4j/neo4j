@@ -46,7 +46,7 @@ public abstract class IterableWrapper<T, U> implements Iterable<T>
 
     private class MyIteratorWrapper extends IteratorWrapper<T, U>
     {
-        public MyIteratorWrapper( Iterator<U> iteratorToWrap )
+        MyIteratorWrapper( Iterator<U> iteratorToWrap )
         {
             super( iteratorToWrap );
         }

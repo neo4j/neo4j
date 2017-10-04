@@ -19,23 +19,18 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import java.net.URL;
 import java.util.Map;
 
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 
 public class URLAccessRules
 {
-    private static final URLAccessRule ALWAYS_PERMITTED = new URLAccessRule()
+    private static final URLAccessRule ALWAYS_PERMITTED = ( config, url ) -> url;
+
+    private URLAccessRules()
     {
-        @Override
-        public URL validate( Configuration config, URL url )
-        {
-            return url;
-        }
-    };
+    }
 
     public static URLAccessRule alwaysPermitted()
     {
@@ -51,20 +46,16 @@ public class URLAccessRules
 
     public static URLAccessRule combined( final Map<String,URLAccessRule> urlAccessRules )
     {
-        return new URLAccessRule()
+        return ( config, url ) ->
         {
-            @Override
-            public URL validate( Configuration config, URL url ) throws URLAccessValidationError
+            String protocol = url.getProtocol();
+            URLAccessRule protocolRule = urlAccessRules.get( protocol );
+            if ( protocolRule == null )
             {
-                String protocol = url.getProtocol();
-                URLAccessRule protocolRule = urlAccessRules.get( protocol );
-                if ( protocolRule == null )
-                {
-                    throw new URLAccessValidationError( "loading resources via protocol '" + protocol +
-                            "' is not permitted" );
-                }
-                return protocolRule.validate( config, url );
+                throw new URLAccessValidationError( "loading resources via protocol '" + protocol +
+                        "' is not permitted" );
             }
+            return protocolRule.validate( config, url );
         };
     }
 }

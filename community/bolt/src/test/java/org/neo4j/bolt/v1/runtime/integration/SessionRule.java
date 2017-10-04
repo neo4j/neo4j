@@ -32,15 +32,20 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.bolt.BoltConnectionDescriptor;
+import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
+import org.neo4j.concurrent.Runnables;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -51,9 +56,9 @@ import org.neo4j.udc.UsageData;
 class SessionRule implements TestRule
 {
     private GraphDatabaseAPI gdb;
-    private LifecycleManagedBoltFactory boltFactory;
+    private BoltFactoryImpl boltFactory;
     private LinkedList<BoltStateMachine> runningMachines = new LinkedList<>();
-    private boolean authEnabled = false;
+    private boolean authEnabled;
 
     @Override
     public Statement apply( final Statement base, Description description )
@@ -67,14 +72,16 @@ class SessionRule implements TestRule
                 config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ) );
-                boltFactory = new LifecycleManagedBoltFactory(
+                Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
+                        resolver.resolveDependency( UserManagerSupplier.class ) );
+                boltFactory = new BoltFactoryImpl(
                                         gdb,
                                         new UsageData( null ),
                                         NullLogService.getInstance(),
                                         resolver.resolveDependency( ThreadToStatementContextBridge.class ),
                                         authentication,
-                                        BoltConnectionTracker.NOOP
+                                        BoltConnectionTracker.NOOP,
+                                        Config.defaults()
                                     );
                 boltFactory.start();
                 try
@@ -90,7 +97,10 @@ class SessionRule implements TestRule
                             runningMachines.forEach( BoltStateMachine::close );
                         }
                     }
-                    catch ( Throwable e ) { e.printStackTrace(); }
+                    catch ( Throwable e )
+                    {
+                        e.printStackTrace();
+                    }
 
                     gdb.shutdown();
                 }
@@ -98,23 +108,23 @@ class SessionRule implements TestRule
         };
     }
 
-    private Authentication authentication( AuthManager authManager )
+    private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
-        return new BasicAuthentication( authManager );
+        return new BasicAuthentication( authManager, userManagerSupplier );
     }
 
-    BoltStateMachine newMachine( String connectionDescriptor )
+    BoltStateMachine newMachine( BoltChannel boltChannel )
     {
-        return newMachine( connectionDescriptor, Clock.systemUTC() );
+        return newMachine( boltChannel, Clock.systemUTC() );
     }
 
-    BoltStateMachine newMachine( String connectionDescriptor, Clock clock )
+    BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock )
     {
         if ( boltFactory == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, () -> {}, clock );
+        BoltStateMachine connection = boltFactory.newMachine( boltChannel, clock );
         runningMachines.add( connection );
         return connection;
     }

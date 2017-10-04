@@ -110,12 +110,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         {
             return false;
         }
-        if ( !principal.equals( that.principal ) )
-        {
-            return false;
-        }
-
-        return true;
+        return principal.equals( that.principal );
     }
 
     @Override

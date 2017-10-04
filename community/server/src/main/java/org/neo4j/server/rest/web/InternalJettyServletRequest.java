@@ -51,20 +51,25 @@ public class InternalJettyServletRequest extends Request
     {
 
         private final byte[] bytes;
-        private int position = 0;
+        private int position;
         private ReadListener readListener;
 
-        public Input( String data )
+        Input( String data )
         {
             bytes = UTF8.encode( data );
         }
 
         public int read() throws IOException
         {
-            if ( bytes.length > position ) return (int) bytes[position++];
+            if ( bytes.length > position )
+            {
+                return (int) bytes[position++];
+            }
 
-            if (readListener != null)
+            if ( readListener != null )
+            {
                 readListener.onAllDataRead();
+            }
 
             return -1;
         }
@@ -262,9 +267,9 @@ public class InternalJettyServletRequest extends Request
         return cookies;
     }
 
-    public void addHeader(String header, String value)
+    public void addHeader( String header, String value )
     {
-        headers.put(header, value);
+        headers.put( header, value );
     }
 
     @Override
@@ -377,8 +382,8 @@ public class InternalJettyServletRequest extends Request
                 String localName,
                 String localAddress,
                 int localPort,
-                String authType
-        ) {
+                String authType )
+        {
             this.remoteAddress = remoteAddress;
             this.isSecure = isSecure;
             this.remotePort = remotePort;

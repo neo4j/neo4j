@@ -25,6 +25,10 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class SecurityTestUtils
 {
+    private SecurityTestUtils()
+    {
+    }
+
     public static Map<String,Object> authToken( String username, String password )
     {
         return newBasicAuthToken( username, password );

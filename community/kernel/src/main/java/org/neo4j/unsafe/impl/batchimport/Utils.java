@@ -29,44 +29,17 @@ import org.neo4j.unsafe.impl.batchimport.input.SourceInputIterator;
  */
 public class Utils
 {
-    public static int safeCastLongToInt( long value )
-    {
-        if ( value > Integer.MAX_VALUE )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Integer.TYPE ) );
-        }
-        return (int) value;
-    }
-
-    public static short safeCastLongToShort( long value )
-    {
-        if ( value > Short.MAX_VALUE )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Short.TYPE ) );
-        }
-        return (short) value;
-    }
-
-    public static byte safeCastLongToByte( long value )
-    {
-        if ( value > Byte.MAX_VALUE )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Byte.TYPE ) );
-        }
-        return (byte) value;
-    }
-
     public enum CompareType
     {
         EQ, GT, GE, LT, LE, NE
-    };
+    }
 
     public static boolean unsignedCompare( long dataA, long dataB, CompareType compareType )
     {   // works for signed and unsigned values
         switch ( compareType )
         {
         case EQ:
-            return (dataA == dataB);
+            return dataA == dataB;
         case GE:
             if ( dataA == dataB )
             {
@@ -74,7 +47,7 @@ public class Utils
             }
             // fall through to GT
         case GT:
-            return !((dataA < dataB) ^ ((dataA < 0) != (dataB < 0)));
+            return dataA < dataB == ((dataA < 0) != (dataB < 0));
         case LE:
             if ( dataA == dataB )
             {
@@ -82,7 +55,7 @@ public class Utils
             }
             // fall through to LT
         case LT:
-            return ((dataA < dataB) ^ ((dataA < 0) != (dataB < 0)));
+            return (dataA < dataB) ^ ((dataA < 0) != (dataB < 0));
         case NE:
             return false;
 
@@ -155,8 +128,9 @@ public class Utils
     // Values in the arrays are assumed to be sorted
     public static boolean anyIdCollides( long[] first, int firstLength, long[] other, int otherLength )
     {
-        int f = 0, o = 0;
-        while( f < firstLength && o < otherLength )
+        int f = 0;
+        int o = 0;
+        while ( f < firstLength && o < otherLength )
         {
             if ( first[f] == other[o] )
             {
@@ -182,9 +156,9 @@ public class Utils
 
     public static void mergeSortedInto( long[] values, long[] into, int intoLengthBefore )
     {
-        int v = values.length-1;
-        int i = intoLengthBefore-1;
-        int t = i+values.length;
+        int v = values.length - 1;
+        int i = intoLengthBefore - 1;
+        int t = i + values.length;
         while ( v >= 0 || i >= 0 )
         {
             if ( i == -1 )
@@ -204,11 +178,6 @@ public class Utils
                 into[t--] = into[i--];
             }
         }
-    }
-
-    private static String getOverflowMessage( long value, Class clazz )
-    {
-        return "Value " + value + " is too big to be represented as " + clazz.getName();
     }
 
     private Utils()

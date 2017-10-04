@@ -30,6 +30,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -39,22 +42,40 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_S
 
 public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
+    private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
+            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM,
+                    BASE_TX_COMMIT_TIMESTAMP );
+
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private final Monitors monitors;
+    private final boolean failOnCorruptedLogFiles;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors,
+            boolean failOnCorruptedLogFiles )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
+        this.monitors = monitors;
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
     @Override
     public TransactionCursor getTransactions( LogPosition position ) throws IOException
     {
         return new PhysicalTransactionCursor<>( logFile.getReader( position ), new VersionAwareLogEntryReader<>() );
+    }
+
+    @Override
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws
+            IOException
+    {
+        return ReversedMultiFileTransactionCursor
+                .fromLogFile( logFile, backToPosition, failOnCorruptedLogFiles,
+                        monitors.newMonitor( ReversedTransactionCursorMonitor.class ) );
     }
 
     @Override
@@ -87,13 +108,10 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         catch ( FileNotFoundException e )
         {
             throw new NoSuchTransactionException( transactionIdToStartFrom,
-                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was deleted? [" + e.getMessage() + "]" );
+                    "Log position acquired, but couldn't find the log file itself. " +
+                            "Perhaps it just recently was deleted? [" + e.getMessage() + "]" );
         }
     }
-
-    private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
-            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM,
-                    BASE_TX_COMMIT_TIMESTAMP );
 
     @Override
     public TransactionMetadata getMetadataFor( long transactionId ) throws IOException

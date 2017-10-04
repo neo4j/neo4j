@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.store.counts;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -46,6 +46,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -93,15 +94,16 @@ public class CountsRotationTest
     private final Label B = Label.label( "B" );
     private final Label C = Label.label( "C" );
 
-    @Rule
-    public PageCacheRule pcRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( getClass(), fsRule.get() );
+    private final PageCacheRule pcRule = new PageCacheRule();
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final TestDirectory testDir = TestDirectory.testDirectory( getClass(), fsRule.get() );
+    private final ThreadingRule threadingRule = new ThreadingRule();
 
     @Rule
-    public ThreadingRule threadingRule = new ThreadingRule();
+    public RuleChain ruleChain = RuleChain.outerRule( threadingRule )
+                                          .around( pcRule )
+                                          .around( fsRule )
+                                          .around( testDir );
 
     private FileSystemAbstraction fs;
     private File dir;
@@ -113,7 +115,8 @@ public class CountsRotationTest
     {
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
     }
 
@@ -156,8 +159,8 @@ public class CountsRotationTest
     {
         // Given
         dbBuilder.newGraphDatabase().shutdown();
-        CountsTracker store = createCountsTracker( pageCache, Config.defaults().augment( Collections
-                .singletonMap( GraphDatabaseSettings.counts_store_rotation_timeout.name(), "100ms" ) ) );
+        CountsTracker store = createCountsTracker( pageCache,
+                Config.defaults( GraphDatabaseSettings.counts_store_rotation_timeout, "100ms" ) );
         try ( Lifespan lifespan = new Lifespan( store ) )
         {
             try ( CountsAccessor.Updater updater = store.apply( 2 ).get() )
@@ -328,7 +331,8 @@ public class CountsRotationTest
         CountDownLatch txStartLatch = new CountDownLatch( 1 );
         CountDownLatch txCommitLatch = new CountDownLatch( 1 );
 
-        Future<?> result = ForkJoinPool.commonPool().submit( () -> {
+        Future<?> result = ForkJoinPool.commonPool().submit( () ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 txStartLatch.countDown();
@@ -421,15 +425,15 @@ public class CountsRotationTest
             }
 
             @Override
-            public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+            public void visitIndexStatistics( long indexId, long updates, long size )
             {
-                records.add( Pair.of( CountsKeyFactory.indexStatisticsKey( labelId, propertyKeyId ), size ) );
+                records.add( Pair.of( CountsKeyFactory.indexStatisticsKey( indexId ), size ) );
             }
 
             @Override
-            public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+            public void visitIndexSample( long indexId, long unique, long size )
             {
-                records.add( Pair.of( CountsKeyFactory.indexSampleKey( labelId, propertyKeyId ), size ) );
+                records.add( Pair.of( CountsKeyFactory.indexSampleKey( indexId ), size ) );
             }
         } );
         return records;

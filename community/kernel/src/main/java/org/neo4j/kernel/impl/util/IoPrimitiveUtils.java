@@ -111,7 +111,7 @@ public abstract class IoPrimitiveUtils
     {
         buffer.clear();
         buffer.limit( bytes );
-        while ( buffer.hasRemaining())
+        while ( buffer.hasRemaining() )
         {
             int read = channel.read( buffer );
 
@@ -222,29 +222,5 @@ public abstract class IoPrimitiveUtils
             return result;
         }
         return new Object[] { propertyValue };
-    }
-
-    public static int safeCastLongToInt( long value )
-    {
-        if ( value >= Integer.MAX_VALUE )
-        {
-            throw new IllegalArgumentException( "Casting long value " + value + " to an int would wrap around" );
-        }
-        return (int) value;
-    }
-
-    public static short safeCastIntToUnsignedShort( int value )
-    {
-        if ( (value & ~0xFFFF) != 0 )
-        {
-            throw new IllegalArgumentException(
-                    "Casting int value " + value + " to an unsigned short would wrap around" );
-        }
-        return (short) value;
-    }
-
-    public static int shortToUnsignedInt( short value )
-    {
-        return value & 0xFFFF;
     }
 }

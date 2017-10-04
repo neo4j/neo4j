@@ -34,10 +34,17 @@ import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 import static java.lang.String.format;
 
@@ -46,10 +53,14 @@ import static java.lang.String.format;
  */
 public class DefaultFileSystemAbstraction implements FileSystemAbstraction
 {
-    // Named this way for better readability when statically importing
-    public static final FileSystemAbstraction REAL_FS = new DefaultFileSystemAbstraction();
-
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        WatchService watchService = FileSystems.getDefault().newWatchService();
+        return new DefaultFileSystemWatcher( watchService );
+    }
 
     @Override
     public StoreFileChannel open( File fileName, String mode ) throws IOException
@@ -74,13 +85,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
-        return new InputStreamReader( new FileInputStream( fileName ), charset );
+        return new InputStreamReader( openAsInputStream( fileName ), charset );
     }
 
     @Override
     public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
-        return new OutputStreamWriter( new FileOutputStream( fileName, append ), charset );
+        return new OutputStreamWriter( openAsOutputStream( fileName, append ), charset );
     }
 
     @Override
@@ -186,11 +197,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
             Class<K> clazz, Function<Class<K>, K> creator )
     {
-        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
-        if (fileSystem == null)
-        {
-            thirdPartyFileSystems.put( clazz, fileSystem = creator.apply( clazz ) );
-        }
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.computeIfAbsent( clazz, k -> creator.apply( clazz ) );
         return clazz.cast( fileSystem );
     }
 
@@ -212,8 +219,20 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         Files.delete( file.toPath() );
     }
 
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
+    }
+
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )
     {
         return new StoreFileChannel( channel );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        IOUtils.closeAll( thirdPartyFileSystems.values() );
     }
 }

@@ -41,7 +41,8 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
     public void shouldAllowDisablingAuthorization() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" ).build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" ).build();
 
         // When
         server.start();
@@ -58,6 +59,9 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if(server != null) { server.stop(); }
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 }

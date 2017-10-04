@@ -42,6 +42,8 @@ public interface GraphDatabaseQueryService
 
     Node createNode();
 
+    Long createNodeId();
+
     Node createNode( Label... labels );
 
     Node getNodeById( long id );
@@ -67,7 +69,7 @@ public interface GraphDatabaseQueryService
      * @return internal transaction
      */
     InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout,
-            TimeUnit unit);
+            TimeUnit unit );
 
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 

@@ -47,7 +47,7 @@ public class PreFlightTasks
     private final PreflightTask[] tasks;
     private final Log log;
 
-    private PreflightTask failedTask = null;
+    private PreflightTask failedTask;
 
     public PreFlightTasks( LogProvider logProvider, PreflightTask... tasks )
     {

@@ -31,14 +31,7 @@ public interface TransactionTracer
      * A TransactionTracer implementation that does nothing, other than return the NULL variants of the companion
      * interfaces.
      */
-    TransactionTracer NULL = new TransactionTracer()
-    {
-        @Override
-        public TransactionEvent beginTransaction()
-        {
-            return TransactionEvent.NULL;
-        }
-    };
+    TransactionTracer NULL = () -> TransactionEvent.NULL;
 
     /**
      * A transaction starts.

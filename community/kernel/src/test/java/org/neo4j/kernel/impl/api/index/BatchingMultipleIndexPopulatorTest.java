@@ -28,14 +28,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -43,26 +44,34 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.AWAIT_TIMEOUT_MINUTES_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.BATCH_SIZE_NAME;
-import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.TASK_QUEUE_SIZE_NAME;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
 
 public class BatchingMultipleIndexPopulatorTest
 {
+    public static final int propertyId = 1;
+    public static final int labelId = 1;
+    private final IndexDescriptor index1 = IndexDescriptorFactory.forLabel(1, 1);
+    private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel(42, 42);
+
     @After
     public void tearDown() throws Exception
     {
@@ -78,14 +87,14 @@ public class BatchingMultipleIndexPopulatorTest
         setProperty( QUEUE_THRESHOLD_NAME, 5 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
-                mock( IndexStoreView.class ), mock( ExecutorService.class ), NullLogProvider.getInstance() );
+                mock( IndexStoreView.class ), immediateExecutor(), NullLogProvider.getInstance() );
 
-        IndexPopulator populator = addPopulator( batchingPopulator, 1 );
+        IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( any() ) ).thenReturn( updater );
 
-        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
-        NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} );
+        IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate<?> update2 = add( 2, index1.schema(), "bar" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
 
@@ -107,20 +116,20 @@ public class BatchingMultipleIndexPopulatorTest
         NeoStoreIndexStoreView storeView =
                 new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
-                storeView, mock( ExecutorService.class ), NullLogProvider.getInstance() );
+                storeView, immediateExecutor(), NullLogProvider.getInstance() );
 
-        IndexPopulator populator1 = addPopulator( batchingPopulator, 1 );
+        IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater1 = mock( IndexUpdater.class );
         when( populator1.newPopulatingUpdater( any() ) ).thenReturn( updater1 );
 
-        IndexPopulator populator2 = addPopulator( batchingPopulator, 2 );
+        IndexPopulator populator2 = addPopulator( batchingPopulator, index42 );
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
         batchingPopulator.indexAllNodes();
-        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
-        NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 2, "bar", new long[]{2} );
-        NodePropertyUpdate update3 = NodePropertyUpdate.add( 3, 1, "baz", new long[]{1} );
+        IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate<?> update2 = add( 2, index42.schema(), "bar" );
+        IndexEntryUpdate<?> update3 = add( 3, index1.schema(), "baz" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
         batchingPopulator.queue( update3 );
@@ -135,10 +144,10 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     public void executorShutdownAfterStoreScanCompletes() throws Exception
     {
-        NodePropertyUpdate update = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
+        NodeUpdates update = nodeUpdates( 1, propertyId, "foo", labelId );
         IndexStoreView storeView = newStoreView( update );
 
-        ExecutorService executor = mock( ExecutorService.class );
+        ExecutorService executor = immediateExecutor();
         when( executor.awaitTermination( anyLong(), any() ) ).thenReturn( true );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
@@ -160,9 +169,9 @@ public class BatchingMultipleIndexPopulatorTest
         StoreScan<Exception> failingStoreScan = mock( StoreScan.class );
         RuntimeException scanError = new RuntimeException();
         doThrow( scanError ).when( failingStoreScan ).run();
-        when( storeView.visitNodes( any(), any(), any(), any() ) ).thenReturn( failingStoreScan );
+        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenReturn( failingStoreScan );
 
-        ExecutorService executor = mock( ExecutorService.class );
+        ExecutorService executor = immediateExecutor();
         when( executor.awaitTermination( anyLong(), any() ) ).thenReturn( true );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
@@ -188,22 +197,22 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     public void pendingBatchesFlushedAfterStoreScan() throws Exception
     {
-        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
-        NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} );
-        NodePropertyUpdate update3 = NodePropertyUpdate.add( 3, 1, "baz", new long[]{1} );
-        NodePropertyUpdate update42 = NodePropertyUpdate.add( 4, 42, "42", new long[]{42} );
+        NodeUpdates update1 = nodeUpdates( 1, propertyId, "foo", labelId );
+        NodeUpdates update2 = nodeUpdates( 2, propertyId, "bar", labelId );
+        NodeUpdates update3 = nodeUpdates( 3, propertyId, "baz", labelId );
+        NodeUpdates update42 = nodeUpdates( 4, 42, "42", 42 );
         IndexStoreView storeView = newStoreView( update1, update2, update3, update42 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
                 sameThreadExecutor(), NullLogProvider.getInstance() );
 
-        IndexPopulator populator1 = addPopulator( batchingPopulator, 1 );
-        IndexPopulator populator42 = addPopulator( batchingPopulator, 42 );
+        IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
+        IndexPopulator populator42 = addPopulator( batchingPopulator, index42 );
 
         batchingPopulator.indexAllNodes().run();
 
-        verify( populator1 ).add( Arrays.asList( update1, update2, update3 ) );
-        verify( populator42 ).add( singletonList( update42 ) );
+        verify( populator1 ).add( forUpdates( index1, update1, update2, update3 ) );
+        verify( populator42 ).add( forUpdates( index42, update42 ) );
     }
 
     @Test
@@ -211,20 +220,20 @@ public class BatchingMultipleIndexPopulatorTest
     {
         setProperty( BATCH_SIZE_NAME, 2 );
 
-        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
-        NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} );
-        NodePropertyUpdate update3 = NodePropertyUpdate.add( 3, 1, "baz", new long[]{1} );
+        NodeUpdates update1 = nodeUpdates( 1, propertyId, "foo", labelId );
+        NodeUpdates update2 = nodeUpdates( 2, propertyId, "bar", labelId );
+        NodeUpdates update3 = nodeUpdates( 3, propertyId, "baz", labelId );
         IndexStoreView storeView = newStoreView( update1, update2, update3 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
                 sameThreadExecutor(), NullLogProvider.getInstance() );
 
-        IndexPopulator populator = addPopulator( batchingPopulator, 1 );
+        IndexPopulator populator = addPopulator( batchingPopulator, index1 );
 
         batchingPopulator.indexAllNodes().run();
 
-        verify( populator ).add( Arrays.asList( update1, update2 ) );
-        verify( populator ).add( singletonList( update3 ) );
+        verify( populator ).add( forUpdates( index1, update1, update2 ) );
+        verify( populator ).add( forUpdates( index1, update3 ) );
     }
 
     @Test
@@ -232,8 +241,8 @@ public class BatchingMultipleIndexPopulatorTest
     {
         setProperty( BATCH_SIZE_NAME, 2 );
 
-        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "aaa", new long[]{1} );
-        NodePropertyUpdate update2 = NodePropertyUpdate.add( 1, 1, "bbb", new long[]{1} );
+        NodeUpdates update1 = nodeUpdates( 1, propertyId, "aaa", labelId );
+        NodeUpdates update2 = nodeUpdates( 1, propertyId, "bbb", labelId );
         IndexStoreView storeView = newStoreView( update1, update2 );
 
         RuntimeException batchFlushError = new RuntimeException( "Batch failed" );
@@ -245,8 +254,9 @@ public class BatchingMultipleIndexPopulatorTest
             BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView, executor,
                     NullLogProvider.getInstance() );
 
-            populator = addPopulator( batchingPopulator, 1 );
-            doThrow( batchFlushError ).when( populator ).add( Arrays.asList( update1, update2 ) );
+            populator = addPopulator( batchingPopulator, index1 );
+            List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
+            doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllNodes().run();
         }
@@ -264,11 +274,11 @@ public class BatchingMultipleIndexPopulatorTest
     {
         setProperty( BATCH_SIZE_NAME, 2 );
 
-        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "aaa", new long[]{1} );
-        NodePropertyUpdate update2 = NodePropertyUpdate.add( 1, 1, "bbb", new long[]{1} );
-        NodePropertyUpdate update3 = NodePropertyUpdate.add( 1, 1, "ccc", new long[]{1} );
-        NodePropertyUpdate update4 = NodePropertyUpdate.add( 1, 1, "ddd", new long[]{1} );
-        NodePropertyUpdate update5 = NodePropertyUpdate.add( 1, 1, "eee", new long[]{1} );
+        NodeUpdates update1 = nodeUpdates( 1, propertyId, "aaa", labelId );
+        NodeUpdates update2 = nodeUpdates( 1, propertyId, "bbb", labelId );
+        NodeUpdates update3 = nodeUpdates( 1, propertyId, "ccc", labelId );
+        NodeUpdates update4 = nodeUpdates( 1, propertyId, "ddd", labelId );
+        NodeUpdates update5 = nodeUpdates( 1, propertyId, "eee", labelId );
         IndexStoreView storeView = newStoreView( update1, update2, update3, update4, update5 );
 
         RuntimeException batchFlushError = new RuntimeException( "Batch failed" );
@@ -276,52 +286,94 @@ public class BatchingMultipleIndexPopulatorTest
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
                 sameThreadExecutor(), NullLogProvider.getInstance() );
 
-        IndexPopulator populator = addPopulator( batchingPopulator, 1 );
-        doThrow( batchFlushError ).when( populator ).add( Arrays.asList( update3, update4 ) );
+        IndexPopulator populator = addPopulator( batchingPopulator, index1 );
+        doThrow( batchFlushError ).when( populator ).add( forUpdates( index1, update3, update4 ) );
 
         batchingPopulator.indexAllNodes().run();
 
-        verify( populator ).add( Arrays.asList( update1, update2 ) );
-        verify( populator ).add( Arrays.asList( update3, update4 ) );
+        verify( populator ).add( forUpdates( index1, update1, update2 ) );
+        verify( populator ).add( forUpdates( index1, update3, update4 ) );
         verify( populator ).markAsFailed( failure( batchFlushError ).asString() );
-        verify( populator, never() ).add( singletonList( update5 ) );
+        verify( populator, never() ).add( forUpdates( index1, update5 ) );
     }
 
-    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, int id )
+    @Test
+    public void shouldApplyBatchesInParallel() throws Exception
+    {
+        // given
+        setProperty( BATCH_SIZE_NAME, 2 );
+        NodeUpdates[] updates = new NodeUpdates[9];
+        for ( int i = 0; i < updates.length; i++ )
+        {
+            updates[i] = nodeUpdates( i, propertyId, String.valueOf( i ), labelId );
+        }
+        IndexStoreView storeView = newStoreView( updates );
+        ExecutorService executor = sameThreadExecutor();
+        BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
+                executor, NullLogProvider.getInstance() );
+        addPopulator( batchingPopulator, index1 );
+
+        // when
+        batchingPopulator.indexAllNodes().run();
+
+        // then
+        verify( executor, atLeast( 5 ) ).execute( any( Runnable.class ) );
+    }
+
+    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, NodeUpdates... updates )
+    {
+        return Iterables.asList(
+                Iterables.concat(
+                        Iterables.map(
+                                update -> update.forIndexKeys( Iterables.asIterable( index ) ),
+                                Arrays.asList( updates )
+                        ) ) );
+    }
+
+    private NodeUpdates nodeUpdates( int nodeId, int propertyId, String propertyValue, long...
+            labelIds )
+    {
+        return NodeUpdates.forNode( nodeId, labelIds, labelIds )
+                .added( propertyId, Values.of( propertyValue ) )
+                .build();
+    }
+
+    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        IndexDescriptor descriptor = new IndexDescriptor( id, id );
 
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
         FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( indexProxyFactory );
 
-        batchingPopulator.addPopulator( populator, descriptor, new SchemaIndexProvider.Descriptor( "foo", "1" ),
-                IndexConfiguration.NON_UNIQUE, flipper, failedIndexProxyFactory, "testIndex" );
+        batchingPopulator.addPopulator(
+                populator, descriptor.schema().getLabelId(), descriptor,
+                new SchemaIndexProvider.Descriptor( "foo", "1" ),
+                flipper, failedIndexProxyFactory, "testIndex" );
 
         return populator;
     }
 
     @SuppressWarnings( "unchecked" )
-    private static IndexStoreView newStoreView( NodePropertyUpdate... updates )
+    private static IndexStoreView newStoreView( NodeUpdates... updates )
     {
         IndexStoreView storeView = mock( IndexStoreView.class );
-        when( storeView.visitNodes( any(), any(), any(), any() ) ).thenAnswer( invocation -> {
-            Object visitorArg = invocation.getArguments()[2];
-            Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException> visitor =
-                    (Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException>) visitorArg;
-            return new NodePropertyUpdatesScan( updates, visitor );
+        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenAnswer( invocation ->
+        {
+            Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitorArg = invocation.getArgument( 2 );
+            return new IndexEntryUpdateScan( updates, visitorArg );
         } );
         return storeView;
     }
 
     private static ExecutorService sameThreadExecutor() throws InterruptedException
     {
-        ExecutorService executor = mock( ExecutorService.class );
+        ExecutorService executor = immediateExecutor();
         when( executor.awaitTermination( anyLong(), any() ) ).thenReturn( true );
-        doAnswer( invocation -> {
-            ((Runnable) invocation.getArguments()[0]).run();
+        doAnswer( invocation ->
+        {
+            ((Runnable) invocation.getArgument( 0 )).run();
             return null;
         } ).when( executor ).execute( any() );
         return executor;
@@ -337,15 +389,26 @@ public class BatchingMultipleIndexPopulatorTest
         FeatureToggles.clear( BatchingMultipleIndexPopulator.class, name );
     }
 
-    private static class NodePropertyUpdatesScan implements StoreScan<IndexPopulationFailedKernelException>
+    private static ExecutorService immediateExecutor()
     {
-        final NodePropertyUpdate[] updates;
-        final Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException> visitor;
+        ExecutorService result = mock( ExecutorService.class );
+        doAnswer( invocation ->
+        {
+            invocation.<Runnable>getArgument( 0 ).run();
+            return null;
+        } ).when( result ).execute( any( Runnable.class ) );
+        return result;
+    }
+
+    private static class IndexEntryUpdateScan implements StoreScan<IndexPopulationFailedKernelException>
+    {
+        final NodeUpdates[] updates;
+        final Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor;
 
         boolean stop;
 
-        NodePropertyUpdatesScan( NodePropertyUpdate[] updates,
-                Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException> visitor )
+        IndexEntryUpdateScan( NodeUpdates[] updates,
+                Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor )
         {
             this.updates = updates;
             this.visitor = visitor;
@@ -354,18 +417,13 @@ public class BatchingMultipleIndexPopulatorTest
         @Override
         public void run() throws IndexPopulationFailedKernelException
         {
-
-            NodePropertyUpdates nodePropertyUpdates = new NodePropertyUpdates();
-            for ( NodePropertyUpdate update : updates )
+            for ( NodeUpdates update : updates )
             {
                 if ( stop )
                 {
                     return;
                 }
-                nodePropertyUpdates.initForNodeId( update.getNodeId() );
-                nodePropertyUpdates.add( update );
-                visitor.visit( nodePropertyUpdates );
-                nodePropertyUpdates.reset();
+                visitor.visit( update );
             }
         }
 
@@ -376,22 +434,15 @@ public class BatchingMultipleIndexPopulatorTest
         }
 
         @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
                 long currentlyIndexedNodeId )
         {
-
         }
 
         @Override
         public PopulationProgress getProgress()
         {
             return PopulationProgress.NONE;
-        }
-
-        @Override
-        public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
-        {
-
         }
     }
 }

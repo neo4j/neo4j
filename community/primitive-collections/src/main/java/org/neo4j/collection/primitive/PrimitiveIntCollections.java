@@ -20,14 +20,17 @@
 package org.neo4j.collection.primitive;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import java.util.function.LongToIntFunction;
 
 import org.neo4j.collection.primitive.base.Empty;
 
@@ -42,18 +45,28 @@ import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
  */
 public class PrimitiveIntCollections
 {
+    private PrimitiveIntCollections()
+    {
+    }
+
     /**
      * Base iterator for simpler implementations of {@link PrimitiveIntIterator}s.
      */
     public abstract static class PrimitiveIntBaseIterator implements PrimitiveIntIterator
     {
+        private boolean hasNextDecided;
         private boolean hasNext;
         private int next;
 
         @Override
         public boolean hasNext()
         {
-            return hasNext ? true : (hasNext = fetchNext());
+            if ( !hasNextDecided )
+            {
+                hasNext = fetchNext();
+                hasNextDecided = true;
+            }
+            return hasNext;
         }
 
         @Override
@@ -63,7 +76,7 @@ public class PrimitiveIntCollections
             {
                 throw new NoSuchElementException( "No more elements in " + this );
             }
-            hasNext = false;
+            hasNextDecided = false;
             return next;
         }
 
@@ -104,7 +117,7 @@ public class PrimitiveIntCollections
             @Override
             protected boolean fetchNext()
             {
-                return ++index < items.length ? next( items[index] ) : false;
+                return ++index < items.length && next( items[index] );
             }
         };
     }
@@ -118,7 +131,7 @@ public class PrimitiveIntCollections
             @Override
             protected boolean fetchNext()
             {
-                return --index >= 0 ? next( items[index] ) : false;
+                return --index >= 0 && next( items[index] );
             }
         };
     }
@@ -149,7 +162,7 @@ public class PrimitiveIntCollections
                     singleItemReturned = true;
                     return next( item );
                 }
-                return iterator.hasNext() ? next( iterator.next() ) : false;
+                return iterator.hasNext() && next( iterator.next() );
             }
         };
     }
@@ -201,7 +214,7 @@ public class PrimitiveIntCollections
                     }
                 }
             }
-            return currentIterator != null && currentIterator.hasNext() ? next( currentIterator.next() ) : false;
+            return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
         }
 
         protected final PrimitiveIntIterator currentIterator()
@@ -253,7 +266,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static PrimitiveIntIterator dedup( PrimitiveIntIterator source )
+    public static PrimitiveIntIterator deduplicate( PrimitiveIntIterator source )
     {
         return new PrimitiveIntFilteringIterator( source )
         {
@@ -283,7 +296,7 @@ public class PrimitiveIntCollections
     {
         return new PrimitiveIntFilteringIterator( source )
         {
-            private int skipped = 0;
+            private int skipped;
 
             @Override
             public boolean test( int item )
@@ -381,7 +394,7 @@ public class PrimitiveIntCollections
         {
             try
             {
-                return current <= end ? next( current ) : false;
+                return current <= end && next( current );
             }
             finally
             {
@@ -401,7 +414,7 @@ public class PrimitiveIntCollections
             {
                 try
                 {
-                    return !returned ? next( item ) : false;
+                    return !returned && next( item );
                 }
                 finally
                 {
@@ -510,13 +523,13 @@ public class PrimitiveIntCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
         if ( cursor < fromEnd )
         {
             throw new NoSuchElementException( "Item " + index + " not found in " + iterator );
         }
-        return trail[cursor%fromEnd];
+        return trail[cursor % fromEnd];
     }
 
     public static int itemAt( PrimitiveIntIterator iterator, int index, int defaultItem )
@@ -536,9 +549,9 @@ public class PrimitiveIntCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
-        return cursor < fromEnd ? defaultItem : trail[cursor%fromEnd];
+        return cursor < fromEnd ? defaultItem : trail[cursor % fromEnd];
     }
 
     /**
@@ -571,7 +584,8 @@ public class PrimitiveIntCollections
      */
     public static boolean equals( PrimitiveIntIterator first, PrimitiveIntIterator other )
     {
-        boolean firstHasNext, otherHasNext;
+        boolean firstHasNext;
+        boolean otherHasNext;
         // single | so that both iterator's hasNext() gets evaluated.
         while ( (firstHasNext = first.hasNext()) | (otherHasNext = other.hasNext()) )
         {
@@ -632,6 +646,18 @@ public class PrimitiveIntCollections
         if ( i < array.length )
         {
             array = copyOf( array, i );
+        }
+        return array;
+    }
+
+    public static long[] asLongArray( PrimitiveIntCollection values )
+    {
+        long[] array = new long[values.size()];
+        PrimitiveIntIterator iterator = values.iterator();
+        int i = 0;
+        while ( iterator.hasNext() )
+        {
+            array[i++] = iterator.next();
         }
         return array;
     }
@@ -704,7 +730,7 @@ public class PrimitiveIntCollections
                     }
                     current = source.next();
                 }
-                return source.hasNext() ? next( current.next() ) : false;
+                return source.hasNext() && next( current.next() );
             }
         };
     }
@@ -733,6 +759,14 @@ public class PrimitiveIntCollections
         };
     }
 
+    public static void consume( PrimitiveIntIterator source, IntConsumer consumer )
+    {
+        while ( source.hasNext() )
+        {
+            consumer.accept( source.next() );
+        }
+    }
+
     public static PrimitiveIntIterator constant( final int value )
     {
         return new PrimitiveIntBaseIterator()
@@ -755,6 +789,16 @@ public class PrimitiveIntCollections
         return set;
     }
 
+    public static PrimitiveIntSet asSet( long[] values, LongToIntFunction converter )
+    {
+        PrimitiveIntSet set = Primitive.intSet( values.length );
+        for ( long value : values )
+        {
+            set.add( converter.applyAsInt( value ) );
+        }
+        return set;
+    }
+
     public static boolean contains( int[] values, int candidate )
     {
         for ( int i = 0; i < values.length; i++ )
@@ -768,23 +812,6 @@ public class PrimitiveIntCollections
     }
 
     /**
-     * Adds all the items in {@code iterator} to {@code collection}.
-     * @param <C> the type of {@link Collection} to add to items to.
-     * @param iterator the {@link Iterator} to grab the items from.
-     * @param collection the {@link Collection} to add the items to.
-     * @return the {@code collection} which was passed in, now filled
-     * with the items from {@code iterator}.
-     */
-    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
-    {
-        while ( iterator.hasNext() )
-        {
-            collection.add( iterator.next() );
-        }
-        return collection;
-    }
-
-    /**
      * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each int.
      *
      * @param iterator {@link PrimitiveIntIterator} to pull values from.
@@ -793,9 +820,9 @@ public class PrimitiveIntCollections
     public static List<Integer> toList( PrimitiveIntIterator iterator )
     {
         List<Integer> out = new ArrayList<>();
-        while(iterator.hasNext())
+        while ( iterator.hasNext() )
         {
-            out.add(iterator.next());
+            out.add( iterator.next() );
         }
         return out;
     }
@@ -810,10 +837,15 @@ public class PrimitiveIntCollections
      */
     public static Set<Integer> toSet( PrimitiveIntIterator iterator )
     {
-        Set<Integer> set = new HashSet<>();
+        return mapToSet( iterator, Integer::new );
+    }
+
+    public static <T> Set<T> mapToSet( PrimitiveIntIterator iterator, IntFunction<T> map )
+    {
+        Set<T> set = new HashSet<>();
         while ( iterator.hasNext() )
         {
-            addUnique( set, iterator.next() );
+            addUnique( set, map.apply( iterator.next() ) );
         }
         return set;
     }
@@ -825,5 +857,33 @@ public class PrimitiveIntCollections
             throw new IllegalStateException( "Encountered an already added item:" + item +
                     " when adding items uniquely to a collection:" + collection );
         }
+    }
+
+    /**
+     * Deduplicates values in the {@code values} array.
+     *
+     * @param values sorted array of int values.
+     * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
+     */
+    public static int[] deduplicate( int[] values )
+    {
+        int unique = 0;
+        for ( int i = 0; i < values.length; i++ )
+        {
+            int value = values[i];
+            for ( int j = 0; j < unique; j++ )
+            {
+                if ( value == values[j] )
+                {
+                    value = -1; // signal that this value is not unique
+                    break; // we will not find more than one conflict
+                }
+            }
+            if ( value != -1 )
+            {   // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                values[unique++] = values[i];
+            }
+        }
+        return unique < values.length ? Arrays.copyOf( values, unique ) : values;
     }
 }

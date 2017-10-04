@@ -19,6 +19,7 @@
  */
 package org.neo4j.harness.internal;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -38,6 +39,9 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -47,22 +51,17 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
-import static org.neo4j.test.Digests.md5Hex;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
 {
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private File serverFolder;
     private final Extensions extensions = new Extensions();
     private final HarnessRegisteredProcs procedures = new HarnessRegisteredProcs();
@@ -79,21 +78,35 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         init( dataDir );
     }
 
+    public AbstractInProcessServerBuilder( File workingDir, String dataSubDir )
+    {
+        File dataDir = new File( workingDir, dataSubDir ).getAbsoluteFile();
+        init( dataDir );
+    }
+
     private void init( File workingDir )
     {
         setDirectory( workingDir );
         withConfig( auth_enabled, "false" );
         withConfig( pagecache_memory, "8m" );
-        withConfig( httpConnector( "1" ).type, "HTTP" );
-        withConfig( httpConnector( "1" ).encryption, Encryption.NONE.name() );
-        withConfig( httpConnector( "1" ).enabled, "true" );
-        withConfig( httpConnector( "1" ).address, "localhost:" + Integer.toString( freePort( 1001, 5000 ) ) );
-        withConfig( httpConnector( "2" ).type, "HTTP" );
-        withConfig( httpConnector( "2" ).encryption, Encryption.TLS.name() );
-        withConfig( httpConnector( "2" ).enabled, "false" );
-        withConfig( boltConnector( "0" ).type, "BOLT" );
-        withConfig( boltConnector( "0" ).enabled, "true" );
-        withConfig( boltConnector( "0" ).address, "localhost:" + Integer.toString( freePort( 5001, 9000 ) ) );
+
+        BoltConnector bolt0 = new BoltConnector( "bolt" );
+        HttpConnector http1 = new HttpConnector( "http", Encryption.NONE );
+        HttpConnector http2 = new HttpConnector( "https", Encryption.TLS );
+
+        withConfig( http1.type, "HTTP" );
+        withConfig( http1.encryption, Encryption.NONE.name() );
+        withConfig( http1.enabled, "true" );
+        withConfig( http1.address, "localhost:0" );
+
+        withConfig( http2.type, "HTTP" );
+        withConfig( http2.encryption, Encryption.TLS.name() );
+        withConfig( http2.enabled, "false" );
+        withConfig( http2.address, "localhost:0" );
+
+        withConfig( bolt0.type, "BOLT" );
+        withConfig( bolt0.enabled, "true" );
+        withConfig( bolt0.address, "localhost:0" );
     }
 
     @Override
@@ -113,39 +126,45 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     @Override
     public ServerControls newServer()
     {
-        final OutputStream logOutputStream;
-        try
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            logOutputStream = createOrOpenAsOuputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
+            final OutputStream logOutputStream;
+            try
+            {
+                logOutputStream = createOrOpenAsOuputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Unable to create log file", e );
+            }
+
+            config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( extensions.toList() ) );
+
+            final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
+            GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
+            Iterable<KernelExtensionFactory<?>> kernelExtensions =
+                    append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() );
+            dependencies = dependencies.kernelExtensions( kernelExtensions ).userLogProvider( userLogProvider );
+
+            AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
+            InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );
+            controls.start();
+
+            try
+            {
+                fixtures.applyTo( controls );
+            }
+            catch ( Exception e )
+            {
+                controls.close();
+                throw Exceptions.launderedException( e );
+            }
+            return controls;
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Unable to create log file", e );
-        }
-
-        config.put( ServerSettings.third_party_packages.name(),
-                toStringForThirdPartyPackageProperty( extensions.toList() ) );
-
-        final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
-        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-        dependencies = dependencies.kernelExtensions(
-                append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() ) )
-                .userLogProvider( userLogProvider );
-
-        AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
-        InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );
-        controls.start();
-
-        try
-        {
-            fixtures.applyTo( controls );
-        }
-        catch ( Exception e )
-        {
-            controls.close();
             throw Exceptions.launderedException( e );
         }
-        return controls;
     }
 
     protected abstract AbstractNeoServer createNeoServer( Map<String,String> config,
@@ -212,6 +231,13 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         return this;
     }
 
+    @Override
+    public TestServerBuilder withAggregationFunction( Class<?> functionClass )
+    {
+        procedures.addAggregationFunction( functionClass );
+        return this;
+    }
+
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
@@ -221,19 +247,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
     private String randomFolderName()
     {
-        return md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
-    }
-
-    private int freePort(int startRange, int endRange)
-    {
-        try
-        {
-            return Ports.findFreePort( Ports.INADDR_LOCALHOST, new int[]{startRange, endRange} ).getPort();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to find an available port: " + e.getMessage(), e );
-        }
+        return DigestUtils.md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
     }
 
     private static String toStringForThirdPartyPackageProperty( List<ThirdPartyJaxRsPackage> extensions )
@@ -241,12 +255,14 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         String propertyString = "";
         int packageCount = extensions.size();
 
-        if( packageCount == 0 )
+        if ( packageCount == 0 )
+        {
             return propertyString;
+        }
         else
         {
             ThirdPartyJaxRsPackage jaxRsPackage;
-            for( int i = 0; i < packageCount - 1; i ++ )
+            for ( int i = 0; i < packageCount - 1; i++ )
             {
                 jaxRsPackage = extensions.get( i );
                 propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint() + Settings.SEPARATOR;
@@ -271,9 +287,9 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         private HarnessRegisteredProcs userProcs;
 
-        public Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
+        Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
         {
-            super("harness");
+            super( "harness" );
             this.userProcs = userProcs;
         }
 

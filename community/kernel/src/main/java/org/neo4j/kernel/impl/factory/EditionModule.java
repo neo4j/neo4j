@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -40,20 +44,27 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
-
-import static java.util.Collections.singletonMap;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
  * Edition module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. Implementations of this class
@@ -61,6 +72,10 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
+    // This resided in RecordStorageEngine prior to 3.3
+    private static final boolean safeIdBuffering = FeatureToggles.flag(
+            EditionModule.class, "safeIdBuffering", true );
+
     void registerProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
@@ -103,6 +118,31 @@ public abstract class EditionModule
 
     public IdReuseEligibility eligibleForIdReuse;
 
+    public FileSystemWatcherService watcherService;
+
+    public IdController idController;
+
+    protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
+            LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
+    {
+        try
+        {
+            RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );
+            watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging, fileNameFilter ) );
+            watcher.watch( storeDir );
+            // register to watch store dir parent folder to see when store dir removed
+            watcher.watch( storeDir.getParentFile() );
+            return new DefaultFileSystemWatcherService( jobScheduler, watcher );
+        }
+        catch ( Exception e )
+        {
+            Log log = logging.getInternalLog( getClass() );
+            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store " +
+                    "files will be disabled.", e );
+            return FileSystemWatcherService.EMPTY_WATCHER;
+        }
+    }
+
     protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {
         DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
@@ -118,7 +158,7 @@ public abstract class EditionModule
     {
         sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
         sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
-        config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
+        config.augment( Configuration.editionName, databaseInfo.edition.toString() );
     }
 
     public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );
@@ -194,5 +234,34 @@ public abstract class EditionModule
     protected BoltConnectionTracker createSessionTracker()
     {
         return BoltConnectionTracker.NOOP;
+    }
+
+    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies, IdGeneratorFactory
+            editionIdGeneratorFactory )
+    {
+        IdGeneratorFactory factory = editionIdGeneratorFactory;
+        if ( safeIdBuffering )
+        {
+            BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
+                    new BufferingIdGeneratorFactory( factory, eligibleForIdReuse, idTypeConfigurationProvider );
+            idController = createBufferedIdController( bufferingIdGeneratorFactory, platformModule.jobScheduler );
+            factory = bufferingIdGeneratorFactory;
+        }
+        else
+        {
+            idController = createDefaultIdController();
+        }
+        this.idGeneratorFactory = factory;
+    }
+
+    private BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory,
+            JobScheduler scheduler )
+    {
+        return new BufferedIdController( idGeneratorFactory, scheduler );
+    }
+
+    protected DefaultIdController createDefaultIdController()
+    {
+        return new DefaultIdController();
     }
 }

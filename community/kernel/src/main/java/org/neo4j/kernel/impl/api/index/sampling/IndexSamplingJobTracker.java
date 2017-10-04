@@ -26,14 +26,13 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 
 public class IndexSamplingJobTracker
 {
     private final JobScheduler jobScheduler;
     private final int jobLimit;
-    private final Set<IndexDescriptor> executingJobDescriptors;
+    private final Set<Long> executingJobs;
     private final Lock lock = new ReentrantLock( true );
     private final Condition canSchedule = lock.newCondition();
     private final Condition allJobsFinished = lock.newCondition();
@@ -44,7 +43,7 @@ public class IndexSamplingJobTracker
     {
         this.jobScheduler = jobScheduler;
         this.jobLimit = config.jobLimit();
-        this.executingJobDescriptors = new HashSet<>();
+        this.executingJobs = new HashSet<>();
     }
 
     public boolean canExecuteMoreSamplingJobs()
@@ -52,7 +51,7 @@ public class IndexSamplingJobTracker
         lock.lock();
         try
         {
-            return !stopped && executingJobDescriptors.size() < jobLimit;
+            return !stopped && executingJobs.size() < jobLimit;
         }
         finally
         {
@@ -70,26 +69,22 @@ public class IndexSamplingJobTracker
                 return;
             }
 
-            IndexDescriptor descriptor = samplingJob.descriptor();
-            if ( executingJobDescriptors.contains( descriptor ) )
+            long indexId = samplingJob.indexId();
+            if ( executingJobs.contains( indexId ) )
             {
                 return;
             }
 
-            executingJobDescriptors.add( descriptor );
-            jobScheduler.schedule( JobScheduler.Groups.indexSampling, new Runnable()
+            executingJobs.add( indexId );
+            jobScheduler.schedule( JobScheduler.Groups.indexSampling, () ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        samplingJob.run();
-                    }
-                    finally
-                    {
-                        samplingJobCompleted( samplingJob );
-                    }
+                    samplingJob.run();
+                }
+                finally
+                {
+                    samplingJobCompleted( samplingJob );
                 }
             } );
         }
@@ -104,7 +99,7 @@ public class IndexSamplingJobTracker
         lock.lock();
         try
         {
-            executingJobDescriptors.remove( samplingJob.descriptor() );
+            executingJobs.remove( samplingJob.indexId() );
             canSchedule.signalAll();
             allJobsFinished.signalAll();
         }
@@ -135,7 +130,7 @@ public class IndexSamplingJobTracker
         }
     }
 
-    public void awaitAllJobs(long time, TimeUnit unit) throws InterruptedException
+    public void awaitAllJobs( long time, TimeUnit unit ) throws InterruptedException
     {
         lock.lock();
         try
@@ -145,7 +140,7 @@ public class IndexSamplingJobTracker
                 return;
             }
 
-            while ( !executingJobDescriptors.isEmpty() )
+            while ( !executingJobs.isEmpty() )
             {
                 allJobsFinished.await( time, unit );
             }
@@ -163,7 +158,7 @@ public class IndexSamplingJobTracker
         {
             stopped = true;
 
-            while ( !executingJobDescriptors.isEmpty() )
+            while ( !executingJobs.isEmpty() )
             {
                 allJobsFinished.awaitUninterruptibly();
             }

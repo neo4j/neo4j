@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Collections.singletonMap;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -71,7 +72,7 @@ public class RecordAccessStub implements RecordAccess
         return new Engine<RECORD, REPORT>( report )
         {
             @Override
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
                                  AbstractBaseRecord newReference )
             {
@@ -86,7 +87,7 @@ public class RecordAccessStub implements RecordAccess
         return new Engine<RECORD, REPORT>( report )
         {
             @Override
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
                                  AbstractBaseRecord newReference )
             {
@@ -110,21 +111,17 @@ public class RecordAccessStub implements RecordAccess
                 final RecordReference<REFERRED> other,
                 final ComparativeRecordChecker<RECORD, ? super REFERRED, REPORT> checker )
         {
-            deferredTasks.add( new Runnable()
+            deferredTasks.add( () ->
             {
-                @Override
-                @SuppressWarnings("unchecked")
-                public void run()
-                {
-                    PendingReferenceCheck mock = mock( PendingReferenceCheck.class );
-                    DeferredReferenceCheck check = new DeferredReferenceCheck( Engine.this, checker );
-                    doAnswer( check ).when( mock ).checkReference( any( AbstractBaseRecord.class ),
+                PendingReferenceCheck mock = mock( PendingReferenceCheck.class );
+                DeferredReferenceCheck check = new DeferredReferenceCheck( Engine.this, checker );
+                doAnswer( check ).when( mock ).checkReference( isNull(), isNull() );
+                doAnswer( check ).when( mock ).checkReference( any( AbstractBaseRecord.class ),
+                                                               any( RecordAccess.class ) );
+                doAnswer( check ).when( mock ).checkDiffReference( any( AbstractBaseRecord.class ),
+                                                                   any( AbstractBaseRecord.class ),
                                                                    any( RecordAccess.class ) );
-                    doAnswer( check ).when( mock ).checkDiffReference( any( AbstractBaseRecord.class ),
-                                                                       any( AbstractBaseRecord.class ),
-                                                                       any( RecordAccess.class ) );
-                    other.dispatch( mock );
-                }
+                other.dispatch( mock );
             } );
         }
 
@@ -152,7 +149,8 @@ public class RecordAccessStub implements RecordAccess
         public Void answer( InvocationOnMock invocation ) throws Throwable
         {
             Object[] arguments = invocation.getArguments();
-            AbstractBaseRecord oldReference = null, newReference;
+            AbstractBaseRecord oldReference = null;
+            AbstractBaseRecord newReference;
             if ( arguments.length == 3 )
             {
                 oldReference = (AbstractBaseRecord) arguments[0];
@@ -225,7 +223,8 @@ public class RecordAccessStub implements RecordAccess
 
     private static class Delta<R extends AbstractBaseRecord>
     {
-        final R oldRecord, newRecord;
+        final R oldRecord;
+        final R newRecord;
 
         Delta( R record )
         {

@@ -65,9 +65,8 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
         this.maxDepth = maxDepth;
     }
 
-    public BidirectionalTraversalDescriptionImpl(Supplier<? extends Resource> statementFactory)
+    public BidirectionalTraversalDescriptionImpl( Supplier<? extends Resource> statementFactory )
     {
-        // TODO Proper defaults.
         this( new MonoDirectionalTraversalDescription(), new MonoDirectionalTraversalDescription(),
                 STANDARD,
                 Evaluators.all(), ALTERNATING,
@@ -144,9 +143,26 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public Traverser traverse( final Iterable<Node> startNodes, final Iterable<Node> endNodes )
     {
-        return new DefaultTraverser( () -> new BidirectionalTraverserIterator(
-                statementFactory.get(),
-                start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth, startNodes, endNodes) );
+        return new DefaultTraverser( () ->
+        {
+            Resource resource = statementFactory.get();
+            boolean success = false;
+            try
+            {
+                BidirectionalTraverserIterator iterator =
+                        new BidirectionalTraverserIterator( resource, start, end, sideSelector, collisionPolicy,
+                                collisionEvaluator, maxDepth, startNodes, endNodes );
+                success = true;
+                return iterator;
+            }
+            finally
+            {
+                if ( !success )
+                {
+                    resource.close();
+                }
+            }
+        } );
     }
 
     /**
@@ -155,7 +171,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
      */
     private void assertIsMonoDirectional( TraversalDescription traversal )
     {
-        if( !( traversal instanceof MonoDirectionalTraversalDescription ) )
+        if ( !(traversal instanceof MonoDirectionalTraversalDescription) )
         {
             throw new IllegalArgumentException( "The bi-directional traversals currently do not support using " +
                     "anything but mono-directional traversers as start and stop points. Please provide a regular " +

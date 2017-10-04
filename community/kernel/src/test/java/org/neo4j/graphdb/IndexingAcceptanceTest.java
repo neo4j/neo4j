@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.util.Map;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -33,9 +34,12 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
@@ -47,6 +51,8 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.schema.IndexQuery.stringPrefix;
+import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyIds;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -71,7 +77,8 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        long smallValue = 10L, bigValue = 1L << 62;
+        long smallValue = 10L;
+        long bigValue = 1L << 62;
         Node myNode;
         {
             try ( Transaction tx = beansAPI.beginTx() )
@@ -227,11 +234,11 @@ public class IndexingAcceptanceTest
         assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", beansAPI ), isEmpty() );
 
         assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
+        assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), isEmpty() );
         assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
 
         assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
+        assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), isEmpty() );
         assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
     }
 
@@ -373,7 +380,8 @@ public class IndexingAcceptanceTest
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( graph, LABEL1, "name" );
 
-        Node node1, node2;
+        Node node1;
+        Node node2;
         try ( Transaction tx = graph.beginTx() )
         {
             node1 = graph.createNode( LABEL1 );
@@ -400,7 +408,8 @@ public class IndexingAcceptanceTest
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( graph, LABEL1, "name" );
 
-        Node node1, node2;
+        Node node1;
+        Node node2;
         try ( Transaction tx = graph.beginTx() )
         {
             node1 = graph.createNode( LABEL1 );
@@ -470,7 +479,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldSupportIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -480,12 +489,13 @@ public class IndexingAcceptanceTest
 
         // WHEN
         PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = getStatement( (GraphDatabaseAPI) db ) )
         {
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations ops = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( ops, index );
-            found.addAll( ops.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
+            int propertyKeyId = descriptor.schema().getPropertyId();
+            found.addAll( ops.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
         }
 
         // THEN
@@ -494,7 +504,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -507,10 +517,13 @@ public class IndexingAcceptanceTest
         {
             expected.add( createNode( db, map( "name", "Carlchen" ), LABEL1 ).getId() );
             createNode( db, map( "name", "Karla" ), LABEL1 );
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
-            ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Carl" ) );
+            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
+            {
+                ReadOperations readOperations = statement.readOperations();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Carl" ) ) );
+            }
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -518,7 +531,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -537,10 +550,13 @@ public class IndexingAcceptanceTest
                 db.getNodeById( id ).delete();
                 expected.remove( id );
             }
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
-            ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
+            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
+            {
+                ReadOperations readOperations = statement.readOperations();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
+            }
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -548,7 +564,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -576,10 +592,13 @@ public class IndexingAcceptanceTest
                 db.getNodeById( id ).setProperty( "name", "X" + id );
                 expected.remove( id );
             }
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
-            ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, prefix ) );
+            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
+            {
+                ReadOperations readOperations = statement.readOperations();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, prefix ) ) );
+            }
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -599,13 +618,14 @@ public class IndexingAcceptanceTest
         return expected;
     }
 
-    private IndexDescriptor indexDescriptor(ReadOperations readOperations, IndexDefinition index)
+    private IndexDescriptor indexDescriptor( ReadOperations readOperations, IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         int labelId = readOperations.labelGetForName( index.getLabel().name() );
-        String propertyName = index.getPropertyKeys().iterator().next();
-        int propertyId = readOperations.propertyKeyGetForName( propertyName );
-        return readOperations.indexGetForLabelAndPropertyKey( labelId, propertyId );
+        int[] propertyKeyIds = getPropertyIds( readOperations, index.getPropertyKeys() );
+
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+        return readOperations.indexGetForSchema( descriptor );
     }
 
     private Statement getStatement( GraphDatabaseAPI db )
@@ -651,8 +671,10 @@ public class IndexingAcceptanceTest
         try ( Transaction tx = beansAPI.beginTx() )
         {
             Node node = beansAPI.createNode( labels );
-            for ( Map.Entry<String, Object> property : properties.entrySet() )
+            for ( Map.Entry<String,Object> property : properties.entrySet() )
+            {
                 node.setProperty( property.getKey(), property.getValue() );
+            }
             tx.success();
             return node;
         }

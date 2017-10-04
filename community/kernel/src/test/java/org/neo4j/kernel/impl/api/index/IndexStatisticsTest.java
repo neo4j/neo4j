@@ -48,10 +48,13 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -59,6 +62,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -93,7 +97,7 @@ public class IndexStatisticsTest
     private ThreadToStatementContextBridge bridge;
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
-    @Parameters(name = "multiThreadedIndexPopulationEnabled = {0}")
+    @Parameters( name = "multiThreadedIndexPopulationEnabled = {0}" )
     public static Object[] multiThreadedIndexPopulationEnabledValues()
     {
         return new Object[]{true, false};
@@ -164,6 +168,8 @@ public class IndexStatisticsTest
         // given
         createSomePersons();
         IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
+        long indexId = storage.indexGetForSchema( index ).getId();
 
         // when
         dropIndex( index );
@@ -176,14 +182,12 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            DoubleLongRegister actual = getTracker()
-                    .indexSample( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
+            DoubleLongRegister actual = getTracker().indexSample( indexId, Registers.newDoubleLongRegister() );
             assertDoubleLongEquals( 0L, 0L, actual );
         }
 
         // and then index size and index updates are zero on disk
-        DoubleLongRegister actual = getTracker()
-                .indexUpdatesAndSize( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
+        DoubleLongRegister actual = getTracker().indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
         assertDoubleLongEquals( 0L, 0L, actual );
     }
 
@@ -197,7 +201,7 @@ public class IndexStatisticsTest
         IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // then
-        double expectedSelectivity = UNIQUE_NAMES / (created);
+        double expectedSelectivity = UNIQUE_NAMES / created;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( created, indexSize( index ) );
         assertEquals( 0L, indexUpdates( index ) );
@@ -216,7 +220,7 @@ public class IndexStatisticsTest
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
@@ -237,7 +241,7 @@ public class IndexStatisticsTest
         // then
         int seenWhilePopulating =
                 initialNodes + updatesTracker.createdDuringPopulation() - updatesTracker.deletedDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         int expectedIndexUpdates = updatesTracker.deletedAfterPopulation() + updatesTracker.createdAfterPopulation();
@@ -258,7 +262,7 @@ public class IndexStatisticsTest
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
@@ -279,14 +283,7 @@ public class IndexStatisticsTest
         final Collection<Callable<UpdatesTracker>> jobs = new ArrayList<>( threads );
         for ( int i = 0; i < threads; i++ )
         {
-            jobs.add( new Callable<UpdatesTracker>()
-            {
-                @Override
-                public UpdatesTracker call() throws Exception
-                {
-                    return executeCreationsDeletionsAndUpdates( nodes, index, CREATION_MULTIPLIER );
-                }
-            } );
+            jobs.add( () -> executeCreationsDeletionsAndUpdates( nodes, index, CREATION_MULTIPLIER ) );
         }
 
         List<Future<UpdatesTracker>> futures = executorService.invokeAll( jobs );
@@ -306,7 +303,7 @@ public class IndexStatisticsTest
         int tolerance = MISSED_UPDATES_TOLERANCE * threads;
         double doubleTolerance = DOUBLE_ERROR_TOLERANCE * threads;
         int seenWhilePopulating = initialNodes + result.createdDuringPopulation() - result.deletedDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ), doubleTolerance );
         assertCorrectIndexSize( "Tracker had " + result, seenWhilePopulating, indexSize( index ), tolerance );
         int expectedIndexUpdates = result.deletedAfterPopulation() + result.createdAfterPopulation();
@@ -317,8 +314,10 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            statement.dataWriteOperations().nodeDelete( nodeId );
+            try ( Statement statement = bridge.get() )
+            {
+                statement.dataWriteOperations().nodeDelete( nodeId );
+            }
             tx.success();
         }
     }
@@ -327,9 +326,11 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-            statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, newValue ) );
+            try ( Statement statement = bridge.get() )
+            {
+                int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
+                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( newValue ) );
+            }
             tx.success();
         }
     }
@@ -338,13 +339,15 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            for ( String name : NAMES )
+            try ( Statement statement = bridge.get() )
             {
-                long nodeId = createNode( statement, "Person", "name", name );
-                if ( nodes != null )
+                for ( String name : NAMES )
                 {
-                    nodes[offset++] = nodeId;
+                    long nodeId = createNode( statement, "Person", "name", name );
+                    if ( nodes != null )
+                    {
+                        nodes[offset++] = nodeId;
+                    }
                 }
             }
             tx.success();
@@ -368,26 +371,22 @@ public class IndexStatisticsTest
         {
             final int finalI = i;
 
-            jobs.add( new Callable<Void>()
+            jobs.add( () ->
             {
-                @Override
-                public Void call() throws Exception
+                int offset = finalI * peoplePerThread;
+                while ( offset < (finalI + 1) * peoplePerThread )
                 {
-                    int offset = finalI * peoplePerThread;
-                    while ( offset < (finalI + 1) * peoplePerThread )
+                    try
                     {
-                        try
-                        {
-                            offset += createNamedPeople( nodes, offset );
-                        }
-                        catch ( KernelException e )
-                        {
-                            exception.compareAndSet( null, e );
-                            throw new RuntimeException( e );
-                        }
+                        offset += createNamedPeople( nodes, offset );
                     }
-                    return null;
+                    catch ( KernelException e )
+                    {
+                        exception.compareAndSet( null, e );
+                        throw new RuntimeException( e );
+                    }
                 }
+                return null;
             } );
         }
 
@@ -413,8 +412,10 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            statement.schemaWriteOperations().indexDrop( index );
+            try ( Statement statement = bridge.get() )
+            {
+                statement.schemaWriteOperations().indexDrop( index );
+            }
             tx.success();
         }
     }
@@ -423,24 +424,31 @@ public class IndexStatisticsTest
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor ).readSecond();
+                                      .indexUpdatesAndSize( descriptor.schema() ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor ).readFirst();
+                                      .indexUpdatesAndSize( descriptor.schema() ).readFirst();
     }
 
     private double indexSelectivity( IndexDescriptor descriptor ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
+            double selectivity = getSelectivity( descriptor );
             tx.success();
             return selectivity;
+        }
+    }
+
+    private double getSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        try ( Statement statement = bridge.get() )
+        {
+            return statement.readOperations().indexUniqueValuesSelectivity( descriptor );
         }
     }
 
@@ -454,11 +462,13 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            createNode( statement, "Person", "name", "Davide" );
-            createNode( statement, "Person", "name", "Stefan" );
-            createNode( statement, "Person", "name", "John" );
-            createNode( statement, "Person", "name", "John" );
+            try ( Statement statement = bridge.get() )
+            {
+                createNode( statement, "Person", "name", "Davide" );
+                createNode( statement, "Person", "name", "Stefan" );
+                createNode( statement, "Person", "name", "John" );
+                createNode( statement, "Person", "name", "John" );
+            }
             tx.success();
         }
     }
@@ -470,7 +480,7 @@ public class IndexStatisticsTest
         int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
         long nodeId = statement.dataWriteOperations().nodeCreate();
         statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
-        statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value ) );
         return nodeId;
     }
 
@@ -478,34 +488,46 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-            IndexDescriptor index = statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
+            IndexDescriptor index;
+            try ( Statement statement = bridge.get() )
+            {
+                int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
+                int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
+                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+                index = statement.schemaWriteOperations().indexCreate( descriptor );
+            }
             tx.success();
             return index;
         }
     }
 
+    private NeoStores neoStores()
+    {
+        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores();
+    }
+
     private IndexDescriptor awaitOnline( IndexDescriptor index ) throws KernelException
     {
         long start = System.currentTimeMillis();
-        long end = start + 20_000;
+        long end = start + TimeUnit.MINUTES.toMillis( 3 );
         while ( System.currentTimeMillis() < end )
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Statement statement = bridge.get();
-                switch ( statement.readOperations().indexGetState( index ) )
+                try ( Statement statement = bridge.get() )
                 {
-                case ONLINE:
-                    return index;
+                    switch ( statement.readOperations().indexGetState( index ) )
+                    {
+                    case ONLINE:
+                        return index;
 
-                case FAILED:
-                    throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
+                    case FAILED:
+                        throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
 
-                default:
-                    break;
+                    default:
+                        break;
+                    }
                 }
                 tx.success();
 
@@ -564,7 +586,8 @@ public class IndexStatisticsTest
             updatesTracker.increaseCreated( created );
 
             // check index online
-            if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( index ) )
+            if ( !updatesTracker.isPopulationCompleted() &&
+                    indexOnlineMonitor.isIndexOnline( index ) )
             {
                 updatesTracker.notifyPopulationCompleted();
             }
@@ -584,7 +607,8 @@ public class IndexStatisticsTest
                 }
 
                 // check again index online
-                if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( index ) )
+                if ( !updatesTracker.isPopulationCompleted() &&
+                        indexOnlineMonitor.isIndexOnline( index ) )
                 {
                     updatesTracker.notifyPopulationCompleted();
                 }

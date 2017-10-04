@@ -26,6 +26,9 @@ import java.util.Map;
 import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.helpers.Numbers.safeCastLongToByte;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 
 /**
  * Common implementations of {@link Extractor}. Since array values can have a delimiter of user choice that isn't
@@ -255,6 +258,7 @@ public class Extractors
         }
 
         @Override
+        @SuppressWarnings( "unchecked" )
         public Extractor<T> clone()
         {
             try
@@ -326,7 +330,7 @@ public class Extractors
         protected boolean extract0( char[] data, int offset, int length )
         {
             value = new String( data, offset, length );
-            if (trimStrings)
+            if ( trimStrings )
             {
                 value = value.trim();
             }
@@ -365,7 +369,7 @@ public class Extractors
         @Override
         public Long value()
         {
-            return Long.valueOf( value );
+            return value;
         }
 
         /**
@@ -403,7 +407,7 @@ public class Extractors
         @Override
         public Integer value()
         {
-            return Integer.valueOf( value );
+            return value;
         }
 
         /**
@@ -441,7 +445,7 @@ public class Extractors
         @Override
         public Short value()
         {
-            return Short.valueOf( value );
+            return value;
         }
 
         /**
@@ -479,7 +483,7 @@ public class Extractors
         @Override
         public Byte value()
         {
-            return Byte.valueOf( value );
+            return value;
         }
 
         /**
@@ -524,7 +528,7 @@ public class Extractors
         @Override
         public Boolean value()
         {
-            return Boolean.valueOf( value );
+            return value;
         }
 
         public boolean booleanValue()
@@ -562,7 +566,7 @@ public class Extractors
         @Override
         public Character value()
         {
-            return Character.valueOf( value );
+            return value;
         }
 
         public char charValue()
@@ -605,7 +609,7 @@ public class Extractors
         @Override
         public Float value()
         {
-            return Float.valueOf( value );
+            return value;
         }
 
         public float floatValue()
@@ -648,7 +652,7 @@ public class Extractors
         @Override
         public Double value()
         {
-            return Double.valueOf( value );
+            return value;
         }
 
         public double doubleValue()
@@ -687,7 +691,7 @@ public class Extractors
         {
             for ( int i = 0; i < length; i++ )
             {
-                if ( data[offset+i] == arrayDelimiter )
+                if ( data[offset + i] == arrayDelimiter )
                 {
                     return i;
                 }
@@ -700,7 +704,7 @@ public class Extractors
             int count = length > 0 ? 1 : 0;
             for ( int i = 0; i < length; i++ )
             {
-                if ( data[offset+i] == arrayDelimiter )
+                if ( data[offset + i] == arrayDelimiter )
                 {
                     count++;
                 }
@@ -739,9 +743,9 @@ public class Extractors
             value = numberOfValues > 0 ? new String[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = new String( data, offset+charIndex, numberOfChars );
-                if (trimStrings)
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = new String( data, offset + charIndex, numberOfChars );
+                if ( trimStrings )
                 {
                     value[arrayIndex] = value[arrayIndex].trim();
                 }
@@ -766,8 +770,8 @@ public class Extractors
             value = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = safeCastLongToByte( extractLong( data, offset+charIndex, numberOfChars ) );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = safeCastLongToByte( extractLong( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -789,8 +793,8 @@ public class Extractors
             value = numberOfValues > 0 ? new short[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = safeCastLongToShort( extractLong( data, offset+charIndex, numberOfChars ) );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = safeCastLongToShort( extractLong( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -812,8 +816,8 @@ public class Extractors
             value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = safeCastLongToInt( extractLong( data, offset+charIndex, numberOfChars ) );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = safeCastLongToInt( extractLong( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -833,8 +837,8 @@ public class Extractors
             value = numberOfValues > 0 ? new long[numberOfValues] : EMPTY_LONG_ARRAY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = extractLong( data, offset+charIndex, numberOfChars );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = extractLong( data, offset + charIndex, numberOfChars );
                 charIndex += numberOfChars;
             }
         }
@@ -856,10 +860,10 @@ public class Extractors
             value = numberOfValues > 0 ? new float[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
                 // TODO Figure out a way to do this conversion without round tripping to String
                 // parseFloat automatically handles leading/trailing whitespace so no need for us to do it
-                value[arrayIndex] = Float.parseFloat( String.valueOf( data, offset+charIndex, numberOfChars ) );
+                value[arrayIndex] = Float.parseFloat( String.valueOf( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -881,10 +885,10 @@ public class Extractors
             value = numberOfValues > 0 ? new double[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
                 // TODO Figure out a way to do this conversion without round tripping to String
                 // parseDouble automatically handles leading/trailing whitespace so no need for us to do it
-                value[arrayIndex] = Double.parseDouble( String.valueOf( data, offset+charIndex, numberOfChars ) );
+                value[arrayIndex] = Double.parseDouble( String.valueOf( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -906,8 +910,8 @@ public class Extractors
             value = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = extractBoolean( data, offset+charIndex, numberOfChars );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = extractBoolean( data, offset + charIndex, numberOfChars );
                 charIndex += numberOfChars;
             }
         }
@@ -947,7 +951,7 @@ public class Extractors
 
         try
         {
-            for (int i = 0; i < length; i++ )
+            for ( int i = 0; i < length; i++ )
             {
                 result = result * 10 + digit( data[offset + i] );
             }
@@ -1009,32 +1013,5 @@ public class Extractors
         }
 
         return true;
-    }
-
-    private static int safeCastLongToInt( long value )
-    {
-        if ( value > Integer.MAX_VALUE )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
-        }
-        return (int) value;
-    }
-
-    private static short safeCastLongToShort( long value )
-    {
-        if ( value > Short.MAX_VALUE )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
-        }
-        return (short) value;
-    }
-
-    private static byte safeCastLongToByte( long value )
-    {
-        if ( value > Byte.MAX_VALUE )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
-        }
-        return (byte) value;
     }
 }

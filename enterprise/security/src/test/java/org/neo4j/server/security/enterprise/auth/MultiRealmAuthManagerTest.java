@@ -34,19 +34,19 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
-import org.neo4j.server.security.auth.Credential;
-import org.neo4j.server.security.auth.InitialUserTests;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.auth.InitialUserTest;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -68,7 +68,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class MultiRealmAuthManagerTest extends InitialUserTests
+public class MultiRealmAuthManagerTest extends InitialUserTest
 {
     private AuthenticationStrategy authStrategy;
     private MultiRealmAuthManager manager;
@@ -171,10 +171,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
                 EnterpriseSecurityModule.getDefaultAdminRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         defaultAdminRepository.start();
         defaultAdminRepository.create(
-                new User.Builder( "foo", Credential.INACCESSIBLE)
-                        .withRequiredPasswordChange( false )
-                        .build()
-        );
+                new User.Builder( "foo", Credential.INACCESSIBLE ).withRequiredPasswordChange( false ).build() );
         defaultAdminRepository.shutdown();
 
         users.create( newUser( "jake", "abc123" , false ) );
@@ -382,8 +379,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
 
         // Then
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
-        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).subject().getAuthenticationResult();
+        assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
     }
 
     @Test
@@ -400,8 +397,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
-        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).subject().getAuthenticationResult();
+        assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
     }
 
     @Test
@@ -418,8 +415,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
-        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).subject().getAuthenticationResult();
+        assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
     }
 
     @Test
@@ -436,8 +433,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
-        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).subject().getAuthenticationResult();
+        assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
     }
 
     @Test
@@ -495,36 +492,6 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
     }
 
     @Test
-    public void shouldSetPasswordThroughAuthSubject() throws Throwable
-    {
-        // Given
-        users.create( newUser( "neo", "abc123", true ) );
-        manager.start();
-        setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
-
-        // When
-        AuthSubject authSubject = manager.login( authToken( "neo", "abc123" ) ).subject();
-        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
-
-        authSubject.setPassword( "hello, world!", false );
-        setMockAuthenticationStrategyResult( "neo", "hello, world!", AuthenticationResult.SUCCESS );
-
-        // Then
-        final User updatedUser = userManager.getUser( "neo" );
-
-        assertTrue( updatedUser.credentials().matchesPassword( "hello, world!" ) );
-        assertThat( users.getUserByName( "neo" ), equalTo( updatedUser ) );
-
-        authSubject.logout();
-        authSubject = manager.login( authToken( "neo", "hello, world!" ) ).subject();
-        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
-        logProvider.assertExactly(
-                info( "[neo]: logged in" ),
-                info( "[neo]: changed password%s", "" ),
-                info( "[neo]: logged in" ) );
-    }
-
-    @Test
     public void shouldNotRequestPasswordChangeWithInvalidCredentials() throws Throwable
     {
         // Given
@@ -534,10 +501,10 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "neo", "wrong", AuthenticationResult.FAILURE );
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "neo", "wrong" ) ).subject();
+        AuthenticationResult result = manager.login( authToken( "neo", "wrong" ) ).subject().getAuthenticationResult();
 
         // Then
-        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
     }
 
     @Test

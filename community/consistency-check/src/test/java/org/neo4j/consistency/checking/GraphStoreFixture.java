@@ -25,6 +25,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 
 import org.neo4j.consistency.statistics.AccessStatistics;
@@ -36,23 +38,26 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.scan.FullLabelStream;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -71,7 +76,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -79,14 +85,16 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.RECOVERY_PREVENTING_COLLECTOR;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
 
-public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
+public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
     private DirectStoreAccess directStoreAccess;
     private Statistics statistics;
@@ -104,21 +112,41 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private long arrayPropId;
     private int relTypeId;
     private int propKeyId;
+    private DefaultFileSystemAbstraction fileSystem;
+    private final LifeSupport life = new LifeSupport();
 
     /**
      * Record format used to generate initial database.
      */
     private String formatName = StringUtils.EMPTY;
 
-    public GraphStoreFixture( boolean keepStatistics, String formatName )
+    private GraphStoreFixture( boolean keepStatistics, String formatName )
     {
         this.keepStatistics = keepStatistics;
         this.formatName = formatName;
     }
 
-    public GraphStoreFixture( String formatName )
+    protected GraphStoreFixture( String formatName )
     {
         this( false, formatName );
+    }
+
+    @Override
+    protected void after( boolean success )
+    {
+        super.after( success );
+        life.shutdown();
+        if ( fileSystem != null )
+        {
+            try
+            {
+                fileSystem.close();
+            }
+            catch ( IOException e )
+            {
+                throw new AssertionError( "Failed to stop file system after test", e );
+            }
+        }
     }
 
     public void apply( Transaction transaction ) throws TransactionFailureException
@@ -130,7 +158,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     {
         if ( directStoreAccess == null )
         {
-            DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            life.start();
+            fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
             StoreFactory storeFactory = new StoreFactory( directory, pageCache, fileSystem, logProvider );
@@ -150,22 +179,42 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             }
             nativeStores.initialize();
 
-            Config config = Config.empty();
-            OperationalMode operationalMode = OperationalMode.single;
-            IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
-            LabelScanStore labelScanStore = new LuceneLabelScanStoreBuilder( directory, indexStoreView,
-                    fileSystem, config, operationalMode, FormattedLogProvider.toOutputStream( System.out ) )
-                    .build();
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,
-                    config, operationalMode ) );
+            Config config = Config.defaults();
+            IndexStoreView indexStoreView =
+                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
+
+            Monitors monitors = new Monitors();
+            LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
+            SchemaIndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory, config, logProvider, monitors);
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
         }
         return directStoreAccess;
     }
 
-    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config, OperationalMode operationalMode )
+    private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors )
     {
-        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory,
-                FormattedLogProvider.toOutputStream( System.out ), config, operationalMode );
+        NativeLabelScanStore labelScanStore =
+                new NativeLabelScanStore( pageCache, directory, new FullLabelStream( indexStoreView ), false, monitors,
+                        RecoveryCleanupWorkCollector.IMMEDIATE );
+        try
+        {
+            labelScanStore.init();
+            labelScanStore.start();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        return labelScanStore;
+    }
+
+    private SchemaIndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir,
+            Config config, LogProvider logProvider, Monitors monitors )
+    {
+        LogService logService = new SimpleLogService( logProvider, logProvider );
+        KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
+                pageCache, RECOVERY_PREVENTING_COLLECTOR, DatabaseInfo.COMMUNITY, monitors ) );
+        return loadSchemaIndexProviders( extensions );
     }
 
     public File directory()
@@ -180,7 +229,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     public abstract static class Transaction
     {
-        public final long startTimestamp = currentTimeMillis();
+        final long startTimestamp = currentTimeMillis();
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
@@ -257,7 +306,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             return propKeyId++;
         }
 
-        public void updateCorrespondingIdGenerators( NeoStores neoStores )
+        void updateCorrespondingIdGenerators( NeoStores neoStores )
         {
             neoStores.getNodeStore().setHighestPossibleIdInUse( nodeId );
             neoStores.getRelationshipStore().setHighestPossibleIdInUse( relId );
@@ -270,7 +319,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         private final TransactionWriter writer;
         private final NodeStore nodes;
 
-        public TransactionDataBuilder( TransactionWriter writer, NodeStore nodes )
+        TransactionDataBuilder( TransactionWriter writer, NodeStore nodes )
         {
             this.writer = writer;
             this.nodes = nodes;
@@ -391,7 +440,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    protected void start( @SuppressWarnings("UnusedParameters") File storeDir )
+    protected void start( @SuppressWarnings( "UnusedParameters" ) File storeDir )
     {
         // allow for override
     }
@@ -406,46 +455,70 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         }
     }
 
-    protected int myId()
+    private int myId()
     {
         return 1;
     }
 
-    protected int masterId()
+    private int masterId()
     {
         return -1;
     }
 
-    @SuppressWarnings("deprecation")
-    protected void applyTransaction( Transaction transaction ) throws TransactionFailureException
+    public class Applier implements AutoCloseable
     {
-        // TODO you know... we could have just appended the transaction representation to the log
-        // and the next startup of the store would do recovery where the transaction would have been
-        // applied and all would have been well.
+        private final GraphDatabaseAPI database;
+        private final TransactionRepresentationCommitProcess commitProcess;
+        private final TransactionIdStore transactionIdStore;
+        private final NeoStores neoStores;
 
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
-        try
+        Applier()
         {
+            database = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                    .newEmbeddedDatabaseBuilder( directory )
+                    .setConfig( "dbms.backup.enabled", "false" )
+                    .newGraphDatabase();
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
-            TransactionRepresentationCommitProcess commitProcess =
-                    new TransactionRepresentationCommitProcess(
-                            dependencyResolver.resolveDependency( TransactionAppender.class ),
-                            dependencyResolver.resolveDependency( StorageEngine.class ) );
-            TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
+            commitProcess = new TransactionRepresentationCommitProcess(
+                    dependencyResolver.resolveDependency( TransactionAppender.class ),
+                    dependencyResolver.resolveDependency( StorageEngine.class ) );
+            transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
 
-            NeoStores neoStores = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+            neoStores = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores();
+        }
 
+        public void apply( Transaction transaction ) throws TransactionFailureException
+        {
             TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
                     transactionIdStore.getLastCommittedTransactionId(), neoStores );
             commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
         }
-        finally
+
+        @Override
+        public void close()
         {
             database.shutdown();
+        }
+    }
+
+    public Applier createApplier()
+    {
+        return new Applier();
+    }
+
+    private void applyTransaction( Transaction transaction ) throws TransactionFailureException
+    {
+        // TODO you know... we could have just appended the transaction representation to the log
+        // and the next startup of the store would do recovery where the transaction would have been
+        // applied and all would have been well.
+
+        try ( Applier applier = createApplier() )
+        {
+            applier.apply( transaction );
         }
     }
 
@@ -458,6 +531,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.
                 .setConfig( GraphDatabaseSettings.label_block_size, "60" )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
         try
         {

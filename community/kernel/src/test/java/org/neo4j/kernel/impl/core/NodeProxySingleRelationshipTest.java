@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -101,23 +99,18 @@ public class NodeProxySingleRelationshipTest
         }
     }
 
-    private NodeProxy mockNodeWithRels( final long ... relIds) throws EntityNotFoundException
+    private NodeProxy mockNodeWithRels( final long... relIds ) throws EntityNotFoundException
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then(
-                new Answer<Relationship>()
-                {
-                    @Override
-                    public Relationship answer( InvocationOnMock invocation ) throws Throwable
-                    {
-                        Long id = (Long) invocation.getArguments()[0];
-                        Long startNode = (Long) invocation.getArguments()[1];
-                        Integer type = (Integer) invocation.getArguments()[2];
-                        Long endNode = (Long) invocation.getArguments()[3];
-                        return new RelationshipProxy( relActions, id, startNode, type, endNode );
-                    }
-                } );
+        when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then( invocation ->
+        {
+            Long id = invocation.getArgument(0);
+            Long startNode = invocation.getArgument( 1 );
+            Integer type = invocation.getArgument( 2 );
+            Long endNode = invocation.getArgument( 3 );
+            return new RelationshipProxy( relActions, id, startNode, type, endNode );
+        } );
 
         GraphDatabaseService gds = mock( GraphDatabaseService.class );
 
@@ -134,12 +127,8 @@ public class NodeProxySingleRelationshipTest
         when( nodeActions.statement() ).thenReturn( stmt );
         when( readOps.relationshipTypeGetForName( loves.name() ) ).thenReturn( 2 );
 
-        when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq( 2 ) ) ).thenAnswer( new Answer<RelationshipIterator>()
-        {
-            @Override
-            public RelationshipIterator answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipIterator.BaseIterator()
+        when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq( new int[]{2} ) ) ).thenAnswer(
+                invocation -> new RelationshipIterator.BaseIterator()
                 {
                     int pos;
                     long relId;
@@ -165,9 +154,7 @@ public class NodeProxySingleRelationshipTest
                         visitor.visit( relId, 2, 1, 10 * relId + 2 );
                         return false;
                     }
-                };
-            }
-        } );
+                } );
         return nodeImpl;
     }
 }

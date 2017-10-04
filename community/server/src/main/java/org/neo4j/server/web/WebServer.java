@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -32,10 +33,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
+import org.neo4j.ssl.SslPolicy;
 
 public interface WebServer
 {
@@ -43,7 +44,7 @@ public interface WebServer
 
     void setHttpsAddress( Optional<ListenSocketAddress> address );
 
-    void setHttpsCertificateInformation( KeyStoreInformation config );
+    void setSslPolicy( SslPolicy sslPolicy );
 
     void setRequestLog( RequestLog requestLog );
 
@@ -59,8 +60,9 @@ public interface WebServer
     void addJAXRSClasses( List<String> classNames, String serverMountPoint, Collection<Injectable<?>> injectables );
     void removeJAXRSClasses( List<String> classNames, String serverMountPoint );
 
-    void addFilter(Filter filter, String pathSpec);
-    void removeFilter(Filter filter, String pathSpec);
+    void addFilter( Filter filter, String pathSpec );
+
+    void removeFilter( Filter filter, String pathSpec );
 
     void addStaticContent( String contentLocation, String serverMountPoint );
     void removeStaticContent( String contentLocation, String serverMountPoint );
@@ -73,4 +75,14 @@ public interface WebServer
     void setDefaultInjectables( Collection<InjectableProvider<?>> defaultInjectables );
 
     void setJettyCreatedCallback( Consumer<Server> callback );
+
+    /**
+     * @return local http connector bind port
+     */
+    InetSocketAddress getLocalHttpAddress();
+
+    /**
+     * @return local https connector bind port
+     */
+    InetSocketAddress getLocalHttpsAddress();
 }

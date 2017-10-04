@@ -75,7 +75,7 @@ public class SlaveTransactionCommitProcessTest
         };
         response = new LongResponse( 42L );
         tx = new PhysicalTransactionRepresentation(
-                Collections.<StorageCommand>emptyList() );
+                Collections.emptyList() );
         tx.setHeader(new byte[]{}, 1, 1, 1, 1, 1, 1337);
 
         commitProcess = new SlaveTransactionCommitProcess( master, reqFactory );
@@ -116,7 +116,7 @@ public class SlaveTransactionCommitProcessTest
         }
         catch ( TransactionFailureException e )
         {
-            assertThat( e.status(), is( (Status) Status.Transaction.TransactionCommitFailed ) );
+            assertThat( e.status(), is( Status.Transaction.TransactionCommitFailed ) );
         }
     }
 }

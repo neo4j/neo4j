@@ -19,34 +19,35 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 
-public class CoreTopology
+import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
+
+public class CoreTopology implements Topology<CoreServerInfo>
 {
-    public static CoreTopology EMPTY = new CoreTopology( null, false, Collections.emptyMap() );
+    static CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
 
     private final ClusterId clusterId;
     private final boolean canBeBootstrapped;
-    private final Map<MemberId, CoreAddresses> coreMembers;
+    private final Map<MemberId,CoreServerInfo> coreMembers;
 
-    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId, CoreAddresses> coreMembers )
+    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId,CoreServerInfo> coreMembers )
     {
         this.clusterId = clusterId;
         this.canBeBootstrapped = canBeBootstrapped;
         this.coreMembers = new HashMap<>( coreMembers );
     }
 
-    public Set<MemberId> members()
+    @Override
+    public Map<MemberId,CoreServerInfo> members()
     {
-        return coreMembers.keySet();
+        return coreMembers;
     }
 
     public ClusterId clusterId()
@@ -54,25 +55,20 @@ public class CoreTopology
         return clusterId;
     }
 
-    public Collection<CoreAddresses> addresses()
-    {
-        return coreMembers.values();
-    }
-
     public boolean canBeBootstrapped()
     {
         return canBeBootstrapped;
     }
 
-    public Optional<CoreAddresses> find( MemberId memberId )
-    {
-        return Optional.ofNullable( coreMembers.get( memberId ) );
-    }
-
     @Override
     public String toString()
     {
-        return String.format( "{coreMembers=%s, bootstrappable=%s}", coreMembers, canBeBootstrapped() );
+        return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(), coreMembers );
+    }
+
+    public Optional<MemberId> anyCoreMemberId()
+    {
+            return coreMembers.keySet().stream().findAny();
     }
 
 }

@@ -50,7 +50,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       }
     }
 
-    val threads: Seq[Thread] = 0 until threadCount map (x => new Thread(runner))
+      val threads: Seq[Thread] = 0 until threadCount map (x => new Thread(runner))
 
     threads.foreach(_.start())
     threads.foreach(_.join())

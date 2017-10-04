@@ -74,13 +74,15 @@ public class BatchAppendLogEntries implements RaftLogCommand
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         BatchAppendLogEntries that = (BatchAppendLogEntries) o;
-        return baseIndex == that.baseIndex &&
-               offset == that.offset &&
-               Arrays.equals( entries, that.entries );
+        return baseIndex == that.baseIndex && offset == that.offset && Arrays.equals( entries, that.entries );
     }
 
     @Override

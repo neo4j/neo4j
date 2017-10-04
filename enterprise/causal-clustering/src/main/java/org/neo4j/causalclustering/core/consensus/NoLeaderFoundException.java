@@ -29,4 +29,14 @@ public class NoLeaderFoundException extends Exception
     {
         super( cause );
     }
+
+    public NoLeaderFoundException( String message )
+    {
+        super( message );
+    }
+
+    public NoLeaderFoundException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 }

@@ -24,25 +24,26 @@ public interface CacheSlots
     int LABELS_SLOT_SIZE = 63;
     int ID_SLOT_SIZE = 35;
 
-    public interface NodeLabel
+    interface NodeLabel
     {
         int SLOT_IN_USE = 0;
         int SLOT_LABEL_FIELD = 1;
     }
 
-    public interface NextRelationhip
+    interface NextRelationship
     {
         int SLOT_FIRST_IN_SOURCE = 0;
         int SLOT_FIRST_IN_TARGET = 1;
         int SLOT_RELATIONSHIP_ID = 2;
     }
 
-    public interface RelationshipLink
+    interface RelationshipLink
     {
         int SLOT_SOURCE_OR_TARGET = 0;
         int SLOT_PREV_OR_NEXT = 1;
         int SLOT_RELATIONSHIP_ID = 2;
         int SLOT_REFERENCE = 3;
+        int SLOT_IN_USE = 4;
         long SOURCE = 0;
         long TARGET = -1;
         long PREV = 0;

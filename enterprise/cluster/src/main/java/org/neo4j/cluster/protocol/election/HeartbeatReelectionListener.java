@@ -44,7 +44,7 @@ public class HeartbeatReelectionListener
     public void failed( InstanceId server )
     {
         // Suggest reelection for all roles of this node
-        log.warn( " instance " + server +" is being demoted since it failed" );
+        log.warn( " instance " + server + " is being demoted since it failed" );
         election.demote( server );
     }
 

@@ -35,20 +35,20 @@ class ProverTimeouts extends Timeouts
 {
     private final Map<Object, Pair<ProverTimeout, Long>> timeouts;
     private final URI to;
-    private long time = 0;
+    private long time;
 
-    public ProverTimeouts( URI to )
+    ProverTimeouts( URI to )
     {
-        super(new FixedTimeoutStrategy(1));
+        super( new FixedTimeoutStrategy( 1 ) );
         this.to = to;
         timeouts = new LinkedHashMap<>();
     }
 
-    private ProverTimeouts( URI to, Map<Object, Pair<ProverTimeout, Long>> timeouts )
+    private ProverTimeouts( URI to, Map<Object,Pair<ProverTimeout,Long>> timeouts )
     {
         super( new FixedTimeoutStrategy( 0 ) );
         this.to = to;
-        this.timeouts = new LinkedHashMap<>(timeouts);
+        this.timeouts = new LinkedHashMap<>( timeouts );
     }
 
     @Override
@@ -99,7 +99,7 @@ class ProverTimeouts extends Timeouts
 
     public ProverTimeouts snapshot()
     {
-        return new ProverTimeouts(to, timeouts);
+        return new ProverTimeouts( to, timeouts );
     }
 
     @Override
@@ -117,22 +117,17 @@ class ProverTimeouts extends Timeouts
         ProverTimeouts that = (ProverTimeouts) o;
 
         Iterator<Pair<ProverTimeout,Long>> those = that.timeouts.values().iterator();
-        Iterator<Pair<ProverTimeout,Long>> mine  = timeouts.values().iterator();
+        Iterator<Pair<ProverTimeout,Long>> mine = timeouts.values().iterator();
 
-        while(mine.hasNext())
+        while ( mine.hasNext() )
         {
-            if(!those.hasNext() || !those.next().first().equals( mine.next().first() ))
+            if ( !those.hasNext() || !those.next().first().equals( mine.next().first() ) )
             {
                 return false;
             }
         }
 
-        if(those.hasNext())
-        {
-            return false;
-        }
-
-        return true;
+        return !those.hasNext();
     }
 
     @Override
@@ -156,7 +151,7 @@ class ProverTimeouts extends Timeouts
     public ClusterAction peek()
     {
         Map.Entry<Object, Pair<ProverTimeout, Long>> next = nextTimeout();
-        if(next != null)
+        if ( next != null )
         {
             return new MessageDeliveryAction( next.getValue().first().getTimeoutMessage() );
         }
@@ -169,9 +164,9 @@ class ProverTimeouts extends Timeouts
     private Map.Entry<Object, Pair<ProverTimeout, Long>> nextTimeout()
     {
         Map.Entry<Object, Pair<ProverTimeout, Long>> lowestTimeout = null;
-        for ( Map.Entry<Object, Pair<ProverTimeout, Long>> current : timeouts.entrySet() )
+        for ( Map.Entry<Object,Pair<ProverTimeout,Long>> current : timeouts.entrySet() )
         {
-            if(lowestTimeout == null || lowestTimeout.getValue().other() > current.getValue().other())
+            if ( lowestTimeout == null || lowestTimeout.getValue().other() > current.getValue().other() )
             {
                 lowestTimeout = current;
             }
@@ -181,7 +176,7 @@ class ProverTimeouts extends Timeouts
 
     class ProverTimeout extends Timeout
     {
-        public ProverTimeout( long timeout, Message<? extends MessageType> timeoutMessage )
+        ProverTimeout( long timeout, Message<? extends MessageType> timeoutMessage )
         {
             super( timeout, timeoutMessage );
         }
@@ -195,7 +190,7 @@ class ProverTimeouts extends Timeouts
         @Override
         public boolean equals( Object obj )
         {
-            if(obj.getClass() != getClass())
+            if ( obj.getClass() != getClass() )
             {
                 return false;
             }

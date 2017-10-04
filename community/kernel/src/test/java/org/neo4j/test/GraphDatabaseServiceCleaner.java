@@ -35,6 +35,12 @@ public class GraphDatabaseServiceCleaner
 
     public static void cleanDatabaseContent( GraphDatabaseService db )
     {
+        cleanupSchema( db );
+        cleanupAllRelationshipsAndNodes( db );
+    }
+
+    public static void cleanupSchema( GraphDatabaseService db )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             for ( ConstraintDefinition constraint : db.schema().getConstraints() )
@@ -48,7 +54,10 @@ public class GraphDatabaseServiceCleaner
             }
             tx.success();
         }
+    }
 
+    public static void cleanupAllRelationshipsAndNodes( GraphDatabaseService db )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             for ( Relationship relationship : db.getAllRelationships() )

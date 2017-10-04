@@ -65,13 +65,15 @@ public class DijkstraTest extends Neo4jAlgoTestCase
 
         // WHEN
         PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        WeightedPath path = finder.findSinglePath( start, start );
+        try ( WeightedPath path = finder.findSinglePath( start, start ) )
+        {
 
-        // THEN
-        assertNotNull( path );
-        assertEquals( start, path.startNode() );
-        assertEquals( start, path.endNode() );
-        assertEquals( 0, path.length() );
+            // THEN
+            assertNotNull( path );
+            assertEquals( start, path.startNode() );
+            assertEquals( start, path.endNode() );
+            assertEquals( 0, path.length() );
+        }
     }
 
     @Test
@@ -428,7 +430,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "b", propertiesForOnes );
         graph.makeEdge( "b", "x", "cost", (double) 7 );
         graph.makeEdge( "b", "c", propertiesForOnes );
-        graph.makeEdge( "c", "x", "cost", (int) 5 );
+        graph.makeEdge( "c", "x", "cost", 5 );
         Relationship shortCTOXRelationship = graph.makeEdge( "c", "x", "cost", (float) 3 );
         graph.makeEdge( "c", "d", propertiesForOnes );
         graph.makeEdge( "d", "x", "cost", (double) 3 );

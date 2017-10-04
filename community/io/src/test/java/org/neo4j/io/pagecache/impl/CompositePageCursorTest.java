@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public class CompositePageCursorTest
 {
@@ -1257,5 +1257,41 @@ public class CompositePageCursorTest
         first.checkAndClearCursorException();
         second.checkAndClearCursorException();
         cursor.checkAndClearCursorException();
+    }
+
+    @Test
+    public void isWriteLockedMustBeTrueIfBothCursorsAreWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( true );
+        second.setWriteLocked( true );
+        assertTrue( cursor.isWriteLocked() );
+    }
+
+    @Test
+    public void isWriteLockedMustBeFalseIfBothCursorsAreNotWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( false );
+        second.setWriteLocked( false );
+        assertFalse( cursor.isWriteLocked() );
+    }
+
+    @Test
+    public void isWriteLockedMustBeFalseIfFirstCursorIsNotWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( false );
+        second.setWriteLocked( true );
+        assertFalse( cursor.isWriteLocked() );
+    }
+
+    @Test
+    public void isWriteLockedMustBeFalseIfSecondCursorIsNotWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( true );
+        second.setWriteLocked( false );
+        assertFalse( cursor.isWriteLocked() );
     }
 }

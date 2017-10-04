@@ -27,9 +27,17 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -91,7 +99,10 @@ public class IndexSamplingIntegrationTest
             {
                 for ( int i = 0; i < (nodes / 10) ; i++ )
                 {
-                    db.findNodes( label, property, names[i % names.length] ).next().delete();
+                    try ( ResourceIterator<Node> nodes = db.findNodes( label, property, names[i % names.length] ) )
+                    {
+                        nodes.next().delete();
+                    }
                     deletedNodes++;
                     tx.success();
                 }
@@ -179,7 +190,25 @@ public class IndexSamplingIntegrationTest
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
-    private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db )
+    private long indexId( GraphDatabaseAPI api ) throws IndexNotFoundKernelException
+    {
+        ThreadToStatementContextBridge contextBridge =
+                api.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        try ( Transaction tx = api.beginTx();
+              Statement statement = contextBridge.get() )
+        {
+            IndexingService indexingService =
+                    api.getDependencyResolver().resolveDependency( IndexingService.class );
+            ReadOperations readOperations = statement.readOperations();
+            int labelId = readOperations.labelGetForName( label.name() );
+            int propertyKeyId = readOperations.propertyKeyGetForName( property );
+            long indexId = indexingService.getIndexId( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+            tx.success();
+            return indexId;
+        }
+    }
+
+    private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db ) throws IndexNotFoundKernelException
     {
         try
         {
@@ -189,7 +218,7 @@ public class IndexSamplingIntegrationTest
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getCounts();
-            IndexSampleKey key = CountsKeyFactory.indexSampleKey( 0, 0 ); // cheating a bit...
+            IndexSampleKey key = CountsKeyFactory.indexSampleKey( indexId( api ) );
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
         finally
@@ -201,7 +230,7 @@ public class IndexSamplingIntegrationTest
         }
     }
 
-    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db )
+    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db ) throws IndexNotFoundKernelException
     {
         try
         {
@@ -211,7 +240,7 @@ public class IndexSamplingIntegrationTest
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getCounts();
-            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( 0, 0 ); // cheating a bit...
+            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( indexId( api ) );
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
         finally

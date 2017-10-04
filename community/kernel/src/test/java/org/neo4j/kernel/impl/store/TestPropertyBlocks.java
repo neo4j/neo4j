@@ -590,7 +590,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         long recordsInUseAtStart = propertyRecordsInUse();
         long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
 
-        List<Long> theYoyoData = new ArrayList<Long>();
+        List<Long> theYoyoData = new ArrayList<>();
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs() - 1; i++ )
         {
             theYoyoData.add( 1L << 63 );
@@ -629,7 +629,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
             {
-                rel.setProperty( "int" + ( propRecCount * 10 + i ), ( propRecCount * 10 + i ) );
+                rel.setProperty( "int" + ( propRecCount * 10 + i ), propRecCount * 10 + i );
             }
         }
 
@@ -756,14 +756,10 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "three", 3 );
         node.setProperty( "four", 4 );
         newTransaction();
-        assertEquals( "Invalid assumption: property record count", propcount + 1,
-                getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse() );
-        assertEquals( "Invalid assumption: property record count", propcount + 1,
-                getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse() );
+        assertEquals( "Invalid assumption: property record count", propcount + 1, propertyRecordsInUse() );
         node.setProperty( "final", 666 );
         newTransaction();
-        assertEquals( "Invalid assumption: property record count", propcount + 2,
-                getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse() );
+        assertEquals( "Invalid assumption: property record count", propcount + 2, propertyRecordsInUse() );
         node.delete();
         commit();
         assertEquals( "All property records should be freed", propcount, propertyRecordsInUse() );

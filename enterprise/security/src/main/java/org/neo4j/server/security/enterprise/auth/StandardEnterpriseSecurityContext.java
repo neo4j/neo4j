@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authz.AuthorizationInfo;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
@@ -114,7 +113,8 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         Collection<AuthorizationInfo> authorizationInfo =
                 authManager.getAuthorizationInfo( shiroSubject.getPrincipals() );
         return authorizationInfo.stream()
-                .flatMap( authInfo -> {
+                .flatMap( authInfo ->
+                {
                     Collection<String> roles = authInfo.getRoles();
                     return roles == null ? Stream.empty() : roles.stream();
                 } )
@@ -226,15 +226,6 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         public AuthenticationResult getAuthenticationResult()
         {
             return shiroSubject.getAuthenticationResult();
-        }
-
-        @Override
-        public void setPassword( String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
-        {
-            getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
-            // Make user authenticated if successful
-            setPasswordChangeNoLongerRequired();
         }
 
         @Override

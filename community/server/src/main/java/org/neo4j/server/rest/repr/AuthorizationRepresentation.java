@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.server.security.auth.User;
+import org.neo4j.kernel.impl.security.User;
 
 import static java.lang.String.format;
 
@@ -33,11 +33,17 @@ public class AuthorizationRepresentation extends ObjectRepresentation
         this.user = user;
     }
 
-    @Mapping("username")
-    public ValueRepresentation user() { return ValueRepresentation.string( user.name() ); }
+    @Mapping( "username" )
+    public ValueRepresentation user()
+    {
+        return ValueRepresentation.string( user.name() );
+    }
 
-    @Mapping("password_change_required")
-    public ValueRepresentation passwordChangeRequired() { return ValueRepresentation.bool( user.passwordChangeRequired() ); }
+    @Mapping( "password_change_required" )
+    public ValueRepresentation passwordChangeRequired()
+    {
+        return ValueRepresentation.bool( user.passwordChangeRequired() );
+    }
 
     @Mapping( "password_change" )
     public ValueRepresentation passwordChange()

@@ -19,12 +19,13 @@
  */
 package org.neo4j.causalclustering.helper;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Exponential backoff strategy helper class. Exponent is always 2.
  */
-public class ExponentialBackoffStrategy implements RetryStrategy
+public class ExponentialBackoffStrategy implements TimeoutStrategy
 {
     private final long initialBackoffTimeMillis;
     private final long upperBoundBackoffTimeMillis;
@@ -35,6 +36,11 @@ public class ExponentialBackoffStrategy implements RetryStrategy
 
         this.initialBackoffTimeMillis = timeUnit.toMillis( initialBackoffTime );
         this.upperBoundBackoffTimeMillis = timeUnit.toMillis( upperBoundBackoffTime );
+    }
+
+    public ExponentialBackoffStrategy( Duration initialBackoffTime, Duration upperBoundBackoffTime )
+    {
+        this( initialBackoffTime.toMillis(), upperBoundBackoffTime.toMillis(), TimeUnit.MILLISECONDS );
     }
 
     @Override

@@ -25,6 +25,9 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+/**
+ * Provides a read-only service for the eventually consistent topology information.
+ */
 public interface TopologyService extends Lifecycle
 {
     CoreTopology coreServers();

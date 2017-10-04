@@ -126,7 +126,7 @@ public class TestNetwork<T>
     public class Outbound implements org.neo4j.causalclustering.messaging.Outbound<T, Message>
     {
         private NetworkThread networkThread;
-        private volatile boolean disconnected = false;
+        private volatile boolean disconnected;
         private T me;
 
         public Outbound( T me )
@@ -147,8 +147,12 @@ public class TestNetwork<T>
         }
 
         @Override
-        public void send( T destination, Message message )
+        public void send( T destination, Message message, boolean block )
         {
+            if ( block )
+            {
+                throw new UnsupportedOperationException( "Not implemented" );
+            }
             doSend( destination, message, System.currentTimeMillis() );
         }
 
@@ -170,14 +174,15 @@ public class TestNetwork<T>
 
         class NetworkThread extends Thread
         {
-            private volatile boolean done = false;
+            private volatile boolean done;
 
-            private final TreeSet<MessageContext> msgQueue = new TreeSet<>( (Comparator<MessageContext>) ( o1, o2 ) -> {
+            private final TreeSet<MessageContext> msgQueue = new TreeSet<>( (Comparator<MessageContext>) ( o1, o2 ) ->
+            {
                 int res = Long.compare( o1.atMillis, o2.atMillis );
 
                 if ( res == 0 && o1 != o2 )
                 {
-                    res = (o1.seqNum < o2.seqNum ? -1 : 1);
+                    res = o1.seqNum < o2.seqNum ? -1 : 1;
                 }
                 return res;
             } );
@@ -303,7 +308,7 @@ public class TestNetwork<T>
             networkThread.kill();
         }
 
-        private volatile boolean disconnected = false;
+        private volatile boolean disconnected;
 
         public synchronized void deliver( Message message )
         {
@@ -332,7 +337,7 @@ public class TestNetwork<T>
 
         class NetworkThread extends Thread
         {
-            private volatile boolean done = false;
+            private volatile boolean done;
 
             public void kill() throws InterruptedException
             {

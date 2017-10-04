@@ -22,6 +22,7 @@ package org.neo4j.server.scripting.javascript;
 import org.mozilla.javascript.ClassShutter;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
+
 import org.neo4j.server.scripting.UserScriptClassWhiteList;
 
 /**
@@ -43,31 +44,36 @@ public class GlobalJavascriptInitializer
 
     private static Mode initializationMode;
 
-    public static enum Mode
+    public enum Mode
     {
         SANDBOXED,
         UNSAFE
     }
 
-    public static synchronized void initialize(Mode requestedMode)
+    private GlobalJavascriptInitializer()
     {
-        if(initializationMode != null)
+    }
+
+    public static synchronized void initialize( Mode requestedMode )
+    {
+        if ( initializationMode != null )
         {
-            if(initializationMode == requestedMode)
+            if ( initializationMode == requestedMode )
             {
                 return;
             }
             else
             {
-                throw new RuntimeException( "Cannot initialize javascript context twice, " +
-                        "system is currently initialized as: '" + initializationMode.name() + "'." );
+                throw new RuntimeException(
+                        "Cannot initialize javascript context twice, " + "system is currently initialized as: '" +
+                                initializationMode.name() + "'." );
             }
         }
 
         initializationMode = requestedMode;
 
         ContextFactory contextFactory;
-        switch(requestedMode)
+        switch ( requestedMode )
         {
             case UNSAFE:
                 contextFactory = new ContextFactory()

@@ -46,7 +46,7 @@ public class RunCarefully
             {
                 o.run();
             }
-            catch ( RuntimeException e)
+            catch ( RuntimeException e )
             {
                 error = combine( error, e );
             }

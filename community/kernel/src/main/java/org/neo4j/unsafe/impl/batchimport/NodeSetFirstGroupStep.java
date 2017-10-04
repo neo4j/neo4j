@@ -78,6 +78,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
                 nodeRecordCursor.next( nodeId );
                 NodeRecord node = nodeRecordCursor.get().clone();
                 node.setNextRel( group.getId() );
+                node.setDense( true );
 
                 current[cursor++] = node;
                 if ( cursor == batchSize )

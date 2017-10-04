@@ -22,5 +22,5 @@ package org.neo4j.test.randomized;
 public interface TestResource extends AutoCloseable
 {
     @Override
-    public void close();
+    void close();
 }

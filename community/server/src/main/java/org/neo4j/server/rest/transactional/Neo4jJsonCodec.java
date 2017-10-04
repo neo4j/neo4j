@@ -19,23 +19,23 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
-import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
 
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
@@ -60,13 +60,19 @@ public class Neo4jJsonCodec extends ObjectMapper
     {
         if ( value instanceof PropertyContainer )
         {
-            writePropertyContainer( out, (PropertyContainer) value, TransactionStateChecker.create( container ) );
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+            {
+                writePropertyContainer( out, (PropertyContainer) value, txStateChecker );
+            }
         }
         else if ( value instanceof Path )
         {
-            writePath( out, ((Path) value).iterator(), TransactionStateChecker.create( container ) );
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+            {
+                writePath( out, ((Path) value).iterator(), txStateChecker );
+            }
         }
-        else if (value instanceof Iterable)
+        else if ( value instanceof Iterable )
         {
             writeIterator( out, ((Iterable) value).iterator() );
         }
@@ -78,7 +84,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             writeMap(out, (Map) value );
         }
-        else if( value instanceof Geometry )
+        else if ( value instanceof Geometry )
         {
             Geometry geom = (Geometry) value;
             Object coordinates = (geom instanceof Point) ? ((Point) geom).getCoordinate() : geom.getCoordinates();
@@ -138,7 +144,8 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value, TransactionStateChecker txStateChecker ) throws IOException
+    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value,
+            TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeStartArray();
         try
@@ -214,15 +221,19 @@ public class Neo4jJsonCodec extends ObjectMapper
         if ( value instanceof Node )
         {
             Node node = (Node) value;
-            writeNodeOrRelationshipMeta( out, node.getId(), "node",
-                    TransactionStateChecker.create( container ).isNodeDeletedInCurrentTx( node.getId() ) );
+            try ( TransactionStateChecker stateChecker = TransactionStateChecker.create( container ) )
+            {
+                writeNodeOrRelationshipMeta( out, node.getId(), "node", stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
+            }
         }
         else if ( value instanceof Relationship )
         {
             Relationship relationship = (Relationship) value;
-            writeNodeOrRelationshipMeta( out, relationship.getId(), "relationship",
-                    TransactionStateChecker.create( container )
-                            .isRelationshipDeletedInCurrentTx( relationship.getId() ) );
+            try ( TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( container ) )
+            {
+                writeNodeOrRelationshipMeta( out, relationship.getId(), "relationship",
+                        transactionStateChecker.isRelationshipDeletedInCurrentTx( relationship.getId() ) );
+            }
         }
         else if ( value instanceof Path )
         {
@@ -230,7 +241,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
         else if ( value instanceof Iterable )
         {
-            for ( Object v : ((Iterable) value) )
+            for ( Object v : (Iterable) value )
             {
                 writeMeta( out, v );
             }

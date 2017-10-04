@@ -45,7 +45,7 @@ public class ExceptionRepresentationTest
     {
         // Given
         ExceptionRepresentation rep = new ExceptionRepresentation(
-                new RuntimeException("Hoho", new RuntimeException("Haha", new RuntimeException( "HAHA!" )) ));
+                new RuntimeException( "Hoho", new RuntimeException( "Haha", new RuntimeException( "HAHA!" ) ) ) );
 
         // When
         JsonNode out = serialize( rep );
@@ -59,7 +59,9 @@ public class ExceptionRepresentationTest
     public void shouldRenderErrorsWithNeo4jStatusCode() throws Exception
     {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" ) { });
+        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )
+        {
+        } );
 
         // When
         JsonNode out = serialize( rep );
@@ -73,7 +75,9 @@ public class ExceptionRepresentationTest
     public void shoudExcludeLegacyFormatIfAsked() throws Exception
     {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" ) { }, /*legacy*/false);
+        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )
+        {
+        }, /*legacy*/false );
 
         // When
         JsonNode out = serialize( rep );
@@ -87,7 +91,7 @@ public class ExceptionRepresentationTest
     private JsonNode serialize( ExceptionRepresentation rep ) throws JsonParseException
     {
         Map<String, Object> output = new HashMap<>();
-        MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter(output), URI.create( "" ),
+        MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter( output ), URI.create( "" ),
                 mock(ExtensionInjector.class ) );
 
         // When

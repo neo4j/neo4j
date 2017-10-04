@@ -33,9 +33,9 @@ import org.neo4j.graphdb.SeverityLevel;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.JOIN_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
 
 public class NotificationCodeTest
 {
@@ -49,7 +49,8 @@ public class NotificationCodeTest
         assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
         assertThat( notification.getCode(), equalTo( "Neo.ClientError.Schema.IndexNotFound" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
-        assertThat( notification.getDescription(), equalTo( "The hinted index does not exist, please check the schema (hinted index is: index on :Person(name))" ) );
+        assertThat( notification.getDescription(), equalTo(
+                "The hinted index does not exist, please check the schema (hinted index is: index on :Person(name))" ) );
     }
 
     @Test
@@ -65,15 +66,17 @@ public class NotificationCodeTest
         assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
         assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.CartesianProductWarning" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
-        assertThat( notification.getDescription(), equalTo( "If a part of a query contains multiple disconnected patterns, this will build a cartesian product " +
-                                                            "between all those parts. This may produce a large amount of data and slow down query processing. While " +
-                                                            "occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross " +
-                                                            "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH " +
-                                                            "(identifiers are: (n, node2))" ) );
+        assertThat( notification.getDescription(), equalTo(
+                "If a part of a query contains multiple disconnected patterns, this will build a cartesian product " +
+                        "between all those parts. This may produce a large amount of data and slow down query processing. While " +
+                        "occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross " +
+                        "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH " +
+                        "(identifiers are: (n, node2))" ) );
     }
 
     @Test
-    public void shouldConstructNotificationsFor_JOIN_HINT_UNFULFILLABLE() {
+    public void shouldConstructNotificationsFor_JOIN_HINT_UNFULFILLABLE()
+    {
         List<String> idents = new ArrayList<>();
         idents.add( "n" );
         idents.add( "node2" );
@@ -91,7 +94,8 @@ public class NotificationCodeTest
     }
 
     @Test
-    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE() {
+    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE()
+    {
         NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "newName");
         Notification notification = DEPRECATED_PROCEDURE.notification( InputPosition.empty, identifierDetail );
 
@@ -104,7 +108,8 @@ public class NotificationCodeTest
     }
 
     @Test
-    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName() {
+    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName()
+    {
         NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "");
         Notification notification = DEPRECATED_PROCEDURE.notification( InputPosition.empty, identifierDetail );
 

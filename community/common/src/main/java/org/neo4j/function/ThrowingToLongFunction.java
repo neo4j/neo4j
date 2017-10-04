@@ -20,7 +20,8 @@
 package org.neo4j.function;
 
 /**
- * Represents a function that produces a long-valued result. This is the long-producing primitive specialization for {@link ThrowingFunction}.
+ * Represents a function that produces a long-valued result.
+ * This is the long-producing primitive specialization for {@link ThrowingFunction}.
  *
  * @param <T> the type of the input to the function
  * @param <E> the type of exception that may be thrown from the function

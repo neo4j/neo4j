@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -30,40 +29,30 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.EMPTY_LIST;
-import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     protected IndexAccessor accessor;
-    private static final int PROPERTY_KEY_ID = 100;
 
-    private boolean isUnique = true;
-
-    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, boolean isUnique )
+    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
-        super(testSuite);
-        this.isUnique = isUnique;
+        super( testSuite, descriptor );
     }
 
     @Before
     public void before() throws Exception
     {
-        IndexConfiguration indexConfig = IndexConfiguration.of( isUnique );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
         populator.close( true );
-        accessor = indexProvider.getOnlineAccessor( 17, new IndexDescriptor( 1, PROPERTY_KEY_ID ),
-                indexConfig, indexSamplingConfig );
+        accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
     }
 
     @After
@@ -73,107 +62,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         accessor.close();
     }
 
-    @Test
-    public void testIndexSeekByNumber() throws Exception
+    protected List<Long> query( IndexQuery... predicates ) throws Exception
     {
-        updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, -5, new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 0, new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, 5.5, new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, 10.0, new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, 100.0, new long[]{1000} ) ) );
-
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 0, 10 ), equalTo( asList( 2L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 10, null ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 100, 0 ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, null ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 0 ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
+        return metaGet( reader -> reader.query( predicates ) );
     }
 
-    @Test
-    public void testIndexSeekByString() throws Exception
-    {
-        updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "Anabelle", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "Anna", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "Bob", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "Harriet", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "William", new long[]{1000} ) ) );
-
-        assertThat( getAllNodesFromIndexSeekByString( "Anna", true, "Harriet", false ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Harriet", true, null, false ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Harriet", false, null, true ), equalTo( singletonList( 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "William", false, "Anna", true ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, false, "Bob", false ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, true, "Bob", true ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, true, null, true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Anabelle", false, "Anna", true ), equalTo( singletonList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Anabelle", false, "Bob", false ), equalTo( singletonList( 2L ) ) );
-    }
-
-    @Test
-    public void testIndexSeekByPrefix() throws Exception
-    {
-        updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apA", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
-
-        assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( Collections.singletonList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-    }
-
-    @Test
-    public void testIndexSeekByPrefixOnNonStrings() throws Exception
-    {
-        updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 2L, new long[]{1000} ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( EMPTY_LIST ) );
-    }
-
-    protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
-    {
-        return metaGet( reader -> reader.seek( propertyValue ));
-    }
-
-    protected List<Long> getAllNodesFromInclusiveIndexSeekByNumber( Number lower, Number upper ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByNumberInclusive( lower, upper ));
-    }
-
-    protected List<Long> getAllNodesFromIndexSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ));
-    }
-
-    protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByPrefix( prefix));
-    }
-
-    protected List<Long> getAllNodesFromIndexScanByContains( String term ) throws IOException
-    {
-        return metaGet( reader -> reader.containsString( term ) );
-    }
-
-    protected List<Long> getAllNodesFromIndexScanEndsWith( String term ) throws IOException
-    {
-        return metaGet( reader -> reader.endsWith( term ) );
-    }
-
-    protected List<Long> getAllNodes() throws IOException
-    {
-        return metaGet( IndexReader::scan );
-    }
-
-    private List<Long> metaGet( ReaderInteraction interaction )
+    private List<Long> metaGet( ReaderInteraction interaction ) throws Exception
     {
         try ( IndexReader reader = accessor.newReader() )
         {
@@ -187,21 +81,20 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
-    private interface ReaderInteraction
+    interface ReaderInteraction
     {
-        PrimitiveLongIterator results( IndexReader reader );
+        PrimitiveLongIterator results( IndexReader reader ) throws Exception;
     }
 
-    protected void updateAndCommit( List<NodePropertyUpdate> updates )
+    void updateAndCommit( List<IndexEntryUpdate<?>> updates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
                 updater.process( update );
             }
         }
     }
-
 }

@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.api;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
  * A {@link KernelTransactionHandle} that wraps the given {@link KernelTransactionImplementation}.
@@ -43,7 +44,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long timeoutMillis;
     private final KernelTransactionImplementation tx;
     private final SecurityContext securityContext;
-    private final Status terminationReason;
+    private final Optional<Status> terminationReason;
     private final ExecutingQueryList executingQueries;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
@@ -104,7 +105,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public Optional<Status> terminationReason()
     {
-        return Optional.ofNullable( terminationReason );
+        return terminationReason;
     }
 
     @Override
@@ -117,6 +118,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public Stream<ExecutingQuery> executingQueries()
     {
         return executingQueries.queries();
+    }
+
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        return tx.activeLocks();
     }
 
     @Override

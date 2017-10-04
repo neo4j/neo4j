@@ -19,25 +19,22 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.jboss.netty.channel.ChannelException;
+
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.jboss.netty.channel.ChannelException;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -49,6 +46,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.Bootstrapper;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.peel;
 
 public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
@@ -56,27 +54,27 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
     private final LifeSupport life = new LifeSupport();
     private final Timer timer = new Timer( true );
 
-    @SafeVarargs
     @Override
-    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
     {
         Config config = getConfig( configFile, configOverrides );
         try
         {
+            DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            life.add( new FileSystemLifecycleAdapter( fileSystem ) );
             life.add( new Neo4jJobScheduler() );
-
             new ClusterClientModule(
                     life,
                     new Dependencies(),
                     new Monitors(),
                     config,
-                    logService( new DefaultFileSystemAbstraction(), config ),
+                    logService( fileSystem, config ),
                     new NotElectableElectionCredentialsProvider() );
         }
         catch ( LifecycleException e )
         {
-            @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-            Throwable cause = peel( e, Predicates.<Throwable>instanceOf( LifecycleException.class ) );
+            @SuppressWarnings( {"ThrowableResultOfMethodCallIgnored", "unchecked"} )
+            Throwable cause = peel( e, Predicates.instanceOf( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
             {
                 System.err.println( "ERROR: " + cause.getMessage() +
@@ -107,28 +105,11 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         stop();
     }
 
-    @SafeVarargs
-    private static Config getConfig( Optional<File> configFile, Pair<String, String>... configOverrides )
+    private static Config getConfig( Optional<File> configFile, Map<String, String> configOverrides )
     {
-        Map<String, String> config = new HashMap<>();
-        configFile.ifPresent( (file) -> {
-            try
-            {
-                config.putAll( MapUtil.load( file ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( "Unable to load config file " + configFile, e );
-            }
-        } );
-
-        for ( Pair<String, String> configOverride : configOverrides )
-        {
-            config.put( configOverride.first(), configOverride.other() );
-        }
-
-        verifyConfig( config );
-        return new Config( config );
+        Config config = Config.builder().withFile( configFile ).withSettings( configOverrides ).build();
+        verifyConfig( config.getRaw() );
+        return config ;
     }
 
     private static void verifyConfig( Map<String, String> config )
@@ -145,11 +126,12 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 
     private static LogService logService( FileSystemAbstraction fileSystem, Config config )
     {
-        File logDir = config.get( GraphDatabaseSettings.logs_directory );
+        File logFile = config.get( store_internal_log_path );
         try
         {
             return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
-                    .inLogsDirectory( fileSystem, logDir );
+                    .withInternalLog( logFile )
+                    .build( fileSystem );
         }
         catch ( IOException e )
         {

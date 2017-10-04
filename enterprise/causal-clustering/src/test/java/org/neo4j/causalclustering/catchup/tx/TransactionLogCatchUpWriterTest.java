@@ -48,14 +48,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -98,7 +99,8 @@ public class TransactionLogCatchUpWriterTest
         int fromTxId = 37;
         int endTxId = fromTxId + 5;
 
-        TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( storeDir, fs, pageCache, NullLogProvider.getInstance(), fromTxId, true );
+        TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( storeDir, fs, pageCache,
+                NullLogProvider.getInstance(), fromTxId, true );
 
         // when
         for ( int i = fromTxId; i <= endTxId; i++ )
@@ -111,7 +113,6 @@ public class TransactionLogCatchUpWriterTest
         // then
         verifyTransactionsInLog( fromTxId, endTxId );
         verifyCheckpointInLog(); // necessary for recovery
-
     }
 
     private void verifyCheckpointInLog() throws IOException
@@ -119,12 +120,11 @@ public class TransactionLogCatchUpWriterTest
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        final LatestCheckPointFinder checkPointFinder =
-                new LatestCheckPointFinder( logFiles, fs, logEntryReader );
+        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, fs, logEntryReader, new Monitors() );
 
-        LatestCheckPointFinder.LatestCheckPoint checkPoint = checkPointFinder.find( 0 );
-        assertNotNull( checkPoint.checkPoint );
-        assertTrue( checkPoint.commitsAfterCheckPoint );
+        LogTailInformation tailInformation = logTailScanner.getTailInformation();
+        assertNotNull( tailInformation.lastCheckPoint );
+        assertTrue( tailInformation.commitsAfterLastCheckpoint() );
     }
 
     private void verifyTransactionsInLog( long fromTxId, long endTxId ) throws IOException
@@ -156,7 +156,7 @@ public class TransactionLogCatchUpWriterTest
     {
         // create an empty store
         org.neo4j.kernel.impl.store.StoreId storeId;
-        NeoStoreDataSource ds = dsRule.getDataSource( storeDir, fs, pageCache, emptyMap() );
+        NeoStoreDataSource ds = dsRule.getDataSource( storeDir, fs, pageCache );
         try ( Lifespan ignored = new Lifespan( ds ) )
         {
             storeId = ds.getStoreId();

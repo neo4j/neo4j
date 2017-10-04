@@ -25,5 +25,5 @@ package org.neo4j.kernel.lifecycle;
  */
 public interface LifecycleListener
 {
-    void notifyStatusChanged(Object instance, LifecycleStatus from, LifecycleStatus to);
+    void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to );
 }

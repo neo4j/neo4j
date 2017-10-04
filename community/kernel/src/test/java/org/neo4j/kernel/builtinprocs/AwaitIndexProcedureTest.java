@@ -20,8 +20,6 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,10 +29,12 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,14 +50,18 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AwaitIndexProcedureTest
 {
-    private static final int timeout = 40;
-    private static final TimeUnit timeoutUnits = TimeUnit.MILLISECONDS;
+    private static final int TIMEOUT = 10;
+    private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
     private final ReadOperations operations = mock( ReadOperations.class );
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
+    private final LabelSchemaDescriptor anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+    private final IndexDescriptor anyIndex = IndexDescriptorFactory.forSchema( anyDescriptor );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
@@ -66,7 +70,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":NonExistentLabel(prop)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":NonExistentLabel(prop)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -82,7 +86,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":Label(nonExistentProperty)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":Label(nonExistentProperty)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -95,15 +99,14 @@ public class AwaitIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
+        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyId() );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
-        procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+        procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
 
-        verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
+        verify( operations ).indexGetForSchema( descriptor );
     }
 
     @Test
@@ -113,13 +116,12 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
 
         try
         {
-            procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -133,14 +135,14 @@ public class AwaitIndexProcedureTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
 
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenThrow( new IndexSchemaRuleNotFoundException( -1, -1 ) );
+        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
+        when( operations.indexGetForSchema( any() ) ).thenThrow(
+                new SchemaRuleNotFoundException( INDEX_RULE, SchemaDescriptorFactory.forLabel( 0, 0 ) ) );
 
         try
         {
-            procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -155,25 +157,17 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( new Answer<InternalIndexState>()
-        {
-            @Override
-            public InternalIndexState answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                return state.get();
-            }
-        } );
+        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
 
         AtomicBoolean done = new AtomicBoolean( false );
         new Thread( () ->
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+                procedure.awaitIndex( ":Person(name)", TIMEOUT, TimeUnit.MILLISECONDS );
             }
             catch ( ProcedureException e )
             {
@@ -186,7 +180,7 @@ public class AwaitIndexProcedureTest
 
         state.set( ONLINE );
         assertEventually( "Procedure did not return after index was online",
-                done::get, is( true ), 10, TimeUnit.SECONDS );
+                done::get, is( true ), TIMEOUT, TimeUnit.SECONDS );
     }
 
     @Test
@@ -195,8 +189,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();
@@ -204,7 +197,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+                procedure.awaitIndex( ":Person(name)", TIMEOUT, TimeUnit.MILLISECONDS );
             }
             catch ( ProcedureException e )
             {
@@ -212,7 +205,7 @@ public class AwaitIndexProcedureTest
             }
         } ).start();
 
-        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), 10, TimeUnit.SECONDS );
+        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), TIMEOUT, TIME_UNIT );
         //noinspection ThrowableResultOfMethodCallIgnored
         assertThat( exception.get().status(), is( Status.Procedure.ProcedureTimedOut ) );
     }

@@ -19,55 +19,58 @@
  */
 package org.neo4j.server.web;
 
+import org.eclipse.jetty.server.handler.ErrorHandler;
+
 import java.io.IOException;
 import java.io.Writer;
-
 import javax.servlet.http.HttpServletRequest;
-
-import org.eclipse.jetty.server.handler.ErrorHandler;
 
 public class NeoJettyErrorHandler extends ErrorHandler
 {
 
     @Override
-    protected void handleErrorPage(HttpServletRequest request, Writer writer, int code,
-                                   String message) throws IOException
+    protected void handleErrorPage( HttpServletRequest request, Writer writer, int code, String message )
+            throws IOException
     {
-        writeErrorPage(request, writer, code, message, false);
+        writeErrorPage( request, writer, code, message, false );
     }
 
     @Override
-    protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message,
-                                  boolean showStacks) throws IOException {
+    protected void writeErrorPage( HttpServletRequest request, Writer writer, int code, String message,
+            boolean showStacks ) throws IOException
+    {
 
         // we don't want any Jetty output
 
     }
 
     @Override
-    protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code,
-                                      String message) throws IOException {
+    protected void writeErrorPageHead( HttpServletRequest request, Writer writer, int code, String message )
+            throws IOException
+    {
         // we don't want any Jetty output
 
     }
 
     @Override
-    protected void writeErrorPageBody(HttpServletRequest request, Writer writer, int code,
-                                      String message, boolean showStacks) throws IOException {
+    protected void writeErrorPageBody( HttpServletRequest request, Writer writer, int code, String message,
+            boolean showStacks ) throws IOException
+    {
         // we don't want any Jetty output
 
     }
 
     @Override
-    protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code,
-                                         String message, String uri) throws IOException {
+    protected void writeErrorPageMessage( HttpServletRequest request, Writer writer, int code, String message,
+            String uri ) throws IOException
+    {
         // we don't want any Jetty output
 
     }
 
     @Override
-    protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
-            throws IOException {
+    protected void writeErrorPageStacks( HttpServletRequest request, Writer writer ) throws IOException
+    {
         // we don't want any stack output
 
     }

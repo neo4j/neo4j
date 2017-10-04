@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -98,7 +97,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
     {
         // When
-        neoStores = storeFactory( Config.empty() ).openAllNeoStores( true );
+        neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -109,7 +108,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
     {
         // When
-        neoStores = storeFactory( Config.empty() ).openAllNeoStores( true );
+        neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -120,8 +119,7 @@ public class StoreFactoryTest
     public void shouldHaveSpecificCountsTrackerForReadOnlyDatabase() throws IOException
     {
         // when
-        StoreFactory readOnlyStoreFactory = storeFactory(
-                new Config( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ) );
+        StoreFactory readOnlyStoreFactory = storeFactory( Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE ) );
         neoStores = readOnlyStoreFactory.openAllNeoStores( true );
         long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
 
@@ -132,7 +130,7 @@ public class StoreFactoryTest
     @Test( expected = StoreNotFoundException.class )
     public void shouldThrowWhenOpeningNonExistingNeoStores()
     {
-        try ( NeoStores neoStores = storeFactory( Config.empty() ).openAllNeoStores() )
+        try ( NeoStores neoStores = storeFactory( Config.defaults() ).openAllNeoStores() )
         {
             neoStores.getMetaDataStore();
         }
@@ -142,7 +140,7 @@ public class StoreFactoryTest
     public void shouldDelegateDeletionOptionToStores() throws Exception
     {
         // GIVEN
-        StoreFactory storeFactory = storeFactory( Config.empty(), DELETE_ON_CLOSE );
+        StoreFactory storeFactory = storeFactory( Config.defaults(), DELETE_ON_CLOSE );
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
@@ -151,5 +149,27 @@ public class StoreFactoryTest
         // THEN
         neoStores.close();
         assertEquals( 0, fsRule.get().listFiles( storeDir ).length );
+    }
+
+    @Test
+    public void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
+    {
+        StoreFactory storeFactory = storeFactory( Config.defaults() );
+        FileSystemAbstraction fs = fsRule.get();
+        fs.create( new File( storeDir, "neostore.nodestore.db.labels" ) );
+        storeFactory.openAllNeoStores( true ).close();
+    }
+
+    @Test
+    public void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
+    {
+        StoreFactory storeFactory = storeFactory( Config.defaults() );
+        storeFactory.openAllNeoStores( true ).close();
+        FileSystemAbstraction fs = fsRule.get();
+        for ( File f : fs.listFiles( storeDir ) )
+        {
+            fs.truncate( f, 0 );
+        }
+        storeFactory.openAllNeoStores( true ).close();
     }
 }

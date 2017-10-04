@@ -27,8 +27,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
@@ -401,7 +399,8 @@ public class ProgressMonitorTest
         final Completion completion = builder.build();
 
         // when
-        final CountDownLatch begin = new CountDownLatch( 1 ), end = new CountDownLatch( 1 );
+        final CountDownLatch begin = new CountDownLatch( 1 );
+        final CountDownLatch end = new CountDownLatch( 1 );
         new Thread()
         {
             @Override
@@ -410,7 +409,7 @@ public class ProgressMonitorTest
                 begin.countDown();
                 try
                 {
-                    completion.await( 1, SECONDS );
+                    completion.await( 10, SECONDS );
                 }
                 catch ( Exception e )
                 {
@@ -421,7 +420,7 @@ public class ProgressMonitorTest
         }.start();
         Runnable callback = mock( Runnable.class );
         completion.notify( callback );
-        assertTrue( begin.await( 1, SECONDS ) );
+        assertTrue( begin.await( 10, SECONDS ) );
 
         // then
         verifyZeroInteractions( callback );
@@ -448,7 +447,7 @@ public class ProgressMonitorTest
         // then
         verify( callback ).run();
         completion.await( 0, TimeUnit.NANOSECONDS ); // should not have to wait
-        assertTrue( end.await( 1, SECONDS ) ); // should have been completed
+        assertTrue( end.await( 10, SECONDS ) ); // should have been completed
 
         // when
         callback = mock( Runnable.class );
@@ -621,14 +620,10 @@ public class ProgressMonitorTest
         ProgressMonitorFactory mock( final Indicator.OpenEnded indicatorMock )
         {
             ProgressMonitorFactory factory = Mockito.mock( ProgressMonitorFactory.class );
-            when( factory.newOpenEndedIndicator( any( String.class ), anyInt() ) ).thenAnswer( new Answer<Indicator>()
+            when( factory.newOpenEndedIndicator( any( String.class ), anyInt() ) ).thenAnswer( invocation ->
             {
-                @Override
-                public Indicator answer( InvocationOnMock invocation ) throws Throwable
-                {
-                    when( indicatorMock.reportResolution() ).thenReturn( (Integer) invocation.getArguments()[1] );
-                    return indicatorMock;
-                }
+                when( indicatorMock.reportResolution() ).thenReturn( invocation.getArgument(1) );
+                return indicatorMock;
             } );
             factoryMocks.put( factory, true );
             return factory;

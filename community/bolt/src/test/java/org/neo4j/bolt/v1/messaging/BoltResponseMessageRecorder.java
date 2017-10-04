@@ -19,22 +19,25 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.messaging.message.*;
-import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
+import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
+import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
+import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.kernel.api.exceptions.Status;
-
-import java.util.Map;
+import org.neo4j.values.virtual.MapValue;
 
 public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage> implements BoltResponseMessageHandler<RuntimeException>
 {
     @Override
-    public void onSuccess( Map<String, Object> metadata )
+    public void onSuccess( MapValue metadata )
     {
         messages.add( new SuccessMessage( metadata ) );
     }
 
     @Override
-    public void onRecord( Record item )
+    public void onRecord( QueryResult.Record item )
     {
         messages.add( new RecordMessage( item ) );
     }
@@ -46,9 +49,9 @@ public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage
     }
 
     @Override
-    public void onFailure( Status status, String message )
+    public void onFailure( Status status, String errorMessage )
     {
-        messages.add( new FailureMessage( status, message ) );
+        messages.add( new FailureMessage( status, errorMessage ) );
     }
 
 }

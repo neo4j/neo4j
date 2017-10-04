@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.time.Clock;
+import java.util.stream.Stream;
+
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -53,7 +57,7 @@ public interface Locks
             super( key, altKeys );
         }
 
-        public abstract Locks newInstance( ResourceType[] resourceTypes );
+        public abstract Locks newInstance( Config config, Clock clocks, ResourceType[] resourceTypes );
     }
 
     /** For introspection and debugging. */
@@ -75,14 +79,14 @@ public interface Locks
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          *
+         * @param tracer a tracer for listening on lock events.
          * @param resourceType type or resource(s) to lock.
          * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
-         * of this method.
          */
-        void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+        void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         @Override
-        void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+        void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean tryExclusiveLock( ResourceType resourceType, long resourceId );
@@ -90,11 +94,15 @@ public interface Locks
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean trySharedLock( ResourceType resourceType, long resourceId );
 
+        boolean reEnterShared( ResourceType resourceType, long resourceId );
+
+        boolean reEnterExclusive( ResourceType resourceType, long resourceId );
+
         /** Release a set of shared locks */
-        void releaseShared( ResourceType resourceType, long resourceId );
+        void releaseShared( ResourceType resourceType, long... resourceIds );
 
         /** Release a set of exclusive locks */
-        void releaseExclusive( ResourceType resourceType, long resourceId );
+        void releaseExclusive( ResourceType resourceType, long... resourceIds );
 
         /**
          * Stop all active lock waiters and release them. All already held locks remains.
@@ -109,6 +117,10 @@ public interface Locks
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
+
+        Stream<? extends ActiveLock> activeLocks();
+
+        long activeLockCount();
     }
 
     /**
@@ -120,7 +132,7 @@ public interface Locks
     Client newClient();
 
     /** Visit all held locks. */
-    void accept(Visitor visitor);
+    void accept( Visitor visitor );
 
     void close();
 }

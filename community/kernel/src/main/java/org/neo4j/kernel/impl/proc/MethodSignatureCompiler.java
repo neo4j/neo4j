@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
 import org.neo4j.procedure.Name;
 
+import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
+
 /**
  * Given a java method, figures out a valid {@link org.neo4j.kernel.api.proc.ProcedureSignature} field signature.
  * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
@@ -49,7 +51,7 @@ public class MethodSignatureCompiler
     public List<Neo4jTypes.AnyType> inputTypesFor( Method method ) throws ProcedureException
     {
         Type[] types = method.getGenericParameterTypes();
-        List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>(types.length);
+        List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>( types.length );
         for ( Type type : types )
         {
             NeoValueConverter valueConverter = typeMappers.converterFor( type );
@@ -63,7 +65,7 @@ public class MethodSignatureCompiler
     {
         Parameter[] params = method.getParameters();
         Type[] types = method.getGenericParameterTypes();
-        List<FieldSignature> signature = new ArrayList<>(params.length);
+        List<FieldSignature> signature = new ArrayList<>( params.length );
         boolean seenDefault = false;
         for ( int i = 0; i < params.length; i++ )
         {
@@ -80,7 +82,7 @@ public class MethodSignatureCompiler
             Name parameter = param.getAnnotation( Name.class );
             String name = parameter.value();
 
-            if( name.trim().length() == 0 )
+            if ( name.trim().length() == 0 )
             {
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Argument at position %d in method `%s` is annotated with a name,%n" +
@@ -93,7 +95,7 @@ public class MethodSignatureCompiler
                 NeoValueConverter valueConverter = typeMappers.converterFor( type );
                 Optional<Neo4jValue> defaultValue = valueConverter.defaultValue( parameter );
                 //it is not allowed to have holes in default values
-                if (seenDefault && !defaultValue.isPresent())
+                if ( seenDefault && !defaultValue.isPresent() )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                             "Non-default argument at position %d with name %s in method %s follows default argument. " +
@@ -102,8 +104,9 @@ public class MethodSignatureCompiler
                 }
 
                 seenDefault = defaultValue.isPresent();
-                signature.add( new FieldSignature( name, valueConverter.type(),
-                        defaultValue ) );
+                signature.add( defaultValue.isPresent()
+                        ? inputField( name, valueConverter.type(), defaultValue.get() )
+                        : inputField( name, valueConverter.type() ) );
             }
             catch ( ProcedureException e )
             {

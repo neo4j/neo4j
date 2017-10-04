@@ -29,7 +29,8 @@ import static org.neo4j.codegen.TypeReference.typeReferences;
 public abstract class CodeGenerator
 {
     private final CodeLoader loader;
-    private long generation, classes;
+    private long generation;
+    private long classes;
     private ByteCodeVisitor byteCodeVisitor = DO_NOTHING;
 
     public static CodeGenerator generateCode( CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options )

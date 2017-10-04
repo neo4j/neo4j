@@ -22,11 +22,16 @@ package org.neo4j.kernel.impl.query;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.*;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.QueryRegistryOperations;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;
@@ -34,6 +39,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
 public class Neo4jTransactionalContext implements TransactionalContext
 {
@@ -47,9 +53,16 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
 
-    private InternalTransaction transaction;
+    /**
+     * Current transaction.
+     * Field can be read from a different thread in {@link #terminate()}.
+     */
+    private volatile InternalTransaction transaction;
     private Statement statement;
     private boolean isOpen = true;
+
+    private long pageHits;
+    private long pageMisses;
 
     public Neo4jTransactionalContext(
         GraphDatabaseQueryService graph,
@@ -60,7 +73,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         InternalTransaction initialTransaction,
         Statement initialStatement,
         ExecutingQuery executingQuery
-    ) {
+    )
+    {
         this.graph = graph;
         this.statementSupplier = statementSupplier;
         this.guard = guard;
@@ -126,21 +140,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
         }
     }
 
-    @Override // TODO: Make the state of this class a state machine that is a single value and maybe CAS state
-    // transitions
+    @Override
     public void terminate()
     {
-        if ( isOpen )
+        InternalTransaction currentTransaction = transaction;
+        if ( currentTransaction != null )
         {
-            try
-            {
-                transaction.terminate();
-                close( false );
-            }
-            catch ( NotInTransactionException e )
-            {
-                // Ok then. Nothing to do
-            }
+            currentTransaction.terminate();
         }
     }
 
@@ -158,8 +164,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
         * creating a new one. And then we need to do that thread switching again to close the old transaction.
         */
 
+        checkNotTerminated();
+
+        collectTransactionExecutionStatistic();
+
         // (1) Unbind current transaction
         QueryRegistryOperations oldQueryRegistryOperations = statement.queryRegistration();
+        Statement oldStatement = statement;
         InternalTransaction oldTransaction = transaction;
         KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
@@ -176,6 +187,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         oldQueryRegistryOperations.unregisterExecutingQuery( executingQuery );
         try
         {
+            oldStatement.close();
             oldTransaction.success();
             oldTransaction.close();
         }
@@ -209,6 +221,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public TransactionalContext getOrBeginNewIfClosed()
     {
+        checkNotTerminated();
+
         if ( !isOpen )
         {
             transaction = graph.beginTransaction( transactionType, securityContext );
@@ -217,6 +231,18 @@ public class Neo4jTransactionalContext implements TransactionalContext
             isOpen = true;
         }
         return this;
+    }
+
+    private void checkNotTerminated()
+    {
+        InternalTransaction currentTransaction = transaction;
+        if ( currentTransaction != null )
+        {
+            currentTransaction.terminationReason().ifPresent( status ->
+            {
+                throw new TransactionTerminatedException( status );
+            } );
+        }
     }
 
     @Override
@@ -267,12 +293,48 @@ public class Neo4jTransactionalContext implements TransactionalContext
         return securityContext;
     }
 
-    interface Creator {
+    @Override
+    public StatisticProvider kernelStatisticProvider()
+    {
+        return new TransactionalContextStatisticProvider( statement.executionStatisticsOperations().getPageCursorTracer() );
+    }
+
+    private void collectTransactionExecutionStatistic()
+    {
+        PageCursorTracer pageCursorTracer = statement.executionStatisticsOperations().getPageCursorTracer();
+        pageHits += pageCursorTracer.hits();
+        pageMisses += pageCursorTracer.faults();
+    }
+
+    interface Creator
+    {
         Neo4jTransactionalContext create(
             Supplier<Statement> statementSupplier,
             InternalTransaction tx,
             Statement initialStatement,
             ExecutingQuery executingQuery
         );
+    }
+
+    private class TransactionalContextStatisticProvider implements StatisticProvider
+    {
+        private final PageCursorTracer pageCursorTracer;
+
+        private TransactionalContextStatisticProvider( PageCursorTracer pageCursorTracer )
+        {
+            this.pageCursorTracer = pageCursorTracer;
+        }
+
+        @Override
+        public long getPageCacheHits()
+        {
+            return pageCursorTracer.hits() + pageHits;
+        }
+
+        @Override
+        public long getPageCacheMisses()
+        {
+            return pageCursorTracer.faults() + pageMisses;
+        }
     }
 }

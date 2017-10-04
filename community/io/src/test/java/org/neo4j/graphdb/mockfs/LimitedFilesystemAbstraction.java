@@ -37,7 +37,7 @@ import org.neo4j.test.impl.ChannelOutputStream;
 
 public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstraction
 {
-    private boolean outOfSpace;
+    private volatile boolean outOfSpace;
 
     public LimitedFilesystemAbstraction( FileSystemAbstraction delegate )
     {
@@ -102,7 +102,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
 
     public void ensureHasSpace() throws IOException
     {
-        if( outOfSpace )
+        if ( outOfSpace )
         {
             throw new IOException( "No space left on device" );
         }

@@ -41,7 +41,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
@@ -72,7 +71,7 @@ public class ParallelInputEntityDeserializerTest
         Groups groups = new Groups();
         Set<Thread> observedProcessingThreads = new CopyOnWriteArraySet<>();
         int threads = 4;
-        DeserializerFactory<InputNode> deserializerFactory = (header,chunk,decorator,validator) ->
+        DeserializerFactory<InputNode> deserializerFactory = ( header, chunk, decorator, validator ) ->
         {
             observedProcessingThreads.add( Thread.currentThread() );
             // Make sure there will be 4 different processing threads doing this
@@ -88,7 +87,7 @@ public class ParallelInputEntityDeserializerTest
         };
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
                 defaultFormatNodeFileHeader(), config, idType, threads, threads, deserializerFactory,
-                Validators.<InputNode>emptyValidator(), InputNode.class ) )
+                Validators.emptyValidator(), InputNode.class ) )
         {
             // WHEN/THEN
             long previousLineNumber = -1;
@@ -138,7 +137,7 @@ public class ParallelInputEntityDeserializerTest
         boolean noticedPanic = false;
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
                 defaultFormatNodeFileHeader(), config, idType, 3, 3, deserializerFactory,
-                Validators.<InputNode>emptyValidator(), InputNode.class ) )
+                Validators.emptyValidator(), InputNode.class ) )
         {
             deserializer.hasNext();
             RuntimeException panic = new RuntimeException();

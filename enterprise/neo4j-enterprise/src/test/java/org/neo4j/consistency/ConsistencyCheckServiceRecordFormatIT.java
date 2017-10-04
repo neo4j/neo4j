@@ -20,7 +20,6 @@
 package org.neo4j.consistency;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -42,24 +41,24 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 
 @RunWith( Parameterized.class )
 public class ConsistencyCheckServiceRecordFormatIT
 {
-    @ClassRule
-    public static final TestDirectory dir = TestDirectory.testDirectory();
-
-    private final File storeDir = dir.directory( "db" );
-    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( storeDir ).startLazily();
+    private final DatabaseRule db = new EmbeddedDatabaseRule()
+            .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+            .startLazily();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
@@ -70,7 +69,7 @@ public class ConsistencyCheckServiceRecordFormatIT
     @Parameters( name = "{0}" )
     public static List<String> recordFormats()
     {
-        return Arrays.asList( StandardV3_0.NAME, HighLimit.NAME );
+        return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
     }
 
     @Before
@@ -115,8 +114,8 @@ public class ConsistencyCheckServiceRecordFormatIT
     {
         ConsistencyCheckService service = new ConsistencyCheckService();
 
-        File storeDir = new File( db.getStoreDir() );
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( storeDir, Config.empty(),
+        File storeDir = db.getStoreDir();
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( storeDir, Config.defaults(),
                 ProgressMonitorFactory.textual( System.out ), FormattedLogProvider.toOutputStream( System.out ), true );
 
         assertTrue( "Store is inconsistent", result.isSuccessful() );

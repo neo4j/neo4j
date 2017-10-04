@@ -38,21 +38,10 @@ public class StreamConsumer implements Runnable
         void handle( IOException failure );
     }
 
-    public static StreamExceptionHandler PRINT_FAILURES = new StreamExceptionHandler()
-    {
-        @Override
-        public void handle( IOException failure )
-        {
-            failure.printStackTrace();
-        }
-    };
+    public static StreamExceptionHandler PRINT_FAILURES = failure -> failure.printStackTrace();
 
-    public static StreamExceptionHandler IGNORE_FAILURES = new StreamExceptionHandler()
+    public static StreamExceptionHandler IGNORE_FAILURES = failure ->
     {
-        @Override
-        public void handle( IOException failure )
-        {
-        }
     };
 
     private final BufferedReader in;
@@ -75,9 +64,9 @@ public class StreamConsumer implements Runnable
         this.quiet = quiet;
         this.prefix = prefix;
         this.failureHandler = failureHandler;
-        this.in = new BufferedReader(new InputStreamReader( in ));
+        this.in = new BufferedReader( new InputStreamReader( in ) );
         this.out = new OutputStreamWriter( out );
-        this.stackTraceOfOrigin = new Exception("Stack trace of thread that created this StreamConsumer");
+        this.stackTraceOfOrigin = new Exception( "Stack trace of thread that created this StreamConsumer" );
     }
 
     @Override
@@ -86,11 +75,11 @@ public class StreamConsumer implements Runnable
         try
         {
             String line;
-            while ( ( line = in.readLine()) != null)
+            while ( (line = in.readLine()) != null )
             {
                 if ( !quiet )
                 {
-                    out.write( prefix+line+"\n" );
+                    out.write( prefix + line + "\n" );
                     out.flush();
                 }
             }

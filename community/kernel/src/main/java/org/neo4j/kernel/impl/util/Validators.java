@@ -21,17 +21,26 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.ExplicitIndexValueValidator;
+import org.neo4j.kernel.impl.api.IndexValueValidator;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
 public class Validators
 {
+
+    public static final IndexValueValidator INDEX_VALUE_VALIDATOR = IndexValueValidator.INSTANCE;
+
+    public static final ExplicitIndexValueValidator EXPLICIT_INDEX_VALUE_VALIDATOR = ExplicitIndexValueValidator.INSTANCE;
+
     public static final Validator<File> REGEX_FILE_EXISTS = file ->
     {
         if ( matchingFiles( file ).isEmpty() )
@@ -39,6 +48,10 @@ public class Validators
             throw new IllegalArgumentException( "File '" + file + "' doesn't exist" );
         }
     };
+
+    private Validators()
+    {
+    }
 
     static List<File> matchingFiles( File fileWithRegexInName )
     {
@@ -83,30 +96,44 @@ public class Validators
 
     public static final Validator<File> CONTAINS_NO_EXISTING_DATABASE = value ->
     {
-        if ( isExistingDatabase( value ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
+            if ( isExistingDatabase( fileSystem, value ) )
+            {
+                throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     };
 
     public static final Validator<File> CONTAINS_EXISTING_DATABASE = value ->
     {
-        if ( !isExistingDatabase( value ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            throw new IllegalArgumentException( "Directory '" + value + "' does not contain a database" );
+            if ( !isExistingDatabase( fileSystem, value ) )
+            {
+                throw new IllegalArgumentException( "Directory '" + value + "' does not contain a database" );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     };
 
-    private static boolean isExistingDatabase( File value )
+    private static boolean isExistingDatabase( FileSystemAbstraction fileSystem, File value )
     {
-        return new DefaultFileSystemAbstraction()
-                .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) );
+        return fileSystem.fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) );
     }
 
     public static Validator<String> inList( String[] validStrings )
     {
-        return value -> {
-            if ( !Arrays.stream( validStrings ).anyMatch( s -> s.equals( value ) ) )
+        return value ->
+        {
+            if ( Arrays.stream( validStrings ).noneMatch( s -> s.equals( value ) ) )
             {
                 throw new IllegalArgumentException( "'" + value + "' found but must be one of: " +
                     Arrays.toString( validStrings ) + "." );

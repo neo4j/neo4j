@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import java.util.concurrent.Future;
 
 import org.neo4j.io.pagecache.PageCache;
@@ -42,7 +43,8 @@ public class PageCacheFlusherTest
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
         Barrier.Control barrier = new Barrier.Control();
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             barrier.reached();
             return null;
         } ).when( pageCache ).flushAndForce();
@@ -51,7 +53,8 @@ public class PageCacheFlusherTest
 
         // WHEN
         barrier.await();
-        Future<Object> halt = t2.execute( state -> {
+        Future<Object> halt = t2.execute( state ->
+        {
             flusher.halt();
             return null;
         } );
@@ -68,7 +71,8 @@ public class PageCacheFlusherTest
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
         RuntimeException failure = new RuntimeException();
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             throw failure;
         } ).when( pageCache ).flushAndForce();
         PageCacheFlusher flusher = new PageCacheFlusher( pageCache );

@@ -19,35 +19,32 @@
  */
 package org.neo4j.server.security.auth;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.CopyOption;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -59,32 +56,26 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-@RunWith(Parameterized.class)
 public class FileUserRepositoryTest
 {
-    private File authFile = new File( "dbms", "auth" );
-    private LogProvider logProvider = NullLogProvider.getInstance();
+    private File authFile;
+    private final LogProvider logProvider = NullLogProvider.getInstance();
     private FileSystemAbstraction fs;
 
-    @Parameters(name = "{1} filesystem")
-    public static Collection<Object[]> data()
-    {
-        return Arrays.asList( new Object[][]{
-                {Configuration.unix(), "unix"},
-                {Configuration.osX(), "osX"},
-                {Configuration.windows(), "windows"}}
-        );
-    }
-
     @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public ThreadingRule threading = new ThreadingRule();
+    public final ExpectedException thrown = ExpectedException.none();
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    public FileUserRepositoryTest( Configuration fsConfig, String fsType )
+    @Before
+    public void setUp()
     {
-        fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem( fsConfig ) );
+        fs = fileSystemRule.get();
+        authFile = new File( testDirectory.directory( "dbms" ), "auth" );
     }
 
     @Test
@@ -170,7 +161,8 @@ public class FileUserRepositoryTest
         // Given
         final IOException exception = new IOException( "simulated IO Exception on create" );
         FileSystemAbstraction craschingFileSystem =
-            new DelegatingFileSystemAbstraction( fs ) {
+            new DelegatingFileSystemAbstraction( fs )
+            {
                 @Override
                 public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
                 {
@@ -191,7 +183,8 @@ public class FileUserRepositoryTest
         {
             users.create( user );
             fail( "Expected an IOException" );
-        } catch ( IOException e )
+        }
+        catch ( IOException e )
         {
             assertSame( exception, e );
         }
@@ -240,7 +233,8 @@ public class FileUserRepositoryTest
         {
             users.update( modifiedUser, updatedUser );
             fail( "expected exception not thrown" );
-        } catch ( ConcurrentModificationException e )
+        }
+        catch ( ConcurrentModificationException e )
         {
             // Then continue
         }
@@ -310,7 +304,7 @@ public class FileUserRepositoryTest
     {
         private final DoubleLatch latch;
 
-        public HangingListSnapshot( DoubleLatch latch, long timestamp, List<User> values )
+        HangingListSnapshot( DoubleLatch latch, long timestamp, List<User> values )
         {
             super( timestamp, values, true );
             this.latch = latch;

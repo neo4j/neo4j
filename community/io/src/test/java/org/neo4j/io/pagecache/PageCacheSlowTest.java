@@ -37,10 +37,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.test.LinearHistoryPageCacheTracer;
-import org.neo4j.test.RepeatRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
+import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
+import org.neo4j.test.rule.RepeatRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -50,20 +53,23 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     private static class UpdateResult
     {
         final int threadId;
+        final long realThreadId;
         final int[] pageCounts;
 
         UpdateResult( int threadId, int[] pageCounts )
         {
             this.threadId = threadId;
+            this.realThreadId = Thread.currentThread().getId();
             this.pageCounts = pageCounts;
         }
     }
@@ -134,10 +140,14 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final AtomicBoolean shouldStop = new AtomicBoolean();
         final int cachePages = 20;
         final int filePages = cachePages * 2;
-        final int threadCount = 8;
+        final int threadCount = 4;
         final int pageSize = threadCount * 4;
 
-        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL );
+        // For debugging via the linear tracers:
+//        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
+//        getPageCache( fs, cachePages, pageSize, linearTracers.getPageCacheTracer(),
+//                linearTracers.getCursorTracerSupplier() );
+        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
 
         ensureAllPagesExists( filePages, pagedFile );
@@ -165,8 +175,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             while ( cursor.shouldRetry() );
                             String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
                             String reason = String.format(
-                                    "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]",
-                                    pageId, lockName, threadId, Thread.currentThread().getId() );
+                                    "inconsistent page read from filePageId:%s, with %s, threadId:%s",
+                                    pageId, lockName, Thread.currentThread().getId() );
                             assertThat( reason, counter, is( pageCounts[pageId] ) );
                         }
                         catch ( Throwable throwable )
@@ -181,16 +191,42 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             cursor.setOffset( offset );
                             cursor.putInt( counter );
                         }
+                        if ( cursor.checkAndClearBoundsFlag() )
+                        {
+                            shouldStop.set( true );
+                            throw new IndexOutOfBoundsException(
+                                    "offset = " + offset + ", filPageId:" + pageId + ", threadId: " + threadId +
+                                    ", updateCounter = " + updateCounter );
+                        }
                     }
                 }
             };
             futures.add( executor.submit( worker ) );
         }
 
-        Thread.sleep( 40 );
+        Thread.sleep( 10 );
         shouldStop.set( true );
 
-        verifyUpdateResults( filePages, pagedFile, futures );
+        try
+        {
+            verifyUpdateResults( filePages, pagedFile, futures );
+        }
+        catch ( Throwable e )
+        {
+            // For debugging via linear tracers:
+//            synchronized ( System.err )
+//            {
+//                System.err.flush();
+//                linearTracers.printHistory( System.err );
+//                System.err.flush();
+//            }
+//            try ( PrintStream out = new PrintStream( "trace.log" ) )
+//            {
+//                linearTracers.printHistory( out );
+//                out.flush();
+//            }
+            throw e;
+        }
         pagedFile.close();
     }
 
@@ -210,9 +246,13 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                       List<Future<UpdateResult>> futures )
             throws InterruptedException, ExecutionException, IOException
     {
-        for ( Future<UpdateResult> future : futures )
+        UpdateResult[] results = new UpdateResult[futures.size()];
+        for ( int i = 0; i < results.length; i++ )
         {
-            UpdateResult result = future.get();
+            results[i] = futures.get( i ).get();
+        }
+        for ( UpdateResult result : results )
+        {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
                 for ( int i = 0; i < filePages; i++ )
@@ -229,14 +269,16 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     }
                     while ( cursor.shouldRetry() );
 
-                    assertThat( "wrong count for threadId = " + threadId + ", pageId = " + i,
+                    assertThat( "wrong count for threadId:" + threadId +
+                                ", aka. real threadId:" + result.realThreadId +
+                                ", filePageId:" + i,
                             actualCount, is( expectedCount ) );
                 }
             }
         }
     }
 
-    @RepeatRule.Repeat( times = 250 )
+    @RepeatRule.Repeat( times = 100 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustNotLoseUpdatesWhenOpeningMultiplePageCursorsPerThread() throws Exception
     {
@@ -255,7 +297,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final int maxCursorsPerThread = cachePages / (1 + threadCount);
         assertThat( maxCursorsPerThread * threadCount, lessThan( cachePages ) );
 
-        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL );
+        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
 
         ensureAllPagesExists( filePages, pagedFile );
@@ -328,7 +370,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         pagedFile.close();
     }
 
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatRule.Repeat( times = 50 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void writeLockingCursorMustThrowWhenLockingPageRacesWithUnmapping() throws Exception
     {
@@ -344,7 +386,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
         final PagedFile pf = pageCache.map( file, filePageSize );
         final CountDownLatch hasLockLatch = new CountDownLatch( 1 );
@@ -353,7 +395,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final AtomicBoolean doneWriteSignal = new AtomicBoolean();
         final AtomicBoolean doneCloseSignal = new AtomicBoolean();
 
-        executor.submit( () -> {
+        executor.submit( () ->
+        {
             try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
@@ -365,7 +408,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         hasLockLatch.await(); // A write lock is now held on page 0.
 
-        Future<Object> takeLockFuture = executor.submit( () -> {
+        Future<Object> takeLockFuture = executor.submit( () ->
+        {
             try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
@@ -375,7 +419,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             return null;
         } );
 
-        Future<Object> closeFuture = executor.submit( () -> {
+        Future<Object> closeFuture = executor.submit( () ->
+        {
             pf.close();
             doneCloseSignal.set( true );
             return null;
@@ -437,7 +482,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    @RepeatRule.Repeat( times = 1000 )
+    @RepeatRule.Repeat( times = 100 )
     @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {
@@ -452,8 +497,9 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         // Because our test failures are non-deterministic, we use this tracer to capture a full history of the
         // events leading up to any given failure.
-        LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
-        getPageCache( fs, maxPages, pageCachePageSize, tracer );
+        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
+        getPageCache( fs, maxPages, pageCachePageSize, linearTracers.getPageCacheTracer(),
+                linearTracers.getCursorTracerSupplier() );
 
         PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
         PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 );
@@ -461,10 +507,10 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         for ( int i = 0; i < 1000; i++ )
         {
-            PagedFile pagedFile = rng.nextBoolean()? pfA : pfB;
+            PagedFile pagedFile = rng.nextBoolean() ? pfA : pfB;
             long maxPageId = pagedFile.getLastPageId();
             boolean performingRead = rng.nextBoolean() && maxPageId != -1;
-            long startingPage = maxPageId < 0? 0 : rng.nextLong( maxPageId + 1 );
+            long startingPage = maxPageId < 0 ? 0 : rng.nextLong( maxPageId + 1 );
             int pf_flags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
             int pageSize = pagedFile.pageSize();
 
@@ -522,7 +568,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
         catch ( Throwable e )
         {
-            tracer.printHistory( System.err );
+            linearTracers.printHistory( System.err );
             throw e;
         }
     }
@@ -578,6 +624,26 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             {
                 readAndVerifyAdversarialPage( cursor, pagedFile.pageSize() );
             }
+        }
+    }
+
+    @Test
+    public void mustNotRunOutOfSwapperAllocationSpace() throws Exception
+    {
+        assumeTrue( "This test is file system agnostic, and too slow on a real file system",
+                fs instanceof EphemeralFileSystemAbstraction );
+        configureStandardPageCache();
+
+        File file = file( "a" );
+        int iterations = Short.MAX_VALUE * 3;
+        for ( int i = 0; i < iterations; i++ )
+        {
+            PagedFile pagedFile = pageCache.map( file, filePageSize );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            pagedFile.close();
         }
     }
 }

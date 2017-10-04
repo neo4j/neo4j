@@ -20,6 +20,7 @@
 package org.neo4j.cypher;
 
 import org.hamcrest.Matchers;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.CRS;
@@ -36,10 +36,10 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,12 +48,16 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class GraphDatabaseServiceExecuteTest
 {
+
+    @Rule
+    public final DatabaseRule graphDb = new ImpermanentDatabaseRule();
+
     @Test
     public void shouldExecuteCypher() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        final long before, after;
+        final long before;
+        final long after;
         try ( Transaction tx = graphDb.beginTx() )
         {
             before = Iterables.count( graphDb.getAllNodes() );
@@ -75,9 +79,6 @@ public class GraphDatabaseServiceExecuteTest
     @Test
     public void shouldNotReturnInternalGeographicPointType() throws Exception
     {
-        // given
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
         // when
         Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
 
@@ -86,7 +87,8 @@ public class GraphDatabaseServiceExecuteTest
         assertThat( obj, Matchers.instanceOf(Point.class));
 
         Point point = (Point) obj;
-        assertThat( point.getCoordinate(), equalTo(new Coordinate( 144.317718, -37.031738 )));
+        assertThat( point.getCoordinate().getCoordinate().get(0), equalTo( 144.317718 ));
+        assertThat( point.getCoordinate().getCoordinate().get(1), equalTo( -37.031738  ));
 
         CRS crs = point.getCRS();
         assertThat( crs.getCode(), equalTo(4326));
@@ -97,9 +99,6 @@ public class GraphDatabaseServiceExecuteTest
     @Test
     public void shouldNotReturnInternalCartesianPointType() throws Exception
     {
-        // given
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
         // when
         Result execute = graphDb.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
 
@@ -120,9 +119,6 @@ public class GraphDatabaseServiceExecuteTest
     @Test
     public void shouldNotReturnInternalPointWhenInArray() throws Exception
     {
-        // given
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
         // when
         Result execute = graphDb.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
 
@@ -135,9 +131,6 @@ public class GraphDatabaseServiceExecuteTest
     @Test
     public void shouldNotReturnInternalPointWhenInMap() throws Exception
     {
-        // given
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
         // when
         Result execute = graphDb.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
 
@@ -150,7 +143,6 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext() throws Exception
     {
         // given a point create by one cypher query
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
         Point point = (Point) execute.next().get( "p" );
 
@@ -168,7 +160,6 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseExternalPointAsParameterToQuery() throws Exception
     {
         // given a point created from public interface
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
 
         // when passing as params to a distance function
@@ -185,7 +176,6 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseExternalGeometryAsParameterToQuery() throws Exception
     {
         // given a point created from public interface
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Geometry geometry = makeFakePointAsGeometry( 144.317718, -37.031738, makeWGS84() );
 
         // when passing as params to a distance function
@@ -202,7 +192,6 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseExternalPointArrayAsParameterToQuery() throws Exception
     {
         // given a point created from public interface
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
         Point[] points = new Point[]{point, point};
 
@@ -220,9 +209,8 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Procedures procedures =
-                ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
+                graphDb.getDependencyResolver().resolveDependency( Procedures.class );
         procedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
@@ -240,9 +228,8 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Procedures procedures =
-                ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
+                graphDb.getDependencyResolver().resolveDependency( Procedures.class );
         procedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
@@ -251,15 +238,17 @@ public class GraphDatabaseServiceExecuteTest
                 "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
 
         // then
-        Double dist = (Double) result.next().get( "dist" );
+        Object dist1 = result.next().get( "dist" );
+        Double dist = (Double) dist1;
         assertThat( dist, equalTo( 0.0 ) );
 
     }
 
-    private static Point makeFakePoint(double x, double y, final CRS crs)
+    private static Point makeFakePoint( double x, double y, final CRS crs )
     {
         final Coordinate coord = new Coordinate( x, y );
-        return new Point() {
+        return new Point()
+        {
 
             @Override
             public String getGeometryType()
@@ -270,7 +259,7 @@ public class GraphDatabaseServiceExecuteTest
             @Override
             public List<Coordinate> getCoordinates()
             {
-                return Arrays.asList( new Coordinate[]{coord} );
+                return Arrays.asList( coord );
             }
 
             @Override
@@ -281,10 +270,11 @@ public class GraphDatabaseServiceExecuteTest
         };
     }
 
-    private static Geometry makeFakePointAsGeometry(double x, double y, final CRS crs)
+    private static Geometry makeFakePointAsGeometry( double x, double y, final CRS crs )
     {
         final Coordinate coord = new Coordinate( x, y );
-        return new Geometry() {
+        return new Geometry()
+        {
 
             @Override
             public String getGeometryType()
@@ -295,7 +285,7 @@ public class GraphDatabaseServiceExecuteTest
             @Override
             public List<Coordinate> getCoordinates()
             {
-                return Arrays.asList( new Coordinate[]{coord} );
+                return Arrays.asList( coord );
             }
 
             @Override
@@ -309,7 +299,8 @@ public class GraphDatabaseServiceExecuteTest
     private static CRS makeWGS84()
     {
         // "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/"
-        return new CRS() {
+        return new CRS()
+        {
             @Override
             public int getCode()
             {
@@ -336,13 +327,13 @@ public class GraphDatabaseServiceExecuteTest
         public Stream<PointResult> spatialPoint( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
         {
             Point point = makeFakePoint( longitude, latitude, makeWGS84() );
-            return Stream.of( new PointResult(point) );
+            return Stream.of( new PointResult( point ) );
         }
         @Procedure( "spatial.pointGeometry" )
         public Stream<GeometryResult> spatialPointGeometry( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
         {
             Geometry geometry = makeFakePointAsGeometry( longitude, latitude, makeWGS84() );
-            return Stream.of( new GeometryResult(geometry) );
+            return Stream.of( new GeometryResult( geometry ) );
         }
     }
 

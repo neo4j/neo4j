@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
@@ -33,23 +33,17 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
  */
 public class DirectIndexUpdates implements IndexUpdates
 {
-    private final Iterable<NodePropertyUpdate> updates;
+    private final Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates;
 
-    public DirectIndexUpdates( Iterable<NodePropertyUpdate> updates )
+    public DirectIndexUpdates( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates )
     {
         this.updates = updates;
     }
 
     @Override
-    public Iterator<NodePropertyUpdate> iterator()
+    public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
     {
         return updates.iterator();
-    }
-
-    @Override
-    public void collectUpdatedNodeIds( PrimitiveLongSet target )
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override

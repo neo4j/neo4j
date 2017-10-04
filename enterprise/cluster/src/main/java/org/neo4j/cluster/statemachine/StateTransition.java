@@ -57,31 +57,26 @@ public class StateTransition
     @Override
     public boolean equals( Object o )
     {
-        if( this == o )
+        if ( this == o )
         {
             return true;
         }
-        if( o == null || getClass() != o.getClass() )
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
 
         StateTransition that = (StateTransition) o;
 
-        if( !message.equals( that.message ) )
+        if ( !message.equals( that.message ) )
         {
             return false;
         }
-        if( !newState.equals( that.newState ) )
+        if ( !newState.equals( that.newState ) )
         {
             return false;
         }
-        if( !oldState.equals( that.oldState ) )
-        {
-            return false;
-        }
-
-        return true;
+        return oldState.equals( that.oldState );
     }
 
     @Override
@@ -96,13 +91,14 @@ public class StateTransition
     @Override
     public String toString()
     {
-        if (message.getPayload() instanceof String)
-            return getOldState().toString()+
-                   "-["+getMessage().getMessageType()+":"+getMessage().getPayload()+"]->"+
-                   getNewState().toString();
+        if ( message.getPayload() instanceof String )
+        {
+            return getOldState().toString() + "-[" + getMessage().getMessageType() + ":" + getMessage().getPayload() +
+                    "]->" + getNewState().toString();
+        }
         else
-            return getOldState().toString()+
-                   "-["+getMessage().getMessageType()+"]->"+
-                   getNewState().toString();
+        {
+            return getOldState().toString() + "-[" + getMessage().getMessageType() + "]->" + getNewState().toString();
+        }
     }
 }

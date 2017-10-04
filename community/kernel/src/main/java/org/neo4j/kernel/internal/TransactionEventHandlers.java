@@ -49,7 +49,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 public class TransactionEventHandlers
         implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
 {
-    protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
+    private final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
     private final NodeActions nodeActions;
     private final RelationshipActions relationshipActions;
@@ -124,7 +124,7 @@ public class TransactionEventHandlers
         {
             try
             {
-                handlerStates.add( handler, handler.beforeCommit( txData ) );
+                handlerStates.add( handler ).setState( handler.beforeCommit( txData ) );
             }
             catch ( Throwable t )
             {
@@ -136,7 +136,7 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void afterCommit( ReadableTransactionState state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
@@ -153,7 +153,7 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void afterRollback( ReadableTransactionState state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
@@ -178,11 +178,15 @@ public class TransactionEventHandlers
     public static class HandlerAndState
     {
         private final TransactionEventHandler handler;
-        private final Object state;
+        private Object state;
 
-        public HandlerAndState( TransactionEventHandler<?> handler, Object state )
+        public HandlerAndState( TransactionEventHandler<?> handler )
         {
             this.handler = handler;
+        }
+
+        void setState( Object state )
+        {
             this.state = state;
         }
     }
@@ -215,9 +219,11 @@ public class TransactionEventHandlers
             return error;
         }
 
-        public void add( TransactionEventHandler<?> handler, Object state )
+        public HandlerAndState add( TransactionEventHandler<?> handler )
         {
-            states.add( new HandlerAndState( handler, state ) );
+            HandlerAndState result = new HandlerAndState( handler );
+            states.add( result );
+            return result;
         }
     }
 

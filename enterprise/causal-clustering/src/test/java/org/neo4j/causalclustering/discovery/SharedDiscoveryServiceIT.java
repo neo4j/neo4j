@@ -19,9 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,10 +30,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.NullLogProvider;
@@ -53,12 +53,12 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class SharedDiscoveryServiceIT
 {
     private static final long TIMEOUT_MS = 15_000;
-    private static final long RUN_TIME_MS = 1000;;
+    private static final long RUN_TIME_MS = 1000;
 
     private NullLogProvider logProvider = NullLogProvider.getInstance();
     private NullLogProvider userLogProvider = NullLogProvider.getInstance();
 
-    @Test(timeout = TIMEOUT_MS)
+    @Test( timeout = TIMEOUT_MS )
     public void shouldDiscoverCompleteTargetSetWithoutDeadlocks() throws Exception
     {
         // given
@@ -89,23 +89,26 @@ public class SharedDiscoveryServiceIT
         }
     }
 
-    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory, Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
+    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory,
+            Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
     {
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
+        HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member,
-                jobScheduler, logProvider, userLogProvider );
+        CoreTopologyService topologyService = disoveryServiceFactory
+                .coreTopologyService( config(), member, jobScheduler, logProvider, userLogProvider, hostnameResolver,
+                        new TopologyServiceNoRetriesStrategy() );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 
     private Config config()
     {
-        return new Config( stringMap(
+        return Config.defaults( stringMap(
                 CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
                 CausalClusteringSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
-                new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true",
-                new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );
+                new BoltConnector( "bolt" ).enabled.name(), "true",
+                new BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );
     }
 
     private Callable<Void> sharedClientStarter( CoreTopologyService topologyService, Set<MemberId> expectedTargetSet )
@@ -116,11 +119,12 @@ public class SharedDiscoveryServiceIT
             {
                 RaftMachine raftMock = mock( RaftMachine.class );
                 topologyService.start();
-                topologyService.addCoreTopologyListener( new RaftDiscoveryServiceConnector( topologyService, raftMock ) );
+                topologyService.addCoreTopologyListener( new RaftCoreTopologyConnector( topologyService, raftMock ) );
 
                 assertEventually( "should discover complete target set", () ->
                 {
-                    ArgumentCaptor<Set<MemberId>> targetMembers = ArgumentCaptor.forClass( (Class<Set<MemberId>>) expectedTargetSet.getClass() );
+                    ArgumentCaptor<Set<MemberId>> targetMembers =
+                            ArgumentCaptor.forClass( (Class<Set<MemberId>>) expectedTargetSet.getClass() );
                     verify( raftMock, atLeastOnce() ).setTargetMembershipSet( targetMembers.capture() );
                     return targetMembers.getValue();
                 }, equalTo( expectedTargetSet ), TIMEOUT_MS, MILLISECONDS );

@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -72,31 +72,35 @@ public class ConversationTest
         assertFalse( conversation.isActive() );
     }
 
-    @Test(timeout = 3000)
+    @Test( timeout = 3000 )
     public void conversationCanNotBeStoppedAndClosedConcurrently() throws InterruptedException
     {
         final CountDownLatch answerLatch = new CountDownLatch( 1 );
         final CountDownLatch stopLatch = new CountDownLatch( 1 );
         final CountDownLatch stopReadyLatch = new CountDownLatch( 1 );
         final int sleepTime = 1000;
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             stopReadyLatch.countDown();
             stopLatch.await();
             TimeUnit.MILLISECONDS.sleep( sleepTime );
             return null;
         } ).when( client ).stop();
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             answerLatch.countDown();
             return null;
         } ).when( client ).close();
 
-        threadingRule.execute( conversation -> {
+        threadingRule.execute( conversation ->
+        {
             conversation.stop();
             return null;
         }, conversation );
 
         stopReadyLatch.await();
-        threadingRule.execute( conversation -> {
+        threadingRule.execute( conversation ->
+        {
             conversation.close();
             return null;
         }, conversation );

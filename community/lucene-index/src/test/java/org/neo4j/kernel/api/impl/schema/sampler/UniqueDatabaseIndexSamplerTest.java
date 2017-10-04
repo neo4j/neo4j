@@ -56,7 +56,8 @@ public class UniqueDatabaseIndexSamplerTest
     @Test
     public void uniqueSamplingCancel() throws IndexNotFoundKernelException
     {
-        when( indexSearcher.getIndexReader().numDocs() ).thenAnswer( invocation -> {
+        when( indexSearcher.getIndexReader().numDocs() ).thenAnswer( invocation ->
+        {
             taskControl.cancel();
             return 17;
         } );

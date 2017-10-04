@@ -129,7 +129,7 @@ public class JmxKernelExtension implements Lifecycle
             }
             return bean;
         }
-        throw new NotFoundException( "No management bean found for "+type.getName() );
+        throw new NotFoundException( "No management bean found for " + type.getName() );
     }
 
     public <T> Collection<T> getManagementBeans( Class<T> beanInterface )

@@ -23,6 +23,10 @@ import org.neo4j.shell.ShellException;
 
 public class JSONParser
 {
+    private JSONParser()
+    {
+    }
+
     public static Object parse( String json ) throws ShellException
     {
         try
@@ -46,7 +50,8 @@ public class JSONParser
                 return null;
             }
             return value;
-        } catch ( JSONException e )
+        }
+        catch ( JSONException e )
         {
             throw new ShellException( "Could not parse value " + json + " " + e.getMessage() );
         }

@@ -59,10 +59,17 @@ public class InputRelationshipReader extends InputEntityReader<InputRelationship
         Object type;
         switch ( typeMode )
         {
-        case SAME_TYPE: type = state.previousType; break;
-        case NEW_TYPE: type = state.previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN, channel ); break;
-        case HAS_TYPE_ID: type = channel.getInt(); break;
-        default: throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
+        case SAME_TYPE:
+            type = state.previousType;
+            break;
+        case NEW_TYPE:
+            type = state.previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN, channel );
+            break;
+        case HAS_TYPE_ID:
+            type = channel.getInt();
+            break;
+        default:
+            throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
         }
 
         return new InputRelationship( sourceDescription(), lineNumber(), position(),

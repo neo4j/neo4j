@@ -23,37 +23,33 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class PopulatingIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final IndexConfiguration configuration;
     private final IndexPopulationJob job;
 
     public PopulatingIndexProxy( IndexDescriptor descriptor,
-                                 IndexConfiguration configuration,
                                  SchemaIndexProvider.Descriptor providerDescriptor,
                                  IndexPopulationJob job )
     {
         this.descriptor = descriptor;
-        this.configuration = configuration;
         this.providerDescriptor = providerDescriptor;
         this.job = job;
     }
@@ -73,7 +69,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
                     {
                         job.update( update );
                     }
@@ -82,7 +78,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
                     {
                         throw new IllegalArgumentException( "Unsupported update mode: " + mode );
                     }
@@ -100,6 +96,12 @@ public class PopulatingIndexProxy implements IndexProxy
     public IndexDescriptor getDescriptor()
     {
         return descriptor;
+    }
+
+    @Override
+    public LabelSchemaDescriptor schema()
+    {
+        return descriptor.schema();
     }
 
     @Override
@@ -154,7 +156,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public ResourceIterator<File> snapshotFiles()
     {
-        return emptyIterator();
+        return emptyResourceIterator();
     }
 
     @Override
@@ -170,12 +172,6 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexConfiguration config()
-    {
-        return configuration;
-    }
-
-    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[job:" + job + "]";
@@ -186,12 +182,6 @@ public class PopulatingIndexProxy implements IndexProxy
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-        }
-
-        @Override
-        public void remove( PrimitiveLongSet nodeIds )
-        {
-            throw new UnsupportedOperationException( "Should not remove() from populating index." );
         }
     }
 }

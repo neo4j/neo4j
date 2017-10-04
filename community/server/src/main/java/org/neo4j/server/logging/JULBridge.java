@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.logging;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
-
 import java.text.MessageFormat;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -32,6 +28,10 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
+
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
 
 public class JULBridge extends Handler
 {
@@ -82,7 +82,8 @@ public class JULBridge extends Handler
         if ( throwable == null )
         {
             logger.log( message );
-        } else
+        }
+        else
         {
             logger.log( message, throwable );
         }
@@ -94,13 +95,16 @@ public class JULBridge extends Handler
         if ( level <= Level.FINE.intValue() )
         {
             return log.debugLogger();
-        } else if ( level <= Level.INFO.intValue() )
+        }
+        else if ( level <= Level.INFO.intValue() )
         {
             return log.infoLogger();
-        } else if ( level <= Level.WARNING.intValue() )
+        }
+        else if ( level <= Level.WARNING.intValue() )
         {
             return log.warnLogger();
-        } else
+        }
+        else
         {
             return log.errorLogger();
         }
@@ -135,7 +139,8 @@ public class JULBridge extends Handler
             try
             {
                 message = bundle.getString( message );
-            } catch ( MissingResourceException e )
+            }
+            catch ( MissingResourceException e )
             {
                 // leave message as it was
             }

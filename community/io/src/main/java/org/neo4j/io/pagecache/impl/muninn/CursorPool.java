@@ -19,15 +19,30 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+
 final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 {
     private final MuninnPagedFile pagedFile;
     private final long victimPage;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private PageCacheTracer pageCacheTracer;
 
-    CursorPool( MuninnPagedFile pagedFile )
+    /**
+     * Cursor pool construction
+     * @param pagedFile paged file for which pool is created
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracers that will
+     * provide thread local page cache statistics
+     * @param pageCacheTracer global page cache tracer
+     */
+    CursorPool( MuninnPagedFile pagedFile, PageCursorTracerSupplier pageCursorTracerSupplier, PageCacheTracer pageCacheTracer )
     {
         this.pagedFile = pagedFile;
         this.victimPage = pagedFile.pageCache.victimPage;
+        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -54,7 +69,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
     {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage );
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage, getPageCursorTracer() );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }
@@ -77,9 +92,16 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
     {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage );
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage, getPageCursorTracer() );
         cursor.initialiseFile( pagedFile );
         return cursor;
+    }
+
+    private PageCursorTracer getPageCursorTracer()
+    {
+        PageCursorTracer pageCursorTracer = pageCursorTracerSupplier.get();
+        pageCursorTracer.init( pageCacheTracer );
+        return pageCursorTracer;
     }
 
     static class CursorSets

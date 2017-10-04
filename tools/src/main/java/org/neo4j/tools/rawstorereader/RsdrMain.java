@@ -44,29 +44,20 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.tools.util.TransactionLogUtils;
 
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 /**
  * Tool to read raw data from various stores.
  */
 public class RsdrMain
 {
-    private static final FileSystemAbstraction files = new DefaultFileSystemAbstraction();
+
     private static final Console console = System.console();
     private static final Pattern readCommandPattern = Pattern.compile( "r" + // 'r' means read command
             "((?<lower>\\d+)?,(?<upper>\\d+)?)?\\s+" + // optional record id range bounds, followed by whitespace
@@ -74,43 +65,52 @@ public class RsdrMain
             "(\\s*\\|\\s*(?<regex>.+))?" // a pipe signifies a regex to filter records by
     );
 
+    private RsdrMain()
+    {
+    }
+
     public static void main( String[] args ) throws IOException
     {
-        console.printf("Neo4j Raw Store Diagnostics Reader%n");
-
-        if ( args.length != 1 || !files.isDirectory( new File( args[0] ) ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            console.printf("Usage: rsdr <store directory>%n");
-            return;
-        }
+            console.printf( "Neo4j Raw Store Diagnostics Reader%n" );
 
-        File storedir = new File( args[0] );
+            if ( args.length != 1 || !fileSystem.isDirectory( new File( args[0] ) ) )
+            {
+                console.printf( "Usage: rsdr <store directory>%n" );
+                return;
+            }
 
-        Config config = buildConfig();
-        try ( PageCache pageCache = createPageCache( files, config ) )
-        {
-            StoreFactory factory = openStore( new File( storedir, MetaDataStore.DEFAULT_NAME ), config, pageCache );
-            NeoStores neoStores = factory.openAllNeoStores();
-            interact( neoStores );
+            File storedir = new File( args[0] );
+
+            Config config = buildConfig();
+            try ( PageCache pageCache = createPageCache( fileSystem, config ) )
+            {
+                File neoStore = new File( storedir, MetaDataStore.DEFAULT_NAME );
+                StoreFactory factory = openStore( fileSystem, neoStore, config, pageCache );
+                NeoStores neoStores = factory.openAllNeoStores();
+                interact( fileSystem, neoStores );
+            }
         }
     }
 
     private static Config buildConfig()
     {
-        return new Config( MapUtil.stringMap(
+        return Config.defaults( MapUtil.stringMap(
                 GraphDatabaseSettings.read_only.name(), "true",
                 GraphDatabaseSettings.pagecache_memory.name(), "64M"
         ) );
     }
 
-    private static StoreFactory openStore( File storeDir, Config config, PageCache pageCache )
+    private static StoreFactory openStore( FileSystemAbstraction fileSystem, File storeDir, Config config,
+            PageCache pageCache )
     {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( files );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, files, logProvider );
+        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider );
     }
 
-    private static void interact( NeoStores neoStores ) throws IOException
+    private static void interact( FileSystemAbstraction fileSystem, NeoStores neoStores ) throws IOException
     {
         printHelp();
 
@@ -118,7 +118,7 @@ public class RsdrMain
         do
         {
             cmd = console.readLine( "neo? " );
-        } while ( execute( cmd, neoStores ) );
+        } while ( execute( fileSystem, cmd, neoStores ) );
         System.exit( 0 );
     }
 
@@ -133,7 +133,8 @@ public class RsdrMain
                 "  q            quit%n" );
     }
 
-    private static boolean execute( String cmd, NeoStores neoStores ) throws IOException
+    private static boolean execute( FileSystemAbstraction fileSystem, String cmd, NeoStores neoStores )
+            throws IOException
     {
         if ( cmd == null || cmd.equals( "q" ) )
         {
@@ -145,11 +146,11 @@ public class RsdrMain
         }
         else if ( cmd.equals( "l" ) )
         {
-            listFiles( neoStores );
+            listFiles( fileSystem, neoStores );
         }
         else if ( cmd.startsWith( "r" ) )
         {
-            read( cmd, neoStores );
+            read( fileSystem, cmd, neoStores );
         }
         else if ( !cmd.trim().isEmpty() )
         {
@@ -158,17 +159,17 @@ public class RsdrMain
         return true;
     }
 
-    private static void listFiles( NeoStores neoStores )
+    private static void listFiles( FileSystemAbstraction fileSystem, NeoStores neoStores )
     {
         File storedir = neoStores.getStoreDir();
-        File[] listing = files.listFiles( storedir );
+        File[] listing = fileSystem.listFiles( storedir );
         for ( File file : listing )
         {
             console.printf( "%s%n", file.getName() );
         }
     }
 
-    private static void read( String cmd, NeoStores neoStores ) throws IOException
+    private static void read( FileSystemAbstraction fileSystem, String cmd, NeoStores neoStores ) throws IOException
     {
         Matcher matcher = readCommandPattern.matcher( cmd );
         if ( matcher.find() )
@@ -177,18 +178,18 @@ public class RsdrMain
             String upper = matcher.group( "upper" );
             String fname = matcher.group( "fname" );
             String regex = matcher.group( "regex" );
-            Pattern pattern = regex != null? Pattern.compile( regex ) : null;
-            long fromId = lower != null? Long.parseLong( lower ) : 0L;
+            Pattern pattern = regex != null ? Pattern.compile( regex ) : null;
+            long fromId = lower != null ? Long.parseLong( lower ) : 0L;
             long toId = upper != null ? Long.parseLong( upper ) : Long.MAX_VALUE;
 
             RecordStore store = getStore( fname, neoStores );
             if ( store != null )
             {
-                readStore( store, fromId, toId, pattern );
+                readStore( fileSystem, store, fromId, toId, pattern );
                 return;
             }
 
-            IOCursor<LogEntry> cursor = getLogCursor( fname, neoStores );
+            IOCursor<LogEntry> cursor = getLogCursor( fileSystem, fname, neoStores );
             if ( cursor != null )
             {
                 readLog( cursor, fromId, toId, pattern );
@@ -204,11 +205,11 @@ public class RsdrMain
         }
     }
 
-    private static void readStore(
+    private static void readStore( FileSystemAbstraction fileSystem,
             RecordStore store, long fromId, long toId, Pattern pattern ) throws IOException
     {
         toId = Math.min( toId, store.getHighId() );
-        try ( StoreChannel channel = files.open( store.getStorageFileName(), "r" ) )
+        try ( StoreChannel channel = fileSystem.open( store.getStorageFileName(), "r" ) )
         {
             int recordSize = store.getRecordSize();
             ByteBuffer buf = ByteBuffer.allocate( recordSize );
@@ -233,7 +234,7 @@ public class RsdrMain
                 try
                 {
                     AbstractBaseRecord record = RecordStore.getRecord( store, i, CHECK );
-                    use = record.inUse()? "+" : "-";
+                    use = record.inUse() ? "+" : "-";
                     str = record.toString();
                 }
                 catch ( InvalidRecordException e )
@@ -275,19 +276,11 @@ public class RsdrMain
         }
     }
 
-    private static IOCursor<LogEntry> getLogCursor( String fname, NeoStores neoStores ) throws IOException
+    private static IOCursor<LogEntry> getLogCursor( FileSystemAbstraction fileSystem, String fname,
+            NeoStores neoStores ) throws IOException
     {
-        File file = new File( neoStores.getStoreDir(), fname );
-        StoreChannel fileChannel = files.open( file, "r" );
-        LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, false, file );
-        console.printf( "Logical log version: %s with prev committed tx[%s]%n",
-                logHeader.logVersion, logHeader.lastCommittedTxId );
-
-        PhysicalLogVersionedStoreChannel channel =
-                new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        return new LogEntryCursor( logEntryReader, logChannel );
+        return TransactionLogUtils
+                .openLogEntryCursor( fileSystem, new File( neoStores.getStoreDir(), fname ), NO_MORE_CHANNELS );
     }
 
     private static void readLog(

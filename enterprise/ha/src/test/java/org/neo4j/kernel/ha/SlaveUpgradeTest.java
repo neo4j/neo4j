@@ -46,7 +46,7 @@ public class SlaveUpgradeTest
         try
         {
             File dir = testDirectory.directory( "haShouldFailToStartWithOldStore" );
-            MigrationTestUtils.find20FormatStoreDirectory( dir );
+            MigrationTestUtils.find23FormatStoreDirectory( dir );
 
             new TestHighlyAvailableGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( dir )

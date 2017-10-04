@@ -61,8 +61,8 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable
     {
         this.cache = cacheFactory.newDynamicLongArray( chunkSize, 0 );
         this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5, 0 ); // expect way less of these
-        this.bitsPerLabel = max( Integer.SIZE-numberOfLeadingZeros( highLabelId ), 1 );
-        this.worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId+1 /*length slot*/)) - 1) / Long.SIZE + 1;
+        this.bitsPerLabel = max( Integer.SIZE - numberOfLeadingZeros( highLabelId ), 1 );
+        this.worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId + 1 /*length slot*/)) - 1) / Long.SIZE + 1;
         this.putClient = new Client( worstCaseLongsNeeded );
     }
 
@@ -139,7 +139,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable
         }
 
         int length = client.fieldBits.getInt( bitsPerLabel );
-        int longsInUse = ((bitsPerLabel * (length+1))-1) / Long.SIZE + 1;
+        int longsInUse = ((bitsPerLabel * (length + 1)) - 1) / Long.SIZE + 1;
         target = ensureCapacity( target, length );
         if ( longsInUse == 1 )
         {

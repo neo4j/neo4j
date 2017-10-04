@@ -35,7 +35,7 @@ public abstract class InputEntityDeserialization<ENTITY extends InputEntity> imp
 {
     protected final SourceTraceability source;
 
-    private Object[] properties = new Object[10*2];
+    private Object[] properties = new Object[10 * 2];
     private int propertiesCursor;
 
     public InputEntityDeserialization( SourceTraceability source )
@@ -47,7 +47,7 @@ public abstract class InputEntityDeserialization<ENTITY extends InputEntity> imp
     {
         if ( value != null )
         {
-            ensurePropertiesArrayCapacity( propertiesCursor+2 );
+            ensurePropertiesArrayCapacity( propertiesCursor + 2 );
             properties[propertiesCursor++] = name;
             properties[propertiesCursor++] = value;
         }

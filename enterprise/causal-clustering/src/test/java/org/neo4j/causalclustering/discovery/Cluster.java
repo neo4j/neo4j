@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.LeaderCanWrite;
@@ -54,13 +54,12 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.DbRepresentation;
 
-import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.concurrent.Futures.combine;
@@ -68,31 +67,25 @@ import static org.neo4j.function.Predicates.await;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
 public class Cluster
 {
-    private static final int DEFAULT_TIMEOUT_MS = 25_000;
+    private static final int DEFAULT_TIMEOUT_MS = 120_000;
     private static final int DEFAULT_CLUSTER_SIZE = 3;
 
-    private final File parentDir;
-    private final DiscoveryServiceFactory discoveryServiceFactory;
-    private final String listenAddress;
-    private final String advertisedAddress;
+    protected final File parentDir;
+    private final Map<String,String> coreParams;
+    private final Map<String,IntFunction<String>> instanceCoreParams;
+    private final Map<String,String> readReplicaParams;
+    private final Map<String,IntFunction<String>> instanceReadReplicaParams;
+    private final String recordFormat;
+    protected final DiscoveryServiceFactory discoveryServiceFactory;
+    protected final String listenAddress;
+    protected final String advertisedAddress;
 
     private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
-
-    public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
-            DiscoveryServiceFactory discoveryServiceFactory,
-            Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
-            Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
-            String recordFormat )
-    {
-        this( parentDir, noOfCoreMembers, noOfReadReplicas, discoveryServiceFactory, coreParams,
-                instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, IpFamily.IPV4, false );
-    }
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
             DiscoveryServiceFactory discoveryServiceFactory,
@@ -102,16 +95,24 @@ public class Cluster
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
-        HashSet<Integer> coreServerIds = new HashSet<>();
-        for ( int i = 0; i < noOfCoreMembers; i++ )
-        {
-            coreServerIds.add( i );
-        }
+        this.coreParams = coreParams;
+        this.instanceCoreParams = instanceCoreParams;
+        this.readReplicaParams = readReplicaParams;
+        this.instanceReadReplicaParams = instanceReadReplicaParams;
+        this.recordFormat = recordFormat;
         listenAddress = useWildcard ? ipFamily.wildcardAddress() : ipFamily.localhostAddress();
         advertisedAddress = ipFamily.localhostName();
-        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreServerIds );
+        List<AdvertisedSocketAddress> initialHosts = initialHosts( noOfCoreMembers );
         createCoreMembers( noOfCoreMembers, initialHosts, coreParams, instanceCoreParams, recordFormat );
         createReadReplicas( noOfReadReplicas, initialHosts, readReplicaParams, instanceReadReplicaParams, recordFormat );
+    }
+
+    private List<AdvertisedSocketAddress> initialHosts( int noOfCoreMembers )
+    {
+        return IntStream.range( 0, noOfCoreMembers )
+                .mapToObj( ignored -> PortAuthority.allocatePort() )
+                .map( port -> new AdvertisedSocketAddress( advertisedAddress, port ) )
+                .collect( toList() );
     }
 
     public void start() throws InterruptedException, ExecutionException
@@ -148,36 +149,62 @@ public class Cluster
 
     public CoreClusterMember addCoreMemberWithId( int memberId )
     {
-        return addCoreMemberWithId( memberId, stringMap(), emptyMap(), StandardV3_0.NAME );
+        return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
+    }
+
+    private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams,
+            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
+    {
+        List<AdvertisedSocketAddress> initialHosts = extractInitialHosts( coreMembers );
+        CoreClusterMember coreClusterMember = createCoreClusterMember(
+                memberId,
+                PortAuthority.allocatePort(),
+                DEFAULT_CLUSTER_SIZE,
+                initialHosts,
+                recordFormat,
+                extraParams,
+                instanceExtraParams
+        );
+
+        coreMembers.put( memberId, coreClusterMember );
+        return coreClusterMember;
     }
 
     public ReadReplica addReadReplicaWithIdAndRecordFormat( int memberId, String recordFormat )
     {
-        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
-        ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory, initialHosts,
-                stringMap(), emptyMap(), recordFormat, new Monitors(), advertisedAddress, listenAddress );
-        readReplicas.put( memberId, member );
-        return member;
+        return addReadReplica( memberId, recordFormat, new Monitors() );
     }
 
     public ReadReplica addReadReplicaWithId( int memberId )
     {
-        return addReadReplicaWithIdAndRecordFormat( memberId, StandardV3_0.NAME );
+        return addReadReplicaWithIdAndRecordFormat( memberId, recordFormat );
     }
 
     public ReadReplica addReadReplicaWithIdAndMonitors( @SuppressWarnings( "SameParameterValue" ) int memberId, Monitors monitors )
     {
-        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
-        ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory, initialHosts,
-                stringMap(), emptyMap(), StandardV3_0.NAME, monitors, advertisedAddress, listenAddress );
+        return addReadReplica( memberId, recordFormat, monitors );
+    }
+
+    private ReadReplica addReadReplica( int memberId, String recordFormat, Monitors monitors )
+    {
+        List<AdvertisedSocketAddress> initialHosts = extractInitialHosts( coreMembers );
+        ReadReplica member = createReadReplica(
+                memberId,
+                initialHosts,
+                readReplicaParams,
+                instanceReadReplicaParams,
+                recordFormat,
+                monitors
+        );
+
         readReplicas.put( memberId, member );
         return member;
     }
 
     public void shutdown() throws ExecutionException, InterruptedException
     {
-        shutdownReadReplicas();
         shutdownCoreMembers();
+        shutdownReadReplicas();
     }
 
     public void shutdownCoreMembers() throws InterruptedException, ExecutionException
@@ -295,7 +322,7 @@ public class Cluster
     public int numberOfCoreMembersReportedByTopology()
     {
         CoreClusterMember aCoreGraphDb = coreMembers.values().stream()
-                .filter( ( member ) -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
+                .filter( member -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
         return coreTopologyService.coreServers().members().size();
@@ -308,16 +335,6 @@ public class Cluster
     {
         // this currently wraps the leader-only strategy, since it is the recommended and only approach
         return leaderTx( op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
-    }
-
-    private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
-    {
-        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
-        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialHosts,
-                discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
-                listenAddress, advertisedAddress );
-        coreMembers.put( memberId, coreClusterMember );
-        return coreClusterMember;
     }
 
     /**
@@ -388,27 +405,95 @@ public class Cluster
                LockSessionExpired;
     }
 
-    private List<AdvertisedSocketAddress> buildInitialHosts( Set<Integer> coreServerIds )
+    private List<AdvertisedSocketAddress> extractInitialHosts( Map<Integer,CoreClusterMember> coreMembers )
     {
-        return coreServerIds.stream().map( this::discoveryAddressForServer ).collect( toList() );
-    }
-
-    private AdvertisedSocketAddress discoveryAddressForServer( int id )
-    {
-        return new AdvertisedSocketAddress( advertisedAddress, (5000 + id) );
+        return coreMembers.values().stream()
+                .map( CoreClusterMember::discoveryPort )
+                .map( port -> new AdvertisedSocketAddress( advertisedAddress, port ) )
+                .collect( toList() );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,
-            List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams,
+            List<AdvertisedSocketAddress> initialHosts, Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        for ( int i = 0; i < noOfCoreMembers; i++ )
+        for ( int i = 0; i < initialHosts.size(); i++ )
         {
-            CoreClusterMember coreClusterMember = new CoreClusterMember( i, noOfCoreMembers, addresses,
-                    discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
-                    listenAddress, advertisedAddress );
+            int discoveryListenAddress = initialHosts.get( i ).getPort();
+            CoreClusterMember coreClusterMember = createCoreClusterMember(
+                    i,
+                    discoveryListenAddress,
+                    noOfCoreMembers,
+                    initialHosts,
+                    recordFormat,
+                    extraParams,
+                    instanceExtraParams
+            );
             coreMembers.put( i, coreClusterMember );
         }
+    }
+
+    protected CoreClusterMember createCoreClusterMember( int serverId,
+                                                       int hazelcastPort,
+                                                       int clusterSize,
+                                                       List<AdvertisedSocketAddress> initialHosts,
+                                                       String recordFormat,
+                                                       Map<String, String> extraParams,
+                                                       Map<String, IntFunction<String>> instanceExtraParams )
+    {
+        int txPort = PortAuthority.allocatePort();
+        int raftPort = PortAuthority.allocatePort();
+        int boltPort = PortAuthority.allocatePort();
+        int httpPort = PortAuthority.allocatePort();
+        int backupPort = PortAuthority.allocatePort();
+
+        return new CoreClusterMember(
+                serverId,
+                hazelcastPort,
+                txPort,
+                raftPort,
+                boltPort,
+                httpPort,
+                backupPort,
+                clusterSize,
+                initialHosts,
+                discoveryServiceFactory,
+                recordFormat,
+                parentDir,
+                extraParams,
+                instanceExtraParams,
+                listenAddress,
+                advertisedAddress
+        );
+    }
+
+    private ReadReplica createReadReplica( int serverId,
+                                           List<AdvertisedSocketAddress> initialHosts,
+                                           Map<String, String> extraParams,
+                                           Map<String, IntFunction<String>> instanceExtraParams,
+                                           String recordFormat,
+                                           Monitors monitors )
+    {
+        int boltPort = PortAuthority.allocatePort();
+        int httpPort = PortAuthority.allocatePort();
+        int txPort = PortAuthority.allocatePort();
+        int backupPort = PortAuthority.allocatePort();
+
+        return new ReadReplica(
+                parentDir,
+                serverId,
+                boltPort,
+                httpPort,
+                txPort,
+                backupPort, discoveryServiceFactory,
+                initialHosts,
+                extraParams,
+                instanceExtraParams,
+                recordFormat,
+                monitors,
+                advertisedAddress,
+                listenAddress
+        );
     }
 
     private void startCoreMembers( ExecutorService executor ) throws InterruptedException, ExecutionException
@@ -450,15 +535,23 @@ public class Cluster
     }
 
     private void createReadReplicas( int noOfReadReplicas,
-            final List<AdvertisedSocketAddress> coreMemberAddresses,
+            final List<AdvertisedSocketAddress> initialHosts,
             Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams,
             String recordFormat )
     {
         for ( int i = 0; i < noOfReadReplicas; i++ )
         {
-            readReplicas.put( i, new ReadReplica( parentDir, i, discoveryServiceFactory, coreMemberAddresses, extraParams,
-                    instanceExtraParams, recordFormat, new Monitors(), advertisedAddress, listenAddress ) );
+            ReadReplica readReplica = createReadReplica(
+                    i,
+                    initialHosts,
+                    extraParams,
+                    instanceExtraParams,
+                    recordFormat,
+                    new Monitors()
+            );
+
+            readReplicas.put( i, readReplica );
         }
     }
 

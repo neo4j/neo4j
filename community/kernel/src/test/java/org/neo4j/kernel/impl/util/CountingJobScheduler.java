@@ -25,6 +25,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.scheduler.JobScheduler;
+
 public class CountingJobScheduler implements JobScheduler
 {
     private final AtomicInteger counter;

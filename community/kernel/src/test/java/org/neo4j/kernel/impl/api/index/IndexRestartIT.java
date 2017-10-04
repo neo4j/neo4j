@@ -31,9 +31,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -66,8 +66,8 @@ public class IndexRestartIT
     public void before() throws Exception
     {
         factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Collections.singletonList(
+        factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
+        factory.setKernelExtensions( Collections.singletonList(
             singleInstanceSchemaIndexProviderFactory( "test", provider )
         ) );
     }
@@ -148,7 +148,7 @@ public class IndexRestartIT
 
     private IndexDefinition createIndex()
     {
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
             tx.success();

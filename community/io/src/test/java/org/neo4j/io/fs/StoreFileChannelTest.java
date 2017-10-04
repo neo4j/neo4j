@@ -19,13 +19,19 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.Test;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Test;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
-import static org.mockito.Mockito.*;
 
 public class StoreFileChannelTest
 {

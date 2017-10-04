@@ -39,8 +39,8 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,8 +49,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
@@ -83,11 +81,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     public void releaseWriteLockWaitersOnStop()
     {
         // given
-        clientA.acquireShared( NODE, 1L );
-        clientB.acquireShared( NODE, 2L );
-        clientC.acquireShared( NODE, 3L );
-        acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
-        acquireExclusive( clientC, NODE, 1L ).callAndAssertWaiting();
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientB.acquireShared( LockTracer.NONE, NODE, 2L );
+        clientC.acquireShared( LockTracer.NONE, NODE, 3L );
+        acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientC, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientC.stop();
@@ -103,9 +101,9 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test
     public void releaseReadLockWaitersOnStop()
     {  // given
-        clientA.acquireExclusive( NODE, 1L );
-        clientB.acquireExclusive( NODE, 2L );
-        acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
+        clientB.acquireExclusive( LockTracer.NONE, NODE, 2L );
+        acquireShared( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientB.stop();
@@ -120,13 +118,13 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test( expected = LockClientStoppedException.class )
     public void acquireSharedThrowsWhenClientStopped()
     {
-        stoppedClient().acquireShared( ResourceTypes.NODE, 1 );
+        stoppedClient().acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void acquireExclusiveThrowsWhenClientStopped()
     {
-        stoppedClient().acquireExclusive( ResourceTypes.NODE, 1 );
+        stoppedClient().acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
@@ -358,14 +356,14 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private AcquiredLock acquireSharedLockInThisThread()
     {
-        client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
+        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
         assertLocksHeld( RESOURCE_ID );
         return AcquiredLock.shared( client, RESOURCE_TYPE, RESOURCE_ID );
     }
 
     private AcquiredLock acquireExclusiveLockInThisThread()
     {
-        client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
+        client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
         assertLocksHeld( RESOURCE_ID );
         return AcquiredLock.exclusive( client, RESOURCE_TYPE, RESOURCE_ID );
     }
@@ -384,22 +382,18 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
+        Future<Void> future = threadA.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            Locks.Client client = newLockClient( lockAcquisition );
+            if ( shared )
             {
-                Locks.Client client = newLockClient( lockAcquisition );
-                if ( shared )
-                {
-                    client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
-                }
-                else
-                {
-                    client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
-                }
-                return null;
+                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
             }
+            else
+            {
+                client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+            }
+            return null;
         } );
         lockAcquisition.setFuture( future, threadA.get() );
 
@@ -411,48 +405,44 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
+        Future<Void> future = threadA.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
-                try ( Locks.Client client = newLockClient( lockAcquisition ) )
+                try
                 {
-                    try
+                    if ( firstShared )
                     {
-                        if ( firstShared )
-                        {
-                            client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
-                        }
-                        else
-                        {
-                            client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
-                        }
-                        fail( "Transaction termination expected" );
-                    }
-                    catch ( Exception e )
-                    {
-                        assertThat( e, instanceOf( LockClientStoppedException.class ) );
-                    }
-                }
-
-                lockAcquisition.setClient( null );
-                firstLockFailed.countDown();
-                await( startSecondLock );
-
-                try ( Locks.Client client = newLockClient( lockAcquisition ) )
-                {
-                    if ( secondShared )
-                    {
-                        client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
+                        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                     }
                     else
                     {
-                        client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
+                        client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                     }
+                    fail( "Transaction termination expected" );
                 }
-                return null;
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( LockClientStoppedException.class ) );
+                }
             }
+
+            lockAcquisition.setClient( null );
+            firstLockFailed.countDown();
+            await( startSecondLock );
+
+            try ( Locks.Client client = newLockClient( lockAcquisition ) )
+            {
+                if ( secondShared )
+                {
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                }
+                else
+                {
+                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                }
+            }
+            return null;
         } );
         lockAcquisition.setFuture( future, threadA.get() );
 
@@ -464,22 +454,18 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
+        Future<Void> future = threadA.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
-                try ( Locks.Client client = newLockClient( lockAcquisition ) )
-                {
-                    client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
 
-                    sharedLockAcquired.countDown();
-                    await( startExclusiveLock );
+                sharedLockAcquired.countDown();
+                await( startExclusiveLock );
 
-                    client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
-                }
-                return null;
+                client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
             }
+            return null;
         } );
         lockAcquisition.setFuture( future, threadA.get() );
 
@@ -491,35 +477,31 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
+        Future<Void> future = threadA.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
-                try ( Locks.Client client = newLockClient( lockAcquisition ) )
+                if ( shared )
                 {
-                    if ( shared )
-                    {
-                        client.acquireShared( RESOURCE_TYPE, OTHER_RESOURCE_ID );
-                    }
-                    else
-                    {
-                        client.acquireExclusive( RESOURCE_TYPE, OTHER_RESOURCE_ID );
-                    }
-
-                    firstLockAcquired.countDown();
-
-                    if ( shared )
-                    {
-                        client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
-                    }
-                    else
-                    {
-                        client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
-                    }
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
                 }
-                return null;
+                else
+                {
+                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
+                }
+
+                firstLockAcquired.countDown();
+
+                if ( shared )
+                {
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                }
+                else
+                {
+                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                }
             }
+            return null;
         } );
         lockAcquisition.setFuture( future, threadA.get() );
 

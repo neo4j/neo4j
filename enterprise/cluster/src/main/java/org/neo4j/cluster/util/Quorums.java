@@ -21,9 +21,13 @@ package org.neo4j.cluster.util;
 
 public class Quorums
 {
+    private Quorums()
+    {
+    }
+
     /** Determines if a number of available members qualify as a majority, given the total number of members. */
     public static boolean isQuorum( long availableMembers, long totalMembers )
     {
-        return availableMembers >= Math.floor((totalMembers/2) + 1);
+        return availableMembers >= Math.floor( (totalMembers / 2) + 1 );
     }
 }

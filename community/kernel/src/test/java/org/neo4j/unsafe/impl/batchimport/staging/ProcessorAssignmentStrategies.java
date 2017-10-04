@@ -39,6 +39,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class ProcessorAssignmentStrategies
 {
+
+    private ProcessorAssignmentStrategies()
+    {
+    }
+
     /**
      * Right of the bat assigns all permitted processors to random steps that allow multiple threads.
      */
@@ -101,7 +106,7 @@ public class ProcessorAssignmentStrategies
                 }
 
                 Random random = ThreadLocalRandom.current();
-                int maxThisCheck = random.nextInt( processors-1 )+1;
+                int maxThisCheck = random.nextInt( processors - 1 ) + 1;
                 for ( Step<?> step : execution.steps() )
                 {
                     int before = step.processors( 0 );

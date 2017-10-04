@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
@@ -32,7 +33,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 /**
- * This has all the functionality of an embedded database, with the addition of services
+ * This has all the functionality of an Enterprise Edition embedded database, with the addition of services
  * for handling clustering.
  */
 public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
@@ -41,6 +42,12 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         newHighlyAvailableFacadeFactory().initFacade( storeDir, params, dependencies, this );
+    }
+
+    public HighlyAvailableGraphDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        newHighlyAvailableFacadeFactory().initFacade( storeDir, config, dependencies, this );
     }
 
     // used for testing in a different project, please do not remove
@@ -66,6 +73,6 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 
     public File getStoreDirectory()
     {
-        return new File( getStoreDir() );
+        return getStoreDir();
     }
 }

@@ -25,12 +25,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Supplier;
 
-import org.neo4j.function.Suppliers;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.values.storable.Value;
 
 public class PropertyBlock implements Cloneable
 {
@@ -94,7 +93,7 @@ public class PropertyBlock implements Cloneable
 
     public List<DynamicRecord> getValueRecords()
     {
-        return valueRecords != null ? valueRecords : Collections.<DynamicRecord>emptyList();
+        return valueRecords != null ? valueRecords : Collections.emptyList();
     }
 
     public long getSingleValueBlock()
@@ -138,8 +137,8 @@ public class PropertyBlock implements Cloneable
     public void setValueBlocks( long[] blocks )
     {
         int expectedPayloadSize = PropertyType.getPayloadSizeLongs();
-        assert ( blocks == null || blocks.length <= expectedPayloadSize) : (
-                "I was given an array of size " + blocks.length +", but I wanted it to be " + expectedPayloadSize );
+        assert blocks == null || blocks.length <= expectedPayloadSize :
+                "I was given an array of size " + blocks.length + ", but I wanted it to be " + expectedPayloadSize;
         this.valueBlocks = blocks;
         if ( valueRecords != null )
         {
@@ -163,7 +162,7 @@ public class PropertyBlock implements Cloneable
     @Override
     public String toString()
     {
-        StringBuilder result = new StringBuilder("PropertyBlock[");
+        StringBuilder result = new StringBuilder( "PropertyBlock[" );
         PropertyType type = getType();
         if ( valueBlocks != null )
         {
@@ -180,7 +179,7 @@ public class PropertyBlock implements Cloneable
                 result.append( ",firstDynamic=" ).append( getSingleValueLong() );
                 break;
             default:
-                Object value = type.getValue( this, null );
+                Object value = type.value( this, null ).asObject();
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );
@@ -246,14 +245,15 @@ public class PropertyBlock implements Cloneable
         return Arrays.equals( valueBlocks, other.valueBlocks );
     }
 
-    public DefinedProperty newPropertyData( PropertyStore propertyStore )
+    public Value newPropertyValue( PropertyStore propertyStore )
     {
-        return newPropertyData( Suppliers.singleton( propertyStore ) );
+        return getType().value( this, propertyStore );
     }
 
-    public DefinedProperty newPropertyData( Supplier<PropertyStore> propertyStore )
+    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore )
     {
-        return getType().readProperty( getKeyIndexId(), this, propertyStore );
+        int propertyKeyId = getKeyIndexId();
+        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore ) );
     }
 
     public static int keyIndexId( long valueBlock )

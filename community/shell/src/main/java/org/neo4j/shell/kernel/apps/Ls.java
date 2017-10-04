@@ -217,7 +217,9 @@ public class Ls extends TransactionProvidingApp
     {
         List<String> labelNames = new ArrayList<String>();
         for ( Label label : thing.asNode().getLabels() )
+        {
             labelNames.add( label.name() );
+        }
 
         if ( brief )
         {
@@ -228,7 +230,9 @@ public class Ls extends TransactionProvidingApp
             for ( String label : sortKeys( labelNames ) )
             {
                 if ( filterMatches( filterMap, caseInsensitiveFilters, looseFilters, label, "" ) )
+                {
                     out.println( ":" + label );
+                }
             }
         }
     }
@@ -241,7 +245,7 @@ public class Ls extends TransactionProvidingApp
         boolean sortByType = parser.options().containsKey( "s" );
         Node node = thing.asNode();
         Iterable<Relationship> relationships = getRelationships( node, filterMap,
-                caseInsensitiveFilters, looseFilters, sortByType|brief );
+                caseInsensitiveFilters, looseFilters, sortByType | brief );
         if ( brief )
         {
             Iterator<Relationship> iterator = relationships.iterator();
@@ -314,10 +318,10 @@ public class Ls extends TransactionProvidingApp
     {
         private final int maxRelsPerType;
         private final Map<String, AtomicInteger> encounteredRelationships = new HashMap<String, AtomicInteger>();
-        private int typesMaxedOut = 0;
+        private int typesMaxedOut;
         private final AtomicBoolean iterationHalted;
 
-        public LimitPerTypeFilter( int maxRelsPerType, Map<String, Direction> types, AtomicBoolean handBreak )
+        LimitPerTypeFilter( int maxRelsPerType, Map<String,Direction> types, AtomicBoolean handBreak )
         {
             this.maxRelsPerType = maxRelsPerType;
             this.iterationHalted = handBreak;
@@ -367,7 +371,8 @@ public class Ls extends TransactionProvidingApp
             else
             {
                 Path nodeAsPath = Paths.singleNodePath( node );
-                return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters ).expand( nodeAsPath, BranchState.NO_STATE );
+                return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters,
+                        looseFilters ).expand( nodeAsPath, BranchState.NO_STATE );
             }
         }
     }

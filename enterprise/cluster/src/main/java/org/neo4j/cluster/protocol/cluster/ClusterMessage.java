@@ -87,12 +87,7 @@ public enum ClusterMessage
             {
                 return false;
             }
-            if ( !joiningUri.equals( that.joiningUri ) )
-            {
-                return false;
-            }
-
-            return true;
+            return joiningUri.equals( that.joiningUri );
         }
 
         @Override
@@ -158,7 +153,7 @@ public enum ClusterMessage
 
         public ConfigurationResponseState snapshot()
         {
-            return new ConfigurationResponseState( new HashMap<>(roles), new HashMap<>(nodes),
+            return new ConfigurationResponseState( new HashMap<>( roles ), new HashMap<>( nodes ),
                     latestReceivedInstanceId, clusterName );
         }
 
@@ -200,12 +195,7 @@ public enum ClusterMessage
             {
                 return false;
             }
-            if ( roles != null ? !roles.equals( that.roles ) : that.roles != null )
-            {
-                return false;
-            }
-
-            return true;
+            return roles != null ? roles.equals( that.roles ) : that.roles == null;
         }
 
         @Override
@@ -333,10 +323,14 @@ public enum ClusterMessage
                 return "Change cluster config, leave:" + leave;
             }
 
-            if (roleWon != null)
+            if ( roleWon != null )
+            {
                 return "Change cluster config, elected:" + winner + " as " + roleWon;
+            }
             else
+            {
                 return "Change cluster config, unelected:" + loser + " as " + roleWon;
+            }
         }
 
         @Override
@@ -377,12 +371,7 @@ public enum ClusterMessage
             {
                 return false;
             }
-            if ( winner != null ? !winner.equals( that.winner ) : that.winner != null )
-            {
-                return false;
-            }
-
-            return true;
+            return winner != null ? winner.equals( that.winner ) : that.winner == null;
         }
 
         @Override
@@ -459,7 +448,7 @@ public enum ClusterMessage
     {
         private final int remainingPings;
 
-        public ConfigurationTimeoutState( int remainingPings)
+        public ConfigurationTimeoutState( int remainingPings )
         {
             this.remainingPings = remainingPings;
         }
@@ -483,12 +472,7 @@ public enum ClusterMessage
 
             ConfigurationTimeoutState that = (ConfigurationTimeoutState) o;
 
-            if ( remainingPings != that.remainingPings )
-            {
-                return false;
-            }
-
-            return true;
+            return remainingPings == that.remainingPings;
         }
 
         @Override

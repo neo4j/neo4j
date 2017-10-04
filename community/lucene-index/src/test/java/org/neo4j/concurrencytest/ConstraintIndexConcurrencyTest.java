@@ -26,19 +26,24 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.properties.Property.property;
 
 public class ConstraintIndexConcurrencyTest
 {
@@ -68,17 +73,18 @@ public class ConstraintIndexConcurrencyTest
         }
 
         // When
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx();
+              Statement statement = statementSupplier.get() )
         {
-            // create a statement and perform a lookup
-            Statement statement = statementSupplier.get();
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            statement.readOperations().nodesGetFromIndexSeek( new IndexDescriptor( labelId, propertyKeyId ),
-                    "The value is irrelevant, we just want to perform some sort of lookup against this index" );
+            IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
+            statement.readOperations().indexQuery( index, IndexQuery.exact( index.schema().getPropertyId(),
+                    "The value is irrelevant, we just want to perform some sort of lookup against this index" ) );
 
             // then let another thread come in and create a node
-            threads.execute( db -> {
+            threads.execute( db ->
+            {
                 try ( Transaction transaction = db.beginTx() )
                 {
                     db.createNode( label ).setProperty( propertyKey, conflictingValue );
@@ -93,16 +99,16 @@ public class ConstraintIndexConcurrencyTest
             statement.dataWriteOperations().nodeAddLabel( node, labelId );
             try
             {
-                statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, conflictingValue ) );
+                statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( conflictingValue ) );
 
                 fail( "exception expected" );
             }
             // Then
-            catch ( UniquePropertyConstraintViolationKernelException e )
+            catch ( UniquePropertyValueValidationException e )
             {
-                assertEquals( labelId, e.labelId() );
-                assertEquals( propertyKeyId, e.propertyKeyId() );
-                assertEquals( conflictingValue, e.propertyValue() );
+                assertEquals( ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), e.constraint() );
+                IndexEntryConflictException conflict = Iterators.single( e.conflicts().iterator() );
+                assertEquals( Values.stringValue( conflictingValue ), conflict.getSinglePropertyValue() );
             }
 
             tx.success();

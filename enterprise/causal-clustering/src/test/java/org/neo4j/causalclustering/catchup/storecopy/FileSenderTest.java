@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
@@ -48,7 +49,7 @@ public class FileSenderTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( fsRule.get());
+    public TestDirectory testDirectory = TestDirectory.testDirectory( fsRule.get() );
 
     private final FileSystemAbstraction fs = fsRule.get();
     private final Random random = new Random();
@@ -60,7 +61,7 @@ public class FileSenderTest
         // given
         File emptyFile = testDirectory.file( "emptyFile" );
         fs.create( emptyFile ).close();
-        FileSender fileSender = new FileSender(fs.open( emptyFile, "r" ));
+        FileSender fileSender = new FileSender( fs.open( emptyFile, "r" ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -77,7 +78,7 @@ public class FileSenderTest
         random.nextBytes( bytes );
 
         File smallFile = testDirectory.file( "smallFile" );
-        try( StoreChannel storeChannel = fs.create( smallFile ) )
+        try ( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
@@ -100,17 +101,18 @@ public class FileSenderTest
         random.nextBytes( bytes );
 
         File smallFile = testDirectory.file( "smallFile" );
-        try( StoreChannel storeChannel = fs.create( smallFile ) )
+        try ( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender(fs.open( smallFile, "r" ));
+        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
         assertEquals( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ), fileSender.readChunk( allocator ) );
-        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, bytes.length ), true ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, bytes.length ), true ),
+                fileSender.readChunk( allocator ) );
         assertNull( fileSender.readChunk( allocator ) );
         assertTrue( fileSender.isEndOfInput() );
     }
@@ -123,7 +125,7 @@ public class FileSenderTest
         random.nextBytes( bytes );
 
         File smallFile = testDirectory.file( "smallFile" );
-        try( StoreChannel storeChannel = fs.create( smallFile ) )
+        try ( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
@@ -133,10 +135,117 @@ public class FileSenderTest
         // when + then
         assertFalse( fileSender.isEndOfInput() );
         assertEquals( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ), fileSender.readChunk( allocator ) );
-        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, MAX_SIZE * 2 ), false ), fileSender.readChunk( allocator ) );
-        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, MAX_SIZE * 2 ), false ),
+                fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ),
+                fileSender.readChunk( allocator ) );
         assertNull( fileSender.readChunk( allocator ) );
         assertTrue( fileSender.isEndOfInput() );
+    }
+
+    @Test
+    public void sendEmptyFileWhichGrowsBeforeSendCommences() throws Exception
+    {
+        // given
+        File file = testDirectory.file( "file" );
+        StoreChannel writer = fs.create( file );
+        StoreChannel reader = fs.open( file, "r" );
+        FileSender fileSender = new FileSender( reader );
+
+        // when
+        byte[] bytes = writeRandomBytes( writer, 1024 );
+
+        // then
+        assertFalse( fileSender.isEndOfInput() );
+        assertEquals( FileChunk.create( bytes, true ), fileSender.readChunk( allocator ) );
+        assertTrue( fileSender.isEndOfInput() );
+        assertNull( fileSender.readChunk( allocator ) );
+    }
+
+    @Test
+    public void sendEmptyFileWhichGrowsWithPartialChunkSizes() throws Exception
+    {
+        // given
+        File file = testDirectory.file( "file" );
+        StoreChannel writer = fs.create( file );
+        StoreChannel reader = fs.open( file, "r" );
+        FileSender fileSender = new FileSender( reader );
+
+        // when
+        byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
+        byte[] chunkB = writeRandomBytes( writer, MAX_SIZE / 2 );
+
+        // then
+        assertEquals( FileChunk.create( chunkA, false ), fileSender.readChunk( allocator ) );
+        assertFalse( fileSender.isEndOfInput() );
+
+        // when
+        writeRandomBytes( writer, MAX_SIZE / 2 );
+
+        // then
+        assertEquals( FileChunk.create( chunkB, true ), fileSender.readChunk( allocator ) );
+        assertTrue( fileSender.isEndOfInput() );
+        assertNull( fileSender.readChunk( allocator ) );
+    }
+
+    @Test
+    public void sendFileWhichGrowsAfterLastChunkWasSent() throws Exception
+    {
+        // given
+        File file = testDirectory.file( "file" );
+        StoreChannel writer = fs.create( file );
+        StoreChannel reader = fs.open( file, "r" );
+        FileSender fileSender = new FileSender( reader );
+
+        // when
+        byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
+        FileChunk readChunkA = fileSender.readChunk( allocator );
+
+        // then
+        assertEquals( FileChunk.create( chunkA, true ), readChunkA );
+        assertTrue( fileSender.isEndOfInput() );
+
+        // when
+        writeRandomBytes( writer, MAX_SIZE );
+
+        // then
+        assertTrue( fileSender.isEndOfInput() );
+        assertNull( fileSender.readChunk( allocator ) );
+    }
+
+    @Test
+    public void sendLargerFileWhichGrows() throws Exception
+    {
+        // given
+        File file = testDirectory.file( "file" );
+        StoreChannel writer = fs.create( file );
+        StoreChannel reader = fs.open( file, "r" );
+        FileSender fileSender = new FileSender( reader );
+
+        // when
+        byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
+        byte[] chunkB = writeRandomBytes( writer, MAX_SIZE );
+        FileChunk readChunkA = fileSender.readChunk( allocator );
+
+        // then
+        assertEquals( FileChunk.create( chunkA, false ), readChunkA );
+        assertFalse( fileSender.isEndOfInput() );
+
+        // when
+        byte[] chunkC = writeRandomBytes( writer, MAX_SIZE );
+        FileChunk readChunkB = fileSender.readChunk( allocator );
+
+        // then
+        assertEquals( FileChunk.create( chunkB, false ), readChunkB );
+        assertFalse( fileSender.isEndOfInput() );
+
+        // when
+        FileChunk readChunkC = fileSender.readChunk( allocator );
+        assertEquals( FileChunk.create( chunkC, true ), readChunkC );
+
+        // then
+        assertTrue( fileSender.isEndOfInput() );
+        assertNull( fileSender.readChunk( allocator ) );
     }
 
     @Test
@@ -147,7 +256,7 @@ public class FileSenderTest
         random.nextBytes( bytes );
 
         File smallFile = testDirectory.file( "smallFile" );
-        try( StoreChannel storeChannel = fs.create( smallFile ) )
+        try ( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
@@ -163,5 +272,13 @@ public class FileSenderTest
         assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ), fileSender.readChunk( allocator ) );
         assertNull( fileSender.readChunk( allocator ) );
         assertTrue( fileSender.isEndOfInput() );
+    }
+
+    private byte[] writeRandomBytes( StoreChannel writer, int size ) throws IOException
+    {
+        byte[] bytes = new byte[size];
+        random.nextBytes( bytes );
+        writer.writeAll( ByteBuffer.wrap( bytes ) );
+        return bytes;
     }
 }

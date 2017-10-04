@@ -54,7 +54,8 @@ public class ResponsePacker
     {
         final long toStartFrom = context.lastAppliedTransaction() + 1;
         final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
-        TransactionStream transactions = visitor -> {
+        TransactionStream transactions = visitor ->
+        {
             // Check so that it's even worth thinking about extracting any transactions at all
             if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
             {
@@ -86,7 +87,8 @@ public class ResponsePacker
     protected Visitor<CommittedTransactionRepresentation,Exception> filterVisitor(
             final Visitor<CommittedTransactionRepresentation,Exception> delegate, final long txToEndAt )
     {
-        return element -> {
+        return element ->
+        {
             if ( element.getCommitEntry().getTxId() > txToEndAt )
             {
                 return false;

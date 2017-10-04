@@ -19,31 +19,42 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
+
 import static org.junit.Assert.assertEquals;
 
 public class AccessUniqueDatabaseIndexTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final File indexDirectory = new File( "index1" );
+    private final File storeDirectory = new File( "db" );
+    private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
     public void shouldAddUniqueEntries() throws Exception
@@ -128,48 +139,47 @@ public class AccessUniqueDatabaseIndexTest
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( index )
                 .withIndexStorage( indexStorage )
-                .uniqueIndex()
                 .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor( luceneIndex, new IndexDescriptor( 1, 1 ) );
+        return new LuceneIndexAccessor( luceneIndex, index );
     }
 
-    private PartitionedIndexStorage getIndexStorage() throws IOException
+    private PartitionedIndexStorage getIndexStorage()
     {
-        IndexStorageFactory storageFactory =
-                new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
+        IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystemRule.get(),
+                directoriesByProviderKey( storeDirectory ).forProvider( PROVIDER_DESCRIPTOR ) );
         return storageFactory.indexStorageOf( 1, false );
     }
 
-    private NodePropertyUpdate add( long nodeId, Object propertyValue )
+    private IndexEntryUpdate<?> add( long nodeId, Object propertyValue )
     {
-        return NodePropertyUpdate.add( nodeId, 100, propertyValue, new long[]{1000} );
+        return IndexQueryHelper.add( nodeId, index.schema(), propertyValue );
     }
 
-    private NodePropertyUpdate change( long nodeId, Object oldValue, Object newValue )
+    private IndexEntryUpdate<?> change( long nodeId, Object oldValue, Object newValue )
     {
-        return NodePropertyUpdate.change( nodeId, 100, oldValue, new long[]{1000}, newValue, new long[]{1000} );
+        return IndexQueryHelper.change( nodeId, index.schema(), oldValue, newValue );
     }
 
-    private NodePropertyUpdate remove( long nodeId, Object oldValue )
+    private IndexEntryUpdate<?> remove( long nodeId, Object oldValue )
     {
-        return NodePropertyUpdate.remove( nodeId, 100, oldValue, new long[]{1000} );
+        return IndexQueryHelper.remove( nodeId, index.schema(), oldValue );
     }
 
     private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
     {
         return AllNodesCollector.getAllNodes( indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) ),
-                propertyValue );
+                Values.stringValue( propertyValue ) );
     }
 
-    private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )
+    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
                 updater.process( update );
             }

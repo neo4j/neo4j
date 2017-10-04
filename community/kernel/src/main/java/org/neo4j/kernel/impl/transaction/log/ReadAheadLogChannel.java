@@ -30,6 +30,11 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
 {
     private final LogVersionBridge bridge;
 
+    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel )
+    {
+        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+    }
+
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge )
     {
         this( startingChannel, bridge, DEFAULT_READ_AHEAD_SIZE );
@@ -37,7 +42,7 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
 
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
     {
-        super(startingChannel, readAheadSize);
+        super( startingChannel, readAheadSize );
         this.bridge = bridge;
     }
 

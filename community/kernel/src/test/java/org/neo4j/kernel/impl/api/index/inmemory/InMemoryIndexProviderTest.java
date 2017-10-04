@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.io.File;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected SchemaIndexProvider createIndexProvider()
+    protected SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         return new InMemoryIndexProvider();
     }

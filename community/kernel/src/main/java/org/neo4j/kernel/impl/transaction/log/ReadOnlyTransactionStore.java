@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
@@ -52,24 +51,31 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
                 new ReadOnlyLogVersionRepository( pageCache, fromPath ),
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
+        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader,
+                monitors, true );
     }
 
     @Override
     public TransactionCursor getTransactions( long transactionIdToStartFrom )
-            throws NoSuchTransactionException, IOException
+            throws IOException
     {
         return physicalStore.getTransactions( transactionIdToStartFrom );
     }
 
     @Override
-    public TransactionCursor getTransactions( LogPosition position ) throws NoSuchTransactionException, IOException
+    public TransactionCursor getTransactions( LogPosition position ) throws IOException
     {
         return physicalStore.getTransactions( position );
     }
 
     @Override
-    public TransactionMetadata getMetadataFor( long transactionId ) throws NoSuchTransactionException, IOException
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws IOException
+    {
+        return physicalStore.getTransactionsInReverseOrder( backToPosition );
+    }
+
+    @Override
+    public TransactionMetadata getMetadataFor( long transactionId ) throws IOException
     {
         return physicalStore.getMetadataFor( transactionId );
     }

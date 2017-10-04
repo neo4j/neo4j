@@ -49,11 +49,11 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
     private final Map<Step<?>,Long/*done batches*/> lastChangedProcessors = new HashMap<>();
     private final int availableProcessors;
 
-    public DynamicProcessorAssigner( Configuration config, int availableProcessors )
+    public DynamicProcessorAssigner( Configuration config )
     {
-        super( 500, MILLISECONDS );
+        super( 100, MILLISECONDS );
         this.config = config;
-        this.availableProcessors = availableProcessors;
+        this.availableProcessors = config.maxNumberOfProcessors();
     }
 
     @Override
@@ -65,28 +65,24 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
     @Override
     public void check( StageExecution execution )
     {
-        int permits = availableProcessors - countActiveProcessors( execution );
         if ( execution.stillExecuting() )
         {
+            int permits = availableProcessors - countActiveProcessors( execution );
             if ( permits > 0 )
             {
                 // Be swift at assigning processors to slow steps, i.e. potentially multiple per round
-                permits -= assignProcessorsToPotentialBottleNeck( execution, permits );
+                assignProcessorsToPotentialBottleNeck( execution, permits );
             }
             // Be a little more conservative removing processors from too fast steps
-            if ( permits == 0 && removeProcessorFromPotentialIdleStep( execution ) )
-            {
-                permits++;
-            }
+            removeProcessorFromPotentialIdleStep( execution );
         }
     }
 
-    private int assignProcessorsToPotentialBottleNeck( StageExecution execution, int permits )
+    private void assignProcessorsToPotentialBottleNeck( StageExecution execution, int permits )
     {
         Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
         Step<?> bottleNeckStep = bottleNeck.first();
         long doneBatches = batches( bottleNeckStep );
-        int usedPermits = 0;
         if ( bottleNeck.other() > 1.0f &&
              batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {
@@ -98,13 +94,11 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             if ( after > before )
             {
                 lastChangedProcessors.put( bottleNeckStep, doneBatches );
-                usedPermits -= (after-before);
             }
         }
-        return usedPermits;
     }
 
-    private boolean removeProcessorFromPotentialIdleStep( StageExecution execution )
+    private void removeProcessorFromPotentialIdleStep( StageExecution execution )
     {
         for ( Pair<Step<?>,Float> fast : execution.stepsOrderedBy( Keys.avg_processing_time, true ) )
         {
@@ -118,7 +112,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             // be faster if we decremented the processor count, with a slight conservative margin as well
             // (0.8 instead of 1.0 so that we don't decrement and immediately become the bottleneck ourselves).
             float factorWithDecrementedProcessorCount =
-                    fast.other().floatValue()*numberOfProcessors/(numberOfProcessors-1);
+                    fast.other().floatValue() * numberOfProcessors / (numberOfProcessors - 1);
             if ( factorWithDecrementedProcessorCount < 0.8f )
             {
                 Step<?> fastestStep = fast.first();
@@ -129,12 +123,11 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
                     if ( fastestStep.processors( -1 ) < before )
                     {
                         lastChangedProcessors.put( fastestStep, doneBatches );
-                        return true;
+                        return;
                     }
                 }
             }
         }
-        return false;
     }
 
     private long avg( Step<?> step )

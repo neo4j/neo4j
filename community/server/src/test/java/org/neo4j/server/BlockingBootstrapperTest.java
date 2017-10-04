@@ -23,12 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,9 +50,8 @@ public class BlockingBootstrapperTest
 
         BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
         {
-            @SafeVarargs
             @Override
-            public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+            public int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
             {
                 running.set( true );
                 return 0;
@@ -65,8 +65,9 @@ public class BlockingBootstrapperTest
             }
         } );
 
-        new Thread( () -> {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null ) );
+        new Thread( () ->
+        {
+            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null, Collections.emptyMap() ) );
             exited.set( true );
         } ).start();
 
@@ -88,9 +89,8 @@ public class BlockingBootstrapperTest
 
         BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
         {
-            @SafeVarargs
             @Override
-            public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+            public int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
             {
                 return 1;
             }
@@ -102,8 +102,9 @@ public class BlockingBootstrapperTest
             }
         } );
 
-        new Thread( () -> {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null ) );
+        new Thread( () ->
+        {
+            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null, Collections.emptyMap() ) );
             exited.set( true );
         } ).start();
 

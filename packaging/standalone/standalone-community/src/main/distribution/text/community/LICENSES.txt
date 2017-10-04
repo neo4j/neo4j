@@ -6,10 +6,9 @@ Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons Lang
+  Apache Commons Text
   Caffeine cache
   ColorBrewer
-  Commons BeanUtils
-  Commons Digester
   Commons IO
   Commons Lang
   Commons Logging
@@ -320,7 +319,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
+  ASM Analysis
   ASM Core
+  ASM Tree
+  ASM Util
   D3.js
   Easing Equations (in easing.js)
   JLine

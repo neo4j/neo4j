@@ -19,46 +19,36 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import org.apache.lucene.index.Term;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import java.io.IOException;
+
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.hasToString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperty;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
 public class NonUniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final int PROPERTY_KEY = 42;
+    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptorFactory.forLabel( 1, 42 );
     private static final int SAMPLING_BUFFER_SIZE_LIMIT = 100;
-
-    @Test
-    public void removeNotSupported()
-    {
-        NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater();
-
-        try
-        {
-            updater.remove( PrimitiveLongCollections.setOf( 1, 2, 3 ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
-    }
+    private static final LabelSchemaDescriptor COMPOSITE_SCHEMA_DESCRIPTOR = SchemaDescriptorFactory
+            .forLabel( 1, 42, 43 );
 
     @Test
     public void addedNodePropertiesIncludedInSample() throws Exception
@@ -66,10 +56,23 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 4, PROPERTY_KEY, "bar", new long[]{1} ) );
+        updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
+        updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
+        updater.process( add( 3, SCHEMA_DESCRIPTOR, "baz" ) );
+        updater.process( add( 4, SCHEMA_DESCRIPTOR, "bar" ) );
+
+        verifySamplingResult( sampler, 4, 3, 4 );
+    }
+
+    @Test
+    public void addedNodeCompositePropertiesIncludedInSample() throws Exception
+    {
+        NonUniqueIndexSampler sampler = newSampler();
+        NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
+        updater.process( add( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "foo" ) );
+        updater.process( add( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
+        updater.process( add( 3, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "baz" ) );
+        updater.process( add( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
 
         verifySamplingResult( sampler, 4, 3, 4 );
     }
@@ -80,12 +83,30 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "initial1", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "initial2", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "new2", new long[]{1} ) );
+        updater.process( add( 1, SCHEMA_DESCRIPTOR, "initial1" ) );
+        updater.process( add( 2, SCHEMA_DESCRIPTOR, "initial2" ) );
+        updater.process( add( 3, SCHEMA_DESCRIPTOR, "new2" ) );
 
-        updater.process( change( 1, PROPERTY_KEY, "initial1", new long[]{1}, "new1", new long[]{1} ) );
-        updater.process( change( 1, PROPERTY_KEY, "initial2", new long[]{1}, "new2", new long[]{1} ) );
+        updater.process( change( 1, SCHEMA_DESCRIPTOR, "initial1", "new1" ) );
+        updater.process( change( 1, SCHEMA_DESCRIPTOR, "initial2", "new2" ) );
+
+        verifySamplingResult( sampler, 3, 2, 3 );
+    }
+
+    @Test
+    public void changedNodeCompositePropertiesIncludedInSample() throws Exception
+    {
+        NonUniqueIndexSampler sampler = newSampler();
+        NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
+
+        updater.process( add( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "initial1" ) );
+        updater.process( add( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "initial2" ) );
+        updater.process( add( 3, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "new2" ) );
+
+        updater.process( change( 1,
+                COMPOSITE_SCHEMA_DESCRIPTOR, new Object[]{"bit", "initial1"}, new Object[]{"bit", "new1"} ) );
+        updater.process( change( 1,
+                COMPOSITE_SCHEMA_DESCRIPTOR, new Object[]{"bit", "initial2"}, new Object[]{"bit", "new2"} ) );
 
         verifySamplingResult( sampler, 3, 2, 3 );
     }
@@ -96,14 +117,32 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 4, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
+        updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
+        updater.process( add( 3, SCHEMA_DESCRIPTOR, "baz" ) );
+        updater.process( add( 4, SCHEMA_DESCRIPTOR, "qux" ) );
 
-        updater.process( remove( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 4, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( remove( 1, SCHEMA_DESCRIPTOR, "foo" ) );
+        updater.process( remove( 2, SCHEMA_DESCRIPTOR, "bar" ) );
+        updater.process( remove( 4, SCHEMA_DESCRIPTOR, "qux" ) );
+
+        verifySamplingResult( sampler, 1, 1, 1 );
+    }
+
+    @Test
+    public void removedNodeCompositePropertyIncludedInSample() throws Exception
+    {
+        NonUniqueIndexSampler sampler = newSampler();
+        NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
+
+        updater.process( add( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "foo" ) );
+        updater.process( add( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
+        updater.process( add( 3, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "baz" ) );
+        updater.process( add( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "qux" ) );
+
+        updater.process( remove( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "foo" ) );
+        updater.process( remove( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
+        updater.process( remove( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "qux" ) );
 
         verifySamplingResult( sampler, 1, 1, 1 );
     }
@@ -114,19 +153,44 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( change( 1, PROPERTY_KEY, "foo", new long[]{1}, "newFoo1", new long[]{1} ) );
+        updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
+        updater.process( change( 1, SCHEMA_DESCRIPTOR, "foo", "newFoo1" ) );
 
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
+        updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
+        updater.process( remove( 2, SCHEMA_DESCRIPTOR, "bar" ) );
 
-        updater.process( change( 1, PROPERTY_KEY, "newFoo1", new long[]{1}, "newFoo2", new long[]{1} ) );
+        updater.process( change( 1, SCHEMA_DESCRIPTOR, "newFoo1", "newFoo2" ) );
 
-        updater.process( add( 42, PROPERTY_KEY, "qux", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 4, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 5, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 42, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 42, SCHEMA_DESCRIPTOR, "qux" ) );
+        updater.process( add( 3, SCHEMA_DESCRIPTOR, "bar" ) );
+        updater.process( add( 4, SCHEMA_DESCRIPTOR, "baz" ) );
+        updater.process( add( 5, SCHEMA_DESCRIPTOR, "bar" ) );
+        updater.process( remove( 42, SCHEMA_DESCRIPTOR, "qux" ) );
+
+        verifySamplingResult( sampler, 4, 3, 4 );
+    }
+
+    @Test
+    public void nodeCompositePropertyUpdatesIncludedInSample() throws Exception
+    {
+        NonUniqueIndexSampler sampler = newSampler();
+        NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
+
+        updater.process( add( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "foo" ) );
+        updater.process( change( 1,
+                COMPOSITE_SCHEMA_DESCRIPTOR, new Object[]{"bit", "foo"}, new Object[]{"bit", "newFoo1"} ) );
+
+        updater.process( add( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
+        updater.process( remove( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
+
+        updater.process( change( 1,
+                COMPOSITE_SCHEMA_DESCRIPTOR, new Object[]{"bit", "newFoo1"}, new Object[]{"bit", "newFoo2"} ) );
+
+        updater.process( add( 42, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "qux" ) );
+        updater.process( add( 3, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
+        updater.process( add( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "baz" ) );
+        updater.process( add( 5, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
+        updater.process( remove( 42, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "qux" ) );
 
         verifySamplingResult( sampler, 4, 3, 4 );
     }
@@ -137,13 +201,22 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "qux", new long[]{1} ) );
+        String expectedString1 = documentRepresentingProperties( 1, "foo" ).toString();
+        String expectedString2 = documentRepresentingProperties( 2, "bar" ).toString();
+        String expectedString3 = documentRepresentingProperties( 3, "qux" ).toString();
+        String expectedString4 = documentRepresentingProperties( 4, "git", "bit" ).toString();
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "foo" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "bar" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ), documentRepresentingProperty( 3, "qux" ) );
+        updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
+        verifydocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );
+
+        updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
+        verifydocument( writer, newTermForChangeOrRemove( 2 ), expectedString2 );
+
+        updater.process( add( 3, SCHEMA_DESCRIPTOR, "qux" ) );
+        verifydocument( writer, newTermForChangeOrRemove( 3 ), expectedString3 );
+
+        updater.process( add( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "git", "bit" ) );
+        verifydocument( writer, newTermForChangeOrRemove( 4 ), expectedString4 );
     }
 
     @Test
@@ -152,11 +225,24 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( change( 1, PROPERTY_KEY, "before1", new long[]{1}, "after1", new long[]{1} ) );
-        updater.process( change( 2, PROPERTY_KEY, "before2", new long[]{1}, "after2", new long[]{1} ) );
+        String expectedString1 = documentRepresentingProperties( 1, "after1" ).toString();
+        String expectedString2 = documentRepresentingProperties( 2, "after2" ).toString();
+        String expectedString3 = documentRepresentingProperties( 3, "bit", "after2" ).toString();
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "after1" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "after2" ) );
+        updater.process( change( 1, SCHEMA_DESCRIPTOR, "before1", "after1" ) );
+        verifydocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );
+
+        updater.process( change( 2, SCHEMA_DESCRIPTOR, "before2", "after2" ) );
+        verifydocument( writer, newTermForChangeOrRemove( 2 ), expectedString2 );
+
+        updater.process( change( 3,
+                COMPOSITE_SCHEMA_DESCRIPTOR, new Object[]{"bit", "before2"}, new Object[]{"bit", "after2"} ) );
+        verifydocument( writer, newTermForChangeOrRemove( 3 ), expectedString3 );
+    }
+
+    private void verifydocument( LuceneIndexWriter writer, Term eq, String documentString ) throws IOException
+    {
+        verify( writer ).updateDocument(  eq(eq), argThat( hasToString( documentString ) ) );
     }
 
     @Test
@@ -165,13 +251,17 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( remove( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
-
+        updater.process( remove( 1, SCHEMA_DESCRIPTOR, "foo" ) );
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 1 ) );
+
+        updater.process( remove( 2, SCHEMA_DESCRIPTOR, "bar" ) );
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 2 ) );
+
+        updater.process( remove( 3, SCHEMA_DESCRIPTOR, "baz" ) );
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 3 ) );
+
+        updater.process( remove( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "baz" ) );
+        verify( writer ).deleteDocuments( newTermForChangeOrRemove( 4 ) );
     }
 
     private static void verifySamplingResult( NonUniqueIndexSampler sampler, long expectedIndexSize,
@@ -182,11 +272,6 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         assertEquals( expectedIndexSize, sample.indexSize() );
         assertEquals( expectedUniqueValues, sample.uniqueValues() );
         assertEquals( expectedSampleSize, sample.sampleSize() );
-    }
-
-    private static NonUniqueLuceneIndexPopulatingUpdater newUpdater()
-    {
-        return newUpdater( newSampler() );
     }
 
     private static NonUniqueLuceneIndexPopulatingUpdater newUpdater( NonUniqueIndexSampler sampler )

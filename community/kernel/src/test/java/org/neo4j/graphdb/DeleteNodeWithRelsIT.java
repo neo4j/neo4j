@@ -40,10 +40,10 @@ public class DeleteNodeWithRelsIT
         GraphDatabaseService db = this.db.getGraphDatabaseAPI();
 
         Node node;
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            node.createRelationshipTo( db.createNode(), DynamicRelationshipType.withName( "MAYOR_OF" ) );
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "MAYOR_OF" ) );
             tx.success();
         }
 
@@ -54,8 +54,8 @@ public class DeleteNodeWithRelsIT
 
         // Expect
         exception.expect( ConstraintViolationException.class );
-        exception.expectMessage( "Cannot delete node<"+node.getId()+">, because it still has relationships. " +
-                                 "To delete this node, you must first delete its relationships." );
+        exception.expectMessage( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+                "To delete this node, you must first delete its relationships." );
 
         // When I commit
         tx.close();

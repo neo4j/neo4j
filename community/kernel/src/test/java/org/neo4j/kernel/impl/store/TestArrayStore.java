@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -43,6 +43,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -50,9 +51,11 @@ import static org.junit.Assert.assertTrue;
 public class TestArrayStore
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private DynamicArrayStore arrayStore;
     private NeoStores neoStores;
@@ -61,10 +64,10 @@ public class TestArrayStore
     public void before() throws Exception
     {
         File dir = testDirectory.graphDbDir();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        FileSystemAbstraction fs = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory factory = new StoreFactory( dir, Config.empty(), idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory( dir, Config.defaults(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();
@@ -92,7 +95,8 @@ public class TestArrayStore
     {
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7 }, PropertyType.LONG, 3 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.LONG, 4 );
-        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1000, 10000, 13000, 15000000000L }, PropertyType.LONG, 34 );
+        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[]{1000, 10000, 13000, 15000000000L},
+                PropertyType.LONG, 34 );
     }
 
     @Test

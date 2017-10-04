@@ -87,7 +87,7 @@ public class MethodTemplate
                     ExpressionTemplate.invokeSuperConstructor( new ExpressionTemplate[]{}, TypeReference.NO_TYPES ) );
         }
 
-        public Builder invokeSuper( ExpressionTemplate[] parameters, Class<?>[] parameterTypes)
+        public Builder invokeSuper( ExpressionTemplate[] parameters, Class<?>[] parameterTypes )
         {
             TypeReference[] references = new TypeReference[parameterTypes.length];
             for ( int i = 0; i < parameterTypes.length; i++ )
@@ -98,7 +98,7 @@ public class MethodTemplate
             return invokeSuper( parameters, references );
         }
 
-        public Builder invokeSuper( ExpressionTemplate[] parameters, TypeReference[] parameterTypes)
+        public Builder invokeSuper( ExpressionTemplate[] parameters, TypeReference[] parameterTypes )
         {
             return expression( ExpressionTemplate.invokeSuperConstructor( parameters, parameterTypes ) );
         }
@@ -164,7 +164,7 @@ public class MethodTemplate
             return this;
         }
 
-        public Builder modiferes(int modifiers)
+        public Builder modiferes( int modifiers )
         {
             this.modifiers = modifiers;
             return this;

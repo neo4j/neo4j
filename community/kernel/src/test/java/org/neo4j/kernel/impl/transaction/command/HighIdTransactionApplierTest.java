@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -44,7 +45,7 @@ public class HighIdTransactionApplierTest
     public void shouldUpdateHighIdsOnExternalTransaction() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
         // WHEN
@@ -74,9 +75,9 @@ public class HighIdTransactionApplierTest
 
         // Schema rules
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                NO_INDEX_PROVIDER.getProviderDescriptor(), 10, 0, 1 ) );
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 10, SchemaDescriptorFactory.forLabel( 0, 1 ) ) );
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                NO_INDEX_PROVIDER.getProviderDescriptor(), 20, 1, 2 ) );
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 20, SchemaDescriptorFactory.forLabel( 1, 2 ) ) );
 
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );
@@ -106,7 +107,7 @@ public class HighIdTransactionApplierTest
     public void shouldTrackSecondaryUnitIdsAsWell() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
         NodeRecord node = new NodeRecord( 5 ).initialize( true, 123, true, 456, 0 );
@@ -132,8 +133,8 @@ public class HighIdTransactionApplierTest
         tracker.close();
 
         // THEN
-        assertEquals( node.getSecondaryUnitId()+1, neoStores.getNodeStore().getHighId() );
-        assertEquals( relationship.getSecondaryUnitId()+1, neoStores.getRelationshipStore().getHighId() );
-        assertEquals( relationshipGroup.getSecondaryUnitId()+1, neoStores.getRelationshipGroupStore().getHighId() );
+        assertEquals( node.getSecondaryUnitId() + 1, neoStores.getNodeStore().getHighId() );
+        assertEquals( relationship.getSecondaryUnitId() + 1, neoStores.getRelationshipStore().getHighId() );
+        assertEquals( relationshipGroup.getSecondaryUnitId() + 1, neoStores.getRelationshipGroupStore().getHighId() );
     }
 }

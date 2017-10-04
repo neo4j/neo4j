@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,8 +27,12 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Paths;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -36,12 +41,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
+import static org.neo4j.io.fs.FileUtils.size;
 
 public class FileUtilsTest
 {
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     public ExpectedException expected = ExpectedException.none();
+    public FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Rule
     public RuleChain chain = RuleChain.outerRule( testDirectory ).around( expected );
@@ -217,6 +225,60 @@ public class FileUtilsTest
         File to   = new File( "/a/b" );
 
         assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/d/f" ) ) );
+    }
+
+    @Test
+    public void allMacsHaveHighIO() throws Exception
+    {
+        assumeTrue( SystemUtils.IS_OS_MAC );
+        assertTrue( FileUtils.highIODevice( Paths.get( "." ), false ) );
+    }
+
+    @Test
+    public void windowsNeverHaveHighIO() throws Exception
+    {
+        // Future work: Maybe we should do like on Mac and assume true on Windows as well?
+        assumeTrue( SystemUtils.IS_OS_WINDOWS );
+        assertFalse( FileUtils.highIODevice( Paths.get( "." ), false ) );
+    }
+
+    @Test
+    public void onLinuxDevShmHasHighIO() throws Exception
+    {
+        assumeTrue( SystemUtils.IS_OS_LINUX );
+        assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
+    }
+
+    @Test
+    public void sizeOfFile() throws Exception
+    {
+        File file = touchFile( "a" );
+
+        try ( FileWriter fileWriter = new FileWriter( file ) )
+        {
+            fileWriter.append( 'a' );
+        }
+
+        assertThat( size( fs, file ), is( 1L )  );
+    }
+
+    @Test
+    public void sizeOfDirector() throws Exception
+    {
+        File dir = directory( "dir" );
+        File file1 = new File( dir, "file1" );
+        File file2 = new File( dir, "file2" );
+
+        try ( FileWriter fileWriter = new FileWriter( file1 ) )
+        {
+            fileWriter.append( 'a' ).append( 'b' );
+        }
+        try ( FileWriter fileWriter = new FileWriter( file2 ) )
+        {
+            fileWriter.append( 'a' );
+        }
+
+        assertThat( size( fs, dir ), is( 3L ) );
     }
 
     private File directory( String name )

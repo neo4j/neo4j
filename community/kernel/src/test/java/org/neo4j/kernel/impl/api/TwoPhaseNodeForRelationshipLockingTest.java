@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
@@ -34,18 +33,17 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -62,6 +60,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
     {
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( state.lockTracer() ).thenReturn( LockTracer.NONE );
     }
 
     @Test
@@ -71,10 +70,10 @@ public class TwoPhaseNodeForRelationshipLockingTest
         Collector collector = new Collector();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( ops, collector );
 
-        returnRelationships( nodeId, false, 21L, 22L, 23L );
-        returnNodesForRelationship( 21L, nodeId, 43L );
-        returnNodesForRelationship( 22L, 40L, nodeId );
-        returnNodesForRelationship( 23L, nodeId, 41L );
+        RelationshipData relationship1 = new RelationshipData( 21L, nodeId, 43L );
+        RelationshipData relationship2 = new RelationshipData( 22L, 40L, nodeId );
+        RelationshipData relationship3 = new RelationshipData( 23L, nodeId, 41L );
+        returnRelationships( ops, state, nodeId, false, relationship1, relationship2, relationship3 );
 
         InOrder inOrder = inOrder( locks );
 
@@ -82,24 +81,25 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 43L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
     @Test
-    public void shouldLockNodesInOrderAndConsumeTheRelationshipsAndRetryIfTheNewRelationshipsAreCreated() throws Throwable
+    public void shouldLockNodesInOrderAndConsumeTheRelationshipsAndRetryIfTheNewRelationshipsAreCreated()
+            throws Throwable
     {
         // given
         Collector collector = new Collector();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( ops, collector );
 
-        returnRelationships( nodeId, true, 21L, 22L, 23L );
-        returnNodesForRelationship( 21L, nodeId, 43L );
-        returnNodesForRelationship( 22L, 40L, nodeId );
-        returnNodesForRelationship( 23L, nodeId, 41L );
+        RelationshipData relationship1 = new RelationshipData( 21L, nodeId, 43L );
+        RelationshipData relationship2 = new RelationshipData( 22L, 40L, nodeId );
+        RelationshipData relationship3 = new RelationshipData( 23L, nodeId, 41L );
+        returnRelationships( ops, state, nodeId, true, relationship1, relationship2, relationship3 );
 
         InOrder inOrder = inOrder( locks );
 
@@ -107,18 +107,18 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
 
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 40L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 41L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, nodeId );
 
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 43L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
@@ -127,82 +127,122 @@ public class TwoPhaseNodeForRelationshipLockingTest
     {
         Collector collector = new Collector();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( ops, collector );
-        returnRelationships( nodeId, false );
+        returnRelationships( ops, state, nodeId, false );
 
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
-        verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
+        verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
         verifyNoMoreInteractions( locks );
     }
 
-    private void returnNodesForRelationship( final long relId, final long startNodeId, final long endNodeId )
-            throws Exception
+    public static class RelationshipData
     {
-        doAnswer( new Answer<Void>()
+        public final long relId;
+        public final long startNodeId;
+        public final long endNodeId;
+
+        RelationshipData( long relId, long startNodeId, long endNodeId )
         {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                @SuppressWarnings( "unchecked" )
-                RelationshipVisitor<RuntimeException> visitor =
-                        (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
-                visitor.visit( relId, 6, startNodeId, endNodeId );
-                return null;
-            }
-        } ).when( ops ).relationshipVisit( eq( state ), eq( relId ), any( RelationshipVisitor.class ) );
+            this.relId = relId;
+            this.startNodeId = startNodeId;
+            this.endNodeId = endNodeId;
+        }
+
+        RelationshipItem asRelationshipItem()
+        {
+            RelationshipItem rel = mock( RelationshipItem.class );
+            when( rel.id() ).thenReturn( relId );
+            when( rel.startNode() ).thenReturn( startNodeId );
+            when( rel.endNode() ).thenReturn( endNodeId );
+            return rel;
+        }
     }
 
-    private void returnRelationships( long nodeId, final boolean skipFirst, final long... relIds )
-            throws EntityNotFoundException
+    static void returnRelationships( EntityReadOperations ops, KernelStatement state, long nodeId,
+            final boolean skipFirst, final RelationshipData... relIds ) throws EntityNotFoundException
     {
-        //noinspection unchecked
-        Cursor<NodeItem> cursor = mock( Cursor.class );
-        when( ops.nodeCursorById( state, nodeId ) ).thenReturn( cursor );
         NodeItem nodeItem = mock( NodeItem.class );
-        when( cursor.get() ).thenReturn( nodeItem );
-        when( nodeItem.getRelationships( Direction.BOTH ) ).thenAnswer( new Answer<RelationshipIterator>()
-        {
-            private boolean first = skipFirst;
-
-            @Override
-            public RelationshipIterator answer( InvocationOnMock invocation ) throws Throwable
-            {
-                try
+        when( ops.nodeGetRelationships( state, nodeItem, Direction.BOTH ) )
+                .thenAnswer( new Answer<Cursor<RelationshipItem>>()
                 {
-                    return new RelationshipIterator()
+                    private boolean first = skipFirst;
+
+                    @Override
+                    public Cursor<RelationshipItem> answer( InvocationOnMock invocation ) throws Throwable
                     {
-                        private int i = first ? 1 : 0;
-
-                        @Override
-                        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                                RelationshipVisitor<EXCEPTION> visitor )
+                        try
                         {
-                            throw new NotImplementedException( "don't call this!" );
-                        }
-
-                        @Override
-                        public boolean hasNext()
-                        {
-                            return i < relIds.length;
-                        }
-
-                        @Override
-                        public long next()
-                        {
-                            if ( !hasNext() )
+                            return new Cursor<RelationshipItem>()
                             {
-                                throw new NoSuchElementException();
-                            }
-                            return relIds[i++];
+                                private int i = first ? 1 : 0;
+                                private RelationshipData relationshipData;
+
+                                @Override
+                                public boolean next()
+                                {
+                                    boolean next = i < relIds.length;
+                                    relationshipData = next ? relIds[i++] : null;
+                                    return next;
+                                }
+
+                                @Override
+                                public RelationshipItem get()
+                                {
+                                    if ( relationshipData == null )
+                                    {
+                                        throw new NoSuchElementException();
+                                    }
+
+                                    return relationshipData.asRelationshipItem();
+                                }
+
+                                @Override
+                                public void close()
+                                {
+                                }
+                            };
                         }
-                    };
-                }
-                finally
+                        finally
+                        {
+                            first = false;
+                        }
+                    }
+                } );
+
+        when( ops.nodeCursorById( state, nodeId ) ).thenAnswer( invocationOnMock ->
+        {
+            Cursor<NodeItem> cursor = new Cursor<NodeItem>()
+            {
+                private int i;
+
+                @Override
+                public boolean next()
                 {
-                    first = false;
+                    return i++ == 0;
                 }
+
+                @Override
+                public NodeItem get()
+                {
+                    if ( i != 1 )
+                    {
+                        throw new NoSuchElementException();
+                    }
+                    return nodeItem;
+                }
+
+                @Override
+                public void close()
+                {
+
+                }
+            };
+            if ( !cursor.next() )
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
             }
-        });
+            return cursor;
+        } );
     }
 
     private static class Collector implements ThrowingConsumer<Long,KernelException>

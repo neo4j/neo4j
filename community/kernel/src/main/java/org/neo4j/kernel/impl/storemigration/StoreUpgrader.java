@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
@@ -30,17 +29,15 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static java.lang.String.format;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -101,7 +98,7 @@ public class StoreUpgrader
         this.participants.add( participant );
     }
 
-    public void migrateIfNeeded( File storeDirectory)
+    public void migrateIfNeeded( File storeDirectory )
     {
         File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
 
@@ -121,7 +118,7 @@ public class StoreUpgrader
         }
 
         // One or more participants would like to do migration
-        progressMonitor.started();
+        progressMonitor.started( participants.size() );
 
         MigrationStatus migrationStatus = MigrationStatus.readMigrationStatus( fileSystem, migrationStateFile );
         String versionToMigrateFrom = null;
@@ -142,15 +139,6 @@ public class StoreUpgrader
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
             moveMigratedFilesToStoreDirectory( participants, migrationDirectory, storeDirectory,
                     versionToMigrateFrom, upgradableDatabase.currentVersion() );
-            MigrationStatus.countsRebuilding.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
-        }
-
-        if ( MigrationStatus.countsRebuilding.isNeededFor( migrationStatus ) )
-        {
-            versionToMigrateFrom = MigrationStatus.countsRebuilding.maybeReadInfo(
-                    fileSystem, migrationStateFile, versionToMigrateFrom );
-            rebuildCountsInStoreDirectory( participants, storeDirectory, versionToMigrateFrom );
-            MigrationStatus.completed.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
         }
 
         cleanup( participants, migrationDirectory );
@@ -160,20 +148,14 @@ public class StoreUpgrader
 
     private boolean isUpgradeAllowed()
     {
-        return config.get( GraphDatabaseSettings.allow_store_upgrade );
+        return config.get( GraphDatabaseSettings.allow_upgrade );
     }
 
     private void cleanupLegacyLeftOverDirsIn( File storeDir )
     {
         final Pattern leftOverDirsPattern = Pattern.compile( MIGRATION_LEFT_OVERS_DIRECTORY + "(_\\d*)?" );
-        File[] leftOverDirs = storeDir.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File file, String name )
-            {
-                return file.isDirectory() && leftOverDirsPattern.matcher( name ).matches();
-            }
-        } );
+        File[] leftOverDirs = storeDir.listFiles(
+                ( file, name ) -> file.isDirectory() && leftOverDirsPattern.matcher( name ).matches() );
         if ( leftOverDirs != null )
         {
             for ( File leftOverDir : leftOverDirs )
@@ -215,35 +197,16 @@ public class StoreUpgrader
         }
     }
 
-    private void rebuildCountsInStoreDirectory( List<StoreMigrationParticipant> participants, File storeDirectory,
-            String versionToMigrateFrom )
-    {
-        try
-        {
-            for ( StoreMigrationParticipant participant : participants )
-            {
-                participant.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnableToUpgradeException( "Unable to move migrated files into place", e );
-        }
-    }
-
     private void migrateToIsolatedDirectory( File storeDir, File migrationDirectory, String versionToMigrateFrom )
     {
         try
         {
-            int index = 1;
             for ( StoreMigrationParticipant participant : participants )
             {
-                Section section = progressMonitor.startSection(
-                        format( "%s (%d/%d)", participant.getName(), index, participants.size() ) );
-                participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom,
+                ProgressReporter progressReporter = progressMonitor.startSection( participant.getName() );
+                participant.migrate( storeDir, migrationDirectory, progressReporter, versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
-                section.completed();
-                index++;
+                progressReporter.completed();
             }
         }
         catch ( IOException | UncheckedIOException e )
@@ -264,11 +227,12 @@ public class StoreUpgrader
             {
                 fileSystem.deleteRecursively( migrationDirectory );
             }
-            // We use the page cache here to make sure that the migration directory is clean even if we are using a
-            // block device.
+            // We use the file system from the page cache here to make sure that the migration directory is clean
+            // even if we are using a block device.
             try
             {
-                pageCache.streamFilesRecursive( migrationDirectory ).forEach( FileHandle.HANDLE_DELETE );
+                pageCache.getCachedFileSystem().streamFilesRecursive( migrationDirectory )
+                        .forEach( FileHandle.HANDLE_DELETE );
             }
             catch ( NoSuchFileException e )
             {

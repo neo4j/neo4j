@@ -44,7 +44,9 @@ import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -95,7 +97,7 @@ public class LoadCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -118,7 +120,7 @@ public class LoadCommandTest
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
 
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -131,7 +133,7 @@ public class LoadCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         new LoadCommand( homeDir, configDir, loader )
@@ -178,9 +180,10 @@ public class LoadCommandTest
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
 
-        try ( StoreLocker locker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker locker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            locker.checkLock( databaseDirectory.toFile() );
+            locker.checkLock();
             execute( "foo.db", "--force" );
             fail( "expected exception" );
         }
@@ -305,6 +308,13 @@ public class LoadCommandTest
 
             assertEquals( String.format( "usage: neo4j-admin load --from=<archive-path> [--database=<name>]%n" +
                             "                        [--force[=<true|false>]]%n" +
+                            "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "Load a database from an archive. <archive-path> must be an archive created with%n" +
                             "the dump command. <database> is the name of the database to create. Existing%n" +

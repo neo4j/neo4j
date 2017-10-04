@@ -70,7 +70,8 @@ public class LifeRule implements TestRule
                         failure.addSuppressed( suppressed );
                     }
                     throw failure;
-                } finally
+                }
+                finally
                 {
                     life = new LifeSupport(  );
                 }
@@ -80,7 +81,7 @@ public class LifeRule implements TestRule
 
     public <T extends Lifecycle> T add( T instance )
     {
-        return life.add(instance);
+        return life.add( instance );
     }
 
     public void init()

@@ -27,8 +27,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
 
-import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
@@ -37,10 +35,8 @@ import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
-import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
@@ -54,7 +50,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -99,18 +94,11 @@ public class MultiPaxosServer
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             server = serverFactory.newNetworkedServer(
-                    new Config( MapUtil.stringMap(), ClusterSettings.class ),
+                    Config.defaults(),
                     new InMemoryAcceptorInstanceStore(),
                     electionCredentialsProvider );
             server.addBindingListener( electionCredentialsProvider );
-            server.addBindingListener( new BindingListener()
-            {
-                @Override
-                public void listeningAt( URI me )
-                {
-                    System.out.println( "Listening at:" + me );
-                }
-            } );
+            server.addBindingListener( me -> System.out.println( "Listening at:" + me ) );
 
             cluster = server.newClient( Cluster.class );
             cluster.addClusterListener( new ClusterListener()
@@ -169,23 +157,19 @@ public class MultiPaxosServer
             } );
 
             broadcast = server.newClient( AtomicBroadcast.class );
-            broadcast.addAtomicBroadcastListener( new AtomicBroadcastListener()
+            broadcast.addAtomicBroadcastListener( value ->
             {
-                @Override
-                public void receive( Payload value )
+                try
                 {
-                    try
-                    {
-                        System.out.println( broadcastSerializer.receive( value ) );
-                    }
-                    catch ( IOException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( ClassNotFoundException e )
-                    {
-                        e.printStackTrace();
-                    }
+                    System.out.println( broadcastSerializer.receive( value ) );
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                }
+                catch ( ClassNotFoundException e )
+                {
+                    e.printStackTrace();
                 }
             } );
 

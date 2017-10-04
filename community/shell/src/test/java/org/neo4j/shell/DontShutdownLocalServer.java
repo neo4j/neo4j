@@ -27,6 +27,10 @@ import static org.neo4j.shell.RmiPublicationIT.createDefaultConfigFile;
 
 public class DontShutdownLocalServer
 {
+    private DontShutdownLocalServer()
+    {
+    }
+
     public static void main( String[] args ) throws Exception
     {
         File path = new File( args[0] );

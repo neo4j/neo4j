@@ -3,12 +3,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-consistency-check</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Consistency Checker</name>
   <description>Tool for checking consistency of a Neo4j data store.</description>
@@ -16,11 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <version-package>consistency.checking.impl</version-package>
     <neo4j.version>${project.version}</neo4j.version>
-    <bundle.namespace>org.neo4j.consistency</bundle.namespace>
-    <short-name>consistency-check</short-name>
-    <docs-plugin.skip>false</docs-plugin.skip>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -73,6 +68,10 @@ the relevant Commercial Agreement.
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>

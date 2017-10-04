@@ -37,15 +37,7 @@ public class EccentricityTest extends Neo4jAlgoTestCase
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-            new CostEvaluator<Double>()
-            {
-                @Override
-                public Double getCost( Relationship relationship,
-                            Direction direction )
-                {
-                    return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }

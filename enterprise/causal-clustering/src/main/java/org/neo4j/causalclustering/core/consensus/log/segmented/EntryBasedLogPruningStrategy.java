@@ -68,7 +68,7 @@ class EntryBasedLogPruningStrategy implements CoreLogPruningStrategy
             }
 
             prevIndex = segment.header().prevIndex();
-            accumulated += (lastPrevIndex - prevIndex);
+            accumulated += lastPrevIndex - prevIndex;
             lastPrevIndex = prevIndex;
 
             return accumulated >= entriesToKeep;

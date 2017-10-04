@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.desktop.model.DesktopModel;
-import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.desktop.model.exceptions.UnableToStartServerException;
+import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -62,7 +62,8 @@ public class DatabaseActions
         Monitors monitors = new Monitors();
 
         LogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ).monitors( monitors );
+        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies()
+                .userLogProvider( userLogProvider ).monitors( monitors );
 
         server = new CommunityNeoServer( config, dependencies, userLogProvider );
 

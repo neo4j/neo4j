@@ -55,7 +55,7 @@ public class KnownDataByteChannel implements ReadableByteChannel
     @Override
     public int read( ByteBuffer dst ) throws IOException
     {
-        int toRead = Math.min( dst.limit()-dst.position(), left() );
+        int toRead = Math.min( dst.limit() - dst.position(), left() );
         if ( toRead == 0 )
         {
             return -1;
@@ -63,13 +63,13 @@ public class KnownDataByteChannel implements ReadableByteChannel
 
         for ( int i = 0; i < toRead; i++ )
         {
-            dst.put( (byte)((position++)%10) );
+            dst.put( (byte) ((position++) % 10) );
         }
         return toRead;
     }
 
     private int left()
     {
-        return size-position;
+        return size - position;
     }
 }

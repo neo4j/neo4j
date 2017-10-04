@@ -85,13 +85,13 @@ public abstract class RaftLogVerificationIT
         {
             final int finalAppendIndex = tlr.nextInt( 10 ) + 1;
             int appendIndex = finalAppendIndex;
-            while( appendIndex --> 0 )
+            while ( appendIndex-- > 0 )
             {
                 raftLog.append( new RaftLogEntry( i, valueOf( i ) ) );
             }
 
             int truncateIndex = tlr.nextInt( finalAppendIndex ); // truncate index must be strictly less than append index
-            while( truncateIndex --> 0 )
+            while ( truncateIndex-- > 0 )
             {
                 raftLog.truncate( truncateIndex );
             }

@@ -57,11 +57,11 @@ public class FilteringIterator<T> extends PrefetchingIterator<T>
 
     public static <T> Iterator<T> notNull( Iterator<T> source )
     {
-        return new FilteringIterator<>( source, Predicates.<T>notNull() );
+        return new FilteringIterator<>( source, Predicates.notNull() );
     }
 
     public static <T> Iterator<T> noDuplicates( Iterator<T> source )
     {
-        return new FilteringIterator<>( source, Predicates.<T>noDuplicates() );
+        return new FilteringIterator<>( source, Predicates.noDuplicates() );
     }
 }

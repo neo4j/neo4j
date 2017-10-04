@@ -22,20 +22,19 @@ package org.neo4j.server.modules;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,10 +47,10 @@ public class RESTApiModuleTest
         // Given
         WebServer webServer = mock( WebServer.class );
 
-        Map<String, String> params = new HashMap();
+        Map<String, String> params = new HashMap<>();
         String path = "/db/data";
         params.put( ServerSettings.rest_api_path.name(), path );
-        Config config = new Config( params );
+        Config config = Config.defaults( params );
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependency( new UsageData( mock( JobScheduler.class ) ) );
@@ -63,6 +62,6 @@ public class RESTApiModuleTest
         module.start();
 
         // Then
-        verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );
+        verify( webServer ).addJAXRSClasses( anyListOf( String.class ), anyString(), any() );
     }
 }

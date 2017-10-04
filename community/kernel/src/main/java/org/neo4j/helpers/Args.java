@@ -112,7 +112,8 @@ public class Args
         }
     }
 
-    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = from -> {
+    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = from ->
+    {
         int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
         return metadataStartIndex == -1
                 ? new Option<>( from, null )
@@ -244,7 +245,7 @@ public class Args
         return value != null ? Double.parseDouble( value ) : defaultValue;
     }
 
-    public long getDuration( String key, long defaultValueInMillis)
+    public long getDuration( String key, long defaultValueInMillis )
     {
         String value = getSingleOptionOrNull( key );
         return value != null ? TimeUtil.parseTimeMillis.apply(value) : defaultValueInMillis;
@@ -339,7 +340,10 @@ public class Args
         return new ArrayList<>( this.orphans );
     }
 
-    /** @see #orphans() **/
+    /**
+     * @see #orphans()
+     * @return list of orphan arguments.
+     */
     public String[] orphansAsArray()
     {
         return orphans.toArray( new String[orphans.size()] );

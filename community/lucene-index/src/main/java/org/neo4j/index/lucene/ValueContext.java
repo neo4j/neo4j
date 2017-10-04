@@ -81,8 +81,8 @@ public class ValueContext
      * @return A ValueContext that can be used with
      * {@link org.neo4j.graphdb.index.Index#add(org.neo4j.graphdb.PropertyContainer, String, Object)}
      */
-    public static ValueContext numeric(Number value)
+    public static ValueContext numeric( Number value )
     {
-        return new ValueContext(value).indexNumeric();
+        return new ValueContext( value ).indexNumeric();
     }
 }

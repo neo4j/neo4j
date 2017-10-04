@@ -27,6 +27,10 @@ import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 public class EnterpriseServerHelper
 {
+    private EnterpriseServerHelper()
+    {
+    }
+
     public static EnterpriseNeoServer createNonPersistentServer( File databaseDir ) throws IOException
     {
         return createServer( databaseDir, false );
@@ -34,8 +38,11 @@ public class EnterpriseServerHelper
 
     private static EnterpriseNeoServer createServer( File databaseDir, boolean persistent ) throws IOException
     {
-        EnterpriseServerBuilder builder = EnterpriseServerBuilder.server().usingDataDir( databaseDir.getAbsolutePath() );
-        if ( persistent ) builder = (EnterpriseServerBuilder) builder.persistent();
+        EnterpriseServerBuilder builder = EnterpriseServerBuilder.serverOnRandomPorts().usingDataDir( databaseDir.getAbsolutePath() );
+        if ( persistent )
+        {
+            builder = (EnterpriseServerBuilder) builder.persistent();
+        }
         builder.withDefaultDatabaseTuning();
         EnterpriseNeoServer server = builder.build();
         server.start();

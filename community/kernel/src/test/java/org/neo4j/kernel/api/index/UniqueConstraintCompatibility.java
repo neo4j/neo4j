@@ -24,10 +24,9 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -44,6 +43,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -69,7 +68,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 {
     public UniqueConstraintCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite );
+        super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
     }
 
     /*
@@ -129,6 +128,20 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      * There's a lot of work to be done here.
      */
 
+    @Before
+    public void setUp()
+    {
+        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
+        dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedSchemaIndexProviderFactory( indexProvider ) ) );
+        db = dbFactory.newImpermanentDatabase( graphDbDir );
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
+    }
+
     // -- Tests:
 
     @Test
@@ -159,7 +172,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         givenOnlineConstraint();
 
         // When
-        Node n, m;
+        Node n;
+        Node m;
         try ( Transaction tx = db.beginTx() )
         {
             n = db.createNode( label );
@@ -181,7 +195,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         // Given
         givenOnlineConstraint();
-        Node n, m;
+        Node n;
+        Node m;
         try ( Transaction tx = db.beginTx() )
         {
             n = db.createNode( label );
@@ -203,7 +218,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 assertLookupNode( COLLISION_Y, is( m ) ) );
     }
 
-    // Replaces UniqueIAC: shouldConsiderWholeTransactionForValidatingUniqueness
     @Test
     public void onlineConstraintShouldNotConflictOnIntermediateStatesInSameTransaction()
     {
@@ -222,7 +236,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 assertLookupNode( "b", is( a ) ) );
     }
 
-    // Replaces UniqueIAC: shouldRejectChangingEntryToAlreadyIndexedValue
     @Test( expected = ConstraintViolationException.class )
     public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValue()
     {
@@ -239,8 +252,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 fail( "Changing a property to an already indexed value should have thrown" ) );
     }
 
-    // Replaces UniqueIPC: should*EnforceUnqieConstraintsAgainstDataAddedInSameTx
-    @Test( expected = ConstraintViolationException.class)
+    @Test( expected = ConstraintViolationException.class )
     public void onlineConstraintShouldRejectConflictsInTheSameTransaction() throws Exception
     {
         // Given
@@ -609,21 +621,17 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         // lock. We need to sneak past these locks.
         final CountDownLatch createNodeReadyLatch = new CountDownLatch( 1 );
         final CountDownLatch createNodeCommitLatch = new CountDownLatch( 1 );
-        Future<?> updatingTransaction = executor.submit( new Runnable()
+        Future<?> updatingTransaction = executor.submit( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
+                for ( Action action : actions )
                 {
-                    for ( Action action : actions )
-                    {
-                        action.accept( tx );
-                    }
-                    tx.success();
-                    createNodeReadyLatch.countDown();
-                    awaitUninterruptibly( createNodeCommitLatch );
+                    action.accept( tx );
                 }
+                tx.success();
+                createNodeReadyLatch.countDown();
+                awaitUninterruptibly( createNodeCommitLatch );
             }
         } );
         createNodeReadyLatch.await();
@@ -649,15 +657,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         // population job to finish, and it's population job should in turn be blocked
         // on the lockBlockingIndexPopulator above:
         final CountDownLatch createConstraintTransactionStarted = new CountDownLatch( 1 );
-        Future<?> createConstraintTransaction = executor.submit( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-
-                createUniqueConstraint( createConstraintTransactionStarted );
-            }
-        } );
+        Future<?> createConstraintTransaction = executor.submit(
+                () -> createUniqueConstraint( createConstraintTransactionStarted ) );
         createConstraintTransactionStarted.await();
 
         // Now we can initiate the data-changing commit. It should then
@@ -687,8 +688,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     private static final long COLLISION_Y = 4611686018427387907L;
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
-    private Label label = Label.label( "Cybermen" );
-    private String property = "name";
+    private final Label label = Label.label( "Cybermen" );
+    private final String property = "name";
     private Node a;
     private Node b;
     private Node c;
@@ -819,7 +820,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             StringBuilder sb = new StringBuilder( "Transaction failed:\n\n" );
             for ( int i = 0; i < actions.length; i++ )
             {
-                String mark = progress == i? " failed --> " : "            ";
+                String mark = progress == i ? " failed --> " : "            ";
                 sb.append( mark ).append( actions[i] ).append( '\n' );
             }
             ex.addSuppressed( new AssertionError( sb.toString() ) );
@@ -870,7 +871,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private Action setProperty( final Node node, final Object value )
     {
-        return new Action( reprNode( node ) + ".setProperty( property, " + reprValue( value ) + " );")
+        return new Action( reprNode( node ) + ".setProperty( property, " + reprValue( value ) + " );" )
         {
             @Override
             public void accept( Transaction transaction )
@@ -882,7 +883,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private Action removeProperty( final Node node )
     {
-        return new Action( reprNode( node ) + ".removeProperty( property );")
+        return new Action( reprNode( node ) + ".removeProperty( property );" )
         {
             @Override
             public void accept( Transaction transaction )
@@ -906,7 +907,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private Action fail( final String message )
     {
-        return new Action( "fail( \"" + message + "\" );")
+        return new Action( "fail( \"" + message + "\" );" )
         {
             @Override
             public void accept( Transaction transaction )
@@ -930,16 +931,12 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private String reprValue( Object value )
     {
-        return value instanceof String? "\"" + value + "\"" : String.valueOf( value );
+        return value instanceof String ? "\"" + value + "\"" : String.valueOf( value );
     }
 
     private String reprNode( Node node )
     {
-        return node == a? "a"
-                : node == b? "b"
-                : node == c? "c"
-                : node == d? "d"
-                : "n";
+        return node == a ? "a" : node == b ? "b" : node == c ? "c" : node == d ? "d" : "n";
     }
 
     // -- Set Up: Advanced transaction handling
@@ -976,7 +973,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private <T> T resolveInternalDependency( Class<T> type )
     {
-        @SuppressWarnings("deprecation")
+        @SuppressWarnings( "deprecation" )
         GraphDatabaseAPI api = (GraphDatabaseAPI) db;
         DependencyResolver resolver = api.getDependencyResolver();
         return resolver.resolveDependency( type );
@@ -994,24 +991,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         }
     }
 
-    // -- Set Up: Environment parts
-
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
-
-    @Before
-    public void setUp() {
-        File storeDir = testDirectory.graphDbDir();
-        TestGraphDatabaseFactory dbfactory = new TestGraphDatabaseFactory();
-        dbfactory.addKernelExtension( new PredefinedSchemaIndexProviderFactory( indexProvider ) );
-        db = dbfactory.newImpermanentDatabase( storeDir );
-    }
-
-    @After
-    public void tearDown() {
-        db.shutdown();
-    }
-
     private static class PredefinedSchemaIndexProviderFactory extends KernelExtensionFactory<PredefinedSchemaIndexProviderFactory.NoDeps>
     {
         private final SchemaIndexProvider indexProvider;
@@ -1022,10 +1001,11 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             return indexProvider;
         }
 
-        public interface NoDeps {
+        interface NoDeps
+        {
         }
 
-        public PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )
+        PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )
         {
             super( indexProvider.getClass().getSimpleName() );
             this.indexProvider = indexProvider;

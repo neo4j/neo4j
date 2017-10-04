@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking.full;
 import java.lang.reflect.Array;
 import java.util.List;
 
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -67,14 +66,20 @@ public class FullCheck
     public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory,
             Statistics statistics, int threads )
     {
+        this( progressFactory, statistics, threads, new ConsistencyFlags( tuningConfiguration ) );
+    }
+
+    public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
+            ConsistencyFlags consistencyFlags )
+    {
         this.statistics = statistics;
         this.threads = threads;
-        this.checkPropertyOwners = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners );
-        this.checkLabelScanStore = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
-        this.checkIndexes = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes );
-        this.checkGraph = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph );
-        this.samplingConfig = new IndexSamplingConfig( tuningConfiguration );
         this.progressFactory = progressFactory;
+        this.samplingConfig = new IndexSamplingConfig( Config.defaults() );
+        this.checkGraph = consistencyFlags.isCheckGraph();
+        this.checkIndexes = consistencyFlags.isCheckIndexes();
+        this.checkLabelScanStore = consistencyFlags.isCheckLabelScanStore();
+        this.checkPropertyOwners = consistencyFlags.isCheckPropertyOwners();
     }
 
     public ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log )
@@ -143,14 +148,7 @@ public class FullCheck
                     multiPass, reporter, threads );
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
-            TaskExecutor.execute( tasks, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    decorator.prepare();
-                }
-            } );
+            TaskExecutor.execute( tasks, decorator::prepare );
         }
         catch ( Exception e )
         {
@@ -169,7 +167,7 @@ public class FullCheck
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         T[] records = (T[]) Array.newInstance( type, (int) store.getHighId() );
         for ( int i = 0; i < records.length; i++ )
         {

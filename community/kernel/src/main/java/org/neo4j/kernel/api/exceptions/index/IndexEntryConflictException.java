@@ -19,60 +19,38 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import java.util.Arrays;
-
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaUtil;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 import static java.lang.String.format;
-import static java.lang.String.valueOf;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 /**
  * TODO why isn't this a {@link KernelException}?
  */
-public abstract class IndexEntryConflictException extends Exception
+public class IndexEntryConflictException extends Exception
 {
-    public IndexEntryConflictException( String message )
+    private final ValueTuple propertyValues;
+    private final long addedNodeId;
+    private final long existingNodeId;
+
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Value... propertyValue )
     {
-        super( message );
+        this( existingNodeId, addedNodeId, ValueTuple.of( propertyValue ) );
     }
 
-    protected static String quote( Object propertyValue )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, ValueTuple propertyValues )
     {
-        if ( propertyValue instanceof String )
-        {
-            return format( "'%s'", propertyValue );
-        }
-        else if ( propertyValue.getClass().isArray() )
-        {
-            Class<?> type = propertyValue.getClass().getComponentType();
-            if ( type == Boolean.TYPE )
-            {
-                return Arrays.toString( (boolean[]) propertyValue );
-            } else if ( type == Byte.TYPE )
-            {
-                return Arrays.toString( (byte[]) propertyValue );
-            } else if ( type == Short.TYPE )
-            {
-                return Arrays.toString( (short[]) propertyValue );
-            } else if ( type == Character.TYPE )
-            {
-                return Arrays.toString( (char[]) propertyValue );
-            } else if ( type == Integer.TYPE )
-            {
-                return Arrays.toString( (int[]) propertyValue );
-            } else if ( type == Long.TYPE )
-            {
-                return Arrays.toString( (long[]) propertyValue );
-            } else if ( type == Float.TYPE )
-            {
-                return Arrays.toString( (float[]) propertyValue );
-            } else if ( type == Double.TYPE )
-            {
-                return Arrays.toString( (double[]) propertyValue );
-            }
-            return Arrays.toString( (Object[]) propertyValue );
-        }
-        return valueOf( propertyValue );
+        super( format( "Both node %d and node %d share the property value %s",
+                existingNodeId, addedNodeId, propertyValues ) );
+        this.existingNodeId = existingNodeId;
+        this.addedNodeId = addedNodeId;
+        this.propertyValues = propertyValues;
     }
 
     /**
@@ -80,14 +58,101 @@ public abstract class IndexEntryConflictException extends Exception
      * was caught but it should not have been allowed to be thrown in the first place.
      * Typically where the index we performed an operation on is not a unique index.
      */
-    public RuntimeException notAllowed( int labelId, int propertyKeyId )
+    public RuntimeException notAllowed( IndexDescriptor descriptor )
     {
         return new IllegalStateException( String.format(
-                "Index for label:%s propertyKey:%s should not require unique values.",
-                labelId, propertyKeyId ), this );
+                "Index for (%s) should not require unique values.",
+                descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ), this );
     }
 
-    public abstract Object getPropertyValue();
+    public String evidenceMessage( TokenNameLookup tokenNameLookup, LabelSchemaDescriptor schema )
+    {
+        assert schema.getPropertyIds().length == propertyValues.size();
 
-    public abstract String evidenceMessage( String labelName, String propertyKey );
+        String labelName = tokenNameLookup.labelGetName( schema.getLabelId() );
+        if ( addedNodeId == NO_SUCH_NODE )
+        {
+            return format( "Node(%d) already exists with label `%s` and %s",
+                    existingNodeId, labelName, propertyString( tokenNameLookup, schema.getPropertyIds() ) );
+        }
+        else
+        {
+            return format( "Both Node(%d) and Node(%d) have the label `%s` and %s",
+                    existingNodeId, addedNodeId, labelName, propertyString( tokenNameLookup, schema.getPropertyIds() ) );
+        }
+    }
+
+    public ValueTuple getPropertyValues()
+    {
+        return propertyValues;
+    }
+
+    public Value getSinglePropertyValue()
+    {
+        return propertyValues.getOnlyValue();
+    }
+
+    public long getAddedNodeId()
+    {
+        return addedNodeId;
+    }
+
+    public long getExistingNodeId()
+    {
+        return existingNodeId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        IndexEntryConflictException that = (IndexEntryConflictException) o;
+
+        return addedNodeId == that.addedNodeId &&
+                existingNodeId == that.existingNodeId &&
+                !(propertyValues != null ? !propertyValues.equals( that.propertyValues ) : that.propertyValues != null);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = propertyValues != null ? propertyValues.hashCode() : 0;
+        result = 31 * result + (int) (addedNodeId ^ (addedNodeId >>> 32));
+        result = 31 * result + (int) (existingNodeId ^ (existingNodeId >>> 32));
+        return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "IndexEntryConflictException{" +
+                "propertyValues=" + propertyValues +
+                ", addedNodeId=" + addedNodeId +
+                ", existingNodeId=" + existingNodeId +
+                '}';
+    }
+
+    private String propertyString( TokenNameLookup tokenNameLookup, int[] propertyIds )
+    {
+        StringBuilder sb = new StringBuilder();
+        String sep = propertyIds.length > 1 ? "properties " : "property ";
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            sb.append( sep );
+            sep = ", ";
+            sb.append( '`' );
+            sb.append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
+            sb.append( "` = " );
+            sb.append( propertyValues.valueAt( i ).prettyPrint() );
+        }
+        return sb.toString();
+    }
 }

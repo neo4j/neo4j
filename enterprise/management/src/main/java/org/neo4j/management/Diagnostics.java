@@ -28,7 +28,7 @@ import org.neo4j.jmx.ManagementInterface;
 @Description( "Diagnostics provided by Neo4j" )
 public interface Diagnostics
 {
-    final String NAME = "Diagnostics";
+    String NAME = "Diagnostics";
 
     @Description( "Dump diagnostics information to the log." )
     void dumpToLog();
@@ -36,7 +36,7 @@ public interface Diagnostics
     @Description( "Dump diagnostics information for the diagnostics provider with the specified id." )
     void dumpToLog( String providerId );
 
-    @Description("Dump diagnostics information to JMX")
+    @Description( "Dump diagnostics information to JMX" )
     String dumpAll(  );
 
     @Description( "Extract diagnostics information for the diagnostics provider with the specified id." )

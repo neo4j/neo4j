@@ -35,16 +35,19 @@ import org.neo4j.codegen.TypeReference;
 
 class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
 {
-    private static final Runnable BOTTOM = () -> {
+    private static final Runnable BOTTOM = () ->
+    {
         throw new IllegalStateException( "Popped too many levels!" );
-    }, LEVEL = () -> {
+    };
+    private static final Runnable LEVEL = () ->
+    {
     };
     private static final String INDENTATION = "    ";
     private final StringBuilder target;
     private final ClassSourceWriter classSourceWriter;
     private final Deque<Runnable> level = new LinkedList<>();
 
-    public MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
+    MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
     {
         this.target = target;
         this.classSourceWriter = classSourceWriter;
@@ -113,7 +116,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void declare( LocalVariable local )
     {
-        indent().append( local.type().name() ).append( ' ' ).append( local.name() ).append( ";\n" );
+        indent().append( local.type().fullName() ).append( ' ' ).append( local.name() ).append( ";\n" );
     }
 
     @Override
@@ -127,78 +130,40 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void assign( LocalVariable variable, Expression value )
     {
-        indent().append( variable.type().name() ).append( ' ' ).append( variable.name() ).append( " = " );
+        indent().append( variable.type().fullName() ).append( ' ' ).append( variable.name() ).append( " = " );
         value.accept( this );
         append( ";\n" );
     }
 
     @Override
-    public void beginWhile( Expression...tests )
+    public void beginWhile( Expression test )
     {
         indent().append( "while( " );
-        String sep = "";
-        for (Expression test: tests)
-        {
-            append( sep );
-            test.accept( this );
-            sep = " && ";
-        }
+        test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
         level.push( LEVEL );
     }
 
     @Override
-    public void beginIf( Expression...tests )
+    public void beginIf( Expression test )
     {
         indent().append( "if ( " );
-        String sep = "";
-        for (Expression test: tests)
-        {
-            append( sep );
-            test.accept( this );
-            sep = " && ";
-        }
+        test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
         level.push( LEVEL );
     }
 
     @Override
-    public void beginIfNot( Expression...tests )
+    public void beginBlock()
     {
-        Expression[] nots = new Expression[tests.length];
-        for ( int i = 0; i < tests.length; i++ )
-        {
-            nots[i] = Expression.not( tests[i] );
-        }
-        beginIf( nots );
+        indent().append( "{\n" );
+        level.push( LEVEL );
     }
 
     @Override
-    public void beginIfNull( Expression...tests )
-    {
-        Expression[] nulls = new Expression[tests.length];
-        for ( int i = 0; i < tests.length; i++ )
-        {
-            nulls[i] = Expression.equal(tests[i], Expression.constant( null ), TypeReference.OBJECT);
-        }
-        beginIf(nulls);
-    }
-
-    @Override
-    public void beginIfNonNull( Expression...tests )
-    {
-        Expression[] notNulls = new Expression[tests.length];
-        for ( int i = 0; i < tests.length; i++ )
-        {
-            notNulls[i] = Expression.not(Expression.equal(tests[i], Expression.constant( null ), TypeReference.OBJECT));
-        }
-        beginIf(notNulls);
-    }
-
-    @Override
-    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block)
+    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
 
         indent().append( "try\n" );
@@ -208,7 +173,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         level.pop();
         indent().append( "}\n" );
         indent().append( "catch ( " )
-                .append( exception.type().name() ).append( " " )
+                .append( exception.type().fullName() ).append( " " )
                 .append( exception.name() )
                 .append( " )\n" );
         indent().append( "{\n" );
@@ -248,7 +213,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void invoke( MethodReference method, Expression[] arguments )
     {
-        append( method.owner().name() ).append( '.' ).append( method.name() );
+        append( method.owner().fullName() ).append( '.' ).append( method.name() );
         arglist( arguments );
     }
 
@@ -318,7 +283,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void getStatic( FieldReference field )
     {
-        append( field.owner().name() ).append( "." ).append( field.name() );
+        append( field.owner().fullName() ).append( "." ).append( field.name() );
     }
 
     @Override
@@ -330,7 +295,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void newInstance( TypeReference type )
     {
-        append( "new " ).append( type.name() );
+        append( "new " ).append( type.fullName() );
     }
 
     @Override
@@ -354,105 +319,86 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
-    {
-        ternary( Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT ),
-                onTrue, onFalse );
-    }
-
-    @Override
-    public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
-    {
-        ternary( Expression.not(
-                Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT )),
-                onTrue, onFalse );
-    }
-
-    @Override
-    public void equal( Expression lhs, Expression rhs, TypeReference ignored )
+    public void equal( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " == " );
     }
 
     @Override
-    public void or( Expression lhs, Expression rhs )
+    public void notEqual( Expression lhs, Expression rhs )
     {
-        binaryOperation( lhs, rhs, " || " );
+        binaryOperation( lhs, rhs, " != " );
     }
 
     @Override
-    public void and( Expression lhs, Expression rhs )
+    public void isNull( Expression expression )
     {
-        binaryOperation( lhs, rhs, " && " );
-
+        expression.accept( this );
+        append( " == null" );
     }
 
     @Override
-    public void addInts( Expression lhs, Expression rhs )
+    public void notNull( Expression expression )
     {
-        add( lhs, rhs );
+        expression.accept( this );
+        append( " != null" );
     }
 
     @Override
-    public void addLongs( Expression lhs, Expression rhs )
+    public void or( Expression... expressions )
     {
-        add( lhs, rhs );
+        boolOp( expressions, " || ");
     }
 
     @Override
-    public void addDoubles( Expression lhs, Expression rhs )
+    public void and( Expression... expressions )
     {
-        add( lhs, rhs );
+        boolOp( expressions, " && ");
     }
 
-    private void add( Expression lhs, Expression rhs )
+    private void boolOp( Expression[] expressions, String op )
+    {
+        String sep = "";
+        for ( Expression expression : expressions )
+        {
+            append( sep );
+            expression.accept( this );
+            sep = op;
+        }
+    }
+
+    @Override
+    public void add( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " + " );
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs, TypeReference ignored )
+    public void gt( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " > " );
     }
 
     @Override
-    public void gte( Expression lhs, Expression rhs, TypeReference ignored )
+    public void gte( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " >= " );
     }
 
     @Override
-    public void lt( Expression lhs, Expression rhs, TypeReference ignored )
+    public void lt( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " < " );
     }
 
     @Override
-    public void lte( Expression lhs, Expression rhs, TypeReference ignored )
+    public void lte( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " <= " );
     }
 
     @Override
-    public void subtractInts( Expression lhs, Expression rhs )
-    {
-        sub( lhs, rhs);
-    }
-
-    @Override
-    public void subtractLongs( Expression lhs, Expression rhs )
-    {
-        sub( lhs, rhs);
-    }
-
-    @Override
-    public void subtractDoubles( Expression lhs, Expression rhs )
-    {
-        sub( lhs, rhs);
-    }
-
-    private void sub( Expression lhs, Expression rhs )
+    public void subtract( Expression lhs, Expression rhs )
     {
         lhs.accept( this );
         append( " - " );
@@ -460,18 +406,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void multiplyLongs( Expression lhs, Expression rhs )
-    {
-        mul( lhs, rhs);
-    }
-
-    @Override
-    public void multiplyDoubles( Expression lhs, Expression rhs )
-    {
-        mul( lhs, rhs);
-    }
-
-    private void mul( Expression lhs, Expression rhs )
+    public void multiply( Expression lhs, Expression rhs )
     {
         lhs.accept( this );
         append( " * " );
@@ -489,7 +424,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     public void cast( TypeReference type, Expression expression )
     {
         append( "(" );
-        append( "(" ).append( type.name() ).append( ") " );
+        append( "(" ).append( type.fullName() ).append( ") " );
         expression.accept( this );
         append( ")" );
     }
@@ -497,7 +432,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void newArray( TypeReference type, Expression... constants )
     {
-        append( "new " ).append( type.name() ).append( "[]{" );
+        append( "new " ).append( type.fullName() ).append( "[]{" );
         String sep = "";
         for ( Expression constant : constants )
         {
@@ -520,7 +455,21 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         expression.accept( this );
     }
 
-    private void binaryOperation(Expression lhs, Expression rhs, String operator)
+    @Override
+    public void box( Expression expression )
+    {
+        //For source code we rely on autoboxing
+        expression.accept( this );
+    }
+
+    @Override
+    public void unbox( Expression expression )
+    {
+        //For source code we rely on autoboxing
+        expression.accept( this );
+    }
+
+    private void binaryOperation( Expression lhs, Expression rhs, String operator )
     {
         lhs.accept( this );
         append( operator );

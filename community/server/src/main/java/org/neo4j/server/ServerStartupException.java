@@ -27,7 +27,7 @@ public class ServerStartupException extends RuntimeException
 {
     public ServerStartupException( String message, Throwable t )
     {
-        super( message, t);
+        super( message, t );
     }
 
     public ServerStartupException( String message )

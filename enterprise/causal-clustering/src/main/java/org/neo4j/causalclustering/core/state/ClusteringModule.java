@@ -20,13 +20,19 @@
 package org.neo4j.causalclustering.core.state;
 
 import java.io.File;
+import java.util.Optional;
+import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
+import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
+import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.ClusterIdentity;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -38,11 +44,12 @@ import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
 import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID_NAME;
+import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 
 public class ClusteringModule
 {
     private final CoreTopologyService topologyService;
-    private final ClusterIdentity clusterIdentity;
+    private final ClusterBinder clusterBinder;
 
     public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself,
             PlatformModule platformModule, File clusterStateDirectory )
@@ -53,9 +60,11 @@ public class ClusteringModule
         LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
         Dependencies dependencies = platformModule.dependencies;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
         topologyService = discoveryServiceFactory
-                .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider, userLogProvider );
+                .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider,
+                        userLogProvider, hostnameResolver, resolveStrategy( config ) );
 
         life.add( topologyService );
 
@@ -68,8 +77,17 @@ public class ClusteringModule
         CoreBootstrapper coreBootstrapper =
                 new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
 
-        clusterIdentity = new ClusterIdentity( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
+        clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
                 () -> sleep( 100 ), 300_000, coreBootstrapper );
+    }
+
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    {
+        long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
+        int pollingFrequencyWithinRefreshWindow = 2;
+        int numberOfRetries =
+                pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
     }
 
     public CoreTopologyService topologyService()
@@ -77,8 +95,13 @@ public class ClusteringModule
         return topologyService;
     }
 
-    public ClusterIdentity clusterIdentity()
+    public Supplier<Optional<ClusterId>> clusterIdentity()
     {
-        return clusterIdentity;
+        return clusterBinder;
+    }
+
+    public ClusterBinder clusterBinder()
+    {
+        return clusterBinder;
     }
 }

@@ -107,7 +107,8 @@ public class DumpProcessInformationTest
         Set<String> expectedStringSet = asSet( expectedStrings );
         try ( Stream<String> lines = Files.lines( file.toPath() ) )
         {
-            lines.forEach( line -> {
+            lines.forEach( line ->
+            {
                 Iterator<String> expectedStringIterator = expectedStringSet.iterator();
                 while ( expectedStringIterator.hasNext() )
                 {

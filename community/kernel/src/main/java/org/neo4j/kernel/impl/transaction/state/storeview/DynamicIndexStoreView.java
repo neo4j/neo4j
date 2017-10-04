@@ -22,78 +22,124 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.function.IntPredicate;
-import java.util.stream.IntStream;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.register.Registers;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.register.Register;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.values.storable.Value;
 
 /**
- * Store view that will try to use label scan store {@link LabelScanStore} for cases when estimated number of nodes
- * is bellow certain threshold otherwise will fallback to whole store scan
+ * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless label scan
+ * store is empty or explicitly told to use store in which cases it will fallback to whole store scan.
  */
-public class DynamicIndexStoreView extends NeoStoreIndexStoreView
+public class DynamicIndexStoreView implements IndexStoreView
 {
-    private static final int VISIT_ALL_NODES_THRESHOLD_PERCENTAGE =
-            FeatureToggles.getInteger( DynamicIndexStoreView.class, "all.nodes.visit.percentage.threshold", 10 );
-    protected static boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
-            DynamicIndexStoreView.class, "use.label.index", false );
+    private static boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
+            DynamicIndexStoreView.class, "use.label.index", true );
 
+    private final NeoStoreIndexStoreView neoStoreIndexStoreView;
     private final LabelScanStore labelScanStore;
-    private final CountsTracker counts;
+    protected final LockService locks;
+    private final Log log;
+    protected final NodeStore nodeStore;
+    protected final PropertyStore propertyStore;
 
-    public DynamicIndexStoreView( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores )
+    public DynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
+            NeoStores neoStores, LogProvider logProvider )
     {
-        super( locks, neoStores );
-        this.counts = neoStores.getCounts();
+        this.nodeStore = neoStores.getNodeStore();
+        this.propertyStore = neoStores.getPropertyStore();
+        this.neoStoreIndexStoreView = neoStoreIndexStoreView;
+        this.locks = locks;
         this.labelScanStore = labelScanStore;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-            IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
-            Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
+            IntPredicate propertyKeyIdFilter, Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
+            Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+            boolean forceStoreScan )
     {
-        if ( !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )
+        if ( forceStoreScan || !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )
         {
-            return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
+            return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
+                    forceStoreScan );
         }
         return new LabelScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
     }
 
+    @Override
+    public NodeUpdates nodeAsUpdates( long nodeId )
+    {
+        return neoStoreIndexStoreView.nodeAsUpdates( nodeId );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexUpdatesAndSize( long indexId, Register.DoubleLongRegister output )
+    {
+        return neoStoreIndexStoreView.indexUpdatesAndSize( indexId, output );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexSample( long indexId, Register.DoubleLongRegister output )
+    {
+        return neoStoreIndexStoreView.indexSample( indexId, output );
+    }
+
+    @Override
+    public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements, long indexSize )
+    {
+        neoStoreIndexStoreView.replaceIndexCounts( indexId, uniqueElements, maxUniqueElements, indexSize );
+    }
+
+    @Override
+    public void incrementIndexUpdates( long indexId, long updatesDelta )
+    {
+        neoStoreIndexStoreView.incrementIndexUpdates( indexId, updatesDelta );
+    }
+
     private boolean useAllNodeStoreScan( int[] labelIds )
     {
-        return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore() || isNumberOfLabeledNodesExceedThreshold( labelIds );
+        try
+        {
+            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore();
+        }
+        catch ( Exception e )
+        {
+            log.error( "Can not determine number of labeled nodes, falling back to all nodes scan.", e );
+            return true;
+        }
     }
 
-    private boolean isEmptyLabelScanStore()
+    private boolean isEmptyLabelScanStore() throws Exception
     {
-        return labelScanStore.allNodeLabelRanges().maxCount() == 0;
+        return labelScanStore.isEmpty();
     }
 
-    private boolean isNumberOfLabeledNodesExceedThreshold( int[] labelIds )
+    @Override
+    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
-        return getNumberOfLabeledNodes( labelIds ) > getVisitAllNodesThreshold();
+        return neoStoreIndexStoreView.getPropertyValue( nodeId, propertyKeyId );
     }
 
-    private long getVisitAllNodesThreshold()
+    @Override
+    public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
     {
-        return (long) ((VISIT_ALL_NODES_THRESHOLD_PERCENTAGE / 100f) * nodeStore.getHighestPossibleIdInUse());
-    }
-
-    private long getNumberOfLabeledNodes( int[] labelIds )
-    {
-        return IntStream.of( labelIds )
-                .mapToLong( labelId -> counts.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() )
-                .reduce( Math::addExact )
-                .orElse( 0L );
+        neoStoreIndexStoreView.loadProperties( nodeId, propertyIds, sink );
     }
 }

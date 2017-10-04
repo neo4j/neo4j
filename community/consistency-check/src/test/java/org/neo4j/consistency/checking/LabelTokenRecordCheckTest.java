@@ -21,19 +21,19 @@ package org.neo4j.consistency.checking;
 
 import org.junit.Test;
 
-import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class LabelTokenRecordCheckTest extends
-                                        RecordCheckTestBase<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport, LabelTokenRecordCheck>
+public class LabelTokenRecordCheckTest
+        extends RecordCheckTestBase<LabelTokenRecord,LabelTokenConsistencyReport,LabelTokenRecordCheck>
 {
     public LabelTokenRecordCheckTest()
     {
-        super( new LabelTokenRecordCheck(), ConsistencyReport.LabelTokenConsistencyReport.class, new int[0] );
+        super( new LabelTokenRecordCheck(), LabelTokenConsistencyReport.class, new int[0] );
     }
 
     @Test
@@ -43,7 +43,7 @@ public class LabelTokenRecordCheckTest extends
         LabelTokenRecord key = notInUse( new LabelTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
+        LabelTokenConsistencyReport report = check( key );
 
         // then
         verifyNoMoreInteractions( report );
@@ -56,7 +56,7 @@ public class LabelTokenRecordCheckTest extends
         LabelTokenRecord key = inUse( new LabelTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
+        LabelTokenConsistencyReport report = check( key );
 
         // then
         verifyNoMoreInteractions( report );
@@ -71,7 +71,7 @@ public class LabelTokenRecordCheckTest extends
         key.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
+        LabelTokenConsistencyReport report = check( key );
 
         // then
         verify( report ).nameBlockNotInUse( name );
@@ -87,7 +87,7 @@ public class LabelTokenRecordCheckTest extends
         key.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.LabelTokenConsistencyReport report = check( key );
+        LabelTokenConsistencyReport report = check( key );
 
         // then
         verify( report ).emptyName( name );

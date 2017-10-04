@@ -25,15 +25,14 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-import org.neo4j.logging.async.AsyncLog;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.neo4j.helpers.Strings.escape;
@@ -50,13 +49,13 @@ public class SecurityLog extends LifecycleAdapter implements Log
 
         rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile,
                 config.get( SecuritySettings.store_security_log_rotation_threshold ),
-                config.get( SecuritySettings.store_security_log_rotation_delay ),
+                config.get( SecuritySettings.store_security_log_rotation_delay ).toMillis(),
                 config.get( SecuritySettings.store_security_log_max_archives ), executor );
 
         FormattedLog formattedLog = builder.toOutputStream( rotatingSupplier );
         formattedLog.setLevel( config.get( SecuritySettings.security_log_level ) );
 
-        this.inner = new AsyncLog( event -> executor.execute( event::process ), formattedLog );
+        this.inner = formattedLog;
     }
 
     /* Only used for tests */
@@ -65,9 +64,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner = log;
     }
 
-    private static String withSubject( AuthSubject subject, String msg )
+    private static String withContext( SecurityContext context, String msg )
     {
-        return "[" + escape( subject.username() ) + "]: " + msg;
+        return "[" + escape( context.subject().username() ) + "]: " + msg;
     }
 
     @Override
@@ -100,9 +99,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.debug( format, arguments );
     }
 
-    public void debug( AuthSubject subject, String format, Object... arguments )
+    public void debug( SecurityContext context, String format, Object... arguments )
     {
-        inner.debug( withSubject( subject, format ), arguments );
+        inner.debug( withContext( context, format ), arguments );
     }
 
     @Override
@@ -129,14 +128,14 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.info( format, arguments );
     }
 
-    public void info( AuthSubject subject, String format, Object... arguments )
+    public void info( SecurityContext context, String format, Object... arguments )
     {
-        inner.info( withSubject( subject, format ), arguments );
+        inner.info( withContext( context, format ), arguments );
     }
 
-    public void info( AuthSubject subject, String format )
+    public void info( SecurityContext context, String format )
     {
-        inner.info( withSubject( subject, format ) );
+        inner.info( withContext( context, format ) );
     }
 
     @Override
@@ -163,9 +162,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.warn( format, arguments );
     }
 
-    public void warn( AuthSubject subject, String format, Object... arguments )
+    public void warn( SecurityContext context, String format, Object... arguments )
     {
-        inner.warn( withSubject( subject, format ), arguments );
+        inner.warn( withContext( context, format ), arguments );
     }
 
     @Override
@@ -192,9 +191,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.error( format, arguments );
     }
 
-    public void error( AuthSubject subject, String format, Object... arguments )
+    public void error( SecurityContext context, String format, Object... arguments )
     {
-        inner.error( withSubject( subject, format ), arguments );
+        inner.error( withContext( context, format ), arguments );
     }
 
     @Override
@@ -211,7 +210,8 @@ public class SecurityLog extends LifecycleAdapter implements Log
             return new SecurityLog( config, fileSystem,
                     jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
         }
-        catch ( IOException ioe ){
+        catch ( IOException ioe )
+        {
             log.warn( "Unable to create log for auth-manager. Auth logging turned off." );
             return null;
         }

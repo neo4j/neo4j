@@ -1,2 +1,0 @@
-Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
-  In-query call to procedure with argument of type INTEGER accepts value of type FLOAT

@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.consensus.log.monitoring;
 public interface RaftLogCommitIndexMonitor
 {
     long commitIndex();
-    void commitIndex(long commitIndex);
+
+    void commitIndex( long commitIndex );
 }
 

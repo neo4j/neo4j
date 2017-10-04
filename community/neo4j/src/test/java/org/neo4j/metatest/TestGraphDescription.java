@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -74,16 +75,14 @@ public class TestGraphDescription implements GraphHolder
     @Graph( { "a TO b", "b TO c", "c TO a" } )
     public void canCreateGraphFromMultipleStrings() throws Exception
     {
-        Map<String, Node> graph = data.get();
+        Map<String,Node> graph = data.get();
         Set<Node> unique = new HashSet<Node>();
         Node n = graph.get( "a" );
         while ( unique.add( n ) )
         {
-            try(Transaction ignored = graphdb.beginTx())
+            try ( Transaction ignored = graphdb.beginTx() )
             {
-                n = n.getSingleRelationship(
-                        RelationshipType.withName( "TO" ),
-                        Direction.OUTGOING ).getEndNode();
+                n = n.getSingleRelationship( RelationshipType.withName( "TO" ), Direction.OUTGOING ).getEndNode();
             }
         }
         assertEquals( graph.size(), unique.size() );
@@ -93,11 +92,11 @@ public class TestGraphDescription implements GraphHolder
     @Graph( { "a:Person EATS b:Banana" } )
     public void ensurePeopleCanEatBananas() throws Exception
     {
-        Map<String, Node> graph = data.get();
+        Map<String,Node> graph = data.get();
         Node a = graph.get( "a" );
         Node b = graph.get( "b" );
 
-        try(Transaction ignored = graphdb.beginTx())
+        try ( Transaction ignored = graphdb.beginTx() )
         {
             assertTrue( a.hasLabel( label( "Person" ) ) );
             assertTrue( b.hasLabel( label( "Banana" ) ) );
@@ -108,11 +107,11 @@ public class TestGraphDescription implements GraphHolder
     @Graph( { "a:Person EATS b:Banana", "a EATS b:Apple" } )
     public void ensurePeopleCanEatBananasAndApples() throws Exception
     {
-        Map<String, Node> graph = data.get();
+        Map<String,Node> graph = data.get();
         Node a = graph.get( "a" );
         Node b = graph.get( "b" );
 
-        try(Transaction ignored = graphdb.beginTx())
+        try ( Transaction ignored = graphdb.beginTx() )
         {
             assertTrue( "Person label missing", a.hasLabel( label( "Person" ) ) );
             assertTrue( "Banana label missing", b.hasLabel( label( "Banana" ) ) );
@@ -121,33 +120,31 @@ public class TestGraphDescription implements GraphHolder
     }
 
     @Test
-    @Graph( value = { "I know you" }, autoIndexNodes=true )
+    @Graph( value = {"I know you"}, autoIndexNodes = true )
     public void canAutoIndexNodes() throws Exception
     {
         data.get();
 
-        try(Transaction ignored = graphdb.beginTx())
+        try ( Transaction ignored = graphdb.beginTx() )
         {
-            assertTrue(
-                    "can't look up node.",
-                    graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
-                            "name", "I" ).hasNext() );
+            try ( IndexHits<Node> indexHits = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
+            {
+                assertTrue( "can't look up node.", indexHits.hasNext() );
+            }
         }
     }
 
     @Test
-    @Graph( nodes = { @NODE( name = "I", setNameProperty=true, properties = {
-                    @PROP( key = "name", value = "I" )})}, autoIndexNodes=true )
+    @Graph( nodes = {@NODE( name = "I", setNameProperty = true, properties = {
+            @PROP( key = "name", value = "I" )} )}, autoIndexNodes = true )
     public void canAutoIndexNodesExplicitProps() throws Exception
     {
         data.get();
 
-        try(Transaction ignored = graphdb.beginTx())
+        try ( Transaction ignored = graphdb.beginTx();
+              IndexHits<Node> nodes = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
         {
-            assertTrue(
-                    "can't look up node.",
-                    graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
-                            "name", "I" ).hasNext() );
+            assertTrue( "can't look up node.", nodes.hasNext() );
         }
     }
 
@@ -156,32 +153,34 @@ public class TestGraphDescription implements GraphHolder
             @NODE( name = "I", properties = {
                     @PROP( key = "name", value = "me" ),
                     @PROP( key = "bool", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ),
-            @NODE( name = "you", setNameProperty = true ) }, relationships = { @REL( start = "I", end = "you", type = "knows", properties = {
-            @PROP( key = "name", value = "relProp" ),
-            @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) }, autoIndexRelationships = true )
+            @NODE( name = "you", setNameProperty = true ) },
+                   relationships = { @REL( start = "I", end = "you", type = "knows",
+                           properties = {
+                    @PROP( key = "name", value = "relProp" ),
+                    @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) },
+            autoIndexRelationships = true )
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
             throws Exception
     {
         data.get();
         verifyIKnowYou( "knows", "me" );
-        try(Transaction ignored = graphdb.beginTx())
+        try ( Transaction ignored = graphdb.beginTx() )
         {
             assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
-            assertFalse( "node autoindex enabled.",
-                    graphdb().index().getNodeAutoIndexer().isEnabled() );
-            assertTrue(
-                    "can't look up rel.",
-                    graphdb().index().getRelationshipAutoIndexer().getAutoIndex().get(
-                            "name", "relProp" ).hasNext() );
-            assertTrue( "relationship autoindex enabled.",
-                    graphdb().index().getRelationshipAutoIndexer().isEnabled() );
+            assertFalse( "node autoindex enabled.", graphdb().index().getNodeAutoIndexer().isEnabled() );
+            try ( IndexHits<Relationship> relationships = graphdb().index()
+                    .getRelationshipAutoIndexer().getAutoIndex().get( "name", "relProp" ) )
+            {
+                assertTrue( "can't look up rel.", relationships.hasNext() );
+            }
+            assertTrue( "relationship autoindex enabled.", graphdb().index().getRelationshipAutoIndexer().isEnabled() );
         }
     }
 
     @Graph( value = { "I know you" }, nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ) } )
     private void verifyIKnowYou( String type, String myName )
     {
-        try(Transaction ignored = graphdb.beginTx())
+        try ( Transaction ignored = graphdb.beginTx() )
         {
             Map<String, Node> graph = data.get();
             assertEquals( "Wrong graph size.", 2, graph.size() );
@@ -220,7 +219,10 @@ public class TestGraphDescription implements GraphHolder
     @AfterClass
     public static void stopDatabase()
     {
-        if ( graphdb != null ) graphdb.shutdown();
+        if ( graphdb != null )
+        {
+            graphdb.shutdown();
+        }
         graphdb = null;
     }
 

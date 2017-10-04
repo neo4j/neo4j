@@ -30,7 +30,7 @@ public class ReverseArrayIterator<T> implements Iterator<T>
     public ReverseArrayIterator( T[] array )
     {
         this.array = array;
-        this.index = array.length-1;
+        this.index = array.length - 1;
     }
 
     public boolean hasNext()
@@ -40,7 +40,10 @@ public class ReverseArrayIterator<T> implements Iterator<T>
 
     public T next()
     {
-        if ( !hasNext() ) throw new NoSuchElementException();
+        if ( !hasNext() )
+        {
+            throw new NoSuchElementException();
+        }
         return array[index--];
     }
 

@@ -23,16 +23,24 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 
 import static java.lang.String.format;
 
 public class Util
 {
+    private Util()
+    {
+    }
+
     public static Path canonicalPath( Path path ) throws IllegalArgumentException
     {
         return canonicalPath( path.toFile() );
@@ -57,9 +65,10 @@ public class Util
 
     public static void checkLock( Path databaseDirectory ) throws CommandFailed
     {
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.checkLock();
         }
         catch ( StoreLockException e )
         {
@@ -75,5 +84,24 @@ public class Util
     {
         throw new CommandFailed(
                 format( "unable to load database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
+    }
+
+    /**
+     * @return the version of Neo4j as defined during the build
+     */
+    @Nonnull
+    public static String neo4jVersion()
+    {
+        Properties props = new Properties();
+        try
+        {
+            props.load( Util.class.getResourceAsStream( "/org/neo4j/commandline/build.properties" ) );
+            return props.getProperty( "neo4jVersion" );
+        }
+        catch ( IOException e )
+        {
+            // This should never happen
+            throw new RuntimeException( e );
+        }
     }
 }

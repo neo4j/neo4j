@@ -30,17 +30,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
+import static java.util.Arrays.copyOfRange;
+import static java.util.concurrent.Executors.newFixedThreadPool;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.copyOfRange;
-import static java.util.concurrent.Executors.newFixedThreadPool;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.csv.reader.Source.EMPTY_CHUNK;
 
 public class ProcessingSourceTest
@@ -200,7 +198,7 @@ public class ProcessingSourceTest
                 }
 
                 // We cheat here and simply say that we read the requested amount of characters
-                into[length-1] = '\n';
+                into[length - 1] = '\n';
                 return length;
             }
 

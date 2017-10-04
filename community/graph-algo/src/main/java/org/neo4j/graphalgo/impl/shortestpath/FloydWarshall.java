@@ -48,16 +48,16 @@ public class FloydWarshall<CostType>
     protected CostType startCost; // starting cost for all nodes
     protected CostType infinitelyBad; // starting value for calculation
     protected Direction relationDirection;
-    protected CostEvaluator<CostType> costEvaluator = null;
-    protected CostAccumulator<CostType> costAccumulator = null;
-    protected Comparator<CostType> costComparator = null;
+    protected CostEvaluator<CostType> costEvaluator;
+    protected CostAccumulator<CostType> costAccumulator;
+    protected Comparator<CostType> costComparator;
     protected Set<Node> nodeSet;
     protected Set<Relationship> relationshipSet;
     CostType[][] costMatrix;
     Integer[][] predecessors;
     Map<Node,Integer> nodeIndexes; // node ->index
     Node[] IndexedNodes; // index -> node
-    protected boolean doneCalculation = false;
+    protected boolean doneCalculation;
 
     /**
      * @param startCost

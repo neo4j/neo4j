@@ -25,13 +25,14 @@ import javax.servlet.http.HttpServletRequest;
  * A variant of SecurityRule which adds the ability to forbid access, even if the request is authenticated,
  * which results in an HTTP 403.
  */
-public interface ForbiddingSecurityRule extends SecurityRule {
+public interface ForbiddingSecurityRule extends SecurityRule
+{
 
     /**
      * @param request The HTTP request currently under consideration.
      * @return <code>true</code> if the rule is triggered and the request is to be rejected with a "403 Forbidden",
      *  and <code>false</code> otherwise.
      */
-    boolean isForbidden(HttpServletRequest request);
+    boolean isForbidden( HttpServletRequest request );
 
 }

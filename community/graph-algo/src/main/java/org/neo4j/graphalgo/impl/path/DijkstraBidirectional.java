@@ -21,9 +21,6 @@ package org.neo4j.graphalgo.impl.path;
 
 import org.apache.commons.lang3.mutable.MutableDouble;
 
-import java.util.Collections;
-import java.util.function.Predicate;
-
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
@@ -38,11 +35,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
-import org.neo4j.graphdb.traversal.BranchCollisionDetector;
-import org.neo4j.graphdb.traversal.BranchCollisionPolicy;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
-import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.PathEvaluator;
@@ -50,6 +44,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -112,7 +107,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         final MutableDouble startSideShortest = new MutableDouble( 0 );
         final MutableDouble endSideShortest = new MutableDouble( 0 );
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
-                startSideShortest, endSideShortest, epsilon);
+                startSideShortest, endSideShortest, epsilon );
 
         GraphDatabaseService db = start.getGraphDatabase();
 
@@ -128,15 +123,9 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
                 .startSide( startSide )
                 .endSide( endSide )
                 .collisionEvaluator( Evaluators.all() )
-                .collisionPolicy( new BranchCollisionPolicy()
-                {
-                    @Override
-                    public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
-                    {
-                        return new DijkstraBranchCollisionDetector( evaluator, costEvaluator, shortestSoFar, epsilon,
-                                pathPredicate );
-                    }
-                } );
+                .collisionPolicy( ( evaluator, pathPredicate ) ->
+                        new DijkstraBranchCollisionDetector( evaluator, costEvaluator, shortestSoFar, epsilon,
+                                pathPredicate ) );
 
         lastTraverser = traversal.traverse( start, end );
         return lastTraverser;
@@ -184,7 +173,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
             if ( NoneStrictMath.compare( thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon ) > 0 &&
                  stopAfterLowestCost )
             {
-                return Collections.emptyList();
+                return Iterables.emptyResourceIterable();
             }
             return source.expand( path, state );
         }

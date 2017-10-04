@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Log;
@@ -40,54 +41,39 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
 public class ConfiguringPageCacheFactory
 {
     private static final int pageSize = getInteger( ConfiguringPageCacheFactory.class, "pageSize", 8192 );
-    private final PageSwapperFactory swapperFactory;
+    private PageSwapperFactory swapperFactory;
+    private final FileSystemAbstraction fs;
     private final Config config;
-    private final PageCacheTracer tracer;
+    private final PageCacheTracer pageCacheTracer;
     private final Log log;
     private PageCache pageCache;
+    private PageCursorTracerSupplier pageCursorTracerSupplier;
 
-    public ConfiguringPageCacheFactory(
-            FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
+    /**
+     * Construct configuring page cache factory
+     * @param fs fileSystem file system that page cache will be based on
+     * @param config page swapper configuration
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     * @param log page cache factory log
+     */
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier, Log log )
     {
-        this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
+        this.fs = fs;
         this.config = config;
-        this.tracer = tracer;
+        this.pageCacheTracer = pageCacheTracer;
         this.log = log;
-    }
-
-    private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
-    {
-        String desiredImplementation = config.get( pagecache_swapper );
-
-        if ( desiredImplementation != null )
-        {
-            for ( PageSwapperFactory factory : Service.load( PageSwapperFactory.class ) )
-            {
-                if ( factory.implementationName().equals( desiredImplementation ) )
-                {
-                    factory.setFileSystemAbstraction( fs );
-                    if ( factory instanceof ConfigurablePageSwapperFactory )
-                    {
-                        ConfigurablePageSwapperFactory configurableFactory = (ConfigurablePageSwapperFactory) factory;
-                        configurableFactory.configure( config );
-                    }
-                    log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
-                    return factory;
-                }
-            }
-            throw new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation );
-        }
-
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.setFileSystemAbstraction( fs );
-        return factory;
+        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
     }
 
     public synchronized PageCache getOrCreatePageCache()
     {
         if ( pageCache == null )
         {
-            pageCache = createPageCache();
+            this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
+            this.pageCache = createPageCache();
         }
         return pageCache;
     }
@@ -99,8 +85,7 @@ public class ConfiguringPageCacheFactory
         return new MuninnPageCache(
                 swapperFactory,
                 maxPages,
-                cachePageSize,
-                tracer );
+                cachePageSize, pageCacheTracer, pageCursorTracerSupplier );
     }
 
     public int calculateMaxPages( Config config, int cachePageSize )
@@ -207,4 +192,30 @@ public class ConfiguringPageCacheFactory
 
         log.info( msg );
     }
+
+    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
+    {
+        PageSwapperFactory factory = getPageSwapperFactory( config, log );
+        factory.open( fs, config );
+        return factory;
+    }
+
+    private static PageSwapperFactory getPageSwapperFactory( Config config, Log log )
+    {
+        String desiredImplementation = config.get( pagecache_swapper );
+        if ( desiredImplementation != null )
+        {
+            for ( PageSwapperFactory factory : Service.load( PageSwapperFactory.class ) )
+            {
+                if ( factory.implementationName().equals( desiredImplementation ) )
+                {
+                    log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
+                    return factory;
+                }
+            }
+            throw new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation );
+        }
+        return new SingleFilePageSwapperFactory();
+    }
+
 }

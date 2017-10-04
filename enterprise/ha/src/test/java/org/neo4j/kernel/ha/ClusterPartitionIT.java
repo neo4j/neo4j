@@ -37,7 +37,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.NetworkFlag;
 import org.neo4j.test.rule.LoggerRule;
-import org.neo4j.test.rule.RetryOnTransientFailure;
+import org.neo4j.test.rule.RetryACoupleOfTimesHandler;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -52,6 +52,8 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberSeesOtherMemberAsFailed;
 import static org.neo4j.test.rule.DatabaseRule.tx;
+import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.TRANSIENT_ERRORS;
+import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.retryACoupleOfTimesOn;
 
 public class ClusterPartitionIT
 {
@@ -364,7 +366,7 @@ public class ClusterPartitionIT
     {
         assertEquals( PENDING, instance.getInstanceState() );
 
-        tx( instance, new RetryOnTransientFailure(),
+        tx( instance, retryACoupleOfTimesOn( TRANSIENT_ERRORS ),
                 db -> assertEquals( testPropValue, instance.getNodeById( testNodeId ).getProperty( testPropKey ) ) );
 
         try ( Transaction ignored = instance.beginTx() )
@@ -380,7 +382,7 @@ public class ClusterPartitionIT
 
     private void ensureInstanceIsWritable( HighlyAvailableGraphDatabase instance )
     {
-        tx( instance, new RetryOnTransientFailure(),
+        tx( instance, retryACoupleOfTimesOn( TRANSIENT_ERRORS ),
                 db -> db.createNode().setProperty( testPropKey, testPropValue ) );
     }
 

@@ -32,8 +32,10 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
+import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -48,7 +50,7 @@ public class PropertyCreatorTest
     // The RecordAccess will take on the role of both store and tx state and the PropertyCreator
     // will know no difference
     @SuppressWarnings( "unchecked" )
-    private final RecordAccess<Long,PropertyRecord,PrimitiveRecord> records =
+    private final RecordAccess<PropertyRecord,PrimitiveRecord> records =
             new DirectRecordAccess<>( mock( RecordStore.class ), new PropertyRecordLoader() );
     private final MyPrimitiveProxy primitive = new MyPrimitiveProxy();
 
@@ -252,7 +254,7 @@ public class PropertyCreatorTest
 
     private void setProperty( int key, Object value )
     {
-        creator.primitiveSetProperty( primitive, key, value, records );
+        creator.primitiveSetProperty( primitive, key, Values.of( value ), records );
     }
 
     private void assertChain( ExpectedRecord... expectedRecords )
@@ -274,20 +276,20 @@ public class PropertyCreatorTest
         {
             PropertyBlock block = record.getPropertyBlock( expectedProperty.key );
             assertNotNull( block );
-            assertEquals( expectedProperty.value, block.getType().getValue( block, null ) );
+            assertEquals( expectedProperty.value, block.getType().value( block, null ) );
         }
     }
 
     private static class ExpectedProperty
     {
         private final int key;
-        private final Object value;
+        private final Value value;
 
         ExpectedProperty( int key, Object value )
         {
             super();
             this.key = key;
-            this.value = value;
+            this.value = Values.of( value );
         }
     }
 
@@ -311,7 +313,7 @@ public class PropertyCreatorTest
         return new ExpectedRecord( properties );
     }
 
-    private static class MyPrimitiveProxy implements RecordProxy<Long,NodeRecord,Void>
+    private static class MyPrimitiveProxy implements RecordProxy<NodeRecord,Void>
     {
         private final NodeRecord record = new NodeRecord( 5 );
         private boolean changed;
@@ -322,7 +324,7 @@ public class PropertyCreatorTest
         }
 
         @Override
-        public Long getKey()
+        public long getKey()
         {
             return record.getId();
         }
@@ -378,18 +380,18 @@ public class PropertyCreatorTest
         }
     }
 
-    private static class PropertyRecordLoader implements Loader<Long,PropertyRecord,PrimitiveRecord>
+    private static class PropertyRecordLoader implements Loader<PropertyRecord,PrimitiveRecord>
     {
-        private final Loader<Long,PropertyRecord,PrimitiveRecord> actual = Loaders.propertyLoader( null );
+        private final Loader<PropertyRecord,PrimitiveRecord> actual = Loaders.propertyLoader( null );
 
         @Override
-        public PropertyRecord newUnused( Long key, PrimitiveRecord additionalData )
+        public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
         {
             return actual.newUnused( key, additionalData );
         }
 
         @Override
-        public PropertyRecord load( Long key, PrimitiveRecord additionalData )
+        public PropertyRecord load( long key, PrimitiveRecord additionalData )
         {
             return null;
         }

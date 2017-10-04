@@ -24,6 +24,10 @@ import java.net.InetSocketAddress;
 public class ServerUtil
 {
 
+    private ServerUtil()
+    {
+    }
+
     /**
      * Figure out the host string of a given socket address, similar to the Java 7 InetSocketAddress.getHostString().
      *

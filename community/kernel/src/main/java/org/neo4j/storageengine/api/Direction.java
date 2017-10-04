@@ -26,5 +26,5 @@ public enum Direction
 {
     OUTGOING,
     INCOMING,
-    BOTH;
+    BOTH
 }

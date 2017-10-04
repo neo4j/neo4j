@@ -51,7 +51,7 @@ public class PaxosInstanceStore
 
     private static final int MAX_STORED = 5000;
 
-    private int queued = 0;
+    private int queued;
     private Queue<InstanceId> delivered = new LinkedList<InstanceId>();
     private Map<InstanceId, PaxosInstance> instances = new HashMap<InstanceId, PaxosInstance>();
     private final int maxInstancesToStore;
@@ -106,7 +106,7 @@ public class PaxosInstanceStore
     {
         PaxosInstanceStore snapshotStore = new PaxosInstanceStore();
         snapshotStore.queued = queued;
-        snapshotStore.delivered = new LinkedList<>(delivered);
+        snapshotStore.delivered = new LinkedList<>( delivered );
         for ( Map.Entry<InstanceId, PaxosInstance> instance : instances.entrySet() )
         {
             snapshotStore.instances.put( instance.getKey(), instance.getValue().snapshot(snapshotStore) );
@@ -136,12 +136,7 @@ public class PaxosInstanceStore
         {
             return false;
         }
-        if ( !instances.equals( that.instances ) )
-        {
-            return false;
-        }
-
-        return true;
+        return instances.equals( that.instances );
     }
 
     @Override

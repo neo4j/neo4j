@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
+import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.packstream.PackStream;
 
 import static java.lang.Math.max;
@@ -50,7 +51,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     private int currentChunkHeaderOffset;
 
     /** Are currently in the middle of writing a chunk? */
-    private boolean chunkOpen = false;
+    private boolean chunkOpen;
 
     public ChunkedOutput( Channel ch, int bufferSize )
     {
@@ -123,8 +124,10 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     @Override
     public PackOutput writeBytes( ByteBuffer data ) throws IOException
     {
-        // TODO: If data is larger than our chunk size or so, we're very likely better off just passing this ByteBuffer on rather than doing the copy here
-        // TODO: *however* note that we need some way to find out when the data has been written (and thus the buffer can be re-used) if we take that approach
+        // TODO: If data is larger than our chunk size or so, we're very likely better off just passing this ByteBuffer
+        // on rather than doing the copy here
+        // TODO: *however* note that we need some way to find out when the data has been written (and thus the buffer
+        // can be re-used) if we take that approach
         // See the comment in #newBuffer for an approach that would allow that
         while ( data.remaining() > 0 )
         {
@@ -146,7 +149,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     @Override
     public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
     {
-        if( offset + length > data.length )
+        if ( offset + length > data.length )
         {
             throw new IOException( "Asked to write " + length + " bytes, but there is only " +
                                    ( data.length - offset ) + " bytes available in data provided." );
@@ -160,7 +163,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
         if ( closed.get() )
         {
-            throw new IOException( "Cannot write to buffer when closed" );
+            throw new PackOutputClosedException( "Unable to write to the closed output channel" );
         }
         int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
         synchronized ( this )
@@ -193,16 +196,18 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     private void newBuffer()
     {
         // Assumption: We're using nettys buffer pooling here
-        // If we wanted to, we can optimize this further and restrict memory usage by using our own ByteBuf impl. Each Output instance would have, say, 3
-        // buffers that it rotates. Fill one up, send it to be async flushed, fill the next one up, etc. When release is called by Netty, push buffer back
-        // onto our local stack. That way there are no global data structures for managing memory, no fragmentation and a fixed amount of RAM per session used.
+        // If we wanted to, we can optimize this further and restrict memory usage by using our own ByteBuf impl.
+        // Each Output instance would have, say, 3 buffers that it rotates. Fill one up, send it to be async flushed,
+        // fill the next one up, etc. When release is called by Netty, push buffer back onto our local stack. That
+        // way there are no global data structures for managing memory, no fragmentation and a fixed amount of
+        // RAM per session used.
         buffer = channel.alloc().buffer( bufferSize, bufferSize );
         chunkOpen = false;
     }
 
     public synchronized void close()
     {
-        if(buffer != null)
+        if ( buffer != null )
         {
             try
             {

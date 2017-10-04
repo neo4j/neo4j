@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -44,11 +41,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -159,7 +158,8 @@ public class TransactionEventsIT
     @Test
     public void shouldGetEmptyUsernameOnAuthDisabled()
     {
-        db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
+        db.registerTransactionEventHandler( getBeforeCommitHandler( txData ->
+        {
             assertThat( "Should have no username", txData.username(), equalTo( "" ) );
             assertThat( "Should have no metadata", txData.metaData(), equalTo( Collections.emptyMap() ) );
         }) );
@@ -171,7 +171,8 @@ public class TransactionEventsIT
     {
         final AtomicReference<String> usernameRef = new AtomicReference<>();
         final AtomicReference<Map<String,Object>> metaDataRef = new AtomicReference<>();
-        db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
+        db.registerTransactionEventHandler( getBeforeCommitHandler( txData ->
+        {
             usernameRef.set( txData.username() );
             metaDataRef.set( txData.metaData() );
         } ) );
@@ -185,9 +186,10 @@ public class TransactionEventsIT
         assertThat( "Should have metadata with specified username", metaDataRef.get(), equalTo( metadata ) );
     }
 
-    private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler(Consumer<TransactionData> dataConsumer)
+    private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler( Consumer<TransactionData> dataConsumer )
     {
-        return new TransactionEventHandler.Adapter<Object>(){
+        return new TransactionEventHandler.Adapter<Object>()
+        {
             @Override
             public Object beforeCommit( TransactionData data ) throws Exception
             {
@@ -202,12 +204,12 @@ public class TransactionEventsIT
         runTransaction( AnonymousContext.write(), Collections.emptyMap() );
     }
 
-    private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData)
+    private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData )
     {
-        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext ) )
+        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext );
+              Statement statement = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get() )
         {
-            db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get()
-                    .queryRegistration().setMetaData( metaData );
+            statement.queryRegistration().setMetaData( metaData );
             db.createNode();
             transaction.success();
         }
@@ -507,36 +509,4 @@ public class TransactionEventsIT
         }
     }
 
-    private class RootCauseMatcher<T extends Throwable> extends TypeSafeMatcher<T>
-    {
-        private final Class<T> rootCause;
-        private final String message;
-        private Throwable cause;
-
-        RootCauseMatcher( Class<T> rootCause, String message )
-        {
-            this.rootCause = rootCause;
-            this.message = message;
-        }
-
-        @Override
-        protected boolean matchesSafely( T item )
-        {
-            cause = ExceptionUtils.getRootCause( item );
-            return rootCause.isInstance( cause ) && cause.getMessage().equals( message );
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( "Expected root cause of " )
-                    .appendValue( rootCause )
-                    .appendText( " with message: " )
-                    .appendValue( message )
-                    .appendText( ", but was " )
-                    .appendValue( cause.getClass() )
-                    .appendText( " with message: " )
-                    .appendValue( cause.getMessage() );
-        }
-    }
 }

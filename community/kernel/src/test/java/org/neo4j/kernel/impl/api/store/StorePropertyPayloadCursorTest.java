@@ -43,9 +43,11 @@ import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -56,7 +58,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.param;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Params.params;
-import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @RunWith( Enclosed.class )
 public class StorePropertyPayloadCursorTest
@@ -175,6 +176,7 @@ public class StorePropertyPayloadCursorTest
             // When
             assertTrue( cursor.next() );
             assertNotNull( cursor.stringValue() );
+            assertNotEquals( Values.NO_VALUE, cursor.stringValue() );
 
             assertTrue( cursor.next() );
             assertNotNull( cursor.arrayValue() );
@@ -258,7 +260,7 @@ public class StorePropertyPayloadCursorTest
             // Then
             assertTrue( next );
             assertEquals( param.type, cursor.type() );
-            assertObjectOrArrayEquals( param.value, cursor.value() );
+            assertEquals( Values.of( param.value ), cursor.value() );
         }
     }
 
@@ -438,7 +440,7 @@ public class StorePropertyPayloadCursorTest
                 // Then
                 assertTrue( next );
                 assertEquals( param.type, cursor.type() );
-                assertObjectOrArrayEquals( param.value, cursor.value() );
+                assertEquals( Values.of( param.value ), cursor.value() );
             }
         }
     }
@@ -470,7 +472,8 @@ public class StorePropertyPayloadCursorTest
             DynamicArrayStore dynamicArrayStore, Object... values )
     {
         StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor(
-                dynamicStringStore.newRecordCursor( null ), dynamicArrayStore.newRecordCursor( null ) );
+                dynamicStringStore.newRecordCursor( new DynamicRecord( -1 ) ),
+                dynamicArrayStore.newRecordCursor( new DynamicRecord( -1 ) ) );
 
         long[] blocks = asBlocks( values );
         cursor.init( blocks, blocks.length );
@@ -489,7 +492,7 @@ public class StorePropertyPayloadCursorTest
             Object value = values[i];
 
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, i, value, stringAllocator, arrayAllocator );
+            PropertyStore.encodeValue( block, i, Values.of( value ), stringAllocator, arrayAllocator );
             long[] valueBlocks = block.getValueBlocks();
             System.arraycopy( valueBlocks, 0, blocks, cursor, valueBlocks.length );
             cursor += valueBlocks.length;

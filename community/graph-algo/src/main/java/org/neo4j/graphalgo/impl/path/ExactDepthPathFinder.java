@@ -65,14 +65,8 @@ public class ExactDepthPathFinder extends TraversalPathFinder
     {
         GraphDatabaseService db = start.getGraphDatabase();
         TraversalDescription side =
-                db.traversalDescription().breadthFirst().uniqueness( uniqueness ).order( new BranchOrderingPolicy()
-                {
-                    @Override
-                    public BranchSelector create( TraversalBranch startSource, PathExpander expander )
-                    {
-                        return new LiteDepthFirstSelector( startSource, startThreshold, expander );
-                    }
-                } );
+                db.traversalDescription().breadthFirst().uniqueness( uniqueness ).order(
+                        ( startSource, expander ) -> new LiteDepthFirstSelector( startSource, startThreshold, expander ) );
         return db.bidirectionalTraversalDescription().startSide( side.expand( expander ).evaluator( toDepth( onDepth / 2 ) ) )
                 .endSide( side.expand( expander.reverse() ).evaluator( toDepth( onDepth - onDepth / 2 ) ) )
                 .collisionEvaluator( atDepth( onDepth ) )

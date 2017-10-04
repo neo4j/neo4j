@@ -154,8 +154,12 @@ enum SystemDiagnostics implements DiagnosticsProvider
             Map<String, String> paths = new HashMap<String, String>();
             assert pathKeys.length == classPaths.length;
             for ( int i = 0; i < classPaths.length; i++ )
+            {
                 for ( String path : classPaths[i].split( File.pathSeparator ) )
+                {
                     paths.put( canonicalize( path ), pathValue( paths, pathKeys[i], path ) );
+                }
+            }
             for ( int level = 0; loader != null; level++ )
             {
                 if ( loader instanceof URLClassLoader )
@@ -223,8 +227,11 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 if ( property instanceof String )
                 {
                     String key = (String) property;
-                    if ( key.startsWith( "java." ) || key.startsWith( "os." ) || key.endsWith( ".boot.class.path" )
-                         || key.equals( "line.separator" ) ) continue;
+                    if ( key.startsWith( "java." ) || key.startsWith( "os." ) || key.endsWith( ".boot.class.path" ) ||
+                            key.equals( "line.separator" ) )
+                    {
+                        continue;
+                    }
                     logger.log( key + " = " + System.getProperty( key ) );
                 }
             }
@@ -243,14 +250,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            for ( File subdir : SYS_BLOCK.listFiles( new java.io.FileFilter()
-            {
-                @Override
-                public boolean accept( File path )
-                {
-                    return path.isDirectory();
-                }
-            } ) )
+            for ( File subdir : SYS_BLOCK.listFiles( path -> path.isDirectory() ) )
             {
                 File scheduler = new File( subdir, "queue/scheduler" );
                 if ( scheduler.isFile() )
@@ -289,7 +289,8 @@ enum SystemDiagnostics implements DiagnosticsProvider
                         logger.log( "    address: %s", hostAddress );
                     }
                 }
-            } catch ( SocketException e )
+            }
+            catch ( SocketException e )
             {
                 logger.log( "ERROR: failed to inspect network interfaces and addresses: " + e.getMessage() );
             }
@@ -299,7 +300,8 @@ enum SystemDiagnostics implements DiagnosticsProvider
 
     private final String message;
 
-    private SystemDiagnostics(String message) {
+    SystemDiagnostics( String message )
+    {
         this.message = message;
     }
 
@@ -307,7 +309,10 @@ enum SystemDiagnostics implements DiagnosticsProvider
     {
         for ( SystemDiagnostics provider : values() )
         {
-            if ( provider.isApplicable() ) manager.appendProvider( provider );
+            if ( provider.isApplicable() )
+            {
+                manager.appendProvider( provider );
+            }
         }
     }
 

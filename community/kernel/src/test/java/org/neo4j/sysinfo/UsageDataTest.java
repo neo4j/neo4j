@@ -21,7 +21,7 @@ package org.neo4j.sysinfo;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKey;
 

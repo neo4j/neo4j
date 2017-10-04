@@ -33,7 +33,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -41,10 +41,12 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Logger;
+import org.neo4j.values.virtual.MapValue;
 
 /**
- * This implements the backend for the "classic" Core API - meaning the surface-layer-of-the-database, thread bound API. It's a thin veneer to wire the
- * various components the kernel and related utilities expose in a way that {@link GraphDatabaseFacade} likes.
+ * This implements the backend for the "classic" Core API - meaning the surface-layer-of-the-database, thread bound API.
+ * It's a thin veneer to wire the various components the kernel and related utilities expose in a way that
+ * {@link GraphDatabaseFacade} likes.
  * @see org.neo4j.kernel.impl.factory.GraphDatabaseFacade.SPI
  */
 class ClassicCoreSPI implements GraphDatabaseFacade.SPI
@@ -54,7 +56,8 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     private final Logger msgLog;
     private final CoreAPIAvailabilityGuard availability;
 
-    public ClassicCoreSPI(PlatformModule platform, DataSourceModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability )
+    ClassicCoreSPI( PlatformModule platform, DataSourceModule dataSource, Logger msgLog,
+            CoreAPIAvailabilityGuard availability )
     {
         this.platform = platform;
         this.dataSource = dataSource;
@@ -69,7 +72,21 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext transactionalContext )
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext transactionalContext )
+    {
+        try
+        {
+            availability.assertDatabaseAvailable();
+            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
+        }
+        catch ( QueryExecutionKernelException e )
+        {
+            throw e.asUserException();
+        }
+    }
+
+    @Override
+    public Result executeQuery( String query, Map<String, Object> parameters, TransactionalContext transactionalContext )
     {
         try
         {
@@ -172,7 +189,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
             availability.assertDatabaseAvailable();
             KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, securityContext, timeout );
             kernelTx.registerCloseListener(
-                    (txId) -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
+                    txId -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             dataSource.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;
         }
@@ -187,7 +204,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     {
         availability.assertDatabaseAvailable();
         KernelTransaction tx = dataSource.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
-        if( tx == null )
+        if ( tx == null )
         {
             throw new NotInTransactionException();
         }

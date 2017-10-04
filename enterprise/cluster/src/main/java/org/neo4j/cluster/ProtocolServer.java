@@ -53,7 +53,7 @@ public class ProtocolServer
         this.stateMachines = stateMachines;
         this.msgLog = logProvider.getLog( getClass() );
 
-        StateMachineConversations conversations = new StateMachineConversations(me);
+        StateMachineConversations conversations = new StateMachineConversations( me );
         proxyFactory = new StateMachineProxyFactory( stateMachines, conversations, me, logProvider );
         stateMachines.addMessageProcessor( proxyFactory );
     }
@@ -124,7 +124,7 @@ public class ProtocolServer
     {
         StringBuilder builder = new StringBuilder();
         builder.append( "Instance URI: " ).append( boundAt.toString() ).append( "\n" );
-        for( StateMachine stateMachine : stateMachines.getStateMachines() )
+        for ( StateMachine stateMachine : stateMachines.getStateMachines() )
         {
             builder.append( "  " ).append( stateMachine ).append( "\n" );
         }

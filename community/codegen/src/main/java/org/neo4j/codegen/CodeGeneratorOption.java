@@ -23,6 +23,8 @@ public interface CodeGeneratorOption
 {
     void applyTo( Object target );
 
-    CodeGeneratorOption BLANK_OPTION = target -> {
+    CodeGeneratorOption BLANK_OPTION = target ->
+    {
     };
+    CodeGeneratorOption PRINT_DISASSEMBLY = ByteCodeVisitor.printer( System.out );
 }

@@ -105,7 +105,7 @@ public class HexPrinter
         return this;
     }
 
-    public HexPrinter withByteSeparator( String byteSeparator)
+    public HexPrinter withByteSeparator( String byteSeparator )
     {
         this.byteSeparator = byteSeparator;
         return this;
@@ -187,7 +187,7 @@ public class HexPrinter
     public HexPrinter append( ReadableByteChannel source, int atMost ) throws IOException
     {
         boolean indefinite = atMost == -1;
-        ByteBuffer buffer = ByteBuffer.allocate( 4*1024 );
+        ByteBuffer buffer = ByteBuffer.allocate( 4 * 1024 );
         while ( true )
         {
             buffer.clear();

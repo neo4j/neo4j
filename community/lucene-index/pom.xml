@@ -3,11 +3,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <artifactId>neo4j-lucene-index</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Lucene Index</name>
   <description>
@@ -16,11 +16,7 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.index</bundle.namespace>
-    <short-name>lucene-index</short-name>
-    <version-package>index.impl.lucene</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs-plugin.filter>true</docs-plugin.filter>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -51,6 +47,15 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
+
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>
@@ -85,6 +90,10 @@ the relevant Commercial Agreement.
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
@@ -126,56 +135,4 @@ the relevant Commercial Agreement.
     </dependency>
 
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- Override parent to include impl package in javadocs. -->
-          <excludePackageNames>*.dummy</excludePackageNames>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default</id>
-            <phase>${clirr-check-phase}</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <failOnError>true</failOnError>
-          <logResults>true</logResults>
-          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
-           need to fix that.
-           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
-            -->
-          <comparisonVersion>1.9.M05</comparisonVersion>
-          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
-          <includes>
-            <include>org/neo4j/index</include>
-          </includes>
-
-          <!-- Allowed breaking changes in Neo4j 2.0 -->
-          <!-- These rules should be looked over and modified appropriately in 2.1 -->
-          <excludeMessageCodes>
-            <param>6006</param><!-- Field was made final. -->
-            <param>7012</param><!-- Method added to interface -->
-          </excludeMessageCodes>
-          <excludes>
-            <!-- Ignore known breaking changes introduced in 2.0 and 2.1 -->
-
-            <!-- This package is not public API -->
-            <exclude>org/neo4j/index/impl/*</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

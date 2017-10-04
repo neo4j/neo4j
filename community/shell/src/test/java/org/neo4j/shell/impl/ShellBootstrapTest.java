@@ -20,13 +20,15 @@
 package org.neo4j.shell.impl;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ShellBootstrapTest
@@ -38,7 +40,7 @@ public class ShellBootstrapTest
         String host = "test";
         int port = 1234;
         String name = "my shell";
-        Config config = new Config( stringMap(
+        Config config = Config.defaults( stringMap(
                 ShellSettings.remote_shell_host.name(), host,
                 ShellSettings.remote_shell_port.name(), valueOf( port ),
                 ShellSettings.remote_shell_name.name(), name,

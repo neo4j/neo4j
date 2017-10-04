@@ -35,13 +35,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -56,9 +56,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -66,10 +66,9 @@ public class DetectAllRelationshipInconsistenciesIT
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final RandomRule random = new RandomRule();
-    private final DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( directory );
+    public final RuleChain rules = RuleChain.outerRule( random ).around( directory ).around( fileSystemRule );
 
     @Test
     public void shouldDetectSabotagedRelationshipWhereEverItIs() throws Exception
@@ -126,7 +125,7 @@ public class DetectAllRelationshipInconsistenciesIT
                 StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
                 DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
                         db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
-                        db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class ) );
+                        db.getDependencyResolver().resolveDependency( SchemaIndexProviderMap.class ) );
 
                 int threads = random.intBetween( 2, 10 );
                 FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE,
@@ -149,22 +148,23 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private StoreFactory newStoreFactory( PageCache pageCache )
     {
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         return new StoreFactory( directory.directory(), getTuningConfiguration(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
     }
 
     private Config getTuningConfiguration()
     {
-        return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+        return Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
                           GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
     }
 
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( directory.absolutePath() );
-        GraphDatabaseService database = builder
+        GraphDatabaseService database = factory.newEmbeddedDatabaseBuilder( directory.absolutePath() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
         return (GraphDatabaseAPI) database;
     }

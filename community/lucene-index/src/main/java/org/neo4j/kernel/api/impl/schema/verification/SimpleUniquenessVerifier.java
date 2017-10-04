@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.storable.Value;
 
 /**
  * A {@link UniquenessVerifier} that is able to verify value uniqueness inside a single index partition using
@@ -56,30 +57,28 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId ) throws IndexEntryConflictException, IOException
+    public void verify( PropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException
     {
         try
         {
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propKeyId );
+            DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
             IndexSearcher searcher = indexSearcher();
             for ( LeafReaderContext leafReaderContext : searcher.getIndexReader().leaves() )
             {
                 Fields fields = leafReaderContext.reader().fields();
                 for ( String field : fields )
                 {
-                    if ( LuceneDocumentStructure.NODE_ID_KEY.equals( field ) )
+                    if ( LuceneDocumentStructure.useFieldForUniquenessVerification( field ) )
                     {
-                        continue;
-                    }
-
-                    TermsEnum terms = LuceneDocumentStructure.originalTerms( fields.terms( field ), field );
-                    BytesRef termsRef;
-                    while ( (termsRef = terms.next()) != null )
-                    {
-                        if ( terms.docFreq() > 1 )
+                        TermsEnum terms = LuceneDocumentStructure.originalTerms( fields.terms( field ), field );
+                        BytesRef termsRef;
+                        while ( (termsRef = terms.next()) != null )
                         {
-                            collector.reset();
-                            searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
+                            if ( terms.docFreq() > 1 )
+                            {
+                                collector.init( terms.docFreq() );
+                                searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
+                            }
                         }
                     }
                 }
@@ -97,16 +96,16 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId, List<Object> updatedPropertyValues )
+    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Value[]> updatedValueTuples )
             throws IndexEntryConflictException, IOException
     {
         try
         {
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propKeyId );
-            for ( Object propertyValue : updatedPropertyValues )
+            DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
+            for ( Value[] valueTuple : updatedValueTuples )
             {
-                collector.reset();
-                Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
+                collector.init();
+                Query query = LuceneDocumentStructure.newSeekQuery( valueTuple );
                 indexSearcher().search( query, collector );
             }
         }

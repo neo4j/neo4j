@@ -21,9 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,22 +31,26 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.MandatoryNamedArg;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
-import org.neo4j.server.configuration.ConfigLoader;
+
+import static org.neo4j.csv.reader.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 
 public class ImportCommand implements AdminCommand
 {
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
     private static final String[] allowedModes = {"database", "csv"};
     private static final Arguments databaseArguments = new Arguments()
-            .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." ) {
+            .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." )
+            {
                 @Override
                 public String usage()
                 {
@@ -60,7 +62,8 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( "from", "source-directory", "",
                     "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) );
     private static final Arguments csvArguments = new Arguments()
-            .withArgument( new OptionalNamedArg( "mode", "csv", "csv", "Import a collection of CSV files." ) {
+            .withArgument( new OptionalNamedArg( "mode", "csv", "csv", "Import a collection of CSV files." )
+            {
                 @Override
                 public String usage()
                 {
@@ -92,7 +95,39 @@ public class ImportCommand implements AdminCommand
                     "For more information on id handling, please see the Neo4j Manual: " +
                     "https://neo4j.com/docs/operations-manual/current/tools/import/" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
-                    "Character set that input data is encoded in." ) );
+                    "Character set that input data is encoded in." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-extra-columns", false,
+                    "If un-specified columns should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
+                    "If duplicate nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "multiline-fields",
+                    DEFAULT.multilineFields(),
+                    "Whether or not fields from input source can span multiple lines," +
+                            " i.e. contain newline characters." ) )
+            .withArgument( new OptionalNamedArg( "delimiter",
+                    "delimiter-character",
+                    String.valueOf( COMMAS.delimiter() ),
+                    "Delimiter character between values in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "array-delimiter",
+                    "array-delimiter-character",
+                    String.valueOf( COMMAS.arrayDelimiter() ),
+                    "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "quote",
+                    "quotation-character",
+                    String.valueOf( COMMAS.quotationCharacter() ),
+                    "Character to treat as quotation character for values in CSV data. "
+                            + "Quotes can be escaped as per RFC 4180 by doubling them, for example \"\" would be " +
+                            "interpreted as a literal \". You cannot escape using \\." ) )
+            .withArgument( new OptionalNamedArg( "max-memory",
+                    "max-memory-that-importer-can-use",
+                    String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
+                    "Maximum memory that neo4j-admin can use for various data structures and caching " +
+                            "to improve performance. " +
+                            "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
+                            "." ) );
+
     private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
@@ -128,8 +163,37 @@ public class ImportCommand implements AdminCommand
                     "For more information on id handling, please see the Neo4j Manual: " +
                     "https://neo4j.com/docs/operations-manual/current/tools/import/" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
-                    "Character set that input data is encoded in." ) );
-
+                    "Character set that input data is encoded in." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-extra-columns", false,
+                    "If un-specified columns should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
+                    "If duplicate nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "multiline-fields",
+                    DEFAULT.multilineFields(),
+                    "Whether or not fields from input source can span multiple lines," +
+                            " i.e. contain newline characters." ) )
+            .withArgument( new OptionalNamedArg( "delimiter",
+                    String.valueOf( COMMAS.delimiter() ),
+                    String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "array-delimiter",
+                    String.valueOf( COMMAS.delimiter() ),
+                    String.valueOf( COMMAS.arrayDelimiter() ),
+                    "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "quote",
+                    "quotation-character",
+                    String.valueOf( COMMAS.quotationCharacter() ),
+                    "Character to treat as quotation character for values in CSV data. "
+                            + "Quotes can be escaped as per RFC 4180 by doubling them, for example \"\" would be " +
+                            "interpreted as a literal \". You cannot escape using \\." ) )
+            .withArgument( new OptionalNamedArg( "max-memory",
+                    "max-memory-that-importer-can-use",
+                    String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
+                    "Maximum memory that neo4j-admin can use for various data structures and caching " +
+                            "to improve performance. " +
+                            "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
+                            "." ) );
     public static Arguments databaseArguments()
     {
         return databaseArguments;
@@ -222,15 +286,10 @@ public class ImportCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
             Map<String,String> additionalConfig )
     {
-        ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadOfflineConfig( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.with( additionalConfig );
-    }
-
-    private static List<Class<?>> settings()
-    {
-        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( homeDir )
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .withSettings( additionalConfig )
+                .withConnectorsDisabled().build();
     }
 }

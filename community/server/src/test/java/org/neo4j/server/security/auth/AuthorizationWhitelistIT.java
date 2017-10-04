@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
@@ -43,7 +43,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     {
         // Given
         assumeTrue( browserIsLoaded() );
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -57,7 +58,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     public void shouldNotWhitelistConsoleService() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -71,7 +73,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     public void shouldNotWhitelistDB() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -84,7 +87,10 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if ( server != null ) { server.stop(); }
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 
     private boolean browserIsLoaded() throws IOException

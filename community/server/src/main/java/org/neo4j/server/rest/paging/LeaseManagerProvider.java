@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.rest.paging;
 
+import com.sun.jersey.api.core.HttpContext;
+
 import javax.ws.rs.ext.Provider;
 
 import org.neo4j.server.database.InjectableProvider;
-
-import com.sun.jersey.api.core.HttpContext;
 
 @Provider
 public class LeaseManagerProvider extends InjectableProvider<LeaseManager>
 {
     private final LeaseManager leaseManager;
 
-    public LeaseManagerProvider(LeaseManager leaseManager)
+    public LeaseManagerProvider( LeaseManager leaseManager )
     {
         super( LeaseManager.class );
         this.leaseManager = leaseManager;

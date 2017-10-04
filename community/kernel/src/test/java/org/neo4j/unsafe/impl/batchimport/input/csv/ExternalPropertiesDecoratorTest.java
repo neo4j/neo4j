@@ -55,9 +55,8 @@ public class ExternalPropertiesDecoratorTest
         Configuration config = config();
         IdType idType = IdType.STRING;
         Decorator<InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
-                DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
-                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD,
-                silentBadCollector( 0 ));
+                DataFactories.data( NO_NODE_DECORATOR, readable( propertyData ) ),
+                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD, silentBadCollector( 0 ) );
 
         // WHEN
         assertProperties( externalPropertiesDecorator.apply( node( "1", "key", "value1" ) ),
@@ -84,9 +83,8 @@ public class ExternalPropertiesDecoratorTest
         Configuration config = config();
         IdType idType = IdType.STRING;
         Decorator<InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
-                DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
-                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD,
-                silentBadCollector( 0 ));
+                DataFactories.data( NO_NODE_DECORATOR, readable( propertyData ) ),
+                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD, silentBadCollector( 0 ) );
 
         // WHEN
         assertProperties( externalPropertiesDecorator.apply( node( "1", "key", "value1", "email", "existing" ) ),

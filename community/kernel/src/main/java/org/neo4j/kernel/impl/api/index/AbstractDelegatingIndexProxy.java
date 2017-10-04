@@ -28,13 +28,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -70,6 +70,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public IndexDescriptor getDescriptor()
     {
         return getDelegate().getDescriptor();
+    }
+
+    @Override
+    public LabelSchemaDescriptor schema()
+    {
+        return getDelegate().schema();
     }
 
     @Override
@@ -109,7 +115,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void validate() throws ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException
+    public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException
     {
         getDelegate().validate();
     }
@@ -136,12 +142,6 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return getDelegate().snapshotFiles();
-    }
-
-    @Override
-    public IndexConfiguration config()
-    {
-        return getDelegate().config();
     }
 
     @Override

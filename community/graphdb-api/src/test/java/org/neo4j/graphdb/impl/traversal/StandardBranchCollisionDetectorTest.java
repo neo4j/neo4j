@@ -79,7 +79,7 @@ public class StandardBranchCollisionDetectorTest
     {
         private final PropertyContainer endNode;
 
-        public IteratorAnswer( PropertyContainer endNode )
+        IteratorAnswer( PropertyContainer endNode )
         {
             this.endNode = endNode;
         }

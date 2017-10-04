@@ -30,40 +30,48 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 public class NonUniqueDatabaseIndexPopulatorTest
 {
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
+    private final LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
     @Before
     public void setUp() throws Exception
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File folder = testDir.directory( "folder" );
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "testIndex", false );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder, false );
 
-        index = LuceneSchemaIndexBuilder.create()
+        index = LuceneSchemaIndexBuilder.create( IndexDescriptorFactory.forSchema( labelSchemaDescriptor ) )
                 .withIndexStorage( indexStorage )
                 .build();
     }
@@ -93,10 +101,10 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<NodePropertyUpdate> updates = Arrays.asList(
-                NodePropertyUpdate.add( 1, 1, "aaa", new long[]{1} ),
-                NodePropertyUpdate.add( 2, 1, "bbb", new long[]{1} ),
-                NodePropertyUpdate.add( 3, 1, "ccc", new long[]{1} ) );
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
+                add( 1, labelSchemaDescriptor, "aaa" ),
+                add( 2, labelSchemaDescriptor, "bbb" ),
+                add( 3, labelSchemaDescriptor, "ccc" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -110,10 +118,10 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<NodePropertyUpdate> updates = Arrays.asList(
-                NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} ),
-                NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} ),
-                NodePropertyUpdate.add( 3, 1, "foo", new long[]{1} ) );
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
+                add( 1, labelSchemaDescriptor, "foo" ),
+                add( 2, labelSchemaDescriptor, "bar" ),
+                add( 3, labelSchemaDescriptor, "foo" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -127,26 +135,27 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<NodePropertyUpdate> updates = Arrays.asList(
-                NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} ),
-                NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} ),
-                NodePropertyUpdate.add( 42, 1, "bar", new long[]{1} ) );
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
+                add( 1, labelSchemaDescriptor, "foo" ),
+                add( 2, labelSchemaDescriptor, "bar" ),
+                add( 42, labelSchemaDescriptor, "bar" ) );
 
         populator.add( updates );
 
         index.maybeRefreshBlocking();
         try ( IndexReader reader = index.getIndexReader() )
         {
-            assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( reader.scan() ) );
+            int propertyKeyId = labelSchemaDescriptor.getPropertyId();
+            PrimitiveLongIterator allEntities = reader.query( IndexQuery.exists( propertyKeyId ) );
+            assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }
 
     private NonUniqueLuceneIndexPopulator newPopulator() throws IOException
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index, samplingConfig );
         populator.create();
-        populator.configureSampling( true );
         return populator;
     }
 }

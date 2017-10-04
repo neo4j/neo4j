@@ -45,7 +45,7 @@ class BatchingResponseHandler implements Response.Handler,
     private final TransactionObligationFulfiller obligationFulfiller;
     private final Log log;
 
-    public BatchingResponseHandler( int maxBatchSize, TransactionQueue.Applier applier,
+    BatchingResponseHandler( int maxBatchSize, TransactionQueue.Applier applier,
             TransactionObligationFulfiller obligationFulfiller, TxHandler txHandler, Log log )
     {
         this.obligationFulfiller = obligationFulfiller;

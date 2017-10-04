@@ -19,11 +19,11 @@
  */
 package org.neo4j.helpers;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
-
-import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 
@@ -191,7 +191,8 @@ public class HostnamePort
         String toMatchHost = toMatch.getHost();
 
         // this tries to match hostnames as they are at first, then tries to extract and match ip addresses of both
-        return result && ( host.equalsIgnoreCase( toMatchHost ) || getHost(null).equalsIgnoreCase( getHostAddress( toMatchHost, toMatchHost ) ) );
+        return result && (host.equalsIgnoreCase( toMatchHost ) ||
+                getHost( null ).equalsIgnoreCase( getHostAddress( toMatchHost, toMatchHost ) ));
     }
 
     private static String[] splitHostAndPort( String hostnamePort )

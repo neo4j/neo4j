@@ -45,13 +45,13 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface ConsistencyReport
 {
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
+    @Retention( RetentionPolicy.RUNTIME )
+    @Target( ElementType.METHOD )
     @interface Warning
     {
     }
 
-    public interface Reporter
+    interface Reporter
     {
         void forSchema( DynamicRecord schema,
                         RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
@@ -86,8 +86,6 @@ public interface ConsistencyReport
         void forIndexEntry( IndexEntry entry,
                             RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker );
 
-        void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, LabelsMatchReport> nodeLabelCheck );
-
         void forRelationshipGroup( RelationshipGroupRecord record,
                 RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
 
@@ -112,7 +110,8 @@ public interface ConsistencyReport
         @Documented( "The referenced property is owned by the neo store (graph global property)." )
         void multipleOwners( NeoStoreRecord neoStore );
 
-        @Documented( "The property chain contains multiple properties that have the same property key id, which means that the entity has at least one duplicate property." )
+        @Documented( "The property chain contains multiple properties that have the same property key id, " +
+                "which means that the entity has at least one duplicate property." )
         void propertyKeyNotUniqueInChain();
 
         @Documented( "The property chain does not contain a property that is mandatory for this entity." )
@@ -140,13 +139,16 @@ public interface ConsistencyReport
         @Documented( "The constraint index does not reference back to the given record" )
         void constraintIndexRuleNotReferencingBack( DynamicRecord ruleRecord );
 
-        @Documented( "This record is required to reference some other record of the given kind but no such obligation was found" )
+        @Documented( "This record is required to reference some other record of the given kind but no such obligation " +
+                "was found" )
         void missingObligation( SchemaRule.Kind kind );
 
-        @Documented( "This record requires some other record to reference back to it but there already was such a conflicting obligation created by the record given as a parameter" )
+        @Documented( "This record requires some other record to reference back to it but there already was such " +
+                "a conflicting obligation created by the record given as a parameter" )
         void duplicateObligation( DynamicRecord record );
 
-        @Documented( "This record contains a schema rule which has the same content as the schema rule contained in the record given as parameter" )
+        @Documented( "This record contains a schema rule which has the same content as the schema rule contained " +
+                "in the record given as parameter" )
         void duplicateRuleContent( DynamicRecord record );
 
         @Documented( "The schema rule contained in the DynamicRecord chain is malformed (not deserializable)" )
@@ -154,6 +156,10 @@ public interface ConsistencyReport
 
         @Documented( "The schema rule contained in the DynamicRecord chain is of an unrecognized Kind" )
         void unsupportedSchemaRuleKind( SchemaRule.Kind kind );
+
+        @Warning
+        @Documented( "The schema rule contained in the DynamicRecord chain has a reference to a schema rule that is not online." )
+        void schemaRuleNotOnline( SchemaRule schemaRule );
     }
 
     interface NodeConsistencyReport extends PrimitiveConsistencyReport
@@ -164,10 +170,12 @@ public interface ConsistencyReport
         @Documented( "The referenced relationship record is a relationship between two other nodes." )
         void relationshipForOtherNode( RelationshipRecord relationship );
 
-        @Documented( "The referenced relationship record is not the first in the relationship chain where this node is source." )
+        @Documented( "The referenced relationship record is not the first in the relationship chain where this node " +
+                "is source." )
         void relationshipNotFirstInSourceChain( RelationshipRecord relationship );
 
-        @Documented( "The referenced relationship record is not the first in the relationship chain where this node is target." )
+        @Documented( "The referenced relationship record is not the first in the relationship chain where this node " +
+                "is target." )
         void relationshipNotFirstInTargetChain( RelationshipRecord relationship );
 
         @Documented( "The label token record referenced from a node record is not in use." )
@@ -186,13 +194,13 @@ public interface ConsistencyReport
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
 
         @Documented( "This node was not found in the expected index." )
-        void notIndexed( IndexRule index, Object propertyValue );
+        void notIndexed( IndexRule index, Object[] propertyValues );
 
         @Documented( "This node was found in the expected index, although multiple times" )
-        void indexedMultipleTimes( IndexRule index, Object propertyValue, long count );
+        void indexedMultipleTimes( IndexRule index, Object[] propertyValues, long count );
 
-        @Documented( "There is another node in the unique index with the same property value." )
-        void uniqueIndexNotUnique( IndexRule index, Object propertyValue, long duplicateNodeId );
+        @Documented( "There is another node in the unique index with the same property value(s)." )
+        void uniqueIndexNotUnique( IndexRule index, Object[] propertyValues, long duplicateNodeId );
 
         @Documented( "The referenced relationship group record is not in use." )
         void relationshipGroupNotInUse( RelationshipGroupRecord group );
@@ -204,6 +212,9 @@ public interface ConsistencyReport
     interface RelationshipConsistencyReport
             extends PrimitiveConsistencyReport
     {
+        @Documented( "The relationship record is not in use, but referenced from relationships chain." )
+        void notUsedRelationshipReferencedInChain( RelationshipRecord relationshipRecord );
+
         @Documented( "The relationship type field has an illegal value." )
         void illegalRelationshipType();
 
@@ -306,10 +317,12 @@ public interface ConsistencyReport
         @Documented( "The array property is not referenced anymore, but the corresponding block as not been deleted." )
         void arrayUnreferencedButNotDeleted( PropertyBlock block );
 
-        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship does not contain this property in its property chain." )
+        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship " +
+                "does not contain this property in its property chain." )
         void ownerDoesNotReferenceBack();
 
-        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship did not contain this property in its property chain prior to the change. The property is referenced by another owner." )
+        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship " +
+                "did not contain this property in its property chain prior to the change. The property is referenced by another owner." )
         void changedForWrongOwner();
 
         @Documented( "The string record referred from this property is also referred from a another property." )
@@ -331,7 +344,9 @@ public interface ConsistencyReport
         void nameBlockNotInUse( DynamicRecord record );
 
         @Warning
-        @Documented( "The token name is empty. Empty token names are discouraged and also prevented in version 2.0.x and above, but they can be accessed just like any other tokens. It's possible that this token have been created in an earlier version where there were no checks for name being empty." )
+        @Documented( "The token name is empty. Empty token names are discouraged and also prevented in version 2.0.x and " +
+                "above, but they can be accessed just like any other tokens. It's possible that this token have been " +
+                "created in an earlier version where there were no checks for name being empty." )
         void emptyName( DynamicRecord name );
 
         @Documented( "The string record referred from this name record is also referred from a another string record." )
@@ -460,6 +475,8 @@ public interface ConsistencyReport
         void nodeNotInUse( NodeRecord referredNodeRecord );
 
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
+
+        void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
     interface LabelScanConsistencyReport extends NodeInUseWithCorrectLabelsReport
@@ -471,6 +488,10 @@ public interface ConsistencyReport
         @Override
         @Documented( "This label scan document refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
+
+        @Override
+        @Documented( "This node record has a label that is not found in the label scan store entry for this node" )
+        void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
     interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport
@@ -482,15 +503,13 @@ public interface ConsistencyReport
         @Override
         @Documented( "This index entry refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
-    }
 
-    interface LabelsMatchReport extends ConsistencyReport
-    {
-        @Documented( "This node record has a label that is not found in the label scan store entry for this node" )
+        @Override
+        @Documented( "This node record has a label that is not found in the index for this node" )
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
-    public interface CountsConsistencyReport extends ConsistencyReport
+    interface CountsConsistencyReport extends ConsistencyReport
     {
         @Documented( "The node count does not correspond with the expected count." )
         void inconsistentNodeCount( long expectedCount );

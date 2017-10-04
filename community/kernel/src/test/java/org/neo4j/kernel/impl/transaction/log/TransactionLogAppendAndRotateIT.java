@@ -30,8 +30,6 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -51,6 +49,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -72,16 +71,16 @@ public class TransactionLogAppendAndRotateIT
 {
     private final LifeRule life = new LifeRule( true );
     private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public final RuleChain chain = outerRule( directory ).around( life );
+    public final RuleChain chain = outerRule( directory ).around( life ).around( fileSystemRule );
 
     @Test
     public void shouldKeepTransactionsIntactWhenConcurrentlyRotationAndAppending() throws Throwable
     {
         // GIVEN
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory().getAbsoluteFile(), fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory().getAbsoluteFile(), fileSystemRule.get() );
         long rotationThreshold = mebiBytes( 1 );
         LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
         final AtomicBoolean end = new AtomicBoolean();
@@ -89,8 +88,8 @@ public class TransactionLogAppendAndRotateIT
         TransactionIdStore txIdStore = new DeadSimpleTransactionIdStore();
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
         LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, rotationThreshold,
-                () -> txIdStore.getLastCommittedTransactionId(), logVersionRepository, monitoring, logHeaderCache ) );
+        LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, rotationThreshold,
+                txIdStore::getLastCommittedTransactionId, logVersionRepository, monitoring, logHeaderCache ) );
         monitoring.setLogFile( logFile );
         DatabaseHealth health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         LogRotation rotation = new LogRotationImpl( monitoring, logFile, health );
@@ -101,23 +100,19 @@ public class TransactionLogAppendAndRotateIT
         Race race = new Race();
         for ( int i = 0; i < 10; i++ )
         {
-            race.addContestant( new Runnable()
+            race.addContestant( () ->
             {
-                @Override
-                public void run()
+                while ( !end.get() )
                 {
-                    while ( !end.get() )
+                    try
                     {
-                        try
-                        {
-                            appender.append( new TransactionToApply( sillyTransaction( 1_000 ) ), NULL );
-                        }
-                        catch ( Exception e )
-                        {
-                            e.printStackTrace( System.out );
-                            end.set( true );
-                            fail( e.getMessage() );
-                        }
+                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ) ), NULL );
+                    }
+                    catch ( Exception e )
+                    {
+                        e.printStackTrace( System.out );
+                        end.set( true );
+                        fail( e.getMessage() );
                     }
                 }
             } );
@@ -131,19 +126,14 @@ public class TransactionLogAppendAndRotateIT
 
     private Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end )
     {
-        return new Runnable()
+        return () ->
         {
-
-            @Override
-            public void run()
+            long endTime = currentTimeMillis() + unit.toMillis( time );
+            while ( currentTimeMillis() < endTime && !end.get() )
             {
-                long endTime = currentTimeMillis() + unit.toMillis( time );
-                while ( currentTimeMillis() < endTime && !end.get() )
-                {
-                    parkNanos( MILLISECONDS.toNanos( 50 ) );
-                }
-                end.set( true );
+                parkNanos( MILLISECONDS.toNanos( 50 ) );
             }
+            end.set( true );
         };
     }
 
@@ -199,7 +189,7 @@ public class TransactionLogAppendAndRotateIT
         private volatile LogFile logFile;
         private volatile int rotations;
 
-        public AllTheMonitoring( AtomicBoolean end, int maxNumberOfRotations )
+        AllTheMonitoring( AtomicBoolean end, int maxNumberOfRotations )
         {
             this.end = end;
             this.maxNumberOfRotations = maxNumberOfRotations;

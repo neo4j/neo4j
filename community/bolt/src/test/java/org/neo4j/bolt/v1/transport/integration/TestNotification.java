@@ -47,14 +47,14 @@ public class TestNotification implements Notification
     }
 
     @SuppressWarnings( "unchecked" )
-    public static Notification fromMap(Map<String, Object> notification)
+    public static Notification fromMap( Map<String,Object> notification )
     {
         assertThat(notification, hasKey("code"));
         assertThat(notification, hasKey("title"));
         assertThat(notification, hasKey("description"));
         assertThat(notification, hasKey("severity"));
         InputPosition position = null;
-        if (notification.containsKey( "position" ))
+        if ( notification.containsKey( "position" ) )
         {
             Map<String,Long> pos = (Map<String,Long>) notification.get( "position" );
             assertThat( pos, hasKey( "offset" ) );
@@ -103,20 +103,32 @@ public class TestNotification implements Notification
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         TestNotification that = (TestNotification) o;
 
         if ( code != null ? !code.equals( that.code ) : that.code != null )
-        { return false; }
+        {
+            return false;
+        }
         if ( title != null ? !title.equals( that.title ) : that.title != null )
-        { return false; }
+        {
+            return false;
+        }
         if ( description != null ? !description.equals( that.description ) : that.description != null )
-        { return false; }
+        {
+            return false;
+        }
         if ( severityLevel != that.severityLevel )
-        { return false; }
+        {
+            return false;
+        }
         return position != null ? position.equals( that.position ) : that.position == null;
 
     }

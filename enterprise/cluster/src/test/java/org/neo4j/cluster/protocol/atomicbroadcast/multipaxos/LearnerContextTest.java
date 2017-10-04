@@ -49,7 +49,7 @@ public class LearnerContextTest
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.empty(),
                 mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(),
                 null, null, null, null, null,
                 config );
@@ -71,7 +71,7 @@ public class LearnerContextTest
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.empty(),
                 mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(),
                 null, null, null, null, null,
                 config );
@@ -94,7 +94,7 @@ public class LearnerContextTest
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.empty(),
                 mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(),
                 null, null, null, null,
                 null, config );

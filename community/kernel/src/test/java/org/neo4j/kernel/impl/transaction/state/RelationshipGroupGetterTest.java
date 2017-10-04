@@ -38,7 +38,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
+import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -80,7 +80,7 @@ public class RelationshipGroupGetterTest
             NodeRecord node = new NodeRecord( 0, true, group_2.getId(), -1 );
 
             // WHEN trying to find relationship group 7
-            RecordAccess<Long, RelationshipGroupRecord, Integer> access =
+            RecordAccess<RelationshipGroupRecord, Integer> access =
                     new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store ) );
             RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access );
 
@@ -89,7 +89,8 @@ public class RelationshipGroupGetterTest
             verification.verify( store ).getRecord( eq( group_2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
             verification.verify( store ).getRecord( eq( group_4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
             verification.verify( store ).getRecord( eq( group_10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store, times( 0 ) ).getRecord( eq( group_23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store, times( 0 ) )
+                    .getRecord( eq( group_23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
 
             // it should also be reported as not found
             assertNull( result.group() );
@@ -104,11 +105,11 @@ public class RelationshipGroupGetterTest
         {
             if ( i > 0 )
             {
-                groups[i].setPrev( groups[i-1].getId() );
+                groups[i].setPrev( groups[i - 1].getId() );
             }
-            if ( i < groups.length-1 )
+            if ( i < groups.length - 1 )
             {
-                groups[i].setNext( groups[i+1].getId() );
+                groups[i].setNext( groups[i + 1].getId() );
             }
         }
     }

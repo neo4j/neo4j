@@ -69,7 +69,7 @@ public class TestData<T> implements TestRule
             productOrFactory = new Factory( graph, title, documentation );
         }
 
-        @SuppressWarnings( "unchecked"/*cast to T*/)
+        @SuppressWarnings( "unchecked" )
         <T> T get( Producer<T> producer, boolean create )
         {
             Object result = productOrFactory;
@@ -120,7 +120,10 @@ public class TestData<T> implements TestRule
         final Title title = description.getAnnotation( Title.class );
         final Documented doc = description.getAnnotation( Documented.class );
         GraphDescription.Graph g = description.getAnnotation( GraphDescription.Graph.class );
-        if ( g == null ) g = description.getTestClass().getAnnotation( GraphDescription.Graph.class );
+        if ( g == null )
+        {
+            g = description.getTestClass().getAnnotation( GraphDescription.Graph.class );
+        }
         final GraphDescription graph = GraphDescription.create( g );
         return new Statement()
         {
@@ -169,7 +172,10 @@ public class TestData<T> implements TestRule
 
     private void destroy( @SuppressWarnings( "hiding" ) T product, boolean successful )
     {
-        if ( product != null ) producer.destroy( product, successful );
+        if ( product != null )
+        {
+            producer.destroy( product, successful );
+        }
     }
 
     private T get( boolean create )
@@ -177,7 +183,10 @@ public class TestData<T> implements TestRule
         Lazy lazy = product.get();
         if ( lazy == null )
         {
-            if ( create ) throw new IllegalStateException( "Not in test case" );
+            if ( create )
+            {
+                throw new IllegalStateException( "Not in test case" );
+            }
             return null;
         }
         return lazy.get( producer, create );
@@ -209,13 +218,17 @@ public class TestData<T> implements TestRule
             }
             String[] lines = doc.split( "\n" );
             int indent = Integer.MAX_VALUE;
-            int start = 0, end = 0;
+            int start = 0;
+            int end = 0;
             for ( int i = 0; i < lines.length; i++ )
             {
                 if ( EMPTY.equals( lines[i].trim() ) )
                 {
                     lines[i] = EMPTY;
-                    if ( start == i ) end = ++start; // skip initial blank lines
+                    if ( start == i )
+                    {
+                        end = ++start; // skip initial blank lines
+                    }
                 }
                 else
                 {
@@ -230,7 +243,10 @@ public class TestData<T> implements TestRule
                     end = i; // skip blank lines at the end
                 }
             }
-            if ( end == lines.length ) end--; // all lines were empty
+            if ( end == lines.length )
+            {
+                end--; // all lines were empty
+            }
             // If there still is no title, and the first line looks like a
             // title, take the first line as title
             if ( title == null && start < end && EMPTY.equals( lines[start + 1] ) )

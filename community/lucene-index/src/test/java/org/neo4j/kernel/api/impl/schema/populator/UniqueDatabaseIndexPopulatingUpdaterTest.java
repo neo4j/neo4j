@@ -20,51 +20,39 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.Value;
 
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperty;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
 public class UniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final int PROPERTY_KEY = 42;
-
-    @Test
-    public void removeNotSupported()
-    {
-        UniqueLuceneIndexPopulatingUpdater updater = newUpdater();
-
-        try
-        {
-            updater.remove( PrimitiveLongCollections.setOf( 1, 2, 3 ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
-    }
+    private static final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 42 );
 
     @Test
     public void closeVerifiesUniquenessOfAddedValues() throws Exception
@@ -72,14 +60,14 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         SchemaIndex index = mock( SchemaIndex.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( index );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 1, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 1, PROPERTY_KEY, "baz", new long[]{1} ) );
+        updater.process( add( 1, descriptor, "foo" ) );
+        updater.process( add( 1, descriptor, "bar" ) );
+        updater.process( add( 1, descriptor, "baz" ) );
 
         verifyZeroInteractions( index );
 
         updater.close();
-        verify( index ).verifyUniqueness( any(), eq( PROPERTY_KEY ), eq( Arrays.asList( "foo", "bar", "baz" ) ) );
+        verifyVerifyUniqueness( index, descriptor, "foo", "bar", "baz" );
     }
 
     @Test
@@ -88,14 +76,15 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         SchemaIndex index = mock( SchemaIndex.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( index );
 
-        updater.process( change( 1, PROPERTY_KEY, "foo1", new long[]{1, 2}, "foo2", new long[]{1} ) );
-        updater.process( change( 1, PROPERTY_KEY, "bar1", new long[]{1, 2}, "bar2", new long[]{1} ) );
-        updater.process( change( 1, PROPERTY_KEY, "baz1", new long[]{1, 2}, "baz2", new long[]{1} ) );
+        updater.process( change( 1, descriptor, "foo1", "foo2" ) );
+        updater.process( change( 1, descriptor, "bar1", "bar2" ) );
+        updater.process( change( 1, descriptor, "baz1", "baz2" ) );
 
         verifyZeroInteractions( index );
 
         updater.close();
-        verify( index ).verifyUniqueness( any(), eq( PROPERTY_KEY ), eq( Arrays.asList( "foo2", "bar2", "baz2" ) ) );
+
+        verifyVerifyUniqueness( index, descriptor, "foo2", "bar2", "baz2" );
     }
 
     @Test
@@ -104,18 +93,17 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         SchemaIndex index = mock( SchemaIndex.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( index );
 
-        updater.process( add( 1, PROPERTY_KEY, "added1", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "added2", new long[]{1} ) );
-        updater.process( change( 3, PROPERTY_KEY, "before1", new long[]{1, 2}, "after1", new long[]{2} ) );
-        updater.process( change( 4, PROPERTY_KEY, "before2", new long[]{1}, "after2", new long[]{1, 2, 3} ) );
-        updater.process( remove( 5, PROPERTY_KEY, "removed1", new long[]{1, 2} ) );
+        updater.process( add( 1, descriptor, "added1" ) );
+        updater.process( add( 2, descriptor, "added2" ) );
+        updater.process( change( 3, descriptor, "before1", "after1" ) );
+        updater.process( change( 4, descriptor, "before2", "after2" ) );
+        updater.process( remove( 5, descriptor, "removed1" ) );
 
         verifyZeroInteractions( index );
 
         updater.close();
 
-        List<Object> toBeVerified = Arrays.asList( "added1", "added2", "after1", "after2" );
-        verify( index ).verifyUniqueness( any(), eq( PROPERTY_KEY ), eq( toBeVerified ) );
+        verifyVerifyUniqueness( index, descriptor, "added1", "added2", "after1", "after2" );
     }
 
     @Test
@@ -124,10 +112,10 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 4, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 1, descriptor, "foo" ) );
+        updater.process( add( 2, descriptor, "bar" ) );
+        updater.process( add( 3, descriptor, "baz" ) );
+        updater.process( add( 4, descriptor, "qux" ) );
 
         verifySamplingResult( sampler, 4 );
     }
@@ -138,8 +126,8 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( change( 1, PROPERTY_KEY, "before1", new long[]{1}, "after1", new long[]{1} ) );
-        updater.process( change( 2, PROPERTY_KEY, "before2", new long[]{1}, "after2", new long[]{1} ) );
+        updater.process( change( 1, descriptor, "before1", "after1" ) );
+        updater.process( change( 2, descriptor, "before2", "after2" ) );
 
         verifySamplingResult( sampler, 0 );
     }
@@ -153,8 +141,8 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
 
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( remove( 1, PROPERTY_KEY, "removed1", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "removed2", new long[]{1} ) );
+        updater.process( remove( 1, descriptor, "removed1" ) );
+        updater.process( remove( 2, descriptor, "removed2" ) );
 
         verifySamplingResult( sampler, initialValue - 2 );
     }
@@ -165,11 +153,11 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( change( 1, PROPERTY_KEY, "foo", new long[]{1}, "bar", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "qux", new long[]{1} ) );
-        updater.process( remove( 4, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 1, descriptor, "foo" ) );
+        updater.process( change( 1, descriptor, "foo", "bar" ) );
+        updater.process( add( 2, descriptor, "baz" ) );
+        updater.process( add( 3, descriptor, "qux" ) );
+        updater.process( remove( 4, descriptor, "qux" ) );
 
         verifySamplingResult( sampler, 2 );
     }
@@ -180,13 +168,16 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 1, descriptor, "foo" ) );
+        updater.process( add( 2, descriptor, "bar" ) );
+        updater.process( add( 3, descriptor, "qux" ) );
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "foo" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "bar" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ), documentRepresentingProperty( 3, "qux" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
+                documentRepresentingProperties( (long) 1, "foo" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
+                documentRepresentingProperties( (long) 2, "bar" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ),
+                documentRepresentingProperties( (long) 3, "qux" ) );
     }
 
     @Test
@@ -195,11 +186,13 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( change( 1, PROPERTY_KEY, "before1", new long[]{1}, "after1", new long[]{1} ) );
-        updater.process( change( 2, PROPERTY_KEY, "before2", new long[]{1}, "after2", new long[]{1} ) );
+        updater.process( change( 1, descriptor, "before1", "after1" ) );
+        updater.process( change( 2, descriptor, "before2", "after2" ) );
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "after1" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "after2" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
+                documentRepresentingProperties( (long) 1, "after1" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
+                documentRepresentingProperties( (long) 2, "after2" ) );
     }
 
     @Test
@@ -208,9 +201,9 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( remove( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
+        updater.process( remove( 1, descriptor, "foo" ) );
+        updater.process( remove( 2, descriptor, "bar" ) );
+        updater.process( remove( 3, descriptor, "baz" ) );
 
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 1 ) );
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 2 ) );
@@ -249,7 +242,21 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
     private static UniqueLuceneIndexPopulatingUpdater newUpdater( SchemaIndex index, LuceneIndexWriter writer,
             UniqueIndexSampler sampler )
     {
-        return new UniqueLuceneIndexPopulatingUpdater( writer, PROPERTY_KEY, index, mock( PropertyAccessor.class ),
-                sampler );
+        return new UniqueLuceneIndexPopulatingUpdater( writer, descriptor.getPropertyIds(), index,
+                mock( PropertyAccessor.class ), sampler );
+    }
+
+    private void verifyVerifyUniqueness( SchemaIndex index, LabelSchemaDescriptor descriptor, Object... values )
+            throws IOException, IndexEntryConflictException
+    {
+        @SuppressWarnings( "unchecked" )
+        ArgumentCaptor<List<Value[]>> captor = ArgumentCaptor.forClass((Class)List.class);
+        verify( index ).verifyUniqueness(
+                any(), eq( descriptor.getPropertyIds() ), captor.capture() );
+
+        assertThat( captor.getValue(),
+                containsInAnyOrder(
+                        valueTupleList( values ).toArray()
+                ) );
     }
 }

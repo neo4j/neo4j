@@ -19,8 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
+
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
 /**
  * {@link Tracker} capable of keeping {@code int} range values, using {@link IntArray}.
@@ -47,6 +48,6 @@ public class IntTracker extends AbstractTracker<IntArray>
     @Override
     public void set( long index, long value )
     {
-        array.set( index, Utils.safeCastLongToInt( value ) );
+        array.set( index, safeCastLongToInt( value ) );
     }
 }

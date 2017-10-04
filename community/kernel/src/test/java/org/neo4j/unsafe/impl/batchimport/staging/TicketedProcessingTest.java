@@ -57,13 +57,13 @@ public class TicketedProcessingTest
         // GIVEN
         int items = 1_000;
         ParkStrategy park = new ParkStrategy.Park( 2, MILLISECONDS );
-        BiFunction<Integer,Void,Integer> processor = (from,ignore) ->
+        BiFunction<Integer,Void,Integer> processor = ( from, ignore ) ->
         {
             if ( ThreadLocalRandom.current().nextFloat() < 0.01f )
             {
                 park.park( Thread.currentThread() );
             }
-            return from*2;
+            return from * 2;
         };
         int processorCount = Runtime.getRuntime().availableProcessors();
         Future<Void> assertions;
@@ -73,20 +73,16 @@ public class TicketedProcessingTest
             processing.processors( processorCount - processing.processors( 0 ) );
 
             // WHEN
-            assertions = t2.execute( new WorkerCommand<Void,Void>()
+            assertions = t2.execute( state ->
             {
-                @Override
-                public Void doWork( Void state ) throws Exception
+                for ( int i = 0; i < items; i++ )
                 {
-                    for ( int i = 0; i < items; i++ )
-                    {
-                        Integer next = processing.next();
-                        assertNotNull( next );
-                        assertEquals( i*2, next.intValue() );
-                    }
-                    assertNull( processing.next() );
-                    return null;
+                    Integer next = processing.next();
+                    assertNotNull( next );
+                    assertEquals( i * 2, next.intValue() );
                 }
+                assertNull( processing.next() );
+                return null;
             } );
             for ( int i = 0; i < items; i++ )
             {
@@ -103,34 +99,38 @@ public class TicketedProcessingTest
     {
         // GIVEN
         try ( TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
-                (job,state) ->
+                ( job, state ) ->
                 {
                     awaitLatch( job.latch );
                     return parseInt( job.string );
                 }, () -> null ) )
         {
-            processing.processors( 1 );
+            processing.processors( 1 ); // now at 2
             StringJob firstJob = new StringJob( "1" );
             processing.submit( firstJob );
             StringJob secondJob = new StringJob( "2" );
             processing.submit( secondJob );
+            // now both processors have taken the 2 submitted jobs and so there should be 2 slots available
 
             // WHEN
             StringJob thirdJob = new StringJob( "3" );
             thirdJob.latch.countDown();
-            Future<Void> thirdSubmit = t2.execute( new WorkerCommand<Void,Void>()
+            processing.submit( thirdJob );
+            StringJob fourthJob = new StringJob( "4" );
+            fourthJob.latch.countDown();
+            processing.submit( fourthJob );
+
+            StringJob fifthJob = new StringJob( "5" );
+            fifthJob.latch.countDown();
+            Future<Void> fifthSubmit = t2.execute( state ->
             {
-                @Override
-                public Void doWork( Void state ) throws Exception
-                {
-                    processing.submit( thirdJob );
-                    return null;
-                }
+                processing.submit( fifthJob );
+                return null;
             } );
             t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
             firstJob.latch.countDown();
             assertEquals( 1, processing.next().intValue() );
-            thirdSubmit.get();
+            fifthSubmit.get();
             secondJob.latch.countDown();
             assertEquals( 2, processing.next().intValue() );
             assertEquals( 3, processing.next().intValue() );
@@ -143,7 +143,7 @@ public class TicketedProcessingTest
         // GIVEN
         IllegalStateException failure = new IllegalStateException( "Consistently failing" );
         try ( TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
-                (job,state) -> parseInt( job.string ), () -> null ) )
+                ( job, state ) -> parseInt( job.string ), () -> null ) )
         {
             processing.processors( 1 );
 

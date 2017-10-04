@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -55,7 +54,8 @@ public class StoreAccess
     private RecordStore<DynamicRecord> nodeDynamicLabelStore;
     private RecordStore<PropertyRecord> propStore;
     // Transitive stores
-    private RecordStore<DynamicRecord> stringStore, arrayStore;
+    private RecordStore<DynamicRecord> stringStore;
+    private RecordStore<DynamicRecord> arrayStore;
     private RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
     private RecordStore<DynamicRecord> relationshipTypeNameStore;
     private RecordStore<DynamicRecord> labelNameStore;
@@ -70,11 +70,6 @@ public class StoreAccess
     {
         this.neoStores = store;
         this.counts = store.getCounts();
-    }
-
-    public StoreAccess( PageCache pageCache, File storeDir )
-    {
-        this( new DefaultFileSystemAbstraction(), pageCache, storeDir );
     }
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
@@ -233,7 +228,7 @@ public class StoreAccess
         return store;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store )
             throws FAILURE
     {

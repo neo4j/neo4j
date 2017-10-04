@@ -21,14 +21,7 @@ package org.neo4j.kernel.impl.transaction.tracing;
 
 public interface CheckPointTracer
 {
-    CheckPointTracer NULL = new CheckPointTracer()
-    {
-        @Override
-        public LogCheckPointEvent beginCheckPoint()
-        {
-            return LogCheckPointEvent.NULL;
-        }
-    };
+    CheckPointTracer NULL = () -> LogCheckPointEvent.NULL;
 
     /**
      * Begin a check point write to the log

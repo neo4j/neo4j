@@ -23,6 +23,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -33,13 +35,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.concat;
@@ -55,14 +55,12 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
  */
 public class RecordFormatSelector
 {
-    private static final RecordFormats DEFAULT_FORMAT = StandardV3_0.RECORD_FORMATS;
+    private static final RecordFormats DEFAULT_FORMAT = Standard.LATEST_RECORD_FORMATS;
 
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
-            StandardV2_0.RECORD_FORMATS,
-            StandardV2_1.RECORD_FORMATS,
-            StandardV2_2.RECORD_FORMATS,
             StandardV2_3.RECORD_FORMATS,
-            StandardV3_0.RECORD_FORMATS
+            StandardV3_0.RECORD_FORMATS,
+            StandardV3_2.RECORD_FORMATS
     );
 
     private RecordFormatSelector()
@@ -263,6 +261,21 @@ public class RecordFormatSelector
     }
 
     /**
+     * Finds which format, if any, succeeded the specified format. Only formats in the same family are considered.
+     *
+     * @param format to find successor to.
+     * @return the format with the lowest generation > format.generation, or None if no such format is known.
+     */
+    @Nonnull
+    public static Optional<RecordFormats> findSuccessor( @Nonnull final RecordFormats format )
+    {
+        return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
+                .filter( candidate -> FormatFamily.isSameFamily( format, candidate ) )
+                .filter( candidate -> candidate.generation() > format.generation() )
+                .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
+    }
+
+    /**
      * Gets all {@link RecordFormats} that the selector is aware of.
      * @return An iterable over all known record formats.
      */
@@ -289,9 +302,9 @@ public class RecordFormatSelector
     {
         if ( StringUtils.isNotEmpty( recordFormat ) )
         {
-            if ( StandardV3_0.NAME.equals( recordFormat ) )
+            if ( Standard.LATEST_NAME.equals( recordFormat ) )
             {
-                return StandardV3_0.RECORD_FORMATS;
+                return Standard.LATEST_RECORD_FORMATS;
             }
             RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
             if ( formatFactory != null )

@@ -25,8 +25,8 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -35,8 +35,9 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
@@ -55,7 +56,7 @@ public class ConsistencyCheckTool
         {
             System.err.println("WARNING: ConsistencyCheckTool is deprecated and support for it will be" +
                     "removed in a future version of Neo4j. Please use neo4j-admin check-consistency.");
-            runConsistencyCheckTool( args );
+            runConsistencyCheckTool( args, System.out, System.err );
         }
         catch ( ToolFailureException e )
         {
@@ -63,23 +64,41 @@ public class ConsistencyCheckTool
         }
     }
 
-    public static ConsistencyCheckService.Result runConsistencyCheckTool( String[] args )
+    public static ConsistencyCheckService.Result runConsistencyCheckTool( String[] args, PrintStream outStream,
+                                                                          PrintStream errStream )
             throws ToolFailureException, IOException
     {
-        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(),
-                new DefaultFileSystemAbstraction(), System.err );
-        return tool.run( args );
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        try
+        {
+            ConsistencyCheckTool tool =
+                    new ConsistencyCheckTool( new ConsistencyCheckService(), fileSystem, outStream, errStream );
+            return tool.run( args );
+        }
+        finally
+        {
+            try
+            {
+                fileSystem.close();
+            }
+            catch ( IOException e )
+            {
+                System.err.print( "Failure during file system shutdown." );
+            }
+        }
     }
 
     private final ConsistencyCheckService consistencyCheckService;
+    private final PrintStream systemOut;
     private final PrintStream systemError;
     private final FileSystemAbstraction fs;
 
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, FileSystemAbstraction fs,
-            PrintStream systemError )
+            PrintStream systemOut, PrintStream systemError )
     {
         this.consistencyCheckService = consistencyCheckService;
         this.fs = fs;
+        this.systemOut = systemOut;
         this.systemError = systemError;
     }
 
@@ -93,11 +112,12 @@ public class ConsistencyCheckTool
 
         checkDbState( storeDir, tuningConfiguration );
 
-        LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
+        LogProvider logProvider = FormattedLogProvider.toOutputStream( systemOut );
         try
         {
             return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose );
+                    ProgressMonitorFactory.textual( systemError ), logProvider, fs, verbose,
+                    new ConsistencyFlags( tuningConfiguration ) );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
@@ -112,9 +132,10 @@ public class ConsistencyCheckTool
 
     private void checkDbState( File storeDir, Config tuningConfiguration ) throws ToolFailureException
     {
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
+        try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
-            if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
+            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, new Monitors() );
+            if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
             {
                 throw new ToolFailureException( Strings.joinAsLines(
                         "Active logical log detected, this might be a source of inconsistencies.",
@@ -162,7 +183,7 @@ public class ConsistencyCheckTool
                         configFilePath ), e );
             }
         }
-        return new Config( specifiedConfig, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return Config.defaults( specifiedConfig );
     }
 
     private String usage()

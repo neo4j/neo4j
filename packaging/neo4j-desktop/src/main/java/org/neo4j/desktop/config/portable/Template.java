@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-
 import java.util.function.Function;
 
 public class Template
@@ -38,21 +37,17 @@ public class Template
     {
         this.templateFile = templateFile;
         substitutor = new VariableSubstitutor();
-        substitutionFunction = new Function<String, String>()
+        substitutionFunction = name ->
         {
-            @Override
-            public String apply( String name )
-            {
-                String var = System.getenv( name );
-                return var == null ? "" : var;
-            }
+            String var = System.getenv( name );
+            return var == null ? "" : var;
         };
     }
 
     public void write( File file ) throws Exception
     {
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( templateFile, StandardCharsets.UTF_8 ) );
-              PrintWriter writer = new PrintWriter( file ))
+              PrintWriter writer = new PrintWriter( file ) )
         {
             String input = reader.readLine();
             while ( input != null )

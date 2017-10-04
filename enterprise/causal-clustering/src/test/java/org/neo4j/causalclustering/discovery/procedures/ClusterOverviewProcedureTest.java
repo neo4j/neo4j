@@ -19,31 +19,37 @@
  */
 package org.neo4j.causalclustering.discovery.procedures;
 
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.hamcrest.collection.IsIterableContainingInOrder;
-import org.junit.Test;
-
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
+import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.collection.RawIterator;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.causalclustering.discovery.procedures.GetServersProcedureTest.*;
-import static org.neo4j.causalclustering.discovery.procedures.GetServersProcedureTest.addresses;
-import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
+import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ClusterOverviewProcedureTest
 {
@@ -53,36 +59,101 @@ public class ClusterOverviewProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         MemberId theLeader = new MemberId( UUID.randomUUID() );
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, coreAddresses( 0 ) );
-        coreMembers.put( follower1, coreAddresses( 1 ) );
-        coreMembers.put( follower2, coreAddresses( 2 ) );
+        coreMembers.put( theLeader, adressesForCore( 0 ) );
+        coreMembers.put( follower1, adressesForCore( 1 ) );
+        coreMembers.put( follower2, adressesForCore( 2 ) );
 
-        Set<ReadReplicaAddresses> readReplicas = addresses( 4, 5 );
+        Map<MemberId,ReadReplicaInfo> replicaMembers = new HashMap<>();
+        MemberId replica4 = new MemberId( UUID.randomUUID() );
+        MemberId replica5 = new MemberId( UUID.randomUUID() );
+
+        replicaMembers.put( replica4, addressesForReadReplica( 4 ) );
+        replicaMembers.put( replica5, addressesForReadReplica( 5 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicas ) );
+        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        ClusterOverviewProcedure procedure = new ClusterOverviewProcedure( topologyService, leaderLocator,
-                NullLogProvider.getInstance() );
+        ClusterOverviewProcedure procedure =
+                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
-        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+        final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0] );
 
-        // then
-        assertThat( members, IsIterableContainingInOrder.contains(
-                new Object[]{theLeader.getUuid().toString(), new String[] {"bolt://localhost:3000"}, "LEADER"},
-                new Object[]{follower1.getUuid().toString(), new String[] {"bolt://localhost:3001"}, "FOLLOWER"},
-                new Object[]{follower2.getUuid().toString(), new String[] {"bolt://localhost:3002"}, "FOLLOWER"},
-                new Object[]{"00000000-0000-0000-0000-000000000000", new String[] {"bolt://localhost:3004"}, "READ_REPLICA"},
-                new Object[]{"00000000-0000-0000-0000-000000000000", new String[] {"bolt://localhost:3005"}, "READ_REPLICA"}
-        ) );
+        assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, Role.LEADER, asSet( "core", "core0" ) ) );
+        assertThat( members.next(),
+                new IsRecord( follower1.getUuid(), 5001, Role.FOLLOWER, asSet( "core", "core1" ) ) );
+        assertThat( members.next(),
+                new IsRecord( follower2.getUuid(), 5002, Role.FOLLOWER, asSet( "core", "core2" ) ) );
+
+        assertThat( members.next(),
+                new IsRecord( replica4.getUuid(), 6004, Role.READ_REPLICA, asSet( "replica", "replica4" ) ) );
+        assertThat( members.next(),
+                new IsRecord( replica5.getUuid(), 6005, Role.READ_REPLICA, asSet( "replica", "replica5" ) ) );
+
+        assertFalse( members.hasNext() );
+    }
+
+    class IsRecord extends TypeSafeMatcher<Object[]>
+    {
+        private final UUID memberId;
+        private final int boltPort;
+        private final Role role;
+        private final Set<String> groups;
+
+        IsRecord( UUID memberId, int boltPort, Role role, Set<String> groups )
+        {
+            this.memberId = memberId;
+            this.boltPort = boltPort;
+            this.role = role;
+            this.groups = groups;
+        }
+
+        @Override
+        protected boolean matchesSafely( Object[] record )
+        {
+            if ( record.length != 4 )
+            {
+                return false;
+            }
+
+            if ( !memberId.toString().equals( record[0] ) )
+            {
+                return false;
+            }
+
+            List<String> boltAddresses = Collections.singletonList( "bolt://localhost:" + boltPort );
+
+            if ( !boltAddresses.equals( record[1] ) )
+            {
+                return false;
+            }
+
+            if ( !role.name().equals( record[2] ) )
+            {
+                return false;
+            }
+
+            Set<String> recordGroups = Iterables.asSet( (List<String>) record[3] );
+            return groups.equals( recordGroups );
+        }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendText(
+                    "memberId=" + memberId +
+                    ", boltPort=" + boltPort +
+                    ", role=" + role +
+                    ", groups=" + groups +
+                    '}' );
+        }
     }
 }

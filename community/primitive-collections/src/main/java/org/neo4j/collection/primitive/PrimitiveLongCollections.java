@@ -20,6 +20,7 @@
 package org.neo4j.collection.primitive;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,18 +47,28 @@ public class PrimitiveLongCollections
 {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
+    private PrimitiveLongCollections()
+    {
+    }
+
     /**
      * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
      */
     public abstract static class PrimitiveLongBaseIterator implements PrimitiveLongIterator
     {
+        private boolean hasNextDecided;
         private boolean hasNext;
         protected long next;
 
         @Override
         public boolean hasNext()
         {
-            return hasNext ? true : (hasNext = fetchNext());
+            if ( !hasNextDecided )
+            {
+                hasNext = fetchNext();
+                hasNextDecided = true;
+            }
+            return hasNext;
         }
 
         @Override
@@ -67,7 +78,7 @@ public class PrimitiveLongCollections
             {
                 throw new NoSuchElementException( "No more elements in " + this );
             }
-            hasNext = false;
+            hasNextDecided = false;
             return next;
         }
 
@@ -108,7 +119,7 @@ public class PrimitiveLongCollections
             @Override
             protected boolean fetchNext()
             {
-                return ++index < items.length ? next( items[index] ) : false;
+                return ++index < items.length && next( items[index] );
             }
         };
     }
@@ -122,7 +133,7 @@ public class PrimitiveLongCollections
             @Override
             protected boolean fetchNext()
             {
-                return --index >= 0 ? next( items[index] ) : false;
+                return --index >= 0 && next( items[index] );
             }
         };
     }
@@ -134,6 +145,11 @@ public class PrimitiveLongCollections
     }
 
     // Concating
+    public static PrimitiveLongIterator concat( PrimitiveLongIterator... primitiveLongIterators )
+    {
+        return concat( Arrays.asList( primitiveLongIterators ) );
+    }
+
     public static PrimitiveLongIterator concat( Iterable<PrimitiveLongIterator> primitiveLongIterators )
     {
         return new PrimitiveLongConcatingIterator( primitiveLongIterators.iterator() );
@@ -158,7 +174,7 @@ public class PrimitiveLongCollections
                     singleItemReturned = true;
                     return next( item );
                 }
-                return iterator.hasNext() ? next( iterator.next() ) : false;
+                return iterator.hasNext() && next( iterator.next() );
             }
         };
     }
@@ -210,7 +226,7 @@ public class PrimitiveLongCollections
                     }
                 }
             }
-            return currentIterator != null && currentIterator.hasNext() ? next( currentIterator.next() ) : false;
+            return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
         }
 
         protected final PrimitiveLongIterator currentIterator()
@@ -262,7 +278,7 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static PrimitiveLongIterator dedup( PrimitiveLongIterator source )
+    public static PrimitiveLongIterator deduplicate( PrimitiveLongIterator source )
     {
         return new PrimitiveLongFilteringIterator( source )
         {
@@ -292,7 +308,7 @@ public class PrimitiveLongCollections
     {
         return new PrimitiveLongFilteringIterator( source )
         {
-            private int skipped = 0;
+            private int skipped;
 
             @Override
             public boolean test( long item )
@@ -391,7 +407,7 @@ public class PrimitiveLongCollections
         {
             try
             {
-                return current <= end ? next( current ) : false;
+                return current <= end && next( current );
             }
             finally
             {
@@ -411,7 +427,7 @@ public class PrimitiveLongCollections
             {
                 try
                 {
-                    return !returned ? next( item ) : false;
+                    return !returned && next( item );
                 }
                 finally
                 {
@@ -520,13 +536,13 @@ public class PrimitiveLongCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
         if ( cursor < fromEnd )
         {
             throw new NoSuchElementException( "Item " + index + " not found in " + iterator );
         }
-        return trail[cursor%fromEnd];
+        return trail[cursor % fromEnd];
     }
 
     public static long itemAt( PrimitiveLongIterator iterator, int index, long defaultItem )
@@ -546,9 +562,9 @@ public class PrimitiveLongCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
-        return cursor < fromEnd ? defaultItem : trail[cursor%fromEnd];
+        return cursor < fromEnd ? defaultItem : trail[cursor % fromEnd];
     }
 
     /**
@@ -581,7 +597,8 @@ public class PrimitiveLongCollections
      */
     public static boolean equals( PrimitiveLongIterator first, PrimitiveLongIterator other )
     {
-        boolean firstHasNext, otherHasNext;
+        boolean firstHasNext;
+        boolean otherHasNext;
         // single | so that both iterator's hasNext() gets evaluated.
         while ( (firstHasNext = first.hasNext()) | (otherHasNext = other.hasNext()) )
         {
@@ -785,14 +802,14 @@ public class PrimitiveLongCollections
     public static List<Long> asList( PrimitiveLongIterator iterator )
     {
         List<Long> out = new ArrayList<>();
-        while(iterator.hasNext())
+        while ( iterator.hasNext() )
         {
-            out.add(iterator.next());
+            out.add( iterator.next() );
         }
         return out;
     }
 
-    @SuppressWarnings("UnusedDeclaration"/*Useful when debugging in tests, but not used outside of debugging sessions*/)
+    @SuppressWarnings( "UnusedDeclaration" )
     public static Iterator<Long> toIterator( final PrimitiveLongIterator primIterator )
     {
         return new Iterator<Long>()
@@ -878,5 +895,33 @@ public class PrimitiveLongCollections
             throw new IllegalStateException( "Encountered an already added item:" + item +
                     " when adding items uniquely to a collection:" + collection );
         }
+    }
+
+    /**
+     * Deduplicates values in the sorted {@code values} array.
+     *
+     * @param values sorted array of long values.
+     * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
+     */
+    public static long[] deduplicate( long[] values )
+    {
+        int unique = 0;
+        for ( int i = 0; i < values.length; i++ )
+        {
+            long value = values[i];
+            for ( int j = 0; j < unique; j++ )
+            {
+                if ( value == values[j] )
+                {
+                    value = -1; // signal that this value is not unique
+                    break; // we will not find more than one conflict
+                }
+            }
+            if ( value != -1 )
+            {   // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                values[unique++] = values[i];
+            }
+        }
+        return unique < values.length ? Arrays.copyOf( values, unique ) : values;
     }
 }

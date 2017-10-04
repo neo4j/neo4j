@@ -43,7 +43,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class MasterEpochTest
 {
@@ -58,7 +57,7 @@ public class MasterEpochTest
         StoreId storeId = newStoreIdForCurrentVersion();
         MasterImpl master = new MasterImpl( spi,
                 mock( ConversationManager.class ), mock( MasterImpl.Monitor.class ),
-                new Config( stringMap( ClusterSettings.server_id.name(), "1" ) ) );
+                Config.defaults( ClusterSettings.server_id, "1" ) );
         HandshakeResult handshake = master.handshake( 1, storeId ).response();
         master.start();
 
@@ -67,7 +66,7 @@ public class MasterEpochTest
         assertEquals( servedIdAllocation.getHighestIdInUse(), idAllocation.getHighestIdInUse() );
         try
         {
-            master.allocateIds( context( handshake.epoch()+1 ), IdType.NODE );
+            master.allocateIds( context( handshake.epoch() + 1 ), IdType.NODE );
             fail( "Should fail with invalid epoch" );
         }
         catch ( InvalidEpochException e )
@@ -77,7 +76,7 @@ public class MasterEpochTest
 
     private IdAllocation idAllocation( long from, int length )
     {
-        return new IdAllocation( new IdRange( EMPTY_LONG_ARRAY, from, length ), from+length, 0 );
+        return new IdAllocation( new IdRange( EMPTY_LONG_ARRAY, from, length ), from + length, 0 );
     }
 
     private RequestContext context( long epoch )

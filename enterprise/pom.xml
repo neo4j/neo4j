@@ -3,24 +3,19 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>enterprise-build</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Build</name>
   <packaging>pom</packaging>
   <description>Project that builds the Neo4j Enterprise distribution.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
-  <properties>
-    <short-name>enterprise-build</short-name>
-    <componentversion.skip>true</componentversion.skip>
-  </properties>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -34,6 +29,7 @@
     <module>cluster</module>
     <module>backup</module>
     <module>kernel</module>
+    <module>runtime</module>
     <module>causal-clustering</module>
     <module>metrics</module>
     <module>neo4j-enterprise</module>
@@ -44,7 +40,23 @@
     <module>auth-plugin-api</module>
     <module>deferred-locks</module>
     <module>ha</module>
+    <module>procedure-compiler-enterprise-tests</module>
+    <module>fulltext-addon</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>include-cypher</id>
+      <activation>
+        <property>
+          <name>!skipCypher</name>
+        </property>
+      </activation>
+      <modules>
+        <module>cypher</module>
+      </modules>
+    </profile>
+  </profiles>
 
   <licenses>
     <license>
@@ -65,6 +77,4 @@ terms of the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-
 </project>
-

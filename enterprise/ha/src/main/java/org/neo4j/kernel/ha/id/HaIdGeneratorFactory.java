@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.id;
 import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
@@ -34,13 +35,14 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.kernel.ha.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
+import static org.neo4j.kernel.impl.store.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
@@ -65,14 +67,14 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         HaIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -90,7 +92,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             // Initially we may call switchToSlave() before calling open, so we need this additional
             // (and, you might say, hacky) call to delete the .id file here as well as in switchToSlave().
             fs.deleteFile( fileName );
-            initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), log, requestContextFactory );
+            initialIdGenerator = new SlaveIdGenerator( idType, highId.get(), master.cement(), log, requestContextFactory );
             break;
         default:
             throw new IllegalStateException( globalState.name() );
@@ -133,7 +135,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
     private enum IdGeneratorState
     {
-        PENDING, SLAVE, MASTER;
+        PENDING, SLAVE, MASTER
     }
 
     private class HaIdGenerator implements IdGenerator
@@ -143,7 +145,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         private final int grabSize;
         private final IdType idType;
         private volatile IdGeneratorState state;
-        private long maxId;
+        private final long maxId;
 
         HaIdGenerator( IdGenerator initialDelegate, File fileName, int grabSize,
                 IdType idType, IdGeneratorState initialState, long maxId )
@@ -176,7 +178,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 delegate.delete();
 
                 localFactory.create( fileName, highId, false );
-                delegate = localFactory.open( fileName, grabSize, idType, highId, maxId );
+                delegate = localFactory.open( fileName, grabSize, idType, () -> highId, maxId );
                 log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
             }
             else
@@ -332,41 +334,52 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             long nextId = nextLocalId();
             if ( nextId == IdRangeIterator.VALUE_REPRESENTING_NULL )
             {
-                // If we don't have anymore grabbed ids from master, grab a bunch
-                try ( Response<IdAllocation> response =
-                        master.allocateIds( requestContextFactory.newRequestContext(), idType ) )
-                {
-                    IdAllocation allocation = response.response();
-                    log.info( "Received id allocation " + allocation + " from master " + master + " for " + idType );
-                    nextId = storeLocally( allocation );
-                }
-                catch ( ComException e )
-                {
-                    throw new TransientTransactionFailureException(
-                            "Cannot allocate new entity ids from the cluster master. " +
-                            "The master instance is either down, or we have network connectivity problems", e );
-                }
+                askForNextRangeFromMaster();
+                nextId = nextLocalId();
             }
             return nextId;
         }
 
-        @Override
-        public IdRange nextIdBatch( int size )
+        private void askForNextRangeFromMaster()
         {
-            throw new UnsupportedOperationException( "Should never be called" );
+            // If we don't have anymore grabbed ids from master, grab a bunch
+            try ( Response<IdAllocation> response =
+                    master.allocateIds( requestContextFactory.newRequestContext(), idType ) )
+            {
+                IdAllocation allocation = response.response();
+                log.info( "Received id allocation " + allocation + " from master " + master + " for " + idType );
+                storeLocally( allocation );
+            }
+            catch ( ComException e )
+            {
+                throw new TransientTransactionFailureException(
+                        "Cannot allocate new entity ids from the cluster master. " +
+                        "The master instance is either down, or we have network connectivity problems", e );
+            }
         }
 
-        private long storeLocally( IdAllocation allocation )
+        @Override
+        public synchronized IdRange nextIdBatch( int size )
+        {
+            IdRange range = idQueue.nextIdBatch( size );
+            if ( range.totalSize() == 0 )
+            {
+                askForNextRangeFromMaster();
+                range = idQueue.nextIdBatch( size );
+            }
+            return range;
+        }
+
+        private void storeLocally( IdAllocation allocation )
         {
             setHighId( allocation.getHighestIdInUse() );
             this.defragCount = allocation.getDefragCount();
-            this.idQueue = new IdRangeIterator( allocation.getIdRange() );
-            return idQueue.next();
+            this.idQueue = allocation.getIdRange().iterator();
         }
 
         private long nextLocalId()
         {
-            return this.idQueue.next();
+            return this.idQueue.nextId();
         }
 
         @Override

@@ -23,11 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -54,8 +53,8 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void keepUserDefinedFormatConfig() throws Exception
     {
-        Config config = new Config( MapUtil.stringMap( string_block_size.name(), "36" ) );
-        RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
+        Config config = Config.defaults( string_block_size, "36" );
+        RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
         assertEquals( "Should keep used specified value", 36, config.get( string_block_size ).intValue() );
     }
@@ -63,7 +62,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void overrideDefaultValuesForCurrentFormat()
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         int testHeaderSize = 17;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 
@@ -77,7 +76,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void checkForMinimumBlockSize()
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         int testHeaderSize = 60;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 
@@ -92,13 +91,19 @@ public class RecordFormatPropertyConfiguratorTest
 
         private int dynamicRecordHeaderSize;
 
-        public ResizableRecordFormats(int dynamicRecordHeaderSize)
+        ResizableRecordFormats( int dynamicRecordHeaderSize )
         {
             this.dynamicRecordHeaderSize = dynamicRecordHeaderSize;
         }
 
         @Override
         public String storeVersion()
+        {
+            return null;
+        }
+
+        @Override
+        public String introductionVersion()
         {
             return null;
         }
@@ -154,7 +159,7 @@ public class RecordFormatPropertyConfiguratorTest
         @Override
         public RecordFormat<DynamicRecord> dynamic()
         {
-            return new ResizableRecordFormat(dynamicRecordHeaderSize);
+            return new ResizableRecordFormat( dynamicRecordHeaderSize );
         }
 
         @Override

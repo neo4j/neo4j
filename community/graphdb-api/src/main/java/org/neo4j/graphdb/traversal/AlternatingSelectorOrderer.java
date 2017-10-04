@@ -46,7 +46,9 @@ public class AlternatingSelectorOrderer extends AbstractSelectorOrderer<Integer>
         else
         {
             if ( branch != null )
+            {
                 setStateForCurrentSelector( branch.length() );
+            }
         }
         return branch;
     }

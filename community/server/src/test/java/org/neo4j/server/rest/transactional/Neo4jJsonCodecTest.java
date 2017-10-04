@@ -30,14 +30,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.spatial.Coordinate;
-import org.neo4j.graphdb.spatial.Geometry;
-import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
@@ -256,8 +256,8 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     {
         //Given
         List<Coordinate> points = new ArrayList<>();
-        points.add( new Coordinate(1,2) );
-        points.add( new Coordinate(2,3) );
+        points.add( new Coordinate( 1, 2 ) );
+        points.add( new Coordinate( 2, 3 ) );
         Geometry value = new MockGeometry( "LineString", points, mockCartesian() );
 
         //When
@@ -304,7 +304,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
 
         public MockPoint( final double x, final double y, final CRS crs )
         {
-            super("Point", new ArrayList<>(), crs);
+            super( "Point", new ArrayList<>(), crs );
             this.coordinate = new Coordinate( x, y );
             this.coordinates.add( this.coordinate );
         }

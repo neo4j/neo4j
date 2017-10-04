@@ -25,4 +25,9 @@ public class DatabaseShutdownException extends RuntimeException
     {
         super( "This database is shutdown." );
     }
+
+    public DatabaseShutdownException( String message )
+    {
+        super( message );
+    }
 }

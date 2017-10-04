@@ -24,24 +24,22 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.Value;
 
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 class InMemoryIndex
 {
@@ -49,22 +47,12 @@ class InMemoryIndex
     private InternalIndexState state = InternalIndexState.POPULATING;
     String failure;
 
-    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = new PrimitiveLongVisitor<RuntimeException>()
-    {
-        @Override
-        public boolean visited( long nodeId ) throws RuntimeException
-        {
-            indexData.remove( nodeId );
-            return false;
-        }
-    };
-
     InMemoryIndex()
     {
         this( new HashBasedIndex() );
     }
 
-    InMemoryIndex( InMemoryIndexImplementation indexData )
+    private InMemoryIndex( InMemoryIndexImplementation indexData )
     {
         this.indexData = indexData;
     }
@@ -92,20 +80,16 @@ class InMemoryIndex
         return new OnlineAccessor();
     }
 
-    protected final PrimitiveLongIterator indexSeek( Object propertyValue )
+    protected boolean add( long nodeId, Value[] propertyValues, boolean applyIdempotently )
     {
-        return indexData.seek( propertyValue );
+        assert propertyValues.length > 0;
+        return indexData.add( nodeId, applyIdempotently, propertyValues );
     }
 
-    protected boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )
-            throws IndexEntryConflictException, IOException
+    protected void remove( long nodeId, Value[] propertyValues )
     {
-        return indexData.add( nodeId, propertyValue, applyIdempotently );
-    }
-
-    protected void remove( long nodeId, Object propertyValue )
-    {
-        indexData.remove( nodeId, propertyValue );
+        assert propertyValues.length > 0;
+        indexData.remove( nodeId, propertyValues );
     }
 
     protected void remove( long nodeId )
@@ -131,11 +115,12 @@ class InMemoryIndex
         }
 
         @Override
-        public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+                throws IndexEntryConflictException, IOException
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
-                InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), false );
+                InMemoryIndex.this.add( update.getEntityId(), update.values(), false );
             }
         }
 
@@ -174,14 +159,8 @@ class InMemoryIndex
         }
 
         @Override
-        public void includeSample( NodePropertyUpdate update )
+        public void includeSample( IndexEntryUpdate<?> update )
         {
-        }
-
-        @Override
-        public void configureSampling( boolean onlineSampling )
-        {
-            //nothing
         }
 
         @Override
@@ -206,11 +185,6 @@ class InMemoryIndex
     {
         @Override
         public void force()
-        {
-        }
-
-        @Override
-        public void flush()
         {
         }
 
@@ -246,7 +220,7 @@ class InMemoryIndex
         @Override
         public ResourceIterator<File> snapshotFiles()
         {
-            return emptyIterator();
+            return emptyResourceIterator();
         }
 
         @Override
@@ -272,19 +246,19 @@ class InMemoryIndex
         }
 
         @Override
-        public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
         {
-            switch ( update.getUpdateMode() )
+            switch ( update.updateMode() )
             {
             case ADDED:
-                InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                InMemoryIndex.this.add( update.getEntityId(), update.values(), applyIdempotently );
                 break;
             case CHANGED:
-                InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
-                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                InMemoryIndex.this.remove( update.getEntityId(), update.beforeValues() );
+                add( update.getEntityId(), update.values(), applyIdempotently );
                 break;
             case REMOVED:
-                InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                InMemoryIndex.this.remove( update.getEntityId(), update.values() );
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -294,12 +268,6 @@ class InMemoryIndex
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-        }
-
-        @Override
-        public void remove( PrimitiveLongSet nodeIds )
-        {
-            nodeIds.visitKeys( removeFromIndex );
         }
     }
 
@@ -355,5 +323,10 @@ class InMemoryIndex
             repr = propertyValue.toString();
         }
         return repr;
+    }
+
+    boolean hasSameContentsAs( InMemoryIndex otherIndex )
+    {
+        return indexData.hasSameContentsAs( otherIndex.indexData );
     }
 }

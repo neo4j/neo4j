@@ -39,7 +39,8 @@ public class OutputAsWriter extends Writer
         if ( lastNewline == -1 )
         {
             out.print( string );
-        } else
+        }
+        else
         {
             out.println( string.substring( 0, lastNewline ) );
             out.print( string.substring( lastNewline + System.lineSeparator().length() ) );

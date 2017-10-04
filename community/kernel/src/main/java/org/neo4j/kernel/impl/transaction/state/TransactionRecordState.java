@@ -25,8 +25,6 @@ import java.util.Comparator;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -58,6 +56,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -94,7 +93,7 @@ public class TransactionRecordState implements RecordState
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
 
-    private RecordChanges<Long,NeoStoreRecord, Void> neoStoreRecord;
+    private RecordChanges<NeoStoreRecord, Void> neoStoreRecord;
     private boolean prepared;
 
     public TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator,
@@ -139,16 +138,16 @@ public class TransactionRecordState implements RecordState
         int noOfCommands = recordChangeSet.changeSize() +
                            (neoStoreRecord != null ? neoStoreRecord.changeSize() : 0);
 
-        for ( RecordProxy<Integer, LabelTokenRecord, Void> record : recordChangeSet.getLabelTokenChanges().changes() )
+        for ( RecordProxy<LabelTokenRecord, Void> record : recordChangeSet.getLabelTokenChanges().changes() )
         {
             commands.add( new Command.LabelTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
-        for ( RecordProxy<Integer, RelationshipTypeTokenRecord, Void> record :
+        for ( RecordProxy<RelationshipTypeTokenRecord, Void> record :
             recordChangeSet.getRelationshipTypeTokenChanges().changes() )
         {
             commands.add( new Command.RelationshipTypeTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
-        for ( RecordProxy<Integer, PropertyKeyTokenRecord, Void> record :
+        for ( RecordProxy<PropertyKeyTokenRecord, Void> record :
             recordChangeSet.getPropertyKeyTokenChanges().changes() )
         {
             commands.add( new Command.PropertyKeyTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
@@ -161,7 +160,7 @@ public class TransactionRecordState implements RecordState
         {
             nodeCommands = new Command[recordChangeSet.getNodeRecords().changeSize()];
             int i = 0;
-            for ( RecordProxy<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
+            for ( RecordProxy<NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
             {
                 NodeRecord record = prepared( change, nodeStore );
                 integrityValidator.validateNodeRecord( record );
@@ -175,7 +174,7 @@ public class TransactionRecordState implements RecordState
         {
             relCommands = new Command[recordChangeSet.getRelRecords().changeSize()];
             int i = 0;
-            for ( RecordProxy<Long, RelationshipRecord, Void> change : recordChangeSet.getRelRecords().changes() )
+            for ( RecordProxy<RelationshipRecord, Void> change : recordChangeSet.getRelRecords().changes() )
             {
                 relCommands[i++] = new Command.RelationshipCommand( change.getBefore(),
                         prepared( change, relationshipStore ) );
@@ -188,7 +187,7 @@ public class TransactionRecordState implements RecordState
         {
             propCommands = new Command[recordChangeSet.getPropertyRecords().changeSize()];
             int i = 0;
-            for ( RecordProxy<Long, PropertyRecord, PrimitiveRecord> change :
+            for ( RecordProxy<PropertyRecord, PrimitiveRecord> change :
                 recordChangeSet.getPropertyRecords().changes() )
             {
                 propCommands[i++] = new Command.PropertyCommand( change.getBefore(),
@@ -202,7 +201,7 @@ public class TransactionRecordState implements RecordState
         {
             relGroupCommands = new Command[recordChangeSet.getRelGroupRecords().changeSize()];
             int i = 0;
-            for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change :
+            for ( RecordProxy<RelationshipGroupRecord, Integer> change :
                 recordChangeSet.getRelGroupRecords().changes() )
             {
                 if ( change.isCreated() && !change.forReadingLinkage().inUse() )
@@ -244,25 +243,25 @@ public class TransactionRecordState implements RecordState
 
         if ( neoStoreRecord != null )
         {
-            for ( RecordProxy<Long,NeoStoreRecord, Void> change : neoStoreRecord.changes() )
+            for ( RecordProxy<NeoStoreRecord, Void> change : neoStoreRecord.changes() )
             {
                 commands.add( new Command.NeoStoreCommand( change.getBefore(), change.forReadingData() ) );
             }
         }
-        for ( RecordProxy<Long, SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
+        for ( RecordProxy<SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
         {
             integrityValidator.validateSchemaRule( change.getAdditionalData() );
             commands.add( new Command.SchemaRuleCommand(
                     change.getBefore(), change.forChangingData(), change.getAdditionalData() ) );
         }
-        assert commands.size() == noOfCommands - skippedCommands: format( "Expected %d final commands, got %d " +
+        assert commands.size() == noOfCommands - skippedCommands : format( "Expected %d final commands, got %d " +
                 "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
 
         prepared = true;
     }
 
     private <RECORD extends AbstractBaseRecord> RECORD prepared(
-            RecordProxy<?,RECORD,?> proxy, RecordStore<RECORD> store )
+            RecordProxy<RECORD,?> proxy, RecordStore<RECORD> store )
     {
         RECORD after = proxy.forReadingLinkage();
         store.prepareForCommit( after );
@@ -338,7 +337,7 @@ public class TransactionRecordState implements RecordState
      */
     public void relRemoveProperty( long relId, int propertyKey )
     {
-        RecordProxy<Long, RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
+        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyDeleter.removeProperty( rel, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
@@ -351,72 +350,60 @@ public class TransactionRecordState implements RecordState
      */
     public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
-        RecordProxy<Long, NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
+        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyDeleter.removeProperty( node, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
     /**
      * Changes an existing property's value of the given relationship, with the
      * given index to the passed value
-     *
-     * @param relId The id of the relationship which holds the property to
+     *  @param relId The id of the relationship which holds the property to
      *            change.
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
-     * @return The changed property, as a PropertyData object.
      */
-    public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
+    public void relChangeProperty( long relId, int propertyKey, Value value )
     {
-        RecordProxy<Long, RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
+        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
      * Changes an existing property of the given node, with the given index to
      * the passed value
-     *
-     * @param nodeId The id of the node which holds the property to change.
+     *  @param nodeId The id of the node which holds the property to change.
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
-     * @return The changed property, as a PropertyData object.
      */
-    public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
+    public void nodeChangeProperty( long nodeId, int propertyKey, Value value )
     {
-        RecordProxy<Long, NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
+        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
      * Adds a property to the given relationship, with the given index and
      * value.
-     *
-     * @param relId The id of the relationship to which to add the property.
+     *  @param relId The id of the relationship to which to add the property.
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
-     * @return The added property, as a PropertyData object.
      */
-    public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
+    public void relAddProperty( long relId, int propertyKey, Value value )
     {
-        RecordProxy<Long, RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
+        RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
      * Adds a property to the given node, with the given index and value.
-     *
-     * @param nodeId The id of the node to which to add the property.
+     *  @param nodeId The id of the node to which to add the property.
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
-     * @return The added property, as a PropertyData object.
      */
-    public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
+    public void nodeAddProperty( long nodeId, int propertyKey, Value value )
     {
-        RecordProxy<Long, NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
+        RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
@@ -508,21 +495,21 @@ public class TransactionRecordState implements RecordState
 
     private static final CommandSorter COMMAND_SORTER = new CommandSorter();
 
-    private RecordProxy<Long,NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
+    private RecordProxy<NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
     {
         // TODO Move this neo store record thingie into RecordAccessSet
         if ( neoStoreRecord == null )
         {
-            neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<Long,NeoStoreRecord, Void>()
+            neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<NeoStoreRecord, Void>()
             {
                 @Override
-                public NeoStoreRecord newUnused( Long key, Void additionalData )
+                public NeoStoreRecord newUnused( long key, Void additionalData )
                 {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public NeoStoreRecord load( Long key, Void additionalData )
+                public NeoStoreRecord load( long key, Void additionalData )
                 {
                     return metaDataStore.graphPropertyRecord();
                 }
@@ -544,16 +531,13 @@ public class TransactionRecordState implements RecordState
 
     /**
      * Adds a property to the graph, with the given index and value.
-     *
-     * @param propertyKey The index of the key of the property to add.
+     *  @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
-     * @return The added property, as a PropertyData object.
      */
-    public DefinedProperty graphAddProperty( int propertyKey, Object value )
+    public void graphAddProperty( int propertyKey, Value value )
     {
         propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
@@ -562,13 +546,11 @@ public class TransactionRecordState implements RecordState
      *
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
-     * @return The changed property, as a PropertyData object.
      */
-    public DefinedProperty graphChangeProperty( int propertyKey, Object value )
+    public void graphChangeProperty( int propertyKey, Value value )
     {
         propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
@@ -579,14 +561,15 @@ public class TransactionRecordState implements RecordState
      */
     public void graphRemoveProperty( int propertyKey )
     {
-        RecordProxy<Long,NeoStoreRecord, Void> recordChange = getOrLoadNeoStoreRecord();
+        RecordProxy<NeoStoreRecord, Void> recordChange = getOrLoadNeoStoreRecord();
         propertyDeleter.removeProperty( recordChange, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
     public void createSchemaRule( SchemaRule schemaRule )
     {
-        for( DynamicRecord change : recordChangeSet.getSchemaRuleChanges()
-                .create( schemaRule.getId(), schemaRule ).forChangingData() )
+        for ( DynamicRecord change : recordChangeSet.getSchemaRuleChanges()
+                .create( schemaRule.getId(), schemaRule )
+                .forChangingData() )
         {
             change.setInUse( true );
             change.setCreated();
@@ -595,13 +578,29 @@ public class TransactionRecordState implements RecordState
 
     public void dropSchemaRule( SchemaRule rule )
     {
-        RecordProxy<Long, SchemaRecord, SchemaRule> change =
+        RecordProxy<SchemaRecord, SchemaRule> change =
                 recordChangeSet.getSchemaRuleChanges().getOrLoad( rule.getId(), rule );
         SchemaRecord records = change.forChangingData();
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );
         }
+    }
+
+    public void changeSchemaRule( SchemaRule rule, SchemaRule updatedRule )
+    {
+        //Read the current record
+        RecordProxy<SchemaRecord,SchemaRule> change = recordChangeSet.getSchemaRuleChanges()
+                .getOrLoad( rule.getId(), rule );
+        SchemaRecord records = change.forReadingData();
+
+        //Register the change of the record
+        RecordProxy<SchemaRecord,SchemaRule> recordChange = recordChangeSet.getSchemaRuleChanges()
+                .setRecord( rule.getId(), records, updatedRule );
+        SchemaRecord dynamicRecords = recordChange.forChangingData();
+
+        //Update the record
+        dynamicRecords.setDynamicRecords( schemaStore.allocateFrom( updatedRule ) );
     }
 
     public void addLabelToNode( int labelId, long nodeId )
@@ -618,13 +617,8 @@ public class TransactionRecordState implements RecordState
 
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
     {
-        RecordProxy<Long, SchemaRecord, SchemaRule> change =
-                recordChangeSet.getSchemaRuleChanges().getOrLoad( indexRule.getId(), indexRule );
-        SchemaRecord records = change.forChangingData();
-
-        indexRule = indexRule.withOwningConstraint( constraintId );
-
-        records.setDynamicRecords( schemaStore.allocateFrom( indexRule ) );
+        IndexRule updatedIndexRule = indexRule.withOwningConstraint( constraintId );
+        changeSchemaRule( indexRule, updatedIndexRule );
     }
 
     public interface PropertyReceiver<P extends StorageProperty>

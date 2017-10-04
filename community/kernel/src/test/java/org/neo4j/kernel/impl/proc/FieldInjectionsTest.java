@@ -84,7 +84,7 @@ public class FieldInjectionsTest
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();
-        components.register( int.class, (ctx) -> 1337 );
+        components.register( int.class, ctx -> 1337 );
         FieldInjections injections = new FieldInjections( components );
 
         // When
@@ -106,7 +106,7 @@ public class FieldInjectionsTest
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();
-        components.register( int.class, (ctx) -> 1337 );
+        components.register( int.class, ctx -> 1337 );
         FieldInjections injections = new FieldInjections( components );
 
         // When
@@ -124,18 +124,18 @@ public class FieldInjectionsTest
 
     public static class ProcedureWithNonInjectedMemberFields
     {
-        public boolean someState = false;
+        public boolean someState;
     }
 
     public static class ProcedureWithPrivateMemberField
     {
         @Context
-        private boolean someState = false;
+        private boolean someState;
     }
 
     public static class ProcedureWithStaticFields
     {
-        private static boolean someState = false;
+        private static boolean someState;
     }
 
     public static class ParentProcedure

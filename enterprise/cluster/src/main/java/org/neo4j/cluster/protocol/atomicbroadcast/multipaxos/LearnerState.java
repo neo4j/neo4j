@@ -100,7 +100,7 @@ public enum LearnerState
                                     description = instance.value_2.toString();
                                 }
                                 log.debug(
-                                        "Learned and closed instance "+instance.id +
+                                        "Learned and closed instance " + instance.id +
                                                 " from conversation " +
                                                 instance.conversationIdHeader +
                                                 " and the content was " +
@@ -280,9 +280,10 @@ public enum LearnerState
                     if ( lastKnownAliveInstance != null )
                     {
                         return context.getUriForId( lastKnownAliveInstance );
-                    } else
+                    }
+                    else
                     {
-                        return new URI(message.getHeader( Message.FROM ));
+                        return new URI( message.getHeader( Message.FROM ) );
                     }
                 }
             }

@@ -115,7 +115,7 @@ class AbstractContextImpl
     }
 
     @Override
-    public URI getUriForId(InstanceId node )
+    public URI getUriForId( InstanceId node )
     {
         return commonState.configuration().getUriForId( node );
     }

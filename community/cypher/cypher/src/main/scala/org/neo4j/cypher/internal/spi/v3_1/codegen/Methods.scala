@@ -30,10 +30,11 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalR
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.values.storable.{Value, Values}
 
 object Methods {
 
@@ -79,18 +80,18 @@ object Methods {
   val relationshipTypeGetName = method[ReadOperations, String]("relationshipTypeGetName", typeRef[Int])
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
-  val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty", typeRef[Long], typeRef[Int])
+  val nodeGetProperty = method[ReadOperations, Value]("nodeGetProperty", typeRef[Long], typeRef[Int])
   val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
   val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
-  val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty", typeRef[Long], typeRef[Int])
+  val relationshipGetProperty = method[ReadOperations, Value]("relationshipGetProperty", typeRef[Long], typeRef[Int])
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
   val fetchNextRelationship = method[RelationshipIterator, Long]("next")
   val newNodeProxyById = method[NodeManager, NodeProxy]("newNodeProxyById", typeRef[Long])
   val newRelationshipProxyById = method[NodeManager, RelationshipProxy]("newRelationshipProxyById", typeRef[Long])
-  val nodeId = method[NodeIdWrapper, Long]("id")
-  val relId = method[RelationshipIdWrapper, Long]("id")
+  val nodeId = method[NodeIdWrapperImpl, Long]("id")
+  val relId = method[RelationshipIdWrapperImpl, Long]("id")
   val set = method[ResultRowImpl, Unit]("set", typeRef[String], typeRef[Object])
   val visit = method[InternalResultVisitor[_], Boolean]("visit", typeRef[InternalResultRow])
   val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
@@ -106,4 +107,5 @@ object Methods {
   val unboxDouble = method[java.lang.Double, Double]("doubleValue")
   val unboxNode = method[NodeProxy, Long]("getNodeId")
   val unboxRel = method[RelationshipProxy, Long]("getRelationshipId")
+  val reboxValue = method[Values, Object]("asObject", typeRef[Value])
 }

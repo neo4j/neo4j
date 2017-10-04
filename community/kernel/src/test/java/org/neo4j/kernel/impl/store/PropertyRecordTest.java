@@ -29,6 +29,7 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -57,7 +58,7 @@ public class PropertyRecordTest
         record.setPropertyBlock( blockB );
 
         // Then the record should only contain a single block, because blockB overwrote blockA
-        List<PropertyBlock> propertyBlocks = Iterables.asList( (Iterable<PropertyBlock>) record );
+        List<PropertyBlock> propertyBlocks = Iterables.asList( record );
         assertThat( propertyBlocks, hasItem( blockB ) );
         assertThat( propertyBlocks, hasSize( 1 ) );
     }
@@ -173,7 +174,7 @@ public class PropertyRecordTest
     private static void addBlock( PropertyRecord record, int key, int value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, key, value, null, null );
+        PropertyStore.encodeValue( block, key, Values.of( value ), null, null );
         for ( long valueBlock : block.getValueBlocks() )
         {
             record.addLoadedBlock( valueBlock );

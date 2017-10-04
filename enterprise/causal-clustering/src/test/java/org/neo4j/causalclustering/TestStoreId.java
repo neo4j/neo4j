@@ -26,14 +26,12 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
@@ -41,6 +39,10 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSAC
 
 public class TestStoreId
 {
+    private TestStoreId()
+    {
+    }
+
     public static void assertAllStoresHaveTheSameStoreId( List<File> coreStoreDirs, FileSystemAbstraction fs )
             throws IOException
     {
@@ -53,14 +55,6 @@ public class TestStoreId
             }
         }
         assertEquals( "Store Ids " + storeIds, 1, storeIds.size() );
-    }
-
-    public static StoreId readStoreId( File coreStoreDir, DefaultFileSystemAbstraction fs ) throws IOException
-    {
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
-        {
-            return doReadStoreId( coreStoreDir, pageCache );
-        }
     }
 
     private static StoreId doReadStoreId( File coreStoreDir, PageCache pageCache ) throws IOException

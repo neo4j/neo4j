@@ -52,10 +52,10 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
     private final LinkedBlockingQueue<byte[]> received = new LinkedBlockingQueue<>();
 
     // Current input data being handled, popped off of 'received' queue
-    private byte[] currentReceiveBuffer = null;
+    private byte[] currentReceiveBuffer;
 
     // Index into the current receive buffer
-    private int currentReceiveIndex = 0;
+    private int currentReceiveIndex;
 
     public WebSocketConnection()
     {
@@ -132,8 +132,8 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
             currentReceiveIndex = 0;
             currentReceiveBuffer = received.poll( 10, MILLISECONDS );
 
-            if( (currentReceiveBuffer == null && ( client.isStopped() || client.isStopping() ) ) ||
-                currentReceiveBuffer == POISON_PILL )
+            if ( (currentReceiveBuffer == null && (client.isStopped() || client.isStopping())) ||
+                    currentReceiveBuffer == POISON_PILL )
             {
                 // no data received
                 throw new IOException( "Connection closed while waiting for data from the server." );
@@ -150,7 +150,7 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
     @Override
     public void disconnect() throws IOException
     {
-        if (client != null)
+        if ( client != null )
         {
             try
             {

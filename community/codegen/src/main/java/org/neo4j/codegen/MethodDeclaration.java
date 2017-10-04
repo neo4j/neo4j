@@ -241,7 +241,7 @@ public abstract class MethodDeclaration
 
     private TypeReference erase( TypeReference reference, Map<String,TypeReference> table )
     {
-        TypeReference erasedReference = table.get( reference.name() );
+        TypeReference erasedReference = table.get( reference.fullName() );
 
         return erasedReference != null ? erasedReference : reference;
     }

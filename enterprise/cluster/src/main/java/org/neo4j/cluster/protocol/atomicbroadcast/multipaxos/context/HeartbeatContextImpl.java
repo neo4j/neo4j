@@ -122,7 +122,8 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
 
         if ( checkSuspectEverybody() )
         {
-            getLog( HeartbeatContext.class ).warn( "All other instances are being suspected. Moving on to mark all other instances as failed" );
+            getLog( HeartbeatContext.class )
+                    .warn( "All other instances are being suspected. Moving on to mark all other instances as failed" );
             markAllOtherMembersAsFailed();
         }
     }
@@ -142,7 +143,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         Set<InstanceId> everyoneElse = new HashSet<>();
         for ( InstanceId instanceId : getMembers().keySet() )
         {
-            if( !isMe( instanceId ) )
+            if ( !isMe( instanceId ) )
             {
                 everyoneElse.add( instanceId );
             }
@@ -369,12 +370,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         {
             return false;
         }
-        if ( nodeSuspicions != null ? !nodeSuspicions.equals( that.nodeSuspicions ) : that.nodeSuspicions != null )
-        {
-            return false;
-        }
-
-        return true;
+        return nodeSuspicions != null ? nodeSuspicions.equals( that.nodeSuspicions ) : that.nodeSuspicions == null;
     }
 
     @Override

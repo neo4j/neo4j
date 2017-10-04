@@ -134,7 +134,7 @@ public class ObservedClusterMembers
 
     private class HAMClusterMemberListener extends ClusterMemberListener.Adapter
     {
-        private InstanceId masterId = null;
+        private InstanceId masterId;
 
         @Override
         public void coordinatorIsElected( InstanceId coordinatorId )

@@ -24,4 +24,13 @@ package org.neo4j.causalclustering.core.replication;
  */
 public interface ReplicatedContent
 {
+    default boolean hasSize()
+    {
+        return false;
+    }
+
+    default long size()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

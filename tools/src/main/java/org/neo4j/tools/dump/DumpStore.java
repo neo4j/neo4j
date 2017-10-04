@@ -48,7 +48,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.PrintStreamLogger;
 import org.neo4j.storageengine.api.Token;
 
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -66,10 +66,11 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
             System.err.println( "SYNTAX: [file[:id[,id]*]]+" );
             return;
         }
-        final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        try ( PageCache pageCache = createPageCache( fs ) )
+
+        try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( fs ) )
         {
+            final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( file.getParentFile(),
                     Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider() );
 
@@ -85,7 +86,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         File file = new File( fileName );
         long[] ids = null; // null means all possible ids
 
-        if( file.isFile() )
+        if ( file.isFile() )
         {
                 /* If file exists, even with : in its path, then accept it straight off. */
         }

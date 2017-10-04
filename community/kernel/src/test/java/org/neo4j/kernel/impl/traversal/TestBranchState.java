@@ -50,7 +50,7 @@ public class TestBranchState extends TraversalTestBase
          */
         createGraph( "a to b", "b to c", "c to d", "b to e", "e to f", "f to d", "f to g", "g to h" );
 
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             DepthStateExpander expander = new DepthStateExpander();
             Iterables.count( getGraphDb().traversalDescription().expand( expander,
@@ -115,7 +115,7 @@ public class TestBranchState extends TraversalTestBase
         public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
         {
             assertEquals( path.length(), state.getState().intValue() );
-            state.setState( state.getState()+1 );
+            state.setState( state.getState() + 1 );
             return path.endNode().getRelationships( Direction.OUTGOING );
         }
 
@@ -131,9 +131,11 @@ public class TestBranchState extends TraversalTestBase
         @Override
         public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
         {
-            assertEquals( path.length()/2, state.getState().intValue() );
+            assertEquals( path.length() / 2, state.getState().intValue() );
             if ( path.length() % 2 == 1 )
+            {
                 state.setState( state.getState() + 1 );
+            }
             return path.endNode().getRelationships( Direction.OUTGOING );
         }
 

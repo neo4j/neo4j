@@ -19,15 +19,10 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.neo4j.graphdb.TransactionGuardException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.guard.GuardException;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.procedure.TerminationGuard;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
@@ -60,25 +55,7 @@ public class TerminationGuardProvider implements ComponentRegistry.Provider<Term
         @Override
         public void check()
         {
-            Status reason = ktx.getReasonIfTerminated();
-            if ( reason == null )
-            {
-                if ( ktx.isOpen() )
-                {
-                    try
-                    {
-                        guard.check( (KernelTransactionImplementation) ktx );
-                    }
-                    catch ( GuardException e )
-                    {
-                        throw new TransactionGuardException( e.status(), "Transaction guard check failed", e );
-                    }
-                }
-            }
-            else
-            {
-                throw new TransactionTerminatedException( reason );
-            }
+            guard.check( ktx );
         }
     }
 }

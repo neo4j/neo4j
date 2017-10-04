@@ -385,7 +385,7 @@ public class AsyncLogTest
         private final AssertableLogProvider.LogMatcherBuilder builder;
         private AssertableLogProvider.LogMatcher matcher;
 
-        public MatcherBuilder( AssertableLogProvider.LogMatcherBuilder builder )
+        MatcherBuilder( AssertableLogProvider.LogMatcherBuilder builder )
         {
             this.builder = builder;
         }

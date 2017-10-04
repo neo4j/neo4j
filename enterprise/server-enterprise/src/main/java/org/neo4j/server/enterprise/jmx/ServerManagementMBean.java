@@ -20,6 +20,7 @@
 package org.neo4j.server.enterprise.jmx;
 
 
-public interface ServerManagementMBean {
+public interface ServerManagementMBean
+{
     void restartServer();
 }

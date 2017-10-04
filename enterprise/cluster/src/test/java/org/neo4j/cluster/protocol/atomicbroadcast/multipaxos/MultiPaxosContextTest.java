@@ -53,7 +53,7 @@ public class MultiPaxosContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
-                Collections.<ElectionRole>emptyList(),
+                Collections.emptyList(),
                 mock( ClusterConfiguration.class ), mock( Executor.class ),
                 NullLogProvider.getInstance(), new ObjectStreamFactory(),
                 new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
@@ -66,9 +66,11 @@ public class MultiPaxosContextTest
         ctx.getClusterContext().instanceIsJoining( joiningId, new URI( joiningUri ) );
 
         // Then
-        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI( joiningUri ) ));
-        assertTrue( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI("http://127.0.0.1:80")));
-        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( new InstanceId( 13 ), new URI( joiningUri ) ) );
+        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI( joiningUri ) ) );
+        assertTrue( ctx.getClusterContext()
+                .isInstanceJoiningFromDifferentUri( joiningId, new URI( "http://127.0.0.1:80" ) ) );
+        assertFalse( ctx.getClusterContext()
+                .isInstanceJoiningFromDifferentUri( new InstanceId( 13 ), new URI( joiningUri ) ) );
     }
 
     @Test
@@ -86,14 +88,14 @@ public class MultiPaxosContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
-                Collections.<ElectionRole>emptyList(),
+                Collections.emptyList(),
                 clusterConfig, executor,
                 NullLogProvider.getInstance(), objStream,
                 objStream, acceptorInstances, timeouts, electionCredentials, config );
 
         // When
-        MultiPaxosContext snapshot = ctx.snapshot( NullLogProvider.getInstance(), timeouts, executor, acceptorInstances, objStream, objStream,
-                electionCredentials );
+        MultiPaxosContext snapshot = ctx.snapshot( NullLogProvider.getInstance(), timeouts, executor, acceptorInstances,
+                objStream, objStream, electionCredentials );
 
         // Then
         assertEquals( ctx, snapshot );

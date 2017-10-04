@@ -26,21 +26,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
@@ -48,11 +49,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
@@ -64,16 +65,13 @@ public class LabelTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( labelId1 ) ).then( answerAsIteratorFrom( Collections
-                .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
-                .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( anyInt() ) ).then( answerAsIteratorFrom( Collections.emptyList() ) );
+        when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.emptyList() ) );
 
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
-                mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
+                mock( ConstraintIndexCreator.class ), mock( ExplicitIndexStore.class ) );
 
         storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
@@ -169,6 +167,8 @@ public class LabelTransactionStateTest
                 labels( 2, 1, 3 ) );
 
         // WHEN
+        List<IndexDescriptor> indexes = Collections.singletonList( IndexDescriptorFactory.forLabel( 2, 2 ) );
+        when( store.indexesGetForLabel( 2 ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, 2, 2 );
 
         // THEN
@@ -247,8 +247,9 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( asNodeCursor( 1337 ) );
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         // WHEN
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
@@ -261,9 +262,10 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( asNodeCursor( 1337, asPropertyCursor(),
-                asLabelCursor( 12 ) ) );
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
+                StubCursors.labels( 12 ) ) );
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         // WHEN
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
@@ -276,8 +278,10 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( asNodeCursor( 1337, asPropertyCursor(), asLabelCursor( 12 ) ) );
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
+                StubCursors.labels( 12 ) ) );
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         // WHEN
         boolean added = txContext.nodeRemoveLabel( state, 1337, 12 );
@@ -290,8 +294,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
-                .thenReturn( asNodeCursor( 1337 ) );
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
 
         // WHEN
         boolean removed = txContext.nodeRemoveLabel( state, 1337, 12 );
@@ -302,7 +305,8 @@ public class LabelTransactionStateTest
 
     // exists
 
-    private final int labelId1 = 10, labelId2 = 12;
+    private final int labelId1 = 10;
+    private final int labelId2 = 12;
     private final long nodeId = 20;
 
     private StoreReadLayer store;
@@ -315,16 +319,16 @@ public class LabelTransactionStateTest
     private static class Labels
     {
         private final long nodeId;
-        private final Integer[] labelIds;
+        private final int[] labelIds;
 
-        Labels( long nodeId, Integer... labelIds )
+        Labels( long nodeId, int... labelIds )
         {
             this.nodeId = nodeId;
             this.labelIds = labelIds;
         }
     }
 
-    private static Labels labels( long nodeId, Integer... labelIds )
+    private static Labels labels( long nodeId, int... labelIds )
     {
         return new Labels( nodeId, labelIds );
     }
@@ -334,18 +338,14 @@ public class LabelTransactionStateTest
         Map<Integer,Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( eq( nodeLabels.nodeId ), any( AssertOpen.class ) ) )
-                    .thenReturn( StubCursors.asNodeCursor(
-                            nodeLabels.nodeId, asPropertyCursor(), asLabelCursor( nodeLabels.labelIds ) ) );
+            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) )
+                    .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
+            when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
+                    .thenReturn( asPropertyCursor() );
 
             for ( int label : nodeLabels.labelIds )
             {
-                Collection<Long> nodes = allLabels.get( label );
-                if ( nodes == null )
-                {
-                    nodes = new ArrayList<>();
-                    allLabels.put( label, nodes );
-                }
+                Collection<Long> nodes = allLabels.computeIfAbsent( label, k -> new ArrayList<>() );
                 nodes.add( nodeLabels.nodeId );
             }
         }
@@ -359,33 +359,25 @@ public class LabelTransactionStateTest
 
     private void commitNoLabels() throws Exception
     {
-        commitLabels( new Integer[0] );
+        commitLabels( new int[0] );
     }
 
-    private void commitLabels( Integer... labels ) throws Exception
+    private void commitLabels( int... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }
 
-    private void assertLabels( Integer... labels ) throws EntityNotFoundException
+    private void assertLabels( int... labels ) throws EntityNotFoundException
     {
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                assertEquals( asSet( labels ), PrimitiveIntCollections.toSet( cursor.get().getLabels() ) );
-            }
-        }
+        txContext.nodeCursorById( state, nodeId )
+                .forAll( node -> assertEquals( PrimitiveIntCollections.asSet( labels ), node.labels() ) );
 
-        for ( int label : labels )
+        txContext.nodeCursorById( state, nodeId ).forAll( node ->
         {
-            try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+            for ( int label : labels )
             {
-                if ( cursor.next() )
-                {
-                    assertTrue( "Expected labels not found on node", cursor.get().hasLabel( label ) );
-                }
+                assertTrue( "Expected labels not found on node", node.hasLabel( label ) );
             }
-        }
+        } );
     }
 }

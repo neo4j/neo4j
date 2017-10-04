@@ -22,32 +22,43 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Function;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
+
 
 /**
- * Test factory for graph databases
+ * Test factory for graph databases.
+ * Please be aware that since it's a database it will close filesystem as part of its lifecycle.
+ * If you expect your file system to be open after database is closed, use {@link UncloseableDelegatingFileSystemAbstraction}
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
@@ -70,11 +81,25 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>,String> config )
     {
         GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder();
+        setConfig( config, builder );
+        return builder.newGraphDatabase();
+    }
+
+    public GraphDatabaseService newImpermanentDatabase( File storeDir , Map<Setting<?>,String> config )
+    {
+        GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder(storeDir);
+        setConfig( config, builder );
+        return builder.newGraphDatabase();
+    }
+
+    private void setConfig( Map<Setting<?>,String> config, GraphDatabaseBuilder builder )
+    {
         for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
         {
-            builder.setConfig( entry.getKey(), entry.getValue() );
+            Setting<?> key = entry.getKey();
+            String value = entry.getValue();
+            builder.setConfig( key, value );
         }
-        return builder.newGraphDatabase();
     }
 
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
@@ -87,8 +112,9 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     {
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        builder.setConfig( boltConnector("bolt").type, BOLT.name() );
-        builder.setConfig( boltConnector("bolt").enabled, "false" );
+        builder.setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" );
+        builder.setConfig( new BoltConnector( "bolt" ).type, BOLT.name() );
+        builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
     }
 
     private void configure( GraphDatabaseBuilder builder, File storeDir )
@@ -120,6 +146,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
+    @Override
     public TestGraphDatabaseFactory setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
@@ -177,69 +204,133 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return new TestGraphDatabaseBuilder( creator );
     }
 
+    @Override
+    protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        return new TestGraphDatabaseFacadeFactory( getCurrentState() ).newFacade( storeDir, config,
+                GraphDatabaseDependencies.newDependencies( dependencies ) );
+    }
+
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings( "deprecation" )
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
-                {
-                    @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
-                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
-                    {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo,
-                                dependencies, graphDatabaseFacade )
-                        {
-                            @Override
-                            protected FileSystemAbstraction createFileSystemAbstraction()
-                            {
-                                FileSystemAbstraction fs = state.getFileSystem();
-                                if ( fs != null )
-                                {
-                                    return fs;
-                                }
-                                else
-                                {
-                                    return super.createFileSystemAbstraction();
-                                }
-                            }
+                return newDatabase( Config.defaults( config ) );
+            }
 
-                            @Override
-                            protected LogService createLogService( LogProvider logProvider )
-                            {
-                                final LogProvider internalLogProvider = state.getInternalLogProvider();
-                                if ( internalLogProvider == null )
-                                {
-                                    return super.createLogService( logProvider );
-                                }
-
-                                final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
-                                return new AbstractLogService()
-                                {
-                                    @Override
-                                    public LogProvider getUserLogProvider()
-                                    {
-                                        return userLogProvider;
-                                    }
-
-                                    @Override
-                                    public LogProvider getInternalLogProvider()
-                                    {
-                                        return internalLogProvider;
-                                    }
-                                };
-                            }
-
-                        };
-                    }
-                }.newFacade( storeDir, config,
+            @Override
+            public GraphDatabaseService newDatabase( @Nonnull Config config )
+            {
+                return new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
+    }
+
+    public static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
+    {
+        private final TestGraphDatabaseFactoryState state;
+        private final boolean impermanent;
+
+        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
+        {
+            this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
+        }
+
+        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
+                DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
+        {
+            super( databaseInfo, editionFactory );
+            this.state = state;
+            this.impermanent = impermanent;
+        }
+
+        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state )
+        {
+            this( state, false );
+        }
+
+        @Override
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                GraphDatabaseFacade graphDatabaseFacade )
+        {
+            if ( impermanent )
+            {
+                config.augment( ephemeral, TRUE );
+                return new ImpermanentTestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade,
+                        this.databaseInfo );
+            }
+            else
+            {
+                return new TestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade,
+                        this.databaseInfo );
+            }
+        }
+
+        class TestDatabasePlatformModule extends PlatformModule
+        {
+
+            TestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies,
+                    GraphDatabaseFacade graphDatabaseFacade, DatabaseInfo databaseInfo )
+            {
+                super( storeDir, config, databaseInfo, dependencies,
+                        graphDatabaseFacade );
+            }
+
+            @Override
+            protected FileSystemAbstraction createFileSystemAbstraction()
+            {
+                FileSystemAbstraction fs = state.getFileSystem();
+                if ( fs != null )
+                {
+                    return fs;
+                }
+                else
+                {
+                    return createNewFileSystem();
+                }
+            }
+
+            protected FileSystemAbstraction createNewFileSystem()
+            {
+                return super.createFileSystemAbstraction();
+            }
+
+            @Override
+            protected LogService createLogService( LogProvider userLogProvider )
+            {
+                LogProvider internalLogProvider = state.getInternalLogProvider();
+                if ( internalLogProvider == null )
+                {
+                    if ( !impermanent )
+                    {
+                        return super.createLogService( userLogProvider );
+                    }
+                    internalLogProvider = NullLogProvider.getInstance();
+                }
+                return new SimpleLogService( userLogProvider, internalLogProvider );
+            }
+        }
+
+        private class ImpermanentTestDatabasePlatformModule extends TestDatabasePlatformModule
+        {
+
+            ImpermanentTestDatabasePlatformModule( File storeDir, Config config,
+                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade, DatabaseInfo databaseInfo )
+            {
+                super( storeDir, config, dependencies, graphDatabaseFacade, databaseInfo );
+            }
+
+            @Override
+            protected FileSystemAbstraction createNewFileSystem()
+            {
+                return new EphemeralFileSystemAbstraction();
+            }
+        }
     }
 }

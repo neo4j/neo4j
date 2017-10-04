@@ -31,5 +31,5 @@ public interface PrimitiveCollection extends AutoCloseable
      * Free any attached resources.
      */
     @Override
-    public void close();
+    void close();
 }

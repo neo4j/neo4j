@@ -30,6 +30,10 @@ import org.neo4j.function.ThrowingConsumer;
 
 public class FileVisitors
 {
+    private FileVisitors()
+    {
+    }
+
     public static FileVisitor<Path> onlyMatching( Predicate<Path> predicate, FileVisitor<Path> wrapped )
     {
         return new FileVisitor<Path>()

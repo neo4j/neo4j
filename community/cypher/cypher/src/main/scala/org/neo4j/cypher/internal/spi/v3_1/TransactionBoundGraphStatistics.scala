@@ -20,26 +20,26 @@
 package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, NameId, PropertyKeyId, RelTypeId}
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.api.{ReadOperations, Statement => KernelStatement}
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
 
 object TransactionBoundGraphStatistics {
   def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
 
-  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics with SchemaDescriptorTranslation {
+  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics {
 
     import NameId._
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = IndexDescriptor( label, property )
+        val indexDescriptor = IndexDescriptorFactory.forLabel( label, property )
         val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
-        val indexEntrySelectivity = operations.indexUniqueValuesSelectivity( indexDescriptor )
+        val indexEntrySelectivity = operations.indexUniqueValuesSelectivity(indexDescriptor)
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
         val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
 
@@ -51,11 +51,11 @@ object TransactionBoundGraphStatistics {
 
     def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = IndexDescriptor( label, property )
+        val indexDescriptor = IndexDescriptorFactory.forLabel( label, property )
         val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property
-        val indexSize = operations.indexSize( indexDescriptor )
+        val indexSize = operations.indexSize(indexDescriptor)
         val indexSelectivity = indexSize / labeledNodes
 
         Selectivity.of(indexSelectivity)

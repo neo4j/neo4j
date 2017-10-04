@@ -21,6 +21,7 @@ package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,9 +43,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 
 public class SchemaProcedure
 {
@@ -60,15 +64,15 @@ public class SchemaProcedure
 
     public GraphResult buildSchemaGraph()
     {
-        final Map<String,NodeImpl> nodes = new HashMap<>();
-        final Map<String,Set<RelationshipImpl>> relationships = new HashMap<>();
+        final Map<String,VirtualNodeHack> nodes = new HashMap<>();
+        final Map<String,Set<VirtualRelationshipHack>> relationships = new HashMap<>();
 
         try ( Statement statement = kernelTransaction.acquireStatement() )
         {
             ReadOperations readOperations = statement.readOperations();
             StatementTokenNameLookup statementTokenNameLookup = new StatementTokenNameLookup( readOperations );
 
-            try ( Transaction transaction = graphDatabaseAPI.beginTx(); )
+            try ( Transaction transaction = graphDatabaseAPI.beginTx() )
             {
                 // add all labelsInDatabase
                 try ( ResourceIterator<Label> labelsInDatabase = graphDatabaseAPI.getAllLabelsInUse().iterator() )
@@ -76,25 +80,30 @@ public class SchemaProcedure
                     while ( labelsInDatabase.hasNext() )
                     {
                         Label label = labelsInDatabase.next();
+                        int labelId = readOperations.labelGetForName( label.name() );
                         Map<String,Object> properties = new HashMap<>();
 
-                        Iterator<IndexDescriptor> indexDescriptorIterator =
-                                readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
+                        Iterator<IndexDescriptor> indexDescriptorIterator = readOperations.indexesGetForLabel( labelId );
                         ArrayList<String> indexes = new ArrayList<>();
                         while ( indexDescriptorIterator.hasNext() )
                         {
-                            indexes.add( statementTokenNameLookup
-                                    .propertyKeyGetName( indexDescriptorIterator.next().getPropertyKeyId() ) );
+                            IndexDescriptor index = indexDescriptorIterator.next();
+                            if ( index.type() == GENERAL )
+                            {
+                                String[] propertyNames = PropertyNameUtils.getPropertyKeys(
+                                        statementTokenNameLookup, index.schema().getPropertyIds() );
+                                indexes.add( String.join( ",", propertyNames ) );
+                            }
                         }
                         properties.put( "indexes", indexes );
 
-                        Iterator<NodePropertyConstraint> nodePropertyConstraintIterator =
-                                readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
+                        Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
+                                readOperations.constraintsGetForLabel( labelId );
                         ArrayList<String> constraints = new ArrayList<>();
                         while ( nodePropertyConstraintIterator.hasNext() )
                         {
-                            constraints
-                                    .add( nodePropertyConstraintIterator.next().userDescription( statementTokenNameLookup ) );
+                            ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
+                            constraints.add( constraint.prettyPrint( statementTokenNameLookup ) );
                         }
                         properties.put( "constraints", constraints );
 
@@ -104,26 +113,25 @@ public class SchemaProcedure
 
                 //add all relationships
 
-                try ( ResourceIterator<RelationshipType> relationshipTypeIterator = graphDatabaseAPI.getAllRelationshipTypesInUse()
-                        .iterator() )
+                try ( ResourceIterator<RelationshipType> relationshipTypeIterator =
+                        graphDatabaseAPI.getAllRelationshipTypesInUse().iterator() )
                 {
                     while ( relationshipTypeIterator.hasNext() )
                     {
                         RelationshipType relationshipType = relationshipTypeIterator.next();
                         String relationshipTypeGetName = relationshipType.name();
                         int relId = readOperations.relationshipTypeGetForName( relationshipTypeGetName );
-
                         try ( ResourceIterator<Label> labelsInUse = graphDatabaseAPI.getAllLabelsInUse().iterator() )
                         {
-                            List<NodeImpl> startNodes = new LinkedList<>();
-                            List<NodeImpl> endNodes = new LinkedList<>();
+                            List<VirtualNodeHack> startNodes = new LinkedList<>();
+                            List<VirtualNodeHack> endNodes = new LinkedList<>();
 
                             while ( labelsInUse.hasNext() )
                             {
                                 Label labelToken = labelsInUse.next();
                                 String labelName = labelToken.name();
                                 Map<String,Object> properties = new HashMap<>();
-                                NodeImpl node = getOrCreateLabel( labelName, properties, nodes );
+                                VirtualNodeHack node = getOrCreateLabel( labelName, properties, nodes );
                                 int labelId = readOperations.labelGetForName( labelName );
 
                                 if ( readOperations.countsForRelationship( labelId, relId, ReadOperations.ANY_LABEL ) > 0 )
@@ -135,11 +143,12 @@ public class SchemaProcedure
                                     endNodes.add( node );
                                 }
                             }
-                            for ( NodeImpl startNode : startNodes )
+
+                            for ( VirtualNodeHack startNode : startNodes )
                             {
-                                for ( NodeImpl endNode : endNodes )
+                                for ( VirtualNodeHack endNode : endNodes )
                                 {
-                                    RelationshipImpl relationship =
+                                    VirtualRelationshipHack relationship =
                                             addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
                                 }
                             }
@@ -164,22 +173,22 @@ public class SchemaProcedure
         }
     }
 
-    private NodeImpl getOrCreateLabel( String label, Map<String,Object> properties,
-            final Map<String,NodeImpl> nodeMap )
+    private VirtualNodeHack getOrCreateLabel( String label, Map<String,Object> properties,
+            final Map<String,VirtualNodeHack> nodeMap )
     {
         if ( nodeMap.containsKey( label ) )
         {
             return nodeMap.get( label );
         }
-        NodeImpl node = new NodeImpl( label, properties );
+        VirtualNodeHack node = new VirtualNodeHack( label, properties );
         nodeMap.put( label, node );
         return node;
     }
 
-    private RelationshipImpl addRelationship( NodeImpl startNode, NodeImpl endNode, String relType,
-            final Map<String,Set<RelationshipImpl>> relationshipMap )
+    private VirtualRelationshipHack addRelationship( VirtualNodeHack startNode, VirtualNodeHack endNode, String relType,
+            final Map<String,Set<VirtualRelationshipHack>> relationshipMap )
     {
-        Set<RelationshipImpl> relationshipsForType;
+        Set<VirtualRelationshipHack> relationshipsForType;
         if ( !relationshipMap.containsKey( relType ) )
         {
             relationshipsForType = new HashSet<>();
@@ -189,7 +198,7 @@ public class SchemaProcedure
         {
             relationshipsForType = relationshipMap.get( relType );
         }
-        RelationshipImpl relationship = new RelationshipImpl( startNode, endNode, relType );
+        VirtualRelationshipHack relationship = new VirtualRelationshipHack( startNode, endNode, relType );
         if ( !relationshipsForType.contains( relationship ) )
         {
             relationshipsForType.add( relationship );
@@ -197,11 +206,11 @@ public class SchemaProcedure
         return relationship;
     }
 
-    private GraphResult getGraphResult( final Map<String,NodeImpl> nodeMap,
-            final Map<String,Set<RelationshipImpl>> relationshipMap )
+    private GraphResult getGraphResult( final Map<String,VirtualNodeHack> nodeMap,
+            final Map<String,Set<VirtualRelationshipHack>> relationshipMap )
     {
         List<Relationship> relationships = new LinkedList<>();
-        for ( Set<RelationshipImpl> relationship : relationshipMap.values() )
+        for ( Set<VirtualRelationshipHack> relationship : relationshipMap.values() )
         {
             relationships.addAll( relationship );
         }
@@ -212,7 +221,7 @@ public class SchemaProcedure
         return graphResult;
     }
 
-    private static class RelationshipImpl implements Relationship
+    private static class VirtualRelationshipHack implements Relationship
     {
 
         private static AtomicLong MIN_ID = new AtomicLong( -1 );
@@ -222,19 +231,12 @@ public class SchemaProcedure
         private final Node endNode;
         private final RelationshipType relationshipType;
 
-        public RelationshipImpl( final NodeImpl startNode, final NodeImpl endNode, final String type )
+        VirtualRelationshipHack( final VirtualNodeHack startNode, final VirtualNodeHack endNode, final String type )
         {
             this.id = MIN_ID.getAndDecrement();
             this.startNode = startNode;
             this.endNode = endNode;
-            relationshipType = new RelationshipType()
-            {
-                @Override
-                public String name()
-                {
-                    return type;
-                }
-            };
+            relationshipType = () -> type;
         }
 
         @Override
@@ -264,7 +266,7 @@ public class SchemaProcedure
         @Override
         public Map<String,Object> getAllProperties()
         {
-            return new HashMap<String,Object>();
+            return new HashMap<>();
         }
 
         @Override
@@ -338,18 +340,24 @@ public class SchemaProcedure
         {
             return null;
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "VirtualRelationshipHack[%s]", id );
+        }
     }
 
-    private static class NodeImpl implements Node
+    private static class VirtualNodeHack implements Node
     {
 
-        private final HashMap<String,Object> propertyMap = new HashMap<String,Object>();
+        private final HashMap<String,Object> propertyMap = new HashMap<>();
 
         private static AtomicLong MIN_ID = new AtomicLong( -1 );
         private final long id;
         private final Label label;
 
-        public NodeImpl( final String label, Map<String,Object> properties )
+        VirtualNodeHack( final String label, Map<String,Object> properties )
         {
             this.id = MIN_ID.getAndDecrement();
             this.label = Label.label( label );
@@ -372,7 +380,7 @@ public class SchemaProcedure
         @Override
         public Iterable<Label> getLabels()
         {
-            return Arrays.asList( label );
+            return Collections.singletonList( label );
         }
 
         @Override
@@ -547,6 +555,12 @@ public class SchemaProcedure
         public Map<String,Object> getProperties( String... keys )
         {
             return null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "VirtualNodeHack[%s]", id );
         }
     }
 }

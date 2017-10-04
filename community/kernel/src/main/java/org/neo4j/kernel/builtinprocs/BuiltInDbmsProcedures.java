@@ -19,17 +19,22 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Comparator;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
@@ -41,23 +46,40 @@ public class BuiltInDbmsProcedures
     @Context
     public SecurityContext securityContext;
 
+    @Description( "List the currently active config of Neo4j." )
+    @Procedure( name = "dbms.listConfig", mode = DBMS )
+    public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
+    {
+        securityContext.assertCredentialsNotExpired();
+        if ( !securityContext.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
+        return config.getConfigValues().values().stream()
+                .filter( c -> !c.internal() )
+                .map( ConfigResult::new )
+                .filter( c -> c.name.toLowerCase().contains( searchString.toLowerCase() ) )
+                .sorted( Comparator.comparing( c -> c.name ) );
+    }
+
     @Description( "List all procedures in the DBMS." )
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
     {
         securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
     }
 
     @Description( "List all user functions in the DBMS." )
-    @Procedure(name = "dbms.functions", mode = DBMS)
+    @Procedure( name = "dbms.functions", mode = DBMS )
     public Stream<FunctionResult> listFunctions()
     {
         securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( FunctionResult::new );
     }
 

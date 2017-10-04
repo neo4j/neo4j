@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -49,10 +48,12 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
@@ -61,7 +62,6 @@ import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.shortToUnsignedInt;
 
 public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
 {
@@ -211,7 +211,7 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
-        int type = shortToUnsignedInt( channel.getShort() );
+        int type = unsignedShortToInt( channel.getShort() );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
         record.setNext( channel.getLong() );
@@ -418,7 +418,7 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
             // labels
             labelField = channel.getLong();
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
-            if( hasSecondaryUnit )
+            if ( hasSecondaryUnit )
             {
                 record.setSecondaryUnitId( channel.getLong() );
             }
@@ -551,7 +551,7 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
         {
             record.setRelId( primitiveId );
         }
-        if (hasSecondaryUnit)
+        if ( hasSecondaryUnit )
         {
             record.setSecondaryUnitId( channel.getLong() );
         }
@@ -640,7 +640,7 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
         {
-            rule = AbstractSchemaRule.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
+            rule = SchemaRuleSerialization.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
         }
         catch ( MalformedSchemaRuleException e )
         {

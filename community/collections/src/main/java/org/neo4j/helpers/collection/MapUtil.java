@@ -67,8 +67,8 @@ public abstract class MapUtil
      * @param <V> type of values
      * @return a Map with the entries supplied by {@code objects}.
      */
-    @SuppressWarnings("unchecked")
-    public static <K, V> Map<K, V> genericMap( Map<K, V> targetMap, Object... objects )
+    @SuppressWarnings( "unchecked" )
+    public static <K, V> Map<K,V> genericMap( Map<K,V> targetMap, Object... objects )
     {
         int i = 0;
         while ( i < objects.length )
@@ -143,6 +143,7 @@ public abstract class MapUtil
     {
         Properties props = new Properties();
         props.load( reader );
+        //noinspection unchecked
         return new HashMap<>( (Map) props );
     }
 
@@ -237,7 +238,10 @@ public abstract class MapUtil
 
     private static void closeIfNotNull( Closeable closeable ) throws IOException
     {
-        if ( closeable != null ) closeable.close();
+        if ( closeable != null )
+        {
+            closeable.close();
+        }
     }
 
     /**
@@ -372,16 +376,16 @@ public abstract class MapUtil
         return reversedMap;
     }
 
-    public static <K, V> Map<K, V> copyAndPut(Map<K, V> map, K key, V value)
+    public static <K, V> Map<K,V> copyAndPut( Map<K,V> map, K key, V value )
     {
-        Map<K, V> copy = new HashMap<>( map );
-        copy.put( key,  value);
+        Map<K,V> copy = new HashMap<>( map );
+        copy.put( key, value );
         return copy;
     }
 
-    public static <K, V> Map<K, V> copyAndRemove(Map<K, V> map, K key)
+    public static <K, V> Map<K,V> copyAndRemove( Map<K,V> map, K key )
     {
-        Map<K, V> copy = new HashMap<>( map );
+        Map<K,V> copy = new HashMap<>( map );
         copy.remove( key );
         return copy;
     }
@@ -394,36 +398,12 @@ public abstract class MapUtil
     public static <K,V> Map<K, V> toMap( Iterator<Pair<K, V>> pairs )
     {
         Map<K,V> result = new HashMap<K,V>();
-        while(pairs.hasNext())
+        while ( pairs.hasNext() )
         {
             Pair<K,V> pair = pairs.next();
-            result.put(pair.first(), pair.other());
+            result.put( pair.first(), pair.other() );
         }
         return result;
-    }
-
-    public static <K> boolean approximatelyEqual( Map<K, Double> that, Map<K, Double> other, double tolerance)
-    {
-        if ( that.size() != other.size() )
-        {
-            return false;
-        }
-
-        for ( Map.Entry<K, Double> entry : that.entrySet() )
-        {
-            if ( !other.containsKey( entry.getKey() ) )
-            {
-                return false;
-            }
-
-            double otherValue = other.get( entry.getKey() );
-            if ( Math.abs( otherValue - entry.getValue() ) > tolerance)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     public static <K, V> MapBuilder<K, V> entry( K key, V value )
@@ -453,6 +433,9 @@ public abstract class MapUtil
      * @param map the map to mutate.
      * @param newBackingData the backing data to retain.
      * @param keyExtractor the function to extract keys from the backing data.
+     * @param <K> type of the key in the input map.
+     * @param <V> type of the values in the input map.
+     * @param <T> type of the keys in the new baking data.
      */
     public static <K, V, T> void trimToList( Map<K,V> map, List<T> newBackingData, Function<T,K> keyExtractor )
     {
@@ -466,6 +449,9 @@ public abstract class MapUtil
      * @param map the map to mutate.
      * @param newBackingData the backing data to retain.
      * @param keyExtractor the function to extract keys from the backing data.
+     * @param <K> type of the key in the input map.
+     * @param <V> type of the values in the input map.
+     * @param <T> type of the keys in the new backing data.
      */
     public static <K, V, T> void trimToFlattenedList( Map<K,V> map, List<T> newBackingData,
             Function<T,Stream<K>> keyExtractor )
@@ -478,6 +464,8 @@ public abstract class MapUtil
      * Mutates the input map by removing entries which are not in the retained set of keys.
      * @param map the map to mutate.
      * @param retainedKeys the keys to retain.
+     * @param <K> type of the key.
+     * @param <V> type of the values.
      */
     public static <K, V> void trimToList( Map<K,V> map, Set<K> retainedKeys )
     {

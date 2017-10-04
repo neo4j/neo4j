@@ -34,7 +34,6 @@ import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.FutureAdapter.future;
-import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
 
 /**
  * Accepts jobs and processes them, potentially in parallel. Each task is given a ticket, an incrementing
@@ -71,23 +70,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
     private final ArrayBlockingQueue<TO> processed;
     private final AtomicLong submittedTicket = new AtomicLong( -1 );
     private final AtomicLong processedTicket = new AtomicLong( -1 );
-    private final LongPredicate myTurnToAddToProcessedQueue = new LongPredicate()
-    {
-        @Override
-        public boolean test( long ticket )
-        {
-            return processedTicket.get() == ticket - 1;
-        }
-    };
-    private final LongPredicate catchUp = new LongPredicate()
-    {
-        @Override
-        public boolean test( long ticket )
-        {
-            long queued = submittedTicket.get() - processedTicket.get();
-            return queued <= executor.processors( 0 ) | executor.isClosed();
-        }
-    };
+    private final LongPredicate myTurnToAddToProcessedQueue = ticket -> processedTicket.get() == ticket - 1;
     private final Runnable healthCheck;
     private volatile boolean done;
 
@@ -114,7 +97,6 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
     public void submit( FROM job )
     {
         long ticket = submittedTicket.incrementAndGet();
-        await( catchUp, ticket, healthCheck, park );
         executor.submit( threadLocalState ->
         {
             // Process this job (we're now in one of the processing threads)
@@ -124,10 +106,8 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
             // correct order so that we preserve the ticket order. We want to wait as short periods of time
             // as possible here because every cycle we wait adding this result, we're also blocking
             // other results from being added to the result queue
-            await( myTurnToAddToProcessedQueue, ticket, healthCheck, park );
-
             // OK now it's my turn to add this result to the result queue which user will pull from later on
-            while ( !processed.offer( result, 10, MILLISECONDS ) )
+            while ( !myTurnToAddToProcessedQueue.test( ticket ) || !processed.offer( result, 10, MILLISECONDS ) )
             {
                 healthCheck.run();
             }

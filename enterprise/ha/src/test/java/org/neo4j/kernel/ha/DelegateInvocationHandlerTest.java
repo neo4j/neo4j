@@ -122,14 +122,7 @@ public class DelegateInvocationHandlerTest
 
     private Value value( final int i )
     {
-        return new Value()
-        {
-            @Override
-            public int get()
-            {
-                return i;
-            }
-        };
+        return () -> i;
     }
 
     private static DelegateInvocationHandler<Value> newDelegateInvocationHandler()

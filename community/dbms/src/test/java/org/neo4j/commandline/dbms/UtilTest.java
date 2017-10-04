@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.commandline.Util;
 
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class UtilTest
 {
@@ -33,4 +34,9 @@ public class UtilTest
         assertNotNull( Util.canonicalPath( "foo" ).getParent() );
     }
 
+    @Test
+    public void returnsAVersion() throws Exception
+    {
+        assertNotNull( "A version should be returned", neo4jVersion() );
+    }
 }

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -41,10 +42,10 @@ import static org.junit.Assert.fail;
 public class ConstraintCreationIT
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ConstraintCreationIT.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     private static final Label LABEL = Label.label( "label1" );
-    private static final String INDEX_IDENTIFIER = "1";
+    private static final long indexId = 1;
 
     @Test
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
@@ -67,21 +68,23 @@ public class ConstraintCreationIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
-            fail("Should have failed with ConstraintViolationException");
+            fail( "Should have failed with ConstraintViolationException" );
             tx.success();
         }
-        catch ( ConstraintViolationException ignored )  { }
+        catch ( ConstraintViolationException ignored )
+        {
+        }
 
         // then
-        try(Transaction ignore = db.beginTx())
+        try ( Transaction ignore = db.beginTx() )
         {
-            assertEquals(0, Iterables.count(db.schema().getIndexes() ));
+            assertEquals( 0, Iterables.count( db.schema().getIndexes() ) );
         }
 
         SchemaIndexProvider schemaIndexProvider =
-                db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
-        File schemaStoreDir = schemaIndexProvider.getSchemaIndexStoreDirectory( new File( db.getStoreDir() ) );
+                db.getDependencyResolver().resolveDependency( SchemaIndexProviderMap.class ).getDefaultProvider();
+        File indexDir = schemaIndexProvider.directoryStructure().directoryForIndex( indexId );
 
-        assertFalse( new IndexFolderLayout( schemaStoreDir, INDEX_IDENTIFIER ).getIndexFolder().exists() );
+        assertFalse( new IndexFolderLayout( indexDir ).getIndexFolder().exists() );
     }
 }

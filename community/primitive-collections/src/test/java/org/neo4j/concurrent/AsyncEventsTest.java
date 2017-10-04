@@ -144,12 +144,13 @@ public class AsyncEventsTest
         EventConsumer consumer = new EventConsumer();
         final CountDownLatch startLatch = new CountDownLatch( 1 );
         final int threads = 10;
-        final int iterations = 10_000;
+        final int iterations = 2_000;
         final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
         executor.submit( asyncEvents );
 
         ExecutorService threadPool = Executors.newFixedThreadPool( threads );
-        Runnable runner = () -> {
+        Runnable runner = () ->
+        {
             try
             {
                 startLatch.await();
@@ -177,7 +178,14 @@ public class AsyncEventsTest
             for ( int i = 0; i < eventCount; i++ )
             {
                 Event event = consumer.poll( 1, TimeUnit.SECONDS );
-                assertThat( event.processedBy, is( not( thisThread ) ) );
+                if ( event == null )
+                {
+                    i--;
+                }
+                else
+                {
+                    assertThat( event.processedBy, is( not( thisThread ) ) );
+                }
             }
         }
         finally
@@ -203,7 +211,8 @@ public class AsyncEventsTest
         while ( consumer.eventsProcessed.take().processedBy == Thread.currentThread() );
 
         // Start a thread that awaits the termination
-        Future<?> awaitShutdownFuture = executor.submit( (Runnable) () -> {
+        Future<?> awaitShutdownFuture = executor.submit( () ->
+        {
             awaitStartLatch.countDown();
             try
             {

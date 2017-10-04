@@ -24,6 +24,12 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
@@ -33,16 +39,13 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
-import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
-
-import java.io.IOException;
-import java.util.Arrays;
+import org.neo4j.values.virtual.MapValue;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -110,12 +113,18 @@ public class FragmentedMessageDeliveryTest
         BoltStateMachine machine = mock( BoltStateMachine.class );
 
         Channel ch = mock( Channel.class );
-        when(ch.alloc()).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
 
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-        when(ctx.channel()).thenReturn( ch );
+        when( ctx.channel() ).thenReturn( ch );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( new SynchronousBoltWorker( machine ), ch, NullLogService.getInstance() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        when( boltChannel.channelHandlerContext() ).thenReturn( ctx );
+        when( boltChannel.rawChannel() ).thenReturn( ch );
+        when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
+
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
+                boltChannel, new SynchronousBoltWorker( machine ), NullLogService.getInstance() );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )
@@ -127,7 +136,7 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            verify( machine ).run( eq( "Mjölnir" ), anyMapOf( String.class, Object.class ), any( BoltResponseHandler.class ) );
+            verify( machine ).run( eq( "Mjölnir" ), any(MapValue.class), any( BoltResponseHandler.class ) );
         }
         catch ( AssertionError e )
         {
@@ -149,7 +158,10 @@ public class FragmentedMessageDeliveryTest
         StringBuilder sb = new StringBuilder();
         for ( int i = 0; i < fragments.length; i++ )
         {
-            if ( i > 0 ) { sb.append( "," ); }
+            if ( i > 0 )
+            {
+                sb.append( "," );
+            }
             sb.append( fragments[i].capacity() );
         }
         return sb.toString();

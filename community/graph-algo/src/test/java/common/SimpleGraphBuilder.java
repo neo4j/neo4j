@@ -19,8 +19,6 @@
  */
 package common;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +31,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 
 public class SimpleGraphBuilder
 {
@@ -42,16 +43,16 @@ public class SimpleGraphBuilder
     HashMap<String,Node> nodes;
     HashMap<Node,String> nodeNames;
     Set<Relationship> edges;
-    RelationshipType currentRelType = null;
+    RelationshipType currentRelType;
 
     public SimpleGraphBuilder( GraphDatabaseService graphDb,
         RelationshipType relationshipType )
     {
         super();
         this.graphDb = graphDb;
-        nodes = new HashMap<String,Node>();
-        nodeNames = new HashMap<Node,String>();
-        edges = new HashSet<Relationship>();
+        nodes = new HashMap<>();
+        nodeNames = new HashMap<>();
+        edges = new HashSet<>();
         setCurrentRelType( relationshipType );
     }
 
@@ -87,7 +88,7 @@ public class SimpleGraphBuilder
 
     public Node makeNode( String id )
     {
-        return makeNode( id, Collections.<String, Object>emptyMap() );
+        return makeNode( id, Collections.emptyMap() );
     }
 
     public Node makeNode( String id, Object... keyValuePairs )
@@ -97,7 +98,7 @@ public class SimpleGraphBuilder
 
     private Map<String, Object> toMap( Object[] keyValuePairs )
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         for ( int i = 0; i < keyValuePairs.length; i++ )
         {
             map.put( keyValuePairs[i++].toString(), keyValuePairs[i] );
@@ -144,12 +145,13 @@ public class SimpleGraphBuilder
 
     public Relationship makeEdge( String node1, String node2 )
     {
-        return makeEdge( node1, node2, Collections.<String, Object>emptyMap() );
+        return makeEdge( node1, node2, Collections.emptyMap() );
     }
 
     public Relationship makeEdge( String node1, String node2, Map<String, Object> edgeProperties )
     {
-        Node n1 = getNode( node1, true ), n2 = getNode( node2, true );
+        Node n1 = getNode( node1, true );
+        Node n2 = getNode( node2, true );
         Relationship relationship = n1
             .createRelationshipTo( n2, currentRelType );
         for ( Map.Entry<String, Object> property : edgeProperties.entrySet() )
@@ -212,40 +214,6 @@ public class SimpleGraphBuilder
         }
     }
 
-    public void importEdges( File file )
-    {
-        try
-        {
-            CsvFileReader reader = new CsvFileReader( file );
-            while ( reader.hasNext() )
-            {
-                String[] line = reader.next();
-                makeEdge( line[0], line[1] );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    /**
-     * Same as makeEdges, but with some property set on all edges.
-     * @param commaSeparatedNodeNames
-     * @param propertyName
-     * @param propertyValue
-     */
-    public void makeEdges( String commaSeparatedNodeNames, String propertyName,
-        Object propertyValue )
-    {
-        String[] nodeNames = commaSeparatedNodeNames.split( "," );
-        for ( int i = 0; i < nodeNames.length / 2; ++i )
-        {
-            makeEdge( nodeNames[i * 2], nodeNames[i * 2 + 1], propertyName,
-                propertyValue );
-        }
-    }
-
     /**
      * @param node1Id
      * @param node2Id
@@ -260,12 +228,16 @@ public class SimpleGraphBuilder
         {
             return null;
         }
-        Iterable<Relationship> relationships = node1.getRelationships();
-        for ( Relationship relationship : relationships )
+        ResourceIterable<Relationship> relationships = Iterables.asResourceIterable( node1.getRelationships() );
+        try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
         {
-            if ( relationship.getOtherNode( node1 ).equals( node2 ) )
+            while ( resourceIterator.hasNext() )
             {
-                return relationship;
+                Relationship relationship = resourceIterator.next();
+                if ( relationship.getOtherNode( node1 ).equals( node2 ) )
+                {
+                    return relationship;
+                }
             }
         }
         return null;

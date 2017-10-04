@@ -46,9 +46,9 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
 {
     private static final Function<Object,MutableLong> NEW_MUTABLE_LONG = type -> new MutableLong();
     private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_COUNT_DESC =
-            (e1,e2) -> Long.compare( e2.getValue().longValue(), e1.getValue().longValue() );
+            ( e1, e2 ) -> Long.compare( e2.getValue().longValue(), e1.getValue().longValue() );
     private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_ID_DESC =
-            (e1,e2) -> Integer.compare( (Integer)e2.getKey(), (Integer)e1.getKey() );
+            ( e1, e2 ) -> Integer.compare( (Integer) e2.getKey(), (Integer) e1.getKey() );
     private final Map<Thread,Map<Object,MutableLong>> typeCheckers = new ConcurrentHashMap<>();
     private final BatchingRelationshipTypeTokenRepository typeTokenRepository;
     private RelationshipTypeDistribution distribution;
@@ -63,9 +63,10 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        Map<Object,MutableLong> typeMap = typeCheckers.computeIfAbsent( currentThread(), ( t ) -> new HashMap<>() );
+        Map<Object,MutableLong> typeMap = typeCheckers.computeIfAbsent( currentThread(), t -> new HashMap<>() );
         Stream.of( batch.input )
               .map( InputRelationship::typeAsObject )
+              .filter( type -> type != null )
               .forEach( type -> typeMap.computeIfAbsent( type, NEW_MUTABLE_LONG ).increment() );
         sender.send( batch );
     }
@@ -75,8 +76,8 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     protected void done()
     {
         Map<Object,MutableLong> mergedTypes = new HashMap<>();
-        typeCheckers.forEach( (thread,localTypes) ->
-            localTypes.forEach( (type,localCount) ->
+        typeCheckers.forEach( ( thread, localTypes ) ->
+            localTypes.forEach( ( type, localCount ) ->
                 mergedTypes.computeIfAbsent( type, t -> new MutableLong() ).add( localCount.longValue() ) ) );
 
         Map.Entry<Object,MutableLong>[] sortedTypes = mergedTypes.entrySet().toArray( new Map.Entry[mergedTypes.size()] );

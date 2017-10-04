@@ -20,6 +20,8 @@
 package org.neo4j.graphdb.impl.notification;
 
 
+import java.util.Objects;
+
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -56,10 +58,16 @@ public enum NotificationCode
         Status.Statement.PlannerUnsupportedWarning,
         "Using COST planner is unsupported for this query, please use RULE planner instead"
     ),
+    RULE_PLANNER_UNAVAILABLE_FALLBACK(
+        SeverityLevel.WARNING,
+        Status.Statement.PlannerUnavailableWarning,
+        "Using RULE planner is unsupported for current CYPHER version, the query has been executed by an older CYPHER " +
+        "version"
+    ),
     RUNTIME_UNSUPPORTED(
         SeverityLevel.WARNING,
         Status.Statement.RuntimeUnsupportedWarning,
-        "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead"
+        "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default."
     ),
     INDEX_HINT_UNFULFILLABLE(
         SeverityLevel.WARNING,
@@ -69,7 +77,8 @@ public enum NotificationCode
     JOIN_HINT_UNFULFILLABLE(
         SeverityLevel.WARNING,
         Status.Statement.JoinHintUnfulfillableWarning,
-        "The hinted join was not planned. This could happen because no generated plan contained the join key, please try using a different join key or restructure your query."
+        "The hinted join was not planned. This could happen because no generated plan contained the join key, " +
+                "please try using a different join key or restructure your query."
     ),
     JOIN_HINT_UNSUPPORTED(
         SeverityLevel.WARNING,
@@ -100,6 +109,27 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated procedure."
+    ),
+    PROCEDURE_WARNING(
+            SeverityLevel.WARNING,
+            Status.Procedure.ProcedureWarning,
+            "The query used a procedure that generated a warning."
+    ),
+    DEPRECATED_PROCEDURE_RETURN_FIELD(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated field from a procedure."
+    ),
+    DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Binding relationships to a list in a variable length pattern is deprecated."
+    ),
+    DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The semantics of using colon in the separation of alternative relationship types in conjunction with the " +
+            "use of variable binding, inlined property predicates, or variable length will change in a future version."
     ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
@@ -145,8 +175,22 @@ public enum NotificationCode
             "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path " +
             "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the " +
             "MATCH containing the shortest path from the existential predicates on that path."
-    )
-    ;
+    ),
+    CREATE_UNIQUE_UNAVAILABLE_FALLBACK(
+            SeverityLevel.WARNING,
+            Status.Statement.PlannerUnavailableWarning,
+        "CREATE UNIQUE is unsupported for current CYPHER version, the query has been executed by an older CYPHER version"
+    ),
+    START_UNAVAILABLE_FALLBACK(
+            SeverityLevel.WARNING,
+            Status.Statement.PlannerUnavailableWarning,
+            "START is not supported for current CYPHER version, the query has been executed by an older CYPHER version"
+    ),
+    START_DEPRECATED(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "START has been deprecated and will be removed in a future version."
+    );
 
     private final Status status;
     private final String description;
@@ -165,12 +209,12 @@ public enum NotificationCode
         return new Notification( position, details );
     }
 
-    private final class Notification implements org.neo4j.graphdb.Notification
+    public final class Notification implements org.neo4j.graphdb.Notification
     {
         private final InputPosition position;
         private final String detailedDescription;
 
-        public Notification( InputPosition position, NotificationDetail... details )
+        Notification( InputPosition position, NotificationDetail... details )
         {
             this.position = position;
 
@@ -223,11 +267,34 @@ public enum NotificationCode
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return "Notification{" +
                     "position=" + position +
                     ", detailedDescription='" + detailedDescription + '\'' +
                     '}';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            Notification that = (Notification) o;
+            return Objects.equals( position, that.position ) &&
+                    Objects.equals( detailedDescription, that.detailedDescription );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( position, detailedDescription );
         }
     }
 }

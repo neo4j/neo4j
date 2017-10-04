@@ -37,6 +37,10 @@ import static org.mockito.Mockito.when;
 
 public class MockedNeoStores
 {
+    private MockedNeoStores()
+    {
+    }
+
     @SuppressWarnings( {"unchecked", "rawtypes"} )
     public static NeoStores basicMockedNeoStores()
     {

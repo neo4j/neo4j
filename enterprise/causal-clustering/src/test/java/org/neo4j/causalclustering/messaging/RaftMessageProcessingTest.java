@@ -23,7 +23,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class RaftMessageProcessingTest
 {
     private static ChannelMarshal<ReplicatedContent> serializer = new SafeChannelMarshal<ReplicatedContent>()
@@ -106,7 +106,8 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        Object message = channel.readOutbound();
+        channel.writeInbound( message );
 
         // then
         assertEquals( request, channel.readInbound() );
@@ -121,7 +122,8 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( response );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        Object message = channel.readOutbound();
+        channel.writeInbound( message );
 
         // then
         assertEquals( response, channel.readInbound() );
@@ -138,7 +140,8 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        Object message = channel.readOutbound();
+        channel.writeInbound( message );
 
         // then
         assertEquals( request, channel.readInbound() );
@@ -154,7 +157,8 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( response );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        Object message = channel.readOutbound();
+        channel.writeInbound( message );
 
         // then
         assertEquals( response, channel.readInbound() );
@@ -170,7 +174,8 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        Object message = channel.readOutbound();
+        channel.writeInbound( message );
 
         // then
         assertEquals( request, channel.readInbound() );

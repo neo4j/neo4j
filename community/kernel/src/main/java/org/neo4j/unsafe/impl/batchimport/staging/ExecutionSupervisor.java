@@ -66,7 +66,7 @@ public class ExecutionSupervisor
             finishAwareSleep( execution );
             monitor.check( execution );
         }
-        end( execution, currentTimeMillis()-startTime );
+        end( execution, currentTimeMillis() - startTime );
     }
 
     private long currentTimeMillis()
@@ -96,7 +96,7 @@ public class ExecutionSupervisor
 
             try
             {
-                sleep( min( 10, max( 0, endTime-currentTimeMillis() ) ) );
+                sleep( min( 10, max( 0, endTime - currentTimeMillis() ) ) );
             }
             catch ( InterruptedException e )
             {

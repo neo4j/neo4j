@@ -60,7 +60,7 @@ public class RelationshipChainPointerChasingTest
     public void shouldChaseTheLivingRelationships() throws Exception
     {
         // GIVEN a sound relationship chain
-        int numberOfRelationships = THRESHOLD/2;
+        int numberOfRelationships = THRESHOLD / 2;
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -104,7 +104,8 @@ public class RelationshipChainPointerChasingTest
     {
         // GIVEN
         Node node;
-        Relationship relationshipInTheMiddle, relationshipInTheEnd;
+        Relationship relationshipInTheMiddle;
+        Relationship relationshipInTheEnd;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
@@ -122,7 +123,7 @@ public class RelationshipChainPointerChasingTest
             // WHEN getting the relationship iterator, the first group record will be read and held,
             // already pointing to the next group
             Iterator<Relationship> relationships = node.getRelationships().iterator();
-            for ( int i = 0; i < THRESHOLD/2; i++ )
+            for ( int i = 0; i < THRESHOLD / 2; i++ )
             {
                 assertTrue( relationships.next().isType( TEST ) );
             }
@@ -132,7 +133,7 @@ public class RelationshipChainPointerChasingTest
             deleteRelationshipsInSeparateThread( relationshipInTheMiddle );
 
             // THEN we should be able to, first of all, iterate through the rest of the relationships of the first type
-            for ( int i = 0; i < THRESHOLD/2; i++ )
+            for ( int i = 0; i < THRESHOLD / 2; i++ )
             {
                 assertTrue( relationships.next().isType( TEST ) );
             }
@@ -154,15 +155,11 @@ public class RelationshipChainPointerChasingTest
 
     private void deleteRelationshipsInSeparateThread( final Relationship... relationships ) throws InterruptedException
     {
-        executeTransactionInSeparateThread( new Runnable()
+        executeTransactionInSeparateThread( () ->
         {
-            @Override
-            public void run()
+            for ( Relationship relationship : relationships )
             {
-                for ( Relationship relationship : relationships )
-                {
-                    relationship.delete();
-                }
+                relationship.delete();
             }
         } );
     }

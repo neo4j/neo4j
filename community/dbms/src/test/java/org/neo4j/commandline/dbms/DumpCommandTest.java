@@ -44,9 +44,11 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -104,7 +106,7 @@ public class DumpCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         putStoreInDirectory( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -126,7 +128,7 @@ public class DumpCommandTest
         Files.createDirectories( dataDir.resolve( "databases" ) );
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -164,9 +166,10 @@ public class DumpCommandTest
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
 
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.checkLock();
 
             execute( "foo.db" );
             fail( "expected exception" );
@@ -220,9 +223,10 @@ public class DumpCommandTest
     {
         assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
 
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.checkLock();
 
             try ( Closeable ignored = withPermissions( databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME ),
                     emptySet() ) )
@@ -245,7 +249,7 @@ public class DumpCommandTest
         doAnswer( invocation ->
         {
             //noinspection unchecked
-            Predicate<Path> exclude = (Predicate<Path>) invocation.getArgumentAt( 2, Predicate.class );
+            Predicate<Path> exclude = invocation.getArgument( 2 );
             assertThat( exclude.test( Paths.get( StoreLocker.STORE_LOCK_FILENAME ) ), is( true ) );
             assertThat( exclude.test( Paths.get( "some-other-file" ) ), is( false ) );
             return null;
@@ -260,7 +264,7 @@ public class DumpCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/graph.db" );
         putStoreInDirectory( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );
@@ -354,6 +358,13 @@ public class DumpCommandTest
 
             assertEquals( String.format( "usage: neo4j-admin dump [--database=<name>] --to=<destination-path>%n" +
                             "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
+                            "%n" +
                             "Dump a database into a single-file archive. The archive can be used by the load%n" +
                             "command. <destination-path> can be a file or directory (in which case a file%n" +
                             "called <database>.dump will be created). It is not possible to dump a database%n" +
@@ -374,9 +385,10 @@ public class DumpCommandTest
 
     private void assertCanLockStore( Path databaseDirectory ) throws IOException
     {
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.checkLock();
         }
     }
 

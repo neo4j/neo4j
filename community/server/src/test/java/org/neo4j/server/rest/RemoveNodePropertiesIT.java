@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -74,13 +74,14 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() {
+    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
+    {
         JaxRsResponse response = RestRequest.req().delete(getPropertiesUri(999999));
         assertEquals(404, response.getStatus());
         response.close();
     }
 
-    private JaxRsResponse removeNodePropertiesOnServer(final long nodeId)
+    private JaxRsResponse removeNodePropertiesOnServer( final long nodeId )
     {
         return RestRequest.req().delete(getPropertiesUri(nodeId));
     }
@@ -111,7 +112,8 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() {
+    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
+    {
         JaxRsResponse response = RestRequest.req().delete(getPropertyUri(999999, "foo"));
         assertEquals(404, response.getStatus());
     }
@@ -121,7 +123,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
         return functionalTestHelper.nodePropertyUri( nodeId, key );
     }
 
-    private JaxRsResponse removeNodePropertyOnServer(final long nodeId, final String key)
+    private JaxRsResponse removeNodePropertyOnServer( final long nodeId, final String key )
     {
         return RestRequest.req().delete(getPropertyUri(nodeId, key));
     }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.function;
 
+import java.util.function.Predicate;
+
 /**
  * Represents a predicate (boolean-valued function) of one argument.
  *
@@ -35,4 +37,22 @@ public interface ThrowingPredicate<T, E extends Exception>
      * @throws E an exception if the predicate fails
      */
     boolean test( T t ) throws E;
+
+    static <TYPE> ThrowingPredicate<TYPE,RuntimeException> throwingPredicate( Predicate<TYPE> predicate )
+    {
+        return new ThrowingPredicate<TYPE,RuntimeException>()
+        {
+            @Override
+            public boolean test( TYPE value )
+            {
+                return predicate.test( value );
+            }
+
+            @Override
+            public String toString()
+            {
+                return predicate.toString();
+            }
+        };
+    }
 }

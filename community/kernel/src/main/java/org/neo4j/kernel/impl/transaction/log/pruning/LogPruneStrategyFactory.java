@@ -46,6 +46,10 @@ public class LogPruneStrategyFactory
         }
     };
 
+    private LogPruneStrategyFactory()
+    {
+    }
+
     /**
      * Parses a configuration value for log specifying log pruning. It has one of these forms:
      * <ul>

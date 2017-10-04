@@ -28,6 +28,11 @@ import org.neo4j.causalclustering.identity.MemberId;
 
 public class Voting
 {
+
+    private Voting()
+    {
+    }
+
     static  void handleVoteRequest( ReadableRaftState state, Outcome outcome,
             RaftMessages.Vote.Request voteRequest ) throws IOException
     {

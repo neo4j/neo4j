@@ -60,7 +60,7 @@ public class CombiningResourceIteratorTest
 
         // Given I iterate through half of it
         int iterations = 4;
-        while( iterations --> 0 )
+        while ( iterations-- > 0 )
         {
             combingIterator.next();
         }

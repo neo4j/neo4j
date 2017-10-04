@@ -40,7 +40,7 @@ public class DatabaseSubGraph implements SubGraph
 
     public static SubGraph from( GraphDatabaseService gdb )
     {
-        return new DatabaseSubGraph(gdb);
+        return new DatabaseSubGraph( gdb );
     }
 
     @Override
@@ -56,9 +56,9 @@ public class DatabaseSubGraph implements SubGraph
     }
 
     @Override
-    public boolean contains(Relationship relationship)
+    public boolean contains( Relationship relationship )
     {
-        return relationship.getGraphDatabase().equals(gdb);
+        return relationship.getGraphDatabase().equals( gdb );
     }
 
     @Override

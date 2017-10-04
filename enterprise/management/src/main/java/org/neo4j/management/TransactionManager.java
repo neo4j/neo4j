@@ -26,7 +26,7 @@ import org.neo4j.jmx.ManagementInterface;
 @Description( "Information about the Neo4j transaction manager" )
 public interface TransactionManager
 {
-    final String NAME = "Transactions";
+    String NAME = "Transactions";
 
     @Description( "The number of currently open transactions" )
     long getNumberOfOpenTransactions();

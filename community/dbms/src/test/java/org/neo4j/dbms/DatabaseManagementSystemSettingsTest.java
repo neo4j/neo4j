@@ -19,23 +19,21 @@
  */
 package org.neo4j.dbms;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.junit.Assert.assertThat;
 
 public class DatabaseManagementSystemSettingsTest
 {
     @Test
     public void shouldPutDatabaseDirectoriesIntoDataDatabases()
     {
-        Config config = new Config( stringMap( DatabaseManagementSystemSettings.data_directory.name(), "the-data-directory" ) );
+        Config config = Config.defaults( DatabaseManagementSystemSettings.data_directory, "the-data-directory" );
         assertThat( config.get( DatabaseManagementSystemSettings.database_path ),
                 equalTo( new File( "the-data-directory/databases/graph.db" ) ) );
     }

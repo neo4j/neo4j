@@ -96,7 +96,7 @@ public class DefaultCacheAccess implements CacheAccess
     {
         private final int threadIndex;
 
-        public DefaultClient( int threadIndex )
+        DefaultClient( int threadIndex )
         {
             this.threadIndex = threadIndex;
         }
@@ -105,6 +105,12 @@ public class DefaultCacheAccess implements CacheAccess
         public long getFromCache( long id, int slot )
         {
             return cache.get( id, slot );
+        }
+
+        @Override
+        public boolean getBooleanFromCache( long id, int slot )
+        {
+            return cache.get( id, slot ) != 0;
         }
 
         @Override
@@ -137,7 +143,7 @@ public class DefaultCacheAccess implements CacheAccess
             }
 
             return id >= threadIndex * recordsPerCPU &&
-                   id <= (threadIndex + 1) * recordsPerCPU;
+                   id < (threadIndex + 1) * recordsPerCPU;
         }
 
         @Override

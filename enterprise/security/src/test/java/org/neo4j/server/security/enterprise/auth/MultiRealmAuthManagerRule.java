@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -56,8 +56,8 @@ public class MultiRealmAuthManagerRule implements TestRule
 
     public MultiRealmAuthManagerRule(
             UserRepository users,
-            AuthenticationStrategy authStrategy
-    ) {
+            AuthenticationStrategy authStrategy )
+    {
         this.users = users;
         this.authStrategy = authStrategy;
     }
@@ -98,9 +98,11 @@ public class MultiRealmAuthManagerRule implements TestRule
     @Override
     public Statement apply( final Statement base, final Description description )
     {
-        return new Statement() {
+        return new Statement()
+        {
             @Override
-            public void evaluate() throws Throwable {
+            public void evaluate() throws Throwable
+            {
                 try
                 {
                     setupAuthManager( authStrategy );

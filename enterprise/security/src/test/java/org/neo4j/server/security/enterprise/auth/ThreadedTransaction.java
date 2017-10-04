@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -34,10 +35,11 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 
 class ThreadedTransaction<S>
 {
-    private volatile Future<Throwable> done = null;
+    private volatile Future<Throwable> done;
     private final NeoInteractionLevel<S> neo;
     private final DoubleLatch latch;
 
@@ -116,7 +118,7 @@ class ThreadedTransaction<S>
                             tx.success();
                             return null;
                         }
-                        catch (Throwable t)
+                        catch ( Throwable t )
                         {
                             return t;
                         }
@@ -136,25 +138,27 @@ class ThreadedTransaction<S>
         }
     }
 
-    void closeAndAssertTransactionTermination() throws Throwable
+    void closeAndAssertExplicitTermination() throws Throwable
     {
         Throwable exceptionInOtherThread = join();
         if ( exceptionInOtherThread == null )
         {
-            fail( "Expected BridgeTransactionTerminatedException in ThreadedCreate, but no exception was raised" );
+            fail( "Expected explicit TransactionTerminatedException in the threaded transaction, " +
+                    "but no exception was raised" );
         }
         assertThat( Exceptions.stringify( exceptionInOtherThread ),
                 exceptionInOtherThread.getMessage(), containsString( "Explicitly terminated by the user.") );
     }
 
-    void closeAndAssertQueryKilled() throws Throwable
+    void closeAndAssertSomeTermination() throws Throwable
     {
         Throwable exceptionInOtherThread = join();
         if ( exceptionInOtherThread == null )
         {
-            fail( "Expected a exception from the query having been killed, but no exception was raised" );
+            fail( "Expected a TransactionTerminatedException in the threaded transaction, but no exception was raised" );
         }
-        assertThat( exceptionInOtherThread.getMessage(), containsString( "The transaction has been terminated.") );
+        assertThat( Exceptions.stringify( exceptionInOtherThread ),
+                exceptionInOtherThread, instanceOf( TransactionTerminatedException.class ) );
     }
 
     private Throwable join() throws ExecutionException, InterruptedException

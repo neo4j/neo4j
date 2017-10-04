@@ -36,6 +36,10 @@ import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLo
 
 public class ClusterSafetyViolations
 {
+    private ClusterSafetyViolations()
+    {
+    }
+
     public static List<Violation> violations( ClusterState state ) throws IOException
     {
         List<Violation> invariantsViolated = new ArrayList<>();

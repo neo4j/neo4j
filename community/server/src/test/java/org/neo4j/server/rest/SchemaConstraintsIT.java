@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Transaction;
@@ -35,12 +35,10 @@ import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
@@ -60,7 +58,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
@@ -84,7 +83,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
         String result = gen.get().expectedStatus( 200 ).get(
@@ -108,7 +108,9 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
@@ -137,7 +139,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
 
         String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
@@ -160,7 +163,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
+        String labelName1 = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
 
         String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
@@ -183,7 +187,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         ConstraintDefinition constraintDefinition = createLabelUniquenessPropertyConstraint( labelName, propertyKey );
         assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
 
@@ -198,7 +203,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_existing_constraint()
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
         Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
@@ -209,23 +215,31 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     @Test
     public void drop_non_existent_constraint() throws Exception
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
 
         gen.get().expectedStatus( 404 )
                 .delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );
     }
 
-    /**
-     * Creating a compound index should not yet be supported.
-     */
     @Test
     public void create_compound_schema_index()
     {
         Map<String,Object> definition = map( "property_keys",
                 asList( properties.newInstance(), properties.newInstance() ) );
 
-        gen.get().expectedStatus( 400 )
+        gen.get().expectedStatus( 200 )
                 .payload( createJsonFrom( definition ) ).post( getSchemaIndexLabelUri( labels.newInstance() ) );
+    }
+
+    @Test
+    public void create_compound_schema_constraint()
+    {
+        Map<String,Object> definition = map( "property_keys",
+                asList( properties.newInstance(), properties.newInstance() ) );
+
+        gen.get().expectedStatus( 405 )
+                .payload( createJsonFrom( definition ) ).post( getSchemaConstraintLabelUri( labels.newInstance() ) );
     }
 
     private ConstraintDefinition createLabelUniquenessPropertyConstraint( String labelName, String propertyKey )

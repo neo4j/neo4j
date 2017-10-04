@@ -382,25 +382,21 @@ public class TransactionPropagator implements Lifecycle
 
     private Callable<Void> slaveCommitter( final Slave slave, final long txId, final CompletionNotifier notifier )
     {
-        return new Callable<Void>()
+        return () ->
         {
-            @Override
-            public Void call()
+            try
             {
-                try
-                {
-                    // TODO Bypass the CommitPusher, now that we have a single thread pulling updates on each slave
-                    // The CommitPusher is all about batching transaction pushing to slaves, to reduce the overhead
-                    // of multiple threads pulling the same transactions on each slave. That should be fine now.
+                // TODO Bypass the CommitPusher, now that we have a single thread pulling updates on each slave
+                // The CommitPusher is all about batching transaction pushing to slaves, to reduce the overhead
+                // of multiple threads pulling the same transactions on each slave. That should be fine now.
 //                    slave.pullUpdates( txId );
-                    pusher.queuePush( slave, txId );
+                pusher.queuePush( slave, txId );
 
-                    return null;
-                }
-                finally
-                {
-                    notifier.completed();
-                }
+                return null;
+            }
+            finally
+            {
+                notifier.completed();
             }
         };
     }

@@ -87,14 +87,15 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         }
     }
 
-    private IOCursor<CommittedTransactionRepresentation> getCursor( ChannelHandlerContext ctx, long firstTxId, StoreId localStoreId, StoreId expectedStoreId ) throws IOException
+    private IOCursor<CommittedTransactionRepresentation> getCursor( ChannelHandlerContext ctx, long firstTxId,
+            StoreId localStoreId, StoreId expectedStoreId ) throws IOException
     {
         long lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
 
         if ( localStoreId == null || !localStoreId.equals( expectedStoreId ) )
         {
             log.info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
-                      "from this machine with %s", firstTxId, expectedStoreId, localStoreId );
+                    "from this machine with %s", firstTxId, expectedStoreId, localStoreId );
             endInteraction( ctx, E_STORE_ID_MISMATCH, lastCommittedTransactionId );
             return null;
         }

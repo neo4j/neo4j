@@ -24,10 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -41,6 +39,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
@@ -51,9 +51,12 @@ import static org.junit.Assert.assertTrue;
 public class ProcedureResourcesIT
 {
     @Rule
-    public DatabaseRule db = new EnterpriseDatabaseRule();
+    public DatabaseRule db = new EnterpriseDatabaseRule()
+            .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     private final String indexDefinition = ":Label(prop)";
+    private final String explicitIndexName = "explicitIndex";
+    private final String relExplicitIndexName = "relExplicitIndex";
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @After
@@ -66,24 +69,22 @@ public class ProcedureResourcesIT
     @Test
     public void allProcedures() throws Exception
     {
-        // given
-        Map<String,List<Object>> allProceduresWithParameters = allProceduresWithParameters();
-
         // when
-        String procedureQuery = null;
+        createExplicitIndex();
         createIndex();
-        for ( Map.Entry<String,List<Object>> procedureWithParams : allProceduresWithParameters.entrySet() )
+        for ( ProcedureSignature procedure : db.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures() )
         {
             // then
             initialData();
+            ProcedureData procedureData = null;
             try
             {
-                procedureQuery = buildProcedureQuery( procedureWithParams.getKey(), procedureWithParams.getValue() );
-                verifyProcedureCloseAllAcquiredKernelStatements( procedureQuery );
+                procedureData = procedureDataFor( procedure );
+                verifyProcedureCloseAllAcquiredKernelStatements( procedureData );
             }
             catch ( Exception e )
             {
-                throw new Exception( "Failed on procedure query: \"" + procedureQuery + "\"", e );
+                throw new Exception( "Failed on procedure: \"" + procedureData + "\"", e );
             }
             clearDb();
         }
@@ -105,12 +106,12 @@ public class ProcedureResourcesIT
         }
     }
 
-    private void verifyProcedureCloseAllAcquiredKernelStatements( String procedureQuery )
-            throws ExecutionException, InterruptedException
+    private void verifyProcedureCloseAllAcquiredKernelStatements( ProcedureData proc ) throws ExecutionException, InterruptedException
     {
-        String failureMessage = "Failed on procedure " + procedureQuery;
+        String failureMessage = "Failed on procedure " + proc.name;
         try ( Transaction outer = db.beginTx() )
         {
+            String procedureQuery = proc.buildProcedureQuery();
             exhaust( db.execute( procedureQuery ) ).close();
             exhaust( db.execute( "MATCH (mo:Label) WHERE mo.prop = 'n/a' RETURN mo" ) ).close();
             executeInOtherThread( "CREATE(mo:Label) SET mo.prop = 'val' RETURN mo" );
@@ -147,14 +148,14 @@ public class ProcedureResourcesIT
         }
     }
 
-    private String buildProcedureQuery( String procedureName, List<Object> parameters )
+    private void createExplicitIndex()
     {
-        StringJoiner stringJoiner = new StringJoiner( ",", "CALL " + procedureName + "(", ")" );
-        for ( Object parameter : parameters )
+        try ( Transaction tx = db.beginTx() )
         {
-            stringJoiner.add( parameter.toString() );
+            db.index().forNodes( explicitIndexName );
+            db.index().forRelationships( relExplicitIndexName );
+            tx.success();
         }
-        return stringJoiner.toString();
     }
 
     private void clearDb()
@@ -166,54 +167,189 @@ public class ProcedureResourcesIT
         }
     }
 
-    private Map<String,List<Object>> allProceduresWithParameters()
+    private static class ProcedureData
     {
-        Set<ProcedureSignature> allProcedures = db.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures();
-        Map<String,List<Object>> allProceduresWithParameters = new HashMap<>();
-        for ( ProcedureSignature procedure : allProcedures )
+        private final String name;
+        private final List<Object> params = new ArrayList<>();
+        private String setupQuery;
+        private String postQuery;
+
+        private ProcedureData( ProcedureSignature procedure )
         {
-            List<Object> params = paramsFor( procedure );
-            allProceduresWithParameters.put( procedure.name().toString(), params );
+            this.name = procedure.name().toString();
         }
-        return allProceduresWithParameters;
+
+        private void withParam( Object param )
+        {
+            this.params.add( param );
+        }
+
+        private void withSetup( String setupQuery, String postQuery )
+        {
+            this.setupQuery = setupQuery;
+            this.postQuery = postQuery;
+        }
+
+        private String buildProcedureQuery()
+        {
+            StringJoiner stringJoiner = new StringJoiner( ",", "CALL " + name + "(", ")" );
+            for ( Object parameter : params )
+            {
+                stringJoiner.add( parameter.toString() );
+            }
+            if ( setupQuery != null && postQuery != null )
+            {
+                return setupQuery + " " + stringJoiner.toString() + " " + postQuery;
+            }
+            else
+            {
+                return stringJoiner.toString();
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return buildProcedureQuery();
+        }
     }
 
-    private List<Object> paramsFor( ProcedureSignature procedure )
+    private ProcedureData procedureDataFor( ProcedureSignature procedure )
     {
-        List<Object> parameters = new ArrayList<>();
-        switch ( procedure.name().toString() )
+        ProcedureData proc = new ProcedureData( procedure );
+        switch ( proc.name )
         {
         case "db.createProperty":
-            parameters.add( "'propKey'" );
+            proc.withParam( "'propKey'" );
             break;
         case "db.resampleIndex":
-            parameters.add( "'" + indexDefinition + "'" );
+            proc.withParam( "'" + indexDefinition + "'" );
             break;
         case "db.createRelationshipType":
-            parameters.add( "'RelType'" );
+            proc.withParam( "'RelType'" );
             break;
         case "dbms.queryJmx":
-            parameters.add( "'*:*'" );
+            proc.withParam( "'*:*'" );
             break;
         case "db.awaitIndex":
-            parameters.add( "'" + indexDefinition + "'" );
-            parameters.add( 100 );
+            proc.withParam( "'" + indexDefinition + "'" );
+            proc.withParam( 100 );
             break;
         case "db.createLabel":
-            parameters.add( "'OtherLabel'" );
+            proc.withParam( "'OtherLabel'" );
             break;
         case "dbms.killQuery":
-            parameters.add( "'query-1234'" );
+            proc.withParam( "'query-1234'" );
             break;
         case "dbms.killQueries":
-            parameters.add( "['query-1234']" );
+            proc.withParam( "['query-1234']" );
             break;
         case "dbms.setTXMetaData":
-            parameters.add( "{realUser:'MyMan'}" );
+            proc.withParam( "{realUser:'MyMan'}" );
+            break;
+        case "dbms.listActiveLocks":
+            proc.withParam( "'query-1234'" );
+            break;
+        case "db.index.explicit.seekNodes":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
+            break;
+        case "db.index.explicit.searchNodes":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            proc.withParam( "'noKey:foo*'" );
+            break;
+        case "db.index.explicit.searchRelationships":
+            proc.withParam( "'" + relExplicitIndexName + "'" );
+            proc.withParam( "'noKey:foo*'" );
+            break;
+        case "db.index.explicit.searchRelationshipsIn":
+            proc.withParam( "'" + relExplicitIndexName + "'" );
+
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.explicit.searchRelationshipsOut":
+            proc.withParam( "'" + relExplicitIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.explicit.searchRelationshipsBetween":
+            proc.withParam( "'" + relExplicitIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.explicit.seekRelationships":
+            proc.withParam( "'" + relExplicitIndexName + "'" );
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
+            break;
+        case "db.index.explicit.auto.seekNodes":
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
+            break;
+        case "db.index.explicit.auto.searchNodes":
+            proc.withParam( "'noKey:foo*'" );
+            break;
+        case "db.index.explicit.auto.searchRelationships":
+            proc.withParam( "'noKey:foo*'" );
+            break;
+        case "db.index.explicit.auto.seekRelationships":
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
+            break;
+        case "db.index.explicit.existsForNodes":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            break;
+        case "db.index.explicit.existsForRelationships":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            break;
+        case "db.index.explicit.forNodes":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            break;
+        case "db.index.explicit.forRelationships":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            break;
+        case "db.index.explicit.addNode":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'prop'" );
+            proc.withParam( "'value'");
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.explicit.addRelationship":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            proc.withParam( "r" );
+            proc.withParam( "'prop'" );
+            proc.withParam( "'value'");
+            proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.explicit.removeNode":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'prop'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.explicit.removeRelationship":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            proc.withParam( "r" );
+            proc.withParam( "'prop'" );
+            proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.explicit.drop":
+            proc.withParam( "'" + explicitIndexName + "'" );
+            break;
+        case "dbms.setConfigValue":
+            proc.withParam( "'dbms.logs.query.enabled'" );
+            proc.withParam( "'false'" );
             break;
         default:
         }
-        return parameters;
+        return proc;
     }
 
     private void executeInOtherThread( String query ) throws ExecutionException, InterruptedException

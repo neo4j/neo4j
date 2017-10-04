@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -47,14 +46,15 @@ public final class RepresentationFormatRepository
         }
     }
 
-    public OutputFormat outputFormat(List<MediaType> acceptable, URI baseUri, MultivaluedMap<String, String> requestHeaders)
+    public OutputFormat outputFormat( List<MediaType> acceptable, URI baseUri,
+            MultivaluedMap<String,String> requestHeaders )
     {
         RepresentationFormat format = forHeaders( acceptable, requestHeaders );
-        if (format==null)
+        if ( format == null )
         {
             format = forMediaTypes( acceptable );
         }
-        if (format==null)
+        if ( format == null )
         {
             format = useDefault( acceptable );
         }
@@ -63,31 +63,40 @@ public final class RepresentationFormatRepository
 
     private PluginManager getExtensionManager()
     {
-        return injectorProvider==null ? null : injectorProvider.getExtensionManager();
+        return injectorProvider == null ? null : injectorProvider.getExtensionManager();
     }
 
-    private RepresentationFormat forHeaders(List<MediaType> acceptable, MultivaluedMap<String, String> requestHeaders)
+    private RepresentationFormat forHeaders( List<MediaType> acceptable, MultivaluedMap<String,String> requestHeaders )
     {
-        if (requestHeaders==null) return null;
-        if (!containsType(acceptable,MediaType.APPLICATION_JSON_TYPE)) return null;
-        String streamHeader = requestHeaders.getFirst(StreamingFormat.STREAM_HEADER);
-        if ("true".equalsIgnoreCase(streamHeader))
+        if ( requestHeaders == null )
         {
-            return formats.get(StreamingFormat.MEDIA_TYPE);
+            return null;
+        }
+        if ( !containsType( acceptable, MediaType.APPLICATION_JSON_TYPE ) )
+        {
+            return null;
+        }
+        String streamHeader = requestHeaders.getFirst( StreamingFormat.STREAM_HEADER );
+        if ( "true".equalsIgnoreCase( streamHeader ) )
+        {
+            return formats.get( StreamingFormat.MEDIA_TYPE );
         }
         return null;
     }
 
-    private boolean containsType(List<MediaType> mediaTypes, MediaType mediaType)
+    private boolean containsType( List<MediaType> mediaTypes, MediaType mediaType )
     {
-        for (MediaType type : mediaTypes)
+        for ( MediaType type : mediaTypes )
         {
-            if (mediaType.getType().equals(type.getType()) && mediaType.getSubtype().equals(type.getSubtype())) return true;
+            if ( mediaType.getType().equals( type.getType() ) && mediaType.getSubtype().equals( type.getSubtype() ) )
+            {
+                return true;
+            }
         }
         return false;
     }
 
-    private RepresentationFormat forMediaTypes(List<MediaType> acceptable)
+    private RepresentationFormat forMediaTypes( List<MediaType> acceptable )
     {
         for ( MediaType type : acceptable )
         {

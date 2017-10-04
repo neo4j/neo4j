@@ -25,11 +25,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Message;
 
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.HEARTBEAT_RESPONSE;
@@ -644,11 +644,17 @@ public interface RaftMessages
             public boolean equals( Object o )
             {
                 if ( this == o )
-                { return true; }
+                {
+                    return true;
+                }
                 if ( o == null || getClass() != o.getClass() )
-                { return false; }
+                {
+                    return false;
+                }
                 if ( !super.equals( o ) )
-                { return false; }
+                {
+                    return false;
+                }
                 BatchRequest batchRequest = (BatchRequest) o;
                 return Objects.equals( list, batchRequest.list );
             }
@@ -744,11 +750,17 @@ public interface RaftMessages
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
+            {
+                return false;
+            }
             if ( !super.equals( o ) )
-            { return false; }
+            {
+                return false;
+            }
             PruneRequest that = (PruneRequest) o;
             return pruneIndex == that.pruneIndex;
         }

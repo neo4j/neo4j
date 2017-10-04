@@ -66,7 +66,7 @@ class TransactionRepresentationFactory
 
         Command nextCommand()
         {
-            return new Command.NodeCommand(nodeRecordGenerator.nextRecord(), nodeRecordGenerator.nextRecord());
+            return new Command.NodeCommand( nodeRecordGenerator.nextRecord(), nodeRecordGenerator.nextRecord() );
         }
     }
 

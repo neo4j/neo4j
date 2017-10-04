@@ -51,8 +51,9 @@ import org.neo4j.udc.UsageData;
 import static org.neo4j.udc.UsageDataKeys.Features.http_batch_endpoint;
 import static org.neo4j.udc.UsageDataKeys.features;
 
-@Path("/batch")
-public class BatchOperationService {
+@Path( "/batch" )
+public class BatchOperationService
+{
 
     private static final Logger LOGGER = Log.getLogger(BatchOperationService.class);
 
@@ -74,8 +75,8 @@ public class BatchOperationService {
     }
 
     @POST
-    public Response performBatchOperations(@Context UriInfo uriInfo,
-            @Context HttpHeaders httpHeaders, @Context HttpServletRequest req, InputStream body)
+    public Response performBatchOperations( @Context UriInfo uriInfo,
+            @Context HttpHeaders httpHeaders, @Context HttpServletRequest req, InputStream body )
     {
         usage.get( features ).flag( http_batch_endpoint );
         if ( isStreaming( httpHeaders ) )
@@ -90,52 +91,48 @@ public class BatchOperationService {
     {
         try
         {
-            final StreamingOutput stream = new StreamingOutput()
+            final StreamingOutput stream = output ->
             {
-                @Override
-                public void write( final OutputStream output ) throws IOException, WebApplicationException
+                try
                 {
-                    try
+                    final ServletOutputStream servletOutputStream = new ServletOutputStream()
                     {
-                        final ServletOutputStream servletOutputStream = new ServletOutputStream()
+                        @Override
+                        public void write( int i ) throws IOException
                         {
-                            @Override
-                            public void write( int i ) throws IOException
-                            {
-                                output.write( i );
-                            }
+                            output.write( i );
+                        }
 
-                            @Override
-                            public boolean isReady()
-                            {
-                                return true;
-                            }
+                        @Override
+                        public boolean isReady()
+                        {
+                            return true;
+                        }
 
-                            @Override
-                            public void setWriteListener( WriteListener writeListener )
+                        @Override
+                        public void setWriteListener( WriteListener writeListener )
+                        {
+                            try
                             {
-                                try
-                                {
-                                    writeListener.onWritePossible();
-                                }
-                                catch ( IOException e )
-                                {
-                                    // Ignore
-                                }
+                                writeListener.onWritePossible();
                             }
-                        };
-                        new StreamingBatchOperations( webServer ).readAndExecuteOperations( uriInfo, httpHeaders, req,
-                                body, servletOutputStream );
-                        representationWriteHandler.onRepresentationWritten();
-                    }
-                    catch ( Exception e )
-                    {
-                        LOGGER.warn( "Error executing batch request ", e );
-                    }
-                    finally
-                    {
-                        representationWriteHandler.onRepresentationFinal();
-                    }
+                            catch ( IOException e )
+                            {
+                                // Ignore
+                            }
+                        }
+                    };
+                    new StreamingBatchOperations( webServer ).readAndExecuteOperations( uriInfo, httpHeaders, req,
+                            body, servletOutputStream );
+                    representationWriteHandler.onRepresentationWritten();
+                }
+                catch ( Exception e )
+                {
+                    LOGGER.warn( "Error executing batch request ", e );
+                }
+                finally
+                {
+                    representationWriteHandler.onRepresentationFinal();
                 }
             };
             return Response.ok(stream)

@@ -24,23 +24,34 @@ import org.junit.Test;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.Map;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 
+import javax.annotation.Nonnull;
+
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
+
 public class ServerBootstrapperTest
 {
     @Rule
     public final SuppressOutput suppress = SuppressOutput.suppress( SuppressOutput.System.out );
+
+    @Rule
+    public TestDirectory homeDir = TestDirectory.testDirectory();
 
     @Test
     public void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception
@@ -55,11 +66,11 @@ public class ServerBootstrapperTest
                 return mock( NeoServer.class );
             }
 
+            @Nonnull
             @Override
-            protected Iterable<Class<?>> settingsClasses( Map<String,String> settings )
+            protected Collection<ConfigurationValidator> configurationValidators()
             {
-                // simulate validation failure
-                throw new IllegalArgumentException( "Missing mandatory setting" );
+                return Collections.emptyList();
             }
         };
 
@@ -67,7 +78,8 @@ public class ServerBootstrapperTest
         dir.deleteOnExit();
 
         // when
-        serverBootstrapper.start( dir, Optional.empty() );
+        serverBootstrapper.start( dir, Optional.empty(), MapUtil.stringMap(
+                database_path.name(), homeDir.absolutePath().getAbsolutePath() ) );
 
         // then no exceptions are thrown and
         assertThat( suppress.getOutputVoice().lines(), not( empty() ) );

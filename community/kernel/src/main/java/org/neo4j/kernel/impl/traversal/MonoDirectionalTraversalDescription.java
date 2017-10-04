@@ -65,7 +65,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
          * significantly less performant, and only used when accessing the traversal framework via the legacy access
          * methods (eg. Traversal.description()).
          */
-        this(NO_STATEMENT);
+        this( NO_STATEMENT );
     }
 
     public MonoDirectionalTraversalDescription( Supplier<? extends Resource> statementProvider )
@@ -108,7 +108,8 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
     @Override
     public Traverser traverse( final Iterable<Node> iterableStartNodes )
     {
-        return new DefaultTraverser( () -> {
+        return new DefaultTraverser( () ->
+        {
             Resource statement = statementSupplier.get();
             MonoDirectionalTraverserIterator iterator = new MonoDirectionalTraverserIterator(
                     statement,
@@ -149,7 +150,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
     @Override
     public TraversalDescription evaluator( Evaluator evaluator )
     {
-        return evaluator( new Evaluator.AsPathEvaluator( evaluator) );
+        return evaluator( new Evaluator.AsPathEvaluator( evaluator ) );
     }
 
     @Override
@@ -174,7 +175,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         else
         {
             return existing == Evaluators.all() ? toAdd :
-                new MultiEvaluator( new PathEvaluator[] { existing, toAdd } );
+                new MultiEvaluator( existing, toAdd );
         }
     }
 
@@ -233,7 +234,9 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
             Direction direction )
     {
         if ( expander instanceof StandardExpander )
-            return expand( ((StandardExpander)expander).add( type, direction ) );
+        {
+            return expand( ((StandardExpander) expander).add( type, direction ) );
+        }
         throw new IllegalStateException( "The current expander cannot be added to" );
     }
 

@@ -29,6 +29,7 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.RaftMessageEncoder;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -40,19 +41,24 @@ public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
     private final ChannelMarshal<ReplicatedContent> marshal;
     private final Log log;
     private final Monitors monitors;
+    private final PipelineHandlerAppender pipelineAppender;
 
     public RaftChannelInitializer( ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider,
-            Monitors monitors )
+                                   Monitors monitors, PipelineHandlerAppender pipelineAppender )
     {
         this.marshal = marshal;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
+        this.pipelineAppender = pipelineAppender;
     }
 
     @Override
     protected void initChannel( SocketChannel ch ) throws Exception
     {
         ChannelPipeline pipeline = ch.pipeline();
+
+        pipelineAppender.addPipelineHandlerForClient( pipeline, ch );
+
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
         pipeline.addLast( new VersionPrepender() );
         pipeline.addLast( "raftMessageEncoder", new RaftMessageEncoder( marshal ) );

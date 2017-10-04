@@ -59,6 +59,12 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
+    public Long createNodeId()
+    {
+        return graph.createNodeId();
+    }
+
+    @Override
     public Node createNode( Label... labels )
     {
         return graph.createNode( labels );
@@ -96,7 +102,8 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public DbmsOperations getDbmsOperations() {
+    public DbmsOperations getDbmsOperations()
+    {
         return dbmsOperations;
     }
 

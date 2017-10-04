@@ -24,8 +24,6 @@ import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
@@ -36,7 +34,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -44,6 +41,7 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -75,11 +73,33 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 //@RunWith( Parameterized.class )
 public class BoltConnectionManagementIT
 {
+    private HostnamePort address;
+
+    protected TransportConnection admin;
+    protected TransportConnection user;
+
+    @Parameterized.Parameter()
+    public Factory<TransportConnection> cf;
+
+    @Parameterized.Parameters
+    public static Collection<Factory<TransportConnection>> transports()
+    {
+        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
+                SecureWebSocketConnection::new );
+    }
+
+    @Rule
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
+            getSettingsFunction() );
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
+
     @Before
     public void setup() throws Exception
     {
         this.admin = cf.newInstance();
         this.user = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
 
         authenticate( admin, "neo4j", "neo4j", "123" );
         createNewUser( admin, "Igor", "123" );
@@ -98,13 +118,6 @@ public class BoltConnectionManagementIT
         }
     }
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
-            getSettingsFunction() );
-
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
-
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
@@ -113,37 +126,6 @@ public class BoltConnectionManagementIT
     protected Consumer<Map<String, String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
-    }
-
-    @Parameterized.Parameter( 0 )
-    public Factory<TransportConnection> cf;
-
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
-
-    protected TransportConnection admin;
-    protected TransportConnection user;
-
-    @Parameterized.Parameters
-    public static Collection<Object[]> transports()
-    {
-        return asList(
-                new Object[]{
-                        (Factory<TransportConnection>) SocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) WebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureWebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                } );
     }
 
     /*
@@ -355,7 +337,7 @@ public class BoltConnectionManagementIT
         Map<String, Object> authToken =
                 map( "principal", username, "credentials", password, "scheme", "basic" );
 
-        if ( newPassword != null)
+        if ( newPassword != null )
         {
             authToken.put( "new_credentials", newPassword );
         }
@@ -398,7 +380,7 @@ public class BoltConnectionManagementIT
 
     }
 
-    static class CollectingMatcher extends BaseMatcher<Record>
+    static class CollectingMatcher extends BaseMatcher<QueryResult.Record>
     {
         Map<String, Long> resultMap = new HashMap<>();
 

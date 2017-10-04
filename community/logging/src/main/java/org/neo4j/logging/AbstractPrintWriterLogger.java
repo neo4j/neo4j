@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -53,7 +54,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     {
         requireNonNull( message, "message must not be null" );
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             writeLog( writer, message );
@@ -71,7 +72,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
             return;
         }
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             writeLog( writer, message, throwable );
@@ -80,7 +81,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     }
 
     @Override
-    public void log( @Nonnull String format, @Nonnull Object... arguments )
+    public void log( @Nonnull String format, @Nullable Object... arguments )
     {
         requireNonNull( format, "format must not be null" );
         if ( arguments == null || arguments.length == 0 )
@@ -90,7 +91,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
         }
         String message = String.format( format, arguments );
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             writeLog( writer, message );
@@ -103,7 +104,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     {
         requireNonNull( consumer, "consumer must not be null" );
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             consumer.accept( getBulkLogger( writer, lock ) );

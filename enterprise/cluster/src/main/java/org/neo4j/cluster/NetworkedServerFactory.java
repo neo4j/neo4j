@@ -62,7 +62,7 @@ public class NetworkedServerFactory
                                    ObjectOutputStreamFactory objectOutputStreamFactory,
                                    NetworkReceiver.Monitor networkReceiverMonitor,
                                    NetworkSender.Monitor networkSenderMonitor,
-                                   NamedThreadFactory.Monitor namedThreadFactoryMonitor)
+                                   NamedThreadFactory.Monitor namedThreadFactoryMonitor )
     {
         this.life = life;
         this.protocolServerFactory = protocolServerFactory;
@@ -100,8 +100,7 @@ public class NetworkedServerFactory
             }
         }, logProvider );
 
-        final NetworkSender sender = new NetworkSender(networkSenderMonitor,
-                new NetworkSender.Configuration()
+        final NetworkSender sender = new NetworkSender( networkSenderMonitor, new NetworkSender.Configuration()
         {
             @Override
             public int defaultPort()
@@ -134,8 +133,8 @@ public class NetworkedServerFactory
                 protocolServer.listeningAt( me );
                 if ( logger == null )
                 {
-                    logger = new StateTransitionLogger(  logProvider,
-                            new AtomicBroadcastSerializer(objectInputStreamFactory, objectOutputStreamFactory));
+                    logger = new StateTransitionLogger( logProvider,
+                            new AtomicBroadcastSerializer( objectInputStreamFactory, objectOutputStreamFactory ) );
                     protocolServer.addStateTransitionListener( logger );
                 }
             }
@@ -171,15 +170,11 @@ public class NetworkedServerFactory
             {
                 scheduler = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "timeout" ) );
 
-                scheduler.scheduleWithFixedDelay( new Runnable()
+                scheduler.scheduleWithFixedDelay( () ->
                 {
-                    @Override
-                    public void run()
-                    {
-                        long now = System.currentTimeMillis();
+                    long now = System.currentTimeMillis();
 
-                        protocolServer.getTimeouts().tick( now );
-                    }
+                    protocolServer.getTimeouts().tick( now );
                 }, 0, 10, TimeUnit.MILLISECONDS );
             }
 

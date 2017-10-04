@@ -24,6 +24,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -122,9 +123,9 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public IdMapper idMapper()
+    public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
     {
-        return idType.idMapper();
+        return idType.idMapper( numberArrayFactory );
     }
 
     @Override
@@ -141,29 +142,23 @@ public class DataGeneratorInput implements Input
 
     public static Header sillyNodeHeader( IdType idType, Extractors extractors )
     {
-        return new Header( new Entry[] {
-                new Entry( null, Type.ID, null, idType.extractor( extractors ) ),
+        return new Header( new Entry( null, Type.ID, null, idType.extractor( extractors ) ),
                 new Entry( "name", Type.PROPERTY, null, extractors.string() ),
                 new Entry( "age", Type.PROPERTY, null, extractors.int_() ),
                 new Entry( "something", Type.PROPERTY, null, extractors.string() ),
-                new Entry( null, Type.LABEL, null, extractors.stringArray() ),
-        } );
+                new Entry( null, Type.LABEL, null, extractors.stringArray() ) );
     }
 
     public static Header bareboneNodeHeader( IdType idType, Extractors extractors )
     {
-        return new Header( new Entry[] {
-                new Entry( null, Type.ID, null, idType.extractor( extractors ) ),
-                new Entry( null, Type.LABEL, null, extractors.stringArray() ),
-        } );
+        return new Header( new Entry( null, Type.ID, null, idType.extractor( extractors ) ),
+                new Entry( null, Type.LABEL, null, extractors.stringArray() ) );
     }
 
     public static Header bareboneRelationshipHeader( IdType idType, Extractors extractors )
     {
-        return new Header( new Entry[] {
-                new Entry( null, Type.START_ID, null, idType.extractor( extractors ) ),
+        return new Header( new Entry( null, Type.START_ID, null, idType.extractor( extractors ) ),
                 new Entry( null, Type.END_ID, null, idType.extractor( extractors ) ),
-                new Entry( null, Type.TYPE, null, extractors.string() )
-        } );
+                new Entry( null, Type.TYPE, null, extractors.string() ) );
     }
 }

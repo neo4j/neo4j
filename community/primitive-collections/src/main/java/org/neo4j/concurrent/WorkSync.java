@@ -88,9 +88,56 @@ public class WorkSync<Material, W extends Work<Material,W>>
         do
         {
             tryCount++;
-            checkFailure( tryDoWork( unit, tryCount ) );
+            checkFailure( tryDoWork( unit, tryCount, true ) );
         }
         while ( !unit.isDone() );
+    }
+
+    /**
+     * Apply the given work to the material in a thread-safe way, possibly asynchronously if contention is observed
+     * with other threads, and possibly by combining it with other work.
+     * <p>
+     * The work will be applied immediately, if no other thread is contending for the material. Otherwise, the work
+     * will be enqueued for later application, which may occur on the next call to {@link #apply(Work)} on this
+     * {@code WorkSync}, or the next call to {@link AsyncApply#await()} from an {@code AsyncApply} instance created
+     * from this {@code WorkSync}. These calls, and thus the application of the enqueued work, may occur in an
+     * arbitrary thread.
+     * <p>
+     * The returned {@link AsyncApply} instance is not thread-safe. If so desired, its ownership can be transferred to
+     * other threads, but only in a way that ensures safe publication.
+     * <p>
+     * If the given work causes an exception to be thrown, then that exception will only be observed by the thread that
+     * ultimately applies the work. Thus, exceptions caused by this work are not guaranteed to be associated with, or
+     * made visible via, the returned {@link AsyncApply} instance.
+     *
+     * @param work The work to be done.
+     * @return An {@link AsyncApply} instance representing the enqueued - and possibly completed - work.
+     */
+    public AsyncApply applyAsync( W work )
+    {
+        // Schedule our work on the stack.
+        WorkUnit<Material,W> unit = enqueueWork( work );
+
+        // Apply the work if the lock is immediately available.
+        Throwable initialThrowable = tryDoWork( unit, 100, false );
+
+        return new AsyncApply()
+        {
+            Throwable throwable = initialThrowable;
+
+            @Override
+            public void await() throws ExecutionException
+            {
+
+                checkFailure( throwable );
+                int tryCount = 0;
+                while ( !unit.isDone() )
+                {
+                    tryCount++;
+                    checkFailure( throwable = tryDoWork( unit, tryCount, true ) );
+                }
+            }
+        };
     }
 
     private WorkUnit<Material,W> enqueueWork( W work )
@@ -100,9 +147,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
         return unit;
     }
 
-    private Throwable tryDoWork( WorkUnit<Material,W> unit, int tryCount )
+    private Throwable tryDoWork( WorkUnit<Material,W> unit, int tryCount, boolean block )
     {
-        if ( tryLock( tryCount, unit ) )
+        if ( tryLock( tryCount, unit, block ) )
         {
             WorkUnit<Material,W> batch = grabBatch();
             try
@@ -136,7 +183,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         }
     }
 
-    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit )
+    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit, boolean block )
     {
         if ( lock.compareAndSet( null, Thread.currentThread() ) )
         {
@@ -151,7 +198,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
             // todo Java9: Thread.onSpinWait() ?
             Thread.yield();
         }
-        else
+        else if ( block )
         {
             unit.park( 10, TimeUnit.MILLISECONDS );
         }

@@ -52,7 +52,7 @@ public class LifecycleManagingDatabase implements Database
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     private final Log log;
 
-    private boolean isRunning = false;
+    private boolean isRunning;
     private GraphDatabaseFacade graph;
 
     public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,
@@ -65,10 +65,9 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public String getLocation()
+    public File getLocation()
     {
-        File file = config.get( DatabaseManagementSystemSettings.database_path );
-        return file.getAbsolutePath();
+        return config.get( DatabaseManagementSystemSettings.database_path );
     }
 
     @Override

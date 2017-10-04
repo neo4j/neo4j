@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
 
 /*
  * Naive implementation of a JSON prettifier.
@@ -37,6 +36,10 @@ public class JSONPrettifier
     private static final JsonParser JSON_PARSER = new JsonParser();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final ObjectWriter WRITER = MAPPER.writerWithDefaultPrettyPrinter();
+
+    private JSONPrettifier()
+    {
+    }
 
     public static String parse( final String json )
     {

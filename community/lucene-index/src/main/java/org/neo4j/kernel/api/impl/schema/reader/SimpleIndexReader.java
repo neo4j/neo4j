@@ -27,21 +27,28 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.IndexQuery.IndexQueryType;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
+import static org.neo4j.kernel.api.schema.IndexQuery.IndexQueryType.exact;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 /**
  * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
@@ -50,18 +57,18 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
  */
 public class SimpleIndexReader implements IndexReader
 {
-    private PartitionSearcher partitionSearcher;
-    private IndexConfiguration indexConfiguration;
+    private final PartitionSearcher partitionSearcher;
+    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private TaskCoordinator taskCoordinator;
+    private final TaskCoordinator taskCoordinator;
 
     public SimpleIndexReader( PartitionSearcher partitionSearcher,
-            IndexConfiguration indexConfiguration,
+            IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
     {
         this.partitionSearcher = partitionSearcher;
-        this.indexConfiguration = indexConfiguration;
+        this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
     }
@@ -70,7 +77,7 @@ public class SimpleIndexReader implements IndexReader
     public IndexSampler createSampler()
     {
         TaskControl taskControl = taskCoordinator.newInstance();
-        if ( indexConfiguration.isUnique() )
+        if ( descriptor.type() == UNIQUE )
         {
             return new UniqueLuceneIndexSampler( getIndexSearcher(), taskControl );
         }
@@ -80,53 +87,109 @@ public class SimpleIndexReader implements IndexReader
         }
     }
 
-    public PrimitiveLongIterator seek( Object value )
+    @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        return query( LuceneDocumentStructure.newSeekQuery( value ) );
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exact:
+            Value[] values = new Value[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                assert predicates[i].type() == exact :
+                        "Exact followed by another query predicate type is not supported at this moment.";
+                values[i] = ((IndexQuery.ExactPredicate) predicates[i]).value();
+            }
+            return seek( values );
+        case exists:
+            for ( IndexQuery p : predicates )
+            {
+                if ( p.type() != IndexQueryType.exists )
+                {
+                    throw new IndexNotApplicableKernelException(
+                            "Exists followed by another query predicate type is not supported." );
+                }
+            }
+            return scan();
+        case rangeNumeric:
+            assertNotComposite( predicates );
+            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+            return rangeSeekByNumberInclusive( np.from(), np.to() );
+        case rangeString:
+            assertNotComposite( predicates );
+            IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
+            return rangeSeekByString( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
+        case stringPrefix:
+            assertNotComposite( predicates );
+            IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
+            return rangeSeekByPrefix( spp.prefix() );
+        case stringContains:
+            assertNotComposite( predicates );
+            IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
+            return containsString( scp.contains() );
+        case stringSuffix:
+            assertNotComposite( predicates );
+            IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
+            return endsWith( ssp.suffix() );
+        default:
+            // todo figure out a more specific exception
+            throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
+        }
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    {
+        return false;
+    }
+
+    private void assertNotComposite( IndexQuery[] predicates )
+    {
+        assert predicates.length == 1 : "composite indexes not yet supported for this operation";
+    }
+
+    private PrimitiveLongIterator seek( Value... values )
+    {
+        return query( LuceneDocumentStructure.newSeekQuery( values ) );
+    }
+
+    private PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         return query( LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( lower, upper ) );
     }
 
-    @Override
-    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+    private PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
             String upper, boolean includeUpper )
     {
         return query( LuceneDocumentStructure.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
     }
 
-    @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    private PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return query( LuceneDocumentStructure.newRangeSeekByPrefixQuery( prefix ) );
     }
 
-    @Override
-    public PrimitiveLongIterator scan()
+    private PrimitiveLongIterator scan()
     {
         return query( LuceneDocumentStructure.newScanQuery() );
     }
 
-    @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
+    private PrimitiveLongIterator containsString( String exactTerm )
     {
         return query( LuceneDocumentStructure.newWildCardStringQuery( exactTerm ) );
     }
 
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
+    private PrimitiveLongIterator endsWith( String suffix )
     {
         return query( LuceneDocumentStructure.newSuffixStringQuery( suffix ) );
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
-        Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValue );
+        Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValues );
         BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );

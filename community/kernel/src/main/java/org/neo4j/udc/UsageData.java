@@ -21,11 +21,11 @@ package org.neo4j.udc;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.DAYS;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.udc;
+import static org.neo4j.scheduler.JobScheduler.Groups.udc;
 
 /**
  * An in-memory storage location for usage metadata.
@@ -54,13 +54,13 @@ public class UsageData extends LifecycleAdapter
     public <T> T get( UsageDataKey<T> key )
     {
         Object o = store.get( key );
-        if( o == null )
+        if ( o == null )
         {
             // When items are missing, if there is a default value, we do a get-or-create style operation
             // This allows outside actors to get-or-create rich objects and know they will get the same object out
             // that other threads would use, which is helpful when we store mutable objects
             T value = key.generateDefaultValue();
-            if(value == null)
+            if ( value == null )
             {
                 return null;
             }
@@ -74,7 +74,7 @@ public class UsageData extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
-        if( featureDecayJob != null )
+        if ( featureDecayJob != null )
         {
             featureDecayJob.cancel( false );
         }

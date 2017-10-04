@@ -30,6 +30,7 @@ import java.lang.reflect.Field;
 import java.util.Properties;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -41,7 +42,7 @@ public class RmiPublicationIT
 {
     public static File createDefaultConfigFile( File path ) throws IOException
     {
-        File configFile = new File( path, "neo4j.conf" );
+        File configFile = new File( path, Config.DEFAULT_CONFIG_FILE_NAME );
         Properties config = new Properties();
         config.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         try ( Writer writer = new FileWriter( configFile ) )
@@ -71,7 +72,7 @@ public class RmiPublicationIT
         String dir = testDirectory.directory( name ).getAbsolutePath();
         return waitForExit( getRuntime()
                 .exec( new String[]{"java", "-cp", getProperty( "java.class.path" ), "-Djava.awt.headless=true",
-                        mainClass.getName(), dir} ), 20 );
+                        mainClass.getName(), dir} ), 120 );
     }
 
     private int waitForExit( Process process, int maxSeconds ) throws InterruptedException

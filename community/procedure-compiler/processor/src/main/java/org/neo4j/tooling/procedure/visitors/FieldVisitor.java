@@ -19,9 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.FieldError;
-
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.lang.model.element.ElementVisitor;
@@ -32,15 +29,17 @@ import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.Context;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.FieldError;
 
 public class FieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
 
     private final ElementVisitor<Stream<CompilationMessage>,Void> contextFieldVisitor;
 
-    public FieldVisitor( Types types, Elements elements, boolean skipContextWarnings )
+    public FieldVisitor( Types types, Elements elements, boolean ignoresWarnings )
     {
-        contextFieldVisitor = new ContextFieldVisitor( types, elements, skipContextWarnings );
+        contextFieldVisitor = new ContextFieldVisitor( types, elements, ignoresWarnings );
     }
 
     private static Stream<CompilationMessage> validateNonContextField( VariableElement field )

@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.consensus.log.monitoring;
 public interface RaftLogAppendIndexMonitor
 {
     long appendIndex();
-    void appendIndex(long appendIndex);
+
+    void appendIndex( long appendIndex );
 }
 

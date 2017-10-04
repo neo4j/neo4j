@@ -2,6 +2,7 @@
 \#*
 target
 out
+.floo*
 .project
 .classpath
 .settings
@@ -28,3 +29,4 @@ Thumbs.db
 /cypher-shell.zip
 packaging/standalone/src/main/distribution/cypher-shell
 /.profiler/
+dependency-reduced-pom.xml

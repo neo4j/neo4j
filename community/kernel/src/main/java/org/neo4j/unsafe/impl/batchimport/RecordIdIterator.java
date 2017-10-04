@@ -19,13 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static java.lang.Long.max;
 import static java.lang.Long.min;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.range;
 
 /**
  * Returns ids either backwards or forwards. In both directions ids are returned batch-wise, sequentially forwards
@@ -61,43 +62,33 @@ public interface RecordIdIterator
         return backwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
     }
 
-    class Forwards extends PrimitiveLongBaseIterator implements RecordIdIterator
+    class Forwards implements RecordIdIterator
     {
         private final long lowIncluded;
         private final long highExcluded;
         private final int batchSize;
-        private long highBatchId;
-        private long nextId;
-        private boolean initialized;
+        private long startId;
 
         public Forwards( long lowIncluded, long highExcluded, Configuration config )
         {
             this.lowIncluded = lowIncluded;
-            this.nextId = lowIncluded;
             this.highExcluded = highExcluded;
             this.batchSize = config.batchSize();
+            this.startId = lowIncluded;
         }
 
         @Override
         public PrimitiveLongIterator nextBatch()
         {
-            assert !initialized || nextId == highBatchId;
-
-            long size = min( batchSize, highExcluded - nextId );
-            if ( size > 0 )
+            if ( startId >= highExcluded )
             {
-                if ( !initialized )
-                {
-                    highBatchId = findRoofId( lowIncluded );
-                    initialized = true;
-                }
-                else
-                {
-                    highBatchId = min( nextId + size, highBatchId + size );
-                }
-                return this;
+                return null;
             }
-            return null;
+
+            long endId = min( highExcluded, findRoofId( startId ) );
+            PrimitiveLongIterator result = range( startId, endId - 1 /*excluded*/ );
+            startId = endId;
+            return result;
         }
 
         private long findRoofId( long floorId )
@@ -107,73 +98,45 @@ public interface RecordIdIterator
         }
 
         @Override
-        protected boolean fetchNext()
-        {
-            return nextId < highBatchId ? next( nextId++ ) : false;
-        }
-
-        @Override
         public String toString()
         {
             return "[" + lowIncluded + "-" + highExcluded + "[";
         }
     }
 
-    class Backwards extends PrimitiveLongBaseIterator implements RecordIdIterator
+    class Backwards implements RecordIdIterator
     {
-        private final int batchSize;
         private final long lowIncluded;
         private final long highExcluded;
-
-        private long nextRoofId;
-        private long floorId;
-        private long nextId;
-        private boolean initialized;
+        private final int batchSize;
+        private long endId;
 
         public Backwards( long lowIncluded, long highExcluded, Configuration config )
         {
             this.lowIncluded = lowIncluded;
-            this.batchSize = config.batchSize();
             this.highExcluded = highExcluded;
-            this.nextId = highExcluded;
-            this.nextRoofId = highExcluded;
-            this.floorId = highExcluded;
+            this.batchSize = config.batchSize();
+            this.endId = highExcluded;
         }
 
         @Override
         public PrimitiveLongIterator nextBatch()
         {
-            assert !initialized || nextId == nextRoofId;
-
-            long size = floorId - lowIncluded;
-            if ( size > 0 )
+            if ( endId <= lowIncluded )
             {
-                if ( !initialized )
-                {
-                    // First time
-                    nextId = floorId = findFloorId( nextRoofId );
-                    initialized = true;
-                }
-                else
-                {
-                    nextRoofId = floorId;
-                    nextId = floorId = floorId - min( size, batchSize );
-                }
-                return this;
+                return null;
             }
-            return null;
+
+            long startId = findFloorId( endId );
+            PrimitiveLongIterator result = range( startId, endId - 1 /*excluded*/ );
+            endId = max( lowIncluded, startId );
+            return result;
         }
 
         private long findFloorId( long roofId )
         {
             int rest = (int) (roofId % batchSize);
             return max( rest == 0 ? roofId - batchSize : roofId - rest, lowIncluded );
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            return nextId < nextRoofId ? next( nextId++ ) : false;
         }
 
         @Override

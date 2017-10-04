@@ -30,11 +30,11 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
-import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.User;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -133,9 +133,15 @@ public class SetDefaultAdminCommandIT
         assertNoAuthIniFile();
 
         verify( out ).stdErrLine( "not enough arguments" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out, times( 3 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out, times( 3 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( String.format( "environment variables:" ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine(
                 String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
                         "when upgrading to neo4j 3.1 enterprise." ) );
@@ -151,9 +157,15 @@ public class SetDefaultAdminCommandIT
         assertNoAuthIniFile();
 
         verify( out ).stdErrLine( "unrecognized arguments: 'bar'" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out, times( 3 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out, times( 3 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( String.format( "environment variables:" ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine(
                 String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
                         "when upgrading to neo4j 3.1 enterprise." ) );

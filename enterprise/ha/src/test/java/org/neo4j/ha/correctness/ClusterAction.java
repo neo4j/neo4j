@@ -22,5 +22,5 @@ package org.neo4j.ha.correctness;
 /** Something that will cause a state transition. For instance, delivery of a message or an instance crashing. */
 interface ClusterAction
 {
-    public Iterable<ClusterAction> perform( ClusterState state ) throws Exception;
+    Iterable<ClusterAction> perform( ClusterState state ) throws Exception;
 }

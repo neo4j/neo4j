@@ -53,8 +53,8 @@ public interface KeyWriteOperations
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    void propertyKeyCreateForName( KernelStatement state, String propertyKeyName,
-                                   int id) throws IllegalTokenNameException;
+    void propertyKeyCreateForName( KernelStatement state, String propertyKeyName, int id )
+            throws IllegalTokenNameException;
 
     void relationshipTypeCreateForName( KernelStatement state, String relationshipTypeName, int id )
             throws IllegalTokenNameException;

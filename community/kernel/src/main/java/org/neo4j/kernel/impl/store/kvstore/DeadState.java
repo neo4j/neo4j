@@ -179,12 +179,8 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
             ActiveState<Key> creation = stateFactory.open( ReadableState.empty( keyFormat(), version ), null );
             try
             {
-                try ( EntryUpdater<Key> updater = creation.resetter( new ReentrantLock(), new Runnable()
+                try ( EntryUpdater<Key> updater = creation.resetter( new ReentrantLock(), () ->
                 {
-                    @Override
-                    public void run()
-                    {
-                    }
                 } ) )
                 {
                     initializer.initialize( updater );

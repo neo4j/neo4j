@@ -24,7 +24,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,11 +40,9 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
@@ -53,9 +50,10 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.test.RepeatRule;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -70,7 +68,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailabl
 public class ClusterTopologyChangesIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule(getClass());
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
@@ -265,13 +263,10 @@ public class ClusterTopologyChangesIT
 
     private ClusterClientModule newClusterClient( LifeSupport life, InstanceId id )
     {
-        Map<String,String> configMap = MapUtil.stringMap(
+        Config config = Config.defaults( MapUtil.stringMap(
                 ClusterSettings.initial_hosts.name(), cluster.getInitialHostsConfigString(),
                 ClusterSettings.server_id.name(), String.valueOf( id.toIntegerIndex() ),
-                ClusterSettings.cluster_server.name(), "0.0.0.0:8888" );
-
-        Config config = new Config( configMap, GraphDatabaseFacadeFactory.Configuration.class,
-                GraphDatabaseSettings.class );
+                ClusterSettings.cluster_server.name(), "0.0.0.0:" + PortAuthority.allocatePort() ) );
 
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );

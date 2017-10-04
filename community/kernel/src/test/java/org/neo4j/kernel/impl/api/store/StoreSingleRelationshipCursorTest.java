@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -81,7 +80,7 @@ public class StoreSingleRelationshipCursorTest
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
-            cursor.init( RELATIONSHIP_ID, AssertOpen.ALWAYS_OPEN );
+            cursor.init( RELATIONSHIP_ID );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }
@@ -96,7 +95,7 @@ public class StoreSingleRelationshipCursorTest
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
-            cursor.init( RELATIONSHIP_ID, AssertOpen.ALWAYS_OPEN );
+            cursor.init( RELATIONSHIP_ID );
             assertFalse( cursor.next() );
         }
     }

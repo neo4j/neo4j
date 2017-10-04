@@ -28,7 +28,7 @@ public interface RecordReference<RECORD extends AbstractBaseRecord>
 
     class SkippingReference<RECORD extends AbstractBaseRecord> implements RecordReference<RECORD>
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public static <RECORD extends AbstractBaseRecord> SkippingReference<RECORD> skipReference()
         {
             return INSTANCE;

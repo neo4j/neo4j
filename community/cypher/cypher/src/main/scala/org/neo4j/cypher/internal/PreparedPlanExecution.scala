@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.ValueConversion
+import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
+import org.neo4j.graphdb.Result
+import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
 case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any]): ExecutionResult =
-    plan.run(transactionalContext, executionMode, params ++ extractedParams)
+  def execute(transactionalContext: TransactionalContextWrapper, params: MapValue): Result =
+    plan.run(transactionalContext, executionMode, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)))
 
-  def profile(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any]): ExecutionResult =
-    plan.run(transactionalContext, CypherExecutionMode.profile, params ++ extractedParams)
+  def profile(transactionalContext: TransactionalContextWrapper, params: MapValue): Result =
+    plan.run(transactionalContext, CypherExecutionMode.profile, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)))
 }

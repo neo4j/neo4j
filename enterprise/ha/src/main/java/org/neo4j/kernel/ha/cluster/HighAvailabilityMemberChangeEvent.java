@@ -67,7 +67,7 @@ public class HighAvailabilityMemberChangeEvent
     @Override
     public String toString()
     {
-        return "HA Member State Event[ old state: "+oldState+", new state: "+newState+", server cluster URI: "+
-                instanceId +", server HA URI: "+serverHaUri+"]";
+        return "HA Member State Event[ old state: " + oldState + ", new state: " + newState +
+                ", server cluster URI: " + instanceId + ", server HA URI: " + serverHaUri + "]";
     }
 }

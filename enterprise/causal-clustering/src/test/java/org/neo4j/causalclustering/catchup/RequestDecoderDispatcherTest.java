@@ -33,7 +33,9 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RequestDecoderDispatcherTest
 {
-    private final Protocol<State> protocol = new Protocol<State>( State.two ) {};
+    private final Protocol<State> protocol = new Protocol<State>( State.two )
+    {
+    };
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     private enum State

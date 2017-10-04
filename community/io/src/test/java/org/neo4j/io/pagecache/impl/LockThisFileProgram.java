@@ -29,6 +29,10 @@ public class LockThisFileProgram
 {
     public static final String LOCKED_OUTPUT = "locked";
 
+    private LockThisFileProgram()
+    {
+    }
+
     public static void main( String[] args ) throws IOException
     {
         Path path = Paths.get( args[0] );

@@ -19,71 +19,61 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-import org.bouncycastle.operator.OperatorCreationException;
 
-import java.io.File;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
+import java.time.Clock;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.security.ssl.Certificates;
-import org.neo4j.bolt.security.ssl.KeyStoreFactory;
-import org.neo4j.bolt.security.ssl.KeyStoreInformation;
-import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
-import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
+import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
-import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
-import org.neo4j.time.Clocks;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.pathSetting;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 
 /**
  * Wraps Bolt and exposes it as a Kernel Extension.
@@ -91,23 +81,11 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 @Service.Implementation( KernelExtensionFactory.class )
 public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtension.Dependencies>
 {
-    public static class Settings
+    public static class Settings implements LoadableConfig
     {
-        @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
-        public static Setting<File> certificates_directory =
-                pathSetting( "dbms.directories.certificates", "certificates" );
-
-        @Internal
-        @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
-        public static Setting<File> tls_certificate_file =
-                derivedSetting( "unsupported.dbms.security.tls_certificate_file", certificates_directory,
-                        ( certificates ) -> new File( certificates, "neo4j.cert" ), PATH );
-
-        @Internal
-        @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
-        public static final Setting<File> tls_key_file =
-                derivedSetting( "unsupported.dbms.security.tls_key_file", certificates_directory,
-                        ( certificates ) -> new File( certificates, "neo4j.key" ), PATH );
+        @Description( "SSL policy to use" )
+        @SuppressWarnings( "deprecated" )
+        public static Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
     }
 
     public interface Dependencies
@@ -128,9 +106,17 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         BoltConnectionTracker sessionTracker();
 
-        NeoStoreDataSource dataSource();
+        ConnectorPortRegister connectionRegister();
+
+        Clock clock();
 
         AuthManager authManager();
+
+        UserManagerSupplier userManagerSupplier();
+
+        SslPolicyLoader sslPolicyFactory();
+
+        FileSystemAbstraction fileSystem();
     }
 
     public BoltKernelExtension()
@@ -141,29 +127,32 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        final Config config = dependencies.config();
-        final GraphDatabaseService gdb = dependencies.db();
-        final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
-        final LogService logService = dependencies.logService();
-        final Log log = logService.getInternalLog( WorkerFactory.class );
+        Config config = dependencies.config();
+        GraphDatabaseService gdb = dependencies.db();
+        GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
+        LogService logService = dependencies.logService();
+        Clock clock = dependencies.clock();
+        SslPolicyLoader sslPolicyFactory = dependencies.sslPolicyFactory();
+        Log log = logService.getInternalLog( WorkerFactory.class );
 
-        final LifeSupport life = new LifeSupport();
+        LifeSupport life = new LifeSupport();
 
-        final JobScheduler scheduler = dependencies.scheduler();
+        JobScheduler scheduler = dependencies.scheduler();
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
+        BoltMessageLogging boltLogging = BoltMessageLogging.create( dependencies.fileSystem(), scheduler, config, log );
 
-        Authentication authentication = authentication( dependencies.authManager() );
+        Authentication authentication = authentication( dependencies.authManager(), dependencies.userManagerSupplier() );
 
-        BoltFactory boltFactory = life.add( new LifecycleManagedBoltFactory( api, dependencies.usageData(),
-                logService, dependencies.txBridge(), authentication, dependencies.sessionTracker() ) );
+        BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
+                logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
+        WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
+        ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
-        WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService );
-
-        List<ProtocolInitializer> connectors = boltConnectors( config ).stream()
-                .map( ( connConfig ) -> {
+        Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
+                .collect( Collectors.toMap( Function.identity(), connConfig ->
+                {
                     ListenSocketAddress listenAddress = config.get( connConfig.listen_address );
-                    AdvertisedSocketAddress advertisedAddress = config.get( connConfig.advertised_address );
                     SslContext sslCtx;
                     boolean requireEncryption;
                     final BoltConnector.EncryptionLevel encryptionLevel = config.get( connConfig.encryption_level );
@@ -172,12 +161,12 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     case REQUIRED:
                         // Encrypted connections are mandatory, a self-signed certificate may be generated.
                         requireEncryption = true;
-                        sslCtx = createSslContext( config, log, advertisedAddress );
+                        sslCtx = createSslContext( sslPolicyFactory, config );
                         break;
                     case OPTIONAL:
                         // Encrypted connections are optional, a self-signed certificate may be generated.
                         requireEncryption = false;
-                        sslCtx = createSslContext( config, log, advertisedAddress );
+                        sslCtx = createSslContext( sslPolicyFactory, config );
                         break;
                     case DISABLED:
                         // Encryption is turned off, no self-signed certificate will be generated.
@@ -195,17 +184,17 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                         break;
                     }
 
-                    final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> versions =
-                            newVersions( logService, workerFactory );
-                    return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), versions );
-                } )
-                .collect( toList() );
+                    final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers =
+                            getProtocolHandlers( logService, workerFactory );
+                    return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
+                            boltLogging, protocolHandlers );
+                } ) );
 
         if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
         {
-            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors ) );
+            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors, connectionRegister ) );
             log.info( "Bolt Server extension loaded." );
-            for ( ProtocolInitializer connector : connectors )
+            for ( ProtocolInitializer connector : connectors.values() )
             {
                 logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
             }
@@ -215,72 +204,44 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     protected WorkerFactory createWorkerFactory( BoltFactory boltFactory, JobScheduler scheduler,
-            Dependencies dependencies, LogService logService )
+            Dependencies dependencies, LogService logService, Clock clock )
     {
-        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService );
-        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, Clocks.systemClock() );
+        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService, clock );
+        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, clock );
     }
 
-    private SslContext createSslContext( Config config, Log log, AdvertisedSocketAddress address )
+    private SslContext createSslContext( SslPolicyLoader sslPolicyFactory, Config config )
     {
         try
         {
-            KeyStoreInformation keyStore = createKeyStore( config, log, address );
-            return SslContextBuilder.forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() ).build();
+            String policyName = config.get( Settings.ssl_policy );
+            if ( policyName == null )
+            {
+                throw new IllegalArgumentException( "No SSL policy has been configured for bolt" );
+            }
+            return sslPolicyFactory.getPolicy( policyName ).nettyServerContext();
         }
-        catch ( IOException | OperatorCreationException | GeneralSecurityException e )
+        catch ( Exception e )
         {
             throw new RuntimeException( "Failed to initialize SSL encryption support, which is required to start " +
                     "this connector. Error was: " + e.getMessage(), e );
         }
     }
 
-    private Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> newVersions(
+    private Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> getProtocolHandlers(
             LogService logging, WorkerFactory workerFactory )
     {
-        Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> availableVersions = new HashMap<>();
-        availableVersions.put(
-                (long) BoltProtocolV1.VERSION,
-                ( channel, isEncrypted ) -> {
-                    String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
-                    BoltWorker worker = workerFactory.newWorker( descriptor, channel::close );
-                    return new BoltProtocolV1( worker, channel, logging );
-                }
+        Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
+        protocolHandlers.put(
+                (long) BoltMessagingProtocolV1Handler.VERSION,
+                boltChannel ->
+                        new BoltMessagingProtocolV1Handler( boltChannel, workerFactory.newWorker( boltChannel ), logging )
         );
-        return availableVersions;
+        return protocolHandlers;
     }
 
-    private KeyStoreInformation createKeyStore( Configuration config, Log log, AdvertisedSocketAddress address )
-            throws GeneralSecurityException, IOException, OperatorCreationException
+    private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
-        File privateKeyPath = config.get( Settings.tls_key_file ).getAbsoluteFile();
-        File certificatePath = config.get( Settings.tls_certificate_file ).getAbsoluteFile();
-
-        if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
-        {
-            log.info( "No SSL certificate found, generating a self-signed certificate.." );
-            Certificates certFactory = new Certificates();
-            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, address.getHostname() );
-        }
-
-        if ( !certificatePath.exists() )
-        {
-            throw new IllegalStateException(
-                    format( "TLS private key found, but missing certificate at '%s'. Cannot start server without " +
-                            "certificate.", certificatePath ) );
-        }
-        if ( !privateKeyPath.exists() )
-        {
-            throw new IllegalStateException(
-                    format( "TLS certificate found, but missing key at '%s'. Cannot start server without key.",
-                            privateKeyPath ) );
-        }
-
-        return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
-    }
-
-    private Authentication authentication( AuthManager authManager )
-    {
-        return new BasicAuthentication( authManager );
+        return new BasicAuthentication( authManager, userManagerSupplier );
     }
 }

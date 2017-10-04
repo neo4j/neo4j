@@ -23,16 +23,21 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -41,12 +46,13 @@ import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
 
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
 /**
  * Tool that will dump content of count store content into a simple string representation for further analysis.
@@ -60,7 +66,10 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             System.err.println( "Expecting exactly one argument describing the path to the store" );
             System.exit( 1 );
         }
-        dumpCountsStore( new DefaultFileSystemAbstraction(), new File( args[0] ), System.out );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            dumpCountsStore( fileSystem, new File( args[0] ), System.out );
+        }
     }
 
     public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException
@@ -73,12 +82,13 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
                 StoreFactory factory = new StoreFactory( path, pages, fs, NullLogProvider.getInstance() );
 
                 NeoStores neoStores = factory.openAllNeoStores();
-                neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );
+                SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
+                neoStores.getCounts().accept( new DumpCountsStore( out, neoStores, schemaStorage ) );
             }
             else
             {
                 VisitableCountsTracker tracker = new VisitableCountsTracker(
-                        NullLogProvider.getInstance(), fs, pages, Config.empty(), path );
+                        NullLogProvider.getInstance(), fs, pages, Config.defaults(), path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );
@@ -93,27 +103,29 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     DumpCountsStore( PrintStream out )
     {
-        this( out, Collections.<Token>emptyList(), Collections.<RelationshipTypeToken>emptyList(),
-                Collections.<Token>emptyList() );
+        this( out, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList() );
     }
 
-    DumpCountsStore( PrintStream out, NeoStores neoStores )
+    DumpCountsStore( PrintStream out, NeoStores neoStores, SchemaStorage schemaStorage )
     {
-        this( out,
+        this( out, getAllIndexesFrom( schemaStorage ),
               allTokensFrom( neoStores.getLabelTokenStore() ),
               allTokensFrom( neoStores.getRelationshipTypeTokenStore() ),
               allTokensFrom( neoStores.getPropertyKeyTokenStore() ) );
     }
 
     private final PrintStream out;
+    private final Map<Long,IndexDescriptor> indexes;
     private final List<Token> labels;
     private final List<RelationshipTypeToken> relationshipTypes;
     private final List<Token> propertyKeys;
 
-    private DumpCountsStore( PrintStream out, List<Token> labels, List<RelationshipTypeToken> relationshipTypes,
-                             List<Token> propertyKeys )
+    private DumpCountsStore( PrintStream out, Map<Long,IndexDescriptor> indexes, List<Token> labels,
+            List<RelationshipTypeToken> relationshipTypes,
+            List<Token> propertyKeys )
     {
         this.out = out;
+        this.indexes = indexes;
         this.labels = labels;
         this.relationshipTypes = relationshipTypes;
         this.propertyKeys = propertyKeys;
@@ -146,19 +158,19 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     }
 
     @Override
-    public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+    public void visitIndexStatistics( long indexId, long updates, long size )
     {
+        IndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                    label( labelId ), propertyKey( propertyKeyId ),
-                    updates, size );
+                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
     }
 
     @Override
-    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    public void visitIndexSample( long indexId, long unique, long size )
     {
+        IndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                    label( labelId ), propertyKey( propertyKeyId ),
-                    unique, size );
+                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
     }
 
     @Override
@@ -177,9 +189,18 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return token( new StringBuilder(), labels, ":", "label", id ).toString();
     }
 
-    private String propertyKey( int id )
+    private String propertyKeys( int[] ids )
     {
-        return token( new StringBuilder(), propertyKeys, "", "key", id ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( "," );
+            }
+            token( builder, propertyKeys, "", "key", ids[i] );
+        }
+        return builder.toString();
     }
 
     private String relationshipType( int id )
@@ -229,10 +250,22 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
     }
 
+    private static Map<Long,IndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
+    {
+        HashMap<Long,IndexDescriptor> indexes = new HashMap<>();
+        Iterator<IndexRule> indexRules = storage.indexesGetAll();
+        while ( indexRules.hasNext() )
+        {
+            IndexRule rule = indexRules.next();
+            indexes.put( rule.getId(), rule.getIndexDescriptor() );
+        }
+        return indexes;
+    }
+
     private static class VisitableCountsTracker extends CountsTracker
     {
 
-        public VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
+        VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
                 PageCache pages, Config config, File baseFile )
         {
             super( logProvider, fs, pages, config, baseFile );

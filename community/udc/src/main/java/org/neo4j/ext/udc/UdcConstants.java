@@ -53,4 +53,8 @@ public class UdcConstants
     public static final String UNKNOWN_DIST = "unknown";
 
     public static final String STORE_SIZE = "storesize";
+
+    private UdcConstants()
+    {
+    }
 }

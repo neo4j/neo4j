@@ -139,11 +139,13 @@ public class DuplicatingLog extends AbstractLog
         if ( !remaining.isEmpty() )
         {
             Log log = remaining.pop();
-            log.bulk( bulkLog -> {
+            log.bulk( bulkLog ->
+            {
                 bulkLogs.add( bulkLog );
                 bulk( remaining, bulkLogs, finalConsumer );
             } );
-        } else
+        }
+        else
         {
             Log log = new DuplicatingLog( bulkLogs );
             finalConsumer.accept( log );
@@ -154,7 +156,7 @@ public class DuplicatingLog extends AbstractLog
     {
         private final CopyOnWriteArraySet<Logger> loggers;
 
-        public DuplicatingLogger( List<Logger> loggers )
+        DuplicatingLogger( List<Logger> loggers )
         {
             this.loggers = new CopyOnWriteArraySet<>( loggers );
         }
@@ -197,16 +199,19 @@ public class DuplicatingLog extends AbstractLog
             bulk( new LinkedList<>( loggers ), new ArrayList<>( loggers.size() ), consumer );
         }
 
-        private static void bulk( final LinkedList<Logger> remaining, final ArrayList<Logger> bulkLoggers, final Consumer<Logger> finalConsumer )
+        private static void bulk( final LinkedList<Logger> remaining, final ArrayList<Logger> bulkLoggers,
+                final Consumer<Logger> finalConsumer )
         {
             if ( !remaining.isEmpty() )
             {
                 Logger logger = remaining.pop();
-                logger.bulk( bulkLogger -> {
+                logger.bulk( bulkLogger ->
+                {
                     bulkLoggers.add( bulkLogger );
                     bulk( remaining, bulkLoggers, finalConsumer );
                 } );
-            } else
+            }
+            else
             {
                 Logger logger = new DuplicatingLogger( bulkLoggers );
                 finalConsumer.accept( logger );

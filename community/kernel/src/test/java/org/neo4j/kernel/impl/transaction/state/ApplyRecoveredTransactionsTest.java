@@ -75,8 +75,8 @@ public class ApplyRecoveredTransactionsTest
                 new RelationshipCommand( null, new RelationshipRecord( relationshipId ) ) );
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
-        assertEquals( nodeId+1, neoStores.getNodeStore().getHighId() );
-        assertEquals( relationshipId+1, neoStores.getRelationshipStore().getHighId() );
+        assertEquals( nodeId + 1, neoStores.getNodeStore().getHighId() );
+        assertEquals( relationshipId + 1, neoStores.getRelationshipStore().getHighId() );
     }
 
     private RelationshipRecord with( RelationshipRecord relationship, long startNode, long endNode, int type )
@@ -95,7 +95,8 @@ public class ApplyRecoveredTransactionsTest
         NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores,
                 mock( CacheAccessBackDoor.class ), lockService );
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
-        CommandHandlerContract.apply( applier, txApplier -> {
+        CommandHandlerContract.apply( applier, txApplier ->
+        {
             tx.accept( txApplier );
             return false;
         }, new TransactionToApply( tx, transactionId ) );
@@ -112,7 +113,7 @@ public class ApplyRecoveredTransactionsTest
     {
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
-        StoreFactory storeFactory = new StoreFactory( storeDir, Config.empty(), new DefaultIdGeneratorFactory( fs ),
+        StoreFactory storeFactory = new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }

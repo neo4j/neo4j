@@ -33,6 +33,10 @@ import static java.nio.file.Files.isWritable;
 
 public class Utils
 {
+    private Utils()
+    {
+    }
+
     public static void checkWritableDirectory( Path directory ) throws FileSystemException
     {
         if ( !exists( directory ) )

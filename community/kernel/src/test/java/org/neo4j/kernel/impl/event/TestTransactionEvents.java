@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,12 +45,13 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -59,9 +61,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
@@ -154,8 +153,11 @@ public class TestTransactionEvents
         VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler( expectedData );
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         db.registerTransactionEventHandler( handler );
-        Node node1 = null, node2, node3 = null;
-        Relationship rel1 = null, rel2 = null;
+        Node node1;
+        Node node2;
+        Node node3;
+        Relationship rel1;
+        Relationship rel2;
         try
         {
             try ( Transaction tx = db.beginTx() )
@@ -473,7 +475,7 @@ public class TestTransactionEvents
         private final TransactionEventHandler<T> source;
         private final boolean willFail;
 
-        public FailingEventHandler( TransactionEventHandler<T> source, boolean willFail )
+        FailingEventHandler( TransactionEventHandler<T> source, boolean willFail )
         {
             this.source = source;
             this.willFail = willFail;
@@ -494,11 +496,17 @@ public class TestTransactionEvents
         @Override
         public T beforeCommit( TransactionData data ) throws Exception
         {
-            if ( willFail )
+            try
             {
-                throw new Exception( "Just failing commit, that's all" );
+                return source.beforeCommit( data );
             }
-            return source.beforeCommit( data );
+            finally
+            {
+                if ( willFail )
+                {
+                    throw new Exception( "Just failing commit, that's all" );
+                }
+            }
         }
     }
 
@@ -508,12 +516,12 @@ public class TestTransactionEvents
         private final Exception afterCommitException;
         private final Exception afterRollbackException;
 
-        public ExceptionThrowingEventHandler( Exception exceptionForAll )
+        ExceptionThrowingEventHandler( Exception exceptionForAll )
         {
             this( exceptionForAll, exceptionForAll, exceptionForAll );
         }
 
-        public ExceptionThrowingEventHandler( Exception beforeCommitException, Exception afterCommitException,
+        ExceptionThrowingEventHandler( Exception beforeCommitException, Exception afterCommitException,
                 Exception afterRollbackException )
         {
             this.beforeCommitException = beforeCommitException;
@@ -557,9 +565,11 @@ public class TestTransactionEvents
         private TransactionData receivedTransactionData;
         private T receivedState;
         private int counter;
-        private Integer beforeCommit, afterCommit, afterRollback;
+        private Integer beforeCommit;
+        private Integer afterCommit;
+        private Integer afterRollback;
 
-        public DummyTransactionEventHandler( T object )
+        DummyTransactionEventHandler( T object )
         {
             this.object = object;
         }
@@ -674,10 +684,9 @@ public class TestTransactionEvents
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Label label = label( "Label" );
-        IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.schema().indexFor( label ).on( "indexed" ).create();
+            db.schema().indexFor( label ).on( "indexed" ).create();
             tx.success();
         }
 
@@ -710,7 +719,7 @@ public class TestTransactionEvents
         try ( Transaction ignore = db.beginTx() )
         {
             Node node = db.findNode( label, "indexed", "value" );
-            assertThat( node.getProperty( "random" ), is( (Object) 42 ) );
+            assertThat( node.getProperty( "random" ), is( 42 ) );
         }
     }
 
@@ -720,10 +729,9 @@ public class TestTransactionEvents
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Label label = label( "Label" );
-        IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.schema().indexFor( label ).on( "indexed" ).create();
+            db.schema().indexFor( label ).on( "indexed" ).create();
             tx.success();
         }
 
@@ -757,7 +765,7 @@ public class TestTransactionEvents
         try ( Transaction ignore = db.beginTx() )
         {
             Node node = db.findNode( label, "indexed", "value" );
-            assertThat( node.getProperty( "random" ), is( (Object) 42 ) );
+            assertThat( node.getProperty( "random" ), is( 42 ) );
         }
     }
 
@@ -773,7 +781,9 @@ public class TestTransactionEvents
             // when
             try ( Transaction tx = db.beginTx() )
             {
-                Node node1 = db.createNode(), node2 = db.createNode(), node3 = db.createNode();
+                Node node1 = db.createNode();
+                Node node2 = db.createNode();
+                Node node3 = db.createNode();
 
                 labels.add( node1, "Foo" );
                 labels.add( node2, "Bar" );
@@ -801,7 +811,9 @@ public class TestTransactionEvents
         ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
         try
         {
-            Node node1, node2, node3;
+            Node node1;
+            Node node2;
+            Node node3;
             try ( Transaction tx = db.beginTx() )
             {
                 node1 = db.createNode();
@@ -926,7 +938,7 @@ public class TestTransactionEvents
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         // create a rel type so the next type id is non zero
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), withName( "TYPE" ) );
         }
@@ -962,7 +974,7 @@ public class TestTransactionEvents
             }
         } );
 
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = db.getRelationshipById( relId );
             rel.setProperty( "since", 2010 );
@@ -1044,7 +1056,7 @@ public class TestTransactionEvents
             dbRule.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
             tx.success();
         }
-        // ... or even a legacy index
+        // ... or even a explicit index
         try ( Transaction tx = dbRule.beginTx() )
         {
             dbRule.index().forNodes( "some index", stringMap( PROVIDER, IDENTIFIER ) );
@@ -1090,7 +1102,8 @@ public class TestTransactionEvents
     {
         // GIVEN
         Relationship relationship;
-        Node startNode, endNode;
+        Node startNode;
+        Node endNode;
         RelationshipType type = MyRelTypes.TEST;
         try ( Transaction tx = dbRule.beginTx() )
         {
@@ -1124,6 +1137,47 @@ public class TestTransactionEvents
         assertThat( deletedToString.get(), containsString( type.name() ) );
         assertThat( deletedToString.get(), containsString( format( "(%d)", startNode.getId() ) ) );
         assertThat( deletedToString.get(), containsString( format( "(%d)", endNode.getId() ) ) );
+    }
+
+    @Test
+    public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed() throws Exception
+    {
+        // given
+        CapturingEventHandler<Integer> firstWorkingHandler = new CapturingEventHandler<>( () -> 5 );
+        String failureMessage = "Massive fail";
+        CapturingEventHandler<Integer> faultyHandler = new CapturingEventHandler<>( () ->
+        {
+            throw new RuntimeException( failureMessage );
+        } );
+        CapturingEventHandler<Integer> otherWorkingHandler = new CapturingEventHandler<>( () -> 10 );
+        dbRule.registerTransactionEventHandler( firstWorkingHandler );
+        dbRule.registerTransactionEventHandler( faultyHandler );
+        dbRule.registerTransactionEventHandler( otherWorkingHandler );
+
+        boolean failed = false;
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            // when
+            dbRule.createNode();
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            assertTrue( Exceptions.contains( e, failureMessage, RuntimeException.class ) );
+            failed = true;
+        }
+        assertTrue( failed );
+
+        // then
+        assertTrue( firstWorkingHandler.beforeCommitCalled );
+        assertTrue( firstWorkingHandler.afterRollbackCalled );
+        assertEquals( 5, firstWorkingHandler.afterRollbackState.intValue() );
+        assertTrue( faultyHandler.beforeCommitCalled );
+        assertTrue( faultyHandler.afterRollbackCalled );
+        assertNull( faultyHandler.afterRollbackState );
+        assertTrue( otherWorkingHandler.beforeCommitCalled );
+        assertTrue( otherWorkingHandler.afterRollbackCalled );
+        assertEquals( 10, otherWorkingHandler.afterRollbackState.intValue() );
     }
 
     private Node createNode( String... properties )
@@ -1167,8 +1221,9 @@ public class TestTransactionEvents
 
     private static final class ChangedLabels extends TransactionEventHandler.Adapter<Void>
     {
-        private final Map<Node,Set<String>> added = new HashMap<>(), removed = new HashMap<>();
-        private boolean active = false;
+        private final Map<Node,Set<String>> added = new HashMap<>();
+        private final Map<Node,Set<String>> removed = new HashMap<>();
+        private boolean active;
 
         @Override
         public Void beforeCommit( TransactionData data ) throws Exception
@@ -1218,11 +1273,7 @@ public class TestTransactionEvents
 
         private void put( Map<Node, Set<String>> changes, Node node, String label )
         {
-            Set<String> labels = changes.get(node);
-            if (labels == null)
-            {
-                changes.put( node, labels = new HashSet<>() );
-            }
+            Set<String> labels = changes.computeIfAbsent( node, k -> new HashSet<>() );
             labels.add( label );
         }
 
@@ -1251,6 +1302,42 @@ public class TestTransactionEvents
             this.startNode = relationship.getStartNode();
             this.type = relationship.getType().name();
             this.endNode = relationship.getEndNode();
+        }
+    }
+
+    static class CapturingEventHandler<T> implements TransactionEventHandler<T>
+    {
+        private final Supplier<T> stateSource;
+        boolean beforeCommitCalled;
+        boolean afterCommitCalled;
+        T afterCommitState;
+        boolean afterRollbackCalled;
+        T afterRollbackState;
+
+        CapturingEventHandler( Supplier<T> stateSource )
+        {
+            this.stateSource = stateSource;
+        }
+
+        @Override
+        public T beforeCommit( TransactionData data ) throws Exception
+        {
+            beforeCommitCalled = true;
+            return stateSource.get();
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, T state )
+        {
+            afterCommitCalled = true;
+            afterCommitState = state;
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, T state )
+        {
+            afterRollbackCalled = true;
+            afterRollbackState = state;
         }
     }
 }

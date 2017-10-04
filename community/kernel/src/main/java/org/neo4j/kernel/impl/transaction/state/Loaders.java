@@ -39,18 +39,20 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static java.lang.Math.toIntExact;
+
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class Loaders
 {
-    private final Loader<Long,NodeRecord,Void> nodeLoader;
-    private final Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader;
-    private final Loader<Long,RelationshipRecord,Void> relationshipLoader;
-    private final Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader;
-    private final Loader<Long,SchemaRecord,SchemaRule> schemaRuleLoader;
-    private final Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
-    private final Loader<Integer,LabelTokenRecord,Void> labelTokenLoader;
-    private final Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
+    private final Loader<NodeRecord,Void> nodeLoader;
+    private final Loader<PropertyRecord,PrimitiveRecord> propertyLoader;
+    private final Loader<RelationshipRecord,Void> relationshipLoader;
+    private final Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader;
+    private final Loader<SchemaRecord,SchemaRule> schemaRuleLoader;
+    private final Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
+    private final Loader<LabelTokenRecord,Void> labelTokenLoader;
+    private final Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
 
     public Loaders( NeoStores neoStores )
     {
@@ -85,58 +87,58 @@ public class Loaders
         relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore );
     }
 
-    public Loader<Long,NodeRecord,Void> nodeLoader()
+    public Loader<NodeRecord,Void> nodeLoader()
     {
         return nodeLoader;
     }
 
-    public Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader()
+    public Loader<PropertyRecord,PrimitiveRecord> propertyLoader()
     {
         return propertyLoader;
     }
 
-    public Loader<Long,RelationshipRecord,Void> relationshipLoader()
+    public Loader<RelationshipRecord,Void> relationshipLoader()
     {
         return relationshipLoader;
     }
 
-    public Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader()
+    public Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader()
     {
         return relationshipGroupLoader;
     }
 
-    public Loader<Long,SchemaRecord,SchemaRule> schemaRuleLoader()
+    public Loader<SchemaRecord,SchemaRule> schemaRuleLoader()
     {
         return schemaRuleLoader;
     }
 
-    public Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader()
+    public Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader()
     {
         return propertyKeyTokenLoader;
     }
 
-    public Loader<Integer,LabelTokenRecord,Void> labelTokenLoader()
+    public Loader<LabelTokenRecord,Void> labelTokenLoader()
     {
         return labelTokenLoader;
     }
 
-    public Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader()
+    public Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader()
     {
         return relationshipTypeTokenLoader;
     }
 
-    public static Loader<Long,NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store )
+    public static Loader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store )
     {
-        return new Loader<Long,NodeRecord,Void>()
+        return new Loader<NodeRecord,Void>()
         {
             @Override
-            public NodeRecord newUnused( Long key, Void additionalData )
+            public NodeRecord newUnused( long key, Void additionalData )
             {
                 return andMarkAsCreated( new NodeRecord( key ) );
             }
 
             @Override
-            public NodeRecord load( Long key, Void additionalData )
+            public NodeRecord load( long key, Void additionalData )
             {
                 return store.getRecord( key, store.newRecord(), NORMAL );
             }
@@ -148,19 +150,19 @@ public class Loaders
             }
 
             @Override
-            public NodeRecord clone(NodeRecord nodeRecord)
+            public NodeRecord clone( NodeRecord nodeRecord )
             {
                 return nodeRecord.clone();
             }
         };
     }
 
-    public static Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store )
+    public static Loader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store )
     {
-        return new Loader<Long,PropertyRecord,PrimitiveRecord>()
+        return new Loader<PropertyRecord,PrimitiveRecord>()
         {
             @Override
-            public PropertyRecord newUnused( Long key, PrimitiveRecord additionalData )
+            public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
             {
                 PropertyRecord record = new PropertyRecord( key );
                 setOwner( record, additionalData );
@@ -176,7 +178,7 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord load( Long key, PrimitiveRecord additionalData )
+            public PropertyRecord load( long key, PrimitiveRecord additionalData )
             {
                 PropertyRecord record = store.getRecord( key, store.newRecord(), NORMAL );
                 setOwner( record, additionalData );
@@ -193,26 +195,26 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord clone(PropertyRecord propertyRecord)
+            public PropertyRecord clone( PropertyRecord propertyRecord )
             {
                 return propertyRecord.clone();
             }
         };
     }
 
-    public static Loader<Long,RelationshipRecord,Void> relationshipLoader(
+    public static Loader<RelationshipRecord,Void> relationshipLoader(
             final RecordStore<RelationshipRecord> store )
     {
-        return new Loader<Long, RelationshipRecord, Void>()
+        return new Loader<RelationshipRecord, Void>()
         {
             @Override
-            public RelationshipRecord newUnused( Long key, Void additionalData )
+            public RelationshipRecord newUnused( long key, Void additionalData )
             {
                 return andMarkAsCreated( new RelationshipRecord( key ) );
             }
 
             @Override
-            public RelationshipRecord load( Long key, Void additionalData )
+            public RelationshipRecord load( long key, Void additionalData )
             {
                 return store.getRecord( key, store.newRecord(), NORMAL );
             }
@@ -223,20 +225,20 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord clone(RelationshipRecord relationshipRecord)
+            public RelationshipRecord clone( RelationshipRecord relationshipRecord )
             {
                 return relationshipRecord.clone();
             }
         };
     }
 
-    public static Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader(
+    public static Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader(
             final RecordStore<RelationshipGroupRecord> store )
     {
-        return new Loader<Long, RelationshipGroupRecord, Integer>()
+        return new Loader<RelationshipGroupRecord, Integer>()
         {
             @Override
-            public RelationshipGroupRecord newUnused( Long key, Integer type )
+            public RelationshipGroupRecord newUnused( long key, Integer type )
             {
                 RelationshipGroupRecord record = new RelationshipGroupRecord( key );
                 record.setType( type );
@@ -244,7 +246,7 @@ public class Loaders
             }
 
             @Override
-            public RelationshipGroupRecord load( Long key, Integer type )
+            public RelationshipGroupRecord load( long key, Integer type )
             {
                 return store.getRecord( key, store.newRecord(), NORMAL );
             }
@@ -262,19 +264,19 @@ public class Loaders
         };
     }
 
-    public static Loader<Long,SchemaRecord,SchemaRule> schemaRuleLoader( final SchemaStore store )
+    public static Loader<SchemaRecord,SchemaRule> schemaRuleLoader( final SchemaStore store )
     {
-        return new Loader<Long, SchemaRecord, SchemaRule>()
+        return new Loader<SchemaRecord, SchemaRule>()
         {
             @Override
-            public SchemaRecord newUnused( Long key, SchemaRule additionalData )
+            public SchemaRecord newUnused( long key, SchemaRule additionalData )
             {
                 // Don't blindly mark as created here since some records may be reused.
                 return new SchemaRecord( store.allocateFrom( additionalData ) );
             }
 
             @Override
-            public SchemaRecord load( Long key, SchemaRule additionalData )
+            public SchemaRecord load( long key, SchemaRule additionalData )
             {
                 return new SchemaRecord( store.getRecords( key, RecordLoad.NORMAL ) );
             }
@@ -282,7 +284,7 @@ public class Loaders
             @Override
             public void ensureHeavy( SchemaRecord records )
             {
-                for ( DynamicRecord record : records)
+                for ( DynamicRecord record : records )
                 {
                     store.ensureHeavy(record);
                 }
@@ -296,19 +298,19 @@ public class Loaders
         };
     }
 
-    public static Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader(
+    public static Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader(
             final RecordStore<PropertyKeyTokenRecord> store )
     {
-        return new Loader<Integer, PropertyKeyTokenRecord, Void>()
+        return new Loader<PropertyKeyTokenRecord, Void>()
         {
             @Override
-            public PropertyKeyTokenRecord newUnused( Integer key, Void additionalData )
+            public PropertyKeyTokenRecord newUnused( long key, Void additionalData )
             {
-                return andMarkAsCreated( new PropertyKeyTokenRecord( key ) );
+                return andMarkAsCreated( new PropertyKeyTokenRecord( toIntExact( key ) ) );
             }
 
             @Override
-            public PropertyKeyTokenRecord load( Integer key, Void additionalData )
+            public PropertyKeyTokenRecord load( long key, Void additionalData )
             {
                 return store.getRecord( key, store.newRecord(), NORMAL );
             }
@@ -327,19 +329,19 @@ public class Loaders
         };
     }
 
-    public static Loader<Integer,LabelTokenRecord,Void> labelTokenLoader(
+    public static Loader<LabelTokenRecord,Void> labelTokenLoader(
             final RecordStore<LabelTokenRecord> store )
     {
-        return new Loader<Integer, LabelTokenRecord, Void>()
+        return new Loader<LabelTokenRecord, Void>()
         {
             @Override
-            public LabelTokenRecord newUnused( Integer key, Void additionalData )
+            public LabelTokenRecord newUnused( long key, Void additionalData )
             {
-                return andMarkAsCreated( new LabelTokenRecord( key ) );
+                return andMarkAsCreated( new LabelTokenRecord( toIntExact( key ) ) );
             }
 
             @Override
-            public LabelTokenRecord load( Integer key, Void additionalData )
+            public LabelTokenRecord load( long key, Void additionalData )
             {
                 return store.getRecord( key, store.newRecord(), NORMAL );
             }
@@ -358,19 +360,19 @@ public class Loaders
         };
     }
 
-    public static Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader(
+    public static Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader(
             final RecordStore<RelationshipTypeTokenRecord> store )
     {
-        return new Loader<Integer, RelationshipTypeTokenRecord, Void>()
+        return new Loader<RelationshipTypeTokenRecord, Void>()
         {
             @Override
-            public RelationshipTypeTokenRecord newUnused( Integer key, Void additionalData )
+            public RelationshipTypeTokenRecord newUnused( long key, Void additionalData )
             {
-                return andMarkAsCreated( new RelationshipTypeTokenRecord( key ) );
+                return andMarkAsCreated( new RelationshipTypeTokenRecord( toIntExact( key ) ) );
             }
 
             @Override
-            public RelationshipTypeTokenRecord load( Integer key, Void additionalData )
+            public RelationshipTypeTokenRecord load( long key, Void additionalData )
             {
                 return store.getRecord( key, store.newRecord(), NORMAL );
             }

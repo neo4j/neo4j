@@ -30,9 +30,9 @@ public class IndexFolderLayout implements FolderLayout
 {
     private final File indexFolder;
 
-    public IndexFolderLayout( File rootDirectory, String identifier )
+    public IndexFolderLayout( File rootDirectory )
     {
-        this.indexFolder = new File( rootDirectory, identifier );
+        this.indexFolder = rootDirectory;
     }
 
     @Override

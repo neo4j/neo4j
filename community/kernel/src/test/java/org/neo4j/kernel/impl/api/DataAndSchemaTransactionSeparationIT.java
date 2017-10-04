@@ -45,7 +45,8 @@ public class DataAndSchemaTransactionSeparationIT
     private static Function<GraphDatabaseService, Void> expectFailureAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )
     {
-        return graphDb -> {
+        return graphDb ->
+        {
             // given
             graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
@@ -69,7 +70,8 @@ public class DataAndSchemaTransactionSeparationIT
     private static Function<GraphDatabaseService, Void> succeedAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )
     {
-        return graphDb -> {
+        return graphDb ->
+        {
             // given
             graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
@@ -95,7 +97,7 @@ public class DataAndSchemaTransactionSeparationIT
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldNotAllowPropertyWritesInSchemaTransaction() throws Exception
     {
         // given
@@ -113,7 +115,7 @@ public class DataAndSchemaTransactionSeparationIT
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldAllowPropertyReadsInSchemaTransaction() throws Exception
     {
         // given

@@ -24,11 +24,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
-import org.neo4j.test.NestedThrowableMatcher;
+import org.neo4j.test.matchers.NestedThrowableMatcher;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;

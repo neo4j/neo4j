@@ -27,11 +27,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -43,9 +45,10 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
@@ -95,21 +98,29 @@ public class EnterpriseSecurityModule extends SecurityModule
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         // Register procedures
-        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
-        procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
+        procedures.registerComponent( SecurityLog.class, ctx -> securityLog, false );
+        procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager, false );
         procedures.registerComponent( EnterpriseSecurityContext.class,
-                ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ) );
+                ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ), true );
 
         if ( config.get( SecuritySettings.native_authentication_enabled )
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
-                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ) );
-            procedures.registerProcedure( UserManagementProcedures.class, true );
+                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ), true );
+            if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
+            {
+                procedures.registerProcedure( UserManagementProcedures.class, true,
+                        Optional.of( "%s only applies to native users." ) );
+            }
+            else
+            {
+                procedures.registerProcedure( UserManagementProcedures.class, true );
+            }
         }
         else
         {
-            procedures.registerComponent( EnterpriseUserManager.class, ctx -> EnterpriseUserManager.NOOP );
+            procedures.registerComponent( EnterpriseUserManager.class, ctx -> EnterpriseUserManager.NOOP, true );
         }
 
         procedures.registerProcedure( SecurityProcedures.class, true );
@@ -119,7 +130,7 @@ public class EnterpriseSecurityModule extends SecurityModule
     {
         if ( securityContext instanceof EnterpriseSecurityContext )
         {
-            return ((EnterpriseSecurityContext) securityContext);
+            return (EnterpriseSecurityContext) securityContext;
         }
         // TODO: better handling of this possible cast failure
         throw new RuntimeException( "Expected EnterpriseSecurityContext, got " + securityContext.getClass().getName() );
@@ -187,7 +198,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem ),
                 getRoleRepository( config, logProvider, fileSystem ),
                 new BasicPasswordPolicy(),
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
+                createAuthenticationStrategy( config ),
                 config.get( SecuritySettings.native_authentication_enabled ),
                 config.get( SecuritySettings.native_authorization_enabled ),
                 jobScheduler,
@@ -196,9 +207,15 @@ public class EnterpriseSecurityModule extends SecurityModule
             );
     }
 
+    private static AuthenticationStrategy createAuthenticationStrategy( Config config )
+    {
+        int maxFailedAttempts = config.get( GraphDatabaseSettings.auth_max_failed_attempts );
+        return new RateLimitedAuthenticationStrategy( Clocks.systemClock(), maxFailedAttempts );
+    }
+
     private static CacheManager createCacheManager( Config config )
     {
-        long ttl = config.get( SecuritySettings.auth_cache_ttl );
+        long ttl = config.get( SecuritySettings.auth_cache_ttl ).toMillis();
         int maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
         return new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity );
     }
@@ -279,7 +296,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         {
             String missingProvider =
                     ( missingAuthenticatingRealm && missingAuthorizingRealm ) ? "authentication or authorization" :
-                    ( missingAuthenticatingRealm ) ? "authentication" : "authorization";
+                    missingAuthenticatingRealm ? "authentication" : "authorization";
 
             throw illegalConfiguration( format(
                     "No plugin %s provider loaded even though required by configuration.", missingProvider ) );
@@ -335,7 +352,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             hasNativeProvider = authProviders.contains( SecuritySettings.NATIVE_REALM_NAME );
             hasLdapProvider = authProviders.contains( SecuritySettings.LDAP_REALM_NAME );
             pluginAuthProviders = authProviders.stream()
-                    .filter( ( r ) -> r.startsWith( SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) )
+                    .filter( r -> r.startsWith( SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) )
                     .collect( Collectors.toList() );
 
             nativeAuthentication = config.get( SecuritySettings.native_authentication_enabled );

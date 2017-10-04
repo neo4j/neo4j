@@ -51,7 +51,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     {
         private final MonoDirectionalTraversalDescription description;
 
-        public Side( MonoDirectionalTraversalDescription description )
+        Side( MonoDirectionalTraversalDescription description )
         {
             this.description = description;
         }
@@ -113,7 +113,8 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         return (BidirectionalUniquenessFilter) uniqueness;
     }
 
-    private SideSelector fixedSide( final Direction direction )    {
+    private SideSelector fixedSide( final Direction direction )
+    {
         return new SideSelector()
         {
             @Override
@@ -160,8 +161,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
                 if ( foundPaths.hasNext() )
                 {
                     numberOfPathsReturned++;
-                    Path next = foundPaths.next();
-                    return next;
+                    return foundPaths.next();
                 }
             }
         }

@@ -26,42 +26,80 @@ import org.junit.runners.Suite;
 
 import java.io.File;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {
-        NonUniqueIndexPopulatorCompatibility.class,
-        UniqueIndexPopulatorCompatibility.class,
-        NonUniqueIndexAccessorCompatibility.class,
-        UniqueIndexAccessorCompatibility.class,
+        SimpleIndexPopulatorCompatibility.General.class,
+        SimpleIndexPopulatorCompatibility.Unique.class,
+        CompositeIndexPopulatorCompatibility.General.class,
+        CompositeIndexPopulatorCompatibility.Unique.class,
+        SimpleIndexAccessorCompatibility.General.class,
+        SimpleIndexAccessorCompatibility.Unique.class,
+        CompositeIndexAccessorCompatibility.General.class,
+        CompositeIndexAccessorCompatibility.Unique.class,
         UniqueConstraintCompatibility.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
-    protected File graphDbDir;
-    protected FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
-    @Before
-    public void setup()
-    {
-        graphDbDir = testDir.graphDbDir();
-    }
-
-    protected abstract SchemaIndexProvider createIndexProvider();
+    protected abstract SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
 
     public abstract static class Compatibility
     {
-        protected final SchemaIndexProvider indexProvider;
-        protected IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
+        @Rule
+        public final PageCacheAndDependenciesRule pageCacheAndDependenciesRule;
 
-        public Compatibility( IndexProviderCompatibilityTestSuite testSuite )
+        protected File graphDbDir;
+        protected FileSystemAbstraction fs;
+        protected final IndexProviderCompatibilityTestSuite testSuite;
+        protected SchemaIndexProvider indexProvider;
+        protected IndexDescriptor descriptor;
+
+        @Before
+        public void setup()
         {
-            this.indexProvider = testSuite.createIndexProvider();
+            fs = pageCacheAndDependenciesRule.fileSystem();
+            graphDbDir = pageCacheAndDependenciesRule.directory().graphDbDir();
+            PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
+            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
+        }
+
+        public Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+        {
+            this.testSuite = testSuite;
+            this.descriptor = descriptor;
+            pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
+        }
+
+        protected void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
+        {
+            try
+            {
+                runWithPopulator.accept( populator );
+            }
+            finally
+            {
+                try
+                {
+                    populator.close( true );
+                }
+                catch ( Exception e )
+                {   // ignore
+                }
+                try
+                {
+                    populator.close( false );
+                }
+                catch ( Exception e )
+                {   // ignore
+                }
+            }
         }
     }
 }

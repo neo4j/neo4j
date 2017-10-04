@@ -26,6 +26,10 @@ public class HexString
 {
     private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
+    private HexString()
+    {
+    }
+
     /**
      * Converts a byte array to a hexadecimal string.
      *

@@ -55,12 +55,13 @@ public enum LearnerMessage
         @Override
         public String toString()
         {
-            if (value instanceof Payload )
+            if ( value instanceof Payload )
             {
                 try
                 {
                     ObjectStreamFactory streamFactory = new ObjectStreamFactory();
-                    return new AtomicBroadcastSerializer( streamFactory, streamFactory ).receive( (Payload) value).toString();
+                    return new AtomicBroadcastSerializer( streamFactory, streamFactory ).receive( (Payload) value )
+                            .toString();
                 }
                 catch ( Throwable e )
                 {
@@ -84,12 +85,7 @@ public enum LearnerMessage
 
             LearnState that = (LearnState) o;
 
-            if ( value != null ? !value.equals( that.value ) : that.value != null )
-            {
-                return false;
-            }
-
-            return true;
+            return value != null ? value.equals( that.value ) : that.value == null;
         }
 
         @Override
@@ -111,7 +107,7 @@ public enum LearnerMessage
         @Override
         public boolean equals( Object obj )
         {
-            if(obj == null)
+            if ( obj == null )
             {
                 return false;
             }

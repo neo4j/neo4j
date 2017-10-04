@@ -19,18 +19,19 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.ArgumentCaptor;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.ArgumentCaptor;
+
 import org.neo4j.consistency.ConsistencyCheckTool.ToolFailureException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -55,7 +56,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {
@@ -72,15 +72,14 @@ public class ConsistencyCheckToolTest
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemError = mock( PrintStream.class );
 
         // when
-        runConsistencyCheckToolWith( service, systemError, args );
+        runConsistencyCheckToolWith( service, args );
 
         // then
         verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
-                anyBoolean() );
+                anyBoolean(), any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -90,16 +89,15 @@ public class ConsistencyCheckToolTest
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        runConsistencyCheckToolWith( service, systemOut, args );
+        runConsistencyCheckToolWith( service, args );
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
-                anyBoolean() );
+                anyBoolean(), any( ConsistencyFlags.class ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
@@ -108,23 +106,22 @@ public class ConsistencyCheckToolTest
     {
         // given
         File storeDir = storeDirectory.directory();
-        File configFile = storeDirectory.file( "neo4j.conf" );
+        File configFile = storeDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( configFile ), null );
 
         String[] args = {storeDir.getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        runConsistencyCheckToolWith( service, systemOut, args );
+        runConsistencyCheckToolWith( service, args );
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
-                anyBoolean() );
+                anyBoolean(), any(ConsistencyFlags.class) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
@@ -134,12 +131,11 @@ public class ConsistencyCheckToolTest
         // given
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         String[] args = {};
-        PrintStream systemError = mock( PrintStream.class );
 
         try
         {
             // when
-            runConsistencyCheckToolWith( service, systemError, args );
+            runConsistencyCheckToolWith( service, args );
             fail( "should have thrown exception" );
         }
         catch ( ConsistencyCheckTool.ToolFailureException e )
@@ -156,12 +152,11 @@ public class ConsistencyCheckToolTest
         File configFile = storeDirectory.file( "nonexistent_file" );
         String[] args = {storeDirectory.directory().getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemOut = mock( PrintStream.class );
 
         try
         {
             // when
-            runConsistencyCheckToolWith( service, systemOut, args );
+            runConsistencyCheckToolWith( service, args );
             fail( "should have thrown exception" );
         }
         catch ( ConsistencyCheckTool.ToolFailureException e )
@@ -182,7 +177,7 @@ public class ConsistencyCheckToolTest
         runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
     }
 
-    private void createGraphDbAndKillIt()
+    private void createGraphDbAndKillIt() throws Exception
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
@@ -196,18 +191,23 @@ public class ConsistencyCheckToolTest
             tx.success();
         }
 
-        fs.snapshot( shutdownDbAction( db ) );
+        fs.snapshot( db::shutdown );
     }
 
     private void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )
             throws IOException, ToolFailureException
     {
-        new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), fileSystem, mock( PrintStream.class ) ).run( args );
+        new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), fileSystem, mock( PrintStream.class),
+                mock( PrintStream.class ) ).run( args );
     }
 
     private void runConsistencyCheckToolWith( ConsistencyCheckService
-            consistencyCheckService, PrintStream systemError, String... args ) throws ToolFailureException, IOException
+            consistencyCheckService, String... args ) throws ToolFailureException, IOException
     {
-        new ConsistencyCheckTool( consistencyCheckService, new DefaultFileSystemAbstraction(), systemError ).run( args );
+        try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction() )
+        {
+            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, mock( PrintStream.class ),
+                    mock( PrintStream.class ) ).run( args );
+        }
     }
 }

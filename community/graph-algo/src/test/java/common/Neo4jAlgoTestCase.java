@@ -35,7 +35,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -50,10 +52,10 @@ import static org.junit.Assert.fail;
 public abstract class Neo4jAlgoTestCase
 {
     protected static GraphDatabaseService graphDb;
-    protected static SimpleGraphBuilder graph = null;
+    protected static SimpleGraphBuilder graph;
     protected Transaction tx;
 
-    public static enum MyRelTypes implements RelationshipType
+    public enum MyRelTypes implements RelationshipType
     {
         R1, R2, R3
     }
@@ -154,20 +156,27 @@ public abstract class Neo4jAlgoTestCase
     public void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
     {
         List<String> unexpectedDefs = new ArrayList<String>();
-        for ( Path path : paths )
+        try ( ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator( paths.iterator() ) )
         {
-            String pathDef = getPathDef( path );
-            int index = pathDefs.indexOf( pathDef );
-            if ( index != -1 )
+            while ( iterator.hasNext() )
             {
-                pathDefs.remove( index );
-            }
-            else
-            {
-                unexpectedDefs.add( getPathDef( path ) );
+                Path path = iterator.next();
+
+                String pathDef = getPathDef( path );
+                int index = pathDefs.indexOf( pathDef );
+                if ( index != -1 )
+                {
+                    pathDefs.remove( index );
+                }
+                else
+                {
+                    unexpectedDefs.add( getPathDef( path ) );
+                }
+                path.close();
             }
         }
-        assertTrue( "These unexpected paths were found: " + unexpectedDefs + ". In addition these expected paths weren't found:" + pathDefs, unexpectedDefs.isEmpty() );
+        assertTrue( "These unexpected paths were found: " + unexpectedDefs +
+                ". In addition these expected paths weren't found:" + pathDefs, unexpectedDefs.isEmpty() );
         assertTrue( "These were expected, but not found: " + pathDefs.toString(), pathDefs.isEmpty() );
     }
 

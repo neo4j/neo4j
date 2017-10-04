@@ -22,8 +22,10 @@ package org.neo4j.commandline.dbms;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -35,18 +37,21 @@ public class ImportCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public Arguments allArguments()
     {
         return ImportCommand.allArguments();
     }
 
     @Override
+    @Nonnull
     public List<Arguments> possibleArguments()
     {
         return Arrays.asList( ImportCommand.csvArguments(), ImportCommand.databaseArguments() );
     }
 
     @Override
+    @Nonnull
     public String description()
     {
         return "Import a collection of CSV files with --mode=csv (default), or a database from " +
@@ -54,12 +59,21 @@ public class ImportCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public String summary()
     {
         return "Import from a collection of CSV files or a pre-3.0 database.";
     }
 
     @Override
+    @Nonnull
+    public AdminCommandSection commandSection()
+    {
+        return AdminCommandSection.general();
+    }
+
+    @Override
+    @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         return new ImportCommand( homeDir, configDir, outsideWorld );

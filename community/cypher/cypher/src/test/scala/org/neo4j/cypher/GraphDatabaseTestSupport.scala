@@ -20,22 +20,22 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.DefaultIDPSolverConfig
-import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration, devNullLogger}
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.DefaultIDPSolverConfig
+import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundPlanContext
-import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_4.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.proc.{CallableProcedure, CallableUserFunction, ProcedureSignature, UserFunctionSignature}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.monitoring
+import org.neo4j.kernel.api.proc._
+import org.neo4j.kernel.api.{KernelAPI, Statement}
+import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -53,8 +53,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = createGraphDatabase()
   }
 
-  protected def createGraphDatabase() = {
-    new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
+  protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+    new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
   override protected def stopTest() {
@@ -236,6 +236,13 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     registerUserFunction(namespace: _*)(name)(f)
   }
 
+  def registerUserDefinedAggregationFunction[T <: CallableUserAggregationFunction](qualifiedName: String)(f: UserFunctionSignature.Builder => T): T = {
+    val parts = qualifiedName.split('.')
+    val namespace = parts.reverse.tail.reverse
+    val name = parts.last
+    registerUserAggregationFunction(namespace: _*)(name)(f)
+  }
+
   def registerUserFunction[T <: CallableUserFunction](namespace: String*)(name: String)(f: UserFunctionSignature.Builder => T): T = {
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
     val func = f(builder)
@@ -243,14 +250,19 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     func
   }
 
-  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
+  def registerUserAggregationFunction[T <: CallableUserAggregationFunction](namespace: String*)(name: String)(f: UserFunctionSignature.Builder => T): T = {
+    val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
+    val func = f(builder)
+    kernelAPI.registerUserAggregationFunction(func)
+    func
+  }
 
   def kernelMonitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
 
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
-  def planContext: PlanContext = {
-    val tc = mock[TransactionalContextWrapperv3_1]
+  def planContext(statement: Statement): PlanContext = {
+    val tc = mock[TransactionalContextWrapper]
     when(tc.statement).thenReturn(statement)
     when(tc.readOperations).thenReturn(statement.readOperations())
     when(tc.graph).thenReturn(graph)
@@ -271,4 +283,18 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false
   )
+
+  case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
+    def apply(graph: GraphDatabaseQueryService): MatchResult = {
+      graph.inTx {
+        val constraintNames = graph.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
+        val result = expectedConstraints.forall(i => constraintNames.contains(i.toString))
+        MatchResult(
+          result,
+          s"Expected graph to have constraints ${expectedConstraints.mkString(", ")}, but it was ${constraintNames.mkString(", ")}",
+          s"Expected graph to not have constraints ${expectedConstraints.mkString(", ")}, but it did."
+        )
+      }
+    }
+  }
 }

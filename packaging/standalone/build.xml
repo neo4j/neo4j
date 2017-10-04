@@ -12,23 +12,4 @@
     <echo>Unzipping...</echo>
     <unzip src="${shell.zip}" dest="src/main/distribution"/>
   </target>
-
-  <!-- Copy to source directory -->
-  <!--
-  <target name="find-shell" description="Check that cypher-shell is available"
-          depends="extract-shell-zip">
-    <available file="${shell.dist}" type="dir"
-               property="shell.present"/>
-    <echo>Checking if ${shell.dist} exists: ${shell.present}</echo>
-  </target>
-
-  <target name="copy-shell" description="Copy cypher-shell files"
-          depends="find-shell" if="shell.present">
-    <echo>Copying...</echo>
-    <copy todir="src/main/distribution/cypher-shell">
-      <fileset dir="${shell.dist}"/>
-    </copy>
-  </target>
-  -->
-
 </project>

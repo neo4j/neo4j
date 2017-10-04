@@ -19,25 +19,24 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import java.io.File;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
 public class IndexStorageFactory
 {
     private final DirectoryFactory dirFactory;
     private final FileSystemAbstraction fileSystem;
-    private final File indexRootFolder;
+    private final IndexDirectoryStructure structure;
 
-    public IndexStorageFactory( DirectoryFactory dirFactory, FileSystemAbstraction fileSystem, File indexRootFolder )
+    public IndexStorageFactory( DirectoryFactory dirFactory, FileSystemAbstraction fileSystem, IndexDirectoryStructure structure )
     {
         this.dirFactory = dirFactory;
         this.fileSystem = fileSystem;
-        this.indexRootFolder = indexRootFolder;
+        this.structure = structure;
     }
 
     public PartitionedIndexStorage indexStorageOf( long indexId, boolean archiveFailed )
     {
-        return new PartitionedIndexStorage( dirFactory, fileSystem, indexRootFolder, String.valueOf( indexId ), archiveFailed );
+        return new PartitionedIndexStorage( dirFactory, fileSystem, structure.directoryForIndex( indexId ), archiveFailed );
     }
 }

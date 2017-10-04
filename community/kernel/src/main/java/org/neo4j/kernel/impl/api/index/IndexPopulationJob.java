@@ -24,11 +24,11 @@ import java.util.concurrent.Future;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Thread.currentThread;
@@ -37,28 +37,24 @@ import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
- * {@link #addPopulator(IndexPopulator, IndexDescriptor, IndexConfiguration, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor, String, FlippableIndexProxy, FailedIndexProxyFactory)}
+ * {@link #addPopulator(IndexPopulator, long, IndexDescriptor, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor,
+ * String, FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
 public class IndexPopulationJob implements Runnable
 {
     private final IndexingService.Monitor monitor;
     private final MultipleIndexPopulator multiPopulator;
-    private final IndexStoreView storeView;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
-    private final Runnable schemaStateChangeCallback;
+    private final SchemaState schemaState;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( IndexStoreView storeView,
-                               MultipleIndexPopulator multiPopulator,
-                               IndexingService.Monitor monitor,
-                               Runnable schemaStateChangeCallback )
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, SchemaState schemaState )
     {
         this.multiPopulator = multiPopulator;
-        this.storeView = storeView;
-        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.schemaState = schemaState;
         this.monitor = monitor;
     }
 
@@ -68,22 +64,21 @@ public class IndexPopulationJob implements Runnable
      *
      * @param populator {@link IndexPopulator} to participate.
      * @param descriptor {@link IndexDescriptor} describing the index.
-     * @param config {@link IndexConfiguration} for the index.
      * @param providerDescriptor provider of this index.
      * @param indexUserDescription user description of this index.
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
      * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
     public void addPopulator( IndexPopulator populator,
+            long indexId,
             IndexDescriptor descriptor,
-            IndexConfiguration config,
             SchemaIndexProvider.Descriptor providerDescriptor,
             String indexUserDescription ,
             FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        this.multiPopulator.addPopulator( populator, descriptor, providerDescriptor, config, flipper,
+        this.multiPopulator.addPopulator( populator, indexId, descriptor, providerDescriptor, flipper,
                 failedIndexProxyFactory, indexUserDescription );
     }
 
@@ -119,7 +114,7 @@ public class IndexPopulationJob implements Runnable
 
                 multiPopulator.flipAfterPopulation();
 
-                schemaStateChangeCallback.run();
+                schemaState.clear();
             }
             catch ( Throwable t )
             {
@@ -165,9 +160,9 @@ public class IndexPopulationJob implements Runnable
      * A transaction happened that produced the given updates. Let this job incorporate its data,
      * feeding it to the {@link IndexPopulator}.
      *
-     * @param update {@link NodePropertyUpdate} to queue.
+     * @param update {@link IndexEntryUpdate} to queue.
      */
-    public void update( NodePropertyUpdate update )
+    public void update( IndexEntryUpdate<?> update )
     {
         multiPopulator.queue( update );
     }

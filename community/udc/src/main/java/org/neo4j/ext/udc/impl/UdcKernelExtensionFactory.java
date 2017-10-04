@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 
-import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -44,7 +43,7 @@ import org.neo4j.udc.UsageData;
  * testing and short-run applications. Subsequent updates are made at regular
  * intervals. Both times are specified in milliseconds.
  */
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelExtensionFactory.Dependencies>
 {
     static final String KEY = "kernel udc";
@@ -64,17 +63,13 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     }
 
     @Override
-    public Class<UdcSettings> getSettingsClass()
-    {
-        return UdcSettings.class;
-    }
-
-    @Override
     public Lifecycle newInstance( KernelContext kernelContext, UdcKernelExtensionFactory.Dependencies dependencies )
             throws Throwable
     {
+        Config config = dependencies.config();
+        config.augment( loadUdcProperties() );
         return new UdcKernelExtension(
-                dependencies.config().with( loadUdcProperties() ),
+                config,
                 dependencies.dataSourceManager(),
                 dependencies.idGeneratorFactory(),
                 dependencies.startupStats(),

@@ -68,12 +68,12 @@ abstract class DynamicNumberArray<N extends NumberArray<N>> implements NumberArr
     protected N chunkOrNullAt( long index )
     {
         int chunkIndex = chunkIndex( index );
-        return chunkIndex < chunks.length ? (N) chunks[chunkIndex] : null;
+        return chunkIndex < chunks.length ? chunks[chunkIndex] : null;
     }
 
     protected int chunkIndex( long index )
     {
-        return (int) (index/chunkSize);
+        return (int) (index / chunkSize);
     }
 
     @Override
@@ -92,7 +92,7 @@ abstract class DynamicNumberArray<N extends NumberArray<N>> implements NumberArr
     {
         if ( index >= length() )
         {
-            N[] newChunks = Arrays.copyOf( chunks, chunkIndex( index )+1 );
+            N[] newChunks = Arrays.copyOf( chunks, chunkIndex( index ) + 1 );
             for ( int i = chunks.length; i < newChunks.length; i++ )
             {
                 newChunks[i] = addChunk( chunkSize, chunkSize * i );

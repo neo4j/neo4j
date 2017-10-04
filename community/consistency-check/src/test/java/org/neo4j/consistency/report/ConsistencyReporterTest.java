@@ -31,6 +31,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Suite;
 import org.junit.runners.model.Statement;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -51,8 +52,10 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -73,19 +76,19 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses({ConsistencyReporterTest.TestAllReportMessages.class,
-                     ConsistencyReporterTest.TestReportLifecycle.class})
+@RunWith( Suite.class )
+@Suite.SuiteClasses( {ConsistencyReporterTest.TestAllReportMessages.class,
+                      ConsistencyReporterTest.TestReportLifecycle.class} )
 public class ConsistencyReporterTest
 {
     public static class TestReportLifecycle
@@ -98,7 +101,7 @@ public class ConsistencyReporterTest
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             RecordAccess records = mock( RecordAccess.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
@@ -114,7 +117,7 @@ public class ConsistencyReporterTest
         }
 
         @Test
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public void shouldOnlySummarizeStatisticsWhenAllReferencesAreChecked()
         {
             // given
@@ -201,11 +204,11 @@ public class ConsistencyReporterTest
         }
     }
 
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class TestAllReportMessages implements Answer
     {
         @Test
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public void shouldLogInconsistency() throws Exception
         {
             // given
@@ -228,8 +231,7 @@ public class ConsistencyReporterTest
                 else
                 {
                     verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ),
-                                            argThat( hasExpectedFormat() ), any( Object[].class ) );
+                                            any( AbstractBaseRecord.class ), argThat( hasExpectedFormat() ), nullSafeAny() );
                 }
             }
             else
@@ -244,7 +246,7 @@ public class ConsistencyReporterTest
                 {
                     verify( report ).warning( any( RecordType.class ),
                                               any( AbstractBaseRecord.class ),
-                                              argThat( hasExpectedFormat() ), any( Object[].class ) );
+                                              argThat( hasExpectedFormat() ), nullSafeAny() );
                 }
             }
         }
@@ -258,7 +260,7 @@ public class ConsistencyReporterTest
             this.method = method;
         }
 
-        @Parameterized.Parameters(name="{1}")
+        @Parameterized.Parameters( name = "{1}" )
         public static List<Object[]> methods()
         {
             ArrayList<Object[]> methods = new ArrayList<>();
@@ -276,27 +278,20 @@ public class ConsistencyReporterTest
         }
 
         @Rule
-        public final TestRule logFailure = new TestRule()
+        public final TestRule logFailure = ( base, description ) -> new Statement()
         {
             @Override
-            public Statement apply( final Statement base, org.junit.runner.Description description )
+            public void evaluate() throws Throwable
             {
-                return new Statement()
+                try
                 {
-                    @Override
-                    public void evaluate() throws Throwable
-                    {
-                        try
-                        {
-                            base.evaluate();
-                        }
-                        catch ( Throwable failure )
-                        {
-                            System.err.println( "Failure in " + TestAllReportMessages.this + ": " + failure );
-                            throw failure;
-                        }
-                    }
-                };
+                    base.evaluate();
+                }
+                catch ( Throwable failure )
+                {
+                    System.err.println( "Failure in " + TestAllReportMessages.this + ": " + failure );
+                    throw failure;
+                }
             }
         };
 
@@ -378,7 +373,7 @@ public class ConsistencyReporterTest
             }
             if ( type == LabelScanDocument.class )
             {
-                return new LabelScanDocument( new LuceneNodeLabelRange( 0, new long[] {}, new long[][] {} ) );
+                return new LabelScanDocument( new NodeLabelRange( 0, new long[][] {} ) );
             }
             if ( type == IndexEntry.class )
             {
@@ -394,7 +389,12 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexRule.class )
             {
-                return IndexRule.indexRule( 1, 2, 3, new SchemaIndexProvider.Descriptor( "provider", "version" ) );
+                return IndexRule.indexRule( 1, IndexDescriptorFactory.forLabel( 2, 3 ),
+                        new SchemaIndexProvider.Descriptor( "provider", "version" ) );
+            }
+            if ( type == SchemaRule.class )
+            {
+                return simpleSchemaRule();
             }
             if ( type == RelationshipGroupRecord.class )
             {
@@ -411,7 +411,25 @@ public class ConsistencyReporterTest
             throw new IllegalArgumentException( format( "Don't know how to provide parameter of type %s", type.getName() ) );
         }
 
-        @SuppressWarnings("unchecked")
+        private SchemaRule simpleSchemaRule()
+        {
+            return new SchemaRule( 0 )
+            {
+                @Override
+                public byte[] serialize()
+                {
+                    return new byte[0];
+                }
+
+                @Override
+                public SchemaDescriptor schema()
+                {
+                    return null;
+                }
+            };
+        }
+
+        @SuppressWarnings( "unchecked" )
         private RecordCheck mockChecker()
         {
             RecordCheck checker = mock( RecordCheck.class );
@@ -437,6 +455,11 @@ public class ConsistencyReporterTest
                         ex );
             }
         }
+    }
+
+    private static <T> T[] nullSafeAny()
+    {
+        return ArgumentMatchers.argThat( argument -> true );
     }
 
     private static Matcher<String> hasExpectedFormat()

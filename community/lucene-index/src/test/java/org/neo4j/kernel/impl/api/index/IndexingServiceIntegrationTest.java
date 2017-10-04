@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -35,9 +40,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -50,16 +59,16 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
+@RunWith( Parameterized.class )
 public class IndexingServiceIntegrationTest
 {
     private static final String FOOD_LABEL = "food";
     private static final String CLOTHES_LABEL = "clothes";
     private static final String WEATHER_LABEL = "weather";
     private static final String PROPERTY_NAME = "name";
-    private static final SchemaIndexProvider.Descriptor indexDescriptor =
-            LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -67,14 +76,43 @@ public class IndexingServiceIntegrationTest
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private GraphDatabaseService database;
 
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection<Object[]> parameters()
+    {
+        return asList(
+                new Object[]{new LuceneSchemaIndexProviderFactory(), LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionSchemaIndexProviderFactory(), NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR},
+                new Object[]{new InMemoryIndexProviderFactory(), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );
+    }
+
+    @Parameterized.Parameter( 0 )
+    public KernelExtensionFactory<?> kernelExtensionFactory;
+
+    @Parameterized.Parameter( 1 )
+    public SchemaIndexProvider.Descriptor indexDescriptor;
+
     @Before
-    public void setUp() {
+    public void setUp()
+    {
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
         database = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .addKernelExtension( new LuceneSchemaIndexProviderFactory() )
+                .setKernelExtensions( Collections.singletonList( kernelExtensionFactory ) )
                 .newImpermanentDatabase();
         createData( database, 100 );
+    }
+
+    @After
+    public void tearDown()
+    {
+        try
+        {
+            database.shutdown();
+        }
+        catch ( Exception e )
+        {
+            //ignore
+        }
     }
 
     @Test
@@ -88,8 +126,8 @@ public class IndexingServiceIntegrationTest
         int foodId = labelTokenHolder.getIdByName( FOOD_LABEL );
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
-        IndexRule rule = IndexRule.indexRule( schemaStore.nextId(), foodId, propertyId,
-                indexDescriptor );
+        IndexRule rule = IndexRule.indexRule(
+                schemaStore.nextId(), IndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 
@@ -110,7 +148,7 @@ public class IndexingServiceIntegrationTest
             transaction.success();
         }
 
-        try ( Transaction transaction = database.beginTx() )
+        try ( Transaction ignored = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
@@ -122,8 +160,10 @@ public class IndexingServiceIntegrationTest
         int weatherLabelId = labelTokenHolder.getIdByName( WEATHER_LABEL );
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
-        IndexProxy clothesIndex = indexingService.getIndexProxy( new IndexDescriptor( clothedLabelId, propertyId) );
-        IndexProxy weatherIndex = indexingService.getIndexProxy( new IndexDescriptor( weatherLabelId, propertyId) );
+        IndexProxy clothesIndex =
+                indexingService.getIndexProxy( SchemaDescriptorFactory.forLabel( clothedLabelId, propertyId ) );
+        IndexProxy weatherIndex =
+                indexingService.getIndexProxy( SchemaDescriptorFactory.forLabel( weatherLabelId, propertyId ) );
         assertEquals( InternalIndexState.ONLINE, clothesIndex.getState());
         assertEquals( InternalIndexState.ONLINE, weatherIndex.getState());
     }
@@ -159,7 +199,7 @@ public class IndexingServiceIntegrationTest
         int indexLabel7 = labelTokenHolder.getIdByName( indexLabelPrefix + 7 );
         int indexProperty7 = propertyKeyTokenHolder.getIdByName( indexPropertyPrefix + 7 );
 
-        IndexProxy index = indexingService.getIndexProxy( new IndexDescriptor( indexLabel7, indexProperty7) );
+        IndexProxy index = indexingService.getIndexProxy( IndexDescriptorFactory.forLabel( indexLabel7, indexProperty7).schema() );
 
         index.drop();
 
@@ -193,7 +233,7 @@ public class IndexingServiceIntegrationTest
         return getDependencyResolver(database).resolveDependency( IndexingService.class );
     }
 
-    private LabelTokenHolder getLabelTokenHolder(GraphDatabaseService database)
+    private LabelTokenHolder getLabelTokenHolder( GraphDatabaseService database )
     {
         return getDependencyResolver( database ).resolveDependency( LabelTokenHolder.class );
     }
@@ -206,7 +246,7 @@ public class IndexingServiceIntegrationTest
     private void createData( GraphDatabaseService database, int numberOfNodes )
     {
         int index = 0;
-        while (index < numberOfNodes)
+        while ( index < numberOfNodes )
         {
             try ( Transaction transaction = database.beginTx() )
             {

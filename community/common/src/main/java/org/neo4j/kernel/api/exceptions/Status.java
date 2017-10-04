@@ -122,7 +122,7 @@ public interface Status
     {
         // client errors
         TransactionNotFound( ClientError,
-                "The request referred to a transaction that does not exist."),
+                "The request referred to a transaction that does not exist." ),
         TransactionAccessedConcurrently( ClientError,
                 "There were concurrent requests accessing the same transaction, which is not allowed." ),
         ForbiddenDueToTransactionType( ClientError,
@@ -134,7 +134,7 @@ public interface Status
                 "allowed. There are several reasons this happens - the client might have asked for the transaction " +
                 "to be terminated, an operator might have asked for the database to be shut down, or the current " +
                 "instance is about to go through a cluster role switch. Simply retry your operation in a new " +
-                "transaction."),
+                "transaction." ),
         TransactionEventHandlerFailed( ClientError,
                 "A transaction event handler threw an exception. The transaction will be rolled back." ),
         TransactionValidationFailed( ClientError,
@@ -168,7 +168,7 @@ public interface Status
         DeadlockDetected( TransientError,
                 "This transaction, and at least one more transaction, has acquired locks in a way that it will wait " +
                 "indefinitely, and the database has aborted it. Retrying this transaction will most likely be " +
-                "successful."),
+                "successful." ),
         InstanceStateChanged( TransientError,
                 "Transactions rely on assumptions around the state of the Neo4j instance they " +
                 "execute on. For instance, transactions in a cluster may expect that " +
@@ -176,7 +176,7 @@ public interface Status
                 "instances may change state while the transaction is running. This causes " +
                 "assumptions the instance has made about how to execute the transaction " +
                 "to be violated - meaning the transaction must be rolled " +
-                "back. If you see this error, you should retry your operation in a new transaction."),
+                "back. If you see this error, you should retry your operation in a new transaction." ),
         ConstraintsChanged( TransientError,
                 "Database constraints changed since the start of this transaction" ),
         Outdated( TransientError,
@@ -184,6 +184,8 @@ public interface Status
                 "transaction was active. Transaction may succeed if retried." ),
         LockClientStopped( TransientError,
                 "Transaction terminated, no more locks can be acquired." ),
+        LockAcquisitionTimeout( TransientError,
+                "Unable to acquire lock within configured timeout." ),
         Terminated( TransientError,
                 "Explicitly terminated by the user." ),
         Interrupted( TransientError,
@@ -219,12 +221,12 @@ public interface Status
         PropertyNotFound( ClientError,
                 "The statement refers to a non-existent property." ),
         LabelNotFound( ClientError,
-                "The statement is referring to a label that does not exist."),
+                "The statement is referring to a label that does not exist." ),
         TypeError( ClientError,
                 "The statement is attempting to perform operations on values with types that are not supported by " +
                 "the operation." ),
         ArgumentError( ClientError,
-                "The statement is attempting to perform operations using invalid arguments"),
+                "The statement is attempting to perform operations using invalid arguments" ),
         ArithmeticError( ClientError,
                 "Invalid use of arithmetic, such as dividing by zero." ),
 
@@ -234,16 +236,16 @@ public interface Status
 
         // transient errors
         ExternalResourceFailed( ClientError,
-                "Access to an external resource failed"),
+                "Access to an external resource failed" ),
 
         // client notifications (performance)
         CartesianProductWarning( ClientNotification,
                 "This query builds a cartesian product between disconnected patterns." ),
         DynamicPropertyWarning( ClientNotification,
                 "Queries using dynamic properties will use neither index seeks nor index scans for those properties" ),
-        EagerOperatorWarning(ClientNotification,
+        EagerOperatorWarning( ClientNotification,
                 "The execution plan for this query contains the Eager operator, which forces all dependent data to " +
-                "be materialized in main memory before proceeding"),
+                 "be materialized in main memory before proceeding" ),
         JoinHintUnfulfillableWarning( ClientNotification,
                 "The database was unable to plan a hinted join." ),
         NoApplicableIndexWarning( ClientNotification,
@@ -256,10 +258,13 @@ public interface Status
                 "might be used in order to find the requested shortest path." ),
 
         // client notifications (not supported/deprecated)
+        PlannerUnavailableWarning( ClientNotification,
+                "The RULE planner is not available in the current CYPHER version, the query has been run by an older " +
+                        "CYPHER version." ),
         PlannerUnsupportedWarning( ClientNotification,
                 "This query is not supported by the COST planner." ),
         RuntimeUnsupportedWarning( ClientNotification,
-                "This query is not supported by the compiled runtime." ),
+                "This query is not supported by the chosen runtime." ),
         FeatureDeprecationWarning( ClientNotification,
                 "This feature is deprecated and will be removed in future versions." ),
         JoinHintUnsupportedWarning( ClientNotification,
@@ -271,7 +276,10 @@ public interface Status
         UnknownRelationshipTypeWarning( ClientNotification,
                 "The provided relationship type is not in the database." ),
         UnknownPropertyKeyWarning( ClientNotification,
-                "The provided property key is not in the database" );
+                "The provided property key is not in the database" ),
+        CreateUniqueUnavailableWarning( ClientNotification,
+                "CREATE UNIQUE is not available in the current CYPHER version, the query has been run by an older " +
+                "CYPHER version." );
 
         private final Code code;
 
@@ -290,6 +298,8 @@ public interface Status
     enum Schema implements Status
     {
         // client errors
+        RepeatedPropertyInCompositeSchema( ClientError,
+                "Unable to create composite index or constraint because a property was specified in several positions." ),
         ConstraintAlreadyExists( ClientError,
                 "Unable to perform operation because it would clash with a pre-existing constraint." ),
         ConstraintNotFound( ClientError,
@@ -302,6 +312,8 @@ public interface Status
                 "Unable to perform operation because it would clash with a pre-existing index." ),
         IndexNotFound( ClientError,
                 "The request (directly or indirectly) referred to an index that does not exist." ),
+        IndexNotApplicable( ClientError,
+                "The request did not contain the properties required by the index." ),
         ForbiddenOnConstraintIndex( ClientError,
                 "A requested operation can not be performed on the specified index because the index is part of a " +
                 "constraint. If you want to drop the index, for instance, you must drop the constraint." ),
@@ -315,7 +327,7 @@ public interface Status
         ConstraintDropFailed( DatabaseError,
                 "The database failed to drop a requested constraint." ),
         IndexCreationFailed( DatabaseError,
-                "Failed to create an index."),
+                "Failed to create an index." ),
         IndexDropFailed( DatabaseError,
                 "The database failed to drop a requested index." ),
         LabelAccessFailed( DatabaseError,
@@ -355,7 +367,7 @@ public interface Status
     enum LegacyIndex implements Status
     {
         LegacyIndexNotFound( ClientError,
-                "The request (directly or indirectly) referred to a legacy index that does not exist." )
+                "The request (directly or indirectly) referred to a explicit index that does not exist." )
 
         ;
 
@@ -387,7 +399,8 @@ public interface Status
                 "A procedure is using or receiving a value of an invalid type." ),
         ProcedureTimedOut( ClientError,
                 "The procedure has not completed within the specified timeout. You may want to retry with a longer " +
-                "timeout." );
+                "timeout." ),
+        ProcedureWarning( ClientNotification, "The query used a procedure that generated a warning." );
 
         private final Code code;
 
@@ -516,7 +529,7 @@ public interface Status
             {
                 if ( child.isEnum() && Status.class.isAssignableFrom( child ) )
                 {
-                    @SuppressWarnings("unchecked")
+                    @SuppressWarnings( "unchecked" )
                     Class<? extends Status> statusType = (Class<? extends Status>) child;
                     Collections.addAll( result, statusType.getEnumConstants() );
                 }
@@ -597,22 +610,22 @@ public interface Status
     enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.ROLLBACK, PublishingPolicy.REPORTS_TO_CLIENT,
-                "The Client sent a bad request - changing the request might yield a successful outcome."),
+        ClientError( TransactionEffect.ROLLBACK,
+                "The Client sent a bad request - changing the request might yield a successful outcome." ),
         /** There are notifications about the request sent by the client.*/
-        ClientNotification( TransactionEffect.NONE, PublishingPolicy.REPORTS_TO_CLIENT,
+        ClientNotification( TransactionEffect.NONE,
                 "There are notifications about the request sent by the client." ),
 
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.REPORTS_TO_CLIENT_AND_LOG,
-                "The database cannot service the request right now, retrying later might yield a successful outcome. "),
+        TransientError( TransactionEffect.ROLLBACK,
+                "The database cannot service the request right now, retrying later might yield a successful outcome. " ),
 
         // Implementation note: These are a sharp tool, database error signals
         // that something is *seriously* wrong, and will prompt the user to send
         // an error report back to us. Only use this if the code path you are
         // at would truly indicate the database is in a broken or bug-induced state.
         /** The database failed to service the request. */
-        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.REFERS_TO_LOG,
+        DatabaseError( TransactionEffect.ROLLBACK,
                 "The database failed to service the request. " );
 
         private enum TransactionEffect
@@ -620,43 +633,18 @@ public interface Status
             ROLLBACK, NONE,
         }
 
-        private enum PublishingPolicy
-        {
-            REPORTS_TO_CLIENT( false ), REPORTS_TO_CLIENT_AND_LOG( true ), REFERS_TO_LOG( true );
-
-            private final boolean shouldLog;
-
-            PublishingPolicy( boolean shouldLog )
-            {
-                this.shouldLog = shouldLog;
-            }
-
-            boolean shouldLog()
-            {
-                return shouldLog;
-            }
-
-        }
-
         private final boolean rollbackTransaction;
-        private final boolean shouldLog;
         private final String description;
 
-        Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
+        Classification( TransactionEffect transactionEffect, String description )
         {
             this.description = description;
-            this.shouldLog = publishingPolicy.shouldLog();
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
         public boolean rollbackTransaction()
         {
             return rollbackTransaction;
-        }
-
-        public boolean shouldLog()
-        {
-            return shouldLog;
         }
 
         public String description()
@@ -668,5 +656,20 @@ public interface Status
     interface HasStatus
     {
         Status status();
+    }
+
+    static Status statusCodeOf( Throwable e )
+    {
+        do
+        {
+            if ( e instanceof Status.HasStatus )
+            {
+                return ((Status.HasStatus) e).status();
+            }
+            e = e.getCause();
+        }
+        while ( e != null );
+
+        return null;
     }
 }

@@ -19,23 +19,35 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
-import org.neo4j.kernel.api.index.{IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.schema.constaints.{NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor}
+import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
-  implicit def cypherToKernel(index:SchemaTypes.IndexDescriptor):KernelIndexDescriptor =
-    new KernelIndexDescriptor( index.labelId, index.propertyId )
+  implicit def cypherToKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
+    IndexDescriptorFactory.forLabel(index.labelId, index.propertyId)
 
-  implicit def kernelToCypher(index:KernelIndexDescriptor):SchemaTypes.IndexDescriptor =
-    SchemaTypes.IndexDescriptor( index.getLabelId, index.getPropertyKeyId )
+  implicit def kernelToCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor =
+    if (index.schema().getPropertyIds.length == 1)
+      SchemaTypes.IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyId)
+    else
+      throw new UnsupportedOperationException("Cypher 2.3 does not support composite indexes")
 
-  implicit def kernelToCypher(constraint:UniquenessConstraint):SchemaTypes.UniquenessConstraint =
-    SchemaTypes.UniquenessConstraint( constraint.label(), constraint.propertyKey() )
+  implicit def kernelToCypher(index: UniquenessConstraintDescriptor): SchemaTypes.UniquenessConstraint =
+    if (index.schema().getPropertyIds.length == 1)
+      SchemaTypes.UniquenessConstraint(index.schema().getLabelId, index.schema().getPropertyId)
+    else
+      throw new UnsupportedOperationException("Cypher 2.3 does not support composite constraints")
 
-  implicit def kernelToCypher(constraint:NodePropertyExistenceConstraint):SchemaTypes.NodePropertyExistenceConstraint =
-    SchemaTypes.NodePropertyExistenceConstraint( constraint.label(), constraint.propertyKey() )
+  implicit def kernelToCypher(index: NodeExistenceConstraintDescriptor): SchemaTypes.NodePropertyExistenceConstraint =
+    if (index.schema().getPropertyIds.length == 1)
+      SchemaTypes.NodePropertyExistenceConstraint(index.schema().getLabelId, index.schema().getPropertyId)
+    else
+      throw new UnsupportedOperationException("Cypher 2.3 does not support composite constraints")
 
-  implicit def kernelToCypher(constraint:RelationshipPropertyConstraint):SchemaTypes.RelationshipPropertyExistenceConstraint =
-    SchemaTypes.RelationshipPropertyExistenceConstraint( constraint.relationshipType(), constraint.propertyKey() )
+  implicit def kernelToCypher(index: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint =
+    if (index.schema().getPropertyIds.length == 1)
+      SchemaTypes.RelationshipPropertyExistenceConstraint(index.schema().getRelTypeId, index.schema().getPropertyId)
+    else
+      throw new UnsupportedOperationException("Cypher 2.3 does not support composite constraints")
 }

@@ -21,8 +21,6 @@ cypher/.cache
 artifacts
 */bin
 */pom-with-build-number.xml
-chromedriver.log
-webdriver-binaries
 *.egg-info
 *.egg
 work-tools/sauron/build/

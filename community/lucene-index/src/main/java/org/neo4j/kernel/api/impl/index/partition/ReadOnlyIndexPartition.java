@@ -42,7 +42,7 @@ public class ReadOnlyIndexPartition extends AbstractIndexPartition
 
     ReadOnlyIndexPartition( File partitionFolder, Directory directory ) throws IOException
     {
-        super(partitionFolder, directory);
+        super( partitionFolder, directory );
         this.searcherManager = new SearcherManager( directory, new SearcherFactory() );
     }
 

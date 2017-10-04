@@ -210,7 +210,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     {
         private final DependencyResolver resolver;
 
-        public ResolvableDependencies( DependencyResolver resolver )
+        ResolvableDependencies( DependencyResolver resolver )
         {
             this.resolver = resolver;
         }
@@ -235,7 +235,8 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
             }
             catch ( UnsatisfiedDependencyException e )
             {
-                return toTxId -> {
+                return toTxId ->
+                {
                     throw new UnsupportedOperationException( "Should not be called" );
                 };
             }

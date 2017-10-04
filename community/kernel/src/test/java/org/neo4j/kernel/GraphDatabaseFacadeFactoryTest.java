@@ -22,15 +22,15 @@ package org.neo4j.kernel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Map;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -54,8 +55,12 @@ import static org.mockito.Mockito.when;
 
 public class GraphDatabaseFacadeFactoryTest
 {
+
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private final TestDirectory dir = TestDirectory.testDirectory( fileSystemRule.get() );
+
     @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory( new EphemeralFileSystemAbstraction() );
+    public final RuleChain ruleChain = RuleChain.outerRule( dir ).around( fileSystemRule );
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =
@@ -113,17 +118,17 @@ public class GraphDatabaseFacadeFactoryTest
     private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
     {
         return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN,
-                (p) -> Mockito.mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ))
+                p -> mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ) )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+            protected PlatformModule createPlatform( File storeDir, Config config,
                     Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
-                doAnswer( invocation -> invocation.getArguments()[0] ).when( lifeMock ).add( any( Lifecycle.class ) );
+                doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     public LifeSupport createLife()

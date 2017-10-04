@@ -63,23 +63,21 @@ public abstract class BatchOperations
     protected void addHeaders( final InternalJettyServletRequest res,
                                final HttpHeaders httpHeaders )
     {
-        for (Map.Entry<String, List<String>> header : httpHeaders
-                .getRequestHeaders().entrySet())
+        for ( Map.Entry<String,List<String>> header : httpHeaders.getRequestHeaders().entrySet() )
         {
             final String key = header.getKey();
             final List<String> value = header.getValue();
-            if (value == null)
+            if ( value == null )
             {
                 continue;
             }
-            if (value.size() != 1)
+            if ( value.size() != 1 )
             {
-                throw new IllegalArgumentException(
-                        "expecting one value per header");
+                throw new IllegalArgumentException( "expecting one value per header" );
             }
             if ( !key.equals( "Accept" ) && !key.equals( "Content-Type" ) )
             {
-                res.addHeader(key, value.get(0));
+                res.addHeader( key, value.get( 0 ) );
             }
         }
         // Make sure they are there and always json
@@ -92,54 +90,54 @@ public abstract class BatchOperations
     {
         URI baseUri = serverUriInfo.getBaseUri();
 
-        if (requestedPath.startsWith(baseUri.toString()))
+        if ( requestedPath.startsWith( baseUri.toString() ) )
         {
-            requestedPath = requestedPath
-                    .substring( baseUri.toString().length() );
+            requestedPath = requestedPath.substring( baseUri.toString().length() );
         }
 
-        if (!requestedPath.startsWith("/"))
+        if ( !requestedPath.startsWith( "/" ) )
         {
             requestedPath = "/" + requestedPath;
         }
 
-        return baseUri.resolve("." + requestedPath);
+        return baseUri.resolve( "." + requestedPath );
     }
 
-    private static final Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
+    private static final Pattern PLACHOLDER_PATTERN = Pattern.compile( "\\{(\\d{1,10})\\}" );
 
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
     {
-        if (!str.contains( "{" ))
+        if ( !str.contains( "{" ) )
         {
             return str;
         }
-        Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
-        StringBuffer sb=new StringBuffer();
+        Matcher matcher = PLACHOLDER_PATTERN.matcher( str );
+        StringBuffer sb = new StringBuffer();
         String replacement = null;
-        while (matcher.find()) {
-            String id = matcher.group(1);
+        while ( matcher.find() )
+        {
+            String id = matcher.group( 1 );
             try
             {
-                replacement = locations.get(Integer.valueOf(id));
+                replacement = locations.get( Integer.valueOf( id ) );
             }
-            catch( NumberFormatException e )
+            catch ( NumberFormatException e )
             {
                 // The body contained a value that happened to match our regex, but is not a valid integer.
                 // Specifically, the digits inside the brackets must have been > 2^31-1.
                 // Simply ignore this, since we don't support non-integer placeholders, this is not a valid placeholder
             }
-            if (replacement!=null)
+            if ( replacement != null )
             {
-                matcher.appendReplacement(sb,replacement);
+                matcher.appendReplacement( sb, replacement );
             }
             else
             {
-                matcher.appendReplacement(sb,matcher.group());
+                matcher.appendReplacement( sb, matcher.group() );
             }
         }
-        matcher.appendTail(sb);
+        matcher.appendTail( sb );
         return sb.toString();
     }
 
@@ -155,13 +153,15 @@ public abstract class BatchOperations
         JsonToken token;
         RequestData requestData = RequestData.from( req );
 
-        while ((token = jp.nextToken()) != null)
+        while ( (token = jp.nextToken()) != null )
         {
-            if (token == JsonToken.START_OBJECT)
+            if ( token == JsonToken.START_OBJECT )
             {
-                String jobMethod="", jobPath="", jobBody="";
+                String jobMethod = "";
+                String jobPath = "";
+                String jobBody = "";
                 Integer jobId = null;
-                while ((token = jp.nextToken()) != JsonToken.END_OBJECT && token != null )
+                while ( (token = jp.nextToken()) != JsonToken.END_OBJECT && token != null )
                 {
                     String field = jp.getText();
                     jp.nextToken();
@@ -184,8 +184,7 @@ public abstract class BatchOperations
                     }
                 }
                 // Read one job description. Execute it.
-                performRequest( uriInfo, jobMethod, jobPath, jobBody,
-                        jobId, httpHeaders, locations, requestData );
+                performRequest( uriInfo, jobMethod, jobPath, jobBody, jobId, httpHeaders, locations, requestData );
             }
         }
     }
@@ -218,5 +217,6 @@ public abstract class BatchOperations
         invoke( method, path, body, id, targetUri, req, res );
     }
 
-    protected abstract void invoke( String method, String path, String body, Integer id, URI targetUri, InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException;
+    protected abstract void invoke( String method, String path, String body, Integer id, URI targetUri,
+            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException;
 }

@@ -68,9 +68,12 @@ class AsOneStartBranch implements TraversalBranch
         {
             List<TraversalBranch> result = new ArrayList<TraversalBranch>();
             for ( Node node : nodes )
+            {
                 result.add( new StartNodeTraversalBranch( context, this, node, initialState ) );
+            }
             return result.iterator();
-        } else
+        }
+        else
         {
             return new TraversalBranchIterator( nodes.iterator() );
         }
@@ -192,7 +195,7 @@ class AsOneStartBranch implements TraversalBranch
     {
         private final Iterator<Node> nodeIterator;
 
-        public TraversalBranchIterator( Iterator<Node> nodeIterator )
+        TraversalBranchIterator( Iterator<Node> nodeIterator )
         {
             this.nodeIterator = nodeIterator;
         }
@@ -206,8 +209,7 @@ class AsOneStartBranch implements TraversalBranch
         @Override
         public TraversalBranch next()
         {
-            return new StartNodeTraversalBranch( context, AsOneStartBranch.this, nodeIterator.next(),
-                    initialState);
+            return new StartNodeTraversalBranch( context, AsOneStartBranch.this, nodeIterator.next(), initialState );
         }
 
         @Override

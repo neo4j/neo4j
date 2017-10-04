@@ -1,3 +1,3 @@
 mknode
 cd -a 0
-set "foo" "bar"
+set "testshell_foo" "testshell_bar"

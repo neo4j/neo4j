@@ -32,6 +32,10 @@ import java.util.concurrent.TimeoutException;
  */
 public class Futures
 {
+    private Futures()
+    {
+    }
+
     /**
      * Combine multiple @{link Future} instances into a single Future
      *

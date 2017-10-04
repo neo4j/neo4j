@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
@@ -43,6 +45,7 @@ import org.neo4j.procedure.Procedure;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -51,9 +54,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
+@SuppressWarnings( "WeakerAccess" )
 public class ReflectiveProcedureTest
 {
     @Rule
@@ -66,7 +71,8 @@ public class ReflectiveProcedureTest
     public void setUp() throws Exception
     {
         components = new ComponentRegistry();
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT );
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
+                NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
     @Test
@@ -74,8 +80,9 @@ public class ReflectiveProcedureTest
     {
         // Given
         Log log = spy( Log.class );
-        components.register( Log.class, (ctx) -> log );
-        CallableProcedure procedure = procedureCompiler.compileProcedure( LoggingProcedure.class ).get( 0 );
+        components.register( Log.class, ctx -> log );
+        CallableProcedure procedure =
+                procedureCompiler.compileProcedure( LoggingProcedure.class, Optional.empty(), true ).get( 0 );
 
         // When
         procedure.apply( new BasicContext(), new Object[0] );
@@ -271,11 +278,12 @@ public class ReflectiveProcedureTest
     {
         // Given
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, log,
-                ProcedureAllowedConfig.DEFAULT );
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+                components, log, ProcedureConfig.DEFAULT );
 
         // When
-        List<CallableProcedure> procs = procedureCompiler.compileProcedure( ProcedureWithDeprecation.class );
+        List<CallableProcedure> procs =
+                procedureCompiler.compileProcedure( ProcedureWithDeprecation.class, Optional.empty(), true );
 
         // Then
         verify( log ).warn( "Use of @Procedure(deprecatedBy) without @Deprecated in badProc" );
@@ -298,6 +306,82 @@ public class ReflectiveProcedureTest
                 fail( "Unexpected procedure: " + name );
             }
         }
+    }
+
+    @Test
+    public void shouldLoadWhiteListedProcedure() throws Throwable
+    {
+        // Given
+        ProcedureConfig config = new ProcedureConfig(
+                Config.defaults( procedure_whitelist, "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
+
+        Log log = mock(Log.class);
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+                components, log, config );
+
+        // When
+        CallableProcedure proc =
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false ).get( 0 );
+        // When
+        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0] );
+
+        // Then
+        assertEquals( result.next()[0], "Bonnie" );
+    }
+
+    @Test
+    public void shouldNotLoadNoneWhiteListedProcedure() throws Throwable
+    {
+        // Given
+        ProcedureConfig config = new ProcedureConfig(
+                Config.defaults( procedure_whitelist, "org.neo4j.kernel.impl.proc.NOTlistCoolPeople" ) );
+
+        Log log = mock(Log.class);
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+                components, log, config );
+
+        // When
+        List<CallableProcedure> proc =
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
+        // Then
+        verify( log )
+                .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
+        assertThat( proc.isEmpty(), is(true) );
+    }
+
+    @Test
+    public void shouldIgnoreWhiteListingIfFullAccess() throws Throwable
+    {
+        // Given
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "empty" ) );
+        Log log = mock(Log.class);
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+                components, log, config );
+
+        // When
+        CallableProcedure proc =
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), true ).get( 0 );
+        // Then
+        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0] );
+        assertEquals( result.next()[0], "Bonnie" );
+    }
+
+    @Test
+    public void shouldNotLoadAnyProcedureIfConfigIsEmpty() throws Throwable
+    {
+        // Given
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "" ) );
+        Log log = mock(Log.class);
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+                components, log, config );
+
+        // When
+        List<CallableProcedure> proc =
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
+        // Then
+        verify( log )
+                .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
+        assertThat( proc.isEmpty(), is(true) );
     }
 
     public static class MyOutputRecord
@@ -400,9 +484,7 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
-            return Stream.of(
-                    new MyOutputRecord( "Bonnie" ),
-                    new MyOutputRecord( "Clyde" ) );
+            return Stream.of( new MyOutputRecord( "Bonnie" ), new MyOutputRecord( "Clyde" ) );
         }
     }
 
@@ -441,9 +523,10 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> throwsInStream( )
         {
-            return Stream.generate( () -> {
+            return Stream.generate( () ->
+            {
                 throw new IndexOutOfBoundsException();
-            });
+            } );
         }
     }
 
@@ -457,9 +540,7 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
-            return Stream.of(
-                    new MyOutputRecord( "Bonnie" ),
-                    new MyOutputRecord( "Clyde" ) );
+            return Stream.of( new MyOutputRecord( "Bonnie" ), new MyOutputRecord( "Clyde" ) );
         }
     }
 
@@ -478,13 +559,13 @@ public class ReflectiveProcedureTest
 
     public static class ProcedureWithOverriddenName
     {
-        @Procedure("org.mystuff.thisisActuallyTheName")
+        @Procedure( "org.mystuff.thisisActuallyTheName" )
         public void somethingThatShouldntMatter()
         {
 
         }
 
-        @Procedure("singleName")
+        @Procedure( "singleName" )
         public void blahDoesntMatterEither()
         {
 
@@ -493,7 +574,7 @@ public class ReflectiveProcedureTest
 
     public static class ProcedureWithSingleName
     {
-        @Procedure("singleName")
+        @Procedure( "singleName" )
         public void blahDoesntMatterEither()
         {
 
@@ -502,18 +583,18 @@ public class ReflectiveProcedureTest
 
     public static class ProcedureWithDeprecation
     {
-        @Procedure("newProc")
+        @Procedure( "newProc" )
         public void newProc()
         {
         }
 
         @Deprecated
-        @Procedure(value = "oldProc", deprecatedBy = "newProc")
+        @Procedure( value = "oldProc", deprecatedBy = "newProc" )
         public void oldProc()
         {
         }
 
-        @Procedure(value = "badProc", deprecatedBy = "newProc")
+        @Procedure( value = "badProc", deprecatedBy = "newProc" )
         public void badProc()
         {
         }
@@ -521,6 +602,6 @@ public class ReflectiveProcedureTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return procedureCompiler.compileProcedure( clazz );
+        return procedureCompiler.compileProcedure( clazz, Optional.empty(), true );
     }
 }

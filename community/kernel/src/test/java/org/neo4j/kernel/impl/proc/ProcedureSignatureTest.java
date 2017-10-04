@@ -45,7 +45,7 @@ public class ProcedureSignatureTest
         exception.expect( UnsupportedOperationException.class );
 
         // When
-        signature.inputSignature().add( new FieldSignature( "b", Neo4jTypes.NTAny ) );
+        signature.inputSignature().add( FieldSignature.inputField( "b", Neo4jTypes.NTAny ) );
     }
 
     @Test
@@ -55,7 +55,7 @@ public class ProcedureSignatureTest
         exception.expect( UnsupportedOperationException.class );
 
         // When
-        signature.outputSignature().add( new FieldSignature( "b", Neo4jTypes.NTAny ) );
+        signature.outputSignature().add( FieldSignature.outputField( "b", Neo4jTypes.NTAny ) );
     }
 
     @Test

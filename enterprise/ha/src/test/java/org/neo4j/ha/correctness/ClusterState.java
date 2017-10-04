@@ -45,7 +45,7 @@ class ClusterState
     private final Set<ClusterAction> pendingActions;
     private final List<ClusterInstance> instances = new ArrayList<>();
 
-    public ClusterState( List<ClusterInstance> instances, Set<ClusterAction> pendingActions )
+    ClusterState( List<ClusterInstance> instances, Set<ClusterAction> pendingActions )
     {
         this.pendingActions = pendingActions instanceof LinkedHashSet ? pendingActions
                 : new LinkedHashSet<>( pendingActions );
@@ -64,33 +64,33 @@ class ClusterState
     }
 
     /** All possible new cluster states that can be generated from this one. */
-    public Iterator<Pair<ClusterAction, ClusterState>> transitions()
+    public Iterator<Pair<ClusterAction,ClusterState>> transitions()
     {
         final Iterator<ClusterAction> actions = pendingActions.iterator();
         final Iterator<ClusterInstance> instancesWithTimeouts = filter( HAS_TIMEOUTS, instances ).iterator();
-        return new PrefetchingIterator<Pair<ClusterAction, ClusterState>>()
+        return new PrefetchingIterator<Pair<ClusterAction,ClusterState>>()
         {
             @Override
-            protected Pair<ClusterAction, ClusterState> fetchNextOrNull()
+            protected Pair<ClusterAction,ClusterState> fetchNextOrNull()
             {
                 try
                 {
-                    if(actions.hasNext())
+                    if ( actions.hasNext() )
                     {
                         ClusterAction action = actions.next();
                         return Pair.of( action, performAction( action ) );
                     }
-                    else if(instancesWithTimeouts.hasNext())
+                    else if ( instancesWithTimeouts.hasNext() )
                     {
                         ClusterInstance instance = instancesWithTimeouts.next();
-                        return performNextTimeoutFrom(instance);
+                        return performNextTimeoutFrom( instance );
                     }
                     else
                     {
                         return null;
                     }
                 }
-                catch(Exception e)
+                catch ( Exception e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -139,16 +139,16 @@ class ClusterState
             cloneInstances.add( clusterInstance.newCopy() );
         }
 
-        return new ClusterState(cloneInstances, newPendingActions);
+        return new ClusterState( cloneInstances, newPendingActions );
     }
 
     public ClusterInstance instance( String to ) throws URISyntaxException
     {
-        URI uri = new URI(to);
+        URI uri = new URI( to );
         for ( ClusterInstance clusterInstance : instances )
         {
             URI instanceUri = clusterInstance.uri();
-            if( instanceUri.getHost().equals( uri.getHost() ) && instanceUri.getPort() == uri.getPort())
+            if ( instanceUri.getHost().equals( uri.getHost() ) && instanceUri.getPort() == uri.getPort() )
             {
                 return clusterInstance;
             }
@@ -175,12 +175,7 @@ class ClusterState
         {
             return false;
         }
-        if ( !pendingActions.equals( that.pendingActions ) )
-        {
-            return false;
-        }
-
-        return true;
+        return pendingActions.equals( that.pendingActions );
     }
 
     @Override
@@ -194,19 +189,19 @@ class ClusterState
     @Override
     public String toString()
     {
-        return "Cluster["+ Iterables.toString( instances, ", " )+"]";
+        return "Cluster[" + Iterables.toString( instances, ", " ) + "]";
     }
 
     public boolean isDeadEnd()
     {
-        if(pendingActions.size() > 0)
+        if ( pendingActions.size() > 0 )
         {
             return false;
         }
 
         for ( ClusterInstance instance : instances )
         {
-            if(instance.hasPendingTimeouts())
+            if ( instance.hasPendingTimeouts() )
             {
                 return false;
             }

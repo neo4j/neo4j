@@ -4,13 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.8-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.neo4j</groupId>
   <artifactId>server-api</artifactId>
-  <version>3.1.8-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>Neo4j - Server API</name>
@@ -18,11 +17,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>server-api</short-name>
-    <version-package>server.impl.api</version-package>
-    <bundle.namespace>org.neo4j.server</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs-plugin.skip>true</docs-plugin.skip>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -52,6 +47,15 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -80,10 +84,5 @@ the relevant Commercial Agreement.
       <artifactId>commons-configuration</artifactId>
     </dependency>
 
-    <!-- Added directly to avoid version clash in commons-configuration. -->
-    <dependency>
-      <groupId>commons-digester</groupId>
-      <artifactId>commons-digester</artifactId>
-    </dependency>
   </dependencies>
 </project>

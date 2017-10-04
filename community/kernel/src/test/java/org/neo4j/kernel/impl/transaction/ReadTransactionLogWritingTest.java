@@ -86,16 +86,16 @@ public class ReadTransactionLogWritingTest
 
         // THEN
         long actualCount = countLogEntries();
-        assertEquals( "There were " + (actualCount-logEntriesWrittenBeforeReadOperations) +
-                " log entries written during one or more pure read transactions",
-                logEntriesWrittenBeforeReadOperations, actualCount );
+        assertEquals( "There were " + (actualCount - logEntriesWrittenBeforeReadOperations) +
+                        " log entries written during one or more pure read transactions", logEntriesWrittenBeforeReadOperations,
+                actualCount );
     }
 
     private long countLogEntries()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         FileSystemAbstraction fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
-        File storeDir = new File( db.getStoreDir() );
+        File storeDir = db.getStoreDir();
         try
         {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
@@ -117,7 +117,7 @@ public class ReadTransactionLogWritingTest
         char[] characters = new char[length];
         for ( int i = 0; i < length; i++ )
         {
-            characters[i] = (char) ('a' + i%10);
+            characters[i] = (char) ('a' + i % 10);
         }
         return new String( characters );
     }
@@ -147,7 +147,8 @@ public class ReadTransactionLogWritingTest
 
     private Runnable getNodesFromRelationship()
     {
-        return () -> {
+        return () ->
+        {
             relationship.getEndNode();
             relationship.getStartNode();
             relationship.getNodes();
@@ -157,7 +158,8 @@ public class ReadTransactionLogWritingTest
 
     private Runnable getById()
     {
-        return () -> {
+        return () ->
+        {
             dbr.getGraphDatabaseAPI().getNodeById( node.getId() );
             dbr.getGraphDatabaseAPI().getRelationshipById( relationship.getId() );
         };

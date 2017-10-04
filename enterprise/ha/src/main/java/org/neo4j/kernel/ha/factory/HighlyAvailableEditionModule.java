@@ -25,9 +25,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -48,13 +50,14 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.com.Server;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -65,6 +68,7 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
@@ -101,6 +105,7 @@ import org.neo4j.kernel.ha.cluster.modeswitch.LabelTokenCreatorSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.LockManagerSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.PropertyKeyCreatorSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.RelationshipTypeCreatorSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.StatementLocksFactorySwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.UpdatePullerSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
@@ -143,7 +148,9 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -154,12 +161,12 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -168,7 +175,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.time.Clocks;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -184,12 +191,6 @@ public class HighlyAvailableEditionModule
 {
     private HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
-
-    @Override
-    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
-    {
-        procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
-    }
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
@@ -208,9 +209,14 @@ public class HighlyAvailableEditionModule
         final LogService logging = platformModule.logging;
         final Monitors monitors = platformModule.monitors;
 
-        this.accessCapability = config.get( GraphDatabaseSettings.read_only )? new ReadOnly() : new CanWrite();
+        this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
+
+        watcherService = createFileSystemWatcherService( platformModule.fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherService );
+        life.add( watcherService );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
@@ -226,14 +232,14 @@ public class HighlyAvailableEditionModule
                 serverId.toIntegerIndex(),
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
-        final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time );
+        final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time ).toMillis();
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( dependencies,
                         config.get( HaSettings.pull_apply_batch_size ), idReuseSafeZone ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
-        transactionStartTimeout = config.get( HaSettings.state_switch_timeout );
+        transactionStartTimeout = config.get( HaSettings.state_switch_timeout ).toMillis();
 
         DelegateInvocationHandler<ClusterMemberEvents> clusterEventsDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( ClusterMemberEvents.class );
@@ -276,7 +282,8 @@ public class HighlyAvailableEditionModule
         ClusterClient clusterClient = clusterClientModule.clusterClient;
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging.getInternalLogProvider(),
-                item -> {
+                item ->
+                {
                     for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                     {
                         if ( member.getRoleUri().getScheme().equals( "ha" ) )
@@ -357,8 +364,12 @@ public class HighlyAvailableEditionModule
         paxosLife.add( (Lifecycle)clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory(
-                masterDelegateInvocationHandler, logging.getInternalLogProvider(), requestContextFactory, fs ) );
+        HaIdGeneratorFactory editionIdGeneratorFactory = (HaIdGeneratorFactory) createIdGeneratorFactory( masterDelegateInvocationHandler,
+                logging.getInternalLogProvider(), requestContextFactory, fs );
+        eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
+        createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         // TODO There's a cyclical dependency here that should be fixed
@@ -378,8 +389,8 @@ public class HighlyAvailableEditionModule
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
                 responseUnpacker,
                 invalidEpochHandler,
-                config.get( HaSettings.read_timeout ).intValue(),
-                config.get( HaSettings.lock_read_timeout ).intValue(),
+                (int) config.get( HaSettings.read_timeout ).toMillis(),
+                (int) config.get( HaSettings.lock_read_timeout ).toMillis(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue(),
                 logEntryReader );
@@ -394,7 +405,7 @@ public class HighlyAvailableEditionModule
 
         PullerFactory pullerFactory = new PullerFactory( requestContextFactory, master, lastUpdateTime,
                 logging.getInternalLogProvider(), serverId, invalidEpochHandler,
-                config.get( HaSettings.pull_interval ), platformModule.jobScheduler,
+                config.get( HaSettings.pull_interval ).toMillis(), platformModule.jobScheduler,
                 dependencies, platformModule.availabilityGuard, memberStateMachine, monitors );
 
         dependencies.satisfyDependency( paxosLife.add( pullerFactory.createObligationFulfiller( updatePullerProxy ) ) );
@@ -406,18 +417,19 @@ public class HighlyAvailableEditionModule
 
         SwitchToSlave switchToSlaveInstance = chooseSwitchToSlaveStrategy( platformModule, config, dependencies, logging, monitors,
                 masterDelegateInvocationHandler, requestContextFactory, clusterMemberAvailability,
-                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory );
+                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory, editionIdGeneratorFactory );
 
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
-                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, idGeneratorFactory,
+                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, this.idGeneratorFactory,
                         platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
                         platformModule.dependencies.resolveDependency( CheckPointer.class ),
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                         platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
                         platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
                         platformModule.dependencies.resolveDependency( PageCache.class ),
+                        platformModule.storeCopyCheckPointMutex,
                         logging.getInternalLogProvider() );
 
         final Factory<ConversationSPI> conversationSPIFactory =
@@ -430,7 +442,8 @@ public class HighlyAvailableEditionModule
                 conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
 
         BiFunction<Master, ConversationManager, MasterServer> masterServerFactory =
-                ( master1, conversationManager ) -> {
+                ( master1, conversationManager ) ->
+                {
                     TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
                             platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                             platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
@@ -443,7 +456,7 @@ public class HighlyAvailableEditionModule
                             logEntryReader.get() );
                 };
 
-        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, (HaIdGeneratorFactory) idGeneratorFactory,
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, editionIdGeneratorFactory,
                 config, dependencies.provideDependency( SlaveFactory.class ),
                 conversationManagerFactory,
                 masterFactory,
@@ -474,12 +487,14 @@ public class HighlyAvailableEditionModule
         platformModule.diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine,
                 clusterClient ) );
 
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
+
         // Create HA services
         lockManager = dependencies.satisfyDependency(
                 createLockManager( componentSwitcherContainer, config, masterDelegateInvocationHandler,
-                        requestContextFactory, platformModule.availabilityGuard, logging ) );
+                        requestContextFactory, platformModule.availabilityGuard, platformModule.clock, logging ) );
 
-        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+        statementLocksFactory = createStatementLocksFactory( componentSwitcherContainer, config, logging );
 
         propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, componentSwitcherContainer,
@@ -501,7 +516,8 @@ public class HighlyAvailableEditionModule
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
-        schemaWriteGuard = () -> {
+        schemaWriteGuard = () ->
+        {
             if ( !memberStateMachine.isMaster() )
             {
                 throw new InvalidTransactionTypeKernelException(
@@ -511,13 +527,11 @@ public class HighlyAvailableEditionModule
             }
         };
 
-        config.augment( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.FALSE ) );
+        config.augment( GraphDatabaseSettings.allow_upgrade, Settings.FALSE );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
-
-        eligibleForIdReuse = new HaIdReuseEligibility( members, Clocks.systemClock(), idReuseSafeZone );
 
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 
@@ -532,18 +546,51 @@ public class HighlyAvailableEditionModule
         dependencies.satisfyDependency( createSessionTracker() );
     }
 
+    @Override
+    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
+    }
+
+    private StatementLocksFactory createStatementLocksFactory( ComponentSwitcherContainer componentSwitcherContainer,
+            Config config, LogService logging )
+    {
+        StatementLocksFactory configuredStatementLocks = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+
+        DelegateInvocationHandler<StatementLocksFactory> locksFactoryDelegate =
+                new DelegateInvocationHandler<>( StatementLocksFactory.class );
+        StatementLocksFactory locksFactory =
+                (StatementLocksFactory) newProxyInstance( StatementLocksFactory.class.getClassLoader(),
+                        new Class[]{StatementLocksFactory.class}, locksFactoryDelegate );
+
+        StatementLocksFactorySwitcher
+                locksSwitcher = new StatementLocksFactorySwitcher( locksFactoryDelegate, configuredStatementLocks );
+        componentSwitcherContainer.add( locksSwitcher );
+
+        return locksFactory;
+    }
+
+    static Predicate<String> fileWatcherFileNameFilter()
+    {
+        return Predicates.any(
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
+                filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+        );
+    }
+
     private SwitchToSlave chooseSwitchToSlaveStrategy( PlatformModule platformModule, Config config, Dependencies
             dependencies, LogService logging, Monitors monitors, DelegateInvocationHandler<Master>
             masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, ClusterMemberAvailability
             clusterMemberAvailability, MasterClientResolver masterClientResolver, UpdatePuller updatePullerProxy,
-                                                       PullerFactory pullerFactory,
-                                                       Function<Slave, SlaveServer> slaveServerFactory )
+            PullerFactory pullerFactory, Function<Slave, SlaveServer> slaveServerFactory, HaIdGeneratorFactory idGeneratorFactory )
     {
         switch ( config.get( HaSettings.branched_data_copying_strategy ) )
         {
             case branch_then_copy:
                 return new SwitchToSlaveBranchThenCopy( platformModule.storeDir, logging,
-                        platformModule.fileSystem, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
+                        platformModule.fileSystem, config, dependencies, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
                         platformModule.kernelExtensions.listFactories(), masterClientResolver,
@@ -555,7 +602,7 @@ public class HighlyAvailableEditionModule
                         monitors, platformModule.transactionMonitor );
             case copy_then_branch:
                 return new SwitchToSlaveCopyThenBranch( platformModule.storeDir, logging,
-                        platformModule.fileSystem, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
+                        platformModule.fileSystem, config, dependencies, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
                         platformModule.kernelExtensions.listFactories(), masterClientResolver,
@@ -611,8 +658,7 @@ public class HighlyAvailableEditionModule
                 TransactionCommitProcess.class );
 
         CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                master, commitProcessDelegate, requestContextFactory, lockManager, monitors, dependencies,
-                config.get( GraphDatabaseSettings.release_schema_lock_while_building_constraint ) );
+                master, commitProcessDelegate, requestContextFactory, monitors, dependencies );
         componentSwitcherContainer.add( commitProcessSwitcher );
 
         return new HighlyAvailableCommitProcessFactory( commitProcessDelegate );
@@ -624,30 +670,26 @@ public class HighlyAvailableEditionModule
             RequestContextFactory requestContextFactory,
             FileSystemAbstraction fs )
     {
-        idGeneratorFactory = new HaIdGeneratorFactory(
-                masterDelegateInvocationHandler, logging, requestContextFactory, fs, idTypeConfigurationProvider );
-
+        HaIdGeneratorFactory idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
+                requestContextFactory, fs, idTypeConfigurationProvider );
         /*
          * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
          * can be started (if required). In any case, the rest of the database is in pending state, so nothing will
          * happen until events start arriving and that will set us to the proper state anyway.
          */
-        ((HaIdGeneratorFactory) idGeneratorFactory).switchToMaster();
-
+        idGeneratorFactory.switchToMaster();
         return idGeneratorFactory;
     }
 
-    private Locks createLockManager( ComponentSwitcherContainer componentSwitcherContainer,
-            Config config,
+    private Locks createLockManager( ComponentSwitcherContainer componentSwitcherContainer, Config config,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory,
-            AvailabilityGuard availabilityGuard, LogService logService )
+            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard, Clock clock, LogService logService )
     {
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(), new Class[]{Locks.class},
                 lockManagerDelegate );
 
-        Factory<Locks> locksFactory = () -> CommunityEditionModule.createLockManager( config, logService );
+        Factory<Locks> locksFactory = () -> CommunityEditionModule.createLockManager( config, clock, logService );
 
         LockManagerSwitcher lockManagerModeSwitcher = new LockManagerSwitcher(
                 lockManagerDelegate, masterDelegateInvocationHandler, requestContextFactory, availabilityGuard,
@@ -841,7 +883,7 @@ public class HighlyAvailableEditionModule
             @Override
             public long getOldChannelThreshold()
             {
-                return config.get( HaSettings.lock_read_timeout );
+                return config.get( HaSettings.lock_read_timeout ).toMillis();
             }
 
             @Override

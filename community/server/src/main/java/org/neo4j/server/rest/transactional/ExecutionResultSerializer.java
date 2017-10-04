@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -26,9 +29,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
@@ -58,7 +58,8 @@ import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
  */
 public class ExecutionResultSerializer
 {
-    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider, TransitionalPeriodTransactionMessContainer container )
+    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider,
+            TransitionalPeriodTransactionMessContainer container )
     {
         this.baseUri = baseUri;
         this.log = logProvider.getLog( getClass() );
@@ -133,7 +134,10 @@ public class ExecutionResultSerializer
     public void notifications( Iterable<Notification> notifications ) throws IOException
     {
         //don't add anything if notifications are empty
-        if ( !notifications.iterator().hasNext() ) return;
+        if ( !notifications.iterator().hasNext() )
+        {
+            return;
+        }
 
         try
         {
@@ -175,7 +179,10 @@ public class ExecutionResultSerializer
     private void writePosition( InputPosition position ) throws IOException
     {
         //do not add position if empty
-        if ( position == InputPosition.empty ) return;
+        if ( position == InputPosition.empty )
+        {
+            return;
+        }
 
         out.writeObjectFieldStart( "position" );
         try
@@ -245,7 +252,7 @@ public class ExecutionResultSerializer
         out.writeArrayFieldStart( "children" );
         try
         {
-            for (ExecutionPlanDescription child : children )
+            for ( ExecutionPlanDescription child : children )
             {
                 out.writeStartObject();
                 try
@@ -287,7 +294,8 @@ public class ExecutionResultSerializer
     }
 
     /**
-     * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.graphdb.Result, boolean, ResultDataContent...)}  statementResults}
+     * Will get called once if any errors occurred,
+     * after {@link #statementResult(org.neo4j.graphdb.Result, boolean, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
      * @param errors the errors to write
@@ -358,7 +366,7 @@ public class ExecutionResultSerializer
             ensureDocumentOpen();
             if ( currentState != State.ERRORS_WRITTEN )
             {
-                errors( Collections.<Neo4jError>emptyList() );
+                errors( Collections.emptyList() );
             }
             out.writeEndObject();
             out.flush();
@@ -435,11 +443,15 @@ public class ExecutionResultSerializer
         out.writeArrayFieldStart( "data" );
         try
         {
-            data.accept( row -> {
+            data.accept( row ->
+            {
                 out.writeStartObject();
                 try
                 {
-                    writer.write( out, columns, row, TransactionStateChecker.create( container ) );
+                    try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+                    {
+                        writer.write( out, columns, row, txStateChecker );
+                    }
                 }
                 finally
                 {
@@ -472,7 +484,7 @@ public class ExecutionResultSerializer
 
     private IOException loggedIOException( IOException exception )
     {
-        if(Exceptions.contains(exception, "Broken pipe", IOException.class ))
+        if ( Exceptions.contains( exception, "Broken pipe", IOException.class ) )
         {
             log.error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." );
         }

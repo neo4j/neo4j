@@ -20,202 +20,132 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.IntSupplier;
+import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.cursor.NodeItemHelper;
-import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.DegreeItem;
-import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.storable.Value;
+
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 /**
  * Stub cursors to be used for testing.
  */
 public class StubCursors
 {
-    public static Cursor<NodeItem> asNodeCursor( final long nodeId )
+    private StubCursors()
     {
-        return asNodeCursor( nodeId, Cursors.<PropertyItem>empty(), Cursors.<LabelItem>empty() );
     }
 
-    public static Cursor<NodeItem> asNodeCursor( final long... nodeIds)
+    public static Cursor<NodeItem> asNodeCursor( long... nodeIds )
     {
         NodeItem[] nodeItems = new NodeItem[nodeIds.length];
-        for (int i = 0; i < nodeIds.length; i++)
+        for ( int i = 0; i < nodeIds.length; i++ )
         {
-            nodeItems[i] = asNode( nodeIds[i] );
+            nodeItems[i] = new StubNodeItem( nodeIds[i], -1, emptySet() );
         }
-        return Cursors.cursor( nodeItems);
+        return cursor( nodeItems );
     }
 
-    public static Cursor<NodeItem> asNodeCursor( final long nodeId,
-            final Cursor<PropertyItem> propertyCursor,
-            final Cursor<LabelItem> labelCursor )
+    public static Cursor<NodeItem> asNodeCursor( long nodeId )
     {
-        return Cursors.<NodeItem>cursor( asNode( nodeId, propertyCursor, labelCursor ) );
+        return asNodeCursor( nodeId, -1 );
     }
 
-    public static NodeItem asNode( final long nodeId )
+    public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId )
     {
-        return asNode( nodeId, Cursors.<PropertyItem>empty(), Cursors.<LabelItem>empty() );
+        return asNodeCursor( nodeId, propertyId, emptySet() );
     }
 
-    public static NodeItem asNode( final long nodeId,
-            final Cursor<PropertyItem> propertyCursor,
-            final Cursor<LabelItem> labelCursor )
+    public static Cursor<NodeItem> asNodeCursor( long nodeId, PrimitiveIntSet labels )
     {
-        return new NodeItemHelper()
+        return cursor( new StubNodeItem( nodeId, -1, labels ) );
+    }
+
+    public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId, PrimitiveIntSet labels )
+    {
+        return cursor( new StubNodeItem( nodeId, propertyId, labels ) );
+    }
+
+    private static class StubNodeItem implements NodeItem
+    {
+        private final long nodeId;
+        private final long propertyId;
+        private final PrimitiveIntSet labels;
+
+        private StubNodeItem( long nodeId, long propertyId, PrimitiveIntSet labels )
+        {
+            this.nodeId = nodeId;
+            this.propertyId = propertyId;
+            this.labels = labels;
+        }
+
+        @Override
+        public long id()
+        {
+            return nodeId;
+        }
+
+        @Override
+        public boolean hasLabel( int labelId )
+        {
+            return labels.contains( labelId );
+        }
+
+        @Override
+        public long nextGroupId()
+        {
+            throw new UnsupportedOperationException( "not supported" );
+        }
+
+        @Override
+        public long nextRelationshipId()
+        {
+            throw new UnsupportedOperationException( "not supported" );
+        }
+
+        @Override
+        public long nextPropertyId()
+        {
+            return propertyId;
+        }
+
+        @Override
+        public Lock lock()
+        {
+            return NO_LOCK;
+        }
+
+        @Override
+        public PrimitiveIntSet labels()
+        {
+            return labels;
+        }
+
+        @Override
+        public boolean isDense()
+        {
+            throw new UnsupportedOperationException(  );
+        }
+    }
+
+    public static RelationshipItem relationship( long id, int type, long start, long end )
+    {
+        return new RelationshipItem()
         {
             @Override
             public long id()
             {
-                return nodeId;
-            }
-
-            @Override
-            public Cursor<LabelItem> label( final int labelId )
-            {
-                return new Cursor<LabelItem>()
-                {
-                    Cursor<LabelItem> cursor = labels();
-
-                    @Override
-                    public boolean next()
-                    {
-                        while ( cursor.next() )
-                        {
-                            if ( cursor.get().getAsInt() == labelId )
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        cursor.close();
-                    }
-
-                    @Override
-                    public LabelItem get()
-                    {
-                        return cursor.get();
-                    }
-                };
-            }
-
-            @Override
-            public Cursor<LabelItem> labels()
-            {
-                return labelCursor;
-            }
-
-            @Override
-            public Cursor<PropertyItem> property( final int propertyKeyId )
-            {
-                return new Cursor<PropertyItem>()
-                {
-                    Cursor<PropertyItem> cursor = properties();
-
-                    @Override
-                    public boolean next()
-                    {
-                        while ( cursor.next() )
-                        {
-                            if ( cursor.get().propertyKeyId() == propertyKeyId )
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        cursor.close();
-                    }
-
-                    @Override
-                    public PropertyItem get()
-                    {
-                        return cursor.get();
-                    }
-                };
-            }
-
-            @Override
-            public Cursor<PropertyItem> properties()
-            {
-                return propertyCursor;
-            }
-
-            @Override
-            public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Cursor<RelationshipItem> relationships( Direction direction )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Cursor<IntSupplier> relationshipTypes()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public int degree( Direction direction )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public int degree( Direction direction, int relType )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean isDense()
-            {
-                throw new UnsupportedOperationException(  );
-            }
-
-            @Override
-            public Cursor<DegreeItem> degrees()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    public static RelationshipItem asRelationship( final long relId, final int type,
-            final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
-    {
-        return new RelationshipItemHelper()
-        {
-            @Override
-            public long id()
-            {
-                return relId;
+                return id;
             }
 
             @Override
@@ -227,68 +157,47 @@ public class StubCursors
             @Override
             public long startNode()
             {
-                return startNode;
+                return start;
             }
 
             @Override
             public long endNode()
             {
-                return endNode;
+                return end;
             }
 
             @Override
             public long otherNode( long nodeId )
             {
-                return startNode == nodeId ? endNode : startNode;
-            }
-
-            @Override
-            public Cursor<PropertyItem> property( final int propertyKeyId )
-            {
-                return new Cursor<PropertyItem>()
+                if ( nodeId == start )
                 {
-                    Cursor<PropertyItem> cursor = properties();
-
-                    @Override
-                    public boolean next()
-                    {
-                        while ( cursor.next() )
-                        {
-                            if ( cursor.get().propertyKeyId() == propertyKeyId )
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        cursor.close();
-                    }
-
-                    @Override
-                    public PropertyItem get()
-                    {
-                        return cursor.get();
-                    }
-                };
+                    return end;
+                }
+                else if ( nodeId == end )
+                {
+                    return start;
+                }
+                throw new IllegalStateException();
             }
 
             @Override
-            public Cursor<PropertyItem> properties()
+            public long nextPropertyId()
             {
-                return propertyCursor;
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Lock lock()
+            {
+                throw new UnsupportedOperationException();
             }
         };
     }
 
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
-            final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
+            final long startNode, final long endNode, long propertyId )
     {
-        return Cursors.<RelationshipItem>cursor( new RelationshipItemHelper()
+        return cursor( new RelationshipItem()
         {
             @Override
             public long id()
@@ -321,77 +230,92 @@ public class StubCursors
             }
 
             @Override
-            public Cursor<PropertyItem> properties()
+            public long nextPropertyId()
             {
-                return propertyCursor;
+                return propertyId;
             }
 
             @Override
-            public Cursor<PropertyItem> property( final int propertyKeyId )
+            public Lock lock()
             {
-                return new Cursor<PropertyItem>()
-                {
-                    Cursor<PropertyItem> cursor = properties();
-
-                    @Override
-                    public boolean next()
-                    {
-                        while ( cursor.next() )
-                        {
-                            if ( cursor.get().propertyKeyId() == propertyKeyId )
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        cursor.close();
-                    }
-
-                    @Override
-                    public PropertyItem get()
-                    {
-                        return cursor.get();
-                    }
-                };
+                return NO_LOCK;
             }
         } );
     }
 
-    public static Cursor<LabelItem> asLabelCursor( final Integer... labels )
+    public static PrimitiveIntSet labels( final int... labels )
     {
-        return asLabelCursor( Arrays.asList( labels ) );
+        return PrimitiveIntCollections.asSet( labels );
     }
 
-    public static Cursor<LabelItem> asLabelCursor( final List<Integer> labels )
+    public static Cursor<PropertyItem> asPropertyCursor( final PropertyKeyValue... properties )
     {
-        return Cursors.cursor( Iterables.map( integer -> {
-            return (LabelItem) () -> integer;
-        }, labels ) );
+        return cursor( map( StubCursors::asPropertyItem, Arrays.asList( properties ) ) );
     }
 
-    public static Cursor<PropertyItem> asPropertyCursor( final DefinedProperty... properties )
+    private static PropertyItem asPropertyItem( final PropertyKeyValue property )
     {
-        return Cursors.cursor( Iterables.map( (Function<DefinedProperty,PropertyItem>) property -> {
-            return new PropertyItem()
+        return new PropertyItem()
+        {
+            @Override
+            public int propertyKeyId()
             {
-                @Override
-                public int propertyKeyId()
+                return property.propertyKeyId();
+            }
+
+            @Override
+            public Value value()
+            {
+                return property.value();
+            }
+        };
+    }
+
+    @SafeVarargs
+    public static <T> Cursor<T> cursor( final T... items )
+    {
+        return cursor( Iterables.asIterable( items ) );
+    }
+
+    public static <T> Cursor<T> cursor( final Iterable<T> items )
+    {
+        return new Cursor<T>()
+        {
+            Iterator<T> iterator = items.iterator();
+
+            T current;
+
+            @Override
+            public boolean next()
+            {
+                if ( iterator.hasNext() )
                 {
-                    return property.propertyKeyId();
+                    current = iterator.next();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                iterator = items.iterator();
+                current = null;
+            }
+
+            @Override
+            public T get()
+            {
+                if ( current == null )
+                {
+                    throw new IllegalStateException();
                 }
 
-                @Override
-                public Object value()
-                {
-                    return property.value();
-                }
-            };
-        }, Arrays.asList( properties ) ) );
+                return current;
+            }
+        };
     }
 }

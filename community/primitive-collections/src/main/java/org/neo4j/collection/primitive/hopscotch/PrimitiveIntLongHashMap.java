@@ -122,7 +122,7 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
         private PrimitiveIntLongHashMap other;
         private boolean equal = true;
 
-        public IntLongEquality( PrimitiveIntLongHashMap that )
+        IntLongEquality( PrimitiveIntLongHashMap that )
         {
             this.other = that;
         }
@@ -155,7 +155,7 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
         @Override
         public boolean visited( int key, long value ) throws RuntimeException
         {
-            hash += DEFAULT_HASHING.hash( key + DEFAULT_HASHING.hash( value ) );
+            hash += DEFAULT_HASHING.hashSingleValueToInt( key + DEFAULT_HASHING.hashSingleValueToInt( value ) );
             return false;
         }
 
@@ -163,6 +163,21 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
         public int hashCode()
         {
             return hash;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            HashCodeComputer that = (HashCodeComputer) o;
+            return hash == that.hash;
         }
     }
 }

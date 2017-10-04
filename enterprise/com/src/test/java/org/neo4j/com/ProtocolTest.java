@@ -47,8 +47,11 @@ public class ProtocolTest
         // GIVEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( justOneNode() );
         byte[] additionalHeader = "extra".getBytes();
-        int masterId = 1, authorId = 2;
-        long timeStarted = 12345, lastTxWhenStarted = 12, timeCommitted = timeStarted+10;
+        int masterId = 1;
+        int authorId = 2;
+        long timeStarted = 12345;
+        long lastTxWhenStarted = 12;
+        long timeCommitted = timeStarted + 10;
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, lastTxWhenStarted, timeCommitted, -1 );
         Protocol.TransactionSerializer serializer = new Protocol.TransactionSerializer( transaction );
         ChannelBuffer buffer = new ChannelBufferWrapper( new InMemoryClosableChannel() );
@@ -74,6 +77,6 @@ public class ProtocolTest
     {
         NodeRecord node = new NodeRecord( 0 );
         node.setInUse( true );
-        return Arrays.<StorageCommand>asList( new NodeCommand( new NodeRecord( node.getId() ), node ) );
+        return Arrays.asList( new NodeCommand( new NodeRecord( node.getId() ), node ) );
     }
 }

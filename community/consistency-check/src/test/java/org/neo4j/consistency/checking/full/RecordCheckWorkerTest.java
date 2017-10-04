@@ -63,26 +63,22 @@ public class RecordCheckWorkerTest
             ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>( 10 );
             race.addContestant( workers[id] = new RecordCheckWorker<>( id, coordination, queue, processor ) );
         }
-        race.addContestant( new Runnable()
+        race.addContestant( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                long end = currentTimeMillis() + SECONDS.toMillis( 100 );
+                while ( currentTimeMillis() < end && expected.get() < threads )
                 {
-                    long end = currentTimeMillis() + SECONDS.toMillis( 100 );
-                    while ( currentTimeMillis() < end && expected.get() < threads )
-                    {
-                        parkNanos( MILLISECONDS.toNanos( 10 ) );
-                    }
-                    assertEquals( threads, expected.get() );
+                    parkNanos( MILLISECONDS.toNanos( 10 ) );
                 }
-                finally
+                assertEquals( threads, expected.get() );
+            }
+            finally
+            {
+                for ( RecordCheckWorker<Integer> worker : workers )
                 {
-                    for ( RecordCheckWorker<Integer> worker : workers )
-                    {
-                        worker.done();
-                    }
+                    worker.done();
                 }
             }
         } );

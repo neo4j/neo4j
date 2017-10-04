@@ -90,17 +90,7 @@ public class LogPosition implements Comparable<LogPosition>
         }
 
         LogPosition that = (LogPosition) o;
-
-        if ( byteOffset != that.byteOffset )
-        {
-            return false;
-        }
-        if ( logVersion != that.logVersion )
-        {
-            return false;
-        }
-
-        return true;
+        return byteOffset == that.byteOffset && logVersion == that.logVersion;
     }
 
     @Override

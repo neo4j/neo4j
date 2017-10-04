@@ -55,5 +55,5 @@ public enum BranchOrderingPolicies implements BranchOrderingPolicy
         {
             return new PostorderBreadthFirstSelector( startSource, expander );
         }
-    };
+    }
 }

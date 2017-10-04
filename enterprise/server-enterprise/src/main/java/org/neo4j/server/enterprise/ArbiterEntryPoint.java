@@ -20,23 +20,37 @@
 package org.neo4j.server.enterprise;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.neo4j.server.BlockingBootstrapper;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerCommandLineArgs;
 
+import static org.neo4j.commandline.Util.neo4jVersion;
+
 public class ArbiterEntryPoint
 {
     private static Bootstrapper bootstrapper;
 
+    private ArbiterEntryPoint()
+    {
+    }
+
     public static void main( String[] argv ) throws IOException
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
-        int status = new ArbiterBootstrapper().start( args.homeDir(), args.configFile() );
-        if ( status != 0 )
+        if ( args.version() )
         {
-            System.exit( status );
+            System.out.println( "neo4j " + neo4jVersion() );
+        }
+        else
+        {
+            int status = new ArbiterBootstrapper().start( args.homeDir(), args.configFile(), Collections.emptyMap() );
+            if ( status != 0 )
+            {
+                System.exit( status );
+            }
         }
     }
 
@@ -46,7 +60,7 @@ public class ArbiterEntryPoint
         System.exit( ServerBootstrapper.start( bootstrapper, args ) );
     }
 
-    public static void stop( @SuppressWarnings("UnusedParameters") String[] args )
+    public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
     {
         if ( bootstrapper != null )
         {

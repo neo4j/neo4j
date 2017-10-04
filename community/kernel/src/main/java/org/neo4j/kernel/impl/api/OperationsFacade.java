@@ -27,27 +27,22 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.ExecutionStatisticsOperations;
+import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -55,60 +50,76 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
+import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
-        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
-        ProcedureCallOperations
+        implements ReadOperations, DataWriteOperations, TokenWriteOperations, SchemaWriteOperations,
+        QueryRegistryOperations, ProcedureCallOperations, ExecutionStatisticsOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -116,15 +127,11 @@ public class OperationsFacade
     private StatementOperationParts operations;
 
     OperationsFacade( KernelTransaction tx, KernelStatement statement,
-                      Procedures procedures )
+                      Procedures procedures, StatementOperationParts operationParts )
     {
         this.tx = tx;
         this.statement = statement;
         this.procedures = procedures;
-    }
-
-    public void initialize( StatementOperationParts operationParts )
-    {
         this.operations = operationParts;
     }
 
@@ -149,14 +156,14 @@ public class OperationsFacade
         return operations.entityWriteOperations();
     }
 
-    final LegacyIndexWriteOperations legacyIndexWrite()
+    final ExplicitIndexWriteOperations explicitIndexWrite()
     {
-        return operations.legacyIndexWriteOperations();
+        return operations.explicitIndexWriteOperations();
     }
 
-    final LegacyIndexReadOperations legacyIndexRead()
+    final ExplicitIndexReadOperations explicitIndexRead()
     {
-        return operations.legacyIndexReadOperations();
+        return operations.explicitIndexReadOperations();
     }
 
     final SchemaReadOperations schemaRead()
@@ -217,77 +224,19 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
+    public PrimitiveLongIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
-        return dataRead().nodesGetFromIndexSeek( statement, index, value );
+        return dataRead().indexQuery( statement, index, predicates );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( IndexDescriptor index,
-            Number lower,
-            boolean includeLower,
-            Number upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException
+    public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( IndexDescriptor index,
-            String lower,
-            boolean includeLower,
-            String upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( IndexDescriptor index, String term )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexContainsScan( statement, index, term );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( IndexDescriptor index, String suffix )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexEndsWithScan( statement, index, suffix );
-    }
-
-    @Override
-    public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeGetFromUniqueIndexSeek( statement, index, value );
+        return dataRead().nodeGetFromUniqueIndexSeek( statement, index, predicates );
     }
 
     @Override
@@ -295,16 +244,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return dataRead().nodeExists( statement, nodeId );
-    }
-
-    @Override
-    public boolean relationshipExists( long relId )
-    {
-        statement.assertOpen();
-        try ( Cursor<RelationshipItem> cursor = relationshipCursor( relId ) )
-        {
-            return cursor.next();
-        }
     }
 
     @Override
@@ -329,7 +268,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getLabels();
+            return node.get().labels().iterator();
         }
     }
 
@@ -343,32 +282,33 @@ public class OperationsFacade
         }
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().hasProperty( propertyKeyId );
+            return dataRead().nodeHasProperty( statement, node.get(), propertyKeyId );
         }
     }
 
     @Override
-    public Object nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return null;
+            return Values.NO_VALUE;
         }
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getProperty( propertyKeyId );
+            return dataRead().nodeGetProperty( statement, node.get(), propertyKeyId );
         }
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes )
+    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
             throws EntityNotFoundException
     {
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction( direction ), relTypes );
+            return new CursorRelationshipIterator( dataRead()
+                    .nodeGetRelationships( statement, node.get(), direction( direction ), deduplicate( relTypes ) ) );
         }
     }
 
@@ -388,10 +328,10 @@ public class OperationsFacade
             throws EntityNotFoundException
     {
         statement.assertOpen();
-
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction( direction ) );
+            return new CursorRelationshipIterator(
+                    dataRead().nodeGetRelationships( statement, node.get(), direction( direction ) ) );
         }
     }
 
@@ -401,7 +341,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().degree( direction( direction ), relType );
+            return dataRead().degree( statement, node.get(), direction( direction ), relType );
         }
     }
 
@@ -411,7 +351,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().degree( direction( direction ) );
+            return dataRead().degree( statement, node.get(), direction( direction ) );
         }
     }
 
@@ -431,7 +371,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationshipTypes();
+            return dataRead().relationshipTypes( statement,node.get() ).iterator();
         }
     }
 
@@ -445,21 +385,21 @@ public class OperationsFacade
         }
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            return relationship.get().hasProperty( propertyKeyId );
+            return dataRead().relationshipHasProperty( statement, relationship.get(), propertyKeyId );
         }
     }
 
     @Override
-    public Object relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    public Value relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return null;
+            return Values.NO_VALUE;
         }
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            return relationship.get().getProperty( propertyKeyId );
+            return dataRead().relationshipGetProperty( statement, relationship.get(), propertyKeyId );
         }
     }
 
@@ -475,7 +415,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Object graphGetProperty( int propertyKeyId )
+    public Value graphGetProperty( int propertyKeyId )
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
@@ -491,8 +431,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            PrimitiveIntCollection propertyKeys = node.get().getPropertyKeys();
-            return propertyKeys.iterator();
+            return dataRead().nodeGetPropertyKeys( statement, node.get() ).iterator();
         }
     }
 
@@ -502,8 +441,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            PrimitiveIntCollection propertyKeys = relationship.get().getPropertyKeys();
-            return propertyKeys.iterator();
+            return dataRead().relationshipGetPropertyKeys( statement, relationship.get() ).iterator();
         }
     }
 
@@ -551,6 +489,13 @@ public class OperationsFacade
     }
 
     @Override
+    public Optional<UserFunctionSignature> aggregationFunctionGet( QualifiedName name )
+    {
+        statement.assertOpen();
+        return procedures.aggregationFunction( name );
+    }
+
+    @Override
     public Set<UserFunctionSignature> functionsGetAll()
     {
         statement.assertOpen();
@@ -563,119 +508,59 @@ public class OperationsFacade
         statement.assertOpen();
         return procedures.getAllProcedures();
     }
-    // </DataRead>
-
-    // <DataReadCursors>
-    @Override
-    public Cursor<NodeItem> nodeCursor( long nodeId )
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursor( statement, nodeId );
-    }
 
     @Override
-    public Cursor<RelationshipItem> relationshipCursor( long relId )
-    {
-        statement.assertOpen();
-        return dataRead().relationshipCursor( statement, relId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetAll()
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursorGetAll()
-    {
-        statement.assertOpen();
-        return dataRead().relationshipCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( int labelId )
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetForLabel( statement, labelId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexScan( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromUniqueIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
         return dataRead().nodesCountIndexed( statement, index, nodeId, value );
+    }
+    // </DataRead>
+
+    // <DataReadCursors>
+    @Override
+    public Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorById( statement, nodeId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().relationshipCursorById( statement, relId );
+    }
+
+    @Override
+    public Cursor<PropertyItem> nodeGetProperties( NodeItem node )
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetProperties( statement, node );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship )
+    {
+        statement.assertOpen();
+        return dataRead().relationshipGetProperties( statement, relationship );
     }
 
     // </DataReadCursors>
 
     // <SchemaRead>
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        IndexDescriptor descriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
-        if ( descriptor == null )
+        IndexDescriptor indexDescriptor = schemaRead().indexGetForSchema( statement, descriptor );
+        if ( indexDescriptor == null )
         {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, descriptor );
         }
-        return descriptor;
+        return indexDescriptor;
     }
 
     @Override
@@ -693,55 +578,10 @@ public class OperationsFacade
     }
 
     @Override
-    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
-            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
-
-    {
-        IndexDescriptor result = null;
-        Iterator<IndexDescriptor> indexes = uniqueIndexesGetForLabel( labelId );
-        while ( indexes.hasNext() )
-        {
-            IndexDescriptor index = indexes.next();
-            if ( index.getPropertyKeyId() == propertyKeyId )
-            {
-                if ( null == result )
-                {
-                    result = index;
-                }
-                else
-                {
-                    throw new DuplicateIndexSchemaRuleException( labelId, propertyKeyId, true );
-                }
-            }
-        }
-
-        if ( null == result )
-        {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId, true );
-        }
-
-        return result;
-    }
-
-    @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
-    {
-        statement.assertOpen();
-        return schemaRead().uniqueIndexesGetForLabel( statement, labelId );
-    }
-
-    @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
-    }
-
-    @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
-    {
-        statement.assertOpen();
-        return schemaRead().uniqueIndexesGetAll( statement );
     }
 
     @Override
@@ -780,36 +620,28 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
         statement.assertOpen();
-        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
+        return schemaRead().constraintsGetForSchema( statement, descriptor );
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabel( statement, labelId );
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForRelationshipType( statement, typeId );
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
-            int propertyKeyId )
-    {
-        statement.assertOpen();
-        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, typeId, propertyKeyId );
-    }
-
-    @Override
-    public Iterator<PropertyConstraint> constraintsGetAll()
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
         statement.assertOpen();
         return schemaRead().constraintsGetAll( statement );
@@ -909,7 +741,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
         int id = tokenRead().labelGetForName( statement, labelName );
-        if (id != KeyReadOperations.NO_SUCH_LABEL )
+        if ( id != KeyReadOperations.NO_SUCH_LABEL )
         {
             return id;
         }
@@ -922,7 +754,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
         int id = tokenRead().propertyKeyGetForName( statement, propertyKeyName );
-        if (id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
             return id;
         }
@@ -935,7 +767,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
         int id = tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
-        if (id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
+        if ( id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
         {
             return id;
         }
@@ -976,6 +808,12 @@ public class OperationsFacade
     public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
     {
         return schemaState().schemaStateGetOrCreate( statement, key, creator );
+    }
+
+    @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        return schemaState().schemaStateGet( statement, key );
     }
 
     @Override
@@ -1026,7 +864,7 @@ public class OperationsFacade
 
     @Override
     public boolean nodeAddLabel( long nodeId, int labelId )
-            throws EntityNotFoundException, ConstraintValidationKernelException
+            throws EntityNotFoundException, ConstraintValidationException
     {
         statement.assertOpen();
         return dataWrite().nodeAddLabel( statement, nodeId, labelId );
@@ -1040,30 +878,31 @@ public class OperationsFacade
     }
 
     @Override
-    public Property nodeSetProperty( long nodeId, DefinedProperty property )
-            throws EntityNotFoundException, ConstraintValidationKernelException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+    public Value nodeSetProperty( long nodeId, int propertyKeyId, Value value )
+            throws EntityNotFoundException, AutoIndexingKernelException,
+                   InvalidTransactionTypeKernelException, ConstraintValidationException
     {
         statement.assertOpen();
-        return dataWrite().nodeSetProperty( statement, nodeId, property );
+        return dataWrite().nodeSetProperty( statement, nodeId, propertyKeyId, value );
     }
 
     @Override
-    public Property relationshipSetProperty( long relationshipId, DefinedProperty property )
+    public Value relationshipSetProperty( long relationshipId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
-        return dataWrite().relationshipSetProperty( statement, relationshipId, property );
+        return dataWrite().relationshipSetProperty( statement, relationshipId, propertyKeyId, value );
     }
 
     @Override
-    public Property graphSetProperty( DefinedProperty property )
+    public Value graphSetProperty( int propertyKeyId, Value value )
     {
         statement.assertOpen();
-        return dataWrite().graphSetProperty( statement, property );
+        return dataWrite().graphSetProperty( statement, propertyKeyId, value );
     }
 
     @Override
-    public Property nodeRemoveProperty( long nodeId, int propertyKeyId )
+    public Value nodeRemoveProperty( long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
@@ -1071,7 +910,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Property relationshipRemoveProperty( long relationshipId, int propertyKeyId )
+    public Value relationshipRemoveProperty( long relationshipId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
@@ -1079,7 +918,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Property graphRemoveProperty( int propertyKeyId )
+    public Value graphRemoveProperty( int propertyKeyId )
     {
         statement.assertOpen();
         return dataWrite().graphRemoveProperty( statement, propertyKeyId );
@@ -1089,11 +928,11 @@ public class OperationsFacade
 
     // <SchemaWrite>
     @Override
-    public IndexDescriptor indexCreate( int labelId, int propertyKeyId )
-            throws AlreadyIndexedException, AlreadyConstrainedException
+    public IndexDescriptor indexCreate( LabelSchemaDescriptor descriptor )
+            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
-        return schemaWrite().indexCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().indexCreate( statement, descriptor );
     }
 
     @Override
@@ -1104,317 +943,315 @@ public class OperationsFacade
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
-        return schemaWrite().uniquePropertyConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().nodeKeyConstraintCreate( statement, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( int labelId, int propertyKeyId )
-            throws CreateConstraintFailureException, AlreadyConstrainedException
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
-        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().uniquePropertyConstraintCreate( statement, descriptor );
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
-            int relTypeId, int propertyKeyId )
-            throws CreateConstraintFailureException, AlreadyConstrainedException
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException, AlreadyConstrainedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
-        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, relTypeId, propertyKeyId );
+        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, descriptor );
     }
 
     @Override
-    public void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
+            RelationTypeSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException, AlreadyConstrainedException,
+            RepeatedPropertyInCompositeSchemaException
+    {
+        statement.assertOpen();
+        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, descriptor );
+    }
+
+    @Override
+    public void constraintDrop( ConstraintDescriptor constraint ) throws DropConstraintFailureException
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );
-    }
-
-    @Override
-    public void constraintDrop( RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException
-    {
-        statement.assertOpen();
-        schemaWrite().constraintDrop( statement, constraint );
-    }
-
-    @Override
-    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
-    {
-        statement.assertOpen();
-        schemaWrite().uniqueIndexDrop( statement, descriptor );
     }
 
     // </SchemaWrite>
 
     // <Locking>
     @Override
-    public void acquireExclusive( ResourceType type, long id )
+    public void acquireExclusive( ResourceType type, long... ids )
     {
         statement.assertOpen();
-        locking().acquireExclusive( statement, type, id );
+        locking().acquireExclusive( statement, type, ids );
     }
 
     @Override
-    public void acquireShared( ResourceType type, long id )
+    public void acquireShared( ResourceType type, long... ids )
     {
         statement.assertOpen();
-        locking().acquireShared( statement, type, id );
+        locking().acquireShared( statement, type, ids );
     }
 
     @Override
-    public void releaseExclusive( ResourceType type, long id )
+    public void releaseExclusive( ResourceType type, long... ids )
     {
         statement.assertOpen();
-        locking().releaseExclusive( statement, type, id );
+        locking().releaseExclusive( statement, type, ids );
     }
 
     @Override
-    public void releaseShared( ResourceType type, long id )
+    public void releaseShared( ResourceType type, long... ids )
     {
         statement.assertOpen();
-        locking().releaseShared( statement, type, id );
+        locking().releaseShared( statement, type, ids );
     }
     // </Locking>
 
-    // <Legacy index>
+    // <Explicit index>
     @Override
-    public boolean nodeLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+    public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexExists( statement, indexName, customConfiguration );
+        return explicitIndexRead().nodeExplicitIndexExists( statement, indexName, customConfiguration );
     }
 
     @Override
-    public boolean relationshipLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+    public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexExists( statement, indexName, customConfiguration );
+        return explicitIndexRead().relationshipExplicitIndexExists( statement, indexName, customConfiguration );
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexGet( String indexName, String key, Object value )
-            throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits nodeExplicitIndexGet( String indexName, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexGet( statement, indexName, key, value );
+        return explicitIndexRead().nodeExplicitIndexGet( statement, indexName, key, value );
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits nodeExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexQuery( statement, indexName, key, queryOrQueryObject );
+        return explicitIndexRead().nodeExplicitIndexQuery( statement, indexName, key, queryOrQueryObject );
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits nodeExplicitIndexQuery( String indexName, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexQuery( statement, indexName, queryOrQueryObject );
+        return explicitIndexRead().nodeExplicitIndexQuery( statement, indexName, queryOrQueryObject );
     }
 
     @Override
-    public LegacyIndexHits relationshipLegacyIndexGet( String indexName, String key, Object value,
-            long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits relationshipExplicitIndexGet( String indexName, String key, Object value,
+            long startNode, long endNode ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexGet( statement, indexName, key, value, startNode, endNode );
+        return explicitIndexRead().relationshipExplicitIndexGet( statement, indexName, key, value, startNode, endNode );
     }
 
     @Override
-    public LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject,
-            long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject,
+            long startNode, long endNode ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexQuery( statement, indexName, key, queryOrQueryObject,
+        return explicitIndexRead().relationshipExplicitIndexQuery( statement, indexName, key, queryOrQueryObject,
                 startNode, endNode );
     }
 
     @Override
-    public LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject,
-            long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, Object queryOrQueryObject,
+            long startNode, long endNode ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexQuery( statement, indexName, queryOrQueryObject,
+        return explicitIndexRead().relationshipExplicitIndexQuery( statement, indexName, queryOrQueryObject,
                 startNode, endNode );
     }
 
     @Override
-    public void nodeLegacyIndexCreateLazily( String indexName, Map<String,String> customConfig )
+    public void nodeExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeLegacyIndexCreateLazily( statement, indexName, customConfig );
+        explicitIndexWrite().nodeExplicitIndexCreateLazily( statement, indexName, customConfig );
     }
 
     @Override
-    public void nodeLegacyIndexCreate( String indexName, Map<String,String> customConfig )
+    public void nodeExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
 
-        legacyIndexWrite().nodeLegacyIndexCreate( statement, indexName, customConfig );
+        explicitIndexWrite().nodeExplicitIndexCreate( statement, indexName, customConfig );
     }
 
     @Override
-    public void relationshipLegacyIndexCreateLazily( String indexName, Map<String,String> customConfig )
+    public void relationshipExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipLegacyIndexCreateLazily( statement, indexName, customConfig );
+        explicitIndexWrite().relationshipExplicitIndexCreateLazily( statement, indexName, customConfig );
     }
 
     @Override
-    public void relationshipLegacyIndexCreate( String indexName, Map<String,String> customConfig )
+    public void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
 
-        legacyIndexWrite().relationshipLegacyIndexCreate( statement, indexName, customConfig );
+        explicitIndexWrite().relationshipExplicitIndexCreate( statement, indexName, customConfig );
     }
 
     @Override
-    public void nodeAddToLegacyIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException
+    public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeAddToLegacyIndex( statement, indexName, node, key, value );
+        explicitIndexWrite().nodeAddToExplicitIndex( statement, indexName, node, key, value );
     }
 
     @Override
-    public void nodeRemoveFromLegacyIndex( String indexName, long node, String key, Object value )
-            throws LegacyIndexNotFoundKernelException
+    public void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeRemoveFromLegacyIndex( statement, indexName, node, key, value );
+        explicitIndexWrite().nodeRemoveFromExplicitIndex( statement, indexName, node, key, value );
     }
 
     @Override
-    public void nodeRemoveFromLegacyIndex( String indexName, long node, String key )
-            throws LegacyIndexNotFoundKernelException
+    public void nodeRemoveFromExplicitIndex( String indexName, long node, String key )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeRemoveFromLegacyIndex( statement, indexName, node, key );
+        explicitIndexWrite().nodeRemoveFromExplicitIndex( statement, indexName, node, key );
     }
 
     @Override
-    public void nodeRemoveFromLegacyIndex( String indexName, long node ) throws LegacyIndexNotFoundKernelException
+    public void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeRemoveFromLegacyIndex( statement, indexName, node );
+        explicitIndexWrite().nodeRemoveFromExplicitIndex( statement, indexName, node );
     }
 
     @Override
-    public void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException
+    public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipAddToLegacyIndex( statement, indexName, relationship, key, value );
+        explicitIndexWrite().relationshipAddToExplicitIndex( statement, indexName, relationship, key, value );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipRemoveFromLegacyIndex( statement, indexName, relationship, key, value );
+        explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key, value );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key )
-            throws LegacyIndexNotFoundKernelException, EntityNotFoundException
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipRemoveFromLegacyIndex( statement, indexName, relationship, key );
+        explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( String indexName, long relationship )
-            throws LegacyIndexNotFoundKernelException, EntityNotFoundException
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipRemoveFromLegacyIndex( statement, indexName, relationship );
+        explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship );
     }
 
     @Override
-    public void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException
+    public void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeLegacyIndexDrop( statement, indexName );
+        explicitIndexWrite().nodeExplicitIndexDrop( statement, indexName );
     }
 
     @Override
-    public void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException
+    public void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipLegacyIndexDrop( statement, indexName );
+        explicitIndexWrite().relationshipExplicitIndexDrop( statement, indexName );
     }
 
     @Override
-    public Map<String,String> nodeLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException
+    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexGetConfiguration( statement, indexName );
+        return explicitIndexRead().nodeExplicitIndexGetConfiguration( statement, indexName );
     }
 
     @Override
-    public Map<String,String> relationshipLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException
+    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexGetConfiguration( statement, indexName );
+        return explicitIndexRead().relationshipExplicitIndexGetConfiguration( statement, indexName );
     }
 
     @Override
-    public String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
-            throws LegacyIndexNotFoundKernelException
+    public String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().nodeLegacyIndexSetConfiguration( statement, indexName, key, value );
+        return explicitIndexWrite().nodeExplicitIndexSetConfiguration( statement, indexName, key, value );
     }
 
     @Override
-    public String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value )
-            throws LegacyIndexNotFoundKernelException
+    public String relationshipExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().relationshipLegacyIndexSetConfiguration( statement, indexName, key, value );
+        return explicitIndexWrite().relationshipExplicitIndexSetConfiguration( statement, indexName, key, value );
     }
 
     @Override
-    public String nodeLegacyIndexRemoveConfiguration( String indexName, String key )
-            throws LegacyIndexNotFoundKernelException
+    public String nodeExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().nodeLegacyIndexRemoveConfiguration( statement, indexName, key );
+        return explicitIndexWrite().nodeExplicitIndexRemoveConfiguration( statement, indexName, key );
     }
 
     @Override
-    public String relationshipLegacyIndexRemoveConfiguration( String indexName, String key )
-            throws LegacyIndexNotFoundKernelException
+    public String relationshipExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().relationshipLegacyIndexRemoveConfiguration( statement, indexName, key );
+        return explicitIndexWrite().relationshipExplicitIndexRemoveConfiguration( statement, indexName, key );
     }
 
     @Override
-    public String[] nodeLegacyIndexesGetAll()
+    public String[] nodeExplicitIndexesGetAll()
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexesGetAll( statement );
+        return explicitIndexRead().nodeExplicitIndexesGetAll( statement );
     }
 
     @Override
-    public String[] relationshipLegacyIndexesGetAll()
+    public String[] relationshipExplicitIndexesGetAll()
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexesGetAll( statement );
+        return explicitIndexRead().relationshipExplicitIndexesGetAll( statement );
     }
-    // </Legacy index>
+    // </Explicit index>
 
     // <Counts>
 
@@ -1474,6 +1311,13 @@ public class OperationsFacade
     }
 
     @Override
+    public Map<String,Object> getMetaData()
+    {
+        statement.assertOpen();
+        return statement.getTransaction().getMetaData();
+    }
+
+    @Override
     public Stream<ExecutingQuery> executingQueries()
     {
         statement.assertOpen();
@@ -1482,9 +1326,9 @@ public class OperationsFacade
 
     @Override
     public ExecutingQuery startQueryExecution(
-        QuerySource descriptor,
+        ClientConnectionInfo descriptor,
         String queryText,
-        Map<String,Object> queryParameters )
+        MapValue queryParameters )
     {
         statement.assertOpen();
         return queryRegistrationOperations().startQueryExecution( statement, descriptor, queryText, queryParameters );
@@ -1628,6 +1472,24 @@ public class OperationsFacade
                 new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
+    @Override
+    public CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    {
+        if ( !tx.securityContext().mode().allowsReads() )
+        {
+            throw tx.securityContext().mode().onViolation(
+                    format( "Read operations are not allowed for %s.", tx.securityContext().description() ) );
+        }
+        return aggregationFunction( name, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public CallableUserAggregationFunction.Aggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    {
+        return aggregationFunction( name,
+                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
     private Object callFunction( QualifiedName name, Object[] input, final AccessMode mode ) throws ProcedureException
     {
         statement.assertOpen();
@@ -1639,6 +1501,26 @@ public class OperationsFacade
             ctx.put( Context.THREAD, Thread.currentThread() );
             return procedures.callFunction( ctx, name, input );
         }
+    }
+
+    private CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name, final AccessMode mode )
+            throws ProcedureException
+    {
+        statement.assertOpen();
+
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( tx.securityContext().withMode( mode ) ) )
+        {
+            BasicContext ctx = new BasicContext();
+            ctx.put( Context.KERNEL_TRANSACTION, tx );
+            ctx.put( Context.THREAD, Thread.currentThread() );
+            return procedures.createAggregationFunction( ctx, name );
+        }
+    }
+
+    @Override
+    public PageCursorTracer getPageCursorTracer()
+    {
+        return statement.getPageCursorTracer();
     }
     // </Procedures>
 }

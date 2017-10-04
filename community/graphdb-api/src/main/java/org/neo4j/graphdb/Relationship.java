@@ -43,13 +43,16 @@ package org.neo4j.graphdb;
  *
  * <pre>
  * <code>
- * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}(), b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
- * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
+ * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}();
+ * {@link Node} b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
+ * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType)
+ * createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)
  *
  * assert rel.{@link Relationship#getStartNode() getStartNode}().equals( a );
  * assert rel.{@link Relationship#getEndNode() getEndNode}().equals( b );
- * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp; rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
+ * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp;
+ *        rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
  * </code>
  * </pre>
  *
@@ -167,4 +170,64 @@ public interface Relationship extends Entity
      *         <code>null</code>
      */
     boolean isType( RelationshipType type );
+
+    /**
+     * Returns the id of the start node of this relationship. For a definition of how
+     * start node relates to {@link Direction directions} as arguments to the
+     * {@link Node#getRelationships() relationship accessors} in Node, see the
+     * class documentation of Relationship.
+     * <p>
+     * Note that this id can get reused in the future, if this relationship and the given node are deleted.
+     *
+     * @return the id of the start node of this relationship.
+     */
+    default long getStartNodeId()
+    {
+        return getStartNode().getId();
+    }
+
+    /**
+     * Returns the id of the end node of this relationship. For a definition of how end
+     * node relates to {@link Direction directions} as arguments to the
+     * {@link Node#getRelationships() relationship accessors} in Node, see the
+     * class documentation of Relationship.
+     * <p>
+     * Note that this id can get reused in the future, if this relationship and the given node are deleted.
+     *
+     * @return the id of the end node of this relationship.
+     */
+    default long getEndNodeId()
+    {
+        return getEndNode().getId();
+    }
+
+    /**
+     * A convenience operation that, given an id of a node that is attached to this
+     * relationship, returns the id of the other node. For example if <code>id</code> is
+     * the start node id, the end node id will be returned, and vice versa.
+     * <p>
+     * This operation will throw a runtime exception if <code>id</code> is
+     * not the id of either of this relationship's nodes.
+     * <p>
+     * Note that this id can get reused in the future, if this relationship and the given node are deleted.
+     *
+     * @param id the id of the start or end node of this relationship
+     * @return the id of the other node
+     * @throws RuntimeException if the given node id is not the id of either the start or end
+     *             node of this relationship.
+     */
+    default long getOtherNodeId( long id )
+    {
+        long start = getStartNodeId();
+        long end = getEndNodeId();
+        if ( id == start )
+        {
+            return end;
+        }
+        else if ( id == end )
+        {
+            return start;
+        }
+        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + "]" );
+    }
 }

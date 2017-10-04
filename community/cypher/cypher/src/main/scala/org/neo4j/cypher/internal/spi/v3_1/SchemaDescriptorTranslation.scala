@@ -20,12 +20,38 @@
 package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes
-import org.neo4j.kernel.api.index.{IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.SchemaDescriptor
+import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptorFactory, NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
+import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
-  implicit def toKernel(descriptor: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
-    new KernelIndexDescriptor(descriptor.labelId, descriptor.propertyId)
+  implicit def toKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
+    IndexDescriptorFactory.forLabel(index.labelId, index.propertyId)
 
-  implicit def toCypher(descriptor: KernelIndexDescriptor): SchemaTypes.IndexDescriptor =
-    SchemaTypes.IndexDescriptor(descriptor.getLabelId, descriptor.getPropertyKeyId)
+  implicit def toCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor = {
+    assertSingleProperty(index.schema())
+    SchemaTypes.IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyId())
+  }
+
+  implicit def toKernel(constraint: SchemaTypes.UniquenessConstraint): KernelUniquenessConstraint =
+    ConstraintDescriptorFactory.uniqueForLabel(constraint.labelId, constraint.propertyId)
+
+  implicit def toCypher(constraint: KernelUniquenessConstraint): SchemaTypes.UniquenessConstraint = {
+    assertSingleProperty(constraint.schema())
+    SchemaTypes.UniquenessConstraint(constraint.schema().getLabelId, constraint.schema().getPropertyId)
+  }
+
+  implicit def toCypher(constraint: NodeExistenceConstraintDescriptor): SchemaTypes.NodePropertyExistenceConstraint = {
+    assertSingleProperty(constraint.schema())
+    SchemaTypes.NodePropertyExistenceConstraint(constraint.schema().getLabelId, constraint.schema().getPropertyId)
+  }
+
+  implicit def toCypher(constraint: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint = {
+    assertSingleProperty(constraint.schema())
+    SchemaTypes.RelationshipPropertyExistenceConstraint(constraint.schema().getRelTypeId, constraint.schema().getPropertyId)
+  }
+
+  def assertSingleProperty(schema: SchemaDescriptor):Unit =
+    if (schema.getPropertyIds.length != 1)
+      throw new UnsupportedOperationException("Cypher 3.1 does not support composite indexes or constraints")
 }

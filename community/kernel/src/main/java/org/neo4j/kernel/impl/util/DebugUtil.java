@@ -43,9 +43,13 @@ import static org.neo4j.helpers.Format.duration;
 
 public class DebugUtil
 {
+    private DebugUtil()
+    {
+    }
+
     public static void printShortStackTrace( Throwable cause, int maxNumberOfStackLines )
     {
-        System.out.println( firstLinesOf( stringify( cause ), maxNumberOfStackLines+1 ) );
+        System.out.println( firstLinesOf( stringify( cause ), maxNumberOfStackLines + 1 ) );
     }
 
     public static String firstLinesOf( String string, int maxNumberOfLines )
@@ -324,7 +328,7 @@ public class DebugUtil
     public static String trackTest()
     {
         boolean track = false;
-        assert (track = true) : "A trick to set this variable to true if assertions are enabled";
+        assert track = true : "A trick to set this variable to true if assertions are enabled";
 
         if ( track )
         {
@@ -354,9 +358,7 @@ public class DebugUtil
 
     private static String simpleClassName( String className )
     {
-        return className.indexOf( '.' ) == -1
-                ? className
-                : className.substring( className.lastIndexOf( '.' )+1 );
+        return className.indexOf( '.' ) == -1 ? className : className.substring( className.lastIndexOf( '.' ) + 1 );
     }
 
     private static boolean hasTestAnnotation( Method method )
@@ -441,7 +443,7 @@ public class DebugUtil
 
     public static long time( long startTime, String message )
     {
-        System.out.println( duration( (currentTimeMillis() - startTime) ) + ": " + message );
+        System.out.println( duration( currentTimeMillis() - startTime ) + ": " + message );
         return currentTimeMillis();
     }
 }

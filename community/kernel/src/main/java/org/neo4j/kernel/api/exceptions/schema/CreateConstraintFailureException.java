@@ -20,22 +20,31 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 
 public class CreateConstraintFailureException extends SchemaKernelException
 {
-    private final PropertyConstraint constraint;
+    private final ConstraintDescriptor constraint;
 
-    public CreateConstraintFailureException( PropertyConstraint constraint, Throwable cause )
+    private final String cause;
+    public CreateConstraintFailureException( ConstraintDescriptor constraint, Throwable cause )
     {
         super( Status.Schema.ConstraintCreationFailed, cause, "Unable to create constraint %s: %s", constraint,
                 cause.getMessage() );
         this.constraint = constraint;
+        this.cause = null;
     }
 
-    public PropertyConstraint constraint()
+    public CreateConstraintFailureException( ConstraintDescriptor constraint, String cause )
+    {
+        super( Status.Schema.ConstraintCreationFailed, null, "Unable to create constraint %s: %s", constraint, cause );
+        this.constraint = constraint;
+        this.cause = cause;
+    }
+
+    public ConstraintDescriptor constraint()
     {
         return constraint;
     }
@@ -43,7 +52,11 @@ public class CreateConstraintFailureException extends SchemaKernelException
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        String message = "Unable to create " + constraint.userDescription( tokenNameLookup );
+        String message = "Unable to create " + constraint.prettyPrint( tokenNameLookup );
+        if ( cause != null )
+        {
+            message = String.format( "%s:%n%s", message, cause );
+        }
         if ( getCause() instanceof KernelException )
         {
             KernelException cause = (KernelException) getCause();

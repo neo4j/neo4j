@@ -173,7 +173,7 @@ public class PathImplTest
         @Override
         public NodeProxy answer( InvocationOnMock invocation ) throws Throwable
         {
-            return createNodeProxy( ((Number) invocation.getArguments()[0]).intValue() );
+            return createNodeProxy( ((Number) invocation.getArgument( 0 )).intValue() );
         }
     }
 }

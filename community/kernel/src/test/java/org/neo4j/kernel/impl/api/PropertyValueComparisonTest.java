@@ -146,9 +146,7 @@ public class PropertyValueComparisonTest
                 int cmpPos = sign( i - j );
                 int cmpVal = sign( compare( COMPARE_VALUES, left, right ) );
 
-//                System.out.println( format( "%s (%d), %s (%d) => %d (%d)", left, i, right, j, cmpLeft, i - j ) );
-
-                if ( cmpPos != cmpVal)
+                if ( cmpPos != cmpVal )
                 {
                     throw new AssertionError( format(
                             "Comparing %s against %s does not agree with their positions in the sorted list (%d and " +

@@ -21,20 +21,23 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
 
-import java.util.Iterator;
 import java.util.Random;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.id.IdType;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
@@ -56,20 +59,26 @@ public class TestNeo4j extends AbstractNeo4jTestCase
 
         // Verify that the node reports that it has a relationship of
         // the type we created above
-        assertTrue( firstNode.getRelationships( relType ).iterator().hasNext() );
-        assertTrue( secondNode.getRelationships( relType ).iterator().hasNext() );
+        try ( ResourceIterator<Relationship> iterator = asResourceIterator( firstNode.getRelationships( relType ).iterator() ) )
+        {
+            assertTrue( iterator.hasNext() );
+        }
+        try ( ResourceIterator<Relationship> iterator = asResourceIterator( secondNode.getRelationships( relType ).iterator() ) )
+        {
+            assertTrue( iterator.hasNext() );
+        }
 
-        Iterable<Relationship> allRels;
+        ResourceIterable<Relationship> allRels;
 
         // Verify that both nodes return the relationship we created above
-        allRels = firstNode.getRelationships();
+        allRels = (ResourceIterable<Relationship>) firstNode.getRelationships();
         assertTrue( this.objectExistsInIterable( rel, allRels ) );
-        allRels = firstNode.getRelationships( relType );
+        allRels = (ResourceIterable<Relationship>) firstNode.getRelationships( relType );
         assertTrue( this.objectExistsInIterable( rel, allRels ) );
 
-        allRels = secondNode.getRelationships();
+        allRels = (ResourceIterable<Relationship>) secondNode.getRelationships();
         assertTrue( this.objectExistsInIterable( rel, allRels ) );
-        allRels = secondNode.getRelationships( relType );
+        allRels = (ResourceIterable<Relationship>) secondNode.getRelationships( relType );
         assertTrue( this.objectExistsInIterable( rel, allRels ) );
 
         // Verify that the relationship reports that it is associated with
@@ -91,16 +100,22 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
 
     private boolean objectExistsInIterable( Relationship rel,
-        Iterable<Relationship> allRels )
+        ResourceIterable<Relationship> allRels )
     {
-        for ( Relationship iteratedRel : allRels )
+        try ( ResourceIterator<Relationship> resourceIterator = allRels.iterator() )
         {
-            if ( rel.equals( iteratedRel ) )
+            while ( resourceIterator.hasNext() )
             {
-                return true;
+                Relationship iteratedRel = resourceIterator.next();
+                {
+                    if ( rel.equals( iteratedRel ) )
+                    {
+                        return true;
+                    }
+                }
             }
+            return false;
         }
-        return false;
     }
 
     private boolean objectExistsInArray( Object obj, Object[] objArray )
@@ -144,13 +159,13 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             tx.success();
         }
 
-        try (Transaction ignored = getGraphDb().beginTx() )
+        try ( Transaction ignored = getGraphDb().beginTx() )
         {
             node.setProperty( "test", new String[] { "value1", "value2" } );
             // no success, we wanna test rollback on this operation
         }
 
-        try (Transaction tx = getGraphDb().beginTx() )
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             String[] value = (String[]) node.getProperty( "test" );
             assertEquals( 1, value.length );
@@ -185,8 +200,9 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             assertEquals( count, oldCount + 1 );
 
             // Tests a bug in the "all nodes" iterator
-            Iterator<Node> allNodesIterator = getGraphDb().getAllNodes().iterator();
+            ResourceIterator<Node> allNodesIterator = getGraphDb().getAllNodes().iterator();
             assertNotNull( allNodesIterator.next() );
+            allNodesIterator.close();
 
             newNode.delete();
             newTransaction();

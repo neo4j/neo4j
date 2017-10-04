@@ -62,7 +62,7 @@ public class ConstraintRecoveryIT
     {
         // given
         final EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        fs.mkdir( new File("/tmp") );
+        fs.mkdir( new File( "/tmp" ) );
         File pathToDb = new File( "/tmp/bar2" );
 
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
@@ -78,8 +78,8 @@ public class ConstraintRecoveryIT
             public void indexPopulationScanComplete()
             {
                 monitorCalled.set( true );
-                db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                        .testAccessNeoStores().getSchemaStore().flush();
+                db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores()
+                        .getSchemaStore().flush();
                 storeInNeedOfRecovery[0] = fs.snapshot();
             }
         } );
@@ -104,7 +104,9 @@ public class ConstraintRecoveryIT
             fail("Should have failed with ConstraintViolationException");
             tx.success();
         }
-        catch ( ConstraintViolationException ignored )  { }
+        catch ( ConstraintViolationException ignored )
+        {
+        }
 
         db.shutdown();
 
@@ -116,22 +118,22 @@ public class ConstraintRecoveryIT
         db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabase( pathToDb );
 
         // then
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 5000, TimeUnit.MILLISECONDS );
         }
 
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals(2, Iterables.count( db.getAllNodes() ) );
+            assertEquals( 2, Iterables.count( db.getAllNodes() ) );
         }
 
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals(0, Iterables.count(Iterables.asList( db.schema().getConstraints() )));
+            assertEquals( 0, Iterables.count( Iterables.asList( db.schema().getConstraints() ) ) );
         }
 
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition orphanedConstraintIndex = single( db.schema().getIndexes() );
             assertEquals( LABEL.name(), orphanedConstraintIndex.getLabel().name() );

@@ -163,4 +163,8 @@ public class RelationshipIndexFacadeMethods
                             DELETE,
                             PUT_IF_ABSENT
                     ) );
+
+    private RelationshipIndexFacadeMethods()
+    {
+    }
 }

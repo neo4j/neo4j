@@ -36,7 +36,7 @@ public class JmxUtils
 
     public static ObjectName getObjectName( GraphDatabaseService db, String name )
     {
-        if(!(db instanceof GraphDatabaseAPI))
+        if ( !(db instanceof GraphDatabaseAPI) )
         {
             throw new IllegalArgumentException( "Can only resolve object names for embedded Neo4j database " +
                     "instances, eg. instances created by GraphDatabaseFactory or HighlyAvailableGraphDatabaseFactory." );
@@ -56,7 +56,7 @@ public class JmxUtils
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> T getAttribute( ObjectName objectName, String attribute )
     {
         try
@@ -69,7 +69,7 @@ public class JmxUtils
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> T invoke( ObjectName objectName, String attribute, Object[] params, String[] signatur )
     {
         try

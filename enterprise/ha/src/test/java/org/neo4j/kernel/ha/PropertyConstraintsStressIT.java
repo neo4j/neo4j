@@ -41,27 +41,24 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-
-import static java.lang.String.format;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterators.loop;
@@ -72,11 +69,8 @@ import static org.neo4j.helpers.collection.Iterators.loop;
 @RunWith( Parameterized.class )
 public class PropertyConstraintsStressIT
 {
-    @Parameter( 0 )
+    @Parameter
     public ConstraintOperations constraintOps;
-
-    @Parameter( 1 )
-    public boolean releaseSchemaLockWhileBuildingIndex;
 
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -108,14 +102,10 @@ public class PropertyConstraintsStressIT
     private final AtomicInteger roundNo = new AtomicInteger( 0 );
 
     @Parameterized.Parameters( name = "{0}:{1}" )
-    public static Iterable<Object[]> params()
+    public static Iterable<ConstraintOperations> params()
     {
-        return Arrays.asList( new Object[][]{
-                {UNIQUE_PROPERTY_CONSTRAINT_OPS, false},
-                {UNIQUE_PROPERTY_CONSTRAINT_OPS, true},
-                {NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, false},
-                {REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS, false},
-        } );
+        return Arrays.asList( UNIQUE_PROPERTY_CONSTRAINT_OPS, UNIQUE_PROPERTY_CONSTRAINT_OPS,
+                NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS );
     }
 
     @Before
@@ -123,8 +113,6 @@ public class PropertyConstraintsStressIT
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.pull_interval, "0" )
-                .withSharedSetting( GraphDatabaseSettings.release_schema_lock_while_building_constraint,
-                        String.valueOf( releaseSchemaLockWhileBuildingIndex ) )
                 .startCluster();
         clearData();
     }
@@ -132,30 +120,7 @@ public class PropertyConstraintsStressIT
     private void clearData() throws InterruptedException
     {
         HighlyAvailableGraphDatabase db = cluster.getMaster();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
-            {
-                constraint.drop();
-            }
-            for ( IndexDefinition index : db.schema().getIndexes() )
-            {
-                index.drop();
-            }
-            tx.success();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( Relationship relationship : db.getAllRelationships() )
-            {
-                relationship.delete();
-            }
-            for ( Node node : db.getAllNodes() )
-            {
-                node.delete();
-            }
-            tx.success();
-        }
+        GraphDatabaseServiceCleaner.cleanDatabaseContent( db );
         cluster.sync();
     }
 
@@ -388,43 +353,39 @@ public class PropertyConstraintsStressIT
     private WorkerCommand<Object,Integer> performInserts( final HighlyAvailableGraphDatabase slave,
             final boolean constraintCompliant )
     {
-        return new WorkerCommand<Object,Integer>()
+        return state ->
         {
-            @Override
-            public Integer doWork( Object state ) throws Exception
-            {
-                int i = 0;
+            int i = 0;
 
-                try
+            try
+            {
+                for (; i < 100; i++ )
                 {
-                    for (; i < 100; i++ )
+                    try ( Transaction tx = slave.beginTx() )
                     {
-                        try ( Transaction tx = slave.beginTx() )
-                        {
-                            constraintOps.createEntity( slave, labelOrRelType, property, "value" + i,
-                                    constraintCompliant );
-                            tx.success();
-                        }
+                        constraintOps.createEntity( slave, labelOrRelType, property, "value" + i,
+                                constraintCompliant );
+                        tx.success();
                     }
                 }
-                catch ( TransactionFailureException | TransientTransactionFailureException e )
-                {
-                    // Swallowed on purpose, we except it to fail sometimes due to either
-                    //  - constraint violation on master
-                    //  - concurrent schema operation on master
-                }
-                catch ( ConstraintViolationException e )
-                {
-                    // Constraint violation detected on slave while building transaction
-                }
-                catch ( ComException e )
-                {
-                    // Happens sometimes, cause:
-                    // - The lock session requested to start is already in use.
-                    //   Please retry your request in a few seconds.
-                }
-                return i;
             }
+            catch ( TransactionFailureException | TransientTransactionFailureException e )
+            {
+                // Swallowed on purpose, we except it to fail sometimes due to either
+                //  - constraint violation on master
+                //  - concurrent schema operation on master
+            }
+            catch ( ConstraintViolationException e )
+            {
+                // Constraint violation detected on slave while building transaction
+            }
+            catch ( ComException e )
+            {
+                // Happens sometimes, cause:
+                // - The lock session requested to start is already in use.
+                //   Please retry your request in a few seconds.
+            }
+            return i;
         };
     }
 
@@ -439,8 +400,8 @@ public class PropertyConstraintsStressIT
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-        Future<Boolean> constraintCreation = null;
-        Future<Integer> constraintViolation = null;
+        Future<Boolean> constraintCreation;
+        Future<Integer> constraintViolation;
 
         abstract void perform();
     }
@@ -470,14 +431,17 @@ public class PropertyConstraintsStressIT
             try ( Transaction tx = db.beginTx() )
             {
                 Set<Object> values = new HashSet<>();
-                for ( Node node : loop( db.findNodes( label( type ) ) ) )
+                try ( ResourceIterator<Node> nodes = db.findNodes( label( type ) ) )
                 {
-                    Object value = node.getProperty( property );
-                    if ( values.contains( value ) )
+                    for ( Node node : loop( nodes ) )
                     {
-                        return false;
+                        Object value = node.getProperty( property );
+                        if ( values.contains( value ) )
+                        {
+                            return false;
+                        }
+                        values.add( value );
                     }
-                    values.add( value );
                 }
 
                 tx.success();
@@ -489,26 +453,22 @@ public class PropertyConstraintsStressIT
         public WorkerCommand<Object,Boolean> createConstraint( final HighlyAvailableGraphDatabase db, final String type,
                 final String property )
         {
-            return new WorkerCommand<Object,Boolean>()
+            return state ->
             {
-                @Override
-                public Boolean doWork( Object state ) throws Exception
+                boolean constraintCreationFailed = false;
+
+                try ( Transaction tx = db.beginTx() )
                 {
-                    boolean constraintCreationFailed = false;
-
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        db.schema().constraintFor( label( type ) ).assertPropertyIsUnique( property ).create();
-                        tx.success();
-                    }
-                    catch ( ConstraintViolationException e )
-                    {
-                    /* Unable to create constraint since it is not consistent with existing data. */
-                        constraintCreationFailed = true;
-                    }
-
-                    return constraintCreationFailed;
+                    db.schema().constraintFor( label( type ) ).assertPropertyIsUnique( property ).create();
+                    tx.success();
                 }
+                catch ( ConstraintViolationException e )
+                {
+                /* Unable to create constraint since it is not consistent with existing data. */
+                    constraintCreationFailed = true;
+                }
+
+                return constraintCreationFailed;
             };
         }
 
@@ -618,39 +578,35 @@ public class PropertyConstraintsStressIT
     private static WorkerCommand<Object,Boolean> createPropertyExistenceConstraintCommand(
             final GraphDatabaseService db, final String query )
     {
-        return new WorkerCommand<Object,Boolean>()
+        return state ->
         {
-            @Override
-            public Boolean doWork( Object state ) throws Exception
+            boolean constraintCreationFailed = false;
+
+            try ( Transaction tx = db.beginTx() )
             {
-                boolean constraintCreationFailed = false;
-
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.execute( query );
-                    tx.success();
-                }
-                catch ( QueryExecutionException e )
-                {
-                    System.out.println( "Constraint failed: " + e.getMessage() );
-                    if ( Exceptions.rootCause( e ) instanceof ConstraintVerificationFailedKernelException )
-                    {
-                        // Unable to create constraint since it is not consistent with existing data
-                        constraintCreationFailed = true;
-                    }
-                    else
-                    {
-                        throw e;
-                    }
-                }
-
-                if ( !constraintCreationFailed )
-                {
-                    System.out.println( "Constraint created: " + query );
-                }
-
-                return constraintCreationFailed;
+                db.execute( query );
+                tx.success();
             }
+            catch ( QueryExecutionException e )
+            {
+                System.out.println( "Constraint failed: " + e.getMessage() );
+                if ( Exceptions.rootCause( e ) instanceof ConstraintValidationException )
+                {
+                    // Unable to create constraint since it is not consistent with existing data
+                    constraintCreationFailed = true;
+                }
+                else
+                {
+                    throw e;
+                }
+            }
+
+            if ( !constraintCreationFailed )
+            {
+                System.out.println( "Constraint created: " + query );
+            }
+
+            return constraintCreationFailed;
         };
     }
 }

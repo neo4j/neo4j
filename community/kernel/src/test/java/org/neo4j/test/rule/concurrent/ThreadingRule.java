@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.rule.concurrent;
 
+import org.junit.rules.ExternalResource;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -29,19 +31,31 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.junit.rules.ExternalResource;
-
+import org.neo4j.function.FailableConsumer;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.helpers.ConcurrentTransfer;
+import org.neo4j.helpers.FailableConcurrentTransfer;
 import org.neo4j.test.ReflectionUtil;
+
+import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
 
 public class ThreadingRule extends ExternalResource
 {
     private ExecutorService executor;
+    private static final FailableConsumer<Thread> NULL_CONSUMER = new FailableConsumer<Thread>()
+    {
+        @Override
+        public void fail( Exception failure )
+        {
+        }
+
+        @Override
+        public void accept( Thread thread )
+        {
+        }
+    };
 
     @Override
     protected void before() throws Throwable
@@ -69,8 +83,7 @@ public class ThreadingRule extends ExternalResource
 
     public <FROM, TO, EX extends Exception> Future<TO> execute( ThrowingFunction<FROM,TO,EX> function, FROM parameter )
     {
-        final Consumer<Thread> threadConsumer = (t) -> {};
-        return executor.submit( task( function, function.toString(), parameter, threadConsumer ) );
+        return executor.submit( task( function, function.toString(), parameter, NULL_CONSUMER ) );
     }
 
     public <FROM, TO, EX extends Exception> List<Future<TO>> multiple( int threads, ThrowingFunction<FROM,TO,EX> function, FROM parameter )
@@ -79,7 +92,7 @@ public class ThreadingRule extends ExternalResource
         for ( int i = 0; i < threads; i++ )
         {
             result.add( executor.submit( task(
-                    function, function.toString() + ":task=" + i, parameter, ( t ) -> {} ) ) );
+                    function, function.toString() + ":task=" + i, parameter, NULL_CONSUMER ) ) );
         }
         return result;
     }
@@ -123,18 +136,27 @@ public class ThreadingRule extends ExternalResource
 
     public <FROM, TO, EX extends Exception> Future<TO> executeAndAwait(
             ThrowingFunction<FROM,TO,EX> function, FROM parameter, Predicate<Thread> threadCondition,
-            long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException
+            long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException, ExecutionException
     {
-        ConcurrentTransfer<Thread> transfer = new ConcurrentTransfer<>();
+        FailableConcurrentTransfer<Thread> transfer = new FailableConcurrentTransfer<>();
         Future<TO> future = executor.submit( task( function, function.toString(), parameter, transfer ) );
-        Predicates.await( transfer, threadCondition, timeout, unit );
+        try
+        {
+            Predicates.awaitEx( transfer, throwingPredicate( threadCondition ), timeout, unit );
+        }
+        catch ( Exception e )
+        {
+            throw new ExecutionException( e );
+        }
         return future;
     }
 
     private static <FROM, TO, EX extends Exception> Callable<TO> task(
-            ThrowingFunction<FROM,TO,EX> function, String name, FROM parameter, Consumer<Thread> threadConsumer )
+            final ThrowingFunction<FROM,TO,EX> function, String name, final FROM parameter,
+            final FailableConsumer<Thread> threadConsumer )
     {
-        return () -> {
+        return () ->
+        {
             Thread thread = Thread.currentThread();
             String previousName = thread.getName();
             thread.setName( name );
@@ -143,6 +165,11 @@ public class ThreadingRule extends ExternalResource
             {
                 return function.apply( parameter );
             }
+            catch ( Exception failure )
+            {
+                threadConsumer.fail( failure );
+                throw failure;
+            }
             finally
             {
                 thread.setName( previousName );
@@ -150,6 +177,7 @@ public class ThreadingRule extends ExternalResource
         };
     }
 
+    /*Sample Stacktrace for method on owner*/
     public static Predicate<Thread> waitingWhileIn( final Class<?> owner, final String method )
     {
         return new Predicate<Thread>()
@@ -159,15 +187,14 @@ public class ThreadingRule extends ExternalResource
             {
                 ReflectionUtil.verifyMethodExists( owner, method );
 
-                if ( thread.getState() != Thread.State.WAITING && thread.getState() != Thread.State.TIMED_WAITING )
+                if ( thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.TIMED_WAITING )
                 {
-                    return false;
-                }
-                for ( StackTraceElement element : thread.getStackTrace() )
-                {
-                    if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
+                    for ( StackTraceElement element : thread.getStackTrace() )
                     {
-                        return true;
+                        if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
+                        {
+                            return true;
+                        }
                     }
                 }
                 return false;

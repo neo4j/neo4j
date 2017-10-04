@@ -19,8 +19,10 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -61,6 +63,7 @@ public class RealOutsideWorld implements OutsideWorld
     @Override
     public void exit( int status )
     {
+        IOUtils.closeAllSilently( this );
         System.exit( status );
     }
 
@@ -80,6 +83,12 @@ public class RealOutsideWorld implements OutsideWorld
     public PrintStream errorStream()
     {
         return System.err;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        fileSystemAbstraction.close();
     }
 
     @Override

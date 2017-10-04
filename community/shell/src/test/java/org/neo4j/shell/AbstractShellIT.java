@@ -57,7 +57,7 @@ public abstract class AbstractShellIT
     protected GraphDatabaseAPI db;
     protected ShellServer shellServer;
     protected ShellClient shellClient;
-    private Integer remotelyAvailableOnPort;
+    protected Integer remotelyAvailableOnPort;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
 
     @Rule
@@ -75,7 +75,7 @@ public abstract class AbstractShellIT
 
     protected SameJvmClient newShellClient( ShellServer server ) throws ShellException, RemoteException
     {
-        return newShellClient( server, Collections.<String,Serializable>singletonMap( "quiet", true ) );
+        return newShellClient( server, Collections.singletonMap( "quiet", true ) );
     }
 
     protected SameJvmClient newShellClient( ShellServer server, Map<String,Serializable> session )
@@ -132,15 +132,27 @@ public abstract class AbstractShellIT
     {
         if ( remotelyAvailableOnPort == null )
         {
-            remotelyAvailableOnPort = findFreePort();
-            shellServer.makeRemotelyAvailable( remotelyAvailableOnPort, SimpleAppServer.DEFAULT_NAME );
+            int attempts = 0;
+            int port = SimpleAppServer.DEFAULT_PORT;
+            do
+            {
+                try
+                {
+                    shellServer.makeRemotelyAvailable( port, SimpleAppServer.DEFAULT_NAME );
+                    remotelyAvailableOnPort = port;
+                }
+                catch ( Throwable error )
+                {
+                    port++;
+                    attempts++;
+                    if ( attempts == 100 )
+                    {
+                        throw new RuntimeException( "Not able to find free port more them 100 times.", error );
+                    }
+                }
+            }
+            while ( remotelyAvailableOnPort == null );
         }
-    }
-
-    private int findFreePort()
-    {
-        // TODO
-        return SimpleAppServer.DEFAULT_PORT;
     }
 
     protected void restartServer() throws Exception
@@ -169,7 +181,7 @@ public abstract class AbstractShellIT
         StringBuilder builder = new StringBuilder();
         for ( Object entity : entities )
         {
-            builder.append( (builder.length() == 0 ? "" : "-->") );
+            builder.append( builder.length() == 0 ? "" : "-->" );
             if ( entity instanceof Node )
             {
                 builder.append( "(" ).append( ((Node) entity).getId() ).append( ")" );
@@ -218,15 +230,14 @@ public abstract class AbstractShellIT
         try
         {
             shellClient.evaluate( command, output );
-            fail( "Was expecting an exception" );
+            fail( "Was expecting an exception but got output: '" + output.asString() + "'" );
         }
         catch ( ShellException e )
         {
-            String errorMessage = e.getMessage();
-            if ( !errorMessage.toLowerCase().contains( errorMessageShouldContain.toLowerCase() ) )
+            String message = e.getMessage();
+            if ( !message.toLowerCase().contains( errorMessageShouldContain.toLowerCase() ) )
             {
-                fail( "Error message '" + errorMessage + "' should have contained '" + errorMessageShouldContain +
-                        "'" );
+                fail( "Error message '" + message + "' should have contained '" + errorMessageShouldContain + "'" );
             }
         }
     }

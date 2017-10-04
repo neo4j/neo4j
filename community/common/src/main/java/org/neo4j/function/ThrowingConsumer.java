@@ -20,8 +20,8 @@
 package org.neo4j.function;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional interfaces, ThrowingConsumer is expected to
- * operate via side-effects.
+ * Represents an operation that accepts a single input argument and returns no result.
+ * Unlike most other functional interfaces, ThrowingConsumer is expected to operate via side-effects.
  *
  * @param <T> the type of the input to the operation
  * @param <E> the type of exception that may be thrown from the function

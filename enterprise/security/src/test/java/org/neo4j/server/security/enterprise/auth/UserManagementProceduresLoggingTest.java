@@ -30,13 +30,13 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
@@ -49,8 +49,8 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class UserManagementProceduresLoggingTest
 {
     private TestUserManagementProcedures authProcedures;
-    private AssertableLogProvider log = null;
-    private EnterpriseSecurityContext matsContext = null;
+    private AssertableLogProvider log;
+    private EnterpriseSecurityContext matsContext;
     private EnterpriseUserManager generalUserManager;
 
     @Before
@@ -274,9 +274,12 @@ public class UserManagementProceduresLoggingTest
 
         // Then
         log.assertExactly(
-                error( "[admin]: tried to change password for user `%s`: %s", "andres", "Old password and new password cannot be the same." ),
-                error( "[admin]: tried to change password for user `%s`: %s", "andres", "A password cannot be empty." ),
-                error( "[admin]: tried to change password for user `%s`: %s", "notAndres", "User 'notAndres' does not exist." )
+                error( "[admin]: tried to change password for user `%s`: %s",
+                        "andres", "Old password and new password cannot be the same." ),
+                error( "[admin]: tried to change password for user `%s`: %s",
+                        "andres", "A password cannot be empty." ),
+                error( "[admin]: tried to change password for user `%s`: %s",
+                        "notAndres", "User 'notAndres' does not exist." )
         );
     }
 
@@ -616,12 +619,12 @@ public class UserManagementProceduresLoggingTest
 
     private void catchInvalidArguments( ThrowingAction<Exception> f ) throws Exception
     {
-        assertException( f, InvalidArgumentsException.class, "" );
+        assertException( f, InvalidArgumentsException.class );
     }
 
     private void catchAuthorizationViolation( ThrowingAction<Exception> f ) throws Exception
     {
-        assertException( f, AuthorizationViolationException.class, "" );
+        assertException( f, AuthorizationViolationException.class );
     }
 
     private AssertableLogProvider.LogMatcher info( String message, String... arguments )
@@ -684,7 +687,7 @@ public class UserManagementProceduresLoggingTest
 
     private static class TestUserManagementProcedures extends UserManagementProcedures
     {
-        private boolean failTerminateTransactions = false;
+        private boolean failTerminateTransactions;
 
         void failTerminateTransaction()
         {

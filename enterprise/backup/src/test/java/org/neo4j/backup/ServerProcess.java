@@ -41,8 +41,8 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<File, String
         }
         else
         {
-            // TODO This is using the old config style - is this class even used anywhere!?
-            this.db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( "enable_online_backup", backupConfigValue ).newGraphDatabase();
+            this.db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                    .setConfig( "enable_online_backup", backupConfigValue ).newGraphDatabase();
         }
     }
 

@@ -36,6 +36,10 @@ import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
 
 public class ProcessTestUtil
 {
+    private ProcessTestUtil()
+    {
+    }
+
     public static void executeSubProcess( Class<?> mainClass, long timeout, TimeUnit unit,
             String... arguments ) throws Exception
     {

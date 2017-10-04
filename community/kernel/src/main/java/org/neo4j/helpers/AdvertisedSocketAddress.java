@@ -28,6 +28,9 @@ public class AdvertisedSocketAddress extends SocketAddress
 
     /**
      * Textual representation format for an advertised socket address.
+     * @param hostname of the address.
+     * @param port of the address.
+     * @return a string representing the address.
      */
     public static String advertisedAddress( String hostname, int port )
     {

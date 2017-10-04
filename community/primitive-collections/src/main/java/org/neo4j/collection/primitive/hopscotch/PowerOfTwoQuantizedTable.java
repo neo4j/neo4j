@@ -43,7 +43,7 @@ public abstract class PowerOfTwoQuantizedTable<VALUE> implements Table<VALUE>
 
         this.h = h;
         this.capacity = quantize( max( capacity, 2 ) );
-        this.tableMask = highestOneBit( this.capacity )-1;
+        this.tableMask = highestOneBit( this.capacity ) - 1;
     }
 
     public static int baseCapacity( int h )
@@ -123,7 +123,7 @@ public abstract class PowerOfTwoQuantizedTable<VALUE> implements Table<VALUE>
     public String toString()
     {
         return format( "hopscotch-table[%s|capacity:%d, size:%d, usage:%f]", getClass().getSimpleName(),
-                capacity, size, size/((double)capacity) );
+                capacity, size, size / ((double) capacity) );
     }
 
     @Override

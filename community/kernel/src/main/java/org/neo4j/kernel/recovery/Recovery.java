@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.IOException;
-
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
 /**
  * This is the process of doing a recovery on the transaction log and store, and is executed
@@ -33,92 +38,125 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class Recovery extends LifecycleAdapter
 {
-    public interface Monitor
-    {
-        default void recoveryRequired( LogPosition recoveryPosition )
-        { // no-op by default
-        }
 
-        default void transactionRecovered( long txId )
-        { // no-op by default
-        }
-
-        default void recoveryCompleted( int numberOfRecoveredTransactions )
-        { // no-op by default
-        }
-    }
-
-    public interface SPI
-    {
-        void forceEverything();
-
-        TransactionCursor getTransactions( LogPosition position ) throws IOException;
-
-        LogPosition getPositionToRecoverFrom() throws IOException;
-
-        Visitor<CommittedTransactionRepresentation,Exception> startRecovery();
-
-        void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
-                LogPosition positionAfterLastRecoveredTransaction ) throws Exception;
-    }
-
-    private final SPI spi;
-    private final Monitor monitor;
+    private final RecoveryService recoveryService;
+    private final RecoveryMonitor monitor;
+    private final StartupStatisticsProvider startupStatistics;
+    private final CorruptedLogsTruncator logsTruncator;
+    private final ProgressReporter progressReporter;
+    private final boolean failOnCorruptedLogFiles;
     private int numberOfRecoveredTransactions;
 
-    private boolean recoveredLog = false;
-
-    public Recovery( SPI spi, Monitor monitor )
+    public Recovery( RecoveryService recoveryService, StartupStatisticsProvider startupStatistics,
+            CorruptedLogsTruncator logsTruncator, RecoveryMonitor monitor, ProgressReporter progressReporter,
+            boolean failOnCorruptedLogFiles )
     {
-        this.spi = spi;
+        this.recoveryService = recoveryService;
         this.monitor = monitor;
+        this.startupStatistics = startupStatistics;
+        this.logsTruncator = logsTruncator;
+        this.progressReporter = progressReporter;
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
     @Override
     public void init() throws Throwable
     {
-        LogPosition recoveryFromPosition = spi.getPositionToRecoverFrom();
-        if ( LogPosition.UNSPECIFIED.equals( recoveryFromPosition ) )
+        RecoveryStartInformation recoveryStartInformation = recoveryService.getRecoveryStartInformation();
+        if ( !recoveryStartInformation.isRecoveryRequired() )
         {
             return;
         }
 
-        monitor.recoveryRequired( recoveryFromPosition );
+        LogPosition recoveryPosition = recoveryStartInformation.getRecoveryPosition();
 
-        LogPosition recoveryToPosition;
+        monitor.recoveryRequired( recoveryPosition );
+        recoveryService.startRecovery();
+
+        LogPosition recoveryToPosition = recoveryPosition;
         CommittedTransactionRepresentation lastTransaction = null;
-        Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor = spi.startRecovery();
-        try ( TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition ) )
+        CommittedTransactionRepresentation lastReversedTransaction = null;
+        try
         {
-            while ( transactionsToRecover.next() )
+            long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
+            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryPosition );
+                    RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY ) )
             {
-                lastTransaction = transactionsToRecover.get();
-                long txId = lastTransaction.getCommitEntry().getTxId();
-                recoveryVisitor.visit( lastTransaction );
-                monitor.transactionRecovered( txId );
-                numberOfRecoveredTransactions++;
+                while ( transactionsToRecover.next() )
+                {
+                    CommittedTransactionRepresentation transaction = transactionsToRecover.get();
+                    if ( lastReversedTransaction == null )
+                    {
+                        lastReversedTransaction = transaction;
+                        initProgressReporter( recoveryStartInformation, lastReversedTransaction );
+                    }
+                    recoveryVisitor.visit( transaction );
+                    lowestRecoveredTxId = transaction.getCommitEntry().getTxId();
+                    reportProgress();
+                }
             }
-            recoveryToPosition = transactionsToRecover.position();
-        }
 
-        if ( recoveryToPosition.equals( LogPosition.UNSPECIFIED ) )
+            monitor.reverseStoreRecoveryCompleted( lowestRecoveredTxId );
+
+            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryPosition );
+                    RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY ) )
+            {
+                while ( transactionsToRecover.next() )
+                {
+                    lastTransaction = transactionsToRecover.get();
+                    long txId = lastTransaction.getCommitEntry().getTxId();
+                    recoveryVisitor.visit( lastTransaction );
+                    monitor.transactionRecovered( txId );
+                    numberOfRecoveredTransactions++;
+                    recoveryToPosition = transactionsToRecover.position();
+                    reportProgress();
+                }
+            }
+        }
+        catch ( Throwable t )
         {
-            recoveryToPosition = recoveryFromPosition;
+            if ( failOnCorruptedLogFiles )
+            {
+                throw Exceptions.launderedException( t );
+            }
+            if ( lastTransaction != null )
+            {
+                LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
+                monitor.failToRecoverTransactionsAfterCommit( t, commitEntry, recoveryToPosition );
+            }
+            else
+            {
+                monitor.failToRecoverTransactionsAfterPosition( t, recoveryPosition );
+                recoveryToPosition = recoveryPosition;
+            }
         }
+        progressReporter.completed();
+        logsTruncator.truncate( recoveryToPosition );
 
-        spi.allTransactionsRecovered( lastTransaction, recoveryToPosition );
-        recoveredLog = true;
-        spi.forceEverything();
+        recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition );
+        startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
+        monitor.recoveryCompleted( numberOfRecoveredTransactions );
     }
 
-    @Override
-    public void start() throws Throwable
+    private void initProgressReporter( RecoveryStartInformation recoveryStartInformation,
+            CommittedTransactionRepresentation lastReversedTransaction )
     {
-        // This is here as by now all other services have reacted to the recovery process
-        if ( recoveredLog )
-        {
-            spi.forceEverything();
-            monitor.recoveryCompleted( numberOfRecoveredTransactions );
-        }
+        long numberOfTransactionToRecover =
+                getNumberOfTransactionToRecover( recoveryStartInformation, lastReversedTransaction );
+        // since we will process each transaction twice (doing reverse and direct detour) we need to
+        // multiply number of transactions that we want to recover by 2 to be able to report correct progress
+        progressReporter.start( numberOfTransactionToRecover * 2 );
+    }
+
+    private void reportProgress()
+    {
+        progressReporter.progress( 1 );
+    }
+
+    private long getNumberOfTransactionToRecover( RecoveryStartInformation recoveryStartInformation,
+            CommittedTransactionRepresentation lastReversedTransaction )
+    {
+        return lastReversedTransaction.getCommitEntry().getTxId() -
+                recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() + 1;
     }
 }

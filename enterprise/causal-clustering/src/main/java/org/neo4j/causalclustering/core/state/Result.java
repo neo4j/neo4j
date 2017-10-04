@@ -50,7 +50,7 @@ public class Result
 
     public Object consume() throws Exception
     {
-        if( exception != null )
+        if ( exception != null )
         {
             throw exception;
         }
@@ -62,7 +62,7 @@ public class Result
 
     public CompletableFuture<Object> apply( CompletableFuture<Object> future )
     {
-        if( exception != null )
+        if ( exception != null )
         {
             future.completeExceptionally( exception );
         }

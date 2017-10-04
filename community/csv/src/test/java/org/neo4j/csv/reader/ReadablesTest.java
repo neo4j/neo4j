@@ -43,7 +43,7 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.test.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -59,19 +59,22 @@ public class ReadablesTest
     public static Collection<ReadMethod> readMethods()
     {
         return Arrays.asList(
-                (readable,length) ->
+                ( readable, length ) ->
                 {
                     SectionedCharBuffer readText = new SectionedCharBuffer( length );
                     readable.read( readText, readText.front() );
                     return copyOfRange( readText.array(), readText.pivot(), readText.front() );
                 },
-                (readable,length) ->
+                ( readable, length ) ->
                 {
                     char[] result = new char[length];
                     readable.read( result, 0, length );
                     return result;
                 } );
     }
+
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     interface ReadMethod
     {
@@ -258,7 +261,7 @@ public class ReadablesTest
         assertEquals( expected.length, buffer.available() );
         for ( int i = 0; i < expected.length; i++ )
         {
-            assertEquals( expected[i], array[buffer.pivot()+i] );
+            assertEquals( expected[i], array[buffer.pivot() + i] );
         }
     }
 
@@ -341,6 +344,4 @@ public class ReadablesTest
         assertArrayEquals( readText, text.toCharArray() );
     }
 
-    @Rule
-    public final TestDirectory directory = new TestDirectory();
 }

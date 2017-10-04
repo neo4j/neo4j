@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -44,13 +45,13 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         return get( idType );
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         return get( idType );
     }
@@ -80,8 +81,8 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     private class JumpingIdGenerator implements IdGenerator
     {
         private final AtomicLong nextId = new AtomicLong();
-        private int leftToNextJump = sizePerJump/2;
-        private long highBits = 0;
+        private int leftToNextJump = sizePerJump / 2;
+        private long highBits;
 
         @Override
         public long nextId()
@@ -90,7 +91,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
             if ( --leftToNextJump == 0 )
             {
                 leftToNextJump = sizePerJump;
-                nextId.set( (0xFFFFFFFFL | (highBits++ << 32)) - sizePerJump/2 + 1 );
+                nextId.set( (0xFFFFFFFFL | (highBits++ << 32)) - sizePerJump / 2 + 1 );
             }
             return result;
         }
@@ -113,15 +114,15 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void setHighId( long id )
-        {
-            nextId.set( id );
-        }
-
-        @Override
         public long getHighId()
         {
             return nextId.get();
+        }
+
+        @Override
+        public void setHighId( long id )
+        {
+            nextId.set( id );
         }
 
         @Override
@@ -154,7 +155,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public long getHighestPossibleIdInUse()
         {
-            return getHighId()-1;
+            return getHighId() - 1;
         }
     }
 }

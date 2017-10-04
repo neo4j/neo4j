@@ -27,7 +27,6 @@ import org.apache.lucene.index.ReaderSlice;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.storable.Value;
 
 import static java.util.stream.Collectors.toList;
 
@@ -69,36 +69,34 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId ) throws IndexEntryConflictException, IOException
+    public void verify( PropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException
     {
         for ( String field : allFields() )
         {
-            if ( LuceneDocumentStructure.NODE_ID_KEY.equals( field ) )
+            if ( LuceneDocumentStructure.useFieldForUniquenessVerification( field ) )
             {
-                continue;
-            }
-
-            TermsEnum terms = LuceneDocumentStructure.originalTerms( termsForField( field ), field );
-            BytesRef termsRef;
-            while ( (termsRef = terms.next()) != null )
-            {
-                if ( terms.docFreq() > 1 )
+                TermsEnum terms = LuceneDocumentStructure.originalTerms( termsForField( field ), field );
+                BytesRef termsRef;
+                while ( (termsRef = terms.next()) != null )
                 {
-                    TermQuery query = new TermQuery( new Term( field, termsRef ) );
-                    searchForDuplicates( query, accessor, propKeyId );
+                    if ( terms.docFreq() > 1 )
+                    {
+                        TermQuery query = new TermQuery( new Term( field, termsRef ) );
+                        searchForDuplicates( query, accessor, propKeyIds, terms.docFreq() );
+                    }
                 }
             }
         }
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId, List<Object> updatedPropertyValues )
+    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Value[]> updatedValueTuples )
             throws IndexEntryConflictException, IOException
     {
-        for ( Object propertyValue : updatedPropertyValues )
+        for ( Value[] valueTuple : updatedValueTuples )
         {
-            Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
-            searchForDuplicates( query, accessor, propKeyId );
+            Query query = LuceneDocumentStructure.newSeekQuery( valueTuple );
+            searchForDuplicates( query, accessor, propKeyIds );
         }
     }
 
@@ -132,18 +130,56 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
         return new MultiTerms( termsArray, readerSlicesArray );
     }
 
-    private void searchForDuplicates( Query query, PropertyAccessor accessor, int propertyKeyId )
+    /**
+     * Search for unknown number of duplicates duplicates
+     *
+     * @param query query to find duplicates in
+     * @param accessor accessor to load actual property value from store
+     * @param propertyKeyIds property key ids
+     * @throws IOException
+     * @throws IndexEntryConflictException
+     */
+    private void searchForDuplicates( Query query, PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
+    {
+        DuplicateCheckingCollector collector = getDuplicateCollector( accessor, propertyKeyIds );
+        collector.init();
+        searchForDuplicates( query, collector );
+    }
+
+    /**
+     * Search for known number of duplicates duplicates
+     *
+     * @param query query to find duplicates in
+     * @param accessor accessor to load actual property value from store
+     * @param propertyKeyIds property key ids
+     * @param expectedNumberOfEntries expected number of duplicates in query
+     * @throws IOException
+     * @throws IndexEntryConflictException
+     */
+    private void searchForDuplicates( Query query, PropertyAccessor accessor, int[] propertyKeyIds,
+            int expectedNumberOfEntries ) throws IOException, IndexEntryConflictException
+    {
+        DuplicateCheckingCollector collector = getDuplicateCollector( accessor, propertyKeyIds );
+        collector.init( expectedNumberOfEntries );
+        searchForDuplicates( query, collector );
+    }
+
+    private DuplicateCheckingCollector getDuplicateCollector( PropertyAccessor accessor, int[] propertyKeyIds )
+    {
+        return DuplicateCheckingCollector.forProperties( accessor, propertyKeyIds );
+    }
+
+    private void searchForDuplicates( Query query, DuplicateCheckingCollector collector ) throws IndexEntryConflictException, IOException
     {
         try
         {
-            /**
-             * Here {@link DuplicateCheckingCollector#reset()} is deliberately not called to preserve accumulated
-             * state (knowledge about duplicates) across all {@link IndexSearcher#search(Query, Collector)} calls.
-             */
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propertyKeyId );
             for ( PartitionSearcher searcher : searchers )
             {
+                    /*
+                     * Here {@link DuplicateCheckingCollector#init()} is deliberately not called to preserve accumulated
+                     * state (knowledge about duplicates) across all {@link IndexSearcher#search(Query, Collector)} calls.
+                     */
                 searcher.getIndexSearcher().search( query, collector );
             }
         }

@@ -19,33 +19,49 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
-import java.util.List;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import javax.annotation.Nonnull;
 
-import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.configuration.DocumentedDefaultValue;
+import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.logging.Log;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class ConfigTest
 {
-    public static class MyMigratingSettings
+    public static class MyMigratingSettings implements LoadableConfig
     {
-        @SuppressWarnings("unused") // accessed by reflection
+        @SuppressWarnings( "unused" ) // accessed by reflection
         @Migrator
         public static ConfigurationMigrator migrator = new BaseConfigurationMigrator()
         {
@@ -53,7 +69,7 @@ public class ConfigTest
                 add( new SpecificPropertyMigration( "old", "Old has been replaced by newer!" )
                 {
                     @Override
-                    public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
+                    public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
                     {
                         rawConfiguration.put( newer.name(), value );
                     }
@@ -64,18 +80,61 @@ public class ConfigTest
         public static Setting<String> newer = setting( "newer", STRING, "" );
     }
 
-    public static class MySettingsWithDefaults
+    public static class MySettingsWithDefaults implements LoadableConfig
     {
-        public static Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
+        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
-        public static Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
+        @Internal
+        @DocumentedDefaultValue( "<documented default value>" )
+        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
+
+        @Deprecated
+        @ReplacedBy( "hello" )
+        public static final Setting<String> oldHello = setting( "old_hello", STRING, "Hello, Bob" );
+
+        @Deprecated
+        public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement" );
     }
+
+    private static class HelloHasToBeNeo4jConfigurationValidator implements ConfigurationValidator
+    {
+        @Override
+        public Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException
+        {
+            if ( !config.get( MySettingsWithDefaults.hello ).equals( "neo4j" ) )
+            {
+                throw new InvalidSettingException( "Setting hello has to set to neo4j" );
+            }
+
+            return Collections.emptyMap();
+        }
+    }
+
+    private static MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
+    private static MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
+
+    private static Config Config()
+    {
+        return Config( Collections.emptyMap() );
+    }
+
+    private static Config Config( Map<String,String> params )
+    {
+        return Config.fromSettings( params ).withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+    }
+
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+
+    @Rule
+    public ExpectedException expect = ExpectedException.none();
 
     @Test
     public void shouldApplyDefaults()
     {
-        Config config = new Config( new HashMap<>(), MySettingsWithDefaults.class );
+        Config config = Config();
 
         assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
     }
@@ -84,16 +143,16 @@ public class ConfigTest
     public void shouldApplyMigrations()
     {
         // When
-        Config config = new Config( stringMap( "old", "hello!" ), MyMigratingSettings.class );
+        Config config = Config( stringMap( "old", "hello!" ) );
 
         // Then
         assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
     }
 
-    @Test(expected = InvalidSettingException.class)
+    @Test( expected = InvalidSettingException.class )
     public void shouldNotAllowSettingInvalidValues()
     {
-        new Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), MySettingsWithDefaults.class );
+        Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ) );
         fail( "Expected validation to fail." );
     }
 
@@ -101,119 +160,197 @@ public class ConfigTest
     public void shouldBeAbleToAugmentConfig() throws Exception
     {
         // Given
-        Config config = new Config( stringMap( "newer", "old", "non-overlapping", "huzzah" ) );
+        Config config = Config();
 
         // When
-        config.augment( stringMap( "newer", "new", "unrelated", "hello" ) );
+        config.augment( MySettingsWithDefaults.boolSetting, Settings.FALSE );
+        config.augment( MySettingsWithDefaults.hello, "Bye" );
 
         // Then
-        assertThat( config.get( setting( "newer", STRING, "" ) ), equalTo( "new" ) );
-        assertThat( config.get( setting( "non-overlapping", STRING, "" ) ), equalTo( "huzzah" ) );
-        assertThat( config.get( setting( "unrelated", STRING, "" ) ), equalTo( "hello" ) );
+        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
+        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
     }
 
     @Test
-    public void shouldProvideViewOfGroups() throws Throwable
+    public void augmentAnotherConfig() throws Exception
     {
-        // Given
-        Config config = new Config( stringMap(
-                "my.users.0.user.name", "Bob",
-                "my.users.0.user.age", "81",
-                "my.users.1.user.name", "Greta",
-                "my.users.1.user.age", "82" ) );
+        Config config = Config();
+        config.augment( MySettingsWithDefaults.hello, "Hi" );
 
-        Setting<String> name = setting( "user.name", STRING, NO_DEFAULT );
-        Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
+        Config anotherConfig = Config();
+        anotherConfig.augment( stringMap( MySettingsWithDefaults.boolSetting.name(),
+                Settings.FALSE, MySettingsWithDefaults.hello.name(), "Bye" ) );
 
-        // When
-        List<Configuration> views = config.view( ConfigGroups.groups( "my.users" ) );
+        config.augment( anotherConfig );
 
-        // Then
-        assertThat( views.size(), equalTo( 2 ) );
-
-        Configuration bob = views.get( 0 );
-        assertThat( bob.get( name ), equalTo( "Bob" ) );
-        assertThat( bob.get( age ), equalTo( 81 ) );
-
-        Configuration greta = views.get( 1 );
-        assertThat( greta.get( name ), equalTo( "Greta" ) );
-        assertThat( greta.get( age ), equalTo( 82 ) );
-
-        // however given the full name, the config could still be accessed outside the group
-        Setting<String> name0 = setting( "my.users.0.user.name", STRING, NO_DEFAULT );
-        assertThat( config.get( name0 ), equalTo( "Bob" ) );
-
+        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
+        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
     }
 
     @Test
-    public void shouldFindNoGroupViewWhenGroupNameIsMissing() throws Throwable
+    public void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods()
+            throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
-                "0.user.name", "Bob",
-                "0.user.age", "81",
-                "1.user.name", "Greta",
-                "1.user.age", "82" ) );
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
 
-        Setting<String> name = setting( "user.name", STRING, NO_DEFAULT );
-        Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
+        Config config = Config.fromFile( confFile )
+                .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
+                .withSetting( "ha.jibberish", "baah" )
+                .withSetting( "dbms.jibberish", "booh" ).build();
 
         // When
-        List<Configuration> emptyStrViews = config.view( ConfigGroups.groups( "" ) );
-        List<Configuration> numViews = config.view( ConfigGroups.groups( "0" ) );
+        config.setLogger( log );
+        config.augment( "causal_clustering.jibberish", "baah" );
 
         // Then
-        assertThat( emptyStrViews.size(), equalTo( 0 ) );
-        assertThat( numViews.size(), equalTo( 0 ) );
-        assertThat( config.get( setting( "0.user.name", STRING, NO_DEFAULT ) ), equalTo( "Bob" ) );
+        verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "ha.jibberish" );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
-    public void shouldFindNoGroupViewWhenGroupNameIsWrong() throws Throwable
+    public void shouldLogDeprecationWarnings()
+            throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
-                "my.users.0.name", "Bob",
-                "my.users.0.age", "81",
-                "my.users.1.name", "Greta",
-                "my.users.1.age", "82" ) );
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+
+        Config config = Config.fromFile( confFile )
+                .withSetting( MySettingsWithDefaults.oldHello, "baah" )
+                .withSetting( MySettingsWithDefaults.oldSetting, "booh" )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings, new GraphDatabaseSettings() ) )
+                .build();
 
         // When
-        List<Configuration> views = config.view( ConfigGroups.groups( "my" ) );
+        config.setLogger( log );
 
         // Then
-        assertThat( views.size(), equalTo( 0 ) );
+        verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
+                MySettingsWithDefaults.hello.name() );
+        verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
-    public void shouldOnlyReadInsideGroupWhileAccessingSettingsInAGroup() throws Throwable
+    public void shouldSetInternalParameter()
+            throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
-                "name", "lemon",
-                "my.users.0.user.name", "Bob",
-                "my.users.0.user.age", "81",
-                "my.users.1.user.name", "Greta",
-                "my.users.1.user.age", "82" ) );
-
-        Setting<String> name = setting( "name", STRING, "No name given to this poor user" );
-        Setting<Integer> age = setting( "age", INTEGER, NO_DEFAULT );
-
-        // When
-        List<Configuration> views = config.view( ConfigGroups.groups( "my.users" ) );
+        Config config = Config.builder()
+                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
+                .withSetting( MySettingsWithDefaults.hello, "ABC")
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
         // Then
-        assertThat( views.size(), equalTo( 2 ) );
+        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
+        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).internal() );
+    }
 
-        Configuration bob = views.get( 0 );
-        assertThat( bob.get( name ), equalTo( "No name given to this poor user" ) );
-        assertNull( bob.get( age ) );
+    @Test
+    public void shouldSetDocumentedDefaultValue()
+            throws Exception
+    {
+        // Given
+        Config config = Config.builder()
+                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
+                .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                .withConfigClasses( Arrays.asList( new MySettingsWithDefaults(), myMigratingSettings ) ).build();
 
-        Configuration greta = views.get( 1 );
-        assertThat( greta.get( name ), equalTo( "No name given to this poor user" ) );
-        assertNull( greta.get( age ) );
+        // Then
+        assertEquals( Optional.of( "<documented default value>" ),
+                config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() )
+                        .documentedDefaultValue() );
+        assertEquals( Optional.empty(),
+                config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).documentedDefaultValue() );
+    }
 
-        assertThat( config.get( name ), equalTo( "lemon" ) );
-        assertNull( config.get( age ) );
+    @Test
+    public void validatorsShouldBeCalledWhenBuilding() throws Exception
+    {
+        // Should not throw
+        Config.builder()
+                .withSetting( MySettingsWithDefaults.hello, "neo4j" )
+                .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+
+        expect.expect( InvalidSettingException.class );
+        expect.expectMessage( "Setting hello has to set to neo4j" );
+
+        // Should throw
+        Config.builder()
+                .withSetting( MySettingsWithDefaults.hello, "not-neo4j" )
+                .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+    }
+
+    @Group( "a.b.c" )
+    private static class GroupedSetting
+    {
+    }
+
+    @Test
+    public void identifiersFromGroup() throws Exception
+    {
+        // Given
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+
+        Config config = Config.fromFile( confFile )
+                .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
+                .withSetting( "a.b.c.first.jibberish", "baah" )
+                .withSetting( "a.b.c.second.jibberish", "baah" )
+                .withSetting( "a.b.c.third.jibberish", "baah" )
+                .withSetting( "a.b.c.forth.jibberish", "baah" ).build();
+
+        Set<String> identifiers = config.identifiersFromGroup( GroupedSetting.class );
+        Set<String> expectedIdentifiers = new HashSet<>( Arrays.asList( "first", "second", "third", "forth" ) );
+
+        assertEquals( expectedIdentifiers, identifiers );
+    }
+
+    @Test
+    public void isConfigured() throws Exception
+    {
+        Config config = Config();
+        assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
+        config.augment( MySettingsWithDefaults.hello, "Hi" );
+        assertTrue( config.isConfigured( MySettingsWithDefaults.hello ) );
+    }
+
+    @Test
+    public void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists() throws Exception
+    {
+        Config config = Config();
+        assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
+        assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
+    }
+
+    @Test
+    public void withConnectorsDisabled() throws Exception
+    {
+        Connector httpConnector = new HttpConnector();
+        Connector boltConnector = new BoltConnector();
+        Config config = Config.builder()
+                .withSetting( httpConnector.enabled, "true" )
+                .withSetting( httpConnector.type, Connector.ConnectorType.HTTP.name() )
+                .withSetting( boltConnector.enabled, "true" )
+                .withSetting( boltConnector.type, Connector.ConnectorType.BOLT.name() )
+                .withConnectorsDisabled().build();
+        assertFalse( config.get( httpConnector.enabled ) );
+        assertFalse( config.get( boltConnector.enabled ) );
+    }
+
+    @Test
+    public void augmentDefaults() throws Exception
+    {
+        Config config = Config();
+        assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
+        config.augmentDefaults( MySettingsWithDefaults.hello, "new default" );
+        assertEquals( "new default", config.get( MySettingsWithDefaults.hello ) );
     }
 }

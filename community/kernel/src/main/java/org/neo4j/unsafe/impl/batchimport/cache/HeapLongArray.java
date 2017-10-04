@@ -29,7 +29,7 @@ public class HeapLongArray extends HeapNumberArray<LongArray> implements LongArr
     private final long[] array;
     private final long defaultValue;
 
-    public HeapLongArray( int length, long defaultValue, int base )
+    public HeapLongArray( int length, long defaultValue, long base )
     {
         super( 8, base );
         this.defaultValue = defaultValue;
@@ -59,16 +59,5 @@ public class HeapLongArray extends HeapNumberArray<LongArray> implements LongArr
     public void clear()
     {
         Arrays.fill( array, defaultValue );
-    }
-
-    @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        for ( int i = 0; i < numberOfEntries; i++ )
-        {
-            long fromValue = get( fromIndex+i );
-            set( fromIndex+i, get( toIndex+i ) );
-            set( toIndex+i, fromValue );
-        }
     }
 }

@@ -270,7 +270,7 @@ public class ClusterContextImplTest
 
         HeartbeatContext heartbeatContext = mock( HeartbeatContext.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl( me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 
@@ -300,7 +300,7 @@ public class ClusterContextImplTest
 
         HeartbeatContext heartbeatContext = mock( HeartbeatContext.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl( me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 
@@ -335,7 +335,7 @@ public class ClusterContextImplTest
 
         HeartbeatContext heartbeatContext = mock( HeartbeatContext.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl( me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 

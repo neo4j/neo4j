@@ -38,19 +38,15 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.FileOperation;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
@@ -75,14 +71,16 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.canDetectFreeMemory;
@@ -102,6 +100,17 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class ImportTool
 {
+    private static final String INPUT_FILES_DESCRIPTION =
+            "Multiple files will be logically seen as one big file " +
+            "from the perspective of the importer. " +
+            "The first line must contain the header. " +
+            "Multiple data sources like these can be specified in one import, " +
+            "where each data source has its own header. " +
+            "Note that file groups must be enclosed in quotation marks. " +
+            "Each file can be a regular expression and will then include all matching files. " +
+            "The file matching is done with number awareness such that e.g. files:" +
+            "'File1Part_001.csv', 'File12Part_003' will be ordered in that order for a pattern like: 'File.*'";
+
     private static final String UNLIMITED = "true";
 
     enum Options
@@ -114,29 +123,20 @@ public class ImportTool
                 "Database name to import into. " + "Must not contain existing database.", true ),
         NODE_DATA( "nodes", null,
                 "[:Label1:Label2] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
-                "Node CSV header and data. Multiple files will be logically seen as one big file "
-                        + "from the perspective of the importer. "
-                        + "The first line must contain the header. "
-                        + "Multiple data sources like these can be specified in one import, "
-                        + "where each data source has its own header. "
-                        + "Note that file groups must be enclosed in quotation marks.",
+                "Node CSV header and data. " + INPUT_FILES_DESCRIPTION,
                         true, true ),
         RELATIONSHIP_DATA( "relationships", null,
                 "[:RELATIONSHIP_TYPE] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
                 MULTI_FILE_DELIMITER + "...\"",
-                "Relationship CSV header and data. Multiple files will be logically seen as one big file "
-                        + "from the perspective of the importer. "
-                        + "The first line must contain the header. "
-                        + "Multiple data sources like these can be specified in one import, "
-                        + "where each data source has its own header. "
-                        + "Note that file groups must be enclosed in quotation marks.",
+                "Relationship CSV header and data. " + INPUT_FILES_DESCRIPTION,
                         true, true ),
         DELIMITER( "delimiter", null,
                 "<delimiter-character>",
                 "Delimiter character, or 'TAB', between values in CSV data. The default option is `" + COMMAS.delimiter() + "`." ),
         ARRAY_DELIMITER( "array-delimiter", null,
                 "<array-delimiter-character>",
-                "Delimiter character, or 'TAB', between array elements within a value in CSV data. The default option is `" + COMMAS.arrayDelimiter() + "`." ),
+                "Delimiter character, or 'TAB', between array elements within a value in CSV data. " +
+                        "The default option is `" + COMMAS.arrayDelimiter() + "`." ),
         QUOTE( "quote", null,
                 "<quotation-character>",
                 "Character to treat as quotation character for values in CSV data. "
@@ -151,7 +151,7 @@ public class ImportTool
 
         TRIM_STRINGS( "trim-strings", org.neo4j.csv.reader.Configuration.DEFAULT.trimStrings(),
                 "<true/false>",
-                "Whether or not strings should be trimmed for whitespaces."),
+                "Whether or not strings should be trimmed for whitespaces." ),
 
         INPUT_ENCODING( "input-encoding", null,
                 "<character set>",
@@ -187,8 +187,8 @@ public class ImportTool
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
                         + "still treated as errors" ),
-        SKIP_BAD_ENTRIES_LOGGING ("skip-bad-entries-logging", Boolean.FALSE,
-                "<true/false>", "Whether or not to skip logging bad entries detected during import."),
+        SKIP_BAD_ENTRIES_LOGGING( "skip-bad-entries-logging", Boolean.FALSE, "<true/false>",
+                "Whether or not to skip logging bad entries detected during import." ),
         SKIP_BAD_RELATIONSHIPS( "skip-bad-relationships", Boolean.TRUE,
                 "<true/false>",
                 "Whether or not to skip importing relationships that refers to missing node ids, i.e. either "
@@ -196,7 +196,7 @@ public class ImportTool
                         + "node input data. "
                         + "Skipped nodes will be logged"
                         + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + ", unless "
-                        + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + " option."),
+                        + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + " option." ),
         SKIP_DUPLICATE_NODES( "skip-duplicate-nodes", Boolean.FALSE,
                 "<true/false>",
                 "Whether or not to skip importing nodes that have the same id/group. In the event of multiple "
@@ -211,17 +211,10 @@ public class ImportTool
                         + "Skipped columns will be logged, containing at most number of entities specified by "
                         + BAD_TOLERANCE.key() + ", unless "
                         + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + "option." ),
-        DATABASE_CONFIG( "db-config", null,
-                "<path/to/neo4j.conf>",
-                "(advanced) File specifying database-specific configuration. For more information consult "
-                        + "manual about available configuration options for a neo4j configuration file. "
-                        + "Only configuration affecting store at time of creation will be read. "
-                        + "Examples of supported config are:\n"
-                        + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
-                        + GraphDatabaseSettings.string_block_size.name() + "\n"
-                        + GraphDatabaseSettings.array_block_size.name() ),
+        DATABASE_CONFIG( "db-config", null, "<path/to/" + Config.DEFAULT_CONFIG_FILE_NAME + ">",
+                "(advanced) Option is deprecated and replaced by 'additional-config'. " ),
         ADDITIONAL_CONFIG( "additional-config", null,
-                "<path/to/neo4j.conf>",
+                "<path/to/" + Config.DEFAULT_CONFIG_FILE_NAME + ">",
                 "(advanced) File specifying database-specific configuration. For more information consult "
                         + "manual about available configuration options for a neo4j configuration file. "
                         + "Only configuration affecting store at time of creation will be read. "
@@ -241,7 +234,17 @@ public class ImportTool
                 "(advanced) Maximum memory that importer can use for various data structures and caching " +
                 "to improve performance. If left as unspecified (null) it is set to " + DEFAULT_MAX_MEMORY_PERCENT +
                 "% of (free memory on machine - max JVM memory). " +
-                "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." );
+                "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." ),
+        CACHE_ON_HEAP( "cache-on-heap",
+                DEFAULT.allowCacheAllocationOnHeap(),
+                "Whether or not to allow allocating memory for the cache on heap",
+                "(advanced) Whether or not to allow allocating memory for the cache on heap. " +
+                "If 'false' then caches will still be allocated off-heap, but the additional free memory " +
+                "inside the JVM will not be allocated for the caches. This to be able to have better control " +
+                "over the heap memory" ),
+        HIGH_IO( "high-io", null, "Assume a high-throughput storage subsystem",
+                "(advanced) Ignore environment-based heuristics, and assume that the target storage subsystem can " +
+                "support parallel IO with high throughput." );
 
         private final String key;
         private final Object defaultValue;
@@ -343,6 +346,10 @@ public class ImportTool
      */
     static final String MULTI_FILE_DELIMITER = ",";
 
+    private ImportTool()
+    {
+    }
+
     /**
      * Runs the import tool given the supplied arguments.
      *
@@ -374,31 +381,33 @@ public class ImportTool
             return;
         }
 
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir;
-        Collection<Option<File[]>> nodesFiles, relationshipsFiles;
+        Collection<Option<File[]>> nodesFiles;
+        Collection<Option<File[]>> relationshipsFiles;
         boolean enableStacktrace;
-        Number processors = null;
-        Input input = null;
-        int badTolerance;
+        Number processors;
+        Input input;
+        long badTolerance;
         Charset inputEncoding;
-        boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
+        boolean skipBadRelationships;
+        boolean skipDuplicateNodes;
+        boolean ignoreExtraColumns;
         boolean skipBadEntriesLogging;
         Config dbConfig;
         OutputStream badOutput = null;
-        IdType idType = null;
+        IdType idType;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
         File logsDir;
         File badFile = null;
-        Long maxMemory = null;
+        Long maxMemory;
+        Boolean defaultHighIO;
 
         boolean success = false;
-        try
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
+            storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
-            Config config = Config.defaults();
-            config.augment( stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
+            Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
             logsDir = config.get( GraphDatabaseSettings.logs_directory );
             fs.mkdirs( logsDir );
 
@@ -428,17 +437,25 @@ public class ImportTool
                     (Boolean)Options.SKIP_DUPLICATE_NODES.defaultValue(), true );
             ignoreExtraColumns = args.getBoolean( Options.IGNORE_EXTRA_COLUMNS.key(),
                     (Boolean)Options.IGNORE_EXTRA_COLUMNS.defaultValue(), true );
+            defaultHighIO = args.getBoolean( Options.HIGH_IO.key(),
+                    (Boolean)Options.HIGH_IO.defaultValue(), true );
 
             Collector badCollector = getBadCollector( badTolerance, skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns,
                     skipBadEntriesLogging, badOutput );
 
-            dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
+            dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
-            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory );
+            dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
+                    Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
+            boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
+                    (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
+            configuration = importConfiguration(
+                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, storeDir,
+                    allowCacheOnHeap, defaultHighIO );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
-                    configuration.maxNumberOfProcessors() );
+                    configuration.maxNumberOfProcessors(), !skipBadRelationships );
 
             doImport( out, err, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration );
@@ -493,10 +510,13 @@ public class ImportTool
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        LogService logService = life.add( StoreLogService.inLogsDirectory( fs, logsDir ) );
+        dbConfig.augment( logs_directory, logsDir.getCanonicalPath() );
+        File internalLogFile = dbConfig.get( store_internal_log_path );
+        LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
 
         life.start();
         BatchImporter importer = new ParallelBatchImporter( storeDir,
+                fs,
                 configuration,
                 logService,
                 ExecutionMonitors.defaultVisible(),
@@ -515,7 +535,7 @@ public class ImportTool
         finally
         {
             Collector collector = input.badCollector();
-            int numberOfBadEntries = collector.badEntries();
+            long numberOfBadEntries = collector.badEntries();
             collector.close();
             IOUtils.closeAll( badOutput );
 
@@ -529,22 +549,13 @@ public class ImportTool
             }
 
             life.shutdown();
+
             if ( !success )
             {
-                try
-                {
-                    StoreFile.fileOperation( FileOperation.DELETE, fs, storeDir, null,
-                            Iterables.<StoreFile,StoreFile>iterable( StoreFile.values() ),
-                            false, ExistingTargetStrategy.FAIL, StoreFileType.values() );
-                }
-                catch ( IOException e )
-                {
-                    err.println( "Unable to delete store files after an aborted import " + e );
-                    if ( enableStacktrace )
-                    {
-                        e.printStackTrace();
-                    }
-                }
+                err.println( "WARNING Import failed. The store files in " + storeDir.getAbsolutePath() +
+                        " are left as they are, although they are likely in an unusable state. " +
+                        "Starting a database on these store files will likely fail or observe inconsistent records so " +
+                        "start at your own risk or delete the store manually" );
             }
         }
     }
@@ -552,15 +563,16 @@ public class ImportTool
     public static Collection<Option<File[]>> extractInputFiles( Args args, String key, PrintStream err )
     {
         return args
-                .interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
+                .interpretOptionsWithMetadata( key, Converters.optional(),
                         Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), filesExist(
                                 err ),
-                        Validators.<File>atLeast( "--" + key, 1 ) );
+                        Validators.atLeast( "--" + key, 1 ) );
     }
 
     private static Validator<File[]> filesExist( PrintStream err )
     {
-        return files -> {
+        return files ->
+        {
             for ( File file : files )
             {
                 if ( file.getName().startsWith( ":" ) )
@@ -574,7 +586,7 @@ public class ImportTool
         };
     }
 
-    private static Collector getBadCollector( int badTolerance, boolean skipBadRelationships,
+    private static Collector getBadCollector( long badTolerance, boolean skipBadRelationships,
             boolean skipDuplicateNodes, boolean ignoreExtraColumns, boolean skipBadEntriesLogging,
             OutputStream badOutput )
     {
@@ -582,15 +594,15 @@ public class ImportTool
         return skipBadEntriesLogging ? silentBadCollector( badTolerance, collect ) : badCollector( badOutput, badTolerance, collect );
     }
 
-    private static Integer parseNumberOrUnlimited( Args args, Options option )
+    private static long parseNumberOrUnlimited( Args args, Options option )
     {
         String value = args.get( option.key(), option.defaultValue().toString() );
-        return UNLIMITED.equals( value ) ? BadCollector.UNLIMITED_TOLERANCE : Integer.parseInt( value );
+        return UNLIMITED.equals( value ) ? BadCollector.UNLIMITED_TOLERANCE : Long.parseLong( value );
     }
 
     private static Config loadDbConfig( File file ) throws IOException
     {
-        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : Config.defaults();
+        return file != null && file.exists() ? Config.defaults( MapUtil.load( file ) ) : Config.defaults();
     }
 
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
@@ -655,14 +667,17 @@ public class ImportTool
         }
     }
 
-    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests, final Config dbConfig )
+    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir )
     {
-        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, null );
+        return importConfiguration(
+                processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir,
+                DEFAULT.allowCacheAllocationOnHeap(), (Boolean)Options.HIGH_IO.defaultValue() );
     }
 
-    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests, final Config dbConfig, Long maxMemory )
+    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, File storeDir,
+            boolean allowCacheOnHeap, Boolean defaultHighIO )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
@@ -687,7 +702,19 @@ public class ImportTool
             @Override
             public long maxMemoryUsage()
             {
-                return maxMemory != null ? maxMemory.longValue() : DEFAULT.maxMemoryUsage();
+                return maxMemory != null ? maxMemory : DEFAULT.maxMemoryUsage();
+            }
+
+            @Override
+            public boolean parallelRecordReadsWhenWriting()
+            {
+                return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( storeDir.toPath(), false );
+            }
+
+            @Override
+            public boolean allowCacheAllocationOnHeap()
+            {
+                return allowCacheOnHeap;
             }
         };
     }
@@ -752,7 +779,10 @@ public class ImportTool
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
         // a specific exit code. On the other hand It's very inconvenient to have any System.exit
         // call in code that is tested.
-        Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) -> { /* Shhhh */ } );
+        Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) ->
+        {
+            /* Shhhh */
+        } );
         return launderedException( e ); // throw in order to have process exit with !0
     }
 
@@ -849,10 +879,10 @@ public class ImportTool
     {
         final Configuration defaultConfiguration = COMMAS;
         final Character specificDelimiter = args.interpretOption( Options.DELIMITER.key(),
-                Converters.<Character>optional(), CHARACTER_CONVERTER );
+                Converters.optional(), CHARACTER_CONVERTER );
         final Character specificArrayDelimiter = args.interpretOption( Options.ARRAY_DELIMITER.key(),
-                Converters.<Character>optional(), CHARACTER_CONVERTER );
-        final Character specificQuote = args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(),
+                Converters.optional(), CHARACTER_CONVERTER );
+        final Character specificQuote = args.interpretOption( Options.QUOTE.key(), Converters.optional(),
                 CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );

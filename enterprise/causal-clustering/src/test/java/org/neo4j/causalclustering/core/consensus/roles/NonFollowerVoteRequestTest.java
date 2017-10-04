@@ -41,11 +41,12 @@ import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.vote
 import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class NonFollowerVoteRequestTest
 {
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection data() {
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection data()
+    {
         return asList( Role.CANDIDATE, Role.LEADER );
     }
 

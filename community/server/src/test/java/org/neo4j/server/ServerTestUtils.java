@@ -36,10 +36,14 @@ import java.util.Random;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 
 public class ServerTestUtils
 {
+    private ServerTestUtils()
+    {
+    }
+
     public static File createTempDir() throws IOException
     {
         return Files.createTempDirectory( "neo4j-test" ).toFile();
@@ -88,7 +92,7 @@ public class ServerTestUtils
     {
         addRelativeProperty( temporaryFolder, properties, DatabaseManagementSystemSettings.data_directory );
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
-        addRelativeProperty( temporaryFolder, properties, ServerSettings.certificates_directory );
+        addRelativeProperty( temporaryFolder, properties, LegacySslPolicyConfig.certificates_directory );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
     }
 
@@ -113,7 +117,7 @@ public class ServerTestUtils
         StringBuilder builder = new StringBuilder();
         for ( Map.Entry<String, String> property : properties.entrySet() )
         {
-            builder.append( ( builder.length() > 0 ? "," : "" ) );
+            builder.append( builder.length() > 0 ? "," : "" );
             builder.append( property.getKey() ).append( "=" ).append( property.getValue() );
         }
         return builder.toString();
@@ -182,16 +186,20 @@ public class ServerTestUtils
         return file;
     }
 
-    public interface BlockWithCSVFileURL {
-        void execute(String url) throws Exception;
+    public interface BlockWithCSVFileURL
+    {
+        void execute( String url ) throws Exception;
     }
 
     public static void withCSVFile( int rowCount, BlockWithCSVFileURL block ) throws Exception
     {
         File file = File.createTempFile( "file", ".csv", null );
-        try {
-            try ( PrintWriter writer = new PrintWriter( file ) ) {
-                for (int i = 0; i < rowCount; ++i) {
+        try
+        {
+            try ( PrintWriter writer = new PrintWriter( file ) )
+            {
+                for ( int i = 0; i < rowCount; ++i )
+                {
                     writer.println("1,2,3");
                 }
             }

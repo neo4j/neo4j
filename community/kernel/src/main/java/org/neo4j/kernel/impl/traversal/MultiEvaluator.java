@@ -64,13 +64,17 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
             {
                 includes = false;
                 if ( !continues )
+                {
                     return Evaluation.EXCLUDE_AND_PRUNE;
+                }
             }
             if ( !bla.continues() )
             {
                 continues = false;
                 if ( !includes )
+                {
                     return Evaluation.EXCLUDE_AND_PRUNE;
+                }
             }
         }
         return Evaluation.of( includes, continues );
@@ -88,9 +92,9 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
      */
     public MultiEvaluator<STATE> add( PathEvaluator<STATE> evaluator )
     {
-        PathEvaluator[] newArray = new PathEvaluator[this.evaluators.length+1];
+        PathEvaluator[] newArray = new PathEvaluator[this.evaluators.length + 1];
         System.arraycopy( this.evaluators, 0, newArray, 0, this.evaluators.length );
-        newArray[newArray.length-1] = evaluator;
+        newArray[newArray.length - 1] = evaluator;
         return new MultiEvaluator<STATE>( newArray );
     }
 }

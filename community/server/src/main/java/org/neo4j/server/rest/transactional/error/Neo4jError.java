@@ -42,15 +42,19 @@ public class Neo4jError
 
     public Neo4jError( Status status, String message )
     {
-        this(status, new RuntimeException( message ));
+        this( status, new RuntimeException( message ) );
     }
 
     public Neo4jError( Status status, Throwable cause )
     {
-        if ( status == null  )
+        if ( status == null )
+        {
             throw new IllegalArgumentException( "statusCode must not be null" );
-        if ( cause == null  )
+        }
+        if ( cause == null )
+        {
             throw new IllegalArgumentException( "cause must not be null" );
+        }
 
         this.status = status;
         this.cause = cause;
@@ -64,7 +68,10 @@ public class Neo4jError
                               getClass().getSimpleName(), status.code(), cause );
     }
 
-    public Throwable cause() { return cause; }
+    public Throwable cause()
+    {
+        return cause;
+    }
 
     public Status status()
     {
@@ -78,13 +85,12 @@ public class Neo4jError
 
     public boolean shouldSerializeStackTrace()
     {
-        switch(status.code().classification())
+        switch ( status.code().classification() )
         {
-            case ClientError:
-                return false;
-            default:
-                return true;
-
+        case ClientError:
+            return false;
+        default:
+            return true;
         }
     }
 

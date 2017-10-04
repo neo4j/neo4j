@@ -27,26 +27,27 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public class OnlineIndexProxy implements IndexProxy
 {
+    private final long indexId;
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final IndexStoreView storeView;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final IndexConfiguration configuration;
     private final IndexCountsRemover indexCountsRemover;
+    private boolean started;
 
     // About this flag: there are two online "modes", you might say...
     // - One is the pure starting of an already online index which was cleanly shut down and all that.
@@ -74,33 +75,35 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    public OnlineIndexProxy( IndexDescriptor descriptor, IndexConfiguration configuration, IndexAccessor accessor,
-                             IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor,
-                             boolean forcedIdempotentMode )
+    public OnlineIndexProxy( long indexId, IndexDescriptor descriptor,
+            IndexAccessor accessor, IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor,
+            boolean forcedIdempotentMode )
     {
+        this.indexId = indexId;
         this.descriptor = descriptor;
         this.storeView = storeView;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
-        this.configuration = configuration;
         this.forcedIdempotentMode = forcedIdempotentMode;
-        this.indexCountsRemover = new IndexCountsRemover( storeView, descriptor );
+        this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
     }
 
     @Override
     public void start()
     {
+        started = true;
     }
 
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return updateCountingUpdater( accessor.newUpdater( forcedIdempotentMode ? IndexUpdateMode.RECOVERY : mode ) );
+        IndexUpdater actual = accessor.newUpdater( forcedIdempotentMode ? IndexUpdateMode.RECOVERY : mode );
+        return started ? updateCountingUpdater( actual ) : actual;
     }
 
     private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
     {
-        return new UpdateCountingIndexUpdater( storeView, descriptor, indexUpdater );
+        return new UpdateCountingIndexUpdater( storeView, indexId, indexUpdater );
     }
 
     @Override
@@ -115,6 +118,12 @@ public class OnlineIndexProxy implements IndexProxy
     public IndexDescriptor getDescriptor()
     {
         return descriptor;
+    }
+
+    @Override
+    public LabelSchemaDescriptor schema()
+    {
+        return descriptor.schema();
     }
 
     @Override
@@ -182,12 +191,6 @@ public class OnlineIndexProxy implements IndexProxy
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return accessor.snapshotFiles();
-    }
-
-    @Override
-    public IndexConfiguration config()
-    {
-        return configuration;
     }
 
     @Override

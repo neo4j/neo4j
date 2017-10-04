@@ -28,18 +28,17 @@ import java.util.concurrent.CountDownLatch;
 
 public class AwaitAnswer<T> implements Answer<T>
 {
-    public static AwaitAnswer<Void> afterAwaiting( CountDownLatch latch )
-    {
-        return new AwaitAnswer<>( latch, null );
-    }
-
     private final CountDownLatch latch;
     private final Answer<T> result;
-
     public AwaitAnswer( CountDownLatch latch, Answer<T> result )
     {
         this.latch = latch;
         this.result = result;
+    }
+
+    public static AwaitAnswer<Void> afterAwaiting( CountDownLatch latch )
+    {
+        return new AwaitAnswer<>( latch, null );
     }
 
     @Override
@@ -54,13 +53,13 @@ public class AwaitAnswer<T> implements Answer<T>
         return new AwaitAnswer<>( latch, result );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public <R> Answer<R> thenReturn( R result )
     {
         return then( (Answer<R>) new Returns( result ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public <R> Answer<R> thenThrow( Throwable exception )
     {
         return then( (Answer<R>) new ThrowsException( exception ) );

@@ -160,7 +160,8 @@ public class KeyValueMergerTest
             return new Pair( key, value );
         }
 
-        final int key, value;
+        final int key;
+        int value;
 
         Pair( int key, int value )
         {

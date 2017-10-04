@@ -19,17 +19,25 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.storable.Value;
 
 public interface EntityReadOperations
 {
@@ -40,88 +48,32 @@ public interface EntityReadOperations
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 
     /**
-     * Returns an iterable with the matched nodes.
+     * Queries the given index with the given index query.
      *
-     * @throws IndexNotFoundKernelException if no such index found.
+     * @param statement the KernelStatement to use.
+     * @param index the index to query against.
+     * @param predicates the {@link IndexQuery} predicates to query for.
+     * @return ids of the matching nodes
+     * @throws IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
+    PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index, IndexQuery... predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
-            IndexDescriptor index,
-            Number lower,
-            boolean includeLower,
-            Number upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
-            IndexDescriptor index,
-            String lower,
-            boolean includeLower,
-            String upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-            IndexDescriptor index,
-            String prefix )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index, String term )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index, String suffix )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched node.
+     * Returns the id of the matched node, or {@link StatementConstants#NO_SUCH_NODE} if no node was found.
      *
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
-    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException;
+    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException;
 
-    long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );
 
-    Object graphGetProperty( KernelStatement state, int propertyKeyId );
+    Value graphGetProperty( KernelStatement state, int propertyKeyId );
 
     /**
      * Return all property keys associated with a relationship.
@@ -137,57 +89,68 @@ public interface EntityReadOperations
 
     Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
 
-    Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId );
-
     Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException;
 
-    Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
-
-    Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement );
-
     Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement );
 
-    Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId );
+    Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction );
 
-    Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException;
+    Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
+            int[] relTypes );
 
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower,
-            boolean includeLower,
-            Number upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
+    Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node );
 
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
-            IndexDescriptor index,
-            String lower,
-            boolean includeLower,
-            String upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
+    Value nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
 
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException;
+    boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
 
-    Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement,
-            IndexDescriptor index ) throws IndexNotFoundKernelException;
+    PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node );
 
-    Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException;
+    Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship );
 
-    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
+    Value relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId );
+
+    boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId );
+
+    PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement, RelationshipItem relationship );
 
     long nodesGetCount( KernelStatement statement );
 
     long relationshipsGetCount( KernelStatement statement );
 
     boolean nodeExists( KernelStatement statement, long id );
+
+    /**
+     * Returns the set of types for relationships attached to this node.
+     *
+     * @param statement the current kernel statement
+     * @param nodeItem the node
+     * @return the set of types for relationships attached to this node.
+     * @throws IllegalStateException if no current node is selected
+     */
+    PrimitiveIntSet relationshipTypes( KernelStatement statement, NodeItem nodeItem );
+
+    /**
+     * Returns degree, e.g. number of relationships for this node.
+     *
+     * @param statement the current kernel statement
+     * @param nodeItem the node
+     * @param direction {@link Direction} filter when counting relationships, e.g. only
+     * {@link Direction#OUTGOING outgoing} or {@link Direction#INCOMING incoming}.
+     * @return degree of relationships in the given direction.
+     */
+    int degree( KernelStatement statement, NodeItem nodeItem, Direction direction );
+
+    /**
+     * Returns degree, e.g. number of relationships for this node.
+     *
+     * @param statement the current kernel statement
+     * @param nodeItem the node
+     * @param direction {@link Direction} filter on when counting relationships, e.g. only
+     * {@link Direction#OUTGOING outgoing} or {@link Direction#INCOMING incoming}.
+     * @param relType relationship type id to filter when counting relationships.
+     * @return degree of relationships in the given direction and relationship type.
+     */
+    int degree( KernelStatement statement, NodeItem nodeItem, Direction direction, int relType );
 }

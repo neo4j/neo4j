@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.values.storable.Value;
 
 public class PropertyCreator
 {
@@ -54,8 +56,8 @@ public class PropertyCreator
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
-            RecordProxy<Long, P, Void> primitiveRecordChange, int propertyKey, Object value,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
+            RecordProxy<P, Void> primitiveRecordChange, int propertyKey, Value value,
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         PropertyBlock block = encodePropertyValue( propertyKey, value );
         P primitive = primitiveRecordChange.forReadingLinkage();
@@ -70,12 +72,12 @@ public class PropertyCreator
         // - (2) (a) occurs and (b) has occurred, but new property block didn't fit
         // - (3) (b) occurs and (a) has occurred
         // - (4) Chain ends
-        RecordProxy<Long, PropertyRecord, PrimitiveRecord> freeHostProxy = null;
-        RecordProxy<Long, PropertyRecord, PrimitiveRecord> existingHostProxy = null;
+        RecordProxy<PropertyRecord, PrimitiveRecord> freeHostProxy = null;
+        RecordProxy<PropertyRecord, PrimitiveRecord> existingHostProxy = null;
         long prop = primitive.getNextProp();
         while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (4)
         {
-            RecordProxy<Long, PropertyRecord, PrimitiveRecord> proxy =
+            RecordProxy<PropertyRecord, PrimitiveRecord> proxy =
                     propertyRecords.getOrLoad( prop, primitive );
             PropertyRecord propRecord = proxy.forReadingLinkage();
             assert propRecord.inUse() : propRecord;
@@ -183,19 +185,26 @@ public class PropertyCreator
         return propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize();
     }
 
-    public PropertyBlock encodePropertyValue( int propertyKey, Object value )
+    public PropertyBlock encodePropertyValue( int propertyKey, Value value )
     {
         return encodeValue( new PropertyBlock(), propertyKey, value );
     }
 
-    public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Object value )
+    public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
         PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator );
         return block;
     }
 
     public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
+    {
+        return createPropertyChain( owner, properties, propertyRecords, p -> {} );
+    }
+
+    public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
+            Consumer<PropertyRecord> createdPropertyRecords )
     {
         if ( properties == null || !properties.hasNext() )
         {
@@ -203,6 +212,7 @@ public class PropertyCreator
         }
         PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId(), owner )
                 .forChangingData();
+        createdPropertyRecords.accept( currentRecord );
         currentRecord.setInUse( true );
         currentRecord.setCreated();
         PropertyRecord firstRecord = currentRecord;
@@ -216,6 +226,7 @@ public class PropertyCreator
                 // Create new record
                 long propertyId = propertyRecordIdGenerator.nextId();
                 currentRecord = propertyRecords.create( propertyId, owner ).forChangingData();
+                createdPropertyRecords.accept( currentRecord );
                 currentRecord.setInUse( true );
                 currentRecord.setCreated();
                 // Set up links

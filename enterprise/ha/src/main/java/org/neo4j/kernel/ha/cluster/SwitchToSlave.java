@@ -75,7 +75,8 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
+import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -102,6 +103,7 @@ public abstract class SwitchToSlave
             TransactionCommittingResponseUnpacker.class,
             IndexConfigStore.class,
             OnlineBackupKernelExtension.class,
+            FileSystemWatcherService.class
     };
     private final StoreCopyClient storeCopyClient;
     private final Function<Slave,SlaveServer> slaveServerFactory;
@@ -179,7 +181,7 @@ public abstract class SwitchToSlave
         // Wait a short while for current transactions to stop first, just to be nice.
         // We can't wait forever since switching to our designated role is quite important.
         Clock clock = Clocks.systemClock();
-        long deadline = clock.millis() + config.get( HaSettings.internal_state_switch_timeout );
+        long deadline = clock.millis() + config.get( HaSettings.internal_state_switch_timeout ).toMillis();
         while ( transactionCounters.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
         {
             parkNanos( MILLISECONDS.toNanos( 10 ) );
@@ -535,7 +537,7 @@ public abstract class SwitchToSlave
                 {   // Nothing to clean up here
                 }
             };
-            MoveAfterCopy moveAfterCopyWithLogging = (moves, fromDirectory, toDirectory) ->
+            MoveAfterCopy moveAfterCopyWithLogging = ( moves, fromDirectory, toDirectory ) ->
             {
                 userLog.info( "Copied store from master to " + fromDirectory );
                 msgLog.info( "Starting post copy operation to move store from " + fromDirectory + " to " + storeDir );
@@ -555,18 +557,58 @@ public abstract class SwitchToSlave
         }
     }
 
+    /**
+     * Monitors events in {@link SwitchToSlave}
+     */
     public interface Monitor
     {
-        void switchToSlaveStarted();
+        /**
+         * Called before any other slave-switching code is executed.
+         */
+        default void switchToSlaveStarted()
+        {   // no-op by default
+        }
 
-        void switchToSlaveCompleted( boolean wasSuccessful );
+        /**
+         * Called after all slave-switching code has been executed, regardless of whether it was successful or not.
+         *
+         * @param wasSuccessful whether or not the slave switch was successful. Depending on the type of failure
+         * other failure handling outside this class kicks in and there may be a switch retry later.
+         */
+        default void switchToSlaveCompleted( boolean wasSuccessful )
+        {   // no-op by default
+        }
 
-        void storeCopyStarted();
+        /**
+         * A full store-copy is required, either if this is the first time this db starts up or if this
+         * store has branched and needs to fetch a new copy from master.
+         */
+        default void storeCopyStarted()
+        {   // no-op by default
+        }
 
-        void storeCopyCompleted( boolean wasSuccessful );
+        /**
+         * A full store-copy has completed.
+         *
+         * @param wasSuccessful whether or not this store-copy was successful.
+         */
+        default void storeCopyCompleted( boolean wasSuccessful )
+        {   // no-op by default
+        }
 
-        void catchupStarted();
+        /**
+         * After a successful handshake with master an optimized catch-up is performed.
+         * This call marks the start of that.
+         */
+        default void catchupStarted()
+        {   // no-op by default
+        }
 
-        void catchupCompleted();
+        /**
+         * This db is now caught up with the master.
+         */
+        default void catchupCompleted()
+        {   // no-op by default
+        }
     }
 }

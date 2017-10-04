@@ -404,7 +404,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         Map<String,String> relevantSysProps = new HashMap<>();
         Properties sysProps = System.getProperties();
-        Enumeration sysPropsNames = sysProps.propertyNames();
+        Enumeration<?> sysPropsNames = sysProps.propertyNames();
         while ( sysPropsNames.hasMoreElements() )
         {
             String sysPropName = (String) sysPropsNames.nextElement();

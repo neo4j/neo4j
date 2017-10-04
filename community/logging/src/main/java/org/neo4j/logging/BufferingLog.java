@@ -29,17 +29,17 @@ import javax.annotation.Nonnull;
 /**
  * Buffers all messages sent to it, and is able to replay those messages into
  * another Logger.
- *
+ * <p>
  * This can be used to start up services that need logging when they start, but
  * where, for one reason or another, we have not yet set up proper logging in
  * the application lifecycle.
- *
+ * <p>
  * This will replay messages in the order they are received, *however*, it will
  * not preserve the time stamps of the original messages.
- *
+ * <p>
  * You should not use this for logging messages where the time stamps are
  * important.
- *
+ * <p>
  * You should also not use this logger, when there is a risk that it can be
  * subjected to an unbounded quantity of log messages, since the buffer keeps
  * all messages until it gets a chance to replay them.
@@ -61,7 +61,7 @@ public class BufferingLog extends AbstractLog
         public void log( @Nonnull String message )
         {
             LogMessage logMessage = buildMessage( message );
-            synchronized (buffer)
+            synchronized ( buffer )
             {
                 buffer.add( logMessage );
             }
@@ -73,7 +73,7 @@ public class BufferingLog extends AbstractLog
         public void log( @Nonnull final String message, @Nonnull final Throwable throwable )
         {
             LogMessage logMessage = buildMessage( message, throwable );
-            synchronized (buffer)
+            synchronized ( buffer )
             {
                 buffer.add( logMessage );
             }
@@ -85,7 +85,7 @@ public class BufferingLog extends AbstractLog
         public void log( @Nonnull String format, @Nonnull Object... arguments )
         {
             LogMessage logMessage = buildMessage( format, arguments );
-            synchronized (buffer)
+            synchronized ( buffer )
             {
                 buffer.add( logMessage );
             }
@@ -96,7 +96,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public void bulk( @Nonnull Consumer<Logger> consumer )
         {
-            synchronized (buffer)
+            synchronized ( buffer )
             {
                 consumer.accept( this );
             }
@@ -384,7 +384,7 @@ public class BufferingLog extends AbstractLog
     @Override
     public void bulk( @Nonnull Consumer<Log> consumer )
     {
-        synchronized (buffer)
+        synchronized ( buffer )
         {
             consumer.accept( this );
         }
@@ -397,7 +397,7 @@ public class BufferingLog extends AbstractLog
      */
     public void replayInto( Log other )
     {
-        synchronized (buffer)
+        synchronized ( buffer )
         {
             LogMessage message = buffer.poll();
             while ( message != null )
@@ -411,7 +411,7 @@ public class BufferingLog extends AbstractLog
     @Override
     public String toString()
     {
-        synchronized (buffer)
+        synchronized ( buffer )
         {
             StringWriter stringWriter = new StringWriter();
             PrintWriter sb = new PrintWriter( stringWriter );

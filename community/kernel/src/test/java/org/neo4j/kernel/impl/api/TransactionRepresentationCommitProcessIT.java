@@ -116,7 +116,7 @@ public class TransactionRepresentationCommitProcessIT
                 neoStores.getMetaDataStore().getLastClosedTransactionId(), neoStores.getCounts().txId() );
     }
 
-    private <T> T getDependency(Class<T> clazz)
+    private <T> T getDependency( Class<T> clazz )
     {
         return db.getDependencyResolver().resolveDependency( clazz );
     }

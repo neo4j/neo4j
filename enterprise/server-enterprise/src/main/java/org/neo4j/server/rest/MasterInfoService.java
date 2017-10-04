@@ -31,12 +31,12 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
-import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.Response.status;
 
-@Path(MasterInfoService.BASE_PATH)
+@Path( MasterInfoService.BASE_PATH )
 public class MasterInfoService implements AdvertisableService
 {
     public static final String BASE_PATH = "server/ha";
@@ -76,7 +76,7 @@ public class MasterInfoService implements AdvertisableService
     }
 
     @GET
-    @Path(IS_MASTER_PATH)
+    @Path( IS_MASTER_PATH )
     public Response isMaster() throws BadInputException
     {
         if ( haDb == null )
@@ -85,12 +85,12 @@ public class MasterInfoService implements AdvertisableService
         }
 
         String role = haDb.role().toLowerCase();
-        if ( role.equals( "master" ))
+        if ( role.equals( "master" ) )
         {
             return positiveResponse();
         }
 
-        if ( role.equals( "slave" ))
+        if ( role.equals( "slave" ) )
         {
             return negativeResponse();
         }
@@ -99,7 +99,7 @@ public class MasterInfoService implements AdvertisableService
     }
 
     @GET
-    @Path(IS_SLAVE_PATH)
+    @Path( IS_SLAVE_PATH )
     public Response isSlave() throws BadInputException
     {
         if ( haDb == null )
@@ -108,12 +108,12 @@ public class MasterInfoService implements AdvertisableService
         }
 
         String role = haDb.role().toLowerCase();
-        if ( role.equals( "slave" ))
+        if ( role.equals( "slave" ) )
         {
             return positiveResponse();
         }
 
-        if ( role.equals( "master" ))
+        if ( role.equals( "master" ) )
         {
             return negativeResponse();
         }
@@ -131,7 +131,7 @@ public class MasterInfoService implements AdvertisableService
         }
 
         String role = haDb.role().toLowerCase();
-        if ( "slave".equals( role ) || "master".equals( role ))
+        if ( "slave".equals( role ) || "master".equals( role ) )
         {
             return plainTextResponse( OK, role );
         }

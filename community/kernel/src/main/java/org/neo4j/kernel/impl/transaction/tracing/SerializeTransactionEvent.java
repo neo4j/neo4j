@@ -24,12 +24,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
  */
 public interface SerializeTransactionEvent extends AutoCloseable
 {
-    SerializeTransactionEvent NULL = new SerializeTransactionEvent()
+    SerializeTransactionEvent NULL = () ->
     {
-        @Override
-        public void close()
-        {
-        }
     };
 
     /**

@@ -27,12 +27,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -48,14 +49,13 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.test.rule.TestDirectory;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.DefaultFileSystemAbstraction.REAL_FS;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -73,6 +73,7 @@ public class StoreNodeRelationshipCursorTest
     @ClassRule
     public static TestDirectory directory = TestDirectory.testDirectory( StoreNodeRelationshipCursorTest.class );
 
+    private static FileSystemAbstraction fs;
     private static PageCache pageCache;
     private static NeoStores neoStores;
 
@@ -98,18 +99,21 @@ public class StoreNodeRelationshipCursorTest
     public static void setupStores()
     {
         File storeDir = directory.absolutePath();
-        pageCache = new ConfiguringPageCacheFactory( REAL_FS,
-                Config.defaults().augment( stringMap( pagecache_memory.name(), "8m" ) ), NULL, NullLog.getInstance() )
+        fs = new DefaultFileSystemAbstraction();
+        pageCache = new ConfiguringPageCacheFactory( fs,
+                Config.defaults( pagecache_memory, "8m" ), NULL,
+                PageCursorTracerSupplier.NULL, NullLog.getInstance() )
                 .getOrCreatePageCache();
-        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, REAL_FS, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
     @AfterClass
-    public static void shutDownStores() throws IOException
+    public static void shutDownStores() throws Exception
     {
         neoStores.close();
         pageCache.close();
+        fs.close();
     }
 
     @Test
@@ -119,13 +123,13 @@ public class StoreNodeRelationshipCursorTest
 
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, AssertOpen.ALWAYS_OPEN );
+            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 2, FIRST_OWNING_NODE, direction, AssertOpen.ALWAYS_OPEN );
+            cursor.init( dense, 2, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 3, FIRST_OWNING_NODE, direction, AssertOpen.ALWAYS_OPEN );
+            cursor.init( dense, 3, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
             assertTrue( cursor.next() );
         }
     }
@@ -137,7 +141,7 @@ public class StoreNodeRelationshipCursorTest
         long expectedNodeId = 1;
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, AssertOpen.ALWAYS_OPEN );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.get().id() );
@@ -155,7 +159,7 @@ public class StoreNodeRelationshipCursorTest
         int relationshipIndex = 0;
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, AssertOpen.ALWAYS_OPEN );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence",
@@ -174,7 +178,7 @@ public class StoreNodeRelationshipCursorTest
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
             // WHEN
-            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, AssertOpen.ALWAYS_OPEN );
+            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
 
             // THEN
             assertFalse( cursor.next() );

@@ -45,8 +45,8 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
-                logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
+                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10L;
@@ -64,8 +64,8 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
-                logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
+                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10L;
@@ -78,8 +78,8 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
-                logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
+                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10L;
@@ -99,14 +99,14 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
-                logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
+                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected -1 );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected - 1 );
         when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
@@ -116,8 +116,8 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReturnNothingWhenThereAreNoTransactions() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
-                logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
+                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
 
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );

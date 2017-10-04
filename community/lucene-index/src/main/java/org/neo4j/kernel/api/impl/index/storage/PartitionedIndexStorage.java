@@ -50,14 +50,8 @@ import static java.util.stream.Collectors.toList;
  */
 public class PartitionedIndexStorage
 {
-    private static final Comparator<File> FILE_COMPARATOR = new Comparator<File>()
-    {
-        @Override
-        public int compare( File o1, File o2 )
-        {
-            return NumberAwareStringComparator.INSTANCE.compare( o1.getName(), o2.getName() );
-        }
-    };
+    private static final Comparator<File> FILE_COMPARATOR =
+            ( o1, o2 ) -> NumberAwareStringComparator.INSTANCE.compare( o1.getName(), o2.getName() );
 
     private final DirectoryFactory directoryFactory;
     private final FileSystemAbstraction fileSystem;
@@ -66,11 +60,11 @@ public class PartitionedIndexStorage
     private final FailureStorage failureStorage;
 
     public PartitionedIndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem,
-                                    File rootFolder, String identifier, boolean archiveFailed )
+            File rootFolder, boolean archiveFailed )
     {
         this.fileSystem = fileSystem;
         this.archiveFailed = archiveFailed;
-        this.folderLayout = new IndexFolderLayout( rootFolder, identifier );
+        this.folderLayout = new IndexFolderLayout( rootFolder );
         this.directoryFactory = directoryFactory;
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
     }
@@ -177,7 +171,7 @@ public class PartitionedIndexStorage
                 byte[] buffer = null;
                 if ( zip != null )
                 {
-                    buffer = new byte[4*1024];
+                    buffer = new byte[4 * 1024];
                 }
                 for ( File partitionFolder : partitionFolders )
                 {

@@ -37,7 +37,7 @@ class SourceInformation implements Cloneable
     SourceInformation decode( long sourceInformation )
     {
         sourceId = (int) ((sourceInformation & ~LINE_NUMBER_MASK) >>> 48); // >>> we don't want the sign to matter
-        lineNumber = (sourceInformation & LINE_NUMBER_MASK);
+        lineNumber = sourceInformation & LINE_NUMBER_MASK;
         return this;
     }
 

@@ -45,7 +45,7 @@ interface LockToken
     static int nextCandidateId( int currentId )
     {
         int candidateId = currentId + 1;
-        if( candidateId == INVALID_LOCK_TOKEN_ID )
+        if ( candidateId == INVALID_LOCK_TOKEN_ID )
         {
             candidateId++;
         }

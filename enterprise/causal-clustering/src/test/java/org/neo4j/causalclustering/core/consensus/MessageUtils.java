@@ -31,6 +31,10 @@ import static java.lang.String.format;
 
 public class MessageUtils
 {
+    private MessageUtils()
+    {
+    }
+
     public static RaftMessages.RaftMessage messageFor( Outcome outcome, final MemberId member )
     {
         Predicate<RaftMessages.Directed> selectMember = message -> message.to() == member;

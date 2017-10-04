@@ -19,33 +19,35 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-
-import java.io.File;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 
 public class IdGeneratorImplContractTest extends IdGeneratorContractTest
 {
+    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private TestDirectory testDirectory = TestDirectory.testDirectory(fsRule.get());
+
     @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory );
+
     private EphemeralFileSystemAbstraction fs;
-    private File storeDir;
 
     @Before
     public void doBefore()
     {
         fs = fsRule.get();
-        storeDir = AbstractNeo4jTestCase.getStorePath( "xatest" );
-        fs.mkdirs( storeDir );
     }
 
     @Override
@@ -58,7 +60,7 @@ public class IdGeneratorImplContractTest extends IdGeneratorContractTest
     @Override
     protected IdGenerator openIdGenerator( int grabSize )
     {
-        return new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, 1000, false, 0 );
+        return new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, 1000, false, () -> 0L );
     }
 
     @After
@@ -71,13 +73,8 @@ public class IdGeneratorImplContractTest extends IdGeneratorContractTest
         }
     }
 
-    private File file( String name )
-    {
-        return new File( storeDir, name );
-    }
-
     private File idGeneratorFile()
     {
-        return file( "testIdGenerator.id" );
+        return testDirectory.file( "testIdGenerator.id" );
     }
 }

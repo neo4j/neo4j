@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.graphdb.Transaction
+import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
+import org.neo4j.graphdb.{Result, Transaction}
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.query.PlannerInfo
+import org.neo4j.values.virtual.MapValue
 
 final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
 
 trait ExecutionPlan {
 
-  def run(transactionalContext: TransactionalContextWrapperv3_1, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
+  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue): Result
 
   def isPeriodicCommit: Boolean
 
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperv3_1): Boolean
+  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
+
+  // This is to force eager calculation
+  val plannerInfo: PlannerInfo
 }

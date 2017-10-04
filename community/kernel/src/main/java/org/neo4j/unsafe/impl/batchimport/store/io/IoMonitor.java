@@ -34,7 +34,8 @@ import static java.lang.System.currentTimeMillis;
  */
 public class IoMonitor implements StatsProvider
 {
-    private volatile long startTime = currentTimeMillis(), endTime;
+    private volatile long startTime = currentTimeMillis();
+    private volatile long endTime;
     private final IoTracer tracer;
     private long resetPoint;
 

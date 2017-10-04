@@ -22,14 +22,15 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.Direction;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.iterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 
 /**
@@ -148,7 +148,7 @@ public class RelationshipChangesForNode
                             protected boolean fetchNext()
                             {
                                 Iterator<Long> iterator = currentSetOfAddedRels();
-                                return iterator.hasNext() ? next( iterator.next() ) : false;
+                                return iterator.hasNext() && next( iterator.next() );
                             }
 
                             private Iterator<Long> currentSetOfAddedRels()
@@ -180,9 +180,9 @@ public class RelationshipChangesForNode
     private Map<Integer /* Type */, Set<Long /* Id */>> incoming;
     private Map<Integer /* Type */, Set<Long /* Id */>> loops;
 
-    private int totalOutgoing = 0;
-    private int totalIncoming = 0;
-    private int totalLoops = 0;
+    private int totalOutgoing;
+    private int totalIncoming;
+    private int totalLoops;
 
     public RelationshipChangesForNode( DiffStrategy diffStrategy, RelationshipVisitor.Home relationshipHome )
     {
@@ -193,12 +193,8 @@ public class RelationshipChangesForNode
     public void addRelationship( long relId, int typeId, Direction direction )
     {
         Map<Integer, Set<Long>> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        Set<Long> rels = relTypeToRelsMap.get( typeId );
-        if ( rels == null )
-        {
-            rels = Collections.newSetFromMap( new VersionedHashMap<Long, Boolean>() );
-            relTypeToRelsMap.put( typeId, rels );
-        }
+        Set<Long> rels =
+                relTypeToRelsMap.computeIfAbsent( typeId, k -> Collections.newSetFromMap( new VersionedHashMap<>() ) );
 
         rels.add( relId );
 
@@ -358,22 +354,22 @@ public class RelationshipChangesForNode
         return degree;
     }
 
-    public PrimitiveIntIterator relationshipTypes()
+    public PrimitiveIntSet relationshipTypes()
     {
-        Set<Integer> types = new HashSet<>();
+        PrimitiveIntSet types = Primitive.intSet();
         if ( outgoing != null && !outgoing.isEmpty() )
         {
-            types.addAll( outgoing.keySet() );
+            outgoing.keySet().forEach( types::add );
         }
         if ( incoming != null && !incoming.isEmpty() )
         {
-            types.addAll( incoming.keySet() );
+            incoming.keySet().forEach( types::add );
         }
         if ( loops != null && !loops.isEmpty() )
         {
-            types.addAll( loops.keySet() );
+            loops.keySet().forEach( types::add );
         }
-        return PrimitiveIntCollections.toPrimitiveIterator( types.iterator() );
+        return types;
     }
 
     public void clear()
@@ -439,11 +435,11 @@ public class RelationshipChangesForNode
         return relTypeToRelsMap;
     }
 
-    private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( final int[] types )
+    private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( int[] types )
     {
         return relationshipsByType -> new PrefetchingIterator<Set<Long>>()
         {
-            private final PrimitiveIntIterator iterTypes = iterator( types );
+            private final PrimitiveIntIterator iterTypes = PrimitiveIntCollections.iterator( types );
 
             @Override
             protected Set<Long> fetchNextOrNull()

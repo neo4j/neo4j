@@ -23,5 +23,10 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 public interface SchemaWriteGuard
 {
+    SchemaWriteGuard ALLOW_ALL_WRITES = () ->
+    {
+        // allow all writes
+    };
+
     void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException;
 }

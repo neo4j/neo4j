@@ -35,7 +35,7 @@ public interface LegacyDatabase extends Remote
 
     long createNode() throws RemoteException;
 
-    public void doComplexLoad( long center ) throws RemoteException;
+    void doComplexLoad( long center ) throws RemoteException;
 
     void verifyNodeExists( long id ) throws RemoteException;
 

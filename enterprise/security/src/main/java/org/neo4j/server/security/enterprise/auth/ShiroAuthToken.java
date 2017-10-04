@@ -87,7 +87,7 @@ public class ShiroAuthToken implements AuthenticationToken
             return "{}";
         }
 
-        List<String> keys = new ArrayList<>(authToken.keySet());
+        List<String> keys = new ArrayList<>( authToken.keySet() );
         int schemeIndex = keys.indexOf( AuthToken.SCHEME_KEY );
         if ( schemeIndex > 0 )
         {
@@ -105,7 +105,7 @@ public class ShiroAuthToken implements AuthenticationToken
 
     private String keyValueString( String key )
     {
-        String valueString = ( key.equals( AuthToken.CREDENTIALS ) ? "******" : authToken.get( key ).toString() );
+        String valueString = key.equals( AuthToken.CREDENTIALS ) ? "******" : authToken.get( key ).toString();
         return key + KEY_VALUE_DELIMITER + VALUE_DELIMITER + valueString + VALUE_DELIMITER;
     }
 }

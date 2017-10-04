@@ -28,20 +28,20 @@ import org.neo4j.cluster.com.message.MessageType;
 public class FixedNetworkLatencyStrategy
     implements NetworkLatencyStrategy
 {
-    private long delay = 0;
+    private long delay;
 
     public FixedNetworkLatencyStrategy()
     {
-        this(0);
+        this( 0 );
     }
 
-    public FixedNetworkLatencyStrategy(long delay)
+    public FixedNetworkLatencyStrategy( long delay )
     {
         this.delay = delay;
     }
 
     @Override
-    public long messageDelay(Message<? extends MessageType> message, String serverIdTo)
+    public long messageDelay( Message<? extends MessageType> message, String serverIdTo )
     {
         return delay;
     }

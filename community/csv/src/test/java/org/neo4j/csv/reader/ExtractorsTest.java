@@ -227,7 +227,7 @@ public class ExtractorsTest
     public void shouldTrimStringIfConfiguredTo() throws Exception
     {
         // GIVEN
-        Extractors extractors = new Extractors( ',', true, true);
+        Extractors extractors = new Extractors( ',', true, true );
         String value = " abcde fgh  ";
 
         // WHEN
@@ -243,7 +243,7 @@ public class ExtractorsTest
     public void shouldNotTrimStringIfNotConfiguredTo() throws Exception
     {
         // GIVEN
-        Extractors extractors = new Extractors( ',', true, false);
+        Extractors extractors = new Extractors( ',', true, false );
         String value = " abcde fgh  ";
 
         // WHEN

@@ -26,9 +26,6 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.collection.Iterables;
-
-import static java.util.Arrays.asList;
 
 public class IndexCreatorImpl implements IndexCreator
 {
@@ -38,7 +35,7 @@ public class IndexCreatorImpl implements IndexCreator
 
     public IndexCreatorImpl( InternalSchemaActions actions, Label label )
     {
-        this( actions, label, new ArrayList<String>() );
+        this( actions, label, new ArrayList<>() );
     }
 
     private IndexCreatorImpl( InternalSchemaActions actions, Label label, Collection<String> propertyKeys )
@@ -54,13 +51,7 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         assertInUnterminatedTransaction();
-
-        if ( !propertyKeys.isEmpty() )
-            throw new UnsupportedOperationException(
-                    "Compound indexes are not yet supported, only one property per index is allowed." );
-        return
-            new IndexCreatorImpl( actions, label,
-                                  Iterables.addToCollection( asList( propertyKey ), new ArrayList<>( propertyKeys ) ) );
+        return new IndexCreatorImpl( actions, label, copyAndAdd( propertyKeys, propertyKey) );
     }
 
     @Override
@@ -69,13 +60,22 @@ public class IndexCreatorImpl implements IndexCreator
         assertInUnterminatedTransaction();
 
         if ( propertyKeys.isEmpty() )
+        {
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
+        }
 
-        return actions.createIndexDefinition( label, Iterables.single( propertyKeys ) );
+        return actions.createIndexDefinition( label, propertyKeys.toArray( new String[propertyKeys.size()] ) );
     }
 
     protected void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
+    }
+
+    private Collection<String> copyAndAdd( Collection<String> propertyKeys, String propertyKey )
+    {
+        Collection<String> ret = new ArrayList<>( propertyKeys );
+        ret.add( propertyKey );
+        return ret;
     }
 }

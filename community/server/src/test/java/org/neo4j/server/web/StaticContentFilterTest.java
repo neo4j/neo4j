@@ -45,7 +45,8 @@ public class StaticContentFilterTest
         new StaticContentFilter().doFilter( request, response, filterChain );
 
         // then
-        verify( response ).addHeader( "Cache-Control", "no-cache" );
+        verify( response ).addHeader( "Cache-Control", "private, no-cache, no-store, proxy-revalidate, no-transform" );
+        verify( response ).addHeader( "Pragma", "no-cache" );
         verify( response ).addHeader( "Content-Security-Policy", "frame-ancestors 'none'" );
         verify( response ).addHeader( "X-Frame-Options", "DENY" );
         verify( filterChain ).doFilter( request, response );

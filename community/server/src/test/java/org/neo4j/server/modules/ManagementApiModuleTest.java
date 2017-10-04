@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.modules;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.CommunityNeoServer;
@@ -32,7 +31,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,16 +48,16 @@ public class ManagementApiModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        Map<String, String> params = new HashMap();
+        Map<String, String> params = new HashMap<>();
         String managementPath = "/db/manage";
         params.put( ServerSettings.management_api_path.name(), managementPath );
-        Config config = new Config( params );
+        Config config = Config.defaults( params );
 
         when( neoServer.getConfig() ).thenReturn( config );
 
-        ManagementApiModule module = new ManagementApiModule(webServer, config );
+        ManagementApiModule module = new ManagementApiModule( webServer, config );
         module.start();
 
-        verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );
+        verify( webServer ).addJAXRSClasses( anyListOf( String.class ), anyString(), any() );
     }
 }

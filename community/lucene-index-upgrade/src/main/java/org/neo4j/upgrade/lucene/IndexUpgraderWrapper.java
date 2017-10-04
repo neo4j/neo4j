@@ -44,7 +44,7 @@ class IndexUpgraderWrapper implements AutoCloseable
     private MethodHandle mainMethod;
     private Supplier<EmbeddedJarLoader> jarLoaderSupplier;
 
-    public IndexUpgraderWrapper( Supplier<EmbeddedJarLoader> jarLoaderSupplier )
+    IndexUpgraderWrapper( Supplier<EmbeddedJarLoader> jarLoaderSupplier )
     {
         this.jarLoaderSupplier = jarLoaderSupplier;
     }

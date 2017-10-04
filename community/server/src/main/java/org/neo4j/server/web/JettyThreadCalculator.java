@@ -72,7 +72,7 @@ public class JettyThreadCalculator
         minThreads = Math.max( 2, transactionThreads ) + (acceptors + selectors) * 2;
         // maxThreads = N + N / 5
         // max Safe value for this = 6 / 5 * INT.MAX = INT.MAX
-        maxThreads = Math.max( (jettyMaxThreads - selectors - acceptors), 8 ) + (acceptors + selectors) * 2;
+        maxThreads = Math.max( jettyMaxThreads - selectors - acceptors, 8 ) + (acceptors + selectors) * 2;
         // maxCapacity = (N - N / 5) * 60_000
         // max safe value = 44738
         maxCapacity = (maxThreads - (selectors + acceptors) * 2) * 1000 * 60; // threads * 1000 req/s * 60 s

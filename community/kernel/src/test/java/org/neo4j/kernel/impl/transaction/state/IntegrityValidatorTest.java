@@ -21,18 +21,20 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class IntegrityValidatorTest
 {
@@ -42,12 +44,14 @@ public class IntegrityValidatorTest
         // Given
         NeoStores store = mock( NeoStores.class );
         IndexingService indexes = mock(IndexingService.class);
-        IntegrityValidator validator = new IntegrityValidator(store, indexes);
+        IntegrityValidator validator = new IntegrityValidator( store, indexes );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 1 );
 
-        doThrow( new UniquenessConstraintVerificationFailedKernelException( null, new RuntimeException() ) )
+        doThrow( new UniquePropertyValueValidationException( constraint,
+                ConstraintValidationException.Phase.VERIFICATION, new RuntimeException() ) )
                 .when( indexes ).validateIndex( 2L );
 
-        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1L, 1, 1, 2L );
+        ConstraintRule record = ConstraintRule.constraintRule( 1L, constraint, 2L );
 
         // When
         try
@@ -55,7 +59,7 @@ public class IntegrityValidatorTest
             validator.validateSchemaRule( record );
             fail("Should have thrown integrity error.");
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
             // good
         }
@@ -67,7 +71,7 @@ public class IntegrityValidatorTest
         // Given
         NeoStores store = mock( NeoStores.class );
         IndexingService indexes = mock(IndexingService.class);
-        IntegrityValidator validator = new IntegrityValidator(store, indexes );
+        IntegrityValidator validator = new IntegrityValidator( store, indexes );
 
         NodeRecord record = new NodeRecord( 1L, false, 1L, -1L );
         record.setInUse( false );
@@ -76,9 +80,9 @@ public class IntegrityValidatorTest
         try
         {
             validator.validateNodeRecord( record );
-            fail("Should have thrown integrity error.");
+            fail( "Should have thrown integrity error." );
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
             // good
         }
@@ -99,9 +103,9 @@ public class IntegrityValidatorTest
         try
         {
             validator.validateTransactionStartKnowledge( 1 );
-            fail("Should have thrown integrity error.");
+            fail( "Should have thrown integrity error." );
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
             // good
         }

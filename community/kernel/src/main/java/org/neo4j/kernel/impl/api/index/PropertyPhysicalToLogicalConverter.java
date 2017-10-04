@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.state.LabelChangeSummary;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
+import org.neo4j.values.storable.Value;
 
 public class PropertyPhysicalToLogicalConverter
 {
@@ -43,31 +41,27 @@ public class PropertyPhysicalToLogicalConverter
 
     /**
      * Converts physical changes to PropertyRecords for a node into logical updates
-     *
-     * @param labelsBefore labels that node had before the change.
-     * @param labelsAfter labels that node has after the change.
-     * @return logical updates of the physical property record changes.
      */
-    public void apply( Collection<NodePropertyUpdate> target, Iterable<PropertyRecordChange> changes,
-            long[] labelsBefore, long[] labelsAfter )
+    public void convertPropertyRecord( long nodeId, Iterable<PropertyRecordChange> changes,
+            NodeUpdates.Builder properties )
     {
-        Map<Integer, PropertyBlock> beforeMap = new HashMap<>(), afterMap = new HashMap<>();
-        long nodeId = mapBlocks( changes, beforeMap, afterMap );
+        Map<Integer, PropertyBlock> beforeMap = new HashMap<>();
+        Map<Integer, PropertyBlock> afterMap = new HashMap<>();
+        mapBlocks( nodeId, changes, beforeMap, afterMap );
 
         for ( int key : union( beforeMap.keySet(), afterMap.keySet() ) )
         {
             PropertyBlock beforeBlock = beforeMap.get( key );
             PropertyBlock afterBlock = afterMap.get( key );
-            NodePropertyUpdate update = null;
 
             if ( beforeBlock != null && afterBlock != null )
             {
                 // CHANGE
                 if ( !beforeBlock.hasSameContentsAs( afterBlock ) )
                 {
-                    Object beforeVal = valueOf( beforeBlock );
-                    Object afterVal = valueOf( afterBlock );
-                    update = NodePropertyUpdate.change( nodeId, key, beforeVal, labelsBefore, afterVal, labelsAfter );
+                    Value beforeVal = valueOf( beforeBlock );
+                    Value afterVal = valueOf( afterBlock );
+                    properties.changed( key, beforeVal, afterVal );
                 }
             }
             else
@@ -75,26 +69,16 @@ public class PropertyPhysicalToLogicalConverter
                 // ADD/REMOVE
                 if ( afterBlock != null )
                 {
-                    final LabelChangeSummary summary = new LabelChangeSummary( labelsBefore, labelsAfter );
-                    if ( summary.hasUnchangedLabels() )
-                    {
-                        update = NodePropertyUpdate.add( nodeId, key, valueOf( afterBlock ),
-                                summary.getUnchangedLabels() );
-                    }
+                    properties.added( key, valueOf( afterBlock ) );
                 }
                 else if ( beforeBlock != null )
                 {
-                    update = NodePropertyUpdate.remove( nodeId, key, valueOf( beforeBlock ), labelsBefore );
+                    properties.removed( key, valueOf( beforeBlock ) );
                 }
                 else
                 {
                     throw new IllegalStateException( "Weird, an update with no property value for before or after" );
                 }
-            }
-
-            if ( update != null)
-            {
-                target.add( update );
             }
         }
     }
@@ -106,24 +90,22 @@ public class PropertyPhysicalToLogicalConverter
         return union;
     }
 
-    private long mapBlocks( Iterable<PropertyRecordChange> changes,
+    private long mapBlocks( long nodeId, Iterable<PropertyRecordChange> changes,
             Map<Integer,PropertyBlock> beforeMap, Map<Integer,PropertyBlock> afterMap )
     {
-        long nodeId = -1;
         for ( PropertyRecordChange change : changes )
         {
-            nodeId = equalCheck( change.getBefore().getNodeId(), nodeId );
-            nodeId = equalCheck( change.getAfter().getNodeId(), nodeId );
+            equalCheck( change.getBefore().getNodeId(), nodeId );
+            equalCheck( change.getAfter().getNodeId(), nodeId );
             mapBlocks( change.getBefore(), beforeMap );
             mapBlocks( change.getAfter(), afterMap );
         }
         return nodeId;
     }
 
-    private long equalCheck( long nodeId, long expectedNodeId )
+    private void equalCheck( long nodeId, long expectedNodeId )
     {
-        assert expectedNodeId == -1 || nodeId == expectedNodeId : "Node id differs expected " + expectedNodeId + ", but was " + nodeId;
-        return nodeId;
+        assert nodeId == expectedNodeId : "Node id differs expected " + expectedNodeId + ", but was " + nodeId;
     }
 
     private void mapBlocks( PropertyRecord record, Map<Integer, PropertyBlock> blocks )
@@ -134,13 +116,13 @@ public class PropertyPhysicalToLogicalConverter
         }
     }
 
-    private Object valueOf( PropertyBlock block )
+    private Value valueOf( PropertyBlock block )
     {
         if ( block == null )
         {
             return null;
         }
 
-        return block.getType().getValue( block, propertyStore );
+        return block.getType().value( block, propertyStore );
     }
 }

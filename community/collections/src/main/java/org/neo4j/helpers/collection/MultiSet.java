@@ -26,7 +26,7 @@ import java.util.Set;
 public class MultiSet<T>
 {
     private final Map<T, Long> inner;
-    private int size = 0;
+    private int size;
 
     public MultiSet()
     {

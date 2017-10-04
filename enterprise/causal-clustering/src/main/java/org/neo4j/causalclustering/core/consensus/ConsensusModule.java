@@ -40,10 +40,11 @@ import org.neo4j.causalclustering.core.consensus.term.MonitoredTermStateStorage;
 import org.neo4j.causalclustering.core.consensus.term.TermState;
 import org.neo4j.causalclustering.core.consensus.vote.VoteState;
 import org.neo4j.causalclustering.core.replication.SendToMyself;
+import org.neo4j.causalclustering.core.state.RefuseToBeLeaderStrategy;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.RaftDiscoveryServiceConnector;
+import org.neo4j.causalclustering.discovery.RaftCoreTopologyConnector;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.Outbound;
@@ -51,7 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
@@ -111,7 +112,7 @@ public class ConsensusModule
                         new RaftMembershipState.Marshal(),
                         config.get( CausalClusteringSettings.raft_membership_state_size ), logProvider ) );
 
-        long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout );
+        long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
         long heartbeatInterval = electionTimeout / 3;
 
         Integer expectedClusterSize = config.get( CausalClusteringSettings.expected_core_cluster_size );
@@ -121,7 +122,7 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                expectedClusterSize, electionTimeout, systemClock(), config.get( join_catch_up_timeout ),
+                expectedClusterSize, electionTimeout, systemClock(), config.get( join_catch_up_timeout ).toMillis(),
                 raftMembershipStorage );
 
         life.add( raftMembershipManager );
@@ -135,9 +136,10 @@ public class ConsensusModule
 
         raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightMap,
-                config.get( CausalClusteringSettings.refuse_to_be_leader ), platformModule.monitors, systemClock() );
+                RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config, logProvider.getLog( getClass() ) ),
+                platformModule.monitors, systemClock() );
 
-        life.add( new RaftDiscoveryServiceConnector( coreTopologyService, raftMachine ) );
+        life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
 
         life.add( logShipping );
     }

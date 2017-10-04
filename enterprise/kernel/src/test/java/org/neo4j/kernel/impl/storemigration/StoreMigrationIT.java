@@ -44,7 +44,6 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -54,7 +53,11 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -92,8 +95,8 @@ public class StoreMigrationIT
         return result;
     }
 
-    private final RecordFormats from;
-    private final RecordFormats to;
+    protected final RecordFormats from;
+    protected final RecordFormats to;
 
     @Parameterized.Parameters( name = "Migrate: {0}->{1}" )
     public static Iterable<Object[]> data() throws IOException
@@ -102,14 +105,15 @@ public class StoreMigrationIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File dir = TestDirectory.testDirectory( StoreMigrationIT.class ).prepareDirectoryForTest( "migration" );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
-        LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, fs );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(), new Monitors() );
         List<Object[]> data = new ArrayList<>();
         ArrayList<RecordFormats> recordFormatses = new ArrayList<>();
-        RecordFormatSelector.allFormats().forEach( ( f ) -> addIfNotThere( f, recordFormatses ) );
+        RecordFormatSelector.allFormats().forEach( f -> addIfNotThere( f, recordFormatses ) );
         for ( RecordFormats toFormat : recordFormatses )
         {
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, storeVersionCheck,
-                    legacyStoreVersionCheck, toFormat );
+            UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( storeVersionCheck, toFormat, tailScanner );
             for ( RecordFormats fromFormat : recordFormatses )
             {
                 File db = new File( dir, baseDirName( toFormat, fromFormat ) );
@@ -133,7 +137,7 @@ public class StoreMigrationIT
         return data;
     }
 
-    private static String baseDirName(RecordFormats toFormat, RecordFormats fromFormat)
+    private static String baseDirName( RecordFormats toFormat, RecordFormats fromFormat )
     {
         return fromFormat.storeVersion() + toFormat.storeVersion();
     }
@@ -180,10 +184,25 @@ public class StoreMigrationIT
         }
     }
 
+    @Service.Implementation( RecordFormats.Factory.class )
+    public static class Standard32Factory extends RecordFormats.Factory
+    {
+        public Standard32Factory()
+        {
+            super( StandardV3_2.STORE_VERSION );
+        }
+
+        @Override
+        public RecordFormats newInstance()
+        {
+            return StandardV3_2.RECORD_FORMATS;
+        }
+    }
+
     private static void createDb( RecordFormats recordFormat, File storeDir ) throws IOException
     {
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormat.storeVersion() ).newGraphDatabase();
         database.shutdown();
     }
@@ -255,7 +274,7 @@ public class StoreMigrationIT
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( );
         ConsistencyCheckService.Result result =
                 runConsistencyChecker( db, fs, consistencyCheckService, to.storeVersion() );
-        if( !result.isSuccessful() )
+        if ( !result.isSuccessful() )
         {
             fail( "Database is inconsistent after migration." );
         }
@@ -271,8 +290,7 @@ public class StoreMigrationIT
             ConsistencyCheckService consistencyCheckService, String storeVersion )
             throws ConsistencyCheckIncompleteException, IOException
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), storeVersion ) );
+        Config config = Config.defaults( GraphDatabaseSettings.record_format, storeVersion );
         return consistencyCheckService.runFullConsistencyCheck( db, config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), fs, false );
     }
@@ -281,7 +299,7 @@ public class StoreMigrationIT
     protected GraphDatabaseService getGraphDatabaseService( File db, String storeVersion )
     {
         return new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( db )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, storeVersion ).newGraphDatabase();
     }
 }

@@ -118,7 +118,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
             {
                 throw new IllegalStateException( "Property getter method may not have any parameters." );
             }
-            if ( !Representation.class.isAssignableFrom( (Class<?>) method.getReturnType() ) )
+            if ( !Representation.class.isAssignableFrom( method.getReturnType() ) )
             {
                 throw new IllegalStateException( "Property getter must return Representation object." );
             }
@@ -127,7 +127,10 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         void putTo( MappingSerializer serializer, ObjectRepresentation object, String key )
         {
             Object value = get( object );
-            if ( value != null ) ( (Representation) value ).putTo( serializer, key );
+            if ( value != null )
+            {
+                ((Representation) value).putTo( serializer, key );
+            }
         }
 
         abstract Object get( ObjectRepresentation object );

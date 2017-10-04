@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -51,12 +52,12 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 
 /**
@@ -123,7 +124,7 @@ public class TestRecoveryScenarios
         // GIVEN
         createIndex( label, "key" );
         Label[] labels = new Label[16];
-        for (int i = 0; i < labels.length; i++ )
+        for ( int i = 0; i < labels.length; i++ )
         {
             labels[i] = label( "Label" + Integer.toHexString( i ) );
         }
@@ -242,7 +243,7 @@ public class TestRecoveryScenarios
         }
     }
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> flushStrategy()
     {
         List<Object[]> parameters = new ArrayList<>(  );
@@ -253,7 +254,7 @@ public class TestRecoveryScenarios
         return parameters;
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     public enum FlushStrategy
     {
         FORCE_EVERYTHING
@@ -291,7 +292,7 @@ public class TestRecoveryScenarios
         this.flush = flush;
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     @Before
     public void before()
     {
@@ -301,7 +302,7 @@ public class TestRecoveryScenarios
     private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
     {
         return new TestGraphDatabaseFactory()
-            .setFileSystem( fs ).addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) );
+            .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
     }
 
     @After
@@ -335,10 +336,11 @@ public class TestRecoveryScenarios
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private void crashAndRestart( InMemoryIndexProvider indexProvider )
+    @SuppressWarnings( "deprecation" )
+    private void crashAndRestart( InMemoryIndexProvider indexProvider ) throws Exception
     {
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
+        final GraphDatabaseService db1 = db;
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
         db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -26,10 +27,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -44,6 +44,9 @@ public class LogHeaderWriterTest
 {
     private final long expectedLogVersion = CURRENT_LOG_VERSION;
     private final long expectedTxId = 42;
+
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void shouldWriteALogHeaderInTheGivenChannel() throws IOException
@@ -98,14 +101,13 @@ public class LogHeaderWriterTest
     {
         // given
         final File file = File.createTempFile( "WriteLogHeader", getClass().getSimpleName() );
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
         // when
-        writeLogHeader( fs, file, expectedLogVersion, expectedTxId );
+        writeLogHeader( fileSystemRule.get(), file, expectedLogVersion, expectedTxId );
 
         // then
         final byte[] array = new byte[LOG_HEADER_SIZE];
-        try ( InputStream stream = fs.openAsInputStream( file ) )
+        try ( InputStream stream = fileSystemRule.get().openAsInputStream( file ) )
         {
             int read = stream.read( array );
             assertEquals( LOG_HEADER_SIZE, read );
@@ -130,8 +132,7 @@ public class LogHeaderWriterTest
     {
         // given
         final File file = File.createTempFile( "WriteLogHeader", getClass().getSimpleName() );
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        final StoreChannel channel = fs.open( file, "rw" );
+        final StoreChannel channel = fileSystemRule.get().open( file, "rw" );
 
         // when
         writeLogHeader( channel, expectedLogVersion, expectedTxId );
@@ -140,7 +141,7 @@ public class LogHeaderWriterTest
 
         // then
         final byte[] array = new byte[LOG_HEADER_SIZE];
-        try ( InputStream stream = fs.openAsInputStream( file ) )
+        try ( InputStream stream = fileSystemRule.get().openAsInputStream( file ) )
         {
             int read = stream.read( array );
             assertEquals( LOG_HEADER_SIZE, read );

@@ -19,24 +19,31 @@
  */
 package org.neo4j.causalclustering.core.replication;
 
+import org.hamcrest.Matchers;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
-import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
-import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
-import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.core.state.Result;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
+import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Message;
+import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.logging.NullLog;
+import org.neo4j.time.Clocks;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -44,12 +51,16 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class RaftReplicatorTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
 
     private LeaderLocator leaderLocator = mock( LeaderLocator.class );
@@ -57,7 +68,9 @@ public class RaftReplicatorTest
     private MemberId leader = new MemberId( UUID.randomUUID() );
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
-    private RetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 0, MILLISECONDS );
+    private TimeoutStrategy timeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
+    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
+    private long replicationLimit = 1000;
 
     @Test
     public void shouldSendReplicatedContentToLeader() throws Exception
@@ -69,7 +82,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, retryStrategy, NullLogProvider.getInstance() );
+                        capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -96,7 +109,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, retryStrategy, NullLogProvider.getInstance() );
+                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -120,7 +133,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, retryStrategy, NullLogProvider.getInstance() );
+                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
@@ -142,13 +155,55 @@ public class RaftReplicatorTest
         assertEquals( 0, sessionPool.openSessionCount() );
     }
 
-    private Thread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
+    @Test
+    public void stopReplicationOnShutdown() throws NoLeaderFoundException, InterruptedException
     {
-        return new Thread( () -> {
+        when( leaderLocator.getLeader() ).thenReturn( leader );
+        CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
+        CapturingOutbound outbound = new CapturingOutbound();
+
+        RaftReplicator replicator =
+                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, timeoutStrategy,
+                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
+        ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
+
+        // when
+        replicatingThread.start();
+
+        availabilityGuard.shutdown();
+        replicatingThread.join();
+        assertThat( replicatingThread.getReplicationException(), Matchers.instanceOf( DatabaseShutdownException.class ) );
+    }
+
+    private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
+    {
+        return new ReplicatingThread( replicator, content, trackResult );
+    }
+
+    private class ReplicatingThread extends Thread
+    {
+
+        private final RaftReplicator replicator;
+        private final ReplicatedInteger content;
+        private final boolean trackResult;
+        private volatile Exception replicationException;
+
+        ReplicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
+        {
+            this.replicator = replicator;
+            this.content = content;
+            this.trackResult = trackResult;
+        }
+
+        @Override
+        public void run()
+        {
             try
             {
                 Future<Object> futureResult = replicator.replicate( content, trackResult );
-                if( trackResult )
+                if ( trackResult )
                 {
                     try
                     {
@@ -156,15 +211,21 @@ public class RaftReplicatorTest
                     }
                     catch ( ExecutionException e )
                     {
+                        replicationException = e;
                         throw new IllegalStateException();
                     }
                 }
             }
-            catch ( InterruptedException | NoLeaderFoundException e )
+            catch ( Exception e )
             {
-                throw new IllegalStateException();
+                replicationException = e;
             }
-        } );
+        }
+
+        public Exception getReplicationException()
+        {
+            return replicationException;
+        }
     }
 
     private class CapturingProgressTracker implements ProgressTracker
@@ -215,7 +276,7 @@ public class RaftReplicatorTest
         private int count;
 
         @Override
-        public void send( MemberId to, MESSAGE message )
+        public void send( MemberId to, MESSAGE message, boolean block )
         {
             this.lastTo = to;
             this.count++;

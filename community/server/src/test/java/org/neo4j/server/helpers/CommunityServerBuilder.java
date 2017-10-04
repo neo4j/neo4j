@@ -26,24 +26,24 @@ import java.net.URISyntaxException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ClientConnectorSettings;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -59,11 +59,13 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 
 public class CommunityServerBuilder
 {
+    protected static final ListenSocketAddress ANY_ADDRESS = new ListenSocketAddress( "localhost", 0 );
+
     protected final LogProvider logProvider;
     private ListenSocketAddress address = new ListenSocketAddress( "localhost", 7474 );
     private ListenSocketAddress httpsAddress = new ListenSocketAddress( "localhost", 7473 );
-    private String maxThreads = null;
-    private String dataDir = null;
+    private String maxThreads;
+    private String dataDir;
     private String managementUri = "/db/manage/";
     private String restUri = "/db/data/";
     private PreFlightTasks preflightTasks;
@@ -75,19 +77,21 @@ public class CommunityServerBuilder
         System.setProperty( "sun.net.http.allowRestrictedHeaders", "true" );
     }
 
-    private static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) -> {
+    private static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = ( config, dependencies ) ->
+    {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        Map<String, String> params = config.getParams();
-        params.put( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true" );
-        return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
+        config.augment( stringMap( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true",
+                new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
+        return new ImpermanentGraphDatabase( storeDir, config,
+                GraphDatabaseDependencies.newDependencies( dependencies ) );
     };
 
-    private Clock clock = null;
-    private String[] autoIndexedNodeKeys = null;
+    private Clock clock;
+    private String[] autoIndexedNodeKeys;
     private final String[] autoIndexedRelationshipKeys = null;
     private String[] securityRuleClassNames;
     private boolean persistent;
-    private boolean httpsEnabled = false;
+    private boolean httpsEnabled;
 
     public static CommunityServerBuilder server( LogProvider logProvider )
     {
@@ -99,35 +103,40 @@ public class CommunityServerBuilder
         return new CommunityServerBuilder( NullLogProvider.getInstance() );
     }
 
+    public static CommunityServerBuilder serverOnRandomPorts()
+    {
+        return server().onRandomPorts();
+    }
+
     public CommunityNeoServer build() throws IOException
     {
         if ( dataDir == null && persistent )
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        final Optional<File> configFile = buildBefore();
+        final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( configFile );
+        Config config = Config.fromFile( configFile ).withServerDefaults().build();
         config.setLogger( log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }
 
-    protected CommunityNeoServer build( Optional<File> configFile, Config config,
+    protected CommunityNeoServer build( File configFile, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new TestCommunityNeoServer( config, configFile, dependencies, logProvider );
     }
 
-    public Optional<File> createConfigFiles() throws IOException
+    public File createConfigFiles() throws IOException
     {
         File temporaryConfigFile = ServerTestUtils.createTempConfigFile();
         File temporaryFolder = ServerTestUtils.createTempDir();
 
         ServerTestUtils.writeConfigToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
 
-        return Optional.of( temporaryConfigFile );
+        return temporaryConfigFile;
     }
 
     public CommunityServerBuilder withClock( Clock clock )
@@ -136,7 +145,7 @@ public class CommunityServerBuilder
         return this;
     }
 
-    private Map<String, String> createConfiguration( File temporaryFolder )
+    public Map<String, String> createConfiguration( File temporaryFolder )
     {
         Map<String, String> properties = stringMap(
                 ServerSettings.management_api_path.name(), managementUri,
@@ -179,19 +188,24 @@ public class CommunityServerBuilder
             properties.put( ServerSettings.security_rules.name(), propertyKeys );
         }
 
-        properties.put( ClientConnectorSettings.httpConnector("http").type.name(), "HTTP" );
-        properties.put( ClientConnectorSettings.httpConnector("http").enabled.name(), "true" );
-        properties.put( ClientConnectorSettings.httpConnector("http").address.name(), address.toString() );
-        properties.put( ClientConnectorSettings.httpConnector("http").encryption.name(), "NONE" );
+        HttpConnector httpConnector = new HttpConnector( "http", Encryption.NONE );
+        HttpConnector httpsConnector = new HttpConnector( "https", Encryption.TLS );
 
-        properties.put( ClientConnectorSettings.httpConnector("https").type.name(), "HTTP" );
-        properties.put( ClientConnectorSettings.httpConnector("https").enabled.name(), String.valueOf( httpsEnabled ) );
-        properties.put( ClientConnectorSettings.httpConnector("https").address.name(), httpsAddress.toString() );
-        properties.put( ClientConnectorSettings.httpConnector("https").encryption.name(), "TLS" );
+        properties.put( httpConnector.type.name(), "HTTP" );
+        properties.put( httpConnector.enabled.name(), "true" );
+        properties.put( httpConnector.address.name(), address.toString() );
+        properties.put( httpConnector.encryption.name(), "NONE" );
+
+        properties.put( httpsConnector.type.name(), "HTTP" );
+        properties.put( httpsConnector.enabled.name(), String.valueOf( httpsEnabled ) );
+        properties.put( httpsConnector.address.name(), httpsAddress.toString() );
+        properties.put( httpsConnector.encryption.name(), "TLS" );
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
-        properties.put( ServerSettings.certificates_directory.name(), new File(temporaryFolder, "certificates").getAbsolutePath() );
-        properties.put( GraphDatabaseSettings.logs_directory.name(), new File(temporaryFolder, "logs").getAbsolutePath() );
+        properties.put( LegacySslPolicyConfig.certificates_directory.name(),
+                new File( temporaryFolder, "certificates" ).getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.logs_directory.name(),
+                new File( temporaryFolder, "logs" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
         for ( Object key : arbitraryProperties.keySet() )
@@ -283,6 +297,13 @@ public class CommunityServerBuilder
         return this;
     }
 
+    public CommunityServerBuilder onRandomPorts()
+    {
+        this.onHttpsAddress( ANY_ADDRESS );
+        this.onAddress( ANY_ADDRESS );
+        return this;
+    }
+
     public CommunityServerBuilder onAddress( ListenSocketAddress address )
     {
         this.address = address;
@@ -322,9 +343,9 @@ public class CommunityServerBuilder
                 config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
-    protected Optional<File> buildBefore() throws IOException
+    private File buildBefore() throws IOException
     {
-        Optional<File> configFile = createConfigFiles();
+        File configFile = createConfigFiles();
 
         if ( preflightTasks == null )
         {
@@ -342,9 +363,9 @@ public class CommunityServerBuilder
 
     private class TestCommunityNeoServer extends CommunityNeoServer
     {
-        private final Optional<File> configFile;
+        private final File configFile;
 
-        private TestCommunityNeoServer( Config config, Optional<File> configFile, GraphDatabaseFacadeFactory
+        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory
                 .Dependencies dependencies, LogProvider logProvider )
         {
             super( config, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies,
@@ -362,7 +383,10 @@ public class CommunityServerBuilder
         public void stop()
         {
             super.stop();
-            configFile.ifPresent( File::delete );
+            if ( configFile != null )
+            {
+                configFile.delete();
+            }
         }
     }
 }

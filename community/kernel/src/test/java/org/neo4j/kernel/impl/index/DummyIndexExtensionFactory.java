@@ -23,7 +23,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.spi.legacyindex.IndexProviders;
+import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 
 public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies>
 {
@@ -51,7 +51,7 @@ public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyInde
     {
         private final IndexProviders indexProviders;
 
-        public Extension( IndexProviders indexProviders )
+        Extension( IndexProviders indexProviders )
         {
             this.indexProviders = indexProviders;
         }

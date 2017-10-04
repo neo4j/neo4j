@@ -27,6 +27,10 @@ public class RaftTestMember
 {
     private static final Map<Integer, MemberId> testMembers = new HashMap<>();
 
+    private RaftTestMember()
+    {
+    }
+
     public static MemberId member( int id )
     {
         return testMembers.computeIfAbsent( id, k -> new MemberId( UUID.randomUUID() ) );

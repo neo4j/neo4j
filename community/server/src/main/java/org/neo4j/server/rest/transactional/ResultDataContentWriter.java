@@ -27,5 +27,6 @@ import org.neo4j.graphdb.Result;
 
 public interface ResultDataContentWriter
 {
-    void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row, TransactionStateChecker txStateChecker ) throws IOException;
+    void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row,
+            TransactionStateChecker txStateChecker ) throws IOException;
 }

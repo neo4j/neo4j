@@ -20,13 +20,13 @@
 package org.neo4j.bolt.v1.messaging.message;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
-import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.cypher.result.QueryResult;
 
 public class RecordMessage implements ResponseMessage
 {
-    private final Record value;
+    private final QueryResult.Record value;
 
-    public RecordMessage( Record record )
+    public RecordMessage( QueryResult.Record record )
     {
         this.value = record;
     }
@@ -68,7 +68,7 @@ public class RecordMessage implements ResponseMessage
                '}';
     }
 
-    public Record record()
+    public QueryResult.Record record()
     {
         return value;
     }

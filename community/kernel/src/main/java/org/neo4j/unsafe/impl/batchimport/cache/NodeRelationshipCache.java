@@ -26,17 +26,18 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
+import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
+import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 
 /**
  * Caches of parts of node store and relationship group store. A crucial part of batch import where
@@ -86,6 +87,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     private static final int BIG_COUNT_MASK = 0x20000000;
     private static final int COUNT_FLAGS_MASKS = DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK | BIG_COUNT_MASK;
     private static final int COUNT_MASK = ~COUNT_FLAGS_MASKS;
+
     private static final int TYPE_SIZE = 2;
     public static final int GROUP_ENTRY_SIZE = TYPE_SIZE + ID_SIZE/*next*/ +
             ID_AND_COUNT_SIZE * Direction.values().length;
@@ -552,7 +554,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         long visit( long nodeId, int typeId, long out, long in, long loop );
     }
 
-    public static final GroupVisitor NO_GROUP_VISITOR = (nodeId, typeId, out, in, loop) -> -1;
+    public static final GroupVisitor NO_GROUP_VISITOR = ( nodeId, typeId, out, in, loop ) -> -1;
 
     private class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Visitable
     {
@@ -621,7 +623,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
         int getTypeId( ByteArray array, long index )
         {
-            return IoPrimitiveUtils.shortToUnsignedInt( array.getShort( index, TYPE_OFFSET ) );
+            return unsignedShortToInt( array.getShort( index, TYPE_OFFSET ) );
         }
 
         /**
@@ -677,7 +679,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             long rebasedIndex = rebase( index );
             ByteArray array = this.array.at( rebasedIndex );
             clearIndex( array, rebasedIndex );
-            short shortTypeId = IoPrimitiveUtils.safeCastIntToUnsignedShort( typeId );
+            short shortTypeId = safeCastIntToUnsignedShort( typeId );
             array.setShort( rebasedIndex, TYPE_OFFSET, shortTypeId );
             return index;
         }
@@ -829,16 +831,17 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
                 continue;
             }
 
-            ByteArray chunk = array.at( nodeId );
-            for ( int i = 0; i < chunkSize && nodeId < highNodeId; i++, nodeId++ )
+            ByteArray subArray = array.at( nodeId );
+            long subArrayLength = subArray.length();
+            for ( int i = 0; i < subArrayLength && nodeId < highNodeId; i++, nodeId++ )
             {
                 boolean nodeHasChanged =
-                        (NodeType.isDense( nodeTypes ) && nodeIsChanged( chunk, nodeId, denseMask )) ||
-                        (NodeType.isSparse( nodeTypes ) && nodeIsChanged( chunk, nodeId, sparseMask ));
+                        (NodeType.isDense( nodeTypes ) && nodeIsChanged( subArray, nodeId, denseMask )) ||
+                        (NodeType.isSparse( nodeTypes ) && nodeIsChanged( subArray, nodeId, sparseMask ));
 
                 if ( nodeHasChanged && NodeType.matchesDense( nodeTypes, isDense( array, nodeId ) ) )
                 {
-                    visitor.change( nodeId, chunk );
+                    visitor.change( nodeId, subArray );
                 }
             }
         }

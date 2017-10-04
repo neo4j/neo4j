@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -47,7 +47,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private long relationshipId;
     private long fromNodeId;
     private Direction direction;
-    private int[] relTypes;
+    private IntPredicate allowedTypes;
     private int groupChainIndex;
     private boolean end;
     private final RecordCursors cursors;
@@ -68,25 +68,15 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             long firstRelId,
             long fromNodeId,
             Direction direction,
-            AssertOpen assertOpen )
-    {
-        return init( isDense, firstRelId, fromNodeId, direction, assertOpen, null );
-    }
-
-    public final StoreNodeRelationshipCursor init( boolean isDense,
-            long firstRelId,
-            long fromNodeId,
-            Direction direction,
-            AssertOpen assertOpen,
-            int... relTypes )
+            IntPredicate allowedTypes )
     {
         this.isDense = isDense;
         this.relationshipId = firstRelId;
         this.fromNodeId = fromNodeId;
         this.direction = direction;
-        this.relTypes = relTypes;
+        this.allowedTypes = allowedTypes;
         this.end = false;
-        initialize( assertOpen );
+
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             cursors.relationshipGroup().next( firstRelId, groupRecord, FORCE );
@@ -144,7 +134,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                     }
 
                     // Type check
-                    if ( !checkType( relationshipRecord.getType() ) )
+                    if ( !allowedTypes.test( relationshipRecord.getType() ) )
                     {
                         continue;
                     }
@@ -164,13 +154,12 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                 }
                 else
                 {
-                    throw new InvalidRecordException( "While loading relationships for Node[" + fromNodeId +
-                                                      "] a Relationship[" + relationshipRecord.getId() +
-                                                      "] was encountered that had startNode:" +
-                                                      " " +
-                                                      relationshipRecord.getFirstNode() + " and endNode: " +
-                                                      relationshipRecord.getSecondNode() +
-                                                      ", i.e. which had neither start nor end node as the node we're loading relationships for" );
+                    throw new InvalidRecordException(
+                            "While loading relationships for Node[" + fromNodeId + "] a Relationship[" +
+                                    relationshipRecord.getId() + "] was encountered that had startNode:" + " " +
+                                    relationshipRecord.getFirstNode() + " and endNode: " +
+                                    relationshipRecord.getSecondNode() + ", i.e. which had neither start nor end node " +
+                                    "as the node we're loading relationships for" );
                 }
 
                 // If there are no more relationships, and this is from a dense node, then
@@ -199,7 +188,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             {
                 // We check inUse flag here since we can actually follow pointers in unused records
                 // to guard for and overcome concurrent deletes in the relationship group chain
-                if ( groupRecord.inUse() && checkType( groupRecord.getType() ) )
+                if ( groupRecord.inUse() && allowedTypes.test( groupRecord.getType() ) )
                 {
                     // Go to the next chain (direction) within this group
                     while ( groupChainIndex < GROUP_CHAINS.length )
@@ -232,24 +221,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         return NULL_REFERENCE.intValue();
     }
 
-    private boolean checkType( int type )
-    {
-        if ( relTypes != null )
-        {
-            for ( int relType : relTypes )
-            {
-                if ( type == relType )
-                {
-                    return true;
-                }
-            }
-            return false;
-
-        }
-        return true;
-    }
-
-    private static enum GroupChain
+    private enum GroupChain
     {
         OUT
                 {

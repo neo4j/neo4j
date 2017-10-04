@@ -370,7 +370,7 @@ public class ArrayMap<K,V>
         }
         if ( arrayCount != -1 )
         {
-            Arrays.fill( ((ArrayEntry[])data), null );
+            Arrays.fill( (ArrayEntry[])data, null );
             arrayCount = 0;
         }
         else
@@ -383,7 +383,7 @@ public class ArrayMap<K,V>
     {
         if ( arrayCount != -1 )
         {
-            Arrays.fill( ((ArrayEntry[])data), null );
+            Arrays.fill( (ArrayEntry[])data, null );
             arrayCount = 0;
         }
         else

@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
-import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.kernel.configuration.Config;
 
 public class PageSwapperFactoryForTesting
         extends SingleFilePageSwapperFactory
-        implements ConfigurablePageSwapperFactory
+        implements PageSwapperFactory
 {
     public static final String TEST_PAGESWAPPER_NAME = "pageSwapperForTesting";
 
@@ -73,14 +72,9 @@ public class PageSwapperFactoryForTesting
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory )
+    public void open( FileSystemAbstraction fs, Configuration configuration )
     {
-        return Stream.empty();
-    }
-
-    @Override
-    public void configure( Config config )
-    {
+        super.open( fs, configuration );
         configuredCounter.getAndIncrement();
     }
 }

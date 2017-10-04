@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,12 +44,18 @@ public class JavaValueCompatibilityTest
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void collections_in_collections_look_aiight() throws Exception
     {
         Result result = db.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
         Map<String, Object> next = result.next();
-        @SuppressWarnings("unchecked") //We know it's a collection.
+        @SuppressWarnings( "unchecked" ) //We know it's a collection.
         List<List<Object>> x = (List<List<Object>>)next.get( "x" );
         Iterable objects = x.get( 0 );
 

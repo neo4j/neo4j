@@ -42,7 +42,8 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 
 public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater
 {
-    private static final long DEFAULT_FIRST_VALUE = 0, DEFAULT_SECOND_VALUE = 0;
+    private static final long DEFAULT_FIRST_VALUE = 0;
+    private static final long DEFAULT_SECOND_VALUE = 0;
     private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
 
     @Override
@@ -67,9 +68,9 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( long indexId, DoubleLongRegister target )
     {
-        counts( indexSampleKey( labelId, propertyKeyId ) ).copyTo( target );
+        counts( indexSampleKey( indexId ) ).copyTo( target );
         return target;
     }
 
@@ -83,28 +84,28 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target )
     {
-        counts( indexStatisticsKey( labelId, propertyKeyId ) ).copyTo( target );
+        counts( indexStatisticsKey( indexId ) ).copyTo( target );
         return target;
     }
 
     @Override
-    public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size )
+    public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
     {
-        counts( indexStatisticsKey( labelId, propertyKeyId ) ).write( updates, size );
+        counts( indexStatisticsKey( indexId ) ).write( updates, size );
     }
 
     @Override
-    public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
+    public void incrementIndexUpdates( long indexId, long delta )
     {
-        counts( indexStatisticsKey( labelId, propertyKeyId ) ).increment( delta, 0L );
+        counts( indexStatisticsKey( indexId ) ).increment( delta, 0L );
     }
 
     @Override
-    public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    public void replaceIndexSample( long indexId, long unique, long size )
     {
-        counts( indexSampleKey( labelId, propertyKeyId ) ).write( unique, size );
+        counts( indexSampleKey( indexId ) ).write( unique, size );
     }
 
     @Override
@@ -162,7 +163,8 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         @Override
         public String toString()
         {
-            return String.format( "%s[%s expected=%d:%d, actual=%d:%d]", getClass().getSimpleName(), key, expectedFirst, expectedSecond, actualFirst, actualSecond );
+            return String.format( "%s[%s expected=%d:%d, actual=%d:%d]", getClass().getSimpleName(), key, expectedFirst,
+                    expectedSecond, actualFirst, actualSecond );
         }
 
         public CountsKey key()
@@ -177,7 +179,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
             {
                 return true;
             }
-            if ( (obj instanceof Difference) )
+            if ( obj instanceof Difference )
             {
                 Difference that = (Difference) obj;
                 return actualFirst == that.actualFirst && expectedFirst == that.expectedFirst
@@ -285,15 +287,15 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
             verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
         }
         @Override
-        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+        public void visitIndexStatistics( long indexId, long updates, long size )
         {
-            verify( indexStatisticsKey( labelId, propertyKeyId ), updates, size );
+            verify( indexStatisticsKey( indexId ), updates, size );
         }
 
         @Override
-        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+        public void visitIndexSample( long indexId, long unique, long size )
         {
-            verify( indexSampleKey( labelId, propertyKeyId ), unique, size );
+            verify( indexSampleKey( indexId ), unique, size );
         }
 
         private void verify( CountsKey key, long actualFirst, long actualSecond )
@@ -306,7 +308,8 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
                     differences.add( new Difference( key, 0, 0, actualFirst, actualSecond ) );
                 }
             }
-            else {
+            else
+            {
                 long expectedFirst = expected.readFirst();
                 long expectedSecond = expected.readSecond();
                 if ( expectedFirst != actualFirst || expectedSecond != actualSecond )

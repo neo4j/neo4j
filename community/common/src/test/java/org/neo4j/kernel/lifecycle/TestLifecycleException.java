@@ -35,32 +35,28 @@ public class TestLifecycleException
     @Test
     public void shouldMakeNoneToStoppedIntoHumanReadableInitMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( NONE, STOPPED ).getMessage(),
+        assertThat( exceptionFor( NONE, STOPPED ).getMessage(),
                 is( "Component 'SomeComponent' failed to initialize." ) );
     }
 
     @Test
     public void shouldMakeStoppedToStartedIntoHumanReadableStartingMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( STOPPED, STARTED ).getMessage(),
+        assertThat( exceptionFor( STOPPED, STARTED ).getMessage(),
                 is( "Component 'SomeComponent' was successfully initialized, but failed to start." ) );
     }
 
     @Test
     public void shouldMakeStartedToStoppedIntoHumanReadableStoppingMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( STARTED, STOPPED ).getMessage(),
+        assertThat( exceptionFor( STARTED, STOPPED ).getMessage(),
                 is( "Component 'SomeComponent' failed to stop." ) );
     }
 
     @Test
     public void shouldMakeShutdownIntoHumanReadableShutdownMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( STOPPED, SHUTDOWN ).getMessage(),
+        assertThat( exceptionFor( STOPPED, SHUTDOWN ).getMessage(),
                 is( "Component 'SomeComponent' failed to shut down." ) );
     }
 
@@ -70,7 +66,7 @@ public class TestLifecycleException
         Exception root = new Exception( "big bad root cause" );
         Exception intermediate = new Exception( "intermediate exception", root );
         assertThat( exceptionFor( STARTED, STOPPED, intermediate ).getMessage(),
-                containsString( root.getMessage() ) );
+                containsString( root.getMessage()));
     }
 
     private LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to )

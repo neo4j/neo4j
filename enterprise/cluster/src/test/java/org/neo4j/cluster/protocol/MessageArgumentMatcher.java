@@ -19,7 +19,6 @@
  */
 package org.neo4j.cluster.protocol;
 
-import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
 
 import java.io.Serializable;
@@ -30,7 +29,7 @@ import java.util.List;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
 
-public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatcher<Message<T>>
+public class MessageArgumentMatcher<T extends MessageType> implements ArgumentMatcher<Message<T>>
 {
     private URI from;
     private URI to;
@@ -75,25 +74,20 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
     }
 
     @Override
-    public boolean matches( Object message )
+    public boolean matches( Message<T> message )
     {
-        if ( message == null || !( message instanceof Message ) )
+        if ( message == null )
         {
             return false;
         }
-        if ( message == this )
-        {
-            return true;
-        }
-        Message toMatchAgainst = (Message) message;
-        boolean toMatches = to == null ? true : to.toString().equals( toMatchAgainst.getHeader( Message.TO ) );
-        boolean fromMatches = from == null ? true : from.toString().equals( toMatchAgainst.getHeader( Message.FROM ) );
-        boolean typeMatches = theMessageType == null ? true : theMessageType == toMatchAgainst.getMessageType();
-        boolean payloadMatches = payload == null ? true : payload.equals( toMatchAgainst.getPayload() );
+        boolean toMatches = to == null || to.toString().equals( message.getHeader( Message.TO ) );
+        boolean fromMatches = from == null || from.toString().equals( message.getHeader( Message.FROM ) );
+        boolean typeMatches = theMessageType == null || theMessageType == ((Message) message).getMessageType();
+        boolean payloadMatches = payload == null || payload.equals( message.getPayload() );
         boolean headersMatch = true;
         for ( String header : headers )
         {
-            headersMatch = headersMatch && matchHeaderAndValue( header, toMatchAgainst.getHeader( header ) );
+            headersMatch = headersMatch && matchHeaderAndValue( header, message.getHeader( header ) );
         }
         return fromMatches && toMatches && typeMatches && payloadMatches && headersMatch;
     }
@@ -115,10 +109,9 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
     }
 
     @Override
-    public void describeTo( Description description )
+    public String toString()
     {
-        description.appendText(
-                (theMessageType != null ? theMessageType.name() : "<no particular message type>") +
-                "{from=" + from + ", to=" + to + ", payload=" + payload + "}" );
+        return (theMessageType != null ? theMessageType.name() : "<no particular message type>") + "{from=" + from +
+                ", to=" + to + ", payload=" + payload + "}";
     }
 }

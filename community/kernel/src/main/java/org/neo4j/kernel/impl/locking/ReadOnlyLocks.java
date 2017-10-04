@@ -45,13 +45,13 @@ public class ReadOnlyLocks implements Locks
     private static class ReadOnlyClient extends NoOpClient
     {
         @Override
-        public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
         {
             fail();
         }
 
         @Override
-        public void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
         {
             fail();
         }
@@ -71,13 +71,13 @@ public class ReadOnlyLocks implements Locks
         }
 
         @Override
-        public void releaseShared( ResourceType resourceType, long resourceId )
+        public void releaseShared( ResourceType resourceType, long... resourceIds )
         {
             fail();
         }
 
         @Override
-        public void releaseExclusive( ResourceType resourceType, long resourceId )
+        public void releaseExclusive( ResourceType resourceType, long... resourceIds )
         {
             fail();
         }

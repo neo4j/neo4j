@@ -200,7 +200,7 @@ public abstract class IndexCommand extends Command
             byte entityIdNeedsLong, byte startNodeNeedsLong, byte endNodeNeedsLong, int indexNameId, int keyId )
                     throws IOException
     {
-        channel.put( (byte) ((valueType << 2) | (entityType << 1) | (entityIdNeedsLong)) );
+        channel.put( (byte) ((valueType << 2) | (entityType << 1) | entityIdNeedsLong) );
         channel.put( (byte) ((startNodeNeedsLong << 7) | (endNodeNeedsLong << 6)) );
         channel.putShort( (short) indexNameId );
         channel.putShort( (short) keyId );

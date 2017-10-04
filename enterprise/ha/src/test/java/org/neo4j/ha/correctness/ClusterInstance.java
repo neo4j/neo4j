@@ -101,7 +101,7 @@ class ClusterInstance
 
         DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
         final MultiPaxosContext context = new MultiPaxosContext( id,
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
+                Iterables.iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
                 new ClusterConfiguration( configuration.getName(), logging,
                         configuration.getMemberURIs() ),
                 executor, logging, objStreamFactory, objStreamFactory, acceptorInstances, timeouts,
@@ -121,7 +121,7 @@ class ClusterInstance
                 input, output, uri );
     }
 
-    public ClusterInstance( Executor stateMachineExecutor, LogProvider logging, MultiPaxosServerFactory factory,
+    ClusterInstance( Executor stateMachineExecutor, LogProvider logging, MultiPaxosServerFactory factory,
                             ProtocolServer server,
                             MultiPaxosContext ctx, InMemoryAcceptorInstanceStore acceptorInstanceStore,
                             ProverTimeouts timeouts, ClusterInstanceInput input, ClusterInstanceOutput output,
@@ -168,9 +168,8 @@ class ClusterInstance
 
     private Iterable<String> stateMachineStates()
     {
-        return Iterables.map( stateMachine -> {
-            return stateMachine.getState().toString();
-        }, server.getStateMachines().getStateMachines() );
+        return Iterables.map( stateMachine -> stateMachine.getState().toString(),
+                server.getStateMachines().getStateMachines() );
     }
 
     @Override
@@ -353,7 +352,7 @@ class ClusterInstance
         private final List<Message<? extends MessageType>> messages = new ArrayList<>();
         private final URI uri;
 
-        public ClusterInstanceOutput( URI uri )
+        ClusterInstanceOutput( URI uri )
         {
             this.uri = uri;
         }

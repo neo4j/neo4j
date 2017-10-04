@@ -76,7 +76,7 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
                     if ( rotationTimer.isTimedOut() )
                     {
                         throw new RotationTimeoutException( threshold, preState.store.version(),
-                                rotationTimer.getElapsedTimeMillis());
+                                rotationTimer.getElapsedTimeMillis() );
                     }
                     try
                     {

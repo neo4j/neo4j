@@ -28,10 +28,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 
-import static org.neo4j.io.pagecache.FileHandle.HANDLE_DELETE;
+import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
 
 public class StoreUtil
 {
@@ -40,7 +40,8 @@ public class StoreUtil
     private static final String[] DONT_MOVE_DIRECTORIES = {"metrics", "logs", "certificates"};
     public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
-    private static final FileFilter STORE_FILE_FILTER = file -> {
+    private static final FileFilter STORE_FILE_FILTER = file ->
+    {
         for ( String directory : DONT_MOVE_DIRECTORIES )
         {
             if ( file.getName().equals( directory ) )
@@ -50,7 +51,8 @@ public class StoreUtil
         }
         return !isBranchedDataRootDirectory( file ) && !isTemporaryCopy( file );
     };
-    private static final FileFilter DEEP_STORE_FILE_FILTER = file -> {
+    private static final FileFilter DEEP_STORE_FILE_FILTER = file ->
+    {
         for ( String directory : DONT_MOVE_DIRECTORIES )
         {
             if ( file.getPath().contains( directory ) )
@@ -61,6 +63,10 @@ public class StoreUtil
         return !isPartOfBranchedDataRootDirectory( file );
     };
 
+    private StoreUtil()
+    {
+    }
+
     public static void cleanStoreDir( File storeDir, PageCache pageCache ) throws IOException
     {
         for ( File file : relevantDbFiles( storeDir ) )
@@ -68,7 +74,7 @@ public class StoreUtil
             FileUtils.deleteRecursively( file );
         }
 
-        pageCache.streamFilesRecursive( storeDir )
+        pageCache.getCachedFileSystem().streamFilesRecursive( storeDir )
                 .filter( fh -> DEEP_STORE_FILE_FILTER.accept( fh.getFile() ) ).forEach( HANDLE_DELETE );
     }
 
@@ -95,7 +101,7 @@ public class StoreUtil
         final Stream<FileHandle> fileHandleStream;
         try
         {
-            fileHandleStream = pageCache.streamFilesRecursive( from );
+            fileHandleStream = pageCache.getCachedFileSystem().streamFilesRecursive( from );
         }
         catch ( IOException e )
         {
@@ -109,7 +115,7 @@ public class StoreUtil
     public static void deleteRecursive( File storeDir, PageCache pageCache ) throws IOException
     {
         FileUtils.deleteRecursively( storeDir );
-        pageCache.streamFilesRecursive( storeDir ).forEach( HANDLE_DELETE );
+        pageCache.getCachedFileSystem().streamFilesRecursive( storeDir ).forEach( HANDLE_DELETE );
     }
 
     public static boolean isBranchedDataDirectory( File file )

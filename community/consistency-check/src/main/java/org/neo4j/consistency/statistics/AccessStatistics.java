@@ -75,11 +75,15 @@ public class AccessStatistics
 
     public static class AccessStats
     {
-        private long reads = 0, writes = 0, inUse = 0;
-        private long randomReads = 0, randomWrites = 0;
-        private int proximityValue = 0;
+        private long reads;
+        private long writes;
+        private long inUse;
+        private long randomReads;
+        private long randomWrites;
+        private int proximityValue;
         private final String storeType;
-        private long prevReadId, prevWriteId;
+        private long prevReadId;
+        private long prevWriteId;
 
         public AccessStats( String type, int proximity )
         {
@@ -149,10 +153,10 @@ public class AccessStatistics
         private boolean closeBy( long id1, long id2 )
         {
             if ( id1 < 0 || id2 < 0 )
+            {
                 return true;
-            if ( Math.abs( id2 - id1 ) < this.proximityValue )
-                return true;
-            return false;
+            }
+            return Math.abs( id2 - id1 ) < this.proximityValue;
         }
 
         public void upWrite( long id )

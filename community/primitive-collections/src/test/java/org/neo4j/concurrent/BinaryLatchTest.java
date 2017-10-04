@@ -42,7 +42,7 @@ public class BinaryLatchTest
         executor.shutdown();
     }
 
-    @Test(timeout = 3000)
+    @Test( timeout = 3000 )
     public void releaseThenAwaitDoesNotBlock() throws Exception
     {
         BinaryLatch latch = new BinaryLatch();
@@ -50,18 +50,11 @@ public class BinaryLatchTest
         latch.await();
     }
 
-    @Test(timeout = 3000)
+    @Test( timeout = 10000 )
     public void releaseMustUnblockAwaiters() throws Exception
     {
         final BinaryLatch latch = new BinaryLatch();
-        Runnable awaiter = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                latch.await();
-            }
-        };
+        Runnable awaiter = latch::await;
         int awaiters = 24;
         Future<?>[] futures = new Future<?>[awaiters];
         for ( int i = 0; i < awaiters; i++ )
@@ -75,7 +68,9 @@ public class BinaryLatchTest
             fail( "Call should have timed out" );
         }
         catch ( TimeoutException ignore )
-        {}
+        {
+            // empty
+        }
 
         latch.release();
 
@@ -85,20 +80,16 @@ public class BinaryLatchTest
         }
     }
 
-    @Test(timeout = 60000)
+    @Test( timeout = 60000 )
     public void stressLatch() throws Exception
     {
         final AtomicReference<BinaryLatch> latchRef = new AtomicReference<>( new BinaryLatch() );
-        Runnable awaiter = new Runnable()
+        Runnable awaiter = () ->
         {
-            @Override
-            public void run()
+            BinaryLatch latch;
+            while ( (latch = latchRef.get()) != null )
             {
-                BinaryLatch latch;
-                while ( (latch = latchRef.get()) != null )
-                {
-                    latch.await();
-                }
+                latch.await();
             }
         };
 
@@ -113,7 +104,7 @@ public class BinaryLatchTest
         for ( int i = 0; i < 500000; i++ )
         {
             latchRef.getAndSet( new BinaryLatch() ).release();
-            spinwaitu( rng.nextLong( 0, 10 ) );
+            spin( rng.nextLong( 0, 10 ) );
         }
 
         latchRef.getAndSet( null ).release();
@@ -125,14 +116,15 @@ public class BinaryLatchTest
         }
     }
 
-    private static void spinwaitu( long micros )
+    private static void spin( long micros )
     {
         if ( micros == 0 )
         {
             return;
         }
 
-        long now, deadline = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos( micros );
+        long now;
+        long deadline = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos( micros );
         do
         {
             now = System.nanoTime();

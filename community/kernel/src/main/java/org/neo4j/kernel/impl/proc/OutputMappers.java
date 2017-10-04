@@ -27,13 +27,14 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -41,8 +42,8 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Takes user-defined record classes, and does two things: Describe the class as a {@link ProcedureSignature}, and provide a mechanism to convert
- * an instance of the class to Neo4j-typed Object[].
+ * Takes user-defined record classes, and does two things: Describe the class as a {@link ProcedureSignature},
+ * and provide a mechanism to convert an instance of the class to Neo4j-typed Object[].
  */
 public class OutputMappers
 {
@@ -52,7 +53,8 @@ public class OutputMappers
     }
 
     /**
-     * A compiled mapper, takes an instance of a java class, and converts it to an Object[] matching the specified {@link #signature()}.
+     * A compiled mapper, takes an instance of a java class, and converts it to an Object[] matching
+     * the specified {@link #signature()}.
      */
     public static class OutputMapper
     {
@@ -98,7 +100,7 @@ public class OutputMappers
         private final MethodHandle getter;
         private final TypeMappers.NeoValueConverter mapper;
 
-        public FieldMapper( MethodHandle getter, TypeMappers.NeoValueConverter mapper )
+        FieldMapper( MethodHandle getter, TypeMappers.NeoValueConverter mapper )
         {
             this.getter = getter;
             this.mapper = mapper;
@@ -137,7 +139,7 @@ public class OutputMappers
     public OutputMapper mapper( Method method ) throws ProcedureException
     {
         Class<?> cls = method.getReturnType();
-        if( cls == Void.class || cls == void.class )
+        if ( cls == Void.class || cls == void.class )
         {
             return OutputMappers.VOID_MAPPER;
         }
@@ -148,27 +150,27 @@ public class OutputMappers
         }
 
         Type genericReturnType = method.getGenericReturnType();
-        if (!(genericReturnType instanceof ParameterizedType))
+        if ( !(genericReturnType instanceof ParameterizedType) )
         {
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                    "that you define and not a raw Stream.");
+                            "that you define and not a raw Stream." );
         }
 
         ParameterizedType genType = (ParameterizedType) genericReturnType;
         Type recordType = genType.getActualTypeArguments()[0];
-        if ( recordType instanceof WildcardType)
+        if ( recordType instanceof WildcardType )
         {
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                    "that you define and not a Stream<?>.");
+                    "that you define and not a Stream<?>." );
         }
-        if (recordType instanceof ParameterizedType)
+        if ( recordType instanceof ParameterizedType )
         {
             ParameterizedType type = (ParameterizedType) recordType;
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                    "that you define and not a parameterized type such as %s.", type);
+                            "that you define and not a parameterized type such as %s.", type );
         }
 
         return mapper( (Class<?>) recordType );
@@ -199,17 +201,19 @@ public class OutputMappers
                 FieldMapper fieldMapper = new FieldMapper( getter, mapper );
 
                 fieldMappers[i] = fieldMapper;
-                signature[i] = new FieldSignature( field.getName(), mapper.type() );
+                signature[i] = FieldSignature.outputField( field.getName(), mapper.type(), field.isAnnotationPresent( Deprecated.class ) );
             }
             catch ( ProcedureException e )
             {
-                throw new ProcedureException( e.status(), e, "Field `%s` in record `%s` cannot be converted to a Neo4j type: %s", field.getName(),
+                throw new ProcedureException( e.status(), e,
+                        "Field `%s` in record `%s` cannot be converted to a Neo4j type: %s", field.getName(),
                         userClass.getSimpleName(), e.getMessage() );
             }
             catch ( IllegalAccessException e )
             {
-                throw new ProcedureException( Status.Procedure.TypeError, e, "Field `%s` in record `%s` cannot be accessed: %s", field.getName(),
-                        userClass.getSimpleName(), e.getMessage() );
+                throw new ProcedureException( Status.Procedure.TypeError, e,
+                        "Field `%s` in record `%s` cannot be accessed: %s", field.getName(), userClass.getSimpleName(),
+                        e.getMessage() );
             }
         }
 
@@ -218,8 +222,8 @@ public class OutputMappers
 
     private void assertIsValidRecordClass( Class<?> userClass ) throws ProcedureException
     {
-        if( userClass.isPrimitive() || userClass.isArray()
-            || userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
+        if ( userClass.isPrimitive() || userClass.isArray() ||
+                userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
         {
             throw invalidReturnType( userClass );
         }
@@ -235,14 +239,14 @@ public class OutputMappers
                 "    public %s out;%n" +
                 "'}'%n" +
                 "%n" +
-                "And then define your procedure as returning `Stream<Output>`.",
-                userClass.getSimpleName(), userClass.getSimpleName());
+                "And then define your procedure as returning `Stream<Output>`.", userClass.getSimpleName(),
+                userClass.getSimpleName() );
     }
 
     private List<Field> instanceFields( Class<?> userClass )
     {
-        return asList( userClass.getDeclaredFields() ).stream()
-                .filter( ( f ) -> !isStatic( f.getModifiers() ) &&
+        return Arrays.stream( userClass.getDeclaredFields() )
+                .filter( f -> !isStatic( f.getModifiers() ) &&
                                   !f.isSynthetic( ) )
                 .collect( toList() );
     }

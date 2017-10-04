@@ -19,13 +19,21 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-
 import java.io.IOException;
 import java.util.Map;
 
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.*;
+import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.helpers.ValueUtils;
+import org.neo4j.values.virtual.MapValue;
+
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.ACK_FAILURE;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.DISCARD_ALL;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.INIT;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.PULL_ALL;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RESET;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
+
 
 public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOException>
 {
@@ -46,11 +54,11 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     }
 
     @Override
-    public void onInit( String clientName, Map<String, Object> credentials ) throws IOException
+    public void onInit( String clientName, Map<String,Object> credentials ) throws IOException
     {
         packer.packStructHeader( 1, INIT.signature() );
         packer.pack( clientName );
-        packer.packRawMap( credentials );
+        packer.packRawMap( ValueUtils.asMapValue( credentials ) );
         onMessageComplete.onMessageComplete();
     }
 
@@ -69,12 +77,12 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     }
 
     @Override
-    public void onRun( String statement, Map<String, Object> params )
+    public void onRun( String statement, MapValue params )
             throws IOException
     {
         packer.packStructHeader( 2, RUN.signature() );
         packer.pack( statement );
-        packer.packRawMap( params );
+        packer.packRawMap(  params );
         onMessageComplete.onMessageComplete();
     }
 

@@ -27,6 +27,10 @@ import java.util.concurrent.FutureTask;
 
 public class ThreadTestUtils
 {
+    private ThreadTestUtils()
+    {
+    }
+
     public static Thread fork( Runnable runnable )
     {
         String name = "Forked-from-" + Thread.currentThread().getName();

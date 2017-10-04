@@ -19,22 +19,18 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
+import javax.annotation.Nonnull;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.causalclustering.core.CausalClusterConfigurationValidator;
+import org.neo4j.configuration.HaConfigurationValidator;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 
 public class EnterpriseBootstrapper extends CommunityBootstrapper
 {
@@ -46,32 +42,13 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
     }
 
     @Override
-    protected Iterable<Class<?>> settingsClasses( Map<String,String> settings )
+    @Nonnull
+    protected Collection<ConfigurationValidator> configurationValidators()
     {
-        if ( isHAMode( settings ) )
-        {
-            return Iterables.concat( super.settingsClasses( settings ),
-                    asList( HaSettings.class, ClusterSettings.class, SecuritySettings.class ) );
-        }
-        if ( isCCMode( settings ) )
-        {
-            return Iterables.concat( super.settingsClasses( settings ),
-                    asList( CausalClusteringSettings.class, SecuritySettings.class ) );
-        }
-        else
-        {
-            return super.settingsClasses( settings );
-        }
-    }
-
-    private boolean isHAMode( Map<String,String> settings )
-    {
-        return new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" );
-    }
-
-    private boolean isCCMode( Map<String,String> settings )
-    {
-        String mode = new Config( settings, EnterpriseServerSettings.class ).get( EnterpriseServerSettings.mode );
-        return mode.equals( "CORE" ) || mode.equals( "READ_REPLICA" );
+        ArrayList<ConfigurationValidator> validators = new ArrayList<>();
+        validators.addAll( super.configurationValidators() );
+        validators.add( new HaConfigurationValidator() );
+        validators.add( new CausalClusterConfigurationValidator() );
+        return validators;
     }
 }

@@ -28,16 +28,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class FuturesTest
 {
-    private static final Runnable NOOP = new Runnable()
+    private static final Runnable NOOP = () ->
     {
-        @Override
-        public void run()
-        {
-        }
     };
 
     @Test
@@ -53,7 +50,8 @@ public class FuturesTest
         {
             combined.get( 10, TimeUnit.MILLISECONDS );
             fail( "should have timedout" );
-        } catch ( TimeoutException e )
+        }
+        catch ( TimeoutException e )
         {
             // continue
         }
@@ -65,7 +63,8 @@ public class FuturesTest
         {
             combined.get( 10, TimeUnit.MILLISECONDS );
             fail( "should have timedout" );
-        } catch ( TimeoutException e )
+        }
+        catch ( TimeoutException e )
         {
             // continue
         }

@@ -23,17 +23,17 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
-import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
+import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.causalclustering.core.consensus.term.TermState;
 import org.neo4j.causalclustering.core.consensus.vote.VoteState;
+import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -218,44 +218,66 @@ public class RaftState implements ReadableRaftState
 
     public ExposedRaftState copy()
     {
-        return new ExposedRaftState()
+        return new ReadOnlyRaftState( leaderCommit(), commitIndex(), entryLog().appendIndex(),
+                lastLogIndexBeforeWeBecameLeader(), term(), votingMembers() );
+    }
+
+    private class ReadOnlyRaftState implements ExposedRaftState
+    {
+
+        final long leaderCommit;
+        final long commitIndex;
+        final long appendIndex;
+        final long lastLogIndexBeforeWeBecameLeader;
+        final long term;
+
+        final Set<MemberId> votingMembers; // returned set is never mutated
+
+        private ReadOnlyRaftState( long leaderCommit, long commitIndex, long appendIndex,
+                long lastLogIndexBeforeWeBecameLeader, long term, Set<MemberId> votingMembers )
         {
-            final long leaderCommit = RaftState.this.leaderCommit();
-            final long commitIndex = RaftState.this.commitIndex();
-            final long appendIndex = RaftState.this.entryLog().appendIndex();
-            final long term = RaftState.this.term();
+            this.leaderCommit = leaderCommit;
+            this.commitIndex = commitIndex;
+            this.appendIndex = appendIndex;
+            this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
+            this.term = term;
+            this.votingMembers = votingMembers;
+        }
 
-            final Set<MemberId> votingMembers = RaftState.this.votingMembers(); // returned set is never mutated
+        @Override
+        public long lastLogIndexBeforeWeBecameLeader()
+        {
+            return lastLogIndexBeforeWeBecameLeader;
+        }
 
-            @Override
-            public long leaderCommit()
-            {
-                return this.leaderCommit;
-            }
+        @Override
+        public long leaderCommit()
+        {
+            return this.leaderCommit;
+        }
 
-            @Override
-            public long commitIndex()
-            {
-                return this.commitIndex;
-            }
+        @Override
+        public long commitIndex()
+        {
+            return this.commitIndex;
+        }
 
-            @Override
-            public long appendIndex()
-            {
-                return this.appendIndex;
-            }
+        @Override
+        public long appendIndex()
+        {
+            return this.appendIndex;
+        }
 
-            @Override
-            public long term()
-            {
-                return this.term;
-            }
+        @Override
+        public long term()
+        {
+            return this.term;
+        }
 
-            @Override
-            public Set<MemberId> votingMembers()
-            {
-                return this.votingMembers;
-            }
-        };
+        @Override
+        public Set<MemberId> votingMembers()
+        {
+            return this.votingMembers;
+        }
     }
 }

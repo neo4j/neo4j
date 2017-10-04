@@ -60,6 +60,7 @@ import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class TestShortestPath extends Neo4jAlgoTestCase
 {
@@ -76,30 +77,39 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final Label F = Label.label( "F" );
         final RelationshipType relType = RelationshipType.withName( "TO" );
         recursiveSnowFlake( null, 0, 4, 5, new Label[]{A, B, C, D, E}, relType );
-        final Node a = graphDb.findNodes( A ).next();
-        final ResourceIterator<Node> allE = graphDb.findNodes( E );
-        while ( allE.hasNext() )
+        Node a = getNodeByLabel( A );
+        try ( ResourceIterator<Node> allE = graphDb.findNodes( E ) )
         {
-            final Node e = allE.next();
-            final Node f = graphDb.createNode( F );
-            f.createRelationshipTo( e, relType );
+            while ( allE.hasNext() )
+            {
+                final Node e = allE.next();
+                final Node f = graphDb.createNode( F );
+                f.createRelationshipTo( e, relType );
+            }
         }
         final CountingPathExpander countingPathExpander =
                 new CountingPathExpander( PathExpanders.forTypeAndDirection( relType, Direction.OUTGOING ) );
-        final ShortestPath shortestPath =
-                new ShortestPath( Integer.MAX_VALUE, countingPathExpander, Integer.MAX_VALUE );
-        final ResourceIterator<Node> allF = graphDb.findNodes( F );
-        final long start = System.currentTimeMillis();
-        while ( allF.hasNext() )
+        final ShortestPath shortestPath = new ShortestPath( Integer.MAX_VALUE, countingPathExpander, Integer.MAX_VALUE );
+        try ( ResourceIterator<Node> allF = graphDb.findNodes( F ) )
         {
-            final Node f = allF.next();
-            shortestPath.findAllPaths( a, f );
+            while ( allF.hasNext() )
+            {
+                final Node f = allF.next();
+                shortestPath.findAllPaths( a, f );
+            }
         }
-        final long totalTime = System.currentTimeMillis() - start;
         assertEquals(
                 "There are 625 different end nodes. The algorithm should start one traversal for each such node. " +
                         "That is 625*2 visited nodes if traversal is interrupted correctly.", 1250,
                 countingPathExpander.nodesVisited.intValue() );
+    }
+
+    private Node getNodeByLabel( Label label )
+    {
+        try ( ResourceIterator<Node> iterator = graphDb.findNodes( label ) )
+        {
+            return iterator.next();
+        }
     }
 
     private void recursiveSnowFlake( Node parent, int level, final int desiredLevel, final int branchingFactor,
@@ -460,6 +470,24 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         assertThat( new ShortestPath( 3, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
     }
 
+    @Test
+    public void shouldMakeSureResultLimitIsRespectedForMultiPathHits() throws Exception
+    {
+        /*       _____
+         *      /     \
+         *    (a)-----(b)
+         *      \_____/
+         */
+        for ( int i = 0; i < 3; i++ )
+        {
+            graph.makeEdge( "a", "b" );
+        }
+
+        Node a = graph.getNode( "a" );
+        Node b = graph.getNode( "b" );
+        testShortestPathFinder( finder -> assertEquals( 1, count( finder.findAllPaths( a, b ) ) ), allTypesAndDirections(), 2, 1 );
+    }
+
     private void testShortestPathFinder( PathFinderTester tester, PathExpander expander, int maxDepth )
     {
         testShortestPathFinder( tester, expander, maxDepth, null );
@@ -522,13 +550,13 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         private MutableInt nodesVisited;
         private final PathExpander delegate;
 
-        public CountingPathExpander( PathExpander delegate )
+        CountingPathExpander( PathExpander delegate )
         {
             nodesVisited = new MutableInt( 0 );
             this.delegate = delegate;
         }
 
-        public CountingPathExpander( PathExpander delegate, MutableInt nodesVisited )
+        CountingPathExpander( PathExpander delegate, MutableInt nodesVisited )
         {
             this( delegate );
             this.nodesVisited = nodesVisited;

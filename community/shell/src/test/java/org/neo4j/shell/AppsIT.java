@@ -28,7 +28,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
@@ -49,14 +48,18 @@ import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.function.Predicates.await;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -510,7 +513,7 @@ public class AppsIT extends AbstractShellIT
         // When
         try
         {
-            executeCommand( "start n=node(*) delete n;" );
+            executeCommand( "match (n) delete n;" );
             fail( "Should have failed with " + NodeStillHasRelationshipsException.class.getName() + " exception" );
         }
         catch ( ShellException e )
@@ -568,7 +571,7 @@ public class AppsIT extends AbstractShellIT
         Map<String, Serializable> values = genericMap( "mykey", "myvalue",
                 "my_other_key", "My other value" );
         ShellClient client = newShellClient( shellServer, values );
-        String[] allStrings = new String[values.size()*2];
+        String[] allStrings = new String[values.size() * 2];
         int i = 0;
         for ( Map.Entry<String, Serializable> entry : values.entrySet() )
         {
@@ -598,7 +601,8 @@ public class AppsIT extends AbstractShellIT
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, true, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertEquals( "Shows welcome message: " + outString, true,
+                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
     }
 
     @Test
@@ -1158,35 +1162,9 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldBeAbleToSwitchBetweenPlanners() throws Exception
-    {
-        executeCommand( "PROFILE CYPHER planner=rule MATCH (n)-[:T]-(n) RETURN n;", "Planner RULE");
-        executeCommand( "PROFILE CYPHER planner=cost MATCH (n)-[:T]-(n) RETURN n;", "Planner COST");
-    }
-
-    @Test
-    public void shouldAllowCombiningPlannerAndProfile() throws Exception
-    {
-        executeCommand( "CYPHER planner=rule PROFILE MATCH (n) RETURN n;", "Planner RULE");
-    }
-
-    @Test
-    public void shouldAllowCombiningProfileAndPlanner() throws Exception
-    {
-        executeCommand( "PROFILE CYPHER planner=rule MATCH (n) RETURN n;", "Planner RULE");
-    }
-
-    @Test
-    public void shouldBeAbleToSwitchBetweenRuntimes() throws Exception
-    {
-        executeCommand( "CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n)-[:T]-(n) RETURN n;" );
-        executeCommand( "CYPHER runtime=interpreted MATCH (n)-[:T]-(n) RETURN n;" );
-    }
-
-    @Test
     public void canListAllConfiguration() throws Exception
     {
-        executeCommand( "dbinfo -g Configuration", "\"unsupported.dbms.ephemeral\": \"true\"" );
+        executeCommand( "dbinfo -g Configuration", "\"dbms.record_format\": \"\"" );
     }
 
     @Test
@@ -1195,16 +1173,15 @@ public class AppsIT extends AbstractShellIT
         TransactionStats txStats = db.getDependencyResolver().resolveDependency( TransactionStats.class );
         assertEquals( 0, txStats.getNumberOfActiveTransactions() );
 
+        createNodeAndLockItInDifferentThread( "Person", "id", 42 );
+
         Serializable clientId = shellClient.getId();
-        Future<?> result = ForkJoinPool.commonPool().submit( () -> {
+        Future<?> result = runAsync( () ->
+        {
             try
             {
-                while ( txStats.getNumberOfActiveTransactions() == 0 )
-                {
-                    Thread.sleep( 10 );
-                }
-                assertEquals( 1, txStats.getNumberOfActiveTransactions() );
-
+                // await 2 active transactions: one that locked node and one that wants to update property via cypher
+                await( () -> txStats.getNumberOfActiveTransactions() == 2, 1, MINUTES );
                 shellServer.terminate( clientId );
             }
             catch ( Exception e )
@@ -1213,8 +1190,7 @@ public class AppsIT extends AbstractShellIT
             }
         } );
 
-        executeCommandExpectingException( "FOREACH(i IN range(0, " + Integer.MAX_VALUE + ") | CREATE ());",
-                "has been terminated" );
+        executeCommandExpectingException( "MATCH (p:Person {id: 42}) SET p.id = 24 RETURN p;", "has been terminated" );
         assertNull( result.get() );
     }
 
@@ -1236,7 +1212,7 @@ public class AppsIT extends AbstractShellIT
             writer.close();
 
             // WHEN
-            executeCommand( "cypher planner=rule USING PERIODIC COMMIT 100 " +
+            executeCommand( "USING PERIODIC COMMIT 100 " +
                             "LOAD CSV FROM '" + url + "' AS line " +
                             "CREATE () " +
                             "RETURN line;", "apa" );
@@ -1294,7 +1270,7 @@ public class AppsIT extends AbstractShellIT
         long txIdBeforeQuery = lastClosedTxId();
 
         // When
-        startClient.start( new String[]{"-path", db.getStoreDir(), "-c", query}, ctrlCHandler );
+        startClient.start( new String[]{"-path", db.getStoreDir().getAbsolutePath(), "-c", query}, ctrlCHandler );
 
         // then
         long txId = lastClosedTxId();
@@ -1334,4 +1310,22 @@ public class AppsIT extends AbstractShellIT
         }
         return tmpFile.toURI().toURL().toExternalForm();
     }
+
+    private void createNodeAndLockItInDifferentThread( String label, String property, Object value ) throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( label( label ) ).setProperty( property, value );
+            tx.success();
+        }
+
+        runAsync( () ->
+        {
+            Transaction tx = db.beginTx();
+            Node node = db.findNode( label( "Person" ), "id", 42L );
+            assertNotNull( node );
+            tx.acquireWriteLock( node );
+        } ).get( 1, MINUTES );
+    }
+
 }
