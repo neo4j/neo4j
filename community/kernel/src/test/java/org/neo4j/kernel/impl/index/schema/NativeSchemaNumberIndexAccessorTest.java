@@ -489,7 +489,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         long[] expected2 = new long[]{2, 3};
         long[] expected3 = new long[]{0, 1};
 
-
         Collection<Long> result1 = new ArrayList<>();
         PrimitiveLongIterator iter1 = reader.query( query1 );
         while ( iter1.hasNext() )
