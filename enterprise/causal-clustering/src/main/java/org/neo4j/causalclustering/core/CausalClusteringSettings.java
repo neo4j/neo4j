@@ -238,7 +238,7 @@ public class CausalClusteringSettings implements LoadableConfig
             "Every message received by the client from the server extends the time out duration." )
     @Internal
     public static final Setting<Duration> catch_up_client_inactivity_timeout =
-            setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "5s" );
+            setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "20s" );
 
     @Description( "Throttle limit for logging unknown cluster member address" )
     public static final Setting<Duration> unknown_address_logging_throttle =

@@ -40,7 +40,6 @@ import org.neo4j.causalclustering.core.consensus.term.MonitoredTermStateStorage;
 import org.neo4j.causalclustering.core.consensus.term.TermState;
 import org.neo4j.causalclustering.core.consensus.vote.VoteState;
 import org.neo4j.causalclustering.core.replication.SendToMyself;
-import org.neo4j.causalclustering.core.state.RefuseToBeLeaderStrategy;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
@@ -60,6 +59,7 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.catchup_batch_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.join_catch_up_timeout;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.log_shipping_max_lag;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.refuse_to_be_leader;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.time.Clocks.systemClock;
 
@@ -136,7 +136,7 @@ public class ConsensusModule
 
         raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightMap,
-                RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config, logProvider.getLog( getClass() ) ),
+                config.get( refuse_to_be_leader ),
                 platformModule.monitors, systemClock() );
 
         life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
