@@ -55,6 +55,7 @@
           <argLine>${test.runner.jvm.settings}</argLine>
           <systemPropertyVariables>
             <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+            <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -64,6 +65,7 @@
           <argLine>${test.runner.jvm.settings}</argLine>
           <systemPropertyVariables>
             <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+            <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
         </configuration>
       </plugin>
