@@ -118,8 +118,7 @@ public abstract class ShortArray extends IntegralArray
     }
 
     @Override
-    @Deprecated
-    public Object asObject()
+    public Object getInnerObject()
     {
         return value();
     }

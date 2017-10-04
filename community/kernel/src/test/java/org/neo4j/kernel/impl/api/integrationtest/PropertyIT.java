@@ -306,7 +306,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( 42, readOperations.nodeGetProperty( nodeId, propertyId ).asObject() );
+        assertEquals( 42, readOperations.nodeGetProperty( nodeId, propertyId ).getInnerObject() );
         commit();
     }
 

@@ -118,8 +118,7 @@ abstract class DoubleArray extends FloatingPointArray
     }
 
     @Override
-    @Deprecated
-    public Object asObject()
+    public Object getInnerObject()
     {
         return value();
     }

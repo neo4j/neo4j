@@ -304,7 +304,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      txContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
+      txContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).getInnerObject
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
@@ -379,7 +379,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      txContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
+      txContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).getInnerObject
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))

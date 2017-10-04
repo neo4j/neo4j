@@ -90,7 +90,7 @@ public class LabelChainWalker<RECORD extends AbstractBaseRecord, REPORT extends 
     public static long[] labelIds( List<DynamicRecord> recordList )
     {
         long[] idArray =
-                (long[]) getRightArray( readFullByteArrayFromHeavyRecords( recordList, PropertyType.ARRAY ) ).asObject();
+                (long[]) getRightArray( readFullByteArrayFromHeavyRecords( recordList, PropertyType.ARRAY ) ).getInnerObject();
         return LabelIdArray.stripNodeId( idArray );
     }
 

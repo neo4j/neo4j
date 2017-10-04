@@ -71,7 +71,7 @@ public abstract class Value extends AnyValue
      *
      * @return the object version of the current value
      */
-    public Object asObject()
+    public Object getInnerObject()
     {
         return asObjectCopy();
     }

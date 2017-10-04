@@ -247,7 +247,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
       case rangeGreaterThan: RangeGreaterThan[String] =>
         rangeGreaterThan.limit(BY_STRING).map { limit =>
-          val rangePredicate = IndexQuery.range(index.property, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false);
+          val rangePredicate = IndexQuery.range(index.property, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false)
           readOps.indexQuery(index, rangePredicate)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
@@ -311,7 +311,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
+      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).getInnerObject
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
@@ -386,7 +386,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
+      transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).getInnerObject
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))

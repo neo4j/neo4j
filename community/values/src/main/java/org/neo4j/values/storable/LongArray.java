@@ -124,8 +124,7 @@ public abstract class LongArray extends IntegralArray
     }
 
     @Override
-    @Deprecated
-    public Object asObject()
+    public Object getInnerObject()
     {
         return value();
     }
