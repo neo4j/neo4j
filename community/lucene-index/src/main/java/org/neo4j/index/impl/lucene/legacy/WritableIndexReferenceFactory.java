@@ -31,6 +31,9 @@ import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 
 class WritableIndexReferenceFactory extends IndexReferenceFactory
 {
@@ -41,7 +44,8 @@ class WritableIndexReferenceFactory extends IndexReferenceFactory
     }
 
     @Override
-    IndexReference createIndexReference( IndexIdentifier identifier ) throws IOException
+    IndexReference createIndexReference( IndexIdentifier identifier )
+            throws IOException, LegacyIndexNotFoundKernelException
     {
         IndexWriter writer = newIndexWriter( identifier );
         IndexReader reader = DirectoryReader.open( writer, true );
@@ -49,21 +53,8 @@ class WritableIndexReferenceFactory extends IndexReferenceFactory
         return new WritableIndexReference( identifier, indexSearcher, writer );
     }
 
-    /**
-     * If nothing has changed underneath (since the searcher was last created
-     * or refreshed) {@code searcher} is returned. But if something has changed a
-     * refreshed searcher is returned. It makes use if the
-     * {@link DirectoryReader#openIfChanged(DirectoryReader, IndexWriter, boolean)} which faster than opening an index
-     * from
-     * scratch.
-     *
-     * @param indexReference the {@link IndexReference} to refresh.
-     * @return a refreshed version of the searcher or, if nothing has changed,
-     *         {@code null}.
-     * @throws RuntimeException if there's a problem with the index.
-     */
     @Override
-    IndexReference refresh( IndexReference indexReference )
+    IndexReference refresh( IndexReference indexReference ) throws LegacyIndexNotFoundKernelException
     {
         try
         {
@@ -80,11 +71,11 @@ class WritableIndexReferenceFactory extends IndexReferenceFactory
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
-    private IndexWriter newIndexWriter( IndexIdentifier identifier )
+    private IndexWriter newIndexWriter( IndexIdentifier identifier ) throws LegacyIndexNotFoundKernelException
     {
         try
         {

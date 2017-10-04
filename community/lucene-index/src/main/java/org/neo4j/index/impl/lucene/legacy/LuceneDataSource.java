@@ -65,6 +65,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -154,6 +155,7 @@ public class LuceneDataSource extends LifecycleAdapter
     }
 
     public void assertValidType( String key, Object value, IndexIdentifier identifier )
+            throws LegacyIndexNotFoundKernelException
     {
         DocValuesType expectedType;
         String expectedTypeName;
@@ -169,18 +171,26 @@ public class LuceneDataSource extends LifecycleAdapter
         }
         Map<String,DocValuesType> stringDocValuesTypeMap = indexTypeMap.get( identifier );
         // If the index searcher has never been loaded, we need to load it now to populate the map.
-        if ( stringDocValuesTypeMap == null )
+        int iterations = 0; // Iterate a bit in case we race with an index drop or create.
+        while ( stringDocValuesTypeMap == null && iterations++ < 20 )
         {
+            // We don't use ensureInstantiated because we want to surface the exception in this case.
             getIndexSearcher( identifier ).close();
             stringDocValuesTypeMap = indexTypeMap.get( identifier );
         }
-        DocValuesType actualType;
 
-        actualType = stringDocValuesTypeMap.putIfAbsent( key, expectedType );
+        if ( stringDocValuesTypeMap == null )
+        {
+            // Looks like we are running into some adversarial racing, so let's just give up.
+            throw new LegacyIndexNotFoundKernelException( "Index '%s' doesn't exist.", identifier );
+        }
+
+        DocValuesType actualType = stringDocValuesTypeMap.putIfAbsent( key, expectedType );
         if ( actualType != null && !actualType.equals( expectedType ) )
         {
-            throw new IllegalArgumentException(
-                    String.format( "Cannot index '%s' for key '%s', since this key has been used to index another %s.", value, key, expectedTypeName ) );
+            throw new IllegalArgumentException( String.format(
+                    "Cannot index '%s' for key '%s', since this key has been used to index another %s.",
+                    value, key, expectedTypeName ) );
         }
     }
 
@@ -189,7 +199,7 @@ public class LuceneDataSource extends LifecycleAdapter
         return new File( storeDir, "index" );
     }
 
-    IndexType getType( IndexIdentifier identifier, boolean recovery )
+    IndexType getType( IndexIdentifier identifier, boolean recovery ) throws LegacyIndexNotFoundKernelException
     {
         return typeCache.getIndexType( identifier, recovery );
     }
@@ -279,7 +289,7 @@ public class LuceneDataSource extends LifecycleAdapter
         return TopFieldCollector.create( sorting, n, false, true, false );
     }
 
-    IndexReference getIndexSearcher( IndexIdentifier identifier )
+    IndexReference getIndexSearcher( IndexIdentifier identifier ) throws LegacyIndexNotFoundKernelException
     {
         assertNotClosed();
         IndexReference searcher = indexSearchers.get( identifier );
@@ -314,6 +324,7 @@ public class LuceneDataSource extends LifecycleAdapter
     }
 
     synchronized IndexReference syncGetIndexSearcher( IndexIdentifier identifier )
+            throws LegacyIndexNotFoundKernelException
     {
         try
         {
@@ -323,7 +334,9 @@ public class LuceneDataSource extends LifecycleAdapter
                 indexReference = indexReferenceFactory.createIndexReference( identifier );
                 indexSearchers.put( identifier, indexReference );
                 ConcurrentHashMap<String,DocValuesType> fieldTypes = new ConcurrentHashMap<>();
-                for ( LeafReaderContext leafReaderContext : indexReference.getSearcher().getTopReaderContext().leaves() )
+                IndexSearcher searcher = indexReference.getSearcher();
+                List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
+                for ( LeafReaderContext leafReaderContext : leaves )
                 {
                     for ( FieldInfo fieldInfo : leafReaderContext.reader().getFieldInfos() )
                     {
@@ -347,11 +360,11 @@ public class LuceneDataSource extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
-    private IndexReference refreshSearcherIfNeeded( IndexReference searcher )
+    private IndexReference refreshSearcherIfNeeded( IndexReference searcher ) throws LegacyIndexNotFoundKernelException
     {
         if ( searcher.checkAndClearStale() )
         {
@@ -555,8 +568,7 @@ public class LuceneDataSource extends LifecycleAdapter
             Map<String, String> config = indexStore.get( Node.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, name );
-                getIndexSearcher( identifier ).close();
+                ensureInstantiated( new IndexIdentifier( IndexEntityType.Node, name ) );
             }
         }
         for ( String name : indexStore.getNames( Relationship.class ) )
@@ -564,9 +576,21 @@ public class LuceneDataSource extends LifecycleAdapter
             Map<String, String> config = indexStore.get( Relationship.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Relationship, name );
-                getIndexSearcher( identifier ).close();
+                ensureInstantiated( new IndexIdentifier( IndexEntityType.Relationship, name ) );
             }
+        }
+    }
+
+    private void ensureInstantiated( IndexIdentifier identifier )
+    {
+        try
+        {
+            IndexReference indexSearcher = getIndexSearcher( identifier );
+            indexSearcher.close();
+        }
+        catch ( LegacyIndexNotFoundKernelException ignore )
+        {
+            // Ignore supposedly concurrently dropped indexes.
         }
     }
 

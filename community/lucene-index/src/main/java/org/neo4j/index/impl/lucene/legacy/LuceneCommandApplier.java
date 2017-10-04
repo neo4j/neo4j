@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
@@ -72,20 +73,27 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
 
     private boolean visitIndexAddCommand( IndexCommand command, EntityId entityId )
     {
-        CommitContext context = commitContext( command );
-        String key = definitions.getKey( command.getKeyId() );
-        Object value = command.getValue();
-
-        // Below is a check for a null value where such a value is ignored. This may look strange, but the
-        // reason is that there was this bug where adding a null value to an index would be fine and written
-        // into the log as a command, to later fail during application of that command, i.e. here.
-        // There was a fix introduced to throw IllegalArgumentException out to user right away if passing in
-        // null or object that had toString() produce null. Although databases already affected by this would
-        // not be able to recover, which is why this check is here.
-        if ( value != null )
+        try
         {
-            context.ensureWriterInstantiated();
-            context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
+            CommitContext context = commitContext( command );
+            String key = definitions.getKey( command.getKeyId() );
+            Object value = command.getValue();
+
+            // Below is a check for a null value where such a value is ignored. This may look strange, but the
+            // reason is that there was this bug where adding a null value to an index would be fine and written
+            // into the log as a command, to later fail during application of that command, i.e. here.
+            // There was a fix introduced to throw IllegalArgumentException out to user right away if passing in
+            // null or object that had toString() produce null. Although databases already affected by this would
+            // not be able to recover, which is why this check is here.
+            if ( value != null )
+            {
+                context.ensureWriterInstantiated();
+                context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
+            }
+        }
+        catch ( LegacyIndexNotFoundKernelException ignore )
+        {
+            // Pretend the index never existed.
         }
         return false;
     }
@@ -93,15 +101,22 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
     {
-        CommitContext context = commitContext( command );
-        String key = definitions.getKey( command.getKeyId() );
-        Object value = command.getValue();
-        context.ensureWriterInstantiated();
-        CommitContext.DocumentContext
-                document = context.getDocument( new IdData( command.getEntityId() ), false );
-        if ( document != null )
+        try
         {
-            context.indexType.removeFromDocument( document.document, key, value );
+            CommitContext context = commitContext( command );
+            String key = definitions.getKey( command.getKeyId() );
+            Object value = command.getValue();
+            context.ensureWriterInstantiated();
+            CommitContext.DocumentContext
+                    document = context.getDocument( new IdData( command.getEntityId() ), false );
+            if ( document != null )
+            {
+                context.indexType.removeFromDocument( document.document, key, value );
+            }
+        }
+        catch ( LegacyIndexNotFoundKernelException ignore )
+        {
+            // Pretend the index never existed.
         }
         return false;
     }
@@ -109,9 +124,16 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
     {
-        CommitContext context = commitContext( command );
-        context.documents.clear();
-        context.dataSource.deleteIndex( context.identifier, context.recovery );
+        try
+        {
+            CommitContext context = commitContext( command );
+            context.documents.clear();
+            context.dataSource.deleteIndex( context.identifier, context.recovery );
+        }
+        catch ( LegacyIndexNotFoundKernelException ignore )
+        {
+            // Pretend the index never existed.
+        }
         return false;
     }
 
@@ -159,7 +181,7 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
         }
     }
 
-    private CommitContext commitContext( IndexCommand command )
+    private CommitContext commitContext( IndexCommand command ) throws LegacyIndexNotFoundKernelException
     {
         Map<String,CommitContext> contextMap = commitContextMap( command.getEntityType() );
         String indexName = definitions.getIndexName( command.getIndexNameId() );
@@ -171,8 +193,11 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
 
             // TODO the fact that we look up index type from config here using the index store
             // directly should be avoided. But how can we do it in, say recovery?
-            context = new CommitContext( dataSource, identifier,
-                    dataSource.getType( identifier, recovery ), recovery );
+            // The `dataSource.getType()` call can throw an exception if the index is concurrently deleted.
+            // To avoid bubbling an exception during commit, we instead ignore the commands related to that index,
+            // and proceed as if the index never existed, and thus cannot accept any modifications.
+            IndexType type = dataSource.getType( identifier, recovery );
+            context = new CommitContext( dataSource, identifier, type, recovery );
             contextMap.put( indexName, context );
         }
         return context;

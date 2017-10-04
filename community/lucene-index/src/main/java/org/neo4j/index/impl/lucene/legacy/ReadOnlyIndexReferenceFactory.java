@@ -26,6 +26,8 @@ import org.apache.lucene.search.IndexSearcher;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+
 public class ReadOnlyIndexReferenceFactory extends IndexReferenceFactory
 {
     public ReadOnlyIndexReferenceFactory( LuceneDataSource.LuceneFilesystemFacade filesystemFacade, File baseStorePath,
@@ -35,7 +37,8 @@ public class ReadOnlyIndexReferenceFactory extends IndexReferenceFactory
     }
 
     @Override
-    IndexReference createIndexReference( IndexIdentifier identifier ) throws IOException
+    IndexReference createIndexReference( IndexIdentifier identifier )
+            throws IOException, LegacyIndexNotFoundKernelException
     {
         IndexReader reader = DirectoryReader.open( getIndexDirectory( identifier ) );
         IndexSearcher indexSearcher = newIndexSearcher( identifier, reader );

@@ -106,7 +106,7 @@ public class WritableIndexReferenceFactoryTest
         writer.commit();
     }
 
-    private IndexReference createIndexReference( WritableIndexReferenceFactory indexReferenceFactory ) throws IOException
+    private IndexReference createIndexReference( WritableIndexReferenceFactory indexReferenceFactory ) throws Exception
     {
         IndexReference indexReference = indexReferenceFactory.createIndexReference( indexIdentifier );
         cleanupRule.add( indexReference );
