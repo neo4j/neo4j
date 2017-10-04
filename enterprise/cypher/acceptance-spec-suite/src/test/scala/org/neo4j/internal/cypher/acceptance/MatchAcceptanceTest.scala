@@ -702,7 +702,7 @@ return p""")
     createLabeledNode("B")
     createLabeledNode("C")
 
-    val result = innerExecute("MATCH (a) WHERE a:A:B RETURN a")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) WHERE a:A:B RETURN a")
 
     // Then
     result.toList should equal(List(Map("a" -> n1), Map("a" -> n2)))
@@ -717,7 +717,7 @@ return p""")
     createLabeledNode("B")
     createLabeledNode("C")
 
-    val result = innerExecute("MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
 
     // Then
     result.toList should equal(List(Map("a" -> n1), Map("a" -> n2), Map("a" -> n3)))
@@ -732,7 +732,7 @@ return p""")
     createLabeledNode("B")
     createLabeledNode("C")
 
-    val result = innerExecute("MATCH (a) WHERE (a:A AND a:B) OR (a:A AND a:C) RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE (a:A AND a:B) OR (a:A AND a:C) RETURN a")
 
     // Then
     result.toList should equal(List(Map("a" -> n1), Map("a" -> n2), Map("a" -> n3)))
@@ -747,7 +747,7 @@ return p""")
     createLabeledNode("B")
     createLabeledNode("C")
 
-    val result = innerExecute("MATCH (a) WHERE a:A:B AND a:A:C RETURN a")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) WHERE a:A:B AND a:A:C RETURN a")
 
     // Then
     result.toList should equal(List(Map("a" -> n)))

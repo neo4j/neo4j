@@ -161,3 +161,4 @@ Using a optional match after aggregation and before an aggregation
 difficult to plan query number 1
 difficult to plan query number 2
 difficult to plan query number 3
+Match on multiple labels with OR

@@ -120,7 +120,24 @@ Feature: MatchAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE (a:A:B)
+      CREATE (:A:B), (:A:C), (:B:C)
+      """
+    When executing query:
+      """
+      MATCH (a)
+      WHERE a:A:B
+      RETURN a
+      """
+    Then the result should be:
+      | a      |
+      | (:A:B) |
+    And no side effects
+
+  Scenario: Match on multiple labels with OR
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A:B), (:A:C), (:B:C)
       """
     When executing query:
       """
@@ -131,4 +148,5 @@ Feature: MatchAcceptance
     Then the result should be:
       | a      |
       | (:A:B) |
+      | (:A:C) |
     And no side effects
