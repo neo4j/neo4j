@@ -47,16 +47,12 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
 {
     private final GBPTree<KEY,VALUE> tree;
     private final Layout<KEY,VALUE> layout;
-    private final KEY treeKeyFrom;
-    private final KEY treeKeyTo;
     private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
 
     NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
     {
         this.tree = tree;
         this.layout = layout;
-        this.treeKeyFrom = layout.newKey();
-        this.treeKeyTo = layout.newKey();
         this.openSeekers = new HashSet<>();
     }
 
@@ -85,6 +81,8 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
+        KEY treeKeyFrom = layout.newKey();
+        KEY treeKeyTo = layout.newKey();
         treeKeyFrom.from( nodeId, propertyValues );
         treeKeyTo.from( nodeId, propertyValues );
         try ( RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo ) )
@@ -108,6 +106,9 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     @Override
     public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
+        KEY treeKeyFrom = layout.newKey();
+        KEY treeKeyTo = layout.newKey();
+
         if ( predicates.length != 1 )
         {
             throw new UnsupportedOperationException();
@@ -119,24 +120,24 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         case exists:
             treeKeyFrom.initAsLowest();
             treeKeyTo.initAsHighest();
-            return startSeekForInitializedRange();
+            return startSeekForInitializedRange( treeKeyFrom, treeKeyTo );
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            return startSeekForInitializedRange();
+            return startSeekForInitializedRange( treeKeyFrom, treeKeyTo );
         case rangeNumeric:
             // todo: NumberRangePredicate should return NumberValue instead of Number
             NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
-            initFromForRange( rangePredicate );
-            initToForRange( rangePredicate );
-            return startSeekForInitializedRange();
+            initFromForRange( rangePredicate, treeKeyFrom );
+            initToForRange( rangePredicate, treeKeyTo );
+            return startSeekForInitializedRange( treeKeyFrom, treeKeyTo );
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
     }
 
-    private void initToForRange( NumberRangePredicate rangePredicate )
+    private void initToForRange( NumberRangePredicate rangePredicate, KEY treeKeyTo )
     {
         Value toValue = rangePredicate.toAsValue();
         if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
@@ -150,7 +151,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         }
     }
 
-    private void initFromForRange( NumberRangePredicate rangePredicate )
+    private void initFromForRange( NumberRangePredicate rangePredicate, KEY treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromAsValue();
         if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
@@ -170,7 +171,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         return true;
     }
 
-    private PrimitiveLongIterator startSeekForInitializedRange()
+    private PrimitiveLongIterator startSeekForInitializedRange( KEY treeKeyFrom, KEY treeKeyTo )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
