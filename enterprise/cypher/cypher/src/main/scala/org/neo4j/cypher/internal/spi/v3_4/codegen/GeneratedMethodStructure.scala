@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
-import java.util
 import java.util.PrimitiveIterator
+import java.util.{Iterator => JIterator, Map => JMap, HashMap => JHashMap,
+                  Set => JSet, HashSet => JHashSet, ArrayList => JArrayList}
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
@@ -28,8 +29,8 @@ import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
-import org.neo4j.cypher.internal.aux.v3_4.{ParameterNotFoundException, symbols}
-import org.neo4j.cypher.internal.aux.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
+import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.DirectionConverter.toGraphDb
@@ -92,7 +93,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case LongToListTable(tupleDescriptor, localMap) =>
       // compute the participating types
       val valueType = aux.typeReference(tupleDescriptor)
-      val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
+      val listType = parameterizedType(classOf[JArrayList[_]], valueType)
       val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
       // the methods we use on those types
       val get = methodReference(tableType, typeRef[Object], "get", typeRef[Long])
@@ -104,8 +105,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case LongsToListTable(tupleDescriptor, localMap) =>
       // compute the participating types
       val valueType = aux.typeReference(tupleDescriptor)
-      val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
-      val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
+      val listType = parameterizedType(classOf[JArrayList[_]], valueType)
+      val tableType = parameterizedType(classOf[JHashMap[_, _]], typeRef[CompositeKey], valueType)
       // the methods we use on those types
       val get = methodReference(tableType, typeRef[Object], "get", typeRef[Object])
       val put = methodReference(tableType, typeRef[Object], "put", typeRef[Object], typeRef[Object])
@@ -662,21 +663,21 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
 
   override def declareIterator(name: String): Unit = {
-    val variable = generator.declare(typeRef[java.util.Iterator[Object]], name)
+    val variable = generator.declare(typeRef[JIterator[Object]], name)
     locals += (name -> variable)
   }
 
   override def iteratorFrom(iterable: Expression) =
-    invoke(method[CompiledConversionUtils, java.util.Iterator[_]]("iteratorFrom", typeRef[Object]), iterable)
+    invoke(method[CompiledConversionUtils, JIterator[_]]("iteratorFrom", typeRef[Object]), iterable)
 
   override def iteratorNext(iterator: Expression) =
-    invoke(iterator, method[java.util.Iterator[_], Object]("next"))
+    invoke(iterator, method[JIterator[_], Object]("next"))
 
   override def iteratorHasNext(iterator: Expression) =
-    invoke(iterator, method[java.util.Iterator[_], Boolean]("hasNext"))
+    invoke(iterator, method[JIterator[_], Boolean]("hasNext"))
 
   override def toSet(value: Expression) =
-    invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[java.util.Set[Object]], "toSet", typeRef[Object]),
+    invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[JSet[Object]], "toSet", typeRef[Object]),
            value)
 
   override def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType]) = {
@@ -688,8 +689,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                              invoke(block.load(name), method[PrimitiveLongSet, Unit]("close"))))
 
     } else {
-      generator.assign(generator.declare(typeRef[util.HashSet[Object]], name),
-                       createNewInstance(typeRef[util.HashSet[Object]]))
+      generator.assign(generator.declare(typeRef[JHashSet[Object]], name),
+                       createNewInstance(typeRef[JHashSet[Object]]))
     }
   }
 
@@ -730,17 +731,18 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     } else {
       val localName = context.namer.newVarName()
       val next = context.namer.newVarName()
-      val variable = generator.declare(typeRef[java.util.Iterator[Object]], localName)
+      val variable = generator.declare(typeRef[JIterator[Object]], localName)
       val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
       generator.assign(variable,
-                       invoke(generator.load(name),method[util.HashSet[Object], util.Iterator[Object]]("iterator")))
+                       invoke(generator.load(name),method[JHashSet[Object], JIterator[Object]]
+                         ("iterator")))
       using(generator.whileLoop(
         invoke(generator.load(localName),
-               method[java.util.Iterator[Object], Boolean]("hasNext")))) { body =>
+               method[JIterator[Object], Boolean]("hasNext")))) { body =>
         body.assign(body.declare(keyStruct, next),
                     cast(keyStruct,
                          invoke(body.load(localName),
-                                method[util.Iterator[Object], Object]("next"))))
+                                method[JIterator[Object], Object]("next"))))
         key.foreach {
           case (keyName, keyType) =>
 
@@ -785,21 +787,21 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                            block.expression(
                              invoke(block.load(name), method[PrimitiveLongLongMap, Unit]("close"))))
     } else {
-      val local = generator.declare(typeRef[util.HashMap[Object, java.lang.Long]], name)
-      generator.assign(local, createNewInstance(typeRef[util.HashMap[Object, java.lang.Long]]))
+      val local = generator.declare(typeRef[JHashMap[Object, java.lang.Long]], name)
+      generator.assign(local, createNewInstance(typeRef[JHashMap[Object, java.lang.Long]]))
     }
   }
 
   override def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType) = {
 
-    val setType = if (elementType.repr == LongType) typeRef[PrimitiveLongSet] else typeRef[util.HashSet[Object]]
+    val setType = if (elementType.repr == LongType) typeRef[PrimitiveLongSet] else typeRef[JHashSet[Object]]
     if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
       val typ =  TypeReference.parameterizedType(typeRef[PrimitiveLongObjectMap[_]], setType)
       generator.assign(generator.declare(typ, name),
                        invoke(method[Primitive, PrimitiveLongObjectMap[PrimitiveLongSet]]("longObjectMap")))
 
     } else {
-      val typ =  TypeReference.parameterizedType(typeRef[util.HashMap[_,_]], typeRef[Object], setType)
+      val typ =  TypeReference.parameterizedType(typeRef[JHashMap[_,_]], typeRef[Object], setType)
 
       generator.assign(generator.declare(typ, name ), createNewInstance(typ))
     }
@@ -867,7 +869,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.assign(local, unbox(
         cast(typeRef[java.lang.Long],
              invoke(generator.load(mapName),
-                    method[util.HashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
+                    method[JHashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
                                                                          typeRef[Object]),
                     generator.load(keyVar), box(constantLong(0L), CodeGenType.javaLong))),
         CypherCodeGenType(CTInteger, ReferenceType)))
@@ -904,26 +906,26 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         generator.expression(pop(invoke(generator.load(tmp),
                                         method[PrimitiveLongSet, Boolean]("add", typeRef[Long]), value)))
       } else {
-        val localVariable = generator.declare(typeRef[util.HashSet[Object]], tmp)
+        val localVariable = generator.declare(typeRef[JHashSet[Object]], tmp)
         generator.assign(localVariable,
-                         cast(typeRef[util.HashSet[Object]],
+                         cast(typeRef[JHashSet[Object]],
                               invoke(generator.load(name),
                                      method[PrimitiveLongObjectMap[Object], Object]("get", typeRef[Long]),
                                      keyExpression)))
         using(generator.ifStatement(Expression.isNull(generator.load(tmp)))) { inner =>
-          inner.assign(localVariable, createNewInstance(typeRef[util.HashSet[Object]]))
+          inner.assign(localVariable, createNewInstance(typeRef[JHashSet[Object]]))
           inner.expression(pop(invoke(generator.load(name),
                                       method[PrimitiveLongObjectMap[Object], Object]("put", typeRef[Long],
                                                                                      typeRef[Object]),
                                       keyExpression, inner.load(tmp))))
         }
         using(generator.ifStatement(not(invoke(generator.load(tmp),
-                                               method[util.HashSet[Object], Boolean]("contains", typeRef[Object]),
+                                               method[JHashSet[Object], Boolean]("contains", typeRef[Object]),
                                                value)))) { inner =>
           block(copy(generator = inner))
         }
         generator.expression(pop(invoke(generator.load(tmp),
-                                        method[util.HashSet[Object], Boolean]("add", typeRef[Object]), value)))
+                                        method[JHashSet[Object], Boolean]("add", typeRef[Object]), value)))
       }
     } else {
       val setVar = context.namer.newVarName()
@@ -934,13 +936,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         generator.assign(localVariable,
                          cast(typeRef[PrimitiveLongSet],
                               invoke(generator.load(name),
-                                     method[util.HashMap[Object, PrimitiveLongSet], Object]("get", typeRef[Object]),
+                                     method[JHashMap[Object, PrimitiveLongSet], Object]("get", typeRef[Object]),
                                      generator.load(keyVar))))
         using(generator.ifStatement(Expression.isNull(generator.load(setVar)))) { inner =>
 
           inner.assign(localVariable, invoke(method[Primitive, PrimitiveLongSet]("longSet")))
           inner.expression(pop(invoke(generator.load(name),
-                                      method[util.HashMap[Object, PrimitiveLongSet], Object]("put", typeRef[Object],
+                                      method[JHashMap[Object, PrimitiveLongSet], Object]("put", typeRef[Object],
                                                                                              typeRef[Object]),
                                       generator.load(keyVar), inner.load(setVar))))
         }
@@ -954,19 +956,19 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                       value)))
         }
       } else {
-        val localVariable = generator.declare(typeRef[util.HashSet[Object]], setVar)
+        val localVariable = generator.declare(typeRef[JHashSet[Object]], setVar)
         if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
 
         generator.assign(localVariable,
-                         cast(typeRef[util.HashSet[Object]],
+                         cast(typeRef[JHashSet[Object]],
                               invoke(generator.load(name),
-                                     method[util.HashMap[Object, util.HashSet[Object]], Object]("get", typeRef[Object]),
+                                     method[JHashMap[Object, JHashSet[Object]], Object]("get", typeRef[Object]),
                                      generator.load(keyVar))))
         using(generator.ifStatement(Expression.isNull(generator.load(setVar)))) { inner =>
 
-          inner.assign(localVariable, createNewInstance(typeRef[util.HashSet[Object]]))
+          inner.assign(localVariable, createNewInstance(typeRef[JHashSet[Object]]))
           inner.expression(pop(invoke(generator.load(name),
-                                      method[util.HashMap[Object, util.HashSet[Object]], Object]("put", typeRef[Object],
+                                      method[JHashMap[Object, JHashSet[Object]], Object]("put", typeRef[Object],
                                                                                                  typeRef[Object]),
                                       generator.load(keyVar), inner.load(setVar))))
         }
@@ -974,11 +976,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         newUniqueAggregationKey(valueVar, Map(context.namer.newVarName() -> (valueType -> value)))
 
         using(generator.ifStatement(not(invoke(generator.load(setVar),
-                                               method[util.HashSet[Object], Boolean]("contains", typeRef[Object]),
+                                               method[JHashSet[Object], Boolean]("contains", typeRef[Object]),
                                                generator.load(valueVar))))) { inner =>
           block(copy(generator = inner))
           inner.expression(pop(invoke(generator.load(setVar),
-                                      method[util.HashSet[Object], Boolean]("add", typeRef[Object]),
+                                      method[JHashSet[Object], Boolean]("add", typeRef[Object]),
                                       generator.load(valueVar))))
         }
       }
@@ -996,7 +998,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
       if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
       generator.expression(pop(invoke(generator.load(name),
-                                      method[util.HashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
+                                      method[JHashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
                                                                                            typeRef[Object]),
                                       generator.load(keyVar), box(value, CodeGenType.javaLong))))
     }
@@ -1025,22 +1027,19 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val localName = context.namer.newVarName()
       val next = context.namer.newVarName()
       val variable = generator
-        .declare(typeRef[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]], localName)
+        .declare(typeRef[JIterator[JMap.Entry[Object, java.lang.Long]]], localName)
       val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
       generator.assign(variable,
                        invoke(invoke(generator.load(name),
-                                     method[util.HashMap[Object, java.lang.Long],
-                                       java.util.Set[java.util.Map.Entry[Object, java.lang.Long]]]("entrySet")),
-                              method[java.util.Set[java.util.Map.Entry[Object, java.lang.Long]], java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]](
-                                "iterator")))
+                              method[JHashMap[Object, java.lang.Long], JSet[JMap.Entry[Object, java.lang.Long]]]("entrySet")),
+                              method[JSet[JMap.Entry[Object, java.lang.Long]], JIterator[java.util.Map.Entry[Object, java.lang.Long]]]("iterator")))
       using(generator.whileLoop(
         invoke(generator.load(localName),
-               method[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]], Boolean]("hasNext")))) { body =>
-        body.assign(body.declare(typeRef[java.util.Map.Entry[Object, java.lang.Long]], next),
-                    cast(typeRef[util.Map.Entry[Object, java.lang.Long]],
+               method[JIterator[JMap.Entry[Object, java.lang.Long]], Boolean]("hasNext")))) { body =>
+        body.assign(body.declare(typeRef[JMap.Entry[Object, java.lang.Long]], next),
+                    cast(typeRef[JMap.Entry[Object, java.lang.Long]],
                          invoke(body.load(localName),
-                                method[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]], Object](
-                                  "next"))))
+                                method[JIterator[JMap.Entry[Object, java.lang.Long]], Object]("next"))))
         key.foreach {
           case (keyName, keyType) =>
 
@@ -1048,14 +1047,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                         Expression.get(
                           cast(keyStruct,
                                invoke(body.load(next),
-                                      method[java.util.Map.Entry[Object, java.lang.Long], Object]("getKey"))),
+                                      method[JMap.Entry[Object, java.lang.Long], Object]("getKey"))),
                           FieldReference.field(keyStruct, lowerType(keyType), keyName)))
         }
 
         body.assign(body.declare(typeRef[Long], valueVar),
                     unbox(cast(typeRef[java.lang.Long],
                                invoke(body.load(next),
-                                      method[java.util.Map.Entry[Object, java.lang.Long], Object]("getValue"))),
+                                      method[JMap.Entry[Object, java.lang.Long], Object]("getValue"))),
                           CypherCodeGenType(CTInteger, ReferenceType)))
         block(copy(generator = body))
       }
@@ -1090,15 +1089,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       case LongToCountTable =>
         typeRef[PrimitiveLongIntMap]
       case LongsToCountTable =>
-        parameterizedType(classOf[util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
+        parameterizedType(classOf[JHashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
       case LongToListTable(tupleDescriptor, _) =>
         parameterizedType(classOf[PrimitiveLongObjectMap[_]],
-                          parameterizedType(classOf[util.ArrayList[_]],
+                          parameterizedType(classOf[JArrayList[_]],
                                             aux.typeReference(tupleDescriptor)))
       case LongsToListTable(tupleDescriptor, _) =>
-        parameterizedType(classOf[util.HashMap[_, _]],
+        parameterizedType(classOf[JHashMap[_, _]],
                           typeRef[CompositeKey],
-                          parameterizedType(classOf[util.ArrayList[_]],
+                          parameterizedType(classOf[JArrayList[_]],
                                             aux.typeReference(tupleDescriptor)))
     }
     returnType

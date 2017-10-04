@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, Rewriter, topDown}
+import org.neo4j.cypher.internal.util.v3_4.{ASTNode, Rewriter, topDown}
 import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.v3_4.expressions._

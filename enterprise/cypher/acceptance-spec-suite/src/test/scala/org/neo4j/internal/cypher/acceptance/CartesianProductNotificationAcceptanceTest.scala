@@ -23,7 +23,7 @@ import java.time.Clock
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext, CommunityRuntimeContextCreator}
 import org.neo4j.cypher.internal.compatibility.v3_4.{Compatibility, WrappedMonitors}
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger}
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {

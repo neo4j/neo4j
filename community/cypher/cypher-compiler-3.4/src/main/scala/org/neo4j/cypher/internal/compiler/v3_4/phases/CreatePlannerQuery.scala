@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.phases
 
-import org.neo4j.cypher.internal.aux.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING

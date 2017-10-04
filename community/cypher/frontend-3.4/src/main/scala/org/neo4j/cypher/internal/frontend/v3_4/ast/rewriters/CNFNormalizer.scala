@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, bottomUp, inSequence, topDown}
-import org.neo4j.cypher.internal.aux.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp, inSequence, topDown}
+import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, Condition}

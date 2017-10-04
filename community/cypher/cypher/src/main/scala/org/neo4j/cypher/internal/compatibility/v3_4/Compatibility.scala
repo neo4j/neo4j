@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 import java.time.Clock
 
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder

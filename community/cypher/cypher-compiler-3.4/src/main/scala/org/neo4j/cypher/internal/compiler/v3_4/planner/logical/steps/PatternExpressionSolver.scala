@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, topDown}
+import org.neo4j.cypher.internal.util.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}

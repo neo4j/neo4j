@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.expressions
 
-import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
 
 case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends Expression {
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.aux.v3_4
+import org.neo4j.cypher.internal.util.v3_4
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AnonymousContext

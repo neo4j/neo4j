@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition, InternalException, NonEmptyList}
+import org.neo4j.cypher.internal.util.v3_4.{ASTNode, InputPosition, InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticCheckable}
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {

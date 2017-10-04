@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.aux.v3_4.{Ref, Rewriter, bottomUp, inSequence}
+import org.neo4j.cypher.internal.util.v3_4.{Ref, Rewriter, bottomUp, inSequence}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Condition, Phase}

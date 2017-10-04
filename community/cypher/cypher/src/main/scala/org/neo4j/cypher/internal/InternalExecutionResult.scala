@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import java.io.PrintWriter
-import java.{lang, util}
+import java.lang
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
@@ -36,7 +36,7 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] with QueryResul
   def columns: List[String] = List(fieldNames():_*)
   def columnAs[T](column: String): Iterator[T]
 
-  def javaColumns: java.util.List[String] = util.Arrays.asList(fieldNames():_*)
+  def javaColumns: java.util.List[String] = java.util.Arrays.asList(fieldNames():_*)
   def javaColumnAs[T](column: String): ResourceIterator[T]
   def javaIterator: ResourceIterator[java.util.Map[String, Any]]
 

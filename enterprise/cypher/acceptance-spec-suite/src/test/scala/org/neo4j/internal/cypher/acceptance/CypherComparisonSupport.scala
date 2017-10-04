@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, Version => IPDVersion}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CRS, CartesianPoint, GeographicPoint}

@@ -29,7 +29,7 @@ import org.neo4j.codegen.bytecode.ByteCode.{BYTECODE, VERIFY_GENERATED_BYTECODE}
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
-import org.neo4j.cypher.internal.aux.v3_4.symbols
+import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._

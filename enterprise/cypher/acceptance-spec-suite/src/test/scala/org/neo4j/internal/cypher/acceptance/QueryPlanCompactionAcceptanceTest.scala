@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._

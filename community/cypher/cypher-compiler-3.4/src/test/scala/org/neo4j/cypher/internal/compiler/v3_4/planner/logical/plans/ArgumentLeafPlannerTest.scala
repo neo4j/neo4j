@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph

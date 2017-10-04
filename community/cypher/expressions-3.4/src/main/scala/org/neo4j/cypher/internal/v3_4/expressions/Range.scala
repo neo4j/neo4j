@@ -16,6 +16,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.expressions
 
-import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.v3_4.{ASTNode, InputPosition}
 
 case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(val position: InputPosition) extends ASTNode

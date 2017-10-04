@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.phases
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.aux.v3_4.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext

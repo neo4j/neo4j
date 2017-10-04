@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.aux.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UnresolvedCall
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 

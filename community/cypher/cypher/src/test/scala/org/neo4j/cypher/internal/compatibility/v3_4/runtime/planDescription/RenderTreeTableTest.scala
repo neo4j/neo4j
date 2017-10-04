@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription
 
 import java.util.Locale
 
-import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.util.v3_4.DummyPosition
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}

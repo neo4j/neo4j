@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.conditions
 
-import org.neo4j.cypher.internal.aux.v3_4.Ref
+import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.Condition
 import org.neo4j.cypher.internal.v3_4.expressions.Variable
 

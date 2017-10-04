@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1.codegen
 
-import java.util
-
 import org.neo4j.codegen.Expression.{not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
@@ -62,7 +60,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       case LongToListTable(structure, localMap) =>
         // compute the participating types
         val valueType = aux.typeReference(structure)
-        val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
+        val listType = parameterizedType(classOf[java.util.ArrayList[_]], valueType)
         val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
         // the methods we use on those types
         val get = methodReference(tableType, typeRef[Object], "get", typeRef[Long])
@@ -74,8 +72,8 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       case LongsToListTable(structure, localMap) =>
         // compute the participating types
         val valueType = aux.typeReference(structure)
-        val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
-        val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
+        val listType = parameterizedType(classOf[java.util.ArrayList[_]], valueType)
+        val tableType = parameterizedType(classOf[java.util.HashMap[_, _]], typeRef[CompositeKey], valueType)
         // the methods we use on those types
         val get = methodReference(tableType, typeRef[Object], "get", typeRef[Object])
         val put = methodReference(tableType, typeRef[Object], "put", typeRef[Object], typeRef[Object])
@@ -411,7 +409,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def asList(values: Seq[Expression]) = Templates.asList[Object](values)
 
   override def toSet(value: Expression) =
-    createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))
+    createNewInstance(typeRef[java.util.HashSet[Object]], (typeRef[java.util.Collection[_]], value))
 
   override def castToCollection(value: Expression) = invoke(Methods.toCollection, value)
 
@@ -440,14 +438,14 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     val returnType = resultType match {
       case LongToCountTable => typeRef[PrimitiveLongIntMap]
       case LongsToCountTable => TypeReference
-        .parameterizedType(classOf[util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
+        .parameterizedType(classOf[java.util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
       case LongToListTable(structure, _) => parameterizedType(classOf[PrimitiveLongObjectMap[_]],
                                                               parameterizedType(
-                                                                classOf[util.ArrayList[_]],
+                                                                classOf[java.util.ArrayList[_]],
                                                                 aux.typeReference(structure)))
       case LongsToListTable(structure, _) => TypeReference
-        .parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey],
-                           parameterizedType(classOf[util.ArrayList[_]], aux.typeReference(structure)))
+        .parameterizedType(classOf[java.util.HashMap[_, _]], typeRef[CompositeKey],
+                           parameterizedType(classOf[java.util.ArrayList[_]], aux.typeReference(structure)))
     }
     returnType
   }

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting
 
-import org.neo4j.cypher.internal.aux.v3_4.Rewriter
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.Rewriter
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class RewriterStepSequencerTest extends CypherFunSuite {
 

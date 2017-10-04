@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders
 
-import org.neo4j.cypher.internal.aux.v3_4.SyntaxException
+import org.neo4j.cypher.internal.util.v3_4.SyntaxException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{Pattern, RelatedTo, VarLengthRelatedTo}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.{PatternGraph, PatternNode, PatternRelationship}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable

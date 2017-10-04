@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, NodeByLabelScan, Projection, Selection}
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

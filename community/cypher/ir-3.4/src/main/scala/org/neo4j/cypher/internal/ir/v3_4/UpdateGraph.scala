@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir.v3_4
 
-import org.neo4j.cypher.internal.aux.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.functions.Labels
 

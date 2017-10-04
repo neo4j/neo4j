@@ -85,7 +85,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-aux-3.4</artifactId>
+      <artifactId>neo4j-cypher-util-3.4</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -97,7 +97,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-aux-3.4</artifactId>
+      <artifactId>neo4j-cypher-util-3.4</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

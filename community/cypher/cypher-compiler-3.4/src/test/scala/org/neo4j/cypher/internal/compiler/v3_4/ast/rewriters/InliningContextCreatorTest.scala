@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSupport {
 

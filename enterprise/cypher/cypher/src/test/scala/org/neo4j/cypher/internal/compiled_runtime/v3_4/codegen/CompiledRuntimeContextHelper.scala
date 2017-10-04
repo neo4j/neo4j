@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.aux.v3_4.{CypherException, InputPosition, InternalException}
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}

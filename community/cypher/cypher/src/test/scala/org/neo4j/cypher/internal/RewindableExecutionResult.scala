@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal
 
 import java.io.PrintWriter
-import java.util
 
-import org.neo4j.cypher.internal.aux.v3_4.{InputPosition, symbols}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
@@ -117,7 +116,7 @@ object RewindableExecutionResult {
 
     override def toList: List[Map[String, Any]] = cache
 
-    override def javaIterator: ResourceIterator[util.Map[String, Any]] = ???
+    override def javaIterator: ResourceIterator[java.util.Map[String, Any]] = ???
 
     override def queryType: InternalQueryType = inner.executionType.queryType() match {
       case QueryExecutionType.QueryType.READ_ONLY => READ_ONLY
@@ -232,7 +231,7 @@ object RewindableExecutionResult {
 
     override def toList: List[Map[String, Any]] = cache
 
-    override def javaIterator: ResourceIterator[util.Map[String, Any]] = ???
+    override def javaIterator: ResourceIterator[java.util.Map[String, Any]] = ???
 
     override def queryType: InternalQueryType = inner.executionType match {
       case v3_1.executionplan.READ_ONLY => READ_ONLY

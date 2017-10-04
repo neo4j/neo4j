@@ -118,7 +118,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     }
 
     def groupInequalities(plannerQuery: PlannerQuery): PlannerQuery = {
-      import org.neo4j.cypher.internal.aux.v3_4.NonEmptyList._
+      import org.neo4j.cypher.internal.util.v3_4.NonEmptyList._
 
       plannerQuery
         .amendQueryGraph(_.mapSelections {

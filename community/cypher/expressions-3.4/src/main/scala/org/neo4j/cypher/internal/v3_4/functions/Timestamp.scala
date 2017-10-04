@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v3_4.functions
 
 import org.neo4j.cypher.internal.v3_4.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 
 case object Timestamp extends Function with TypeSignatures {
   val name = "timestamp"

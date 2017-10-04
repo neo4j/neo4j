@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription
 
-import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
-import org.neo4j.cypher.internal.aux.v3_4.symbols.{CTBoolean, CTList, CTNode, CTString}
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.DummyPosition
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CTBoolean, CTList, CTNode, CTString}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.compiler.v3_4.ast.NestedPlanExpression

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans._

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
-import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.graphdb

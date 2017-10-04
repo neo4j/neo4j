@@ -25,7 +25,7 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.internal.aux.v3_4.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}

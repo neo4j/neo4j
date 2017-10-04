@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
-import org.neo4j.cypher.internal.aux.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext

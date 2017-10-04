@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.rewriters
 
-import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.v3_4.{ASTNode, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.aux.v3_4.symbols.{CTAny, CTBoolean, CTFloat, CTInteger, CTList, CTString}
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CTAny, CTBoolean, CTFloat, CTInteger, CTList, CTString}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
 

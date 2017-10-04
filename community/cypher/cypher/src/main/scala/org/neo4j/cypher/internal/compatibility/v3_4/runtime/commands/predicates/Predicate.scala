@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates
 
-import org.neo4j.cypher.internal.aux.v3_4.{CypherTypeException, NonEmptyList}
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, NonEmptyList}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
