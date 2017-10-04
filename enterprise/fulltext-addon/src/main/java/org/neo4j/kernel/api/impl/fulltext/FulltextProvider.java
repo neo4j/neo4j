@@ -22,11 +22,12 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -54,6 +55,7 @@ public class FulltextProvider implements AutoCloseable
     private final Map<String,WritableFulltext> writableNodeIndices;
     private final Map<String,WritableFulltext> writableRelationshipIndices;
     private final FulltextUpdateApplier applier;
+    private final ReadWriteLock configurationLock;
 
     /**
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
@@ -77,6 +79,7 @@ public class FulltextProvider implements AutoCloseable
         relationshipProperties = ConcurrentHashMap.newKeySet();
         writableNodeIndices = new ConcurrentHashMap<>();
         writableRelationshipIndices = new ConcurrentHashMap<>();
+        configurationLock = new ReentrantReadWriteLock( true );
     }
 
     public void init() throws IOException
@@ -134,37 +137,45 @@ public class FulltextProvider implements AutoCloseable
         writableRelationshipIndices.values().forEach( fulltextCloser );
     }
 
-    synchronized void register( LuceneFulltext fulltextIndex ) throws IOException
+    void register( LuceneFulltext fulltextIndex ) throws IOException
     {
-        WritableFulltext writableFulltext = new WritableFulltext( fulltextIndex );
-        writableFulltext.open();
-        if ( fulltextIndex.getType() == FulltextIndexType.NODES )
+        configurationLock.writeLock().lock();
+        try
         {
-            if ( !matchesConfiguration( writableFulltext ) )
+            WritableFulltext writableFulltext = new WritableFulltext( fulltextIndex );
+            writableFulltext.open();
+            if ( fulltextIndex.getType() == FulltextIndexType.NODES )
             {
-                writableFulltext.drop();
-                writableFulltext.open();
-                if ( !writableFulltext.getProperties().isEmpty() )
+                if ( !matchesConfiguration( writableFulltext ) )
                 {
-                    applier.populateNodes( writableFulltext, db );
+                    writableFulltext.drop();
+                    writableFulltext.open();
+                    if ( !writableFulltext.getProperties().isEmpty() )
+                    {
+                        applier.populateNodes( writableFulltext, db );
+                    }
                 }
+                writableNodeIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
+                nodeProperties.addAll( fulltextIndex.getProperties() );
             }
-            writableNodeIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
-            nodeProperties.addAll( fulltextIndex.getProperties() );
+            else
+            {
+                if ( !matchesConfiguration( writableFulltext ) )
+                {
+                    writableFulltext.drop();
+                    writableFulltext.open();
+                    if ( !writableFulltext.getProperties().isEmpty() )
+                    {
+                        applier.populateRelationships( writableFulltext, db );
+                    }
+                }
+                writableRelationshipIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
+                relationshipProperties.addAll( fulltextIndex.getProperties() );
+            }
         }
-        else
+        finally
         {
-            if ( !matchesConfiguration( writableFulltext ) )
-            {
-                writableFulltext.drop();
-                writableFulltext.open();
-                if ( !writableFulltext.getProperties().isEmpty() )
-                {
-                    applier.populateRelationships( writableFulltext, db );
-                }
-            }
-            writableRelationshipIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
-            relationshipProperties.addAll( fulltextIndex.getProperties() );
+            configurationLock.writeLock().unlock();
         }
     }
 
@@ -230,17 +241,25 @@ public class FulltextProvider implements AutoCloseable
         return applyToMatchingIndex( identifier, type, WritableFulltext::getState );
     }
 
-    synchronized void drop( String identifier, FulltextIndexType type ) throws IOException
+    void drop( String identifier, FulltextIndexType type ) throws IOException
     {
-        if ( type == FulltextIndexType.NODES )
+        configurationLock.writeLock().lock();
+        try
         {
-            writableNodeIndices.remove( identifier ).drop();
+            if ( type == FulltextIndexType.NODES )
+            {
+                writableNodeIndices.remove( identifier ).drop();
+            }
+            else
+            {
+                writableRelationshipIndices.remove( identifier ).drop();
+            }
+            rebuildProperties();
         }
-        else
+        finally
         {
-            writableRelationshipIndices.remove( identifier ).drop();
+            configurationLock.writeLock().unlock();
         }
-        rebuildProperties();
     }
 
     private void rebuildProperties()
@@ -249,6 +268,13 @@ public class FulltextProvider implements AutoCloseable
         relationshipProperties.clear();
         writableNodeIndices.forEach( ( s, index ) -> nodeProperties.addAll( index.getProperties() ) );
         writableRelationshipIndices.forEach( ( s, index ) -> relationshipProperties.addAll( index.getProperties() ) );
+    }
+
+    Lock readLockIndexConfiguration()
+    {
+        Lock lock = configurationLock.readLock();
+        lock.lock();
+        return lock;
     }
 
     /**

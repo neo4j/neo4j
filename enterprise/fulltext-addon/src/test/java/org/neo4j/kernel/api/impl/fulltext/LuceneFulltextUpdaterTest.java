@@ -22,11 +22,16 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.Race;
 
 import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
 
@@ -664,6 +669,139 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertFuzzyQueryFindsIds( reader, Arrays.asList( "Tom", "Hanks" ), true, thirdID, fourthID, fifthID );
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
+    {
+        try ( FulltextProvider provider = createProvider() )
+        {
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
+            provider.init();
+
+            long firstID;
+            long secondID;
+            long thirdID;
+            long fourthID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                firstID = createNodeIndexableByPropertyValue( "thing" );
+
+                secondID = db.createNode().getId();
+                setNodeProp( secondID, "prop2", "zebra" );
+
+                thirdID = createNodeIndexableByPropertyValue( "zebra" );
+                tx.success();
+            }
+
+            fulltextFactory.changeIndexedProperties( "nodes", NODES, Collections.singletonList( "prop2" ) );
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                setNodeProp( firstID, "prop2", "thing" );
+
+                fourthID = db.createNode().getId();
+                setNodeProp( fourthID, "prop2", "zebra" );
+                tx.success();
+            }
+
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
+            {
+                assertExactQueryFindsIds( reader, Arrays.asList( "thing", "zebra" ), false, firstID, secondID, fourthID );
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToDropAndReaddIndex() throws Exception
+    {
+        try ( FulltextProvider provider = createProvider() )
+        {
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
+            provider.init();
+
+            long firstID;
+            long secondID;
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                firstID = createNodeIndexableByPropertyValue( "thing" );
+
+                secondID = createNodeIndexableByPropertyValue( "zebra" );
+                tx.success();
+            }
+
+            provider.drop( "nodes", NODES );
+
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
+            provider.awaitPopulation();
+
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
+            {
+                assertExactQueryFindsIds( reader, Arrays.asList( "thing", "zebra" ), false, firstID, secondID );
+            }
+        }
+    }
+
+    @Test
+    public void concurrentUpdatesAndIndexChangesShouldREsultInValidState() throws Throwable
+    {
+        try ( FulltextProvider provider = createProvider() )
+        {
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
+            provider.init();
+
+            int aliceThreads = 10;
+            int bobthreads = 10;
+            int nodesCreatedPerThread = 10;
+            Race race = new Race();
+            Runnable aliceWork = () ->
+            {
+                for ( int i = 0; i < nodesCreatedPerThread; i++ )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        createNodeIndexableByPropertyValue( "alice" );
+                        tx.success();
+                    }
+                }
+            };
+            Runnable changeConfig = () ->
+            {
+                try
+                {
+                    fulltextFactory.changeIndexedProperties( "nodes", NODES, singletonList( "otherProp" ) );
+                    provider.awaitPopulation();
+                }
+                catch ( Exception e )
+                {
+                    throw new AssertionError( e );
+                }
+            };
+            Runnable bobWork = () ->
+            {
+                for ( int i = 0; i < nodesCreatedPerThread; i++ )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        createNodeWithProperty( "otherProp", "bob" );
+                        tx.success();
+                    }
+                }
+            };
+            race.addContestants( aliceThreads, aliceWork );
+            race.addContestant( changeConfig );
+            race.addContestants( bobthreads, bobWork );
+            race.go();
+
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
+            {
+                PrimitiveLongIterator bob = reader.query( singletonList( "bob" ), true );
+                assertEquals( bobthreads * nodesCreatedPerThread, PrimitiveLongCollections.count( bob ) );
+                PrimitiveLongIterator alice = reader.query( singletonList( "alice" ), true );
+                assertEquals( 0, PrimitiveLongCollections.count( alice ) );
             }
         }
     }
