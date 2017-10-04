@@ -509,7 +509,7 @@ public class LuceneDataSource extends LifecycleAdapter
                     {
                         if ( exception == null )
                         {
-                            exception = e instanceof IOException?
+                            exception = e instanceof IOException ?
                                         new UncheckedIOException( (IOException) e ) :
                                         (RuntimeException) e;
                         }
