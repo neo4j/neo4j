@@ -88,15 +88,15 @@ public class BackupToolCmdArgumentsAcceptanceTest
         // Given
         String[] args = argsAsString.split( " " );
 
-        BackupProtocolService backupProtocolService = mock( BackupProtocolService.class );
+        BackupService backupService = mock( BackupService.class );
         PrintStream printStream = mock( PrintStream.class );
-        BackupTool backupTool = new BackupTool( backupProtocolService, printStream );
+        BackupTool backupTool = new BackupTool( backupService, printStream );
 
         // When
         backupTool.run( args );
 
         // Then
-        verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
+        verify( backupService ).doIncrementalBackupOrFallbackToFull(
                 eq( HOST ),
                 eq( PORT ),
                 eq( PATH ),

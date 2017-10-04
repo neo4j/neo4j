@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -40,7 +41,6 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;

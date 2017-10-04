@@ -34,7 +34,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -48,12 +47,12 @@ public class HaConfigurationValidatorTest
     public ExpectedException expected = ExpectedException.none();
 
     @Parameterized.Parameter
-    public EnterpriseEditionSettings.Mode mode;
+    public ClusterSettings.Mode mode;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static List<EnterpriseEditionSettings.Mode> recordFormats()
+    public static List<ClusterSettings.Mode> recordFormats()
     {
-        return Arrays.asList( EnterpriseEditionSettings.Mode.HA, EnterpriseEditionSettings.Mode.ARBITER );
+        return Arrays.asList( ClusterSettings.Mode.HA, ClusterSettings.Mode.ARBITER );
     }
 
     @Test
@@ -61,7 +60,7 @@ public class HaConfigurationValidatorTest
     {
         // when
         Config config = Config.fromSettings(
-                stringMap( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.SINGLE.name(),
+                stringMap( ClusterSettings.mode.name(), ClusterSettings.Mode.SINGLE.name(),
                         ClusterSettings.initial_hosts.name(), "" ) )
                 .withValidator( new HaConfigurationValidator() ).build();
 
@@ -76,7 +75,7 @@ public class HaConfigurationValidatorTest
     {
         // when
         Config config = Config.fromSettings(
-                stringMap( EnterpriseEditionSettings.mode.name(), mode.name(),
+                stringMap( ClusterSettings.mode.name(), mode.name(),
                         ClusterSettings.server_id.name(), "1",
                         ClusterSettings.initial_hosts.name(), "localhost,remotehost" ) )
                 .withValidator( new HaConfigurationValidator() ).build();
@@ -97,7 +96,7 @@ public class HaConfigurationValidatorTest
 
         // when
         Config.fromSettings(
-                stringMap( EnterpriseEditionSettings.mode.name(), mode.name() ) )
+                stringMap( ClusterSettings.mode.name(), mode.name() ) )
                 .withValidator( new HaConfigurationValidator() ).build();
     }
 
@@ -110,7 +109,7 @@ public class HaConfigurationValidatorTest
 
         // when
         Config.fromSettings(
-                stringMap( EnterpriseEditionSettings.mode.name(), mode.name(),
+                stringMap( ClusterSettings.mode.name(), mode.name(),
                         ClusterSettings.server_id.name(), "1" ) )
                 .withValidator( new HaConfigurationValidator() ).build();
     }
@@ -124,7 +123,7 @@ public class HaConfigurationValidatorTest
 
         // when
         Config.fromSettings(
-                stringMap( EnterpriseEditionSettings.mode.name(), mode.name(),
+                stringMap( ClusterSettings.mode.name(), mode.name(),
                         ClusterSettings.server_id.name(), "1",
                         ClusterSettings.initial_hosts.name(), "," ) )
                 .withValidator( new HaConfigurationValidator() ).build();

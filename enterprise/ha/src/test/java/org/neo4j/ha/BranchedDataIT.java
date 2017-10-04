@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave.Monitor;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
