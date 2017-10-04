@@ -25,7 +25,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -49,6 +51,7 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -425,6 +428,93 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
 
+    @Test( timeout = 10_000L )
+    @SuppressWarnings( "unchecked" )
+    public void mustHandleNestedQueries() throws Exception
+    {
+        // given
+        IndexEntryUpdate[] updates = new IndexEntryUpdate[]
+                {
+                        IndexEntryUpdate.add( 0, indexDescriptor, Values.of( 0 ) ),
+                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of(1 ) ),
+                        IndexEntryUpdate.add( 2, indexDescriptor, Values.of( 2 ) ),
+                        IndexEntryUpdate.add( 3, indexDescriptor, Values.of( 3 ) )
+                };
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+
+        IndexQuery.NumberRangePredicate outerQuery = IndexQuery.range( 0, 2, true, 3, true );
+        IndexQuery.NumberRangePredicate innerQuery = IndexQuery.range( 0, 0, true, 1, true );
+
+        long[] expectedOuter = new long[]{2, 3};
+        long[] expectedInner = new long[]{0, 1};
+
+        PrimitiveLongIterator outerIter = reader.query( outerQuery );
+        Collection<Long> outerResult = new ArrayList<>();
+        while ( outerIter.hasNext() )
+        {
+            outerResult.add( outerIter.next() );
+            PrimitiveLongIterator innerIter = reader.query( innerQuery );
+            assertEntityIdHits( expectedInner, innerIter );
+        }
+        assertEntityIdHits( expectedOuter, outerResult );
+    }
+
+    @Test( timeout = 10_000L )
+    @SuppressWarnings( "unchecked" )
+    public void mustHandleMultipleNestedQueries() throws Exception
+    {
+        // given
+        IndexEntryUpdate[] updates = new IndexEntryUpdate[]
+                {
+                        IndexEntryUpdate.add( 0, indexDescriptor, Values.of( 0 ) ),
+                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of(1 ) ),
+                        IndexEntryUpdate.add( 2, indexDescriptor, Values.of( 2 ) ),
+                        IndexEntryUpdate.add( 3, indexDescriptor, Values.of( 3 ) ),
+                        IndexEntryUpdate.add( 4, indexDescriptor, Values.of( 4 ) ),
+                        IndexEntryUpdate.add( 5, indexDescriptor, Values.of( 5 ) ),
+                };
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+
+        IndexQuery.NumberRangePredicate query1 = IndexQuery.range( 0, 4, true, 5, true );
+        IndexQuery.NumberRangePredicate query2 = IndexQuery.range( 0, 2, true, 3, true );
+        IndexQuery.NumberRangePredicate query3 = IndexQuery.range( 0, 0, true, 1, true );
+
+        long[] expected1 = new long[]{4, 5};
+        long[] expected2 = new long[]{2, 3};
+        long[] expected3 = new long[]{0, 1};
+
+
+        Collection<Long> result1 = new ArrayList<>();
+        PrimitiveLongIterator iter1 = reader.query( query1 );
+        while ( iter1.hasNext() )
+        {
+            result1.add( iter1.next() );
+
+            Collection<Long> result2 = new ArrayList<>();
+            PrimitiveLongIterator iter2 = reader.query( query2 );
+            while ( iter2.hasNext() )
+            {
+                result2.add( iter2.next() );
+
+                Collection<Long> result3 = new ArrayList<>();
+                PrimitiveLongIterator iter3 = reader.query( query3 );
+                while ( iter3.hasNext() )
+                {
+                    result3.add( iter3.next() );
+                }
+                assertEntityIdHits( expected3, result3 );
+            }
+            assertEntityIdHits( expected2, result2 );
+        }
+        assertEntityIdHits( expected1, result1 );
+    }
+
     @Test
     public void shouldHandleMultipleConsecutiveUpdaters() throws Exception
     {
@@ -652,9 +742,26 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
     private void assertEntityIdHits( long[] expected, PrimitiveLongIterator result )
     {
         long[] actual = PrimitiveLongCollections.asArray( result );
+        assertSameContent( expected, actual );
+    }
+
+    private void assertEntityIdHits( long[] expected, Collection<Long> result )
+    {
+        long[] actual = new long[result.size()];
+        int index = 0;
+        for ( Long aLong : result )
+        {
+            actual[index++] = aLong;
+        }
+        assertSameContent( expected, actual );
+    }
+
+    private void assertSameContent( long[] expected, long[] actual )
+    {
         Arrays.sort( actual );
         Arrays.sort( expected );
-        assertArrayEquals( expected, actual );
+        assertArrayEquals( format( "Expected arrays to be equal but wasn't.%nexpected:%s%n  actual:%s%n",
+                Arrays.toString( expected ), Arrays.toString( actual ) ), expected, actual );
     }
 
     private long[] extractEntityIds( IndexEntryUpdate<?>[] updates, Predicate<Value> valueFilter )
