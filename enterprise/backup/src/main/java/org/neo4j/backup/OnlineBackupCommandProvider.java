@@ -91,7 +91,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
 
         return new OnlineBackupCommand( outsideWorld,
                 onlineBackupContextLoader,
-                new CommunityBackupSupportingClassesFactory( backupModuleResolveAtRuntime ),
+                BackupSupportingClassesFactoryProvider.findBestProvider().get().getFactory( backupModuleResolveAtRuntime ),
                 new BackupFlowFactory( backupModuleResolveAtRuntime )
         );
     }

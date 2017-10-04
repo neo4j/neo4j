@@ -89,8 +89,7 @@ abstract class AbstractBackupSupportingClassesFactory
     private BackupDelegator backupDelegatorFormConfig( PageCache pageCache, Config config )
     {
         PipelineHandlerAppenderFactory pipelineHandlerAppenderFactory = getPipelineHandlerAppenderFactory();
-        Dependencies dependencies = getDependencies();
-        PipelineHandlerAppender pipelineHandlerAppender = pipelineHandlerAppenderFactory.create( config, dependencies, logProvider );
+        PipelineHandlerAppender pipelineHandlerAppender = pipelineHandlerAppenderFactory.create( config, getDependencies(), logProvider );
         CatchUpClient catchUpClient = new CatchUpClient( logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, monitors, pipelineHandlerAppender );
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
         StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider );
@@ -106,9 +105,10 @@ abstract class AbstractBackupSupportingClassesFactory
         return new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, new ClearIdService( new IdGeneratorWrapper() ) );
     }
 
-    abstract Dependencies getDependencies();
+    private Dependencies getDependencies()
+    {
+        return null;
+    }
 
     abstract PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory();
-
-    abstract int getPriority();
 }

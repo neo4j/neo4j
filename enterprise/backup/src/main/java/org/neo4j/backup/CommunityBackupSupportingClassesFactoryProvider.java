@@ -19,13 +19,23 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.helpers.Service;
-
-public class CommunityBackupSupportingClassesFactoryProvider extends Service
+public class CommunityBackupSupportingClassesFactoryProvider extends BackupSupportingClassesFactoryProvider
 {
     public CommunityBackupSupportingClassesFactoryProvider()
     {
         super( null );
+    }
+
+    @Override
+    AbstractBackupSupportingClassesFactory getFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
+    {
+        return new CommunityBackupSupportingClassesFactory( backupModuleResolveAtRuntime );
+    }
+
+    @Override
+    int getPriority()
+    {
+        return 0;
     }
 
     /**
