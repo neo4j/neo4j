@@ -24,7 +24,6 @@ import java.util.Map;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
 public class OnlineBackupExtensionIT extends KernelExtensionFactoryContractTest
 {

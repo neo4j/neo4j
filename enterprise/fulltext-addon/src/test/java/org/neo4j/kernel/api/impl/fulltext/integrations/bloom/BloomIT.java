@@ -32,7 +32,7 @@ import java.io.File;
 import java.util.Date;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -410,7 +410,7 @@ public class BloomIT
 
         Config config = Config.defaults( bloom_indexed_properties, "prop" );
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
-        ConsistencyFlags checkConsistencyConfig = new ConsistencyFlags( true, true, true, true );
+        CheckConsistencyConfig checkConsistencyConfig = new CheckConsistencyConfig( true, true, true, true );
         ConsistencyCheckService.Result result =
                 consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), config, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(),
                         true, checkConsistencyConfig );
