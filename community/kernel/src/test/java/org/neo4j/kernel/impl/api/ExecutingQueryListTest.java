@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.Clocks;
-import org.neo4j.resources.CpuClock;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
@@ -118,7 +118,8 @@ public class ExecutingQueryListTest
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, "me", query,
-                Collections.emptyMap(), Collections.emptyMap(), () -> 0, PageCursorTracer.NULL, Thread.currentThread(),
+                Collections.emptyMap(), Collections.emptyMap(), () -> 0, PageCursorTracer.NULL,
+                Thread.currentThread().getId(), Thread.currentThread().getName(),
                 Clocks.nanoClock(), CpuClock.CPU_CLOCK, HeapAllocation.HEAP_ALLOCATION );
     }
 }

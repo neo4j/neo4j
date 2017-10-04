@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.query;
 
+import org.junit.Test;
+
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -32,7 +32,6 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
-import org.neo4j.test.FakeHeapAllocation;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -102,7 +101,9 @@ public class ExecutingQueryStatusTest
                                 null,
                                 null,
                                 null,
-                                PageCursorTracer.NULL, Thread.currentThread(),
+                                PageCursorTracer.NULL,
+                                Thread.currentThread().getId(),
+                                Thread.currentThread().getName(),
                                 clock,
                                 FakeCpuClock.NOT_AVAILABLE,
                                 HeapAllocation.NOT_AVAILABLE ), clock.nanos() );

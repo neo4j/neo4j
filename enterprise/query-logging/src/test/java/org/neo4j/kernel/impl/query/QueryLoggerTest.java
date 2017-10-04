@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -496,6 +496,7 @@ public class QueryLoggerTest
             Map<String,Object> params,
             Map<String,Object> metaData )
     {
+        Thread thread = Thread.currentThread();
         return new ExecutingQuery( queryId++,
                 sessionInfo.withUsername( username ),
                 username,
@@ -558,7 +559,9 @@ public class QueryLoggerTest
                     {
                         return 0;
                     }
-                }, Thread.currentThread(),
+                },
+                thread.getId(),
+                thread.getName(),
                 clock,
                 cpuClock,
                 heapAllocation );
