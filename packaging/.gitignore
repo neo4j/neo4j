@@ -13,4 +13,3 @@ target
 .DS_Store
 /bin
 .gradle
-/installer-windows/src/main/resources/installer/installer-cache/

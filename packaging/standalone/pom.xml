@@ -123,7 +123,6 @@
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
-                <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-oss-win.txt</thirdPartyLicensingFilename>
@@ -177,7 +176,6 @@
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
-                <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-win.txt</thirdPartyLicensingFilename>
