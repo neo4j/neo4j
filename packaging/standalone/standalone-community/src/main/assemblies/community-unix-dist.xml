@@ -20,7 +20,9 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 -->
-<assembly>
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
   <id>unix</id>
   <formats>
     <format>tar.gz</format>
@@ -39,14 +41,6 @@
       <excludes>
         <exclude>**/.keep</exclude>
       </excludes>
-    </fileSet>
-    <!-- non-maven jars -->
-    <fileSet>
-      <directory>src/main/distribution/binary</directory>
-      <outputDirectory/>
-      <includes>
-        <include>lib/*.jar</include>
-      </includes>
     </fileSet>
     <!-- filter and chmod 755 shell scripts -->
     <!-- filter m4 scripts-->

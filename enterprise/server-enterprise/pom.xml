@@ -16,17 +16,6 @@
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <properties>
-    <neo4j-server.mainClass>org.neo4j.server.enterprise.EnterpriseEntryPoint</neo4j-server.mainClass>
-    <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
-    <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
-    <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-
-    <!-- Run integration tests against a server that is started elsewhere This is used in ServerIntegrationTestFacade,
-      which currently assumes external servers to be running at http://localhost:7474/ -->
-    <testWithExternalServer>false</testWithExternalServer>
-  </properties>
-
   <packaging>jar</packaging>
 
   <scm>

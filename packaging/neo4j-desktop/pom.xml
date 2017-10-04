@@ -18,6 +18,8 @@
   <name>Neo4j Desktop</name>
   <description>Easy-to-use Neo4j database in an .exe</description>
 
+  <!-- TODO: This only generates an uber jar, should be moved to internal packaging since it's not used here -->
+
   <properties>
     <neo4j.version>${project.version}</neo4j.version>
   </properties>
@@ -145,6 +147,17 @@
         <configuration>
           <skip>true</skip>
         </configuration>
+      </plugin>
+      <!-- Shader plugin causes problem for clirr, disable for now -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -34,8 +34,6 @@ import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class SharedServerTestBase
 {
-    private static boolean useExternal = Boolean.valueOf( System.getProperty( "neo-server.external", "false" ) );
-
     protected static NeoServer server()
     {
         return server;
@@ -50,35 +48,29 @@ public class SharedServerTestBase
     public static void allocateServer() throws Throwable
     {
         System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
-        if ( !useExternal )
+        suppressAll().call( (Callable<Void>) () ->
         {
-            suppressAll().call( (Callable<Void>) () ->
-            {
-                ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), "true" );
-                server = ServerHolder.allocate();
-                ServerHelper.cleanTheDatabase( server );
-                return null;
-            } );
-        }
+            ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), "true" );
+            server = ServerHolder.allocate();
+            ServerHelper.cleanTheDatabase( server );
+            return null;
+        } );
     }
 
     @AfterClass
     public static void releaseServer() throws Exception
     {
-        if ( !useExternal )
+        try
         {
-            try
+            suppressAll().call( (Callable<Void>) () ->
             {
-                suppressAll().call( (Callable<Void>) () ->
-                {
-                    ServerHolder.release( server );
-                    return null;
-                } );
-            }
-            finally
-            {
-                server = null;
-            }
+                ServerHolder.release( server );
+                return null;
+            } );
+        }
+        finally
+        {
+            server = null;
         }
     }
 }
