@@ -28,8 +28,8 @@ import static org.neo4j.helpers.Exceptions.withCause;
 
 public class DatabaseHealth
 {
-    private static final String panicMessage = "Database has encountered some problem, "
-            + "please perform necessary action (tx recovery/restart)";
+    private static final String panicMessage = "Critical error has encountered (see database logs for more details). " +
+            "Please restart the database.";
     private static final Class<?>[] CRITICAL_EXCEPTIONS = new Class[]{OutOfMemoryError.class};
 
     private volatile boolean healthy = true;
