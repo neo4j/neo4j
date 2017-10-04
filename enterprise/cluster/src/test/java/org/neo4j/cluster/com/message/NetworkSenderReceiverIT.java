@@ -89,8 +89,7 @@ public class NetworkSenderReceiverIT
 
         // when
 
-        server1.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:" + (new Random().nextBoolean() ? port1 : port2 ) ),
-                "Hello World" ) );
+        server1.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:" + port2 ),"Hello World" ) );
 
         // then
 
