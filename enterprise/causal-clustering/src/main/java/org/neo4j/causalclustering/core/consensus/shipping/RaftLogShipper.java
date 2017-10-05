@@ -22,13 +22,13 @@ package org.neo4j.causalclustering.core.consensus.shipping;
 import java.io.IOException;
 import java.time.Clock;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.LeaderContext;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.core.state.InFlightLogEntryReader;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -111,7 +111,7 @@ public class RaftLogShipper
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
+    private final InFlightCache inFlightCache;
 
     private DelayedRenewableTimeoutService timeoutService;
     private RenewableTimeout timeout;
@@ -124,7 +124,7 @@ public class RaftLogShipper
     RaftLogShipper( Outbound<MemberId, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                     ReadableRaftLog raftLog, Clock clock,
                     MemberId leader, MemberId follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
-                    int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<RaftLogEntry> inFlightMap )
+                    int catchupBatchSize, int maxAllowedShippingLag, InFlightCache inFlightCache )
     {
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
@@ -137,7 +137,7 @@ public class RaftLogShipper
         this.leader = leader;
         this.retryTimeMillis = retryTimeMillis;
         this.lastLeaderContext = new LeaderContext( leaderTerm, leaderCommit );
-        this.inFlightMap = inFlightMap;
+        this.inFlightCache = inFlightCache;
     }
 
     public Object identity()
@@ -480,7 +480,7 @@ public class RaftLogShipper
             }
 
             boolean entryMissing = false;
-            try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, false ) )
+            try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightCache, false ) )
             {
                 for ( int offset = 0; offset < batchSize; offset++ )
                 {

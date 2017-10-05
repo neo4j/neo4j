@@ -29,10 +29,11 @@ import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.SessionTracker;
 import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ProgressTrackerImpl;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
@@ -81,15 +82,15 @@ public class CommandApplicationProcessTest
     private final int flushEvery = 10;
     private final int batchSize = 16;
 
-    private InFlightMap<RaftLogEntry> inFlightMap = spy( new InFlightMap<>( true ) );
+    private InFlightCache inFlightCache = spy( new ConsecutiveInFlightCache() );
     private final Monitors monitors = new Monitors();
     private CoreState coreState = mock( CoreState.class );
     private final CommandApplicationProcess applicationProcess = new CommandApplicationProcess(
             raftLog, batchSize, flushEvery, () -> dbHealth,
             NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ),
-            sessionTracker, coreState, inFlightMap, monitors );
+            sessionTracker, coreState, inFlightCache, monitors );
 
-    private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
+    private ReplicatedTransaction nullTx = new ReplicatedTransaction( new byte[0] );
 
     private final CommandDispatcher commandDispatcher = mock( CommandDispatcher.class );
 
@@ -267,74 +268,40 @@ public class CommandApplicationProcessTest
     public void shouldApplyToLogFromCache() throws Throwable
     {
         // given
-        inFlightMap.put( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
+        inFlightCache.put( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
 
         //when
         applicationProcess.notifyCommitted( 0 );
         applicationProcess.start();
 
         //then the cache should have had it's get method called.
-        verify( inFlightMap, times( 1 ) ).get( 0L );
+        verify( inFlightCache, times( 1 ) ).get( 0L );
         verifyZeroInteractions( raftLog );
     }
 
     @Test
-    public void cacheEntryShouldBePurgedWhenApplied() throws Throwable
+    public void cacheEntryShouldBePurgedAfterBeingApplied() throws Throwable
     {
         // given
-        inFlightMap.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
-        inFlightMap.put( 1L, new RaftLogEntry( 0, operation( nullTx ) ) );
-        inFlightMap.put( 2L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightCache.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightCache.put( 1L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightCache.put( 2L, new RaftLogEntry( 0, operation( nullTx ) ) );
 
         // when
         applicationProcess.notifyCommitted( 0 );
         applicationProcess.start();
 
-        //then the cache should have had its get method called.
-        assertNull( inFlightMap.get( 0L ) );
-        assertNotNull( inFlightMap.get( 1L ) );
-        assertNotNull( inFlightMap.get( 2L ) );
-    }
-
-    @Test
-    public void shouldFallbackToLogCursorOnCacheMiss() throws Throwable
-    {
-        // given cache with missing entry
-        ReplicatedContent operation0 = operation( nullTx );
-        ReplicatedContent operation1 = operation( nullTx );
-        ReplicatedContent operation2 = operation( nullTx );
-
-        inFlightMap.put( 0L, new RaftLogEntry( 0, operation0 ) );
-        inFlightMap.put( 2L, new RaftLogEntry( 2, operation2 ) );
-
-        raftLog.append( new RaftLogEntry( 0, operation0 ) );
-        raftLog.append( new RaftLogEntry( 1, operation1 ) );
-        raftLog.append( new RaftLogEntry( 2, operation2 ) );
-
-        // when
-        applicationProcess.notifyCommitted( 2 );
-        applicationProcess.start();
-
-        // then the cache stops being used after it finds 1 is missing
-        verify( inFlightMap, times( 1 ) ).get( 0L );
-        verify( inFlightMap, times( 1 ) ).get( 1L );
-        verify( inFlightMap, times( 0 ) ).get( 2L );
-
-        // we only look up 1 so let's remove that from the cache
-        verify( inFlightMap, times( 1 ) ).remove( 0L );
-
-        verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
-        verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
-        verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
-
-        verify( raftLog, times( 1 ) ).getEntryCursor( 1 );
+        // then the cache should have had its get method called.
+        assertNull( inFlightCache.get( 0L ) );
+        assertNotNull( inFlightCache.get( 1L ) );
+        assertNotNull( inFlightCache.get( 2L ) );
     }
 
     @Test
     public void shouldFailWhenCacheAndLogMiss() throws Throwable
     {
         // given
-        inFlightMap.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightCache.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 1, operation( nullTx ) ) );
 

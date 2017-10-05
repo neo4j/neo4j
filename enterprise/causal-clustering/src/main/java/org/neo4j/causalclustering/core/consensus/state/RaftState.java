@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
@@ -46,7 +45,7 @@ public class RaftState implements ReadableRaftState
     private final RaftMembership membership;
     private final Log log;
     private final RaftLog entryLog;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
+    private final InFlightCache inFlightCache;
 
     private TermState termState;
     private VoteState voteState;
@@ -64,14 +63,14 @@ public class RaftState implements ReadableRaftState
                       RaftMembership membership,
                       RaftLog entryLog,
                       StateStorage<VoteState> voteStorage,
-                      InFlightMap<RaftLogEntry> inFlightMap, LogProvider logProvider )
+                      InFlightCache inFlightCache, LogProvider logProvider )
     {
         this.myself = myself;
         this.termStorage = termStorage;
         this.voteStorage = voteStorage;
         this.membership = membership;
         this.entryLog = entryLog;
-        this.inFlightMap = inFlightMap;
+        this.inFlightCache = inFlightCache;
         log = logProvider.getLog( getClass() );
     }
 
@@ -194,7 +193,7 @@ public class RaftState implements ReadableRaftState
         for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {
             logCommand.applyTo( entryLog, log );
-            logCommand.applyTo( inFlightMap, log );
+            logCommand.applyTo( inFlightCache, log );
         }
         commitIndex = outcome.getCommitIndex();
     }

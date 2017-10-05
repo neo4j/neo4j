@@ -61,6 +61,18 @@ public class  DistributedOperation implements ReplicatedContent
         return content;
     }
 
+    @Override
+    public boolean hasSize()
+    {
+        return content.hasSize();
+    }
+
+    @Override
+    public long size()
+    {
+        return content.size();
+    }
+
     public void serialize( WritableChannel channel ) throws IOException
     {
         channel.putLong( globalSession().sessionId().getMostSignificantBits() );

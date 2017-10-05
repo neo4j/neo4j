@@ -22,10 +22,10 @@ package org.neo4j.causalclustering.core.consensus;
 import java.io.IOException;
 import java.time.Clock;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.RaftGroup;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipState;
@@ -78,7 +78,7 @@ public class RaftMachineBuilder
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
     private CommitListener commitListener = commitIndex -> {};
-    private InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
+    private InFlightCache inFlightCache = new ConsecutiveInFlightCache();
 
     public RaftMachineBuilder( MemberId member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
@@ -96,10 +96,10 @@ public class RaftMachineBuilder
         membershipManager.setRecoverFromIndexSupplier( () -> 0 );
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, shippingClock, member, membershipManager,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightCache );
         RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, inFlightMap, false, monitors, clock );
+                membershipManager, logShipping, inFlightCache, false, monitors, clock );
         inbound.registerHandler( ( incomingMessage ) ->
         {
             try
@@ -161,9 +161,9 @@ public class RaftMachineBuilder
         return this;
     }
 
-    public RaftMachineBuilder inFlightMap( InFlightMap<RaftLogEntry> inFlightMap )
+    public RaftMachineBuilder inFlightCache( InFlightCache inFlightCache )
     {
-        this.inFlightMap = inFlightMap;
+        this.inFlightCache = inFlightCache;
         return this;
     }
 
