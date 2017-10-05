@@ -43,6 +43,10 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 {
     private final RelationshipGroupRecord groupRecord;
     private final Consumer<StoreNodeRelationshipCursor> instanceCache;
+    private final RecordCursors cursors;
+
+    // Reset all this state on init()
+    // --------
     private boolean isDense;
     private long relationshipId;
     private long fromNodeId;
@@ -50,7 +54,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private IntPredicate allowedTypes;
     private int groupChainIndex;
     private boolean end;
-    private final RecordCursors cursors;
+    // --------
 
     public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
             RelationshipGroupRecord groupRecord,
@@ -75,6 +79,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         this.fromNodeId = fromNodeId;
         this.direction = direction;
         this.allowedTypes = allowedTypes;
+        this.groupChainIndex = 0;
         this.end = false;
 
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )

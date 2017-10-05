@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher
 
-import java.io.{PrintStream, PrintWriter, StringWriter}
+import java.io.{PrintWriter, StringWriter}
 
 import org.neo4j.graphdb.{NotFoundException, TransactionFailureException}
-import org.neo4j.io.NullOutputStream
 
 import scala.language.reflectiveCalls
 
@@ -35,7 +34,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
-      new MyThread(() => {
+      new MyThread(1, () => {
         execute(s"MATCH (root) WHERE ID(root) = 0 DELETE root").toList
       })
     }.toList
@@ -59,7 +58,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
-      new MyThread(() => {
+      new MyThread(1, () => {
         execute(s"MATCH ()-[r:FRIEND]->() WHERE ID(r) = 0 DELETE r").toList
       })
     }.toList
@@ -82,11 +81,11 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     }
     val concurrency = 30
     val threads: List[MyThread] = (0 until concurrency).map { ignored =>
-      new MyThread(() => {
+      new MyThread(1, () => {
         execute(s"MATCH ()-[r]->() WITH r DELETE r").toList
       })
     }.toList ++ (0 until concurrency).map { ignored =>
-      new MyThread(() => {
+      new MyThread(1, () => {
         execute(s"MATCH (p1), (p2) WHERE id(p1) < id(p2) CREATE (p2)-[:T]->(p1)").toList
       })
     }.toList
@@ -116,7 +115,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     }
 
     val threads: List[MyThread] = ids.map { id =>
-      new MyThread(() => {
+      new MyThread(1, () => {
         execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
       })
     }
@@ -134,58 +133,56 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
   }
 
   test("detach delete should be atomic") {
-    val originalErr = System.err
-    System.setErr(new PrintStream(NullOutputStream.NULL_OUTPUT_STREAM)) // let's not spam!
+    val NUM_NODES = 13
+    val NUM_EXECUTIONS = 10
 
-    try {
-      val nodes = 10
+    val ids = {
       val ids = graph.inTx {
-        (0 until nodes).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
+        (0 until NUM_NODES).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
       }
+      new scala.util.Random(41).shuffle(ids)
+    }
 
-      graph.inTx {
-        ids.foreach { id =>
-          execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:person_name {val:'Bob Smith'}) CREATE (a)-[r:name]->(b)").toList
-        }
+    graph.inTx {
+      ids.foreach { id =>
+        execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:person_name {val:'Bob Smith'}) CREATE (a)-[r:name]->(b)").toList
       }
+    }
 
-      val threads: List[MyThread] = ids.map { id =>
-        new MyThread(() => {
-          execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
-        })
-      } ++ ids.map { id =>
-        new MyThread(() => {
-          try {
-            execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id CREATE (root)-[:name]->(b)").toList
-          } catch {
-            case _: NotFoundException => // ignore if we cannot create the relationship if b has been deleted
-            case _: CypherExecutionException => // ignore if we cannot create the relationship if b has been deleted
-          }
-        }, ignoreException = {
-          // let's ignore the commit failures if they are caused by the above exceptions
-          case ex: TransactionFailureException =>
-            val cause: Throwable = ex.getCause
-            cause.isInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException] &&
-              cause.getMessage == "Transaction rolled back even if marked as successful"
-          case ex: CypherExecutionException =>
-            ex.getCause.isInstanceOf[org.neo4j.kernel.api.exceptions.EntityNotFoundException] &&
-            ex.getCause.getMessage.startsWith("Unable to load NODE with id")
-          case _ => false
-        })
-      }
+    val threads: List[MyThread] = ids.map { id =>
+      new MyThread(NUM_EXECUTIONS, () => {
+        execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
+      })
+    } ++ ids.map { id =>
+      new MyThread(NUM_EXECUTIONS, () => {
+          execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id CREATE (root)-[:name]->(b)").toList
+      }, ignoreRollbackAndNodeNotFound)
+    }
 
-      threads.foreach(_.start())
-      threads.foreach(_.join())
+    threads.foreach(_.start())
+    threads.foreach(_.join())
 
-      val errors = threads.collect {
-        case t if t.exception != null => t.exception
-      }
+    val errors = threads.collect {
+      case t if t.exception != null => t.exception
+    }
 
-      withClue(prettyPrintErrors(errors)) {
-        errors shouldBe empty
-      }
-    } finally System.setErr(originalErr)
+    withClue(prettyPrintErrors(errors)) {
+      errors shouldBe empty
+    }
   }
+
+  val ignoreRollbackAndNodeNotFound: Throwable => Boolean = {
+      // let's ignore the commit failures if they are caused by the above exceptions
+      case ex: TransactionFailureException =>
+        val cause: Throwable = ex.getCause
+        cause.isInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException] &&
+          cause.getMessage == "Transaction rolled back even if marked as successful"
+      case ex: CypherExecutionException =>
+        ex.getCause.isInstanceOf[org.neo4j.kernel.api.exceptions.EntityNotFoundException] &&
+          ex.getCause.getMessage.startsWith("Unable to load NODE with id")
+      case ex: NotFoundException => true
+      case _ => false
+    }
 
   private def prettyPrintErrors(errors: Seq[Throwable]): String = {
     val stringWriter = new StringWriter()
@@ -194,16 +191,20 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     stringWriter.toString
   }
 
-  private class MyThread(f: () => Unit, ignoreException: (Throwable) => Boolean = _ => false) extends Thread {
-    private var ex: Throwable = null
+  private class MyThread(numExecutions:Int, f: () => Unit, ignoreException: (Throwable) => Boolean = _ => false) extends Thread {
+    private var ex: Throwable = _
 
     def exception: Throwable = ex
 
     override def run() {
-      try {
-        graph.inTx { f() }
-      } catch {
-        case ex: Throwable if !ignoreException(ex) => this.ex = ex
+      for ( i <- 0 until numExecutions ) {
+        try {
+          graph.inTx { f() }
+        } catch {
+          case ex: Throwable =>
+            if (!ignoreException(ex))
+              this.ex = ex
+        }
       }
     }
   }
