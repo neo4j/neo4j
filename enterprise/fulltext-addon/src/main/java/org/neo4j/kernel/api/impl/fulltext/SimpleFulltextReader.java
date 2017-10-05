@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
-import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_ENTITY_ID;
 

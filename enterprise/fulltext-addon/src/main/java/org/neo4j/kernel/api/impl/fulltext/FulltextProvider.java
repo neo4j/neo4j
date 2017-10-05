@@ -20,17 +20,23 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -41,10 +47,6 @@ public class FulltextProvider implements AutoCloseable
 {
     public static final String LUCENE_FULLTEXT_ADDON_PREFIX = "__lucene__fulltext__addon__";
     public static final String FIELD_ENTITY_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "internal__id__";
-    public static final String FIELD_METADATA_DOC = LUCENE_FULLTEXT_ADDON_PREFIX + "metadata__doc__field__";
-    public static final String FIELD_CONFIG_ANALYZER = LUCENE_FULLTEXT_ADDON_PREFIX + "analyzer";
-    public static final String FIELD_CONFIG_PROPERTIES = LUCENE_FULLTEXT_ADDON_PREFIX + "properties";
-    public static final String FIELD_LAST_COMMITTED_TX_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "tx__id";
 
     private final GraphDatabaseService db;
     private final Log log;
@@ -52,11 +54,10 @@ public class FulltextProvider implements AutoCloseable
     private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
     private final Set<String> nodeProperties;
     private final Set<String> relationshipProperties;
-    private final Set<WritableFulltext> writableNodeIndices;
-    private final Set<WritableFulltext> writableRelationshipIndices;
-    private final Map<String,LuceneFulltext> nodeIndices;
-    private final Map<String,LuceneFulltext> relationshipIndices;
+    private final Map<String,WritableFulltext> writableNodeIndices;
+    private final Map<String,WritableFulltext> writableRelationshipIndices;
     private final FulltextUpdateApplier applier;
+    private final ReadWriteLock configurationLock;
 
     /**
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
@@ -76,36 +77,15 @@ public class FulltextProvider implements AutoCloseable
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
-        nodeProperties = new HashSet<>();
-        relationshipProperties = new HashSet<>();
-        writableNodeIndices = new HashSet<>();
-        writableRelationshipIndices = new HashSet<>();
-        nodeIndices = new HashMap<>();
-        relationshipIndices = new HashMap<>();
+        nodeProperties = ConcurrentHashMap.newKeySet();
+        relationshipProperties = ConcurrentHashMap.newKeySet();
+        writableNodeIndices = new ConcurrentHashMap<>();
+        writableRelationshipIndices = new ConcurrentHashMap<>();
+        configurationLock = new ReentrantReadWriteLock( true );
     }
 
     public void init() throws IOException
     {
-        for ( WritableFulltext index : writableNodeIndices )
-        {
-            index.open();
-            if ( !matchesConfiguration( index ) )
-            {
-                index.drop();
-                index.open();
-                applier.populateNodes( index, db );
-            }
-        }
-        for ( WritableFulltext index : writableRelationshipIndices )
-        {
-            index.open();
-            if ( !matchesConfiguration( index ) )
-            {
-                index.drop();
-                index.open();
-                applier.populateRelationships( index, db );
-            }
-        }
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }
 
@@ -115,11 +95,12 @@ public class FulltextProvider implements AutoCloseable
         FulltextIndexConfiguration currentConfig =
                 new FulltextIndexConfiguration( index.getAnalyzerName(), index.getProperties(), txId );
 
+        FulltextIndexConfiguration storedConfig;
         try ( ReadOnlyFulltext indexReader = index.getIndexReader() )
         {
-            FulltextIndexConfiguration storedConfig = indexReader.getConfigurationDocument();
-            return storedConfig != null && storedConfig.equals( currentConfig );
+            storedConfig = indexReader.getConfigurationDocument();
         }
+        return storedConfig == null && index.getProperties().isEmpty() || storedConfig != null && storedConfig.equals( currentConfig );
     }
 
     /**
@@ -129,9 +110,20 @@ public class FulltextProvider implements AutoCloseable
      * needs to recover after an unclean shut-down, or a configuration change.
      * @throws IOException If it was not possible to wait for the population to finish, for some reason.
      */
-    public void awaitPopulation() throws Exception
+    public void awaitPopulation()
     {
-        applier.writeBarrier().awaitCompletion();
+        try
+        {
+            applier.writeBarrier().awaitCompletion();
+        }
+        catch ( ExecutionException e )
+        {
+            throw new AssertionError( "The writeBarrier operation should never throw an exception", e );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     /**
@@ -142,7 +134,7 @@ public class FulltextProvider implements AutoCloseable
     {
         db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
         applier.stop();
-        nodeIndices.values().forEach( luceneFulltextIndex ->
+        Consumer<WritableFulltext> fulltextCloser = luceneFulltextIndex ->
         {
             try
             {
@@ -151,35 +143,52 @@ public class FulltextProvider implements AutoCloseable
             }
             catch ( IOException e )
             {
-                log.error( "Unable to close fulltext node index.", e );
+                log.error( "Unable to close fulltext index.", e );
             }
-        } );
-        relationshipIndices.values().forEach( luceneFulltextIndex ->
-        {
-            try
-            {
-                luceneFulltextIndex.close();
-            }
-            catch ( IOException e )
-            {
-                log.error( "Unable to close fulltext relationship index.", e );
-            }
-        } );
+        };
+        writableNodeIndices.values().forEach( fulltextCloser );
+        writableRelationshipIndices.values().forEach( fulltextCloser );
     }
 
     void register( LuceneFulltext fulltextIndex ) throws IOException
     {
-        if ( fulltextIndex.getType() == FulltextIndexType.NODES )
+        configurationLock.writeLock().lock();
+        try
         {
-            nodeIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
-            writableNodeIndices.add( new WritableFulltext( fulltextIndex ) );
-            nodeProperties.addAll( fulltextIndex.getProperties() );
+            WritableFulltext writableFulltext = new WritableFulltext( fulltextIndex );
+            writableFulltext.open();
+            if ( fulltextIndex.getType() == FulltextIndexType.NODES )
+            {
+                if ( !matchesConfiguration( writableFulltext ) )
+                {
+                    writableFulltext.drop();
+                    writableFulltext.open();
+                    if ( !writableFulltext.getProperties().isEmpty() )
+                    {
+                        applier.populateNodes( writableFulltext, db );
+                    }
+                }
+                writableNodeIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
+                nodeProperties.addAll( fulltextIndex.getProperties() );
+            }
+            else
+            {
+                if ( !matchesConfiguration( writableFulltext ) )
+                {
+                    writableFulltext.drop();
+                    writableFulltext.open();
+                    if ( !writableFulltext.getProperties().isEmpty() )
+                    {
+                        applier.populateRelationships( writableFulltext, db );
+                    }
+                }
+                writableRelationshipIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
+                relationshipProperties.addAll( fulltextIndex.getProperties() );
+            }
         }
-        else
+        finally
         {
-            relationshipIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
-            writableRelationshipIndices.add( new WritableFulltext( fulltextIndex ) );
-            relationshipProperties.addAll( fulltextIndex.getProperties() );
+            configurationLock.writeLock().unlock();
         }
     }
 
@@ -193,14 +202,14 @@ public class FulltextProvider implements AutoCloseable
         return relationshipProperties.toArray( new String[0] );
     }
 
-    Set<WritableFulltext> writableNodeIndices()
+    Collection<WritableFulltext> writableNodeIndices()
     {
-        return Collections.unmodifiableSet( writableNodeIndices );
+        return Collections.unmodifiableCollection( writableNodeIndices.values() );
     }
 
-    Set<WritableFulltext> writableRelationshipIndices()
+    Collection<WritableFulltext> writableRelationshipIndices()
     {
-        return Collections.unmodifiableSet( writableRelationshipIndices );
+        return Collections.unmodifiableCollection( writableRelationshipIndices.values() );
     }
 
     /**
@@ -215,34 +224,72 @@ public class FulltextProvider implements AutoCloseable
     {
         if ( type == FulltextIndexType.NODES )
         {
-            return nodeIndices.get( identifier ).getIndexReader();
+            return writableNodeIndices.get( identifier ).getIndexReader();
         }
         else
         {
-            return relationshipIndices.get( identifier ).getIndexReader();
+            return writableRelationshipIndices.get( identifier ).getIndexReader();
         }
     }
 
     public Set<String> getProperties( String identifier, FulltextIndexType type )
     {
-        return applyToMatchingIndex( identifier, type, LuceneFulltext::getProperties );
+        return applyToMatchingIndex( identifier, type, WritableFulltext::getProperties );
     }
 
-    private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<LuceneFulltext,E> function )
+    private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<WritableFulltext,E> function )
     {
         if ( type == FulltextIndexType.NODES )
         {
-            return function.apply( nodeIndices.get( identifier ) );
+            return function.apply( writableNodeIndices.get( identifier ) );
         }
         else
         {
-            return function.apply( relationshipIndices.get( identifier ) );
+            return function.apply( writableRelationshipIndices.get( identifier ) );
         }
     }
 
     public InternalIndexState getState( String identifier, FulltextIndexType type )
     {
-        return applyToMatchingIndex( identifier, type, LuceneFulltext::getState );
+        return applyToMatchingIndex( identifier, type, WritableFulltext::getState );
+    }
+
+    void drop( String identifier, FulltextIndexType type ) throws IOException
+    {
+        configurationLock.writeLock().lock();
+        try
+        {
+            // Wait for the queue of updates to drain, before deleting an index.
+            awaitPopulation();
+            if ( type == FulltextIndexType.NODES )
+            {
+                writableNodeIndices.remove( identifier ).drop();
+            }
+            else
+            {
+                writableRelationshipIndices.remove( identifier ).drop();
+            }
+            rebuildProperties();
+        }
+        finally
+        {
+            configurationLock.writeLock().unlock();
+        }
+    }
+
+    private void rebuildProperties()
+    {
+        nodeProperties.clear();
+        relationshipProperties.clear();
+        writableNodeIndices.forEach( ( s, index ) -> nodeProperties.addAll( index.getProperties() ) );
+        writableRelationshipIndices.forEach( ( s, index ) -> relationshipProperties.addAll( index.getProperties() ) );
+    }
+
+    Lock readLockIndexConfiguration()
+    {
+        Lock lock = configurationLock.readLock();
+        lock.lock();
+        return lock;
     }
 
     /**
