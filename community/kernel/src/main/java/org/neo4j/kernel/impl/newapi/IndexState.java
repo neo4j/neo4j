@@ -29,4 +29,9 @@ public interface IndexState
     {
         void node( long reference, int[] keys, Value[] values );
     }
+
+    interface NodeLabel extends IndexState
+    {
+
+    }
 }

@@ -21,25 +21,28 @@ package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.impl.newapi.CursorProgressor;
-import org.neo4j.kernel.impl.newapi.IndexState;
+import org.neo4j.kernel.impl.newapi.IndexCursorProgressor;
 
-class NodeIdProgressor implements CursorProgressor<IndexState.NodeValue>
+class NodeValueIndexProgressor implements IndexCursorProgressor
 {
     private final PrimitiveLongIterator ids;
+    private final NodeValueCursor target;
 
-    NodeIdProgressor( PrimitiveLongIterator ids )
+    NodeValueIndexProgressor( PrimitiveLongIterator ids, NodeValueCursor target )
     {
         this.ids = ids;
+        this.target = target;
     }
 
     @Override
-    public boolean next( IndexState.NodeValue target )
+    public boolean next()
     {
-        if ( ids.hasNext() )
+        while ( ids.hasNext() )
         {
-            target.node( ids.next(), null, null );
-            return true;
+            if ( target.node( ids.next(), null ) )
+            {
+                return true;
+            }
         }
         return false;
     }

@@ -19,75 +19,37 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.store.PropertyUtil;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public class Read implements org.neo4j.internal.kernel.api.Read
+abstract class Read implements org.neo4j.internal.kernel.api.Read
 {
     static final long FILTER_MASK = 0x2000_0000_0000_0000L;
-    private final RelationshipGroupStore groupStore;
-    private final PropertyStore propertyStore;
-    private NodeStore nodeStore;
-    private RelationshipStore relationshipStore;
-    private final StorageStatement statement;
-    private final StoreReadLayer read;
-
-    public Read( RecordStorageEngine engine )
-    {
-        read = engine.storeReadLayer();
-        statement = read.newStatement();
-        NeoStores stores = engine.testAccessNeoStores();
-        this.nodeStore = stores.getNodeStore();
-        this.relationshipStore = stores.getRelationshipStore();
-        this.groupStore = stores.getRelationshipGroupStore();
-        this.propertyStore = stores.getPropertyStore();
-    }
 
     @Override
-    public void nodeIndexSeek(
+    public final void nodeIndexSeek(
             org.neo4j.internal.kernel.api.IndexReference index,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
             IndexQuery... query )
     {
-        CursorProgressor.Cursor<IndexState.NodeValue> target = (NodeValueIndexCursor) cursor;
+        IndexCursorProgressor.NodeValueCursor target = (NodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( (IndexReference) index );
         if ( !reader.hasFullNumberPrecision( query ) )
         {
@@ -126,89 +88,77 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     }
 
     @Override
-    public void nodeIndexScan(
+    public final void nodeIndexScan(
             org.neo4j.internal.kernel.api.IndexReference index,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor )
     {
-        indexReader( (IndexReference) index ).scan( (NodeValueIndexCursor)cursor );
+        indexReader( (IndexReference) index ).scan( (NodeValueIndexCursor) cursor );
     }
 
-    private IndexReader indexReader( IndexReference index )
-    {
-        try
-        {
-            return statement.getIndexReader( index.isUnique()
-                    ? IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() )
-                    : IndexDescriptorFactory.forLabel( index.label(), index.properties() ) );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new IllegalStateException( e );
-        }
-    }
+    abstract IndexReader indexReader( IndexReference index );
 
     @Override
-    public void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
+    public final void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public Scan<org.neo4j.internal.kernel.api.NodeLabelIndexCursor> nodeLabelScan( int label )
+    public final Scan<org.neo4j.internal.kernel.api.NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void allNodesScan( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public final void allNodesScan( org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
         ((NodeCursor) cursor).scan();
     }
 
     @Override
-    public Scan<org.neo4j.internal.kernel.api.NodeCursor> allNodesScan()
+    public final Scan<org.neo4j.internal.kernel.api.NodeCursor> allNodesScan()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void singleNode( long reference, org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public final void singleNode( long reference, org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
         ((NodeCursor) cursor).single( reference );
     }
 
     @Override
-    public void singleRelationship( long reference, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
+    public final void singleRelationship( long reference, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
         ((RelationshipScanCursor) cursor).single( reference );
     }
 
     @Override
-    public void allRelationshipsScan( org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
+    public final void allRelationshipsScan( org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
         ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/ );
     }
 
     @Override
-    public Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> allRelationshipsScan()
+    public final Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> allRelationshipsScan()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void relationshipLabelScan( int label, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
+    public final void relationshipLabelScan( int label, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
         ((RelationshipScanCursor) cursor).scan( label );
     }
 
     @Override
-    public Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> relationshipLabelScan( int label )
+    public final Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> relationshipLabelScan( int label )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void relationshipGroups(
+    public final void relationshipGroups(
             long nodeReference, long reference, org.neo4j.internal.kernel.api.RelationshipGroupCursor cursor )
     {
         if ( reference == NO_ID ) // there are no relationships for this node
@@ -226,7 +176,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     }
 
     @Override
-    public void relationships(
+    public final void relationships(
             long nodeReference, long reference, org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
         /* TODO: There are actually five (5!) different ways a relationship traversal cursor can be initialized:
@@ -275,141 +225,69 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     }
 
     @Override
-    public void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public final void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ((PropertyCursor) cursor).init( reference );
     }
 
     @Override
-    public void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public final void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ((PropertyCursor) cursor).init( reference );
     }
 
     @Override
-    public void futureNodeReferenceRead( long reference )
+    public final void futureNodeReferenceRead( long reference )
     {
     }
 
     @Override
-    public void futureRelationshipsReferenceRead( long reference )
+    public final void futureRelationshipsReferenceRead( long reference )
     {
     }
 
     @Override
-    public void futureNodePropertyReferenceRead( long reference )
+    public final void futureNodePropertyReferenceRead( long reference )
     {
     }
 
     @Override
-    public void futureRelationshipPropertyReferenceRead( long reference )
+    public final void futureRelationshipPropertyReferenceRead( long reference )
     {
     }
 
     @Override
-    public IndexReference index( int label, int... properties )
-    {
-        IndexDescriptor indexDescriptor = read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
-        return new IndexReference( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE, label, properties );
-    }
+    public abstract IndexReference index( int label, int... properties );
 
-    @Override
-    public int nodeLabel( String name )
-    {
-        return read.labelGetForName( name );
-    }
+    abstract PageCursor nodePage( long reference );
 
-    @Override
-    public int propertyKey( String name )
-    {
-        return read.propertyKeyGetForName( name );
-    }
+    abstract PageCursor relationshipPage( long reference );
 
-    PageCursor nodePage( long reference )
-    {
-        return nodeStore.openPageCursor( reference );
-    }
+    abstract PageCursor groupPage( long reference );
 
-    PageCursor relationshipPage( long reference )
-    {
-        return relationshipStore.openPageCursor( reference );
-    }
+    abstract PageCursor propertyPage( long reference );
 
-    PageCursor groupPage( long reference )
-    {
-        return groupStore.openPageCursor( reference );
-    }
+    abstract PageCursor stringPage( long reference );
 
-    PageCursor propertyPage( long reference )
-    {
-        return propertyStore.openPageCursor( reference );
-    }
+    abstract PageCursor arrayPage( long reference );
 
-    PageCursor stringPage( long reference )
-    {
-        return propertyStore.getStringStore().openPageCursor( reference );
-    }
+    abstract RecordCursor<DynamicRecord> labelCursor();
 
-    PageCursor arrayPage( long reference )
-    {
-        return propertyStore.getArrayStore().openPageCursor( reference );
-    }
+    abstract void node( NodeRecord record, long reference, PageCursor pageCursor );
 
-    RecordCursor<DynamicRecord> labelCursor()
-    {
-        return newCursor( nodeStore.getDynamicLabelStore() );
-    }
+    abstract void relationship( RelationshipRecord record, long reference, PageCursor pageCursor );
 
-    private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store )
-    {
-        return store.newRecordCursor( store.newRecord() ).acquire( store.getNumberOfReservedLowIds(), NORMAL );
-    }
+    abstract void property( PropertyRecord record, long reference, PageCursor pageCursor );
 
-    void node( NodeRecord record, long reference, PageCursor pageCursor )
-    {
-        nodeStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
-    }
+    abstract void group( RelationshipGroupRecord record, long reference, PageCursor page );
 
-    void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
-    {
-        relationshipStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
-    }
+    abstract long nodeHighMark();
 
-    void property( PropertyRecord record, long reference, PageCursor pageCursor )
-    {
-        propertyStore.getRecordByCursor( reference, record, RecordLoad.NORMAL, pageCursor );
-    }
+    abstract long relationshipHighMark();
 
-    void group( RelationshipGroupRecord record, long reference, PageCursor page )
-    {
-        groupStore.getRecordByCursor( reference, record, RecordLoad.NORMAL, page );
-    }
+    abstract TextValue string( PropertyCursor cursor, long reference, PageCursor page );
 
-    long nodeHighMark()
-    {
-        return nodeStore.getHighestPossibleIdInUse();
-    }
-
-    long relationshipHighMark()
-    {
-        return relationshipStore.getHighestPossibleIdInUse();
-    }
-
-    TextValue string( PropertyCursor cursor, long reference, PageCursor page )
-    {
-        ByteBuffer buffer =
-                cursor.buffer = readDynamic( propertyStore.getStringStore(), reference, cursor.buffer, page );
-        buffer.flip();
-        return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
-    }
-
-    ArrayValue array( PropertyCursor cursor, long reference, PageCursor page )
-    {
-        ByteBuffer buffer =
-                cursor.buffer = readDynamic( propertyStore.getArrayStore(), reference, cursor.buffer, page );
-        buffer.flip();
-        return PropertyUtil.readArrayFromBuffer( buffer );
-    }
+    abstract ArrayValue array( PropertyCursor cursor, long reference, PageCursor page );
 
     /**
      * Inverted references are used to signal that the reference is of a special type.
@@ -446,45 +324,5 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     static boolean needsFiltering( long reference )
     {
         return (reference & FILTER_MASK) != 0L;
-    }
-
-    private static ByteBuffer readDynamic(
-            AbstractDynamicStore store, long reference, ByteBuffer buffer,
-            PageCursor page )
-    {
-        if ( buffer == null )
-        {
-            buffer = ByteBuffer.allocate( 512 );
-        }
-        else
-        {
-            buffer.clear();
-        }
-        DynamicRecord record = store.newRecord();
-        do
-        {
-            store.getRecordByCursor( reference, record, RecordLoad.CHECK, page );
-            reference = record.getNextBlock();
-            byte[] data = record.getData();
-            if ( buffer.remaining() < data.length )
-            {
-                buffer = grow( buffer, data.length );
-            }
-            buffer.put( data, 0, data.length );
-        }
-        while ( reference != NO_ID );
-        return buffer;
-    }
-
-    private static ByteBuffer grow( ByteBuffer buffer, int required )
-    {
-        buffer.flip();
-        int capacity = buffer.capacity();
-        do
-        {
-            capacity *= 2;
-        }
-        while ( capacity - buffer.limit() < required );
-        return ByteBuffer.allocate( capacity ).order( ByteOrder.LITTLE_ENDIAN ).put( buffer );
     }
 }

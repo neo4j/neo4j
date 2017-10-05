@@ -25,16 +25,17 @@ import java.util.Comparator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
-class IndexCursorFilter implements CursorProgressor.Cursor<IndexState.NodeValue>
+class IndexCursorFilter implements IndexCursorProgressor.NodeValueCursor
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
-    private final CursorProgressor.Cursor<IndexState.NodeValue> target;
+    private final IndexCursorProgressor.NodeValueCursor target;
     private final NodeCursor node;
     private final PropertyCursor property;
     private final IndexQuery[] filters;
+    private int[] keys;
 
     IndexCursorFilter(
-            CursorProgressor.Cursor<IndexState.NodeValue> target,
+            IndexCursorProgressor.NodeValueCursor target,
             NodeCursor node, PropertyCursor property, IndexQuery... filters )
     {
         this.target = target;
@@ -45,90 +46,29 @@ class IndexCursorFilter implements CursorProgressor.Cursor<IndexState.NodeValue>
     }
 
     @Override
-    public void empty()
+    public void initialize( IndexCursorProgressor progressor, int[] keys )
     {
-        node.close();
-        property.close();
-        target.empty();
+        this.keys = keys;
+        target.initialize( progressor, keys );
     }
 
     @Override
-    public void initialize( CursorProgressor<IndexState.NodeValue> progressor )
+    public void done()
     {
-        target.initialize( new Progressor( progressor, node, property, filters ) );
+        node.close();
+        property.close();
+        target.done();
     }
 
-    private static class Progressor implements CursorProgressor<IndexState.NodeValue>, IndexState.NodeValue
+    @Override
+    public boolean node( long reference, Value[] values )
     {
-        private final CursorProgressor<IndexState.NodeValue> progressor;
-        private final NodeCursor node;
-        private final PropertyCursor property;
-        private final IndexQuery[] filters;
-        private long reference;
-        private int[] keys;
-        private Value[] values;
-
-        Progressor(
-                CursorProgressor<IndexState.NodeValue> progressor,
-                NodeCursor node, PropertyCursor property, IndexQuery[] filters )
+        if ( keys != null && values != null )
         {
-            this.progressor = progressor;
-            this.node = node;
-            this.property = property;
-            this.filters = filters;
+            return filterByIndexValues( reference, values );
         }
-
-        @Override
-        public boolean next( IndexState.NodeValue nodeValue )
+        else
         {
-            if ( !progressor.next( this ) )
-            {
-                return false;
-            }
-            PROPERTIES:
-            while ( property.next() )
-            {
-                for ( IndexQuery filter : filters )
-                {
-                    if ( filter.propertyKeyId() == property.propertyKey() )
-                    {
-                        if ( !filter.acceptsValueAt( property ) )
-                        {
-                            // this will reset the property cursor to the properties of the next node
-                            if ( !progressor.next( this ) )
-                            {
-                                return false;
-                            }
-                            // so all we have to do is continue in order to inspect the next one
-                            continue PROPERTIES;
-                        }
-                    }
-                    else if ( property.propertyKey() < filter.propertyKeyId() )
-                    {
-                        continue PROPERTIES;
-                    }
-                }
-            }
-            // when we get here, we know that we are on a node where all filters are accepted
-            nodeValue.node( reference, keys, values );
-            return true;
-        }
-
-        @Override
-        public void close()
-        {
-            node.close();
-            property.close();
-            progressor.close();
-        }
-
-        @Override
-        public void node( long reference, int[] keys, Value[] values )
-        {
-            // it's a bit iffy that we have to put these things into fields, but ok enough.
-            this.reference = reference;
-            this.keys = keys;
-            this.values = values;
             node.single( reference );
             if ( node.next() )
             {
@@ -137,12 +77,61 @@ class IndexCursorFilter implements CursorProgressor.Cursor<IndexState.NodeValue>
             else
             {
                 property.clear();
+                return false;
+            }
+            return filterByCursors( reference, values );
+        }
+    }
+
+    private boolean filterByIndexValues( long reference, Value[] values )
+    {
+        FILTERS:
+        for ( IndexQuery filter : filters )
+        {
+            for ( int i = 0; i < keys.length; i++ )
+            {
+                if ( keys[i] == filter.propertyKeyId() )
+                {
+                    if ( !filter.acceptsValue( values[i] ) )
+                    {
+                        return false;
+                    }
+                    continue FILTERS;
+                }
+            }
+            assert false : "Cannot satisfy filter " + filter + " - no corresponding key!";
+            return false;
+        }
+        return target.node( reference, values );
+    }
+
+    private boolean filterByCursors( long reference, Value[] values )
+    {
+        // note that this way of checking if all filters are matched relies on the node not having duplicate properties
+        int accepted = 0;
+        PROPERTIES:
+        while ( property.next() )
+        {
+            for ( IndexQuery filter : filters )
+            {
+                if ( filter.propertyKeyId() == property.propertyKey() )
+                {
+                    if ( !filter.acceptsValueAt( property ) )
+                    {
+                        return false;
+                    }
+                    accepted++;
+                }
+                else if ( property.propertyKey() < filter.propertyKeyId() )
+                {
+                    continue PROPERTIES;
+                }
             }
         }
-
-        @Override
-        public void done()
+        if ( accepted < filters.length )
         {
+            return false; // not all filters were matched
         }
+        return target.node( reference, values );
     }
 }

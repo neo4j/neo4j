@@ -25,13 +25,13 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class NodeValueIndexCursor implements org.neo4j.internal.kernel.api.NodeValueIndexCursor,
-        CursorProgressor.Cursor<IndexState.NodeValue>, IndexState.NodeValue
+        IndexCursorProgressor.NodeValueCursor
 {
     private final Read read;
     private long node;
     private int[] keys;
     private Value[] values;
-    private CursorProgressor<IndexState.NodeValue> progressor;
+    private IndexCursorProgressor progressor;
 
     NodeValueIndexCursor( Read read )
     {
@@ -39,29 +39,24 @@ class NodeValueIndexCursor implements org.neo4j.internal.kernel.api.NodeValueInd
     }
 
     @Override
-    public void empty()
+    public void initialize( IndexCursorProgressor progressor, int[] keys )
     {
-        close();
+        this.progressor = progressor;
+        this.keys = keys;
     }
 
     @Override
-    public void initialize( CursorProgressor<IndexState.NodeValue> progressor )
+    public boolean node( long reference, Value[] values )
     {
-        this.progressor = progressor;
+        this.node = reference;
+        this.values = values;
+        return true;
     }
 
     @Override
     public void done()
     {
         close();
-    }
-
-    @Override
-    public void node( long reference, int[] keys, Value[] values )
-    {
-        this.node = reference;
-        this.keys = keys;
-        this.values = values;
     }
 
     @Override
@@ -97,7 +92,7 @@ class NodeValueIndexCursor implements org.neo4j.internal.kernel.api.NodeValueInd
     @Override
     public boolean next()
     {
-        return progressor != null && progressor.next( this );
+        return progressor != null && progressor.next();
     }
 
     @Override

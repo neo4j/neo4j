@@ -57,7 +57,7 @@ class TempKernel implements KernelAPI
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    private static class Transaction extends Read implements org.neo4j.internal.kernel.api.Transaction
+    private static class Transaction extends Store implements org.neo4j.internal.kernel.api.Transaction
     {
         Transaction( RecordStorageEngine engine )
         {

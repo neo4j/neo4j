@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public interface CursorProgressor<Sink>
+import org.neo4j.values.storable.Value;
+
+public interface IndexCursorProgressor
 {
-    boolean next( Sink sink );
+    boolean next();
 
     void close();
 
-    interface Cursor<Sink>
+    interface NodeValueCursor
     {
-        void empty();
+        void initialize( IndexCursorProgressor progressor, int[] keys );
 
-        void initialize( CursorProgressor<Sink> progressor );
+        void done();
+
+        boolean node( long reference, Value[] values );
     }
 }

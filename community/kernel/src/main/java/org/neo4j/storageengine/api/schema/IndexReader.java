@@ -24,8 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.impl.newapi.CursorProgressor;
-import org.neo4j.kernel.impl.newapi.IndexState;
+import org.neo4j.kernel.impl.newapi.IndexCursorProgressor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -94,25 +93,23 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void query(
-                CursorProgressor.Cursor<IndexState.NodeValue> cursor,
-                IndexQuery... query )
+        public void query( IndexCursorProgressor.NodeValueCursor cursor, IndexQuery... query )
         {
-            cursor.empty();
+            cursor.done();
         }
 
         @Override
-        public void scan( CursorProgressor.Cursor<IndexState.NodeValue> cursor )
+        public void scan( IndexCursorProgressor.NodeValueCursor cursor )
         {
-            cursor.empty();
+            cursor.done();
         }
     };
 
-    default void query( CursorProgressor.Cursor<IndexState.NodeValue> cursor, IndexQuery... query )
+    default void query( IndexCursorProgressor.NodeValueCursor cursor, IndexQuery... query )
     {
         try
         {
-            cursor.initialize( new NodeIdProgressor( query( query ) ) );
+            cursor.initialize( new NodeValueIndexProgressor( query( query ), cursor ), null );
         }
         catch ( IndexNotApplicableKernelException e )
         {
@@ -120,7 +117,7 @@ public interface IndexReader extends Resource
         }
     }
 
-    default void scan( CursorProgressor.Cursor<IndexState.NodeValue> cursor )
+    default void scan( IndexCursorProgressor.NodeValueCursor cursor )
     {
         try
         {
@@ -131,7 +128,7 @@ public interface IndexReader extends Resource
             // While we violate 1. here, we are at least "well intended", we don't actually care about what the key is.
             // 2. holds because compound indexes are only created through node keys.
             IndexQuery.ExistsPredicate scan = IndexQuery.exists( -1 );
-            cursor.initialize( new NodeIdProgressor( query( scan ) ) );
+            cursor.initialize( new NodeValueIndexProgressor( query( scan ), cursor ), null );
         }
         catch ( IndexNotApplicableKernelException e )
         {
