@@ -63,12 +63,17 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltex
 
 public class BloomIT
 {
-    private static final String NODES = "CALL db.fulltext.bloomFulltextNodes([%s])";
-    private static final String NODES_ADVANCED = "CALL db.fulltext.bloomFulltextNodes([%s], %b, %b)";
-    private static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([%s])";
-    private static final String RELS_ADVANCED = "CALL db.fulltext.bloomFulltextRelationships([%s], %b, %b)";
+    private static final String NODES = "CALL bloom.searchNodes([%s])";
+    private static final String NODES_ADVANCED = "CALL bloom.searchNodes([%s], %b, %b)";
+    private static final String RELS = "CALL bloom.searchRelationships([%s])";
+    private static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
     private static final String ENTITYID = "entityid";
-    private static final String KEYS = "CALL db.fulltext.bloomFulltextSetPropertyKeys([%s])";
+    private static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
+    private static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
+    private static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
+    private static final String GET_REL_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
+    private static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
+    private static final String STATUS = "CALL bloom.indexStatus";
 
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
@@ -108,7 +113,8 @@ public class BloomIT
     public void shouldPopulateAndQueryIndexes() throws Exception
     {
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\", \"relprop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"relprop\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"prop\", \"relprop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -136,7 +142,8 @@ public class BloomIT
     public void exactQueryShouldBeExact() throws Exception
     {
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"prop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -166,7 +173,8 @@ public class BloomIT
     public void matchAllQueryShouldMatchAll() throws Exception
     {
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"prop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -194,7 +202,7 @@ public class BloomIT
     {
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -220,7 +228,7 @@ public class BloomIT
     public void shouldPopulateIndexWithExistingDataOnIndexCreate() throws Exception
     {
         db = getDb();
-        db.execute( String.format( KEYS, "\"something\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"something\"" ) );
 
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -236,9 +244,9 @@ public class BloomIT
 
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
 
         result = db.execute( String.format( NODES, "\"Roskildevej\"") );
         assertTrue( result.hasNext() );
@@ -251,7 +259,7 @@ public class BloomIT
     {
 
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -262,7 +270,7 @@ public class BloomIT
         }
 
         // Verify it's indexed exactly once
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
         Result result = db.execute( String.format( NODES, "\"Jyllingevej\"") );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
@@ -271,7 +279,7 @@ public class BloomIT
         db.shutdown();
         db = getDb();
 
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
         // Verify it's STILL indexed exactly once
         result = db.execute( String.format( NODES, "\"Jyllingevej\"") );
         assertTrue( result.hasNext() );
@@ -284,7 +292,7 @@ public class BloomIT
     {
 
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -295,14 +303,14 @@ public class BloomIT
         }
 
         // Verify it's indexed exactly once
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
         Result result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
-        db.execute( String.format( KEYS, "" ) );
+        db.execute( String.format( SET_NODE_KEYS, "" ) );
 
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
         // Verify it's nowhere to be found now
         result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertFalse( result.hasNext() );
@@ -319,7 +327,7 @@ public class BloomIT
     {
 
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -331,7 +339,7 @@ public class BloomIT
 
         db.shutdown();
         db = getDb();
-        db.execute( String.format( KEYS, "\"not-prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"not-prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -342,10 +350,10 @@ public class BloomIT
 
         db.shutdown();
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
         // Verify that the node is no longer indexed
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
         Result result = db.execute( String.format( NODES, "\"Esplanaden\"") );
         assertFalse( result.hasNext() );
         result.close();
@@ -356,7 +364,7 @@ public class BloomIT
     {
 
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -368,7 +376,7 @@ public class BloomIT
 
         db.shutdown();
         db = getDb();
-        db.execute( String.format( KEYS, "\"not-prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"not-prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -379,10 +387,10 @@ public class BloomIT
 
         db.shutdown();
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
         // Verify that the node is no longer indexed
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
         Result result = db.execute( String.format( NODES, "\"Esplanaden\"") );
         assertFalse( result.hasNext() );
         result.close();
@@ -392,7 +400,7 @@ public class BloomIT
     public void updatesAreAvailableToConcurrentReadTransactions() throws Exception
     {
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -430,14 +438,14 @@ public class BloomIT
     {
         expectedException.expectMessage( "It is not possible to index property keys starting with __lucene__fulltext__addon__" );
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\", \"" + FulltextProvider.FIELD_ENTITY_ID + "\", \"hello\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"" + FulltextProvider.FIELD_ENTITY_ID + "\", \"hello\"" ) );
     }
 
     @Test
     public void shouldBeAbleToRunConsistencyCheck() throws Exception
     {
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -464,7 +472,7 @@ public class BloomIT
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, ENGLISH );
 
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "prop", "Hello and hello again." );
@@ -487,7 +495,7 @@ public class BloomIT
         db.shutdown();
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, SWEDISH );
         db = getDb();
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
 
         try ( Transaction ignore = db.beginTx() )
         {
@@ -508,7 +516,7 @@ public class BloomIT
 
         // Create a node while the index is enabled.
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "prop", "Hello and hello again." );
@@ -531,7 +539,7 @@ public class BloomIT
         db.shutdown();
         builder.setConfig( bloom_enabled, "true" );
         db = getDb();
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        db.execute( AWAIT_POPULATION ).close();
 
         // Now we should be able to find the node that was added while the index was disabled.
         try ( Transaction ignore = db.beginTx() )
@@ -552,7 +560,7 @@ public class BloomIT
     {
         db = getDb();
 
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         // Create a node while the index is enabled.
         try ( Transaction tx = db.beginTx() )
         {
@@ -574,9 +582,9 @@ public class BloomIT
     {
         db = getDb();
 
-        db.execute( String.format( KEYS, "\"prop\", \"otherprop\", \"proppmatt\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"otherprop\", \"proppmatt\"" ) );
 
-        Result result = db.execute( "CALL db.fulltext.bloomFulltextGetPropertyKeys" );
+        Result result = db.execute( GET_NODE_KEYS );
         assertEquals( "otherprop", result.next().get( "propertyKey" ) );
         assertEquals( "prop", result.next().get( "propertyKey" ) );
         assertEquals( "proppmatt", result.next().get( "propertyKey" ) );
@@ -587,10 +595,11 @@ public class BloomIT
     public void onlineIndexShouldBeReportedAsOnline() throws Exception
     {
         db = getDb();
-        db.execute( String.format( KEYS, "\"prop, otherprop, proppmatt\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop, otherprop, proppmatt\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"prop, otherprop, proppmatt\"" ) );
 
-        db.execute( "CALL db.fulltext.bloomAwaitPopulation" );
-        Result result = db.execute( "CALL db.fulltext.bloomFulltextStatus" );
+        db.execute( AWAIT_POPULATION );
+        Result result = db.execute( STATUS );
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertFalse( result.hasNext() );
@@ -605,7 +614,7 @@ public class BloomIT
 
         // Create the store directory and all its files, and add a bit of data to it
         GraphDatabaseService db = getDb();
-        db.execute( String.format( KEYS, "\"prop\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
