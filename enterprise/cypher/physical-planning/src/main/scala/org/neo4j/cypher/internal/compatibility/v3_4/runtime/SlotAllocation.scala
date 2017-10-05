@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.{expressions => parserAst}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.{expressions => parserAst}
 
 import scala.collection.mutable
 
@@ -271,7 +271,7 @@ object SlotAllocation {
            _: ConditionalApply =>
         rhsPipeline
 
-      case _:CartesianProduct =>
+      case _: CartesianProduct =>
         val newPipeline = lhsPipeline.seedClone()
         rhsPipeline.foreachSlot {
           case (k, slot) =>
@@ -282,6 +282,9 @@ object SlotAllocation {
       case RollUpApply(_, _, collectionName, _, _) =>
         lhsPipeline.newReference(collectionName.name, nullable, CTList(CTAny))
         lhsPipeline
+
+      case _: Union  =>
+        lhsPipeline //TODO/Fixme: This does not work with permutated variables
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }

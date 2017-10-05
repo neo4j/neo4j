@@ -351,6 +351,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val refOffsets = refIds.map(e => pipeline.getReferenceOffsetFor(e.name))
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
 
+      case Union(_, _) =>
+        UnionSlottedPipe(lhs, rhs, pipelines(lhs.id), pipelines(rhs.id))(id = id)
+
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }

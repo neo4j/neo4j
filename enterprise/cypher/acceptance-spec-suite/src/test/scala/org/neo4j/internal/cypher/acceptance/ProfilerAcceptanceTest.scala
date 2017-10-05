@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{Arg
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.helpers.TxCounts
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ProfilerStatisticsNotReadyException}
 import org.neo4j.graphdb.QueryExecutionException
@@ -323,7 +323,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       }
 
       test ("should support profiling union queries") {
-        val result = profileWithExecute(Configs.CommunityInterpreted, "return 1 as A union return 2 as A")
+        val result = profileWithExecute(Configs.Interpreted, "return 1 as A union return 2 as A")
         result.toSet should equal(Set(Map("A" -> 1), Map("A" -> 2)))
       }
 

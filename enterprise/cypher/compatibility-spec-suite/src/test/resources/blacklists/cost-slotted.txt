@@ -118,11 +118,6 @@ Using `rand()` in aggregations
 `toString()` should work on Any type
 `toString()` on a list of integers
 `toString()` failing on invalid arguments
-Should be able to create text output from union queries
-Two elements, both unique, not distinct
-Two elements, both unique, distinct
-Three elements, two unique, distinct
-Three elements, two unique, not distinct
 Creating nodes from an unwound parameter list
 Unwind does not remove variables from scope
 Fail when asterisk operator is missing
