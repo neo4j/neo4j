@@ -149,4 +149,21 @@ Feature: MatchAcceptance
       | a      |
       | (:A:B) |
       | (:A:C) |
+
+  Scenario: Handle filtering with empty properties map
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({foo: 1})-[:R {bar: 1}]->({foo: 2}),
+             ({foo: 3})-[:R {bar: 2}]->({foo: 4}),
+             ({foo: 5})-[:R {bar: 3}]->({foo: 6})
+      """
+    When executing query:
+      """
+      MATCH (a { })-[r:R { }]->(b { }) WHERE a.foo = 3 AND b.foo = 4
+      RETURN r.bar
+      """
+    Then the result should be:
+      | r.bar |
+      | 2     |
     And no side effects
