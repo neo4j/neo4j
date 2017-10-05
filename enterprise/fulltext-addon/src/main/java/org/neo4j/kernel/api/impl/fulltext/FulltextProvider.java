@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +36,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
@@ -57,25 +61,33 @@ public class FulltextProvider implements AutoCloseable
     private final Map<String,WritableFulltext> writableNodeIndices;
     private final Map<String,WritableFulltext> writableRelationshipIndices;
     private final FulltextUpdateApplier applier;
+    private final FulltextFactory factory;
     private final ReadWriteLock configurationLock;
 
     /**
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
+     *
+     *
      * @param db Database that this provider should work with.
      * @param log For logging errors.
      * @param availabilityGuard Used for waiting with populating the index until the database is available.
      * @param scheduler For background work.
      * @param transactionIdStore Used for checking if the store has had transactions applied to it, while the fulltext
-     * indexes have been disabled. If so, then the indexes will be rebuilt.
+     * @param fileSystem The filesystem to use.
+     * @param storeDir Store directory of the database.
+     * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
      */
     public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
-                             JobScheduler scheduler, TransactionIdStore transactionIdStore )
+                             JobScheduler scheduler, TransactionIdStore transactionIdStore,
+                             FileSystemAbstraction fileSystem, File storeDir,
+                             String analyzerClassName ) throws IOException
     {
         this.db = db;
         this.log = log;
         this.transactionIdStore = transactionIdStore;
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
+        factory = new FulltextFactory( fileSystem, storeDir, analyzerClassName );
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
         nodeProperties = ConcurrentHashMap.newKeySet();
         relationshipProperties = ConcurrentHashMap.newKeySet();
@@ -84,7 +96,7 @@ public class FulltextProvider implements AutoCloseable
         configurationLock = new ReentrantReadWriteLock( true );
     }
 
-    public void init() throws IOException
+    public void registerTransactionEventHandler() throws IOException
     {
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }
@@ -108,7 +120,7 @@ public class FulltextProvider implements AutoCloseable
      *
      * Such population, where the entire store is scanned for data to write to the index, will be started if the index
      * needs to recover after an unclean shut-down, or a configuration change.
-     * @throws IOException If it was not possible to wait for the population to finish, for some reason.
+     * @throws RuntimeException If it was not possible to wait for the population to finish, for some reason.
      */
     public void awaitPopulation()
     {
@@ -126,31 +138,20 @@ public class FulltextProvider implements AutoCloseable
         }
     }
 
-    /**
-     * Closes the provider and all associated resources.
-     */
-    @Override
-    public void close()
+    public void openIndex( String identifier, FulltextIndexType type ) throws IOException
     {
-        db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
-        applier.stop();
-        Consumer<WritableFulltext> fulltextCloser = luceneFulltextIndex ->
-        {
-            try
-            {
-                luceneFulltextIndex.saveConfiguration( transactionIdStore.getLastCommittedTransactionId() );
-                luceneFulltextIndex.close();
-            }
-            catch ( IOException e )
-            {
-                log.error( "Unable to close fulltext index.", e );
-            }
-        };
-        writableNodeIndices.values().forEach( fulltextCloser );
-        writableRelationshipIndices.values().forEach( fulltextCloser );
+        LuceneFulltext index = factory.openFulltextIndex( identifier, type );
+        register( index );
     }
 
-    void register( LuceneFulltext fulltextIndex ) throws IOException
+    public void createIndex( String identifier, FulltextIndexType type, List<String> properties )
+            throws IOException
+    {
+        LuceneFulltext index = factory.createFulltextIndex( identifier, type, properties );
+        register( index );
+    }
+
+    private void register( LuceneFulltext fulltextIndex ) throws IOException
     {
         configurationLock.writeLock().lock();
         try
@@ -222,13 +223,21 @@ public class FulltextProvider implements AutoCloseable
      */
     public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type ) throws IOException
     {
-        if ( type == FulltextIndexType.NODES )
+        WritableFulltext writableFulltext = getIndexMap( type ).get( identifier );
+        if ( writableFulltext == null )
         {
-            return writableNodeIndices.get( identifier ).getIndexReader();
+            throw new IllegalArgumentException( "No such " + type + " index '" + identifier + "'." );
         }
-        else
+        return writableFulltext.getIndexReader();
+    }
+
+    private Map<String,WritableFulltext> getIndexMap( FulltextIndexType type )
+    {
+        switch ( type )
         {
-            return writableRelationshipIndices.get( identifier ).getIndexReader();
+        case NODES: return writableNodeIndices;
+        case RELATIONSHIPS: return writableRelationshipIndices;
+        default: throw new IllegalArgumentException( "No such fulltext index type: " + type );
         }
     }
 
@@ -292,26 +301,51 @@ public class FulltextProvider implements AutoCloseable
         return lock;
     }
 
-    /**
-     * Fulltext index type.
-     */
-    public enum FulltextIndexType
+    public void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys )
+            throws IOException, InvalidArgumentsException
     {
-        NODES
-                {
-                    @Override
-                    public String toString()
-                    {
-                        return "Nodes";
-                    }
-                },
-        RELATIONSHIPS
-                {
-                    @Override
-                    public String toString()
-                    {
-                        return "Relationships";
-                    }
-                }
+        configurationLock.writeLock().lock();
+        try
+        {
+            if ( propertyKeys.stream().anyMatch( s -> s.startsWith( FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX ) ) )
+            {
+                throw new InvalidArgumentsException( "It is not possible to index property keys starting with " + FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX );
+            }
+            Set<String> currentProperties = getProperties( identifier, type );
+            if ( !currentProperties.containsAll( propertyKeys ) || !propertyKeys.containsAll( currentProperties ) )
+            {
+                drop( identifier, type );
+                createIndex( identifier, type, propertyKeys );
+            }
+        }
+        finally
+        {
+            configurationLock.writeLock().unlock();
+        }
     }
+
+    /**
+     * Closes the provider and all associated resources.
+     */
+    @Override
+    public void close()
+    {
+        db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
+        applier.stop();
+        Consumer<WritableFulltext> fulltextCloser = luceneFulltextIndex ->
+        {
+            try
+            {
+                luceneFulltextIndex.saveConfiguration( transactionIdStore.getLastCommittedTransactionId() );
+                luceneFulltextIndex.close();
+            }
+            catch ( IOException e )
+            {
+                log.error( "Unable to close fulltext index.", e );
+            }
+        };
+        writableNodeIndices.values().forEach( fulltextCloser );
+        writableRelationshipIndices.values().forEach( fulltextCloser );
+    }
+
 }

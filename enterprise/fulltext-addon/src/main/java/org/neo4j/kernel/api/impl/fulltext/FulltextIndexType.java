@@ -19,16 +19,25 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-
-import static java.util.Collections.singletonList;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
-
-public class StubLuceneFulltext extends LuceneFulltext
+/**
+ * Fulltext index type.
+ */
+public enum FulltextIndexType
 {
-    StubLuceneFulltext()
-    {
-        super( null, null, singletonList( "props" ), new StandardAnalyzer(), BLOOM_NODES, NODES );
-    }
+    NODES
+            {
+                @Override
+                public String toString()
+                {
+                    return "Nodes";
+                }
+            },
+    RELATIONSHIPS
+            {
+                @Override
+                public String toString()
+                {
+                    return "Relationships";
+                }
+            }
 }

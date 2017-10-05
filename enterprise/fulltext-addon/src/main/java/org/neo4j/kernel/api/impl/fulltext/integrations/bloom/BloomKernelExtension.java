@@ -27,7 +27,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -37,8 +36,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.RELATIONSHIPS;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_RELATIONSHIPS;
 
@@ -80,14 +79,13 @@ class BloomKernelExtension extends LifecycleAdapter
             String analyzer = config.get( BloomFulltextConfig.bloom_analyzer );
 
             Log log = logService.getInternalLog( FulltextProvider.class );
-            provider = new FulltextProvider( db, log, availabilityGuard, scheduler, transactionIdStore.get() );
-            FulltextFactory fulltextFactory = new FulltextFactory( fileSystem, storeDir, analyzer, provider );
-            fulltextFactory.openFulltextIndex( BLOOM_NODES, NODES );
-            fulltextFactory.openFulltextIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
+            provider = new FulltextProvider( db, log, availabilityGuard, scheduler, transactionIdStore.get(),
+                    fileSystem, storeDir, analyzer );
+            provider.openIndex( BLOOM_NODES, NODES );
+            provider.openIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
+            provider.registerTransactionEventHandler();
 
-            provider.init();
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
-            procedures.registerComponent( FulltextFactory.class, context -> fulltextFactory, true );
         }
     }
 

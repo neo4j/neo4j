@@ -59,9 +59,9 @@ public class LuceneFulltextTestSupport
 
     protected static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
 
+    protected String analyzer = ANALYZER;
     protected AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
     protected GraphDatabaseAPI db;
-    protected FulltextFactory fulltextFactory;
     protected JobScheduler scheduler;
     protected FileSystemAbstraction fs;
     protected File storeDir;
@@ -79,9 +79,8 @@ public class LuceneFulltextTestSupport
 
     protected FulltextProvider createProvider() throws IOException
     {
-        FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler, transactionIdStore );
-        fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
-        return provider;
+        return new FulltextProvider( db, LOG, availabilityGuard, scheduler, transactionIdStore,
+                fs, storeDir, analyzer );
     }
 
     protected long createNodeIndexableByPropertyValue( Object propertyValue )

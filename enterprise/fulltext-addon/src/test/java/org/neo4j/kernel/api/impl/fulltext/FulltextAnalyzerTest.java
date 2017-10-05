@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 
 import static java.util.Collections.singletonList;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
@@ -37,11 +37,12 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
+        analyzer = ENGLISH;
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
-            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.init();
+//            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
+            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
+            provider.registerTransactionEventHandler();
 
             long id;
             try ( Transaction tx = db.beginTx() )
@@ -67,11 +68,12 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
+        analyzer = SWEDISH;
         try ( FulltextProvider provider = createProvider(); )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
-            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.init();
+//            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
+            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
+            provider.registerTransactionEventHandler();
 
             long id;
             try ( Transaction tx = db.beginTx() )
@@ -99,11 +101,11 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         long firstID;
         long secondID;
+        analyzer = ENGLISH;
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
-            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.init();
+            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
+            provider.registerTransactionEventHandler();
 
             try ( Transaction tx = db.beginTx() )
             {
@@ -125,11 +127,11 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             }
         }
 
+        analyzer = SWEDISH;
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
-            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.init();
+            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
+            provider.registerTransactionEventHandler();
             provider.awaitPopulation();
 
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )

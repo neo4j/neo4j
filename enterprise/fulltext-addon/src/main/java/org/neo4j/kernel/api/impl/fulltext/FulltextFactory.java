@@ -25,11 +25,9 @@ import org.apache.lucene.index.IndexWriterConfig;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
@@ -38,11 +36,10 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 /**
  * Used for creating {@link LuceneFulltext} and registering those to a {@link FulltextProvider}.
  */
-public class FulltextFactory
+class FulltextFactory
 {
     public static final String INDEX_DIR = "fulltext";
     private final FileSystemAbstraction fileSystem;
-    private final FulltextProvider provider;
     private final WritableIndexPartitionFactory partitionFactory;
     private final File indexDir;
     private final Analyzer analyzer;
@@ -53,15 +50,12 @@ public class FulltextFactory
      * @param fileSystem The filesystem to use.
      * @param storeDir Store directory of the database.
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
-     * @param provider The {@link FulltextProvider} to register the indexes with.
      * @throws IOException
      */
-    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName,
-                            FulltextProvider provider ) throws IOException
+    FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName ) throws IOException
     {
         this.analyzer = getAnalyzer( analyzerClassName );
         this.fileSystem = fileSystem;
-        this.provider = provider;
         Factory<IndexWriterConfig> indexWriterConfigFactory = () -> IndexWriterConfigs.standard( analyzer );
         partitionFactory = new WritableIndexPartitionFactory( indexWriterConfigFactory );
         indexDir = new File( storeDir, INDEX_DIR );
@@ -82,48 +76,21 @@ public class FulltextFactory
         return analyzer;
     }
 
-    /**
-     * Creates an instance of {@link LuceneFulltext} and registers it with the supplied {@link FulltextProvider}.
-     *
-     * @param identifier The identifier of the new fulltext index
-     * @param type The type of the new fulltext index
-     * @param properties The properties to index
-     * @throws IOException
-     */
-    public void createFulltextIndex( String identifier, FulltextProvider.FulltextIndexType type, List<String> properties ) throws IOException
+    LuceneFulltext createFulltextIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
     {
         File indexRootFolder = new File( indexDir, identifier );
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         PartitionedIndexStorage storage = storageBuilder.build();
-        LuceneFulltext index = new LuceneFulltext( storage, partitionFactory, properties, analyzer, identifier, type );
-
-        provider.register( index );
+        return new LuceneFulltext( storage, partitionFactory, properties, analyzer, identifier, type );
     }
 
-    public void openFulltextIndex( String identifier, FulltextProvider.FulltextIndexType type ) throws IOException
+    LuceneFulltext openFulltextIndex( String identifier, FulltextIndexType type ) throws IOException
     {
         File indexRootFolder = new File( indexDir, identifier );
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         PartitionedIndexStorage storage = storageBuilder.build();
-        LuceneFulltext index = new LuceneFulltext( storage, partitionFactory, analyzer, identifier, type );
-
-        provider.register( index );
-    }
-
-    public void changeIndexedProperties( String identifier, FulltextProvider.FulltextIndexType type, List<String> propertyKeys )
-            throws IOException, InvalidArgumentsException
-    {
-        if ( propertyKeys.stream().anyMatch( s -> s.startsWith( FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX ) ) )
-        {
-            throw new InvalidArgumentsException( "It is not possible to index property keys starting with " + FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX );
-        }
-        Set<String> currentProperties = provider.getProperties( identifier, type );
-        if ( !currentProperties.containsAll( propertyKeys ) || !propertyKeys.containsAll( currentProperties ) )
-        {
-            provider.drop( identifier, type );
-            createFulltextIndex( identifier, type, propertyKeys );
-        }
+        return new LuceneFulltext( storage, partitionFactory, analyzer, identifier, type );
     }
 }
