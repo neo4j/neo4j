@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterators;
@@ -50,7 +49,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -62,7 +60,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_indexed_properties;
 
 public class BloomIT
 {
@@ -71,6 +68,7 @@ public class BloomIT
     private static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([%s])";
     private static final String RELS_ADVANCED = "CALL db.fulltext.bloomFulltextRelationships([%s], %b, %b)";
     private static final String ENTITYID = "entityid";
+    private static final String KEYS = "CALL db.fulltext.bloomFulltextSetPropertyKeys([%s])";
 
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
@@ -90,6 +88,15 @@ public class BloomIT
         builder.setConfig( bloom_enabled, "true" );
     }
 
+    @After
+    public void after() throws Exception
+    {
+        if ( db != null )
+        {
+            db.shutdown();
+        }
+    }
+
     private GraphDatabaseService getDb() throws KernelException
     {
         GraphDatabaseService db = builder.newGraphDatabase();
@@ -100,8 +107,8 @@ public class BloomIT
     @Test
     public void shouldPopulateAndQueryIndexes() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop, relprop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\", \"relprop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -114,10 +121,13 @@ public class BloomIT
         }
 
         Result result = db.execute( String.format( NODES, "\"integration\"") );
+        assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
+        assertTrue( result.hasNext() );
         assertEquals( 1L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
         result = db.execute( String.format( RELS, "\"relate\"") );
+        assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
     }
@@ -125,8 +135,8 @@ public class BloomIT
     @Test
     public void exactQueryShouldBeExact() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -155,8 +165,8 @@ public class BloomIT
     @Test
     public void matchAllQueryShouldMatchAll() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -182,9 +192,9 @@ public class BloomIT
     @Test
     public void shouldBeAbleToConfigureAnalyzer() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -209,8 +219,8 @@ public class BloomIT
     @Test
     public void shouldPopulateIndexWithExistingDataOnIndexCreate() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "something" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"something\"" ) );
 
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -224,9 +234,9 @@ public class BloomIT
         assertFalse( result.hasNext() );
         db.shutdown();
 
-        builder.setConfig( bloom_indexed_properties, "prop" );
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
 
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
 
@@ -239,9 +249,9 @@ public class BloomIT
     @Test
     public void startupPopulationShouldNotCauseDuplicates() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
 
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -261,8 +271,8 @@ public class BloomIT
         db.shutdown();
         db = getDb();
 
-        // Verify it's STILL indexed exactly once
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        // Verify it's STILL indexed exactly once
         result = db.execute( String.format( NODES, "\"Jyllingevej\"") );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
@@ -270,11 +280,46 @@ public class BloomIT
     }
 
     @Test
-    public void staleDataFromEntityDeleteShouldNotBeAccessibleAfterConfigurationChange() throws Exception
+    public void shouldNotBeAbleToFindNodesAfterRemovingIndex() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
 
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Jyllingevej" );
+            tx.success();
+        }
+
+        // Verify it's indexed exactly once
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+        db.execute( String.format( KEYS, "" ) );
+
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        // Verify it's nowhere to be found now
+        result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
+        assertFalse( result.hasNext() );
+
+        db.shutdown();
+        db = getDb();
+        // Should not be found after restart
+        result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void staleDataFromEntityDeleteShouldNotBeAccessibleAfterConfigurationChange() throws Exception
+    {
+
+        db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -285,8 +330,8 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( bloom_indexed_properties, "not-prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"not-prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -296,8 +341,8 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( bloom_indexed_properties, "prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
 
         // Verify that the node is no longer indexed
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
@@ -309,9 +354,9 @@ public class BloomIT
     @Test
     public void staleDataFromPropertyRemovalShouldNotBeAccessibleAfterConfigurationChange() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
 
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -322,8 +367,8 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( bloom_indexed_properties, "not-prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"not-prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -333,8 +378,8 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( bloom_indexed_properties, "prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
 
         // Verify that the node is no longer indexed
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
@@ -346,8 +391,8 @@ public class BloomIT
     @Test
     public void updatesAreAvailableToConcurrentReadTransactions() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -381,25 +426,18 @@ public class BloomIT
     }
 
     @Test
-    public void shouldNotBeAbleToStartWithoutConfiguringProperties() throws Exception
-    {
-        expectedException.expect( new RootCauseMatcher<>( RuntimeException.class, "Properties to index must be configured for bloom fulltext" ) );
-        db = getDb();
-    }
-
-    @Test
     public void shouldNotBeAbleToStartWithIllegalPropertyKey() throws Exception
     {
-        expectedException.expect( InvalidSettingException.class );
-        builder.setConfig( bloom_indexed_properties, "prop, " + FulltextProvider.FIELD_ENTITY_ID + ", hello" );
+        expectedException.expectMessage( "It is not possible to index property keys starting with __lucene__fulltext__addon__" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\", \"" + FulltextProvider.FIELD_ENTITY_ID + "\", \"hello\"" ) );
     }
 
     @Test
     public void shouldBeAbleToRunConsistencyCheck() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -408,7 +446,7 @@ public class BloomIT
         }
         db.shutdown();
 
-        Config config = Config.defaults( bloom_indexed_properties, "prop" );
+        Config config = Config.defaults( bloom_enabled, "true" );
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
         ConsistencyFlags checkConsistencyConfig = new ConsistencyFlags( true, true, true, true );
         ConsistencyCheckService.Result result =
@@ -423,10 +461,10 @@ public class BloomIT
         String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
         String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
-        builder.setConfig( bloom_indexed_properties, "prop" );
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, ENGLISH );
 
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "prop", "Hello and hello again." );
@@ -467,10 +505,10 @@ public class BloomIT
     @Test
     public void shouldReindexAfterBeingTemporarilyDisabled() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop" );
 
         // Create a node while the index is enabled.
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "prop", "Hello and hello again." );
@@ -510,13 +548,35 @@ public class BloomIT
     }
 
     @Test
-    public void shouldBeAbleToQueryForIndexedProperties() throws Exception
+    public void indexedPropertiesShouldBeSetByProcedure() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop, otherprop, proppmatt" );
-
         db = getDb();
 
-        Result result = db.execute( "CALL db.fulltext.bloomFulltextProperties" );
+        db.execute( String.format( KEYS, "\"prop\"" ) );
+        // Create a node while the index is enabled.
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "Hello and hello again." );
+            tx.success();
+        }
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"hello\"", false, false ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToQueryForIndexedProperties() throws Exception
+    {
+        db = getDb();
+
+        db.execute( String.format( KEYS, "\"prop\", \"otherprop\", \"proppmatt\"" ) );
+
+        Result result = db.execute( "CALL db.fulltext.bloomFulltextGetPropertyKeys" );
         assertEquals( "otherprop", result.next().get( "propertyKey" ) );
         assertEquals( "prop", result.next().get( "propertyKey" ) );
         assertEquals( "proppmatt", result.next().get( "propertyKey" ) );
@@ -526,9 +586,8 @@ public class BloomIT
     @Test
     public void onlineIndexShouldBeReportedAsOnline() throws Exception
     {
-        builder.setConfig( bloom_indexed_properties, "prop, otherprop, proppmatt" );
-
         db = getDb();
+        db.execute( String.format( KEYS, "\"prop, otherprop, proppmatt\"" ) );
 
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" );
         Result result = db.execute( "CALL db.fulltext.bloomFulltextStatus" );
@@ -544,10 +603,10 @@ public class BloomIT
         // the code. Unfortunately, file permissions are an incredible pain to work with on Windows.
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
 
-        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
-
         // Create the store directory and all its files, and add a bit of data to it
-        GraphDatabaseService db = builder.newGraphDatabase();
+        GraphDatabaseService db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
+
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "prop", "bla bla bla" );
@@ -560,7 +619,7 @@ public class BloomIT
         try
         {
             // Making the directory not readable ought to cause problems for the database as it tries to start up
-            builder.newGraphDatabase().shutdown();
+            getDb().shutdown();
             fail( "Should not have started up and shut down cleanly on an unreadable store directory" );
         }
         catch ( Exception e )
@@ -588,15 +647,6 @@ public class BloomIT
             {
                 throw error;
             }
-        }
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        if ( db != null )
-        {
-            db.shutdown();
         }
     }
 }

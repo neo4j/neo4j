@@ -31,13 +31,14 @@ import java.util.Set;
 
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_CONFIG_ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_CONFIG_PROPERTIES;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_LAST_COMMITTED_TX_ID;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_METADATA_DOC;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX;
 
 class FulltextIndexConfiguration
 {
+    private static final String FIELD_METADATA_DOC = LUCENE_FULLTEXT_ADDON_PREFIX + "metadata__doc__field__";
+    private static final String FIELD_CONFIG_ANALYZER = LUCENE_FULLTEXT_ADDON_PREFIX + "analyzer";
+    private static final String FIELD_CONFIG_PROPERTIES = LUCENE_FULLTEXT_ADDON_PREFIX + "properties";
+    private static final String FIELD_LAST_COMMITTED_TX_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "tx__id";
     static Term TERM = new Term( FIELD_METADATA_DOC );
 
     private final Set<String> properties;
@@ -96,5 +97,10 @@ class FulltextIndexConfiguration
             doc.add( new StoredField( FIELD_CONFIG_PROPERTIES, property ) );
         }
         return doc;
+    }
+
+    public Set<String> getProperties()
+    {
+        return properties;
     }
 }
