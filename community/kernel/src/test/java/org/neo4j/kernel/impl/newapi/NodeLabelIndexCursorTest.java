@@ -19,30 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.values.storable.Value;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursorTestBase;
 
-public interface IndexCursorProgressor
+public class NodeLabelIndexCursorTest extends NodeLabelIndexCursorTestBase<ReadTestSupport>
 {
-    boolean next();
-
-    void close();
-
-    interface NodeValueCursor
+    @Override
+    public ReadTestSupport newTestSupport()
     {
-        void initialize( IndexCursorProgressor progressor, int[] keys );
-
-        void done();
-
-        boolean node( long reference, Value[] values );
-    }
-
-    interface NodeLabelCursor
-    {
-        void initialize( IndexCursorProgressor progressor, boolean providesLabels );
-
-        void done();
-
-        boolean node( long reference, LabelSet labels );
+        return new ReadTestSupport();
     }
 }

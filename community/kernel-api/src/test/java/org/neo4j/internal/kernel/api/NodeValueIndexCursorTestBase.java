@@ -222,8 +222,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = read.propertyKey( "prop" );
         IndexReference index = read.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet();
-              NodeCursor n = cursors.allocateNodeCursor(); PropertyCursor p = cursors.allocatePropertyCursor() )
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
             // when
             uniqueIds.clear();
@@ -273,7 +272,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    private static void assertFoundNodes( NodeValueIndexCursor node, int nodes, PrimitiveLongSet uniqueIds )
+    static void assertFoundNodes( NodeIndexCursor node, int nodes, PrimitiveLongSet uniqueIds )
     {
         for ( int i = 0; i < nodes; i++ )
         {

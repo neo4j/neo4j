@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
@@ -88,6 +90,12 @@ class Store extends Read
         {
             throw new IllegalStateException( e );
         }
+    }
+
+    @Override
+    LabelScanReader labelScanReader()
+    {
+        return statement.getLabelScanReader();
     }
 
     @Override

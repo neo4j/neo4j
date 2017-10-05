@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -61,6 +62,12 @@ public class MockStore extends Read implements TestRule
 
     @Override
     IndexReader indexReader( IndexReference index )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    LabelScanReader labelScanReader()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

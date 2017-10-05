@@ -22,9 +22,15 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 
-class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+
+class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor,
+        IndexCursorProgressor.NodeLabelCursor
 {
     private final Read read;
+    private long node;
+    private LabelSet labels;
+    private IndexCursorProgressor progressor;
 
     NodeLabelIndexCursor( Read read )
     {
@@ -32,27 +38,47 @@ class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelInd
     }
 
     @Override
+    public void initialize( IndexCursorProgressor progressor, boolean providesLabels )
+    {
+        this.progressor = progressor;
+    }
+
+    @Override
+    public boolean node( long reference, LabelSet labels )
+    {
+        this.node = reference;
+        this.labels = labels;
+        return true;
+    }
+
+    @Override
+    public void done()
+    {
+        close();
+    }
+
+    @Override
     public void node( NodeCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        read.singleNode( node, cursor );
     }
 
     @Override
     public long nodeReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return node;
     }
 
     @Override
     public LabelSet labels()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return labels;
     }
 
     @Override
     public boolean next()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return progressor != null && progressor.next();
     }
 
     @Override
@@ -64,6 +90,8 @@ class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelInd
     @Override
     public void close()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        progressor.close();
+        node = NO_ID;
+        labels = null;
     }
 }

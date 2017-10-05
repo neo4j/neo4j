@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.io.pagecache.PageCursor;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -95,12 +97,12 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read
         indexReader( (IndexReference) index ).scan( (NodeValueIndexCursor) cursor );
     }
 
-    abstract IndexReader indexReader( IndexReference index );
-
     @Override
     public final void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        LabelScanReader reader = labelScanReader();
+        IndexCursorProgressor.NodeLabelCursor target = (NodeLabelIndexCursor) cursor;
+        target.initialize( new NodeLabelIndexProgressor( reader.nodesWithLabel( label ), target ), false );
     }
 
     @Override
@@ -255,6 +257,10 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read
     public final void futureRelationshipPropertyReferenceRead( long reference )
     {
     }
+
+    abstract IndexReader indexReader( IndexReference index );
+
+    abstract LabelScanReader labelScanReader();
 
     @Override
     public abstract IndexReference index( int label, int... properties );

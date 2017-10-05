@@ -19,30 +19,39 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.values.storable.Value;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Resource;
 
-public interface IndexCursorProgressor
+class NodeLabelIndexProgressor implements IndexCursorProgressor
 {
-    boolean next();
+    private final PrimitiveLongIterator iterator;
+    private final NodeLabelCursor target;
 
-    void close();
-
-    interface NodeValueCursor
+    NodeLabelIndexProgressor( PrimitiveLongIterator iterator, NodeLabelCursor target )
     {
-        void initialize( IndexCursorProgressor progressor, int[] keys );
-
-        void done();
-
-        boolean node( long reference, Value[] values );
+        this.iterator = iterator;
+        this.target = target;
     }
 
-    interface NodeLabelCursor
+    @Override
+    public boolean next()
     {
-        void initialize( IndexCursorProgressor progressor, boolean providesLabels );
+        while ( iterator.hasNext() )
+        {
+            if ( target.node( iterator.next(), null ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        void done();
-
-        boolean node( long reference, LabelSet labels );
+    @Override
+    public void close()
+    {
+        if ( iterator instanceof Resource )
+        {
+            ((Resource) iterator).close();
+        }
     }
 }
