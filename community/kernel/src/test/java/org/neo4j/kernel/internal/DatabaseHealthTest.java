@@ -73,7 +73,8 @@ public class DatabaseHealthTest
         // THEN
         logProvider.assertAtLeastOnce(
                 inLog( DatabaseHealth.class ).error(
-                        is("Database panic: Critical error has encountered (see database logs for more details). Please restart the database." ),
+                        is( "Database panic: The database has encountered a critical error, " +
+                                "and needs to be restarted. Please see database logs for more details." ),
                         sameInstance( exception )
                 )
         );
