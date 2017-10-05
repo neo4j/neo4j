@@ -224,6 +224,23 @@ public class PrimitiveArrays
     }
 
     /**
+     * Copy PrimitiveLongCollection into new long array
+     * @param collection the collection to copy
+     * @return the new long array
+     */
+    public static long[] of( PrimitiveLongCollection collection )
+    {
+        int i = 0;
+        long[] result = new long[collection.size()];
+        PrimitiveLongIterator iterator = collection.iterator();
+        while ( iterator.hasNext() )
+        {
+            result[i++] = iterator.next();
+        }
+        return result;
+    }
+
+    /**
      * Compute the number of unique values in two sorted long array sets
      * @param left a sorted array set
      * @param right another sorted array set

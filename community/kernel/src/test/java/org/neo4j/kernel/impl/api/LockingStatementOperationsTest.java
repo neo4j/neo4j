@@ -483,8 +483,8 @@ public class LockingStatementOperationsTest
 
         lockingOps.nodeDetachDelete( state, nodeId );
 
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, relationship.startNodeId );
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, relationship.endNodeId );
+        order.verify( locks ).acquireExclusive(
+                LockTracer.NONE, ResourceTypes.NODE, relationship.startNodeId, relationship.endNodeId );
         order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, relationship.startNodeId );
         order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, relationship.endNodeId );
         order.verify( entityWriteOps ).nodeDetachDelete( state, nodeId );
