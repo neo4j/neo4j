@@ -21,9 +21,10 @@ package org.neo4j.causalclustering.core.consensus.outcome;
 
 import org.junit.Test;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
@@ -90,7 +91,7 @@ public class BatchAppendLogEntriesTest
 
         BatchAppendLogEntries batchAppend = new BatchAppendLogEntries( baseIndex, offset, entries );
 
-        InFlightMap<RaftLogEntry> cache = new InFlightMap<>( true );
+        InFlightCache cache = new ConsecutiveInFlightCache();
 
         //when
         batchAppend.applyTo( cache, log );

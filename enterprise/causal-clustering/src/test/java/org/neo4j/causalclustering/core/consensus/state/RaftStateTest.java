@@ -28,11 +28,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
 import org.neo4j.causalclustering.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
@@ -59,10 +60,10 @@ public class RaftStateTest
     @Test
     public void shouldUpdateCacheState() throws Exception
     {
-        //Test that updates applied to the raft state will be refelcted in the entry cache.
+        //Test that updates applied to the raft state will be reflected in the entry cache.
 
         //given
-        InFlightMap<RaftLogEntry> cache = new InFlightMap<>( true );
+        InFlightCache cache = new ConsecutiveInFlightCache();
         RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance() );
@@ -100,7 +101,7 @@ public class RaftStateTest
                 new InMemoryStateStorage<>( new TermState() ),
                 new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState( ) ),
-                new InFlightMap<>(), NullLogProvider.getInstance() );
+                new ConsecutiveInFlightCache(), NullLogProvider.getInstance() );
 
         raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, emptySet(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), emptySet(), -1, emptySet() ) );

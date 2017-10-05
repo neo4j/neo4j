@@ -21,8 +21,10 @@ package org.neo4j.causalclustering.core.consensus.outcome;
 
 import org.junit.Test;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
+
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -44,24 +46,24 @@ public class TruncateLogCommandTest
         Log log = logProvider.getLog( getClass() );
         long fromIndex = 2L;
         TruncateLogCommand truncateLogCommand = new TruncateLogCommand( fromIndex );
-        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>( true );
+        InFlightCache inFlightCache = new ConsecutiveInFlightCache();
 
-        inFlightMap.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
-        inFlightMap.put( 1L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
-        inFlightMap.put( 2L, new RaftLogEntry( 2L, valueOf( 2 ) ) );
-        inFlightMap.put( 3L, new RaftLogEntry( 3L, valueOf( 3 ) ) );
+        inFlightCache.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
+        inFlightCache.put( 1L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
+        inFlightCache.put( 2L, new RaftLogEntry( 2L, valueOf( 2 ) ) );
+        inFlightCache.put( 3L, new RaftLogEntry( 3L, valueOf( 3 ) ) );
 
         //when
-        truncateLogCommand.applyTo( inFlightMap, log );
+        truncateLogCommand.applyTo( inFlightCache, log );
 
         //then
-        assertNotNull( inFlightMap.get( 0L ) );
-        assertNotNull( inFlightMap.get( 1L ) );
-        assertNull( inFlightMap.get( 2L ) );
-        assertNull( inFlightMap.get( 3L ) );
+        assertNotNull( inFlightCache.get( 0L ) );
+        assertNotNull( inFlightCache.get( 1L ) );
+        assertNull( inFlightCache.get( 2L ) );
+        assertNull( inFlightCache.get( 3L ) );
 
         logProvider.assertAtLeastOnce( inLog( getClass() )
-                .debug( "Start truncating in-flight-map from index %d. Current map:%n%s", fromIndex, inFlightMap ) );
+                .debug( "Start truncating in-flight-map from index %d. Current map:%n%s", fromIndex, inFlightCache ) );
     }
 
     @Test
@@ -71,19 +73,18 @@ public class TruncateLogCommandTest
         long fromIndex = 1L;
         TruncateLogCommand truncateLogCommand = new TruncateLogCommand( fromIndex );
 
-        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>( true );
+        InFlightCache inFlightCache = new ConsecutiveInFlightCache();
 
-        inFlightMap.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
-        inFlightMap.put( 2L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
-        inFlightMap.put( 4L, new RaftLogEntry( 2L, valueOf( 2 ) ) );
+        inFlightCache.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
+        inFlightCache.put( 2L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
+        inFlightCache.put( 4L, new RaftLogEntry( 2L, valueOf( 2 ) ) );
 
-        truncateLogCommand.applyTo( inFlightMap, NullLog.getInstance() );
+        truncateLogCommand.applyTo( inFlightCache, NullLog.getInstance() );
 
-        inFlightMap.put( 1L, new RaftLogEntry( 3L, valueOf( 1 ) ) );
-        inFlightMap.put( 2L, new RaftLogEntry( 4L, valueOf( 2 ) ) );
+        inFlightCache.put( 1L, new RaftLogEntry( 3L, valueOf( 1 ) ) );
+        inFlightCache.put( 2L, new RaftLogEntry( 4L, valueOf( 2 ) ) );
 
-        assertNotNull( inFlightMap.get( 0L ) );
-        assertNotNull( inFlightMap.get( 1L ) );
-        assertNotNull( inFlightMap.get( 2L ) );
+        assertNotNull( inFlightCache.get( 1L ) );
+        assertNotNull( inFlightCache.get( 2L ) );
     }
 }

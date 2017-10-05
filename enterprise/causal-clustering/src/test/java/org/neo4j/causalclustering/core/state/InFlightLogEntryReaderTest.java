@@ -27,10 +27,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
+
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -47,7 +49,7 @@ public class InFlightLogEntryReaderTest
 {
     private final ReadableRaftLog raftLog = mock( ReadableRaftLog.class );
     @SuppressWarnings( "unchecked" )
-    private final InFlightMap<RaftLogEntry> inFlightMap = mock( InFlightMap.class );
+    private final InFlightCache inFlightCache = mock( ConsecutiveInFlightCache.class );
     private final long logIndex = 42L;
     private final RaftLogEntry entry = mock( RaftLogEntry.class );
 
@@ -64,8 +66,8 @@ public class InFlightLogEntryReaderTest
     public void shouldUseTheCacheWhenTheIndexIsPresent() throws Exception
     {
         // given
-        InFlightLogEntryReader reader = new InFlightLogEntryReader( raftLog, inFlightMap, clearCache );
-        startingFromIndexReturnEntries( inFlightMap, logIndex, entry );
+        InFlightLogEntryReader reader = new InFlightLogEntryReader( raftLog, inFlightCache, clearCache );
+        startingFromIndexReturnEntries( inFlightCache, logIndex, entry );
         startingFromIndexReturnEntries( raftLog, -1, null );
 
         // when
@@ -73,9 +75,9 @@ public class InFlightLogEntryReaderTest
 
         // then
         assertEquals( entry, raftLogEntry );
-        verify( inFlightMap ).get( logIndex );
-        assertCacheIsUpdated( inFlightMap, logIndex );
-        verifyNoMoreInteractions( inFlightMap );
+        verify( inFlightCache ).get( logIndex );
+        assertCacheIsUpdated( inFlightCache, logIndex );
+        verifyNoMoreInteractions( inFlightCache );
         verifyZeroInteractions( raftLog );
     }
 
@@ -83,8 +85,8 @@ public class InFlightLogEntryReaderTest
     public void shouldUseTheRaftLogWhenTheIndexIsNotPresent() throws Exception
     {
         // given
-        InFlightLogEntryReader reader = new InFlightLogEntryReader( raftLog, inFlightMap, clearCache );
-        startingFromIndexReturnEntries( inFlightMap, logIndex, null );
+        InFlightLogEntryReader reader = new InFlightLogEntryReader( raftLog, inFlightCache, clearCache );
+        startingFromIndexReturnEntries( inFlightCache, logIndex, null );
         startingFromIndexReturnEntries( raftLog, logIndex, entry );
 
         // when
@@ -92,20 +94,20 @@ public class InFlightLogEntryReaderTest
 
         // then
         assertEquals( entry, raftLogEntry );
-        verify( inFlightMap ).get( logIndex );
+        verify( inFlightCache ).get( logIndex );
         verify( raftLog ).getEntryCursor( logIndex );
-        assertCacheIsUpdated( inFlightMap, logIndex );
+        assertCacheIsUpdated( inFlightCache, logIndex );
 
-        verifyNoMoreInteractions( inFlightMap );
+        verifyNoMoreInteractions( inFlightCache );
         verifyNoMoreInteractions( raftLog );
     }
 
     @Test
-    public void shouldNeverUseMapAgainAfterHavingFeltBackToTheRaftLog() throws Exception
+    public void shouldNeverUseMapAgainAfterHavingFallenBackToTheRaftLog() throws Exception
     {
         // given
-        InFlightLogEntryReader reader = new InFlightLogEntryReader( raftLog, inFlightMap, clearCache );
-        startingFromIndexReturnEntries( inFlightMap, logIndex, entry, null, mock( RaftLogEntry.class ) );
+        InFlightLogEntryReader reader = new InFlightLogEntryReader( raftLog, inFlightCache, clearCache );
+        startingFromIndexReturnEntries( inFlightCache, logIndex, entry, null, mock( RaftLogEntry.class ) );
         RaftLogEntry[] entries = {entry, mock( RaftLogEntry.class ), mock( RaftLogEntry.class )};
         startingFromIndexReturnEntries( raftLog, logIndex + 1, entries[1], entries[2] );
 
@@ -119,7 +121,7 @@ public class InFlightLogEntryReaderTest
 
             if ( offset <= 1)
             {
-                verify( inFlightMap ).get( offset + logIndex );
+                verify( inFlightCache ).get( offset + logIndex );
             }
 
             if ( offset == 1 )
@@ -127,20 +129,20 @@ public class InFlightLogEntryReaderTest
                 verify( raftLog ).getEntryCursor( offset + logIndex );
             }
 
-            assertCacheIsUpdated( inFlightMap, offset + logIndex );
+            assertCacheIsUpdated( inFlightCache, offset + logIndex );
         }
 
-        verifyNoMoreInteractions( inFlightMap );
+        verifyNoMoreInteractions( inFlightCache );
         verifyNoMoreInteractions( raftLog );
     }
 
-    private void startingFromIndexReturnEntries( InFlightMap<RaftLogEntry> inFlightMap, long startIndex,
+    private void startingFromIndexReturnEntries( InFlightCache inFlightCache, long startIndex,
             RaftLogEntry entry, RaftLogEntry... otherEntries ) throws IOException
     {
-        when( inFlightMap.get( startIndex ) ).thenReturn( entry );
+        when( inFlightCache.get( startIndex ) ).thenReturn( entry );
         for ( int offset = 0; offset < otherEntries.length; offset++ )
         {
-            when( inFlightMap.get( startIndex + offset + 1L ) ).thenReturn( otherEntries[offset] );
+            when( inFlightCache.get( startIndex + offset + 1L ) ).thenReturn( otherEntries[offset] );
         }
     }
 
@@ -169,15 +171,15 @@ public class InFlightLogEntryReaderTest
         when( cursor.get() ).thenReturn( entry, raftLogEntries );
     }
 
-    public void assertCacheIsUpdated( InFlightMap<RaftLogEntry> inFlightMap, long key )
+    private void assertCacheIsUpdated( InFlightCache inFlightCache, long key )
     {
         if ( clearCache )
         {
-            verify( inFlightMap, times( 1 ) ).remove( key );
+            verify( inFlightCache, times( 1 ) ).prune( key );
         }
         else
         {
-            verify( inFlightMap, never() ).remove( key );
+            verify( inFlightCache, never() ).prune( key );
         }
     }
 }

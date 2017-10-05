@@ -23,13 +23,13 @@ import java.io.File;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.EnterpriseCoreEditionModule;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
 import org.neo4j.causalclustering.core.consensus.log.segmented.CoreLogPruningStrategy;
 import org.neo4j.causalclustering.core.consensus.log.segmented.CoreLogPruningStrategyFactory;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSetBuilder;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
@@ -73,7 +73,7 @@ public class ConsensusModule
     private final RaftMachine raftMachine;
     private final DelayedRenewableTimeoutService raftTimeoutService;
     private final RaftMembershipManager raftMembershipManager;
-    private final InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
+    private final InFlightCache inFlightCache;
 
     public ConsensusModule( MemberId myself, final PlatformModule platformModule,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, File clusterStateDirectory,
@@ -127,17 +127,18 @@ public class ConsensusModule
 
         life.add( raftMembershipManager );
 
+        inFlightCache = InFlightCacheFactory.create( config, platformModule.monitors );
+
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(), myself,
                         raftMembershipManager, electionTimeout, config.get( catchup_batch_size ),
-                        config.get( log_shipping_max_lag ), inFlightMap );
+                        config.get( log_shipping_max_lag ), inFlightCache );
 
         raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
 
         raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
-                raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightMap,
-                RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config, logProvider.getLog( getClass() ) ),
-                platformModule.monitors, systemClock() );
+                raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightCache,
+                RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config, logProvider.getLog( getClass() ) ), platformModule.monitors, systemClock() );
 
         life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
 
@@ -195,8 +196,8 @@ public class ConsensusModule
         return raftMembershipManager;
     }
 
-    public InFlightMap<RaftLogEntry> inFlightMap()
+    public InFlightCache inFlightCache()
     {
-        return inFlightMap;
+        return inFlightCache;
     }
 }

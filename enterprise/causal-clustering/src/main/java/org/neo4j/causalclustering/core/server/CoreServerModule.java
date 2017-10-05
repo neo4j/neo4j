@@ -167,7 +167,7 @@ public class CoreServerModule
                 config.get( CausalClusteringSettings.state_machine_apply_max_batch_size ),
                 config.get( CausalClusteringSettings.state_machine_flush_window_size ), databaseHealthSupplier,
                 logProvider, replicationModule.getProgressTracker(),
-                replicationModule.getSessionTracker(), coreState, consensusModule.inFlightMap(),
+                replicationModule.getSessionTracker(), coreState, consensusModule.inFlightCache(),
                 platformModule.monitors );
         dependencies.satisfyDependency( commandApplicationProcess ); // lastApplied() for CC-robustness
 

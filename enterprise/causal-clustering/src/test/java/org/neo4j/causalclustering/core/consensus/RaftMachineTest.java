@@ -23,11 +23,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
+
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheMonitor;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
@@ -474,13 +477,13 @@ public class RaftMachineTest
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();
-        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
+        InFlightCache inFlightCache = new ConsecutiveInFlightCache( 10, 10000, InFlightCacheMonitor.VOID, false );
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .clock( fakeClock )
                 .raftLog( raftLog )
-                .inFlightMap( inFlightMap )
+                .inFlightCache( inFlightCache )
                 .build();
 
         raftLog.append( new RaftLogEntry(0, new MemberIdSet(asSet( myself, member1, member2 ))) );
@@ -491,7 +494,7 @@ public class RaftMachineTest
 
         // then
         assertEquals( data1, readLogEntry( raftLog, 1 ).content() );
-        assertNull( inFlightMap.get( 1L ) );
+        assertNull( inFlightCache.get( 1L ) );
 
         // when
         raft.postRecoveryActions();
@@ -500,7 +503,7 @@ public class RaftMachineTest
 
         // then
         assertEquals( data2, readLogEntry( raftLog, 2 ).content() );
-        assertEquals( data2, inFlightMap.get( 2L ).content() );
+        assertEquals( data2, inFlightCache.get( 2L ).content() );
     }
 
     private static class ExplodingRaftLog implements RaftLog
