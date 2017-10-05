@@ -23,6 +23,7 @@ import org.jboss.netty.channel.ChannelException;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
@@ -32,6 +33,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
@@ -129,7 +131,9 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         File logFile = config.get( store_internal_log_path );
         try
         {
-            return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
+            ZoneId zoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( zoneId ).toOutputStream( System.out );
+            return StoreLogService.withUserLogProvider( logProvider )
                     .withInternalLog( logFile )
                     .build( fileSystem );
         }

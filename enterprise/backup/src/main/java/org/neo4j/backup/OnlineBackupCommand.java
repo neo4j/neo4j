@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -37,6 +38,7 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.MapUtil;
@@ -237,10 +239,11 @@ public class OnlineBackupCommand implements AdminCommand
             try
             {
                 outsideWorld.stdOutLine( "Doing consistency check..." );
+                ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
                 ConsistencyCheckService.Result ccResult = consistencyCheckService
                         .runFullConsistencyCheck( destination, config,
                                 ProgressMonitorFactory.textual( outsideWorld.errorStream() ),
-                                FormattedLogProvider.toOutputStream( outsideWorld.outStream() ),
+                                FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( outsideWorld.outStream() ),
                                 outsideWorld.fileSystem(),
                                 false, reportDir.toFile(),
                                 new CheckConsistencyConfig( checkGraph, checkIndexes, checkLabelScanStore,

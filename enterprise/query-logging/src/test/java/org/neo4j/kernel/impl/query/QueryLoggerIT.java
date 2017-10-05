@@ -30,6 +30,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,6 +39,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -56,6 +58,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -70,6 +73,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.security.AuthSubject.AUTH_DISABLED;
 
@@ -387,6 +391,37 @@ public class QueryLoggerIT
         // Value should not change when disabled
         strings = readAllLines( logFilename );
         assertEquals( 2, strings.size() );
+    }
+
+    @Test
+    public void logQueriesWithSystemTimeZoneIsConfigured() throws IOException
+    {
+        TimeZone defaultTimeZone = TimeZone.getDefault();
+        try
+        {
+            TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( 5 ) ) );
+            executeSingleQueryWithTimeZoneLog();
+            TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( -5 ) ) );
+            executeSingleQueryWithTimeZoneLog();
+            List<String> allQueries = readAllLinesSilent( logFilename );
+            assertTrue( allQueries.get( 0 ).contains( "+0500" ) );
+            assertTrue( allQueries.get( 1 ).contains( "-0500" ) );
+        }
+        finally
+        {
+            TimeZone.setDefault( defaultTimeZone );
+        }
+    }
+
+    private void executeSingleQueryWithTimeZoneLog()
+    {
+        GraphDatabaseFacade database =
+                (GraphDatabaseFacade) databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                        .setConfig( GraphDatabaseSettings.log_timezone, LogTimeZone.SYSTEM.name() )
+                        .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                        .newGraphDatabase();
+        database.execute( QUERY ).close();
+        database.shutdown();
     }
 
     private void executeQueryAndShutdown( GraphDatabaseService database )

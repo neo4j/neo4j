@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.ZoneId;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -53,14 +54,15 @@ public class AsyncRequestLog
     private final ExecutorService asyncLogProcessingExecutor;
     private final AsyncEvents<AsyncLogEvent> asyncEventProcessor;
 
-    public AsyncRequestLog( FileSystemAbstraction fs, String logFile, long rotationSize, int rotationKeepNumber )
+    public AsyncRequestLog( FileSystemAbstraction fs, ZoneId logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
             throws IOException
     {
         NamedThreadFactory threadFactory = new NamedThreadFactory( "HTTP-Log-Rotator", true );
         ExecutorService rotationExecutor = Executors.newCachedThreadPool( threadFactory );
         Supplier<OutputStream> outputSupplier = new RotatingFileOutputStreamSupplier(
                 fs, new File( logFile ), rotationSize, 0, rotationKeepNumber, rotationExecutor );
-        FormattedLogProvider logProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( outputSupplier );
+        FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone )
+                .toOutputStream( outputSupplier );
         asyncLogProcessingExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "HTTP-Log-Writer" ) );
         asyncEventProcessor = new AsyncEvents<>( this, this );
         AsyncLogProvider asyncLogProvider = new AsyncLogProvider( asyncEventProcessor, logProvider );

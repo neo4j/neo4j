@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
@@ -362,6 +363,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         AsyncRequestLog requestLog = new AsyncRequestLog(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                config.get( GraphDatabaseSettings.log_timezone ).getZoneId(),
                 config.get( http_log_path ).toString(),
                 config.get( http_logging_rotation_size ),
                 config.get( http_logging_rotation_keep_number ) );

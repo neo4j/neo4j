@@ -278,6 +278,7 @@ public class PlatformModule
             builder.withLevel( debugContext, Level.DEBUG );
         }
         builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
+        builder.withTimeZone( config.get( GraphDatabaseSettings.log_timezone ).getZoneId() );
 
         File logFile = config.get( store_internal_log_path );
         if ( !logFile.getParentFile().exists() )

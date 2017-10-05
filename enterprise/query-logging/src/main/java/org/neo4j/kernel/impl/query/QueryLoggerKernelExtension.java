@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
+import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
@@ -85,6 +86,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 BooleanSupplier queryLogEnabled = () -> config.get( GraphDatabaseSettings.log_queries );
                 Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
                 int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
+                ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
                 EnumSet<QueryLogEntryContent> flags = EnumSet.noneOf( QueryLogEntryContent.class );
                 for ( QueryLogEntryContent flag : QueryLogEntryContent.values() )
                 {
@@ -94,7 +96,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                     }
                 }
 
-                FormattedLog.Builder logBuilder = FormattedLog.withUTCTimeZone();
+                FormattedLog.Builder logBuilder = FormattedLog.withZoneId( logTimeZoneId );
                 Log log;
                 if ( rotationThreshold == 0 )
                 {

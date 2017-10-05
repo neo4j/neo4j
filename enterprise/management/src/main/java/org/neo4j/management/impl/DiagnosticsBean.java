@@ -20,19 +20,21 @@
 package org.neo4j.management.impl;
 
 import java.io.StringWriter;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsProvider;
+import org.neo4j.logging.FormattedLog;
 import org.neo4j.management.Diagnostics;
 
 @Service.Implementation( ManagementBeanProvider.class )
@@ -52,11 +54,13 @@ public class DiagnosticsBean extends ManagementBeanProvider
     private static class DiagnosticsImpl extends Neo4jMBean implements Diagnostics
     {
         private final DiagnosticsManager diagnostics;
+        private Config config;
 
         DiagnosticsImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
             DependencyResolver resolver = management.getKernelData().graphDatabase().getDependencyResolver();
+            config = resolver.resolveDependency( Config.class );
             this.diagnostics = resolver.resolveDependency( DiagnosticsManager.class );
         }
 
@@ -87,7 +91,9 @@ public class DiagnosticsBean extends ManagementBeanProvider
         public String dumpAll(  )
         {
             StringWriter stringWriter = new StringWriter();
-            diagnostics.dumpAll( FormattedLog.withUTCTimeZone().toWriter( stringWriter ) );
+            ZoneId zoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            FormattedLog.Builder logBuilder = FormattedLog.withZoneId( zoneId );
+            diagnostics.dumpAll( logBuilder.toWriter( stringWriter ) );
             return stringWriter.toString();
         }
 
@@ -95,7 +101,9 @@ public class DiagnosticsBean extends ManagementBeanProvider
         public String extract( String providerId )
         {
             StringWriter stringWriter = new StringWriter();
-            diagnostics.extract( providerId, FormattedLog.withUTCTimeZone().toWriter( stringWriter ) );
+            ZoneId zoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            FormattedLog.Builder logBuilder = FormattedLog.withZoneId( zoneId );
+            diagnostics.extract( providerId, logBuilder.toWriter( stringWriter ) );
             return stringWriter.toString();
         }
     }

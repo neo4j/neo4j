@@ -24,11 +24,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.com.ComException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
@@ -135,7 +137,7 @@ public class BackupTool
 
         long timeout = args.getDuration( TIMEOUT, BackupClient.BIG_READ_TIMEOUT );
 
-        URI backupURI = resolveBackupUri( from, args );
+        URI backupURI = resolveBackupUri( from, args, tuningConfiguration );
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
@@ -237,7 +239,7 @@ public class BackupTool
         return Config.defaults( specifiedConfig );
     }
 
-    private static URI resolveBackupUri( String from, Args arguments ) throws ToolFailureException
+    private static URI resolveBackupUri( String from, Args arguments, Config config ) throws ToolFailureException
     {
         if ( from.contains( "," ) )
         {
@@ -246,7 +248,7 @@ public class BackupTool
                 checkNoSchemaIsPresent( from );
                 from = "ha://" + from;
             }
-            return resolveUriWithProvider( "ha", from, arguments );
+            return resolveUriWithProvider( "ha", config, from, arguments );
         }
         if ( !from.startsWith( "single://" ) )
         {
@@ -277,7 +279,7 @@ public class BackupTool
         }
     }
 
-    private static URI resolveUriWithProvider( String providerName, String from, Args args )
+    private static URI resolveUriWithProvider( String providerName, Config config, String from, Args args )
             throws ToolFailureException
     {
         BackupExtensionService service;
@@ -292,8 +294,9 @@ public class BackupTool
 
         try
         {
-            return service.resolve( from, args, new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ),
-                    NullLogProvider.getInstance() ) );
+            ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            FormattedLogProvider userLogProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out );
+            return service.resolve( from, args, new SimpleLogService( userLogProvider, NullLogProvider.getInstance() ) );
         }
         catch ( Throwable t )
         {
