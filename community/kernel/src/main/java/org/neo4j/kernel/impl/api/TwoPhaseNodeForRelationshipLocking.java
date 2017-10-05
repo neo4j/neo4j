@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
+
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveArrays;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -31,18 +34,20 @@ import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
+
 class TwoPhaseNodeForRelationshipLocking
 {
-    private final PrimitiveLongSet nodeIds = Primitive.longSet();
-    private final EntityReadOperations entityReadOperations;
+    private final EntityReadOperations ops;
     private final ThrowingConsumer<Long,KernelException> relIdAction;
 
     private long firstRelId;
+    private long[] sortedNodeIds;
 
     TwoPhaseNodeForRelationshipLocking( EntityReadOperations entityReadOperations,
             ThrowingConsumer<Long,KernelException> relIdAction )
     {
-        this.entityReadOperations = entityReadOperations;
+        this.ops = entityReadOperations;
         this.relIdAction = relIdAction;
     }
 
@@ -51,24 +56,18 @@ class TwoPhaseNodeForRelationshipLocking
         boolean retry;
         do
         {
-            nodeIds.add( nodeId );
             retry = false;
-            firstRelId = -1;
+            firstRelId = NO_SUCH_RELATIONSHIP;
 
             // lock all the nodes involved by following the node id ordering
-            try ( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
-            {
-                entityReadOperations.nodeGetRelationships( state, node.get(), Direction.BOTH )
-                        .forAll( this::collectNodeId );
-            }
+            collectAndSortNodeIds( nodeId, state );
 
-            lockAllNodes( state );
+            lockAllNodes( state, sortedNodeIds );
 
             // perform the action on each relationship, we will retry if the the relationship iterator contains new relationships
-            try ( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
+            try ( Cursor<NodeItem> node = ops.nodeCursorById( state, nodeId ) )
             {
-                try ( Cursor<RelationshipItem> relationships = entityReadOperations
-                        .nodeGetRelationships( state, node.get(), Direction.BOTH ) )
+                try ( Cursor<RelationshipItem> relationships = ops.nodeGetRelationships( state, node.get(), Direction.BOTH ) )
                 {
                     boolean first = true;
                     while ( relationships.next() && !retry )
@@ -82,24 +81,45 @@ class TwoPhaseNodeForRelationshipLocking
         while ( retry );
     }
 
-    private void lockAllNodes( KernelStatement state )
+    private void collectAndSortNodeIds( long nodeId, KernelStatement state ) throws EntityNotFoundException
     {
-        PrimitiveLongIterator nodeIdIterator = nodeIds.iterator();
-        while ( nodeIdIterator.hasNext() )
+        PrimitiveLongSet nodeIdSet = Primitive.longSet();
+        nodeIdSet.add( nodeId );
+
+        try ( Cursor<NodeItem> node = ops.nodeCursorById( state, nodeId ) )
         {
-            state.locks().optimistic()
-                    .acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeIdIterator.next() );
+            try ( Cursor<RelationshipItem> rels = ops.nodeGetRelationships( state, node.get(), Direction.BOTH ) )
+            {
+                while ( rels.next() )
+                {
+                    RelationshipItem rel = rels.get();
+                    if ( firstRelId == NO_SUCH_RELATIONSHIP )
+                    {
+                        firstRelId = rel.id();
+                    }
+
+                    nodeIdSet.add( rel.startNode() );
+                    nodeIdSet.add( rel.endNode() );
+                }
+            }
         }
+
+        long[] nodeIds = PrimitiveArrays.of( nodeIdSet );
+        Arrays.sort( nodeIds );
+        this.sortedNodeIds = nodeIds;
     }
 
-    private void unlockAllNodes( KernelStatement state )
+    private void lockAllNodes( KernelStatement state, long[] nodeIds )
     {
-        PrimitiveLongIterator iterator = nodeIds.iterator();
-        while ( iterator.hasNext() )
+        state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeIds );
+    }
+
+    private void unlockAllNodes( KernelStatement state, long[] nodeIds  )
+    {
+        for ( long nodeId : nodeIds )
         {
-            state.locks().optimistic().releaseExclusive( ResourceTypes.NODE, iterator.next() );
+            state.locks().optimistic().releaseExclusive( ResourceTypes.NODE, nodeId );
         }
-        nodeIds.clear();
     }
 
     private boolean performAction( KernelStatement state, RelationshipItem rel, boolean first ) throws KernelException
@@ -110,23 +130,13 @@ class TwoPhaseNodeForRelationshipLocking
             {
                 // if the first relationship is not the same someone added some new rels, so we need to
                 // lock them all again
-                unlockAllNodes( state );
+                unlockAllNodes( state, sortedNodeIds );
+                sortedNodeIds = null;
                 return true;
             }
         }
 
         relIdAction.accept( rel.id() );
         return false;
-    }
-
-    private void collectNodeId( RelationshipItem rel )
-    {
-        if ( firstRelId == -1 )
-        {
-            firstRelId = rel.id();
-        }
-
-        nodeIds.add( rel.startNode() );
-        nodeIds.add( rel.endNode() );
     }
 }
