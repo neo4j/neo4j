@@ -296,7 +296,7 @@ public class BloomIT
 
         // Verify it's indexed exactly once
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
-        Result result = db.execute( String.format( NODES, "Jyllingevej", true, false ) );
+        Result result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
@@ -304,13 +304,13 @@ public class BloomIT
 
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
         // Verify it's nowhere to be found now
-        result = db.execute( String.format( NODES, "Jyllingevej", true, false ) );
+        result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertFalse( result.hasNext() );
 
         db.shutdown();
         db = getDb();
         // Should not be found after restart
-        result = db.execute( String.format( NODES, "Jyllingevej", true, false ) );
+        result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertFalse( result.hasNext() );
     }
 
@@ -562,7 +562,7 @@ public class BloomIT
 
         try ( Transaction ignore = db.beginTx() )
         {
-            try ( Result result = db.execute( String.format( NODES, "hello", false, false ) ) )
+            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"hello\"", false, false ) ) )
             {
                 assertThat( Iterators.count( result ), is( 1L ) );
             }

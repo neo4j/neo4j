@@ -746,7 +746,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void concurrentUpdatesAndIndexChangesShouldREsultInValidState() throws Throwable
+    public void concurrentUpdatesAndIndexChangesShouldResultInValidState() throws Throwable
     {
         try ( FulltextProvider provider = createProvider() )
         {

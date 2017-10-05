@@ -20,11 +20,13 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -108,9 +110,20 @@ public class FulltextProvider implements AutoCloseable
      * needs to recover after an unclean shut-down, or a configuration change.
      * @throws IOException If it was not possible to wait for the population to finish, for some reason.
      */
-    public void awaitPopulation() throws Exception
+    public void awaitPopulation()
     {
-        applier.writeBarrier().awaitCompletion();
+        try
+        {
+            applier.writeBarrier().awaitCompletion();
+        }
+        catch ( ExecutionException e )
+        {
+            throw new AssertionError( "The writeBarrier operation should never throw an exception", e );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     /**
@@ -246,6 +259,8 @@ public class FulltextProvider implements AutoCloseable
         configurationLock.writeLock().lock();
         try
         {
+            // Wait for the queue of updates to drain, before deleting an index.
+            awaitPopulation();
             if ( type == FulltextIndexType.NODES )
             {
                 writableNodeIndices.remove( identifier ).drop();
