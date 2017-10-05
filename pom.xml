@@ -106,6 +106,7 @@
 
     <scala.version>2.11.11</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
+    <asm.version>5.2</asm.version>
   </properties>
 
   <modules>

@@ -43,38 +43,38 @@
     <artifact id="org.codehaus.jackson:jackson-jaxrs:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-server:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-server:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-http:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-http:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-util:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-util:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-io:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-io:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-webapp:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-webapp:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-xml:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-xml:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-servlet:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-servlet:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-security:jar:9.0.5.v20130815">
+    <artifact id="org.eclipse.jetty:jetty-security:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty.orbit:javax.servlet:orbit:3.0.0.v201112011016">
+    <artifact id="org.eclipse.jetty.orbit:javax.servlet:orbit:">
       <license>CDDL1.1</license>
       <license>GPL2/CPE</license>
     </artifact>
     <artifact id="org.jboss.xnio:xnio-api:jar:3.3.0.Final">
       <license>ASL2.0</license><!-- https://github.com/dmlloyd/xnio/blob/3.x/LICENSE.txt -->
     </artifact>
-    <artifact id="com.google.code.findbugs:annotations:jar:2.0.3">
+    <artifact id="com.google.code.findbugs:annotations:">
       <license>LGPL2.1</license>
     </artifact>
   </override-licenses>

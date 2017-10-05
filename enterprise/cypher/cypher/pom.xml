@@ -43,10 +43,6 @@
     </license>
   </licenses>
 
-  <properties>
-    <asm.version>5.2</asm.version>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
