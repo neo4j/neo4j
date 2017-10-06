@@ -69,14 +69,12 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         case x => x
       }).toSet
 
-    graph.inTx {
-      result should equal(Set(
-        Map("p" -> Set(PathImpl(start, rel2, c), PathImpl(start, rel1, c))),
-        Map("p" -> 42),
-        Map("p" -> Set(PathImpl(start2, rel4, d), PathImpl(start2, rel3, d))),
-        Map("p" -> 42)
-      ))
-    }
+    result should equal(Set(
+      Map("p" -> Set(PathImpl(start, rel2, c), PathImpl(start, rel1, c))),
+      Map("p" -> 42),
+      Map("p" -> Set(PathImpl(start2, rel4, d), PathImpl(start2, rel3, d))),
+      Map("p" -> 42)
+    ))
   }
 
   test("match (n) with case when id(n) >= 0 then (n)-->() else 42 end as p, count(n) as c return p, c") {
@@ -123,13 +121,11 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         case x => x
       }).toSet
 
-    graph.inTx {
-      result should equal(Set(
-        Map("c" -> 1, "p" -> Set(PathImpl(start, rel2, c), PathImpl(start, rel1, c))),
-        Map("c" -> 1, "p" -> Set(PathImpl(start2, rel4, d), PathImpl(start2, rel3, d))),
-        Map("c" -> 2, "p" -> 42)
-      ))
-    }
+    result should equal(Set(
+      Map("c" -> 1, "p" -> Set(PathImpl(start, rel2, c), PathImpl(start, rel1, c))),
+      Map("c" -> 1, "p" -> Set(PathImpl(start2, rel4, d), PathImpl(start2, rel3, d))),
+      Map("c" -> 2, "p" -> 42)
+    ))
   }
 
   test("match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n") {

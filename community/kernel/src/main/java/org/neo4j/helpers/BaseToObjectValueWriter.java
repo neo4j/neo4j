@@ -236,12 +236,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
             }
 
             @Override
-            public String toString()
-            {
-                return Paths.defaultPathToString(this);
-            }
-
-            @Override
             public boolean equals( Object obj )
             {
                 if ( this == obj )
