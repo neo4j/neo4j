@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.util
 import java.util.Collections
-import java.util.function.Consumer
 
 import org.junit.Assert.assertEquals
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
@@ -31,67 +29,37 @@ import org.neo4j.kernel.impl.proc.Procedures
 
 class ApocAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-
-//  test("apa") {
-//    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
-//
-//    val n1 = createLabeledNode(Map("title" -> "The Matrix"), "Tweet")
-//    val n2 = createLabeledNode("User")
-//    relate(n2, n1, "POSTED")
-//
-//    val query =
-//      """MATCH (m:Tweet {title: 'The Matrix'})
-//         CALL org.neo4j.testTraversal() YIELD value RETURN count(*) AS c""".stripMargin;
-//
-//    val result = executeWithCostPlannerOnly(query)
-//    result.toList
-//  }
-
-  test("testLimitPlaysNiceWithMinLevel") {
+  test("should complete APOC-like procedure using traversal API") {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
 
     graph.execute(movies)
-    graph.execute(bigbrother)
+//    graph.execute(bigbrother)
 
-    graph.execute("MATCH (c:Person) WHERE c.name in ['Clint Eastwood', 'Gene Hackman'] SET c:Western");
-
-    // hardcoded config:
-    // {relationshipFilter:'ACTED_IN|PRODUCED|DIRECTED', labelFilter:'>Western', uniqueness: 'NODE_GLOBAL', limit:1, minLevel:3}
+    graph.execute("MATCH (c:Person) WHERE c.name in ['Clint Eastwood', 'Gene Hackman'] SET c:Western")
 
     testResult(graph.getGraphDatabaseService,
-      "MATCH (k:Person {name:'Keanu Reeves'}) " +
-        "CALL apoc.path.expandConfig(k, {relationshipFilter:'ACTED_IN|PRODUCED|DIRECTED', labelFilter:'>Western', uniqueness: 'NODE_GLOBAL', limit:1, minLevel:3}) yield path " +
-        "return path",
-      new Consumer[Result] {
-        override def accept(t: Result): Unit = {
-          val maps = Iterators.asList(t)
-          assertEquals(1, maps.size)
-          val path = maps.get(0).get("path").asInstanceOf[Path]
-          assertEquals("Clint Eastwood", path.endNode.getProperty("name"))
-        }
+      """MATCH (k:Person {name:'Keanu Reeves'})
+         CALL org.neo4j.movieTraversal(k) YIELD path RETURN path""".stripMargin,
+      result => {
+        val maps = Iterators.asList(result)
+        assertEquals(1, maps.size)
+        val path = maps.get(0).get("path").asInstanceOf[Path]
+        assertEquals("Clint Eastwood", path.endNode.getProperty("name"))
       })
   }
 
-  def testResult(db: GraphDatabaseService, call: String, resultConsumer: Consumer[Result]): Unit = {
-    testResult(db, call, null, resultConsumer)
-  }
-
-  def testResult(db: GraphDatabaseService, call: String, params: util.Map[String, AnyRef], resultConsumer: Consumer[Result]): Unit =
-  {
+  def testResult(db: GraphDatabaseService, call: String, onResult: Result => Unit): Unit = {
     try {
       val tx: Transaction = db.beginTx
       try {
-        val p: util.Map[String, AnyRef] = if (params == null) Collections.emptyMap[String, AnyRef]
-        else params
-        resultConsumer.accept(db.execute(call, p))
+        onResult(db.execute(call, Collections.emptyMap[String, AnyRef]))
         tx.success()
       } finally if (tx != null) tx.close()
     }
   }
 
-  val bigbrother = "MATCH (per:Person) MERGE (bb:BigBrother {name : 'Big Brother' })  MERGE (bb)-[:FOLLOWS]->(per)"
-
-  val movies = """CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'})
+  val movies = """
+  CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'})
   CREATE (Keanu:Person {name:'Keanu Reeves', born:1964})
   CREATE (Carrie:Person {name:'Carrie-Anne Moss', born:1967})
   CREATE (Laurence:Person {name:'Laurence Fishburne', born:1961})
