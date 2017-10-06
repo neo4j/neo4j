@@ -87,7 +87,7 @@ public class GBPTreeConcurrencyIT
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private Layout<MutableLong,MutableLong> layout;
     private GBPTree<MutableLong,MutableLong> index;
     private final ExecutorService threadPool =
             Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
@@ -101,7 +101,8 @@ public class GBPTreeConcurrencyIT
     private GBPTree<MutableLong,MutableLong> createIndex( GBPTree.Monitor monitor )
             throws IOException
     {
-        int pageSize = 256;
+        int pageSize = 512;
+        layout = new SimpleLongLayout( random.intBetween( 0, 10 ) );
         PageCache pageCache =
                 pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();

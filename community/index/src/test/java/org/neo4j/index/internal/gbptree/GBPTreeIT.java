@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
@@ -41,7 +42,9 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static java.lang.Integer.max;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
@@ -58,7 +61,7 @@ public class GBPTreeIT
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private Layout<MutableLong,MutableLong> layout;
     private GBPTree<MutableLong,MutableLong> index;
     private final ExecutorService threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
     private PageCache pageCache;
@@ -72,6 +75,8 @@ public class GBPTreeIT
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
             throws IOException
     {
+        // some random padding
+        layout = new SimpleLongLayout( random.intBetween( 0, 10 ) );
         pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
     }
@@ -94,7 +99,7 @@ public class GBPTreeIT
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 512 );
         Comparator<MutableLong> keyComparator = layout;
         Map<MutableLong,MutableLong> data = new TreeMap<>( keyComparator );
         int count = 100;
@@ -155,6 +160,57 @@ public class GBPTreeIT
 
             index.checkpoint( IOLimiter.unlimited() );
             randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
+        }
+    }
+
+    @Test
+    public void shouldHandleRemoveEntireTree() throws Exception
+    {
+        // given
+        GBPTree<MutableLong,MutableLong> index = createIndex( 512 );
+        int numberOfNodes = 200_000;
+        MutableLong value = new MutableLong();
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            for ( int i = 0; i < numberOfNodes; i++ )
+            {
+                value.setValue( i );
+                writer.put( value, value );
+            }
+        }
+
+        // when
+        BitSet removed = new BitSet();
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            for ( int i = 0; i < numberOfNodes - numberOfNodes / 10; i++ )
+            {
+                int candidate;
+                do
+                {
+                    candidate = random.nextInt( max( 1, random.nextInt( numberOfNodes ) ) );
+                }
+                while ( removed.get( candidate ) );
+                removed.set( candidate );
+
+                value.setValue( candidate );
+                writer.remove( value );
+            }
+
+            int next = 0;
+            for ( int i = 0; i < numberOfNodes / 10; i++ )
+            {
+                next = removed.nextClearBit( next );
+                removed.set( next );
+                value.setValue( next );
+                writer.remove( value );
+            }
+        }
+
+        // then
+        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( new MutableLong( 0 ), new MutableLong( numberOfNodes ) ) )
+        {
+            assertFalse( seek.next() );
         }
     }
 

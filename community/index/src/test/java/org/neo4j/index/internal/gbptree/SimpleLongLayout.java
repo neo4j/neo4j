@@ -27,16 +27,23 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
 {
+    private final int keyPadding;
     private String customNameAsMetaData;
 
-    SimpleLongLayout( String customNameAsMetaData )
+    SimpleLongLayout( int keyPadding, String customNameAsMetaData )
     {
+        this.keyPadding = keyPadding;
         this.customNameAsMetaData = customNameAsMetaData;
+    }
+
+    SimpleLongLayout( int keyPadding )
+    {
+        this( keyPadding, "test" );
     }
 
     SimpleLongLayout()
     {
-        this( "test" );
+        this( 0 );
     }
 
     @Override
@@ -67,7 +74,8 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     @Override
     public int keySize()
     {
-        return Long.BYTES;
+        // pad the key here to affect the max key count, useful to get odd or even max key count
+        return Long.BYTES + keyPadding;
     }
 
     @Override
@@ -122,6 +130,7 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     public void writeMetaData( PageCursor cursor )
     {
         writeString( cursor, customNameAsMetaData );
+        cursor.putInt( keyPadding );
     }
 
     private static void writeString( PageCursor cursor, String string )
@@ -150,6 +159,12 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
             }
         }
         customNameAsMetaData = name;
+
+        int readKeyPadding = cursor.getInt();
+        if ( readKeyPadding != keyPadding )
+        {
+            cursor.setCursorException( "Key padding " + readKeyPadding + " doesn't match expected " + keyPadding );
+        }
     }
 
     private static String readString( PageCursor cursor )
