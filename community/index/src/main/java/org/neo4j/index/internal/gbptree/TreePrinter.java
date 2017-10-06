@@ -33,7 +33,7 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
  */
-class TreePrinter<KEY,VALUE>
+class TreePrinter<KEY, VALUE>
 {
     private final TreeNode<KEY,VALUE> node;
     private final Layout<KEY,VALUE> layout;
@@ -54,13 +54,14 @@ class TreePrinter<KEY,VALUE>
      * Will print sub-tree from that point. Leaves cursor at same page as when called. No guarantees on offset.
      *
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
+     * @param writeCursor Currently active {@link PageCursor write cursor} in tree.
      * @param out target to print tree at.
      * @param printPosition whether or not to include positional (slot number) information.
      * @param printState whether or not to also print state pages
      * @throws IOException on page cache access error.
      */
-    void printTree( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition, boolean printState )
-            throws IOException
+    void printTree( PageCursor cursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition,
+            boolean printState ) throws IOException
     {
         if ( printState )
         {
@@ -71,7 +72,7 @@ class TreePrinter<KEY,VALUE>
             out.println( "StateA: " + statePair.getLeft() );
             out.println( "StateB: " + statePair.getRight() );
         }
-        assertOnTreeNode( cursor );
+        assertOnTreeNode( select( cursor, writeCursor ) );
 
         // Traverse the tree
         int level = 0;
@@ -82,13 +83,13 @@ class TreePrinter<KEY,VALUE>
             long leftmostSibling = cursor.getCurrentPageId();
 
             // Go right through all siblings
-            printLevel( cursor, out, printValues, printPosition );
+            printLevel( cursor, writeCursor, out, printValues, printPosition );
 
             // Then go back to the left-most node on this level
             TreeNode.goTo( cursor, "back", leftmostSibling );
         }
         // And continue down to next level if this level was an internal level
-        while ( goToLeftmostChild( cursor ) );
+        while ( goToLeftmostChild( cursor, writeCursor ) );
     }
 
     void printTreeNode( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition,
@@ -104,7 +105,8 @@ class TreePrinter<KEY,VALUE>
             {
                 cursor.setCursorException( "Unexpected keyCount " + keyCount );
             }
-        } while ( cursor.shouldRetry() );
+        }
+        while ( cursor.shouldRetry() );
 
         if ( printHeader )
         {
@@ -114,7 +116,8 @@ class TreePrinter<KEY,VALUE>
             {
                 generation = TreeNode.generation( cursor );
 
-            } while ( cursor.shouldRetry() );
+            }
+            while ( cursor.shouldRetry() );
             String treeNodeType = isLeaf ? "leaf" : "internal";
             out.print( format( "{%d,%s,generation=%d,keyCount=%d}",
                     cursor.getCurrentPageId(), treeNodeType, generation, keyCount ) );
@@ -179,10 +182,11 @@ class TreePrinter<KEY,VALUE>
         out.println();
     }
 
-    private boolean goToLeftmostChild( PageCursor cursor ) throws IOException
+    private boolean goToLeftmostChild( PageCursor readCursor, PageCursor writeCursor ) throws IOException
     {
         boolean isInternal;
         long leftmostSibling = -1;
+        PageCursor cursor = select( readCursor, writeCursor );
         do
         {
             isInternal = TreeNode.isInternal( cursor );
@@ -195,18 +199,18 @@ class TreePrinter<KEY,VALUE>
 
         if ( isInternal )
         {
-            TreeNode.goTo( cursor, "child", leftmostSibling );
+            TreeNode.goTo( readCursor, "child", leftmostSibling );
         }
         return isInternal;
     }
 
-    private void printLevel( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition )
+    private void printLevel( PageCursor readCursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition )
             throws IOException
     {
         long rightSibling = -1;
         do
         {
-
+            PageCursor cursor = select( readCursor, writeCursor );
             printTreeNode( cursor, out, printValues, printPosition, false );
 
             do
@@ -217,9 +221,14 @@ class TreePrinter<KEY,VALUE>
 
             if ( TreeNode.isNode( rightSibling ) )
             {
-                TreeNode.goTo( cursor, "right sibling", rightSibling );
+                TreeNode.goTo( readCursor, "right sibling", rightSibling );
             }
         }
         while ( TreeNode.isNode( rightSibling ) );
+    }
+
+    private static PageCursor select( PageCursor readCursor, PageCursor writeCursor )
+    {
+        return readCursor.getCurrentPageId() == writeCursor.getCurrentPageId() ? writeCursor : readCursor;
     }
 }
