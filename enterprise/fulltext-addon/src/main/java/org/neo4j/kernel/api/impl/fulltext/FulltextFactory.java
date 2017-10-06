@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
  */
 class FulltextFactory
 {
-    public static final String INDEX_DIR = "fulltext";
+    public static final String INDEX_DIR = "bloom_fts";
     private final FileSystemAbstraction fileSystem;
     private final WritableIndexPartitionFactory partitionFactory;
     private final File indexDir;
