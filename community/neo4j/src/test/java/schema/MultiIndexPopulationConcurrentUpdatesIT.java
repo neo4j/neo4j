@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -86,8 +87,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+
+import static java.util.Arrays.asList;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -123,6 +125,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private int propertyId;
     private Map<String,Integer> labelsNameIdMap;
     private Map<Integer,String> labelsIdNameMap;
+    private Node country1;
+    private Node country2;
+    private Node color1;
+    private Node color2;
+    private Node car1;
+    private Node car2;
+    private Node[] otherNodes;
 
     @After
     public void tearDown() throws Throwable
@@ -149,9 +158,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentDeletesToPopulatedIndex() throws Throwable
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( 0, id( COUNTRY_LABEL ) )
+        updates.add( NodeUpdates.forNode( country1.getId(), id( COUNTRY_LABEL ) )
                 .removed( propertyId, Values.of( "Sweden" ) ).build() );
-        updates.add( NodeUpdates.forNode( 3, id( COLOR_LABEL ) )
+        updates.add( NodeUpdates.forNode( color2.getId(), id( COLOR_LABEL ) )
                 .removed( propertyId, Values.of( "green" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
@@ -179,9 +188,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentAddsToPopulatedIndex() throws Throwable
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( 6, id( COUNTRY_LABEL ) )
+        updates.add( NodeUpdates.forNode( otherNodes[0].getId(), id( COUNTRY_LABEL ) )
                 .added( propertyId, Values.of( "Denmark" ) ).build() );
-        updates.add( NodeUpdates.forNode( 7, id( CAR_LABEL ) )
+        updates.add( NodeUpdates.forNode( otherNodes[1].getId(), id( CAR_LABEL ) )
                 .added( propertyId, Values.of( "BMW" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
@@ -194,13 +203,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
                 assertEquals("Should be added by concurrent add.", 1,
-                        indexReader.countIndexedNodes( 6, Values.of( "Denmark" ) ) );
+                        indexReader.countIndexedNodes( otherNodes[0].getId(), Values.of( "Denmark" ) ) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
                 assertEquals("Should be added by concurrent add.", 1,
-                        indexReader.countIndexedNodes( 7, Values.of( "BMW" ) ) );
+                        indexReader.countIndexedNodes( otherNodes[1].getId(), Values.of( "BMW" ) ) );
             }
         }
     }
@@ -209,9 +218,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentChangesToPopulatedIndex() throws Exception
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( 3, id( COLOR_LABEL ) )
+        updates.add( NodeUpdates.forNode( color2.getId(), id( COLOR_LABEL ) )
                 .changed( propertyId, Values.of( "green" ), Values.of( "pink" ) ).build() );
-        updates.add( NodeUpdates.forNode( 5, id( CAR_LABEL ) )
+        updates.add( NodeUpdates.forNode( car2.getId(), id( CAR_LABEL ) )
                 .changed( propertyId, Values.of( "Ford" ), Values.of( "SAAB" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
@@ -224,18 +233,18 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertEquals("Should be deleted by concurrent change.", 0,
-                        indexReader.countIndexedNodes( 3, Values.of( "green" ) ) );
+                        indexReader.countIndexedNodes( color2.getId(), Values.of( "green" ) ) );
             }
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertEquals("Should be updated by concurrent change.", 1,
-                        indexReader.countIndexedNodes( 3, Values.of( "pink"  ) ) );
+                        indexReader.countIndexedNodes( color2.getId(), Values.of( "pink"  ) ) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
                 assertEquals("Should be added by concurrent change.", 1,
-                        indexReader.countIndexedNodes( 5, Values.of( "SAAB"  ) ) );
+                        indexReader.countIndexedNodes( car2.getId(), Values.of( "SAAB"  ) ) );
             }
         }
     }
@@ -320,9 +329,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propertyId
-        ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
         indexProxy.awaitStoreScanCompleted();
+        while ( indexProxy.getState() != InternalIndexState.ONLINE )
+        {
+            Thread.sleep( 10 );
+        }
         indexProxy.activate();
     }
 
@@ -370,28 +382,30 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         Label car = Label.label( CAR_LABEL );
         try ( Transaction transaction = embeddedDatabase.beginTx() )
         {
-            createNamedLabeledNode( countryLabel, "Sweden" );
-            createNamedLabeledNode( countryLabel, "USA" );
+            country1 = createNamedLabeledNode( countryLabel, "Sweden" );
+            country2 = createNamedLabeledNode( countryLabel, "USA" );
 
-            createNamedLabeledNode( color, "red" );
-            createNamedLabeledNode( color, "green" );
+            color1 = createNamedLabeledNode( color, "red" );
+            color2 = createNamedLabeledNode( color, "green" );
 
-            createNamedLabeledNode( car, "Volvo" );
-            createNamedLabeledNode( car, "Ford" );
+            car1 = createNamedLabeledNode( car, "Volvo" );
+            car2 = createNamedLabeledNode( car, "Ford" );
 
+            otherNodes = new Node[250];
             for ( int i = 0; i < 250; i++ )
             {
-                embeddedDatabase.createNode();
+                otherNodes[i] = embeddedDatabase.createNode();
             }
 
             transaction.success();
         }
     }
 
-    private void createNamedLabeledNode( Label label, String name )
+    private Node createNamedLabeledNode( Label label, String name )
     {
         Node node = embeddedDatabase.createNode( label );
         node.setProperty( NAME_PROPERTY, name );
+        return node;
     }
 
     private LabelScanStore getLabelScanStore()
