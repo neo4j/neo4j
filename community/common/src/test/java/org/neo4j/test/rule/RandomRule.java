@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 
 import java.lang.annotation.ElementType;
@@ -91,8 +92,25 @@ public class RandomRule implements TestRule
                 }
                 catch ( Throwable t )
                 {
-                    throw Exceptions.withMessage( t, t.getMessage() + ": random seed used:" + seed );
+                    if ( t instanceof MultipleFailureException )
+                    {
+                        MultipleFailureException multipleFailures = (MultipleFailureException) t;
+                        for ( Throwable failure : multipleFailures.getFailures() )
+                        {
+                            enhanceFailureWithSeed( failure );
+                        }
+                    }
+                    else
+                    {
+                        enhanceFailureWithSeed( t );
+                    }
+                    throw t;
                 }
+            }
+
+            private void enhanceFailureWithSeed( Throwable t )
+            {
+                Exceptions.withMessage( t, t.getMessage() + ": random seed used:" + seed );
             }
         };
     }
