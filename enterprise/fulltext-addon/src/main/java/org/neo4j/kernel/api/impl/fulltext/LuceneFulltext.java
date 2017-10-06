@@ -42,13 +42,13 @@ class LuceneFulltext extends AbstractLuceneIndex
 {
     private final Analyzer analyzer;
     private final String identifier;
-    private final FulltextProvider.FulltextIndexType type;
+    private final FulltextIndexType type;
     private Set<String> properties;
     private volatile InternalIndexState state;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
             String identifier,
-                    FulltextProvider.FulltextIndexType type )
+                    FulltextIndexType type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );
@@ -59,7 +59,7 @@ class LuceneFulltext extends AbstractLuceneIndex
     }
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, WritableIndexPartitionFactory partitionFactory, Analyzer analyzer, String identifier,
-            FulltextProvider.FulltextIndexType type ) throws IOException
+            FulltextIndexType type ) throws IOException
     {
         this( indexStorage, partitionFactory, Collections.EMPTY_SET, analyzer, identifier, type );
         this.properties = readProperties();
@@ -126,7 +126,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
     }
 
-    FulltextProvider.FulltextIndexType getType()
+    FulltextIndexType getType()
     {
         return type;
     }

@@ -32,8 +32,6 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.LUCENE_FULLTEX
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
-import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.matchesAny;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -55,6 +53,6 @@ public class BloomFulltextConfig implements LoadableConfig
     @Description( "Define the analyzer to use for the bloom index. Expects the fully qualified classname of the " +
                   "analyzer to use" )
     @Internal
-    static final Setting<String> bloom_analyzer = setting( "unsupported.dbms.bloom_analyzer", STRING,
+    static final Setting<String> bloom_default_analyzer = setting( "unsupported.dbms.bloom_default_analyzer", STRING,
             "org.apache.lucene.analysis.standard.StandardAnalyzer" );
 }
