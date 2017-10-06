@@ -41,13 +41,3 @@ Bouncy Castle License
 Common Development and Distribution License Version 1.1
   jsr311-api
 
-GNU General Public License, version 2 with the Classpath Exception
-  jsr311-api
-
-Dependencies with multiple licenses
------------------------------------
-
-jsr311-api
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-

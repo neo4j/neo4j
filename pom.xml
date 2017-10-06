@@ -233,35 +233,6 @@
           </configuration>
           <executions>
             <execution>
-              <id>enforce-licensing-oss</id>
-              <phase>${licensing.phase}</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                  <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-oss.txt
-                </thirdPartyLicensingFilename>
-              </configuration>
-            </execution>
-            <execution>
-              <id>enforce-licensing-com</id>
-              <phase>${licensing.phase}</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                  <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}.txt</thirdPartyLicensingFilename>
-              </configuration>
-            </execution>
-            <execution>
               <id>list-all-licenses</id>
               <phase>${licensing.phase}</phase>
               <goals>

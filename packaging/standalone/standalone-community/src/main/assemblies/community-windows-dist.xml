@@ -37,14 +37,6 @@
         <exclude>**/.keep</exclude>
       </excludes>
     </fileSet>
-    <!-- non-maven jars -->
-    <fileSet>
-      <directory>src/main/distribution/binary</directory>
-      <outputDirectory/>
-      <includes>
-        <include>lib/*.jar</include>
-      </includes>
-    </fileSet>
     <!-- do not filter binaries -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
@@ -127,6 +119,7 @@
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
+        <exclude>org.ow2.asm:*</exclude>
       </excludes>
     </dependencySet>
   </dependencySets>

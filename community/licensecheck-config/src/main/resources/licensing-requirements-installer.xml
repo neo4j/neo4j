@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2002-2016 "Neo Technology,"
+    Copyright (c) 2002-2017 "Neo Technology,"
     Network Engine for Objects in Lund AB [http://neotechnology.com]
 
     This file is part of Neo4j.
@@ -21,6 +21,10 @@
 
 -->
 <licensing-requirements>
+
+  <liked-license>Oracle Binary Code License Agreement for Java SE Platform Products and JavaFX</liked-license>
+  <liked-license>Install4j redistributable files license</liked-license>
+
   <missing-artifacts>
     <artifact id="Oracle JRE" name="Oracle Java Runtime Environment">
         <license>Oracle Binary Code License Agreement for Java SE Platform Products and JavaFX</license>
