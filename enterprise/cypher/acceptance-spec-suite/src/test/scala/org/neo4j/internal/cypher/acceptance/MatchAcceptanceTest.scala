@@ -805,9 +805,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createLabeledNode("B")
     createLabeledNode("C")
 
-    // TODO: This bug exists in 3.2 and 3.3, and so when the next releases of those are made,
-    // If at that point we have added support for 3.3, that fix will be available here too
-    // and the following line needs to be edited
     val result = executeWith(Configs.Interpreted, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
 
     // Then
