@@ -23,14 +23,18 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.store.cursors.MemoryManager;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.store.prototype.neole.PartialPropertyCursor.NO_PROPERTIES;
 import static org.neo4j.internal.store.prototype.neole.RelationshipCursor.NO_RELATIONSHIP;
@@ -73,6 +77,18 @@ public class ReadStore extends MemoryManager implements Read
 
     @Override
     public void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void nodeLabelUnionScan( NodeLabelIndexCursor cursor, int... labels )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void nodeLabelIntersectionScan( NodeLabelIndexCursor cursor, int... labels )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -211,6 +227,46 @@ public class ReadStore extends MemoryManager implements Read
 
     @Override
     public int propertyKey( String name )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void nodeExplicitIndexLookup(
+            NodeExplicitIndexCursor cursor, String index, String key, Value value )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void relationshipExplicitIndexGet(
+            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

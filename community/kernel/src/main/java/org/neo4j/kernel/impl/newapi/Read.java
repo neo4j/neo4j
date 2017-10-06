@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
@@ -103,9 +104,24 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public final void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
     {
-        LabelScanReader reader = labelScanReader();
-        IndexCursorProgressor.NodeLabelCursor target = (NodeLabelIndexCursor) cursor;
-        target.initialize( new NodeLabelIndexProgressor( reader.nodesWithLabel( label ), target ), false );
+        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithLabel( label ) );
+    }
+
+    @Override
+    public void nodeLabelUnionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
+    {
+        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ) );
+    }
+
+    @Override
+    public void nodeLabelIntersectionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
+    {
+        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
+    }
+
+    private void labelScan( IndexCursorProgressor.NodeLabelCursor target, PrimitiveLongIterator iterator )
+    {
+        target.initialize( new NodeLabelIndexProgressor( iterator, target ), false );
     }
 
     @Override

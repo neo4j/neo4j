@@ -38,6 +38,18 @@ public interface Read
 
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor );
 
+    /**
+     * Scan for nodes that have a <i>disjunction</i> of the specified labels.
+     * i.e. MATCH (n) WHERE n:Label1 OR n:Label2 OR ...
+     */
+    void nodeLabelUnionScan( NodeLabelIndexCursor cursor, int... labels );
+
+    /**
+     * Scan for nodes that have a <i>conjunction</i> of the specified labels.
+     * i.e. MATCH (n) WHERE n:Label1 AND n:Label2 AND ...
+     */
+    void nodeLabelIntersectionScan( NodeLabelIndexCursor cursor, int... labels );
+
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 
     void allNodesScan( NodeCursor cursor );

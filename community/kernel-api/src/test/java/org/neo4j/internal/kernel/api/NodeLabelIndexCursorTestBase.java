@@ -85,4 +85,40 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
             assertFoundNodes( cursor, 3, uniqueIds );
         }
     }
+
+    @Test
+    public void shouldFindNodesByDisjunction() throws Exception
+    {
+        // given
+        int first = read.nodeLabel( "First" );
+        int two = read.nodeLabel( "Two" );
+        /// find nodes with the First Two labels...
+        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        {
+            // when
+            read.nodeLabelUnionScan( cursor, first, two );
+
+            // then
+            assertFoundNodes( cursor, 4, uniqueIds );
+        }
+    }
+
+    @Test
+    public void shouldFindNodesByConjunction() throws Exception
+    {
+        // given
+        int first = read.nodeLabel( "First" );
+        int two = read.nodeLabel( "Two" );
+        // find the First node with label Two...
+        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        {
+            // when
+            read.nodeLabelIntersectionScan( cursor, first, two );
+
+            // then
+            assertFoundNodes( cursor, 1, uniqueIds );
+        }
+    }
 }
