@@ -34,12 +34,12 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.NodeManualIndexCursor;
+import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
-import org.neo4j.internal.kernel.api.RelationshipManualIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
@@ -296,13 +296,13 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public NodeManualIndexCursor allocateNodeManualIndexCursor()
+    public NodeExplicitIndexCursor allocateNodeManualIndexCursor()
     {
         return cursors.allocateNodeManualIndexCursor();
     }
 
     @Override
-    public RelationshipManualIndexCursor allocateRelationshipManualIndexCursor()
+    public RelationshipExplicitIndexCursor allocateRelationshipManualIndexCursor()
     {
         return cursors.allocateRelationshipManualIndexCursor();
     }

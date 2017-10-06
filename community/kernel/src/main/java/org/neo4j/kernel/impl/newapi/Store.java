@@ -21,13 +21,16 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -61,12 +64,13 @@ class Store extends Read
 {
     private final RelationshipGroupStore groupStore;
     private final PropertyStore propertyStore;
-    private NodeStore nodeStore;
-    private RelationshipStore relationshipStore;
+    private final NodeStore nodeStore;
+    private final RelationshipStore relationshipStore;
     private final StorageStatement statement;
     private final StoreReadLayer read;
+    private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
-    public Store( RecordStorageEngine engine )
+    public Store( RecordStorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
     {
         read = engine.storeReadLayer();
         statement = read.newStatement();
@@ -75,6 +79,7 @@ class Store extends Read
         this.relationshipStore = stores.getRelationshipStore();
         this.groupStore = stores.getRelationshipGroupStore();
         this.propertyStore = stores.getPropertyStore();
+        this.explicitIndexes = new Lazy<>( explicitIndexes );
     }
 
     @Override
@@ -96,6 +101,34 @@ class Store extends Read
     LabelScanReader labelScanReader()
     {
         return statement.getLabelScanReader();
+    }
+
+    @Override
+    ExplicitIndex explicitNodeIndex( String indexName )
+    {
+        try
+        {
+            return explicitIndexes.get().nodeChanges( indexName );
+        }
+        catch ( ExplicitIndexNotFoundKernelException e )
+        {
+            // TODO: exception handling
+            throw new RuntimeException( "SOMEONE HAS NOT IMPLEMENTED PROPER EXCEPTION HANDLING!", e );
+        }
+    }
+
+    @Override
+    ExplicitIndex explicitRelationshipIndex( String indexName )
+    {
+        try
+        {
+            return explicitIndexes.get().relationshipChanges( indexName );
+        }
+        catch ( ExplicitIndexNotFoundKernelException e )
+        {
+            // TODO: exception handling
+            throw new RuntimeException( "SOMEONE HAS NOT IMPLEMENTED PROPER EXCEPTION HANDLING!", e );
+        }
     }
 
     @Override

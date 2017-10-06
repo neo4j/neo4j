@@ -32,17 +32,35 @@ public interface IndexCursorProgressor
     {
         void initialize( IndexCursorProgressor progressor, int[] keys );
 
-        void done();
-
         boolean node( long reference, Value[] values );
+
+        void done();
     }
 
     interface NodeLabelCursor
     {
         void initialize( IndexCursorProgressor progressor, boolean providesLabels );
 
-        void done();
-
         boolean node( long reference, LabelSet labels );
+
+        void done();
     }
+
+    interface ExplicitCursor
+    {
+        void initialize( IndexCursorProgressor progressor, int expectedSize );
+
+        boolean entity( long reference, float score );
+
+        void done();
+    }
+//
+//    interface RelationshipManualCursor
+//    {
+//        void initialize( IndexCursorProgressor progressor, int expectedSize );
+//
+//        boolean node( long reference, float score, long source, int type, long target );
+//
+//        void done();
+//    }
 }

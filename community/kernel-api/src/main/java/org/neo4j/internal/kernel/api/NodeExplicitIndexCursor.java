@@ -20,8 +20,8 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Cursor for accessing manual index relationships.
+ * Cursor for accessing manual index nodes.
  */
-public interface RelationshipManualIndexCursor extends RelationshipIndexCursor, ManualIndexCursor
+public interface NodeExplicitIndexCursor extends NodeIndexCursor, ExplicitIndexCursor
 {
 }

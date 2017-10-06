@@ -31,6 +31,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.ExplicitIndexCursorTestBase.assertFoundNodes;
 
 public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -270,15 +271,5 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // then
             assertFoundNodes( node, 15, uniqueIds );
         }
-    }
-
-    static void assertFoundNodes( NodeIndexCursor node, int nodes, PrimitiveLongSet uniqueIds )
-    {
-        for ( int i = 0; i < nodes; i++ )
-        {
-            assertTrue( "at least " + nodes + " nodes", node.next() );
-            assertTrue( uniqueIds.add( node.nodeReference() ) );
-        }
-        assertFalse( "no more than " + nodes + " nodes", node.next() );
     }
 }

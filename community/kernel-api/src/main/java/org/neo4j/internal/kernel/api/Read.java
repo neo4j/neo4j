@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.values.storable.Value;
+
 /**
  * Defines the read operations of the Kernel API.
  */
@@ -122,4 +124,19 @@ public interface Read
     int nodeLabel( String name );
 
     int propertyKey( String name );
+
+    void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value );
+
+    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query );
+
+    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query );
+
+    void relationshipExplicitIndexGet(
+            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target );
+
+    void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target );
+
+    void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target );
 }

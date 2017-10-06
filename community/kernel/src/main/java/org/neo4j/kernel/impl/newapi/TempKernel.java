@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.KernelAPI;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -34,8 +36,10 @@ class TempKernel implements KernelAPI
 
     TempKernel( GraphDatabaseAPI db )
     {
-        RecordStorageEngine engine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        this.tx = new Transaction( engine );
+        DependencyResolver resolver = db.getDependencyResolver();
+        RecordStorageEngine engine = resolver.resolveDependency( RecordStorageEngine.class );
+        KernelTransactions ktx = resolver.resolveDependency( KernelTransactions.class );
+        this.tx = new Transaction( engine, ktx );
         this.cursors = new Cursors( tx );
     }
 
@@ -59,9 +63,9 @@ class TempKernel implements KernelAPI
 
     private static class Transaction extends Store implements org.neo4j.internal.kernel.api.Transaction
     {
-        Transaction( RecordStorageEngine engine )
+        Transaction( RecordStorageEngine engine, KernelTransactions ktx )
         {
-            super( engine );
+            super( engine, ktx.explicitIndexTxStateSupplier() );
         }
 
         @Override

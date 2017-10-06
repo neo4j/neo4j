@@ -24,13 +24,12 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor,
-        IndexCursorProgressor.NodeLabelCursor
+class NodeLabelIndexCursor extends IndexCursor
+        implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor, IndexCursorProgressor.NodeLabelCursor
 {
     private final Read read;
     private long node;
     private LabelSet labels;
-    private IndexCursorProgressor progressor;
 
     NodeLabelIndexCursor( Read read )
     {
@@ -40,7 +39,7 @@ class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelInd
     @Override
     public void initialize( IndexCursorProgressor progressor, boolean providesLabels )
     {
-        this.progressor = progressor;
+        super.initialize( progressor );
     }
 
     @Override
@@ -49,12 +48,6 @@ class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelInd
         this.node = reference;
         this.labels = labels;
         return true;
-    }
-
-    @Override
-    public void done()
-    {
-        close();
     }
 
     @Override
@@ -76,21 +69,9 @@ class NodeLabelIndexCursor implements org.neo4j.internal.kernel.api.NodeLabelInd
     }
 
     @Override
-    public boolean next()
-    {
-        return progressor != null && progressor.next();
-    }
-
-    @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
-        progressor.close();
+        super.close();
         node = NO_ID;
         labels = null;
     }

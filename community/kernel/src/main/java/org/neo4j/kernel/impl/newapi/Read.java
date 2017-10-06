@@ -21,10 +21,13 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -239,6 +242,77 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read
     }
 
     @Override
+    public final void nodeExplicitIndexLookup(
+            NodeExplicitIndexCursor cursor, String index, String key, Value value )
+    {
+        explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).get( key, value.asObject() ) );
+    }
+
+    @Override
+    public final void nodeExplicitIndexQuery(
+            NodeExplicitIndexCursor cursor, String index, Object query )
+    {
+        explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
+                query instanceof Value ? ((Value) query).asObject() : query ) );
+    }
+
+    @Override
+    public final void nodeExplicitIndexQuery(
+            NodeExplicitIndexCursor cursor, String index, String key, Object query )
+    {
+        explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
+                key, query instanceof Value ? ((Value) query).asObject() : query ) );
+    }
+
+    @Override
+    public void relationshipExplicitIndexGet(
+            RelationshipExplicitIndexCursor cursor,
+            String index,
+            String key,
+            Value value,
+            long source,
+            long target )
+    {
+        explicitIndex(
+                (org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor,
+                explicitRelationshipIndex( index ).get( key, value.asObject(), source, target ) );
+    }
+
+    @Override
+    public void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor,
+            String index,
+            Object query,
+            long source,
+            long target )
+    {
+        explicitIndex(
+                (org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor,
+                explicitRelationshipIndex( index )
+                        .query( query instanceof Value ? ((Value) query).asObject() : query, source, target ) );
+    }
+
+    @Override
+    public void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor,
+            String index,
+            String key,
+            Object query,
+            long source,
+            long target )
+    {
+        explicitIndex(
+                (org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor,
+                explicitRelationshipIndex( index ).query(
+                        key, query instanceof Value ? ((Value) query).asObject() : query, source, target ) );
+    }
+
+    private static void explicitIndex( IndexCursorProgressor.ExplicitCursor cursor, ExplicitIndexHits hits )
+    {
+        cursor.initialize( new ExplicitIndexProgressor( cursor, hits ), hits.size() );
+    }
+
+    @Override
     public final void futureNodeReferenceRead( long reference )
     {
     }
@@ -261,6 +335,10 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read
     abstract IndexReader indexReader( IndexReference index );
 
     abstract LabelScanReader labelScanReader();
+
+    abstract ExplicitIndex explicitNodeIndex( String indexName );
+
+    abstract ExplicitIndex explicitRelationshipIndex( String indexName );
 
     @Override
     public abstract IndexReference index( int label, int... properties );

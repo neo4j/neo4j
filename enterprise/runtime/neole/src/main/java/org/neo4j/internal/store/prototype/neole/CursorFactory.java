@@ -20,9 +20,9 @@
 package org.neo4j.internal.store.prototype.neole;
 
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.NodeManualIndexCursor;
+import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipManualIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 
 class CursorFactory implements org.neo4j.internal.kernel.api.CursorFactory
 {
@@ -76,13 +76,13 @@ class CursorFactory implements org.neo4j.internal.kernel.api.CursorFactory
     }
 
     @Override
-    public NodeManualIndexCursor allocateNodeManualIndexCursor()
+    public NodeExplicitIndexCursor allocateNodeManualIndexCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public RelationshipManualIndexCursor allocateRelationshipManualIndexCursor()
+    public RelationshipExplicitIndexCursor allocateRelationshipManualIndexCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

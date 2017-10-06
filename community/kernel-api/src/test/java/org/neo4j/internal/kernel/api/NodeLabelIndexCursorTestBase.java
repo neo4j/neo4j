@@ -27,7 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase.assertFoundNodes;
+import static org.neo4j.internal.kernel.api.ExplicitIndexCursorTestBase.assertFoundNodes;
 
 public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>

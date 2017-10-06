@@ -148,6 +148,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         blockNewTransactions();
     }
 
+    public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
+    {
+        return explicitIndexTxStateSupplier;
+    }
+
     public KernelTransaction newInstance( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();

@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-/**
- * Cursor for accessing manual index nodes.
- */
-public interface NodeManualIndexCursor extends NodeIndexCursor, ManualIndexCursor
+import org.neo4j.internal.kernel.api.ExplicitIndexCursorTestBase;
+
+public class ExplicitIndexCursorTest extends ExplicitIndexCursorTestBase<ReadTestSupport>
 {
+    @Override
+    public ReadTestSupport newTestSupport()
+    {
+        return new ReadTestSupport();
+    }
 }

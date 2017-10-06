@@ -19,22 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-/**
- * Cursor for scanning relationships of a schema index.
- */
-public interface RelationshipIndexCursor extends Cursor
+interface ExplicitIndexCursor
 {
-    void relationship( RelationshipScanCursor cursor );
+    int totalExpectedCursorSize();
 
-    void sourceNode( NodeCursor cursor );
-
-    void targetNode( NodeCursor cursor );
-
-    int relationshipLabel();
-
-    long sourceNodeReference();
-
-    long targetNodeReference();
-
-    long relationshipReference(); // will relationships have independent references? exposing it is leakage!
+    float score();
 }

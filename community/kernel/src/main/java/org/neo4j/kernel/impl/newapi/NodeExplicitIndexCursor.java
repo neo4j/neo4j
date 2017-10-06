@@ -20,36 +20,47 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class NodeValueIndexCursor extends IndexCursor
-        implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, IndexCursorProgressor.NodeValueCursor
+class NodeExplicitIndexCursor extends IndexCursor
+        implements org.neo4j.internal.kernel.api.NodeExplicitIndexCursor, IndexCursorProgressor.ExplicitCursor
 {
     private final Read read;
+    private int expectedSize;
     private long node;
-    private int[] keys;
-    private Value[] values;
+    private float score;
 
-    NodeValueIndexCursor( Read read )
+    NodeExplicitIndexCursor( Read read )
     {
         this.read = read;
     }
 
     @Override
-    public void initialize( IndexCursorProgressor progressor, int[] keys )
+    public void initialize( IndexCursorProgressor progressor, int expectedSize )
     {
         super.initialize( progressor );
-        this.keys = keys;
+        this.expectedSize = expectedSize;
     }
 
     @Override
-    public boolean node( long reference, Value[] values )
+    public boolean entity( long reference, float score )
     {
         this.node = reference;
-        this.values = values;
+        this.score = score;
         return true;
+    }
+
+    @Override
+    public int totalExpectedCursorSize()
+    {
+        return expectedSize;
+    }
+
+    @Override
+    public float score()
+    {
+        return score;
     }
 
     @Override
@@ -65,29 +76,11 @@ class NodeValueIndexCursor extends IndexCursor
     }
 
     @Override
-    public int numberOfProperties()
-    {
-        return keys == null ? 0 : keys.length;
-    }
-
-    @Override
-    public int propertyKey( int offset )
-    {
-        return keys[offset];
-    }
-
-    @Override
-    public Value propertyValue( int offset )
-    {
-        return values[offset];
-    }
-
-    @Override
     public void close()
     {
         super.close();
-        this.node = NO_ID;
-        this.keys = null;
-        this.values = null;
+        node = NO_ID;
+        score = 0;
+        expectedSize = 0;
     }
 }

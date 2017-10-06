@@ -26,6 +26,7 @@ import org.junit.runners.model.Statement;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -68,6 +69,18 @@ public class MockStore extends Read implements TestRule
 
     @Override
     LabelScanReader labelScanReader()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    ExplicitIndex explicitNodeIndex( String indexName )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    ExplicitIndex explicitRelationshipIndex( String indexName )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

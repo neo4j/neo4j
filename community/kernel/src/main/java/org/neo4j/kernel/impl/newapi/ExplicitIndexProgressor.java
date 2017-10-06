@@ -17,24 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-/**
- * Cursor for scanning relationships of a schema index.
- */
-public interface RelationshipIndexCursor extends Cursor
+import org.neo4j.kernel.api.ExplicitIndexHits;
+
+class ExplicitIndexProgressor implements IndexCursorProgressor
 {
-    void relationship( RelationshipScanCursor cursor );
+    private final ExplicitCursor cursor;
+    private final ExplicitIndexHits hits;
 
-    void sourceNode( NodeCursor cursor );
+    ExplicitIndexProgressor( ExplicitCursor cursor, ExplicitIndexHits hits )
+    {
+        this.cursor = cursor;
+        this.hits = hits;
+    }
 
-    void targetNode( NodeCursor cursor );
+    @Override
+    public boolean next()
+    {
+        while ( hits.hasNext() )
+        {
+            if ( cursor.entity( hits.next(), hits.currentScore() ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
-    int relationshipLabel();
-
-    long sourceNodeReference();
-
-    long targetNodeReference();
-
-    long relationshipReference(); // will relationships have independent references? exposing it is leakage!
+    @Override
+    public void close()
+    {
+        hits.close();
+    }
 }

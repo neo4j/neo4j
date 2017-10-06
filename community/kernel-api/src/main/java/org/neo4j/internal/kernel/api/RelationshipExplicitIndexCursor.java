@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-interface ManualIndexCursor
+/**
+ * Cursor for accessing manual index relationships.
+ */
+public interface RelationshipExplicitIndexCursor extends RelationshipIndexCursor, ExplicitIndexCursor
 {
-    int totalExpectedCursorSize();
-
-    float score();
 }

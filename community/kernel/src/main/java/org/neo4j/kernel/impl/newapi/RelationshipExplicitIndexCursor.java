@@ -20,55 +20,98 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 
-class NodeManualIndexCursor implements org.neo4j.internal.kernel.api.NodeManualIndexCursor
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+
+class RelationshipExplicitIndexCursor extends IndexCursor
+        implements org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor, IndexCursorProgressor.ExplicitCursor
 {
     private final Read read;
+    private int expectedSize;
+    private long relationship;
+    private float score;
 
-    NodeManualIndexCursor( Read read )
+    RelationshipExplicitIndexCursor( Read read )
     {
         this.read = read;
     }
 
     @Override
+    public void initialize( IndexCursorProgressor progressor, int expectedSize )
+    {
+        super.initialize( progressor );
+        this.expectedSize = expectedSize;
+    }
+
+    @Override
+    public boolean entity( long reference, float score )
+    {
+        this.relationship = reference;
+        this.score = score;
+        return true;
+    }
+
+    @Override
     public int totalExpectedCursorSize()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return expectedSize;
     }
 
     @Override
     public float score()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return score;
     }
 
     @Override
-    public void node( NodeCursor cursor )
+    public void relationship( RelationshipScanCursor cursor )
+    {
+        read.singleRelationship( relationship, cursor );
+    }
+
+    @Override
+    public void sourceNode( NodeCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public long nodeReference()
+    public void targetNode( NodeCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public boolean next()
+    public int relationshipLabel()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public boolean shouldRetry()
+    public long sourceNodeReference()
     {
-        return false;
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long targetNodeReference()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long relationshipReference()
+    {
+        return relationship;
     }
 
     @Override
     public void close()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        super.close();
+        relationship = NO_ID;
+        score = 0;
+        expectedSize = 0;
     }
 }
