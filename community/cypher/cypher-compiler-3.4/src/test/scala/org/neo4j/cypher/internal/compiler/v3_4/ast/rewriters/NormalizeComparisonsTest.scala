@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_4.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.v3_4.expressions._
 
-class NormalizeComparisonsTest extends CypherFunSuite {
-  val pos = DummyPosition(0)
+class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSupport {
+
   val expression: Expression = Variable("foo")(pos)
   val comparisons = List(
     Equals(expression, expression)(pos),
@@ -43,5 +43,20 @@ class NormalizeComparisonsTest extends CypherFunSuite {
 
       rewritten.lhs shouldNot be theSameInstanceAs rewritten.rhs
     }
+  }
+
+  test("extract multiple hasLabels") {
+    val original = HasLabels(varFor("a"), Seq(lblName("X"), lblName("Y")))(pos)
+
+    original.endoRewrite(normalizeComparisons) should equal(
+      Ands(Set(
+        HasLabels(varFor("a"), Seq(lblName("X")))(pos),
+        HasLabels(varFor("a"), Seq(lblName("Y")))(pos)))(pos))
+  }
+
+  test("does not extract single hasLabels") {
+    val original = HasLabels(varFor("a"), Seq(lblName("Y")))(pos)
+
+    original.endoRewrite(normalizeComparisons) should equal(original)
   }
 }

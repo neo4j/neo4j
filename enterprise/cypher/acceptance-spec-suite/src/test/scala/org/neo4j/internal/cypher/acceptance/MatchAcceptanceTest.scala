@@ -781,14 +781,65 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("size" -> 8)))
   }
 
-  /**
-    * Append variable to keys and transform value arrays to lists
-    */
-  private def asResult(data: Map[String, Any], id: String) =
-    data.map {
-      case (k, v) => (s"$id.$k", v)
-    }.mapValues {
-      case v: Array[_] => v.toList
-      case v => v
-    }
+  test("Should handle multiple labels") {
+    val n1 = createLabeledNode("A", "B", "C")
+    val n2 = createLabeledNode("A", "B")
+    createLabeledNode("A", "C")
+    createLabeledNode("B", "C")
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+
+    val result = executeWith(Configs.All, "MATCH (a) WHERE a:A:B RETURN a")
+
+    // Then
+    result.toList should equal(List(Map("a" -> n1), Map("a" -> n2)))
+  }
+
+  test("Should handle multiple labels with OR") {
+    val n1 = createLabeledNode("A", "B", "C")
+    val n2 = createLabeledNode("A", "B")
+    val n3 = createLabeledNode("A", "C")
+    createLabeledNode("B", "C")
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+
+    // TODO: This bug exists in 3.2, and so when the next release of 3.2 is made, that fix will be available here too
+    // and the following line needs to be edited by deleting ` - Configs.Cost3_2`
+    val result = executeWith(Configs.Interpreted - Configs.Cost3_2, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
+
+    // Then
+    result.toList should equal(List(Map("a" -> n1), Map("a" -> n2), Map("a" -> n3)))
+  }
+
+  test("Should handle multiple labels with OR and AND") {
+    val n1 = createLabeledNode("A", "B", "C")
+    val n2 = createLabeledNode("A", "B")
+    val n3 = createLabeledNode("A", "C")
+    createLabeledNode("B", "C")
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+
+    val result = executeWith(Configs.Interpreted, "MATCH (a) WHERE (a:A AND a:B) OR (a:A AND a:C) RETURN a")
+
+    // Then
+    result.toList should equal(List(Map("a" -> n1), Map("a" -> n2), Map("a" -> n3)))
+  }
+
+  test("Should handle multiple labels with AND") {
+    val n = createLabeledNode("A", "B", "C")
+    createLabeledNode("A", "B")
+    createLabeledNode("A", "C")
+    createLabeledNode("B", "C")
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+
+    val result = executeWith(Configs.All, "MATCH (a) WHERE a:A:B AND a:A:C RETURN a")
+
+    // Then
+    result.toList should equal(List(Map("a" -> n)))
+  }
 }
