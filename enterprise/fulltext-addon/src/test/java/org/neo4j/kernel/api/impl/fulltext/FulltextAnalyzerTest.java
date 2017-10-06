@@ -40,7 +40,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         analyzer = ENGLISH;
         try ( FulltextProvider provider = createProvider() )
         {
-//            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.registerTransactionEventHandler();
 
@@ -71,7 +70,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         analyzer = SWEDISH;
         try ( FulltextProvider provider = createProvider(); )
         {
-//            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.registerTransactionEventHandler();
 
