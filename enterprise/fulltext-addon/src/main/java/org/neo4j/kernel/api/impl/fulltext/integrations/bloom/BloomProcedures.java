@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -29,7 +28,6 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -38,8 +36,8 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.RELATIONSHIPS;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_RELATIONSHIPS;
 import static org.neo4j.procedure.Mode.READ;
@@ -52,42 +50,56 @@ public class BloomProcedures
 {
     @Context
     public FulltextProvider provider;
-    @Context
-    public FulltextFactory factory;
 
     @Description( "Await the completion of any background index population or updates" )
-    @Procedure( name = "db.fulltext.bloomAwaitPopulation", mode = READ )
+    @Procedure( name = "bloom.awaitPopulation", mode = READ )
     public void awaitPopulation() throws Exception
     {
         provider.awaitPopulation();
     }
 
-    @Description( "Returns the property keys indexed by the bloom addon" )
-    @Procedure( name = "db.fulltext.bloomFulltextGetPropertyKeys", mode = READ )
-    public Stream<PropertyOutput> bloomFulltextGetPropertyKeys() throws Exception
+    @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
+    @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
+    public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws Exception
     {
         return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
     }
 
-    @Description( "Check the status of the bloom addon" )
-    @Procedure( name = "db.fulltext.bloomFulltextStatus", mode = READ )
-    public Stream<StatusOutput> bloomFulltextStatus() throws Exception
+    @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
+    @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
+    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
     {
-        List<InternalIndexState> states = Arrays.asList( provider.getState( BLOOM_NODES, NODES ), provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) );
-        return states.stream().map( StatusOutput::new );
+        return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
     }
 
-    @Description( "Set the property keys to index" )
-    @Procedure( name = "db.fulltext.bloomFulltextSetPropertyKeys", mode = SCHEMA )
-    public void bloomFulltextSetPropertyKeys( @Name( "propertyKeys" ) List<String> propertyKeys ) throws Exception
+    @Description( "Set the node property keys to index" )
+    @Procedure( name = "bloom.setIndexedNodePropertyKeys", mode = SCHEMA )
+    public void setIndexedNodePropertyKeys( @Name( "propertyKeys" ) List<String> propertyKeys ) throws Exception
     {
-        factory.changeIndexedProperties( BLOOM_NODES, NODES, propertyKeys );
-        factory.changeIndexedProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS, propertyKeys );
+        provider.changeIndexedProperties( BLOOM_NODES, NODES, propertyKeys );
     }
 
-    @Description( "Queries the bloom index for nodes" )
-    @Procedure( name = "db.fulltext.bloomFulltextNodes", mode = READ )
-    public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
+    @Description( "Set the relationship property keys to index" )
+    @Procedure( name = "bloom.setIndexedRelationshipPropertyKeys", mode = SCHEMA )
+    public void setIndexedRelationshipPropertyKeys( @Name( "propertyKeys" ) List<String> propertyKeys ) throws Exception
+    {
+        provider.changeIndexedProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS, propertyKeys );
+    }
+
+    @Description( "Check the status of the Bloom fulltext index add-on" )
+    @Procedure( name = "bloom.indexStatus", mode = READ )
+    public Stream<StatusOutput> indexStatus() throws Exception
+    {
+        InternalIndexState nodeIndexState = provider.getState( BLOOM_NODES, NODES );
+        InternalIndexState relationshipIndexState = provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
+        return Stream.of( nodeIndexState, relationshipIndexState ).map( StatusOutput::new );
+    }
+
+    @Description( "Query the Bloom fulltext index for nodes" )
+    @Procedure( name = "bloom.searchNodes", mode = READ )
+    public Stream<EntityOutput> bloomFulltextNodes(
+            @Name( "terms" ) List<String> terms,
+            @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
             @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_NODES, NODES ) )
@@ -96,9 +108,11 @@ public class BloomProcedures
         }
     }
 
-    @Description( "Queries the bloom index for relationships" )
-    @Procedure( name = "db.fulltext.bloomFulltextRelationships", mode = READ )
-    public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
+    @Description( "Query the Bloom fulltext index for relationships" )
+    @Procedure( name = "bloom.searchRelationships", mode = READ )
+    public Stream<EntityOutput> bloomFulltextRelationships(
+            @Name( "terms" ) List<String> terms,
+            @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
             @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) )
