@@ -200,7 +200,7 @@ public class BloomIT
     @Test
     public void shouldBeAbleToConfigureAnalyzer() throws Exception
     {
-        builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
+        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         try ( Transaction transaction = db.beginTx() )
@@ -242,7 +242,7 @@ public class BloomIT
         assertFalse( result.hasNext() );
         db.shutdown();
 
-        builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
+        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
@@ -469,7 +469,7 @@ public class BloomIT
         String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
         String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
-        builder.setConfig( BloomFulltextConfig.bloom_analyzer, ENGLISH );
+        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, ENGLISH );
 
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
@@ -493,7 +493,7 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( BloomFulltextConfig.bloom_analyzer, SWEDISH );
+        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, SWEDISH );
         db = getDb();
         db.execute( AWAIT_POPULATION ).close();
 

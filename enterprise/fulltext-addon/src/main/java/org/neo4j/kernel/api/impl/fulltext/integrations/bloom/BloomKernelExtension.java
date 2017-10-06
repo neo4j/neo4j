@@ -76,7 +76,7 @@ class BloomKernelExtension extends LifecycleAdapter
     {
         if ( config.get( BloomFulltextConfig.bloom_enabled ) )
         {
-            String analyzer = config.get( BloomFulltextConfig.bloom_analyzer );
+            String analyzer = config.get( BloomFulltextConfig.bloom_default_analyzer );
 
             Log log = logService.getInternalLog( FulltextProvider.class );
             provider = new FulltextProvider( db, log, availabilityGuard, scheduler, transactionIdStore.get(),
