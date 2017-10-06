@@ -22,7 +22,7 @@ package org.neo4j.backup;
 import java.io.File;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,7 +44,7 @@ interface ConsistencyCheck
                 @Override
                 public boolean runFull( File storeDir, Config tuningConfiguration,
                         ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
-                        CheckConsistencyConfig checkConsistencyConfig )
+                        ConsistencyFlags consistencyFlags )
                         throws ConsistencyCheckFailedException
                 {
                     return true;
@@ -64,12 +64,12 @@ interface ConsistencyCheck
                 public boolean runFull( File storeDir, Config tuningConfiguration,
                         ProgressMonitorFactory progressFactory, LogProvider logProvider,
                         FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
-                        CheckConsistencyConfig checkConsistencyConfig ) throws ConsistencyCheckFailedException
+                        ConsistencyFlags consistencyFlags ) throws ConsistencyCheckFailedException
                 {
                     try
                     {
                         return new ConsistencyCheckService().runFullConsistencyCheck( storeDir, tuningConfiguration,
-                                progressFactory, logProvider, fileSystem, pageCache, verbose, checkConsistencyConfig )
+                                progressFactory, logProvider, fileSystem, pageCache, verbose, consistencyFlags )
                                 .isSuccessful();
                     }
                     catch ( ConsistencyCheckIncompleteException e )
@@ -83,7 +83,7 @@ interface ConsistencyCheck
 
     boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
-            CheckConsistencyConfig checkConsistencyConfig )
+            ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckFailedException;
 
     String toString();
@@ -114,14 +114,14 @@ interface ConsistencyCheck
             @Override
             public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
                     LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
-                    CheckConsistencyConfig checkConsistencyConfig )
+                    ConsistencyFlags consistencyFlags )
                     throws ConsistencyCheckFailedException
             {
                 try
                 {
                     return consistencyCheckService
                             .runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
-                                    fileSystem, pageCache, verbose, reportDir, checkConsistencyConfig ).isSuccessful();
+                                    fileSystem, pageCache, verbose, reportDir, consistencyFlags ).isSuccessful();
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {

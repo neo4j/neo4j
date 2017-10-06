@@ -27,7 +27,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.DbRepresentation;
@@ -36,8 +36,8 @@ import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.backup.OnlineBackupCommandIT.createSomeData;
-import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.backup.OnlineBackupCommandCcIT.createSomeData;
+import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupHaIT
 {
