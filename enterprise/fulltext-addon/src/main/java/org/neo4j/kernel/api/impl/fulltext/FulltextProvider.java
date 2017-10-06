@@ -65,8 +65,8 @@ public class FulltextProvider implements AutoCloseable
     private final ReadWriteLock configurationLock;
 
     /**
-     * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
-     *
+     * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index
+     * operations.
      *
      * @param db Database that this provider should work with.
      * @param log For logging errors.
@@ -112,14 +112,16 @@ public class FulltextProvider implements AutoCloseable
         {
             storedConfig = indexReader.getConfigurationDocument();
         }
-        return storedConfig == null && index.getProperties().isEmpty() || storedConfig != null && storedConfig.equals( currentConfig );
+        return storedConfig == null && index.getProperties().isEmpty() ||
+               storedConfig != null && storedConfig.equals( currentConfig );
     }
 
     /**
      * Wait for the asynchronous background population, if one is on-going, to complete.
-     *
+     * <p>
      * Such population, where the entire store is scanned for data to write to the index, will be started if the index
      * needs to recover after an unclean shut-down, or a configuration change.
+     *
      * @throws RuntimeException If it was not possible to wait for the population to finish, for some reason.
      */
     public void awaitPopulation()
@@ -235,9 +237,12 @@ public class FulltextProvider implements AutoCloseable
     {
         switch ( type )
         {
-        case NODES: return writableNodeIndices;
-        case RELATIONSHIPS: return writableRelationshipIndices;
-        default: throw new IllegalArgumentException( "No such fulltext index type: " + type );
+        case NODES:
+            return writableNodeIndices;
+        case RELATIONSHIPS:
+            return writableRelationshipIndices;
+        default:
+            throw new IllegalArgumentException( "No such fulltext index type: " + type );
         }
     }
 
@@ -246,7 +251,8 @@ public class FulltextProvider implements AutoCloseable
         return applyToMatchingIndex( identifier, type, WritableFulltext::getProperties );
     }
 
-    private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<WritableFulltext,E> function )
+    private <E> E applyToMatchingIndex(
+            String identifier, FulltextIndexType type, Function<WritableFulltext,E> function )
     {
         if ( type == FulltextIndexType.NODES )
         {
@@ -309,7 +315,9 @@ public class FulltextProvider implements AutoCloseable
         {
             if ( propertyKeys.stream().anyMatch( s -> s.startsWith( FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX ) ) )
             {
-                throw new InvalidArgumentsException( "It is not possible to index property keys starting with " + FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX );
+                throw new InvalidArgumentsException(
+                        "It is not possible to index property keys starting with " +
+                        FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX );
             }
             Set<String> currentProperties = getProperties( identifier, type );
             if ( !currentProperties.containsAll( propertyKeys ) || !propertyKeys.containsAll( currentProperties ) )
