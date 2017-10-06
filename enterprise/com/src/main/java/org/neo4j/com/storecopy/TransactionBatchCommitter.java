@@ -131,23 +131,24 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
             if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
                  commitTimestamp < earliestSafeTimestamp )
             {
-                log.info( "Marking transaction for termination, " +
-                        "invalidated due to an upcoming batch of changes being applied:" +
-                        "\n" +
-                        "  Batch: firstCommittedTxId:" + first.transactionId() +
-                        ", firstCommittedTimestamp:" + informativeTimestamp( firstCommittedTimestamp ) +
-                        ", lastCommittedTxId:" + last.transactionId() +
-                        ", lastCommittedTimestamp:" + informativeTimestamp( lastCommittedTimestamp ) +
-                        ", batchTimeRange:" + informativeDuration( lastCommittedTimestamp - firstCommittedTimestamp ) +
-                        ", earliestSafeTimstamp:" + informativeTimestamp( earliestSafeTimestamp ) +
-                        ", safeZoneDuration:" + informativeDuration( idReuseSafeZoneTime ) +
-                        "\n" +
-                        "  Transaction: lastCommittedTimestamp:" +
-                        informativeTimestamp( txHandle.lastTransactionTimestampWhenStarted() ) +
-                        ", lastCommittedTxId:" + txHandle.lastTransactionIdWhenStarted() +
-                        ", localStartTimestamp:" + informativeTimestamp( txHandle.startTime() ) );
-
-                txHandle.markForTermination( Status.Transaction.Outdated );
+                if ( txHandle.markForTermination( Status.Transaction.Outdated ) )
+                {
+                    log.info( "Marking transaction for termination, " +
+                            "invalidated due to an upcoming batch of changes being applied:" +
+                            "\n" +
+                            "  Batch: firstCommittedTxId:" + first.transactionId() +
+                            ", firstCommittedTimestamp:" + informativeTimestamp( firstCommittedTimestamp ) +
+                            ", lastCommittedTxId:" + last.transactionId() +
+                            ", lastCommittedTimestamp:" + informativeTimestamp( lastCommittedTimestamp ) +
+                            ", batchTimeRange:" + informativeDuration( lastCommittedTimestamp - firstCommittedTimestamp ) +
+                            ", earliestSafeTimstamp:" + informativeTimestamp( earliestSafeTimestamp ) +
+                            ", safeZoneDuration:" + informativeDuration( idReuseSafeZoneTime ) +
+                            "\n" +
+                            "  Transaction: lastCommittedTimestamp:" +
+                            informativeTimestamp( txHandle.lastTransactionTimestampWhenStarted() ) +
+                            ", lastCommittedTxId:" + txHandle.lastTransactionIdWhenStarted() +
+                            ", localStartTimestamp:" + informativeTimestamp( txHandle.startTime() ) );
+                }
             }
         }
     }
