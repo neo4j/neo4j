@@ -38,5 +38,8 @@ case object normalizeComparisons extends Rewriter {
       GreaterThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@InvalidNotEquals(lhs, rhs) =>
       InvalidNotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
+    case c@HasLabels(expr, labels) if labels.size > 1 =>
+      val hasLabels = labels.map(l => HasLabels(expr.endoRewrite(copyVariables), Seq(l))(c.position))
+      Ands(hasLabels.toSet)(c.position)
   })
 }
