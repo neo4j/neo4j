@@ -420,7 +420,7 @@ public class OperationsFacade
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return null;
+            return Values.NO_VALUE;
         }
         return dataRead().graphGetProperty( statement, propertyKeyId );
     }
