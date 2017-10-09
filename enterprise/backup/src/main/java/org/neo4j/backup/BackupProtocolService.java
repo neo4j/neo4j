@@ -93,14 +93,12 @@ class BackupProtocolService
             " perform a full backup at this point. You can modify this time interval by setting the '" +
             GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a higher value.";
 
-    static final String DIFFERENT_STORE_MESSAGE = "Target directory contains full backup of a logically different store.";
-
     private final Supplier<FileSystemAbstraction> fileSystemSupplier;
     private final LogProvider logProvider;
     private final Log log;
     private final OutputStream logDestination;
     private final Monitors monitors;
-    private final Optional<PageCache> pageCacheOptional;
+    private final PageCache pageCache;
 
     BackupProtocolService()
     {
@@ -109,8 +107,8 @@ class BackupProtocolService
 
     BackupProtocolService( OutputStream logDestination )
     {
-        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination,
-                new Monitors(), null );
+        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination, new Monitors(),
+                createPageCache( new DefaultFileSystemAbstraction() ) );
     }
 
     BackupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, OutputStream logDestination, Monitors monitors,
@@ -121,7 +119,7 @@ class BackupProtocolService
         this.log = logProvider.getLog( getClass() );
         this.logDestination = logDestination;
         this.monitors = monitors;
-        this.pageCacheOptional = Optional.ofNullable( pageCache );
+        this.pageCache = pageCache;
         monitors.addMonitorListener( new StoreCopyClientLoggingMonitor( log ), getClass().getName() );
     }
 
@@ -148,7 +146,7 @@ class BackupProtocolService
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
-        try ( PageCache pageCache = this.pageCacheOptional.orElse( createPageCache( fileSystem, tuningConfiguration ) ) )
+        try
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
                     loadKernelExtensions(), logProvider, fileSystem, pageCache,
@@ -201,7 +199,7 @@ class BackupProtocolService
 
         Map<String,String> configParams = config.getRaw();
 
-        try ( PageCache pageCache = this.pageCacheOptional.orElse( createPageCache( fileSystem, config ) ) )
+        try
         {
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
             long backupStartTime = System.currentTimeMillis();
@@ -328,7 +326,7 @@ class BackupProtocolService
         return !fileSystem.isDirectory( targetDirectory ) || 0 == fileSystem.listFiles( targetDirectory ).length;
     }
 
-    private static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache,
+    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache,
             Map<String,String> config )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
@@ -370,7 +368,7 @@ class BackupProtocolService
         }
         catch ( MismatchingStoreIdException e )
         {
-            throw new RuntimeException( DIFFERENT_STORE_MESSAGE, e );
+            throw new ExistingBackupWithDifferentStoreException( e );
         }
         catch ( RuntimeException | IOException e )
         {

@@ -19,36 +19,22 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.io.pagecache.PageCache;
+import java.io.File;
 
-public class BackupSupportingClasses
+import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+
+class ExistingBackupWithDifferentStoreException extends RuntimeException
 {
-    // Strategies
-    private final BackupDelegator backupDelegator;
-    private final BackupProtocolService backupProtocolService;
+    static final String DIFFERENT_STORE_MESSAGE = "Target directory contains full backup of a logically different store.";
+    private static final String BACKUP_LOCATION_MESSAGE = "Directory `%s` contains full backup of a logically different store.";
 
-    // Dependency Helpers
-    private final PageCache pageCache;
-
-    public BackupSupportingClasses( BackupDelegator backupDelegator, BackupProtocolService backupProtocolService, PageCache pageCache )
+    ExistingBackupWithDifferentStoreException( MismatchingStoreIdException mismatchingStoreIdException )
     {
-        this.backupDelegator = backupDelegator;
-        this.backupProtocolService = backupProtocolService;
-        this.pageCache = pageCache;
+        super( DIFFERENT_STORE_MESSAGE, mismatchingStoreIdException );
     }
 
-    public BackupDelegator getBackupDelegator()
+    ExistingBackupWithDifferentStoreException( ExistingBackupWithDifferentStoreException cause, File backupLocation )
     {
-        return backupDelegator;
-    }
-
-    public BackupProtocolService getBackupProtocolService()
-    {
-        return backupProtocolService;
-    }
-
-    public PageCache getPageCache()
-    {
-        return pageCache;
+        super( String.format( BACKUP_LOCATION_MESSAGE, backupLocation ), cause );
     }
 }

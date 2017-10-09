@@ -19,36 +19,21 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.util.Map;
+
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-public class BackupSupportingClasses
+import static org.neo4j.backup.BackupProtocolService.startTemporaryDb;
+
+public class BackupRecoveryService
 {
-    // Strategies
-    private final BackupDelegator backupDelegator;
-    private final BackupProtocolService backupProtocolService;
-
-    // Dependency Helpers
-    private final PageCache pageCache;
-
-    public BackupSupportingClasses( BackupDelegator backupDelegator, BackupProtocolService backupProtocolService, PageCache pageCache )
+    public void recoverWithDatabase( File targetDirectory, PageCache pageCache, Config config )
     {
-        this.backupDelegator = backupDelegator;
-        this.backupProtocolService = backupProtocolService;
-        this.pageCache = pageCache;
-    }
-
-    public BackupDelegator getBackupDelegator()
-    {
-        return backupDelegator;
-    }
-
-    public BackupProtocolService getBackupProtocolService()
-    {
-        return backupProtocolService;
-    }
-
-    public PageCache getPageCache()
-    {
-        return pageCache;
+        Map<String,String> configParams = config.getRaw();
+        GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
+        targetDb.shutdown();
     }
 }

@@ -55,11 +55,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -164,13 +166,13 @@ public class BackupProtocolServiceIT
     private BackupProtocolService backupService()
     {
         return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
-                FormattedLogProvider.toOutputStream( NULL_OUTPUT ), NULL_OUTPUT, new Monitors(), null );
+                FormattedLogProvider.toOutputStream( NULL_OUTPUT ), NULL_OUTPUT, new Monitors(), pageCacheRule.getPageCache( fileSystemRule.get() ) );
     }
 
     private BackupProtocolService backupService( LogProvider logProvider )
     {
-        return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
-                logProvider, NULL_OUTPUT, new Monitors(), null );
+        return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ), logProvider, NULL_OUTPUT,
+                new Monitors(), pageCacheRule.getPageCache( fileSystemRule.get() ) );
     }
 
     @Test
@@ -1009,7 +1011,7 @@ public class BackupProtocolServiceIT
         catch ( RuntimeException e )
         {
             // Then
-            assertThat( e.getMessage(), equalTo( BackupProtocolService.DIFFERENT_STORE_MESSAGE ) );
+            assertThat( e.getMessage(), equalTo( ExistingBackupWithDifferentStoreException.DIFFERENT_STORE_MESSAGE ) );
             assertThat( e.getCause(), instanceOf( MismatchingStoreIdException.class ) );
         }
     }

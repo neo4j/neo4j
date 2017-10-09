@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,8 +31,10 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -40,6 +43,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -75,6 +79,11 @@ public class OnlineBackupCommandCcIT
 
     private File backupDir;
 
+    private List<Runnable> oneOffShutdownTasks;
+    private static final Label label = Label.label( "any_label" );
+    private static final String PROP_NAME = "name";
+    private static final String PROP_RANDOM = "random";
+
     @Parameter
     public String recordFormat;
 
@@ -87,7 +96,14 @@ public class OnlineBackupCommandCcIT
     @Before
     public void initialiseBackupDirectory()
     {
+        oneOffShutdownTasks = new ArrayList<>();
         backupDir = testDirectory.directory( "backups" );
+    }
+
+    @After
+    public void performShutdownTasks()
+    {
+        oneOffShutdownTasks.forEach( Runnable::run );
     }
 
     @Test
@@ -126,13 +142,51 @@ public class OnlineBackupCommandCcIT
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
 
         Cluster cluster = startCluster( recordFormat );
-        String ip = TestHelpers.backupAddress( clusterLeader( cluster ).database() );
+        String ip = TestHelpers.backupAddressHa( clusterLeader( cluster ).database() );
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
+    }
+
+    @Test
+    public void dataIsInAUsableStateAfterBackup() throws Exception
+    {
+        // given database exists
+        Cluster cluster = startCluster( recordFormat );
+
+        // and the database has indexes
+        createIndexes( cluster.getDbWithAnyRole( Role.LEADER ).database() );
+
+        // and the database is being populated
+        AtomicBoolean continueFlagReference = new AtomicBoolean( false );
+        new Thread( () -> repeatedlyPopulateDatabase( clusterLeader( cluster ).database(), continueFlagReference ) )
+                .start(); // populate db with number properties etc.
+        oneOffShutdownTasks.add( () -> continueFlagReference.set( false ) ); // kill thread
+
+        // then backup is successful
+        String ip = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
+        assertEquals( 0,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" ) );
+    }
+
+    private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
+    {
+        while ( continueFlagReference.get() )
+        {
+            createSomeData( db );
+        }
+    }
+
+    private void createIndexes( CoreGraphDatabase db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label ).on( PROP_NAME ).on( PROP_RANDOM ).create();
+            tx.success();
+        }
     }
 
     private static CoreGraphDatabase clusterDatabase( Cluster cluster )
@@ -155,9 +209,9 @@ public class OnlineBackupCommandCcIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            node.setProperty( "name", "Neo" );
-            node.setProperty( "random", Math.random() * 10000 );
+            Node node = db.createNode( label );
+            node.setProperty( PROP_NAME, "Neo" );
+            node.setProperty( PROP_RANDOM, Math.random() * 10000 );
             db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }

@@ -28,6 +28,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
@@ -54,6 +55,8 @@ public class BackupStrategyWrapperTest
     private Config config = mock( Config.class );
     private OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
     private PotentiallyErroneousState<BackupStageOutcome> SUCCESS = new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
+    private PageCache pageCache = mock( PageCache.class );
+    private BackupRecoveryService backupRecoveryService = mock( BackupRecoveryService.class );
 
     @Before
     public void setup()
@@ -62,7 +65,7 @@ public class BackupStrategyWrapperTest
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( backupLocation );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn( SUCCESS );
-        subject = new BackupStrategyWrapper( backupStrategyImplementation, backupCopyService );
+        subject = new BackupStrategyWrapper( backupStrategyImplementation, backupCopyService, pageCache, config, backupRecoveryService );
     }
 
     @Test
@@ -233,5 +236,32 @@ public class BackupStrategyWrapperTest
 
         // and full backup was definitely performed
         verify( backupStrategyImplementation ).performFullBackup( any(), any(), any() );
+    }
+
+    @Test
+    public void performingFullBackupInvokesRecovery()
+    {
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupRecoveryService ).recoverWithDatabase( any(), any(), any() );
+    }
+
+    @Test
+    public void performingIncrementalBackupDoesNotInvokeRecovery()
+    {
+        // given backup exists
+        when( backupCopyService.backupExists( any()  ) ).thenReturn( true );
+        when( requiredArguments.isFallbackToFull() ).thenReturn( true );
+
+        // and incremental backups are successful
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn( SUCCESS );
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupRecoveryService, never() ).recoverWithDatabase( any(), any(), any() );
     }
 }

@@ -50,6 +50,11 @@ public class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
                     config );
             return new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
         }
+        catch ( ExistingBackupWithDifferentStoreException e )
+        {
+            ExistingBackupWithDifferentStoreException exceptionWithFilename = new ExistingBackupWithDifferentStoreException( e, backupDestination );
+            return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, exceptionWithFilename );
+        }
         catch ( IncrementalBackupNotPossibleException e )
         {
             return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, e );
