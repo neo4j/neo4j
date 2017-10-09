@@ -23,10 +23,8 @@
   </scm>
 
   <properties>
-    <version-package>cypher.internal.util.v3_4</version-package>
-    <scala.version>2.11.11</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
-    <license.header>${project.baseUri}/ASL-2-header.txt</license.header>
+    <licensing.prepend.text>notice-asl-prefix.txt</licensing.prepend.text>
+    <license-text.header>${project.baseUri}/ASL-2-header.txt</license-text.header>
   </properties>
 
   <licenses>
@@ -41,41 +39,6 @@
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <!-- inserting licenses is better than checking for them -->
-        <executions>
-          <execution>
-            <id>check-licenses</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>insert-licenses</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <strictCheck>true</strictCheck>
-          <header>${license.header}</header>
-          <includes>
-            <include>src/**/*.java</include>
-            <include>src/**/*.scala</include>
-          </includes>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-            <scala>SLASHSTAR_STYLE</scala>
-          </mapping>
-          <timestampPropertyName>currentYear</timestampPropertyName>
-          <properties>
-            <inceptionYear>2002</inceptionYear>
-          </properties>
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -128,40 +91,5 @@
     </dependency>
 
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>neo-full-build-with-javadoc</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>generate-dummy-javadocs-jar</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-                <configuration>
-                  <classifier>javadoc</classifier>
-                  <excludes>
-                    <exclude>**</exclude>
-                  </excludes>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>
