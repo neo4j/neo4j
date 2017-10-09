@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -103,7 +102,7 @@ public class ConsistencyCheckToolTest
             Mockito.when( service.runFullConsistencyCheck( any( File.class ), any( Config.class ),
                     any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                     eq( false ), any( CheckConsistencyConfig.class ) ) )
-                    .then( (Answer<ConsistencyCheckService.Result>) invocationOnMock ->
+                    .then( invocationOnMock ->
                     {
                         LogProvider provider = invocationOnMock.getArgumentAt( 3, LogProvider.class );
                         provider.getLog( "test" ).info( "testMessage" );
@@ -220,15 +219,15 @@ public class ConsistencyCheckToolTest
         runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
     }
 
-    private void checkLogRecordTimeZone( ConsistencyCheckService service, String[] args, int i, String s )
-            throws ToolFailureException, IOException
+    private void checkLogRecordTimeZone( ConsistencyCheckService service, String[] args, int hoursShift,
+            String timeZoneSuffix ) throws ToolFailureException, IOException
     {
-        TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( i ) ) );
+        TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( outputStream );
         runConsistencyCheckToolWith( service, printStream, args );
         String logLine = readLogLine( outputStream );
-        assertTrue( logLine, logLine.contains( s ) );
+        assertTrue( logLine, logLine.contains( timeZoneSuffix ) );
     }
 
     private String readLogLine( ByteArrayOutputStream outputStream ) throws IOException
