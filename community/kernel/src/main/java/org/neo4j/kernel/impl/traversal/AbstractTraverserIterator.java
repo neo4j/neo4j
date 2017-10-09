@@ -27,7 +27,7 @@ abstract class AbstractTraverserIterator extends PrefetchingResourceIterator<Pat
 {
     protected int numberOfPathsReturned;
     protected int numberOfRelationshipsTraversed;
-    private final Resource resource;
+    private Resource resource;
 
     protected AbstractTraverserIterator( Resource resource )
     {
@@ -61,6 +61,10 @@ abstract class AbstractTraverserIterator extends PrefetchingResourceIterator<Pat
     @Override
     public void close()
     {
-        resource.close();
+        if ( resource != null )
+        {
+            resource.close();
+            resource = null;
+        }
     }
 }
