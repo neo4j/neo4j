@@ -189,6 +189,10 @@ class TreeNode<KEY,VALUE>
 
     static void setKeyCount( PageCursor cursor, int count )
     {
+        if ( count < 0 )
+        {
+            throw new IllegalArgumentException( "Invalid key count, " + count + ". On tree node " + cursor.getCurrentPageId() + "." );
+        }
         cursor.putInt( BYTE_POS_KEYCOUNT, count );
     }
 
