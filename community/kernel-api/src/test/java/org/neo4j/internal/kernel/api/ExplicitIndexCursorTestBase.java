@@ -121,6 +121,46 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
 
             // then
             assertFoundRelationships( cursor, 1, edges );
+
+            // when
+            read.relationshipExplicitIndexGet( cursor, "rels", "bar", stringValue( "not that" ), -1, -1 );
+
+            // then
+            assertFoundRelationships( cursor, 0, edges );
+        }
+    }
+
+    @Test
+    public void shouldFindRelationshipByQuery() throws Exception
+    {
+        // given
+        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipManualIndexCursor();
+                PrimitiveLongSet relationships = Primitive.longSet() )
+        {
+            // when
+            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha:betting*", -1, -1 );
+
+            // then
+            assertFoundRelationships( cursor, 1, relationships );
+
+            // when
+            relationships.clear();
+            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha", "betting*", -1,-1 );
+
+            // then
+            assertFoundRelationships( cursor, 1, relationships );
+
+            // when
+            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha:that*", -1, -1 );
+
+            // then
+            assertFoundRelationships( cursor, 0, relationships );
+
+            // when
+            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha", "that*", -1, -1 );
+
+            // then
+            assertFoundRelationships( cursor, 0, relationships );
         }
     }
 
