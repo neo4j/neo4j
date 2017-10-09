@@ -20,17 +20,17 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.{ResourceIterator, Result}
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.{ExecutionEngineFunSuite, PatternGen, QueryStatisticsTestSupport}
+import org.neo4j.graphdb.ResourceIterator
 import org.scalacheck.{Gen, Shrink}
 
 /*
  * Tests merge on random patterns.
- *  - uses updateWithBothPlanners to verify that the statistics match the rule planner
  *  - makes sure that whatever pattern we create is returned when doing MATCH on pattern.
  */
 class SemanticMergeAcceptanceTest
-  extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport with QueryStatisticsTestSupport {
+  extends ExecutionEngineFunSuite with PatternGen with QueryStatisticsTestSupport {
 
   //we don't want scala check to shrink patterns here and leave things in the database
   implicit val dontShrink: Shrink[List[Element]] = Shrink(s => Stream.empty)
@@ -44,16 +44,16 @@ class SemanticMergeAcceptanceTest
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          updateWithBothPlannersAndCompatibilityMode(s"MERGE $patternString")
+          graph.execute(s"MERGE $patternString")
 
           //find created pattern (cannot return * since everything might be unnamed)
-          val result1: Result = graph.execute(s"MATCH $patternString RETURN 42")
+          val result1 = graph.execute(s"MATCH $patternString RETURN 42")
           hasSingleRow(result1)
           val result2 = graph.execute(s"CYPHER runtime=interpreted MATCH $patternString RETURN 42")
           hasSingleRow(result2)
 
           //clean up
-          updateWithBothPlannersAndCompatibilityMode(s"MATCH (n) DETACH DELETE n")
+          graph.execute(s"MATCH (n) DETACH DELETE n")
         }
       }
     }
@@ -68,15 +68,15 @@ class SemanticMergeAcceptanceTest
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
+          graph.execute(s"CREATE $patternString")
 
           //find created pattern (cannot return * since everything might be unnamed)
-          val result = updateWithBothPlannersAndCompatibilityMode(s"MERGE $patternString RETURN 42")
+          val result = RewindableExecutionResult(graph.execute(s"MERGE $patternString RETURN 42"))
           result.toList should have size 1
           assertStats(result, nodesCreated = 0)
 
           //clean up
-          updateWithBothPlannersAndCompatibilityMode(s"MATCH (n) DETACH DELETE n")
+          graph.execute(s"MATCH (n) DETACH DELETE n")
         }
       }
     }
