@@ -144,7 +144,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout( "Something else" );
+        SimpleLongLayout otherLayout = new SimpleLongLayout( 0, "Something else" );
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
