@@ -376,7 +376,7 @@
       <activation>
         <activeByDefault>false</activeByDefault>
         <file>
-          <exists>src/main</exists>
+          <exists>src</exists>
         </file>
       </activation>
       <build>

@@ -109,11 +109,6 @@
       <aka>Dual license consisting of the CDDL v1.1 and GPL v2</aka>
       <aka>CDDL + GPLv2 with classpath exception</aka>
     </license>
-    <license name="Eclipse Public License, Version 1.0">
-      <aka>Eclipse Public License - Version 1.0</aka>
-      <aka>Eclipse Public License - v 1.0</aka>
-      <aka>EPL1.0</aka>
-    </license>
     <license name="GNU General Public License, version 2">
       <aka>GPL2</aka>
       <aka>GNU General Public License, Version 2</aka>
