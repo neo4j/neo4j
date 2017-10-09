@@ -126,7 +126,7 @@ class Candidate implements RaftMessageHandler
                     outcome.setNextRole( FOLLOWER );
                     log.info( "Moving to FOLLOWER state after receiving vote request from %s at term %d (I am at %d)",
                             req.from(), req.term(), ctx.term() );
-                    Voting.handleVoteRequest( ctx, outcome, req );
+                    Voting.handleVoteRequest( ctx, outcome, req, log );
                     break;
                 }
 

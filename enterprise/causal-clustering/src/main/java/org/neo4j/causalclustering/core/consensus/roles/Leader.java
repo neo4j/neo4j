@@ -227,7 +227,7 @@ public class Leader implements RaftMessageHandler
                         "Moving to FOLLOWER state after receiving vote request at term %d (my term is " + "%d) from %s",
                         req.term(), ctx.term(), req.from() );
 
-                Voting.handleVoteRequest( ctx, outcome, req );
+                Voting.handleVoteRequest( ctx, outcome, req, log );
                 break;
             }
 
