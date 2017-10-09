@@ -65,7 +65,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
   }
 
   private def setupModel(): Unit = {
-    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
+    graph.execute(
       """
         |MERGE (p1:Pixie {fname:'Charles'})
         |MERGE (p2:Pixie {fname:'Kim'})
@@ -74,6 +74,6 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
         |MERGE (p5:Pixie {fname:'Paz'})
         |MERGE (p1)-[:KNOWS]->(p2)-[:KNOWS]->(p3)-[:KNOWS]->(p4)-[:KNOWS]->(p5)-[:KNOWS]->(p1)
         |RETURN p1,p2,p3,p4,p5
-      """.stripMargin, rollback = false)
+      """.stripMargin)
   }
 }
