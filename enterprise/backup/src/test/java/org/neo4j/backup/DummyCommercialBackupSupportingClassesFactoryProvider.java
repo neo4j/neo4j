@@ -19,20 +19,28 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 
-public class CommunityBackupSupportingClassesFactory extends AbstractBackupSupportingClassesFactory
+public class DummyCommercialBackupSupportingClassesFactoryProvider extends BackupSupportingClassesFactoryProvider
 {
-    public CommunityBackupSupportingClassesFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
+
+    @Override
+    public AbstractBackupSupportingClassesFactory getFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
     {
-        super( backupModuleResolveAtRuntime );
+        return new AbstractBackupSupportingClassesFactory( backupModuleResolveAtRuntime )
+        {
+            @Override
+            protected PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory()
+            {
+                return null;
+            }
+        };
     }
 
     @Override
-    protected PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory()
+    protected int getPriority()
     {
-        return new NoOpPipelineHandlerAppenderFactory();
+        return -1;
     }
 }
