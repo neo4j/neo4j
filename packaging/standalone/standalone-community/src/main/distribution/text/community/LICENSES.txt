@@ -8,13 +8,15 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
-  ColorBrewer
   Commons IO
   Commons Lang
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  ExplorerCanvas
+  disposables.js
+  dom-storage.js
+  ecdsa-sig-formatter.js
+  firebase.js
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -30,10 +32,12 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  neo4j-driver.js
   Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
+  rxjs.js
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -282,52 +286,27 @@ SUCH DAMAGE.
 
 
 ------------------------------------------------------------------------------
-BSD - seedrandom.js
-  seedrandom.js
-------------------------------------------------------------------------------
-
-LICENSE (BSD):
-
-Copyright 2010 David Bau, all rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-
- 3. Neither the name of this module nor the names of its contributors may
-    be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-------------------------------------------------------------------------------
 BSD License
+  antlr4.js
   ASM Analysis
   ASM Core
   ASM Tree
   ASM Util
+  buffer-equal-constant-time.js
   D3.js
-  Easing Equations (in easing.js)
+  dnd-core.js
+  hoek.js
+  hoist-non-react-statics.js
+  ieee754.js
+  invariant.js
   JLine
-  JQuery Easing Plugin
+  joi.js
+  prop-types.js
+  react-dnd-html5-backend.js
+  react-dnd.js
   Scala Compiler
+  sprintf-js.js
+  topo.js
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -354,6 +333,39 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+------------------------------------------------------------------------------
+BSD License 2-clause
+  esprima.js
+  isemail.js
+  node-noop.js
+  staged-git-files.js
+  stringify-object.js
+------------------------------------------------------------------------------
+
+Copyright <year> <copyright holder>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+	 this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ------------------------------------------------------------------------------
@@ -749,283 +761,8 @@ County, California.
 
 
 ------------------------------------------------------------------------------
-Creative Commons - Glyphish
-  Glyphish Icons Free
-------------------------------------------------------------------------------
-
-GLYPHISH ICONS FREE
-
-Created by Joseph Wain and downloaded from http://glyphish.com
-
-This work is licensed under the Creative Commons Attribution 3.0 United States
-License. To view a copy of this license, visit
-http://creativecommons.org/licenses/by/3.0/us/
-
-You are free to share and to remix it remix under the following conditions:
-
-	* You must attribute the work in the manner specified by the author (SEE
-	BELOW).
-
-	* For any reuse or distribution, you must make clear to others the
-	license terms of this work.
-
-	* The above conditions can be waived if you get permission from the
-	copyright holder (send me an email to discuss).
-
-You're free to use these icons for commercial and non-commercial purposes, for
-yourself, your company and your clients, and to edit, remix and otherwise modify
-them, as long as clear attribution is provided. You may not sell or redistribute
-the icons themselves as icons.
-
-Additionally, you may not use them in a way that encourages downstream
-distribution -- no templates or skins or theme kits or similar uses, no
-app-building tools or similar. (The person using the theme or template might not
-know where the icons came from and thus wouldn't be following the license.) This
-specifically prohibits the use in any kind of "app builder" tool or platform,
-especially where the icons are provided as choices to people using the tool to
-create apps.
-
-ATTRIBUTION -- A note on your app's website, like "Icons by Glyphish" or
-similar, plus a link back to glyphish.com, is the preferred form of attribution.
-For questions about attribution, contact me via the Glyphish website.
-
-USE WITHOUT ATTRIBUTION -- If attribution is not possible, workable or desirable
-for your application, get in touch to discuss other options.
-
-
-------------------------------------------------------------------------------
-Eclipse Public License, Version 1.0
-  Jetty :: Http Utility
-  Jetty :: IO Utility
-  Jetty :: Security
-  Jetty :: Server Core
-  Jetty :: Servlet Handling
-  Jetty :: Utilities
-  Jetty :: Webapp Application Support
-  Jetty :: XML utilities
-------------------------------------------------------------------------------
-
-Eclipse Public License - v 1.0
-
-THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE PUBLIC
-LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION OF THE PROGRAM
-CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
-
-1. DEFINITIONS
-
-"Contribution" means:
-
-a) in the case of the initial Contributor, the initial code and documentation
-distributed under this Agreement, and
-
-b) in the case of each subsequent Contributor:
-
-i) changes to the Program, and
-
-ii) additions to the Program;
-
-where such changes and/or additions to the Program originate from and are
-distributed by that particular Contributor. A Contribution 'originates' from a
-Contributor if it was added to the Program by such Contributor itself or anyone
-acting on such Contributor's behalf. Contributions do not include additions to
-the Program which: (i) are separate modules of software distributed in
-conjunction with the Program under their own license agreement, and (ii) are not
-derivative works of the Program.
-
-"Contributor" means any person or entity that distributes the Program.
-
-"Licensed Patents" mean patent claims licensable by a Contributor which are
-necessarily infringed by the use or sale of its Contribution alone or when
-combined with the Program.
-
-"Program" means the Contributions distributed in accordance with this Agreement.
-
-"Recipient" means anyone who receives the Program under this Agreement,
-including all Contributors.
-
-2. GRANT OF RIGHTS
-
-a) Subject to the terms of this Agreement, each Contributor hereby grants
-Recipient a non-exclusive, worldwide, royalty-free copyright license to
-reproduce, prepare derivative works of, publicly display, publicly perform,
-distribute and sublicense the Contribution of such Contributor, if any, and such
-derivative works, in source code and object code form.
-
-b) Subject to the terms of this Agreement, each Contributor hereby grants
-Recipient a non-exclusive, worldwide, royalty-free patent license under Licensed
-Patents to make, use, sell, offer to sell, import and otherwise transfer the
-Contribution of such Contributor, if any, in source code and object code form.
-This patent license shall apply to the combination of the Contribution and the
-Program if, at the time the Contribution is added by the Contributor, such
-addition of the Contribution causes such combination to be covered by the
-Licensed Patents. The patent license shall not apply to any other combinations
-which include the Contribution. No hardware per se is licensed hereunder.
-
-c) Recipient understands that although each Contributor grants the licenses to
-its Contributions set forth herein, no assurances are provided by any
-Contributor that the Program does not infringe the patent or other intellectual
-property rights of any other entity. Each Contributor disclaims any liability to
-Recipient for claims brought by any other entity based on infringement of
-intellectual property rights or otherwise. As a condition to exercising the
-rights and licenses granted hereunder, each Recipient hereby assumes sole
-responsibility to secure any other intellectual property rights needed, if any.
-For example, if a third party patent license is required to allow Recipient to
-distribute the Program, it is Recipient's responsibility to acquire that license
-before distributing the Program.
-
-d) Each Contributor represents that to its knowledge it has sufficient copyright
-rights in its Contribution, if any, to grant the copyright license set forth in
-this Agreement.
-
-3. REQUIREMENTS
-
-A Contributor may choose to distribute the Program in object code form under its
-own license agreement, provided that:
-
-a) it complies with the terms and conditions of this Agreement; and
-
-b) its license agreement:
-
-i) effectively disclaims on behalf of all Contributors all warranties and
-conditions, express and implied, including warranties or conditions of title and
-non-infringement, and implied warranties or conditions of merchantability and
-fitness for a particular purpose;
-
-ii) effectively excludes on behalf of all Contributors all liability for
-damages, including direct, indirect, special, incidental and consequential
-damages, such as lost profits;
-
-iii) states that any provisions which differ from this Agreement are offered by
-that Contributor alone and not by any other party; and
-
-iv) states that source code for the Program is available from such Contributor,
-and informs licensees how to obtain it in a reasonable manner on or through a
-medium customarily used for software exchange.
-
-When the Program is made available in source code form:
-
-a) it must be made available under this Agreement; and
-
-b) a copy of this Agreement must be included with each copy of the Program.
-
-Contributors may not remove or alter any copyright notices contained within the
-Program.
-
-Each Contributor must identify itself as the originator of its Contribution, if
-any, in a manner that reasonably allows subsequent Recipients to identify the
-originator of the Contribution.
-
-4. COMMERCIAL DISTRIBUTION
-
-Commercial distributors of software may accept certain responsibilities with
-respect to end users, business partners and the like. While this license is
-intended to facilitate the commercial use of the Program, the Contributor who
-includes the Program in a commercial product offering should do so in a manner
-which does not create potential liability for other Contributors. Therefore, if
-a Contributor includes the Program in a commercial product offering, such
-Contributor ("Commercial Contributor") hereby agrees to defend and indemnify
-every other Contributor ("Indemnified Contributor") against any losses, damages
-and costs (collectively "Losses") arising from claims, lawsuits and other legal
-actions brought by a third party against the Indemnified Contributor to the
-extent caused by the acts or omissions of such Commercial Contributor in
-connection with its distribution of the Program in a commercial product
-offering. The obligations in this section do not apply to any claims or Losses
-relating to any actual or alleged intellectual property infringement. In order
-to qualify, an Indemnified Contributor must: a) promptly notify the Commercial
-Contributor in writing of such claim, and b) allow the Commercial Contributor to
-control, and cooperate with the Commercial Contributor in, the defense and any
-related settlement negotiations. The Indemnified Contributor may participate in
-any such claim at its own expense.
-
-For example, a Contributor might include the Program in a commercial product
-offering, Product X. That Contributor is then a Commercial Contributor. If that
-Commercial Contributor then makes performance claims, or offers warranties
-related to Product X, those performance claims and warranties are such
-Commercial Contributor's responsibility alone. Under this section, the
-Commercial Contributor would have to defend claims against the other
-Contributors related to those performance claims and warranties, and if a court
-requires any other Contributor to pay any damages as a result, the Commercial
-Contributor must pay those damages.
-
-5. NO WARRANTY
-
-EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, THE PROGRAM IS PROVIDED ON AN
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
-IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF TITLE,
-NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. Each
-Recipient is solely responsible for determining the appropriateness of using and
-distributing the Program and assumes all risks associated with its exercise of
-rights under this Agreement , including but not limited to the risks and costs
-of program errors, compliance with applicable laws, damage to or loss of data,
-programs or equipment, and unavailability or interruption of operations.
-
-6. DISCLAIMER OF LIABILITY
-
-EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, NEITHER RECIPIENT NOR ANY
-CONTRIBUTORS SHALL HAVE ANY LIABILITY FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT LIMITATION LOST
-PROFITS), HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-OUT OF THE USE OR DISTRIBUTION OF THE PROGRAM OR THE EXERCISE OF ANY RIGHTS
-GRANTED HEREUNDER, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-
-7. GENERAL
-
-If any provision of this Agreement is invalid or unenforceable under applicable
-law, it shall not affect the validity or enforceability of the remainder of the
-terms of this Agreement, and without further action by the parties hereto, such
-provision shall be reformed to the minimum extent necessary to make such
-provision valid and enforceable.
-
-If Recipient institutes patent litigation against any entity (including a
-cross-claim or counterclaim in a lawsuit) alleging that the Program itself
-(excluding combinations of the Program with other software or hardware)
-infringes such Recipient's patent(s), then such Recipient's rights granted under
-Section 2(b) shall terminate as of the date such litigation is filed.
-
-All Recipient's rights under this Agreement shall terminate if it fails to
-comply with any of the material terms or conditions of this Agreement and does
-not cure such failure in a reasonable period of time after becoming aware of
-such noncompliance. If all Recipient's rights under this Agreement terminate,
-Recipient agrees to cease use and distribution of the Program as soon as
-reasonably practicable. However, Recipient's obligations under this Agreement
-and any licenses granted by Recipient relating to the Program shall continue and
-survive.
-
-Everyone is permitted to copy and distribute copies of this Agreement, but in
-order to avoid inconsistency the Agreement is copyrighted and may only be
-modified in the following manner. The Agreement Steward reserves the right to
-publish new versions (including revisions) of this Agreement from time to time.
-No one other than the Agreement Steward has the right to modify this Agreement.
-The Eclipse Foundation is the initial Agreement Steward. The Eclipse Foundation
-may assign the responsibility to serve as the Agreement Steward to a suitable
-separate entity. Each new version of the Agreement will be given a
-distinguishing version number. The Program (including Contributions) may always
-be distributed subject to the version of the Agreement under which it was
-received. In addition, after a new version of the Agreement is published,
-Contributor may elect to distribute the Program (including its Contributions)
-under the new version. Except as expressly stated in Sections 2(a) and 2(b)
-above, Recipient receives no rights or licenses to the intellectual property of
-any Contributor under this Agreement, whether expressly, by implication,
-estoppel or otherwise. All rights in the Program not expressly granted under
-this Agreement are reserved.
-
-This Agreement is governed by the laws of the State of New York and the
-intellectual property laws of the United States of America. No party to this
-Agreement will bring a legal action under this Agreement more than one year
-after the cause of action arose. Each party waives its rights to a jury trial in
-any resulting litigation.
-
-
-------------------------------------------------------------------------------
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
-  jersey-core
-  jersey-multipart
-  jersey-server
-  jersey-servlet
-  jsr311-api
-  MIME streaming extension
 ------------------------------------------------------------------------------
 
 The GNU General Public License (GPL) Version 2, June 1991 
@@ -1392,44 +1129,202 @@ version.
 
 
 ------------------------------------------------------------------------------
+ISC
+  css-color-keywords.js
+  get-own-enumerable-property-symbols.js
+  graceful-fs.js
+  isexe.js
+  lru-cache.js
+  minimatch.js
+  pseudomap.js
+  sax.js
+  signal-exit.js
+  which.js
+  yallist.js
+------------------------------------------------------------------------------
+
+Copyright (c) <year>, <copyright holder>
+
+Permission to use, copy, modify, and/or distribute this software
+for any purpose with or without fee is hereby granted, provided
+that the above copyright notice and this permission notice
+appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE
+LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES
+OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+------------------------------------------------------------------------------
 MIT License
-  angular-animate
-  angular-base64
-  angular-cookies
-  angular-local-storage
-  angular-mocks
-  angular-resource
-  angular-sanitize
-  angular-scenario
-  angular-ui-bootstrap
-  angular-ui-codemirror
-  angular-ui-sortable
-  AngularJS
-  arbor-graphics.js
-  arbor-tween.js
-  arbor.js
-  Blob.js
+  
+  ansi-escapes.js
+  ansi-regex.js
+  ansi-styles.js
+  app-root-path.js
+  argparse.js
+  asap.js
+  ascii-data-table.js
+  assertion-error.js
+  attr-accept.js
+  babel-runtime.js
+  balanced-match.js
+  base64-js.js
+  base64url.js
   bootstrap
+  brace-expansion.js
+  buffer.js
   canvg
-  CodeMirror
-  CodeMirror CSS
-  Color picker
-  Date Format
-  es5-shim
-  FileSaver.js
-  JQuery
-  jquery-ui
-  jquery.colorhelpers.js
-  jquery.flot.js
-  jquery.hotkeys.js
-  jquery.putCursorAtEnd.js
-  jquery.sortable.js
-  JSON3
-  local-storage-js
-  Modernizr
-  Pure Feature Detection Library (has.js)
-  Underscore.js
-  UUID.js
+  chai.js
+  chalk.js
+  check-error.js
+  ci-info.js
+  classnames.js
+  cli-cursor.js
+  cli-spinners.js
+  cli-truncate.js
+  code-point-at.js
+  codemirror.js
+  color-convert.js
+  color-name.js
+  commander.js
+  concat-map.js
+  core-js.js
+  cosmiconfig.js
+  cross-spawn.js
+  css-to-react-native.js
+  date-fns.js
+  deep-eql.js
+  elegant-spinner.js
+  encoding.js
+  error-ex.js
+  escape-string-regexp.js
+  execa.js
+  exit-hook.js
+  faye-websocket.js
+  fbjs.js
+  figures.js
+  file-saver.js
+  Font Awesome CSS
+  fuzzaldrin.js
+  get-func-name.js
+  get-stream.js
+  has-ansi.js
+  has-flag.js
+  http-parser-js.js
+  husky.js
+  iconv-lite.js
+  immutability-helper.js
+  indent-string.js
+  is-arrayish.js
+  is-ci.js
+  is-extglob.js
+  is-finite.js
+  is-fullwidth-code-point.js
+  is-function.js
+  is-glob.js
+  is-obj.js
+  is-plain-object.js
+  is-promise.js
+  is-regexp.js
+  is-stream.js
+  isobject.js
+  isomorphic-fetch.js
+  jest-get-type.js
+  jest-validate.js
+  js-tokens.js
+  js-yaml.js
+  jsonic.js
+  jsonwebtoken.js
+  jwa.js
+  jws.js
+  leven.js
+  lint-staged.js
+  listr-silent-renderer.js
+  listr-update-renderer.js
+  listr-verbose-renderer.js
+  listr.js
+  lodash-es.js
+  lodash.js
+  log-symbols.js
+  log-update.js
+  loose-envify.js
+  minimist.js
+  moment.js
+  ms.js
+  node-fetch.js
+  normalize-path.js
+  npm-path.js
+  npm-run-path.js
+  npm-which.js
+  number-is-nan.js
+  object-assign.js
+  onetime.js
+  ora.js
+  os-homedir.js
+  p-finally.js
+  p-map.js
+  parse-json.js
+  path-key.js
+  pathval.js
+  pinkie-promise.js
+  pinkie.js
+  postcss-value-parser.js
+  preact-compat.js
+  preact-redux.js
+  preact-render-to-string.js
+  preact-suber.js
+  preact-transition-group.js
+  preact.js
+  pretty-format.js
+  promise-polyfill.js
+  promise.js
+  querystringify.js
+  react-addons-pure-render-mixin.js
+  react-dropzone.js
+  react-icon-base.js
+  react-icons.js
+  react-timeago.js
+  redux-observable.js
+  redux.js
+  regenerator-runtime.js
+  repeating.js
+  require-from-string.js
+  requires-port.js
+  restore-cursor.js
+  safe-buffer.js
+  save-as.js
+  setimmediate.js
+  shebang-command.js
+  shebang-regex.js
+  slice-ansi.js
+  standalone-react-addons-pure-render-mixin.js
+  stream-to-observable.js
+  string-width.js
+  strip-ansi.js
+  strip-eof.js
+  strip-indent.js
+  styled-components.js
+  stylis.js
+  suber.js
+  supports-color.js
+  swipe-js-iso.js
+  symbol-observable.js
+  type-detect.js
+  ua-parser-js.js
+  url-parse.js
+  uuid.js
+  websocket-driver.js
+  websocket-extensions.js
+  whatwg-fetch.js
+  xml2js.js
+  xmlbuilder.js
+  xmlhttprequest.js
+  xtend.js
 ------------------------------------------------------------------------------
 
 The MIT License
@@ -1836,49 +1731,10 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 
 ------------------------------------------------------------------------------
-Public Domain - JSON2
-  JSON2
-------------------------------------------------------------------------------
-
-json2.js
-2011-10-19
-
-Public Domain.
-
-NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
-
-See http://www.JSON.org/js.html
-
-
-------------------------------------------------------------------------------
-Public Domain - RGB Color
-  RGB Color
-------------------------------------------------------------------------------
-
-A class to parse color values
-@author Stoyan Stefanov <sstoo@gmail.com>
-@link   http://www.phpied.com/rgb-color-parser-in-javascript/
-@license Use it if you like it
-
-
-------------------------------------------------------------------------------
-Public Domain - Tango
-  Tango Icons
-------------------------------------------------------------------------------
-
-Terms Of Use
-
-The Tango base icon theme is released to the Public Domain. The palette is in
-public domain. Developers, feel free to ship it along with your application.
-
-Though the tango-icon-theme package is released to the Public Domain, we ask
-that you still please attribute the Tango Desktop Project, for all the hard work
-we've done. Thanks.
-
-
-------------------------------------------------------------------------------
 SIL OFL 1.1
   Font Awesome
+  Inconsolata Font
+  Open Sans Font
 ------------------------------------------------------------------------------
 
 -----------------------------------------------------------
@@ -1974,62 +1830,6 @@ Dependencies with multiple licenses
 -----------------------------------
 
 Java Servlet API
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-Jetty :: Http Utility
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: IO Utility
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Security
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Server Core
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Servlet Handling
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Utilities
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Webapp Application Support
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: XML utilities
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-MIME streaming extension
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-core
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-multipart
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-server
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-servlet
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jsr311-api
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 

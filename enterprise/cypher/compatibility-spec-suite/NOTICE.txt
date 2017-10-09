@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -27,59 +27,29 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Batik AWT utilities
-  Batik Java2D SVG generator
-  Batik utility library
-  casbah-commons
-  casbah-core
-  casbah-query
+  Caffeine cache
   ConcurrentLinkedHashMap
-  Cucumber-JVM Repackaged Dependencies
-  Joda convert
-  Joda-Time
-  json4s-ast
-  json4s-core
-  json4s-native
+  Lucene codecs
+  Lucene Common Analyzers
   Lucene Core
   Lucene Memory
-  MongoDB Java Driver
-  nscala-time
-  openCypher Grammar Developer Tools
-  openCypher TCK Developer Tools
+  Lucene QueryParsers
+  Netty/All-in-One
+  opencsv
   parboiled-core
   parboiled-scala
-  salat-core
-  salat-util
-  XML Commons External Components XML APIs
 
 BSD - Scala License
   Scala Library
 
 BSD License
-  ANTLR 4 Tool
-  Cucumber-JVM Repackaged Dependencies
-  ParaNamer Core
+  ASM Analysis
+  ASM Core
+  ASM Tree
+  ASM Util
   Scala Compiler
-  scala-parser-combinators
-  scala-xml
-  Scalap
 
-GNU Lesser General Public License, Version 2.1
-  JCommon
-  JFreeChart
-
-MIT License
-  Cucumber-HTML
-  Cucumber-JVM: Core
-  Cucumber-JVM: JUnit
-  Cucumber-JVM: Scala (2.11)
-  Gherkin
-  SLF4J API Module
-
-Dependencies with multiple licenses
------------------------------------
-
-Cucumber-JVM Repackaged Dependencies
-  Apache Software License, Version 2.0
-  BSD License
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 

@@ -31,13 +31,15 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
-  ColorBrewer
   Commons IO
   Commons Lang
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  ExplorerCanvas
+  disposables.js
+  dom-storage.js
+  ecdsa-sig-formatter.js
+  firebase.js
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -53,27 +55,44 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  neo4j-driver.js
   Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
+  rxjs.js
 
 BSD - Scala License
   Scala Library
 
-BSD - seedrandom.js
-  seedrandom.js
-
 BSD License
+  antlr4.js
   ASM Analysis
   ASM Core
   ASM Tree
   ASM Util
+  buffer-equal-constant-time.js
   D3.js
-  Easing Equations (in easing.js)
+  dnd-core.js
+  hoek.js
+  hoist-non-react-statics.js
+  ieee754.js
+  invariant.js
   JLine
-  JQuery Easing Plugin
+  joi.js
+  prop-types.js
+  react-dnd-html5-backend.js
+  react-dnd.js
   Scala Compiler
+  sprintf-js.js
+  topo.js
+
+BSD License 2-clause
+  esprima.js
+  isemail.js
+  node-noop.js
+  staged-git-files.js
+  stringify-object.js
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
@@ -88,142 +107,200 @@ Common Development and Distribution License Version 1.1
   jsr311-api
   MIME streaming extension
 
-Creative Commons - Glyphish
-  Glyphish Icons Free
-
-Eclipse Public License, Version 1.0
-  Jetty :: Http Utility
-  Jetty :: IO Utility
-  Jetty :: Security
-  Jetty :: Server Core
-  Jetty :: Servlet Handling
-  Jetty :: Utilities
-  Jetty :: Webapp Application Support
-  Jetty :: XML utilities
-
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
-  jersey-core
-  jersey-multipart
-  jersey-server
-  jersey-servlet
-  jsr311-api
-  MIME streaming extension
+
+ISC
+  css-color-keywords.js
+  get-own-enumerable-property-symbols.js
+  graceful-fs.js
+  isexe.js
+  lru-cache.js
+  minimatch.js
+  pseudomap.js
+  sax.js
+  signal-exit.js
+  which.js
+  yallist.js
 
 MIT License
-  angular-animate
-  angular-base64
-  angular-cookies
-  angular-local-storage
-  angular-mocks
-  angular-resource
-  angular-sanitize
-  angular-scenario
-  angular-ui-bootstrap
-  angular-ui-codemirror
-  angular-ui-sortable
-  AngularJS
-  arbor-graphics.js
-  arbor-tween.js
-  arbor.js
-  Blob.js
+  
+  ansi-escapes.js
+  ansi-regex.js
+  ansi-styles.js
+  app-root-path.js
+  argparse.js
+  asap.js
+  ascii-data-table.js
+  assertion-error.js
+  attr-accept.js
+  babel-runtime.js
+  balanced-match.js
+  base64-js.js
+  base64url.js
   bootstrap
+  brace-expansion.js
+  buffer.js
   canvg
-  CodeMirror
-  CodeMirror CSS
-  Color picker
-  Date Format
-  es5-shim
-  FileSaver.js
-  JQuery
-  jquery-ui
-  jquery.colorhelpers.js
-  jquery.flot.js
-  jquery.hotkeys.js
-  jquery.putCursorAtEnd.js
-  jquery.sortable.js
-  JSON3
-  local-storage-js
-  Modernizr
-  Pure Feature Detection Library (has.js)
-  Underscore.js
-  UUID.js
+  chai.js
+  chalk.js
+  check-error.js
+  ci-info.js
+  classnames.js
+  cli-cursor.js
+  cli-spinners.js
+  cli-truncate.js
+  code-point-at.js
+  codemirror.js
+  color-convert.js
+  color-name.js
+  commander.js
+  concat-map.js
+  core-js.js
+  cosmiconfig.js
+  cross-spawn.js
+  css-to-react-native.js
+  date-fns.js
+  deep-eql.js
+  elegant-spinner.js
+  encoding.js
+  error-ex.js
+  escape-string-regexp.js
+  execa.js
+  exit-hook.js
+  faye-websocket.js
+  fbjs.js
+  figures.js
+  file-saver.js
+  Font Awesome CSS
+  fuzzaldrin.js
+  get-func-name.js
+  get-stream.js
+  has-ansi.js
+  has-flag.js
+  http-parser-js.js
+  husky.js
+  iconv-lite.js
+  immutability-helper.js
+  indent-string.js
+  is-arrayish.js
+  is-ci.js
+  is-extglob.js
+  is-finite.js
+  is-fullwidth-code-point.js
+  is-function.js
+  is-glob.js
+  is-obj.js
+  is-plain-object.js
+  is-promise.js
+  is-regexp.js
+  is-stream.js
+  isobject.js
+  isomorphic-fetch.js
+  jest-get-type.js
+  jest-validate.js
+  js-tokens.js
+  js-yaml.js
+  jsonic.js
+  jsonwebtoken.js
+  jwa.js
+  jws.js
+  leven.js
+  lint-staged.js
+  listr-silent-renderer.js
+  listr-update-renderer.js
+  listr-verbose-renderer.js
+  listr.js
+  lodash-es.js
+  lodash.js
+  log-symbols.js
+  log-update.js
+  loose-envify.js
+  minimist.js
+  moment.js
+  ms.js
+  node-fetch.js
+  normalize-path.js
+  npm-path.js
+  npm-run-path.js
+  npm-which.js
+  number-is-nan.js
+  object-assign.js
+  onetime.js
+  ora.js
+  os-homedir.js
+  p-finally.js
+  p-map.js
+  parse-json.js
+  path-key.js
+  pathval.js
+  pinkie-promise.js
+  pinkie.js
+  postcss-value-parser.js
+  preact-compat.js
+  preact-redux.js
+  preact-render-to-string.js
+  preact-suber.js
+  preact-transition-group.js
+  preact.js
+  pretty-format.js
+  promise-polyfill.js
+  promise.js
+  querystringify.js
+  react-addons-pure-render-mixin.js
+  react-dropzone.js
+  react-icon-base.js
+  react-icons.js
+  react-timeago.js
+  redux-observable.js
+  redux.js
+  regenerator-runtime.js
+  repeating.js
+  require-from-string.js
+  requires-port.js
+  restore-cursor.js
+  safe-buffer.js
+  save-as.js
+  setimmediate.js
+  shebang-command.js
+  shebang-regex.js
+  slice-ansi.js
+  standalone-react-addons-pure-render-mixin.js
+  stream-to-observable.js
+  string-width.js
+  strip-ansi.js
+  strip-eof.js
+  strip-indent.js
+  styled-components.js
+  stylis.js
+  suber.js
+  supports-color.js
+  swipe-js-iso.js
+  symbol-observable.js
+  type-detect.js
+  ua-parser-js.js
+  url-parse.js
+  uuid.js
+  websocket-driver.js
+  websocket-extensions.js
+  whatwg-fetch.js
+  xml2js.js
+  xmlbuilder.js
+  xmlhttprequest.js
+  xtend.js
 
 Mozilla Public License, Version 2.0
   Mozilla Rhino
 
-Public Domain - JSON2
-  JSON2
-
-Public Domain - RGB Color
-  RGB Color
-
-Public Domain - Tango
-  Tango Icons
-
 SIL OFL 1.1
   Font Awesome
+  Inconsolata Font
+  Open Sans Font
 
 Dependencies with multiple licenses
 -----------------------------------
 
 Java Servlet API
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-Jetty :: Http Utility
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: IO Utility
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Security
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Server Core
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Servlet Handling
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Utilities
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Webapp Application Support
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: XML utilities
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-MIME streaming extension
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-core
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-multipart
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-server
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jersey-servlet
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-jsr311-api
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 
