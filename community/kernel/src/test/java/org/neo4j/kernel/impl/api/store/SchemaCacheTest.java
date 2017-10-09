@@ -29,7 +29,6 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.test.Race;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -46,28 +46,50 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 
 public class SchemaCacheTest
 {
-    final SchemaRule hans = newIndexRule( 1, 0, 5 );
-    final SchemaRule witch = nodePropertyExistenceConstraintRule( 2, 3, 6 );
-    final SchemaRule gretel = newIndexRule( 3, 0, 7 );
+    private final SchemaRule hans = newIndexRule( 1, 0, 5 );
+    private final SchemaRule witch = nodePropertyExistenceConstraintRule( 2, 3, 6 );
+    private final SchemaRule gretel = newIndexRule( 3, 0, 7 );
+    private final ConstraintRule robot = relPropertyExistenceConstraintRule( 7L, 8, 9 );
 
     @Test
     public void should_construct_schema_cache()
     {
         // GIVEN
-        Collection<SchemaRule> rules = asList( hans, witch, gretel );
+        Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
         SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
-        assertEquals( asSet( witch ), Iterables.asSet( cache.constraintRules() ) );
+        assertEquals( asSet( witch, robot ), Iterables.asSet( cache.constraintRules() ) );
     }
 
     @Test
-    public void should_add_schema_rules()
+    public void addRemoveIndexes()
+    {
+        Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+
+        IndexRule rule1 = newIndexRule( 10, 11, 12 );
+        IndexRule rule2 = newIndexRule( 13, 14, 15 );
+        cache.addSchemaRule( rule1 );
+        cache.addSchemaRule( rule2 );
+
+        cache.removeSchemaRule( hans.getId() );
+        cache.removeSchemaRule( witch.getId() );
+
+        assertEquals( asSet( gretel, rule1, rule2 ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( robot ), Iterables.asSet( cache.constraintRules() ) );
+    }
+
+    @Test
+    public void addSchemaRules()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -76,10 +98,11 @@ public class SchemaCacheTest
         cache.addSchemaRule( hans );
         cache.addSchemaRule( gretel );
         cache.addSchemaRule( witch );
+        cache.addSchemaRule( robot );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
-        assertEquals( asSet( witch ), Iterables.asSet( cache.constraintRules() ) );
+        assertEquals( asSet( witch, robot ), Iterables.asSet( cache.constraintRules() ) );
     }
 
     @Test
@@ -95,8 +118,8 @@ public class SchemaCacheTest
         cache.addSchemaRule( nodePropertyExistenceConstraintRule( 3L, 7, 8 ) );
 
         // THEN
-        ConstraintDescriptor unique1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 2 );
-        ConstraintDescriptor unique2 = ConstraintDescriptorFactory.uniqueForLabel( 3, 4 );
+        ConstraintDescriptor unique1 = uniqueForLabel( 1, 2 );
+        ConstraintDescriptor unique2 = uniqueForLabel( 3, 4 );
         ConstraintDescriptor existsRel = ConstraintDescriptorFactory.existsForRelType( 5, 6 );
         ConstraintDescriptor existsNode = ConstraintDescriptorFactory.existsForLabel( 7, 8 );
 
@@ -114,7 +137,7 @@ public class SchemaCacheTest
 
         assertEquals(
                 asSet(),
-                asSet( cache.constraintsForSchema( SchemaDescriptorFactory.forLabel( 1, 3 ) ) ) );
+                asSet( cache.constraintsForSchema( forLabel( 1, 3 ) ) ) );
 
         assertEquals(
                 asSet( existsRel ),
@@ -134,8 +157,8 @@ public class SchemaCacheTest
         cache.removeSchemaRule( 0L );
 
         // THEN
-        ConstraintDescriptor dropped = ConstraintDescriptorFactory.uniqueForLabel( 1, 1 );
-        ConstraintDescriptor unique = ConstraintDescriptorFactory.uniqueForLabel( 3, 4 );
+        ConstraintDescriptor dropped = uniqueForLabel( 1, 1 );
+        ConstraintDescriptor unique = uniqueForLabel( 3, 4 );
         assertEquals(
                 asSet( unique ),
                 asSet( cache.constraints() ) );
@@ -162,7 +185,7 @@ public class SchemaCacheTest
 
         // then
         assertEquals(
-                asList( ConstraintDescriptorFactory.uniqueForLabel( 1, 2 ) ),
+                asList( uniqueForLabel( 1, 2 ) ),
                 Iterators.asList( cache.constraints() ) );
     }
 
@@ -177,7 +200,7 @@ public class SchemaCacheTest
         cache.addSchemaRule( newIndexRule( 3L, 2, 2 ) );
 
         // When
-        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( 1, 3 );
+        LabelSchemaDescriptor schema = forLabel( 1, 3 );
         IndexDescriptor descriptor = cache.indexDescriptor( schema );
 
         // Then
@@ -191,7 +214,7 @@ public class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( SchemaDescriptorFactory.forLabel( 1, 1 ) );
+        IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
 
         // Then
         assertNull( indexDescriptor );
@@ -205,7 +228,10 @@ public class SchemaCacheTest
         ConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
         ConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, 1, 2 );
 
-        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
+        SchemaCache cache = newSchemaCache();
+        cache.addSchemaRule( rule1 );
+        cache.addSchemaRule( rule2 );
+        cache.addSchemaRule( rule3 );
 
         // When
         Set<ConstraintDescriptor> listed = asSet( cache.constraintsForLabel( 1 ) );
@@ -225,7 +251,10 @@ public class SchemaCacheTest
         ConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
         ConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, 1, 2 );
 
-        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
+        SchemaCache cache = newSchemaCache();
+        cache.addSchemaRule( rule1 );
+        cache.addSchemaRule( rule2 );
+        cache.addSchemaRule( rule3 );
 
         // When
         Set<ConstraintDescriptor> listed = asSet( cache.constraintsForSchema( rule3.schema() ) );
@@ -242,7 +271,10 @@ public class SchemaCacheTest
         ConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, 2, 1 );
         ConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, 1, 2 );
 
-        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
+        SchemaCache cache = newSchemaCache();
+        cache.addSchemaRule( rule1 );
+        cache.addSchemaRule( rule2 );
+        cache.addSchemaRule( rule3 );
 
         // When
         Set<ConstraintDescriptor> listed = asSet( cache.constraintsForRelationshipType( 1 ) );
@@ -252,6 +284,59 @@ public class SchemaCacheTest
         assertEquals( expected, listed );
     }
 
+    @Test
+    public void concurrentSchemaRuleAdd() throws Throwable
+    {
+        SchemaCache cache = newSchemaCache();
+        Race race = new Race();
+        int indexNumber = 10;
+        for ( int i = 0; i < indexNumber; i++ )
+        {
+            int id = i;
+            race.addContestant( () -> cache.addSchemaRule( newIndexRule( id, id, id ) ) );
+        }
+        race.go();
+
+        assertEquals( indexNumber, Iterables.count( cache.indexRules() ) );
+        for ( int labelId = 0; labelId < indexNumber; labelId++ )
+        {
+            assertEquals( 1, Iterators.count( cache.indexDescriptorsForLabel( labelId ) ) );
+        }
+        for ( int propertyId = 0; propertyId < indexNumber; propertyId++ )
+        {
+            assertEquals( 1, Iterators.count( cache.indexesByProperty( propertyId ) ) );
+        }
+    }
+
+    @Test
+    public void concurrentSchemaRuleRemove() throws Throwable
+    {
+        SchemaCache cache = newSchemaCache();
+        int indexNumber = 20;
+        for ( int i = 0; i < indexNumber; i++ )
+        {
+            cache.addSchemaRule( newIndexRule( i, i, i ) );
+        }
+        Race race = new Race();
+        int numberOfDeletions = 10;
+        for ( int i = 0; i < numberOfDeletions; i++ )
+        {
+            int indexId = i;
+            race.addContestant( () -> cache.removeSchemaRule( indexId ) );
+        }
+        race.go();
+
+        assertEquals( indexNumber - numberOfDeletions, Iterables.count( cache.indexRules() ) );
+        for ( int labelId = numberOfDeletions; labelId < indexNumber; labelId++ )
+        {
+            assertEquals( 1, Iterators.count( cache.indexDescriptorsForLabel( labelId ) ) );
+        }
+        for ( int propertyId = numberOfDeletions; propertyId < indexNumber; propertyId++ )
+        {
+            assertEquals( 1, Iterators.count( cache.indexesByProperty( propertyId ) ) );
+        }
+    }
+
     private IndexRule newIndexRule( long id, int label, int propertyKey )
     {
         return IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
@@ -259,20 +344,17 @@ public class SchemaCacheTest
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
     {
-        return ConstraintRule.constraintRule(
-                ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ) );
+        return constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ) );
     }
 
     private ConstraintRule relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
     {
-        return ConstraintRule.constraintRule(
-                ruleId, ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
+        return constraintRule( ruleId, ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
     }
 
     private ConstraintRule uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
     {
-        return ConstraintRule.constraintRule(
-                ruleId, ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyId ), indexId );
+        return constraintRule( ruleId, uniqueForLabel( labelId, propertyId ), indexId );
     }
 
     private static SchemaCache newSchemaCache( SchemaRule... rules )
