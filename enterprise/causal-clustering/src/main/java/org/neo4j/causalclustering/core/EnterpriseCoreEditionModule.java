@@ -87,6 +87,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -206,7 +207,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         if ( config.get( CausalClusteringSettings.raft_messages_log_enable ) )
         {
             File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logsDir ) ) );
+            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logsDir ), Clocks.systemClock() ) );
         }
         else
         {

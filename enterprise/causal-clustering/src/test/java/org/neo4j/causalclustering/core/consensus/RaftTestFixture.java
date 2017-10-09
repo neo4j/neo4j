@@ -20,6 +20,8 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -36,8 +38,10 @@ import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutServic
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
-import org.neo4j.causalclustering.logging.NullMessageLogger;
+import org.neo4j.causalclustering.logging.BetterMessageLogger;
+import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.Inbound;
+import org.neo4j.causalclustering.messaging.LoggingInbound;
 import org.neo4j.causalclustering.messaging.LoggingOutbound;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.time.Clocks;
@@ -50,6 +54,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class RaftTestFixture
 {
     private Members members = new Members();
+    // Does not need to be closed
+    private StringWriter writer = new StringWriter();
 
     public RaftTestFixture( DirectNetworking net, int expectedClusterSize, MemberId... ids )
     {
@@ -63,9 +69,12 @@ public class RaftTestFixture
             fixtureMember.raftLog = new InMemoryRaftLog();
             fixtureMember.member = id;
 
-            Inbound inbound = net.new Inbound( fixtureMember.member );
+            MessageLogger<MemberId> messageLogger =
+                    new BetterMessageLogger<>( id, new PrintWriter( writer ), Clocks.systemClock() );
+            Inbound<RaftMessages.RaftMessage> inbound =
+                    new LoggingInbound<>( net.new Inbound<>( fixtureMember.member ), messageLogger, fixtureMember.member );
             Outbound<MemberId,RaftMessages.RaftMessage> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member,
-                    new NullMessageLogger<>() );
+                    messageLogger );
 
             fixtureMember.raftMachine = new RaftMachineBuilder( fixtureMember.member, expectedClusterSize,
                     RaftTestMemberSetBuilder.INSTANCE )
@@ -93,6 +102,10 @@ public class RaftTestFixture
             member.raftInstance().installCoreState( new RaftCoreState( new MembershipEntry( 0,  asSet( members )) ) );
             member.raftInstance().startTimers();
         }
+    }
+
+    public String messageLog() {
+        return writer.toString();
     }
 
     public static class Members implements Iterable<MemberFixture>
