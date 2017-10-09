@@ -559,4 +559,37 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ), numberOfLongs = 0, numberOfReferences = 3)
     )
   }
+
+  test("should allocate RollUpApply") {
+    // Given RollUpApply with RHS ~= MATCH (x)-[r:R]->(y) WITH x, x.prop as prop, r ...
+
+    // LHS
+    val lhsLeaf = SingleRow()(solved)
+
+    // RHS
+    val labelScan = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val expand = Expand(labelScan, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
+    val projectionExpressions = Map(
+      "x" -> varFor("x"),
+      "prop" -> prop("x", "prop"),
+      "r" -> varFor("r")
+    )
+    val rhsProjection = Projection(expand, projectionExpressions)(solved)
+
+    // RollUpApply(LHS, RHS, ...)
+    val rollUp =
+      RollUpApply(lhsLeaf, rhsProjection, IdName("c"), IdName("x"), nullableVariables = Set(IdName("r"), IdName("y")))(solved)
+    rollUp.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(rollUp)
+
+    // then
+    allocations should have size 5
+    allocations(rollUp.assignedId) should equal(
+      PipelineInformation(Map(
+        "c" -> RefSlot(0, nullable = false, CTList(CTAny), "c")
+      ), numberOfLongs = 0, numberOfReferences = 1)
+    )
+  }
 }

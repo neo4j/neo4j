@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeTestSupport, QueryState, QueryStateHelper}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.{NodeFromSlot, ReferenceFromSlot}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_4.{Operations, QueryContext}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ValueUtils
@@ -38,16 +38,18 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues
 
 class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport with FakeEntityTestSupport {
-  val pipeline = PipelineInformation
+  private val pipeline = PipelineInformation
     .empty
     .newReference("a", nullable = true, CTNumber)
     .newReference("x", nullable = false, CTList(CTNumber)) // NOTE: This has to be last since that is the order in which the slots are assumed to be allocated
+
+  private val collectionRefSlotOffset = pipeline.getReferenceOffsetFor("x")
 
   test("when rhs returns nothing, an empty collection should be produced") {
     // given
     val lhs = createLhs(1)
     val rhs = pipeWithResults { (state) => Iterator() }
-    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionName = "x",
+    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(0)),
       nullableIdentifiers = Set("a"), pipeline)()
 
@@ -65,7 +67,7 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     // given
     val lhs = createLhs(null, 1)
     val rhs = pipeWithResults { (state) => Iterator() }
-    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionName = "x",
+    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(0)),
       nullableIdentifiers = Set("a"), pipeline)()
 
@@ -86,7 +88,7 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     val lhs = createLhs(1)
     val rhs = createRhs(1, 2, 3, 4)
     val yOffset = rhs.pipeline.getReferenceOffsetFor("y")
-    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionName = "x",
+    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(yOffset)),
       nullableIdentifiers = Set("a"), pipeline)()
 
@@ -106,7 +108,7 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     val lhs = createLhs(1)
     val rhs = createRhsWithNumberOfNodes(2)
     val yOffset = rhs.pipeline.getLongOffsetFor("y")
-    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionName = "x",
+    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> NodeFromSlot(yOffset)),
       nullableIdentifiers = Set("a"), pipeline)()
 
@@ -146,7 +148,7 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
         Iterator.empty
       }
     })
-    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionName = "x",
+    val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(0)),
       nullableIdentifiers = Set("a"), pipeline)()
 
@@ -158,27 +160,20 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
 
   private def createRhs(data: Any*) = {
     val rhsData = data.map { case v => Map("y" -> v) }
-    val pipeline = PipelineInformation
-      .empty
-      .newReference("a", nullable = true, CTNumber)
+    val rhsPipeline = pipeline.seedClone()
       .newReference("y", nullable = false, CTNumber)
-    new FakeSlottedPipe(rhsData.iterator, pipeline)
+    new FakeSlottedPipe(rhsData.iterator, rhsPipeline)
   }
 
   private def createRhsWithNumberOfNodes(numberOfNodes: Int) = {
     val rhsData = for (i <- 0 until numberOfNodes) yield Map("y" -> i)
-    val pipeline = PipelineInformation
-      .empty
-      .newReference("a", nullable = true, CTNumber)
+    val rhsPipeline = pipeline.seedClone()
       .newLong("y", nullable = false, CTNode)
-    new FakeSlottedPipe(rhsData.iterator, pipeline)
+    new FakeSlottedPipe(rhsData.iterator, rhsPipeline)
   }
 
   private def createLhs(data: Any*) = {
     val lhsData = data.map { case v => Map("a" -> v) }
-    val pipeline = PipelineInformation
-      .empty
-      .newReference("a", nullable = true, CTNumber)
     new FakeSlottedPipe(lhsData.iterator, pipeline)
   }
 }

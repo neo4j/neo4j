@@ -280,9 +280,8 @@ object SlotAllocation {
         newPipeline
 
       case RollUpApply(_, _, collectionName, _, _) =>
-        val newPipeline = lhsPipeline.seedClone()
-        newPipeline.newReference(collectionName.name, true, CTList(CTAny))
-        newPipeline
+        lhsPipeline.newReference(collectionName.name, nullable, CTList(CTAny))
+        lhsPipeline
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }

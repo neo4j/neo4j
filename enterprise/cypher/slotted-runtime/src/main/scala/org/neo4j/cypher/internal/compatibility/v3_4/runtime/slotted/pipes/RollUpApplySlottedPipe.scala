@@ -22,21 +22,17 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues
 
 case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe,
-                                  collectionName: String,
+                                  collectionRefSlotOffset: Int,
                                   identifierToCollect: (String, Expression),
                                   nullableIdentifiers: Set[String],
                                   pipelineInformation: PipelineInformation)
                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(lhs) {
-
-  private val collectionSlot = pipelineInformation.get(collectionName).get
 
   private val getValueToCollectFunction = {
     val expression: Expression = identifierToCollect._2
@@ -56,29 +52,19 @@ case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe,
   private def hasNullValue(ctx: ExecutionContext): Boolean =
     hasNullValuePredicates.exists(p => p(ctx))
 
-  private val setCollectionInRow: (ExecutionContext, AnyValue) => Unit = {
-    collectionSlot match {
-      case RefSlot(offset, _, _, _) =>
-        (ctx: ExecutionContext, value: AnyValue) => ctx.setRefAt(offset, value)
-      case _ => throw new InternalError("Expected collection to be allocated to a ref slot")
-    }
-  }
-
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.map {
       ctx =>
-        val outputRow = PrimitiveExecutionContext(pipelineInformation)
-        ctx.copyTo(outputRow)
         if (hasNullValue(ctx)) {
-          setCollectionInRow(outputRow, NO_VALUE)
+          ctx.setRefAt(collectionRefSlotOffset, NO_VALUE)
         }
         else {
           val innerState = state.withInitialContext(ctx)
           val innerResults: Iterator[ExecutionContext] = rhs.createResults(innerState)
           val collection = VirtualValues.list(innerResults.map(getValueToCollectFunction(state)).toArray: _*)
-          setCollectionInRow(outputRow, collection)
+          ctx.setRefAt(collectionRefSlotOffset, collection)
         }
-        outputRow
+        ctx
     }
   }
 }
