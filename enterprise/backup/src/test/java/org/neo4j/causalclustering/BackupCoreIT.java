@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
@@ -74,7 +75,7 @@ public class BackupCoreIT
         {
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( createSomeData( cluster ) );
-            String[] args = backupArguments( backupAddress( db.database() ), backupsDir, "" + db.serverId() );
+            String[] args = backupArguments( backupAddress( cluster ), backupsDir, "" + db.serverId() );
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( clusterRule.clusterDirectory(), args ) );
 
             // Add some new data
@@ -97,9 +98,9 @@ public class BackupCoreIT
         } ).database();
     }
 
-    static String backupAddress( GraphDatabaseFacade db )
+    static String backupAddress( Cluster cluster )
     {
-        return ":" + PortAuthority.allocatePort();
+        return cluster.getDbWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
     }
 
     static String[] backupArguments( String from, File backupsDir, String name )
