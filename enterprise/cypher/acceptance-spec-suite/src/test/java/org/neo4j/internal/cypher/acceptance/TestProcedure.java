@@ -80,7 +80,7 @@ public class TestProcedure
         private Set<String> endNodeLabels;
         private long limit = -1;
         private long minLevel = -1;
-        private long resultCount = 0;
+        private long resultCount;
 
         LabelEvaluator( String endNodeLabel, long limit, int minLevel )
         {

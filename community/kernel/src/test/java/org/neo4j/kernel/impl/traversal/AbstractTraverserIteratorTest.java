@@ -69,7 +69,7 @@ public class AbstractTraverserIteratorTest
 
     private static class AssertOneClose implements Resource
     {
-        boolean isClosed = false;
+        boolean isClosed;
 
         @Override
         public void close()
