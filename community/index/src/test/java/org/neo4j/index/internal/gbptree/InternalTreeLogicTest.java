@@ -1529,7 +1529,7 @@ public class InternalTreeLogicTest
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
-        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration ).printTree( cursor, System.out, true, true, true );
+        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration ).printTree( cursor, cursor, System.out, true, true, true );
         cursor.next( currentPageId );
     }
 
