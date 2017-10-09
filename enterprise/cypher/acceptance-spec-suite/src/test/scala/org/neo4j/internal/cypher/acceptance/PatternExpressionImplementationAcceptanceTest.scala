@@ -290,7 +290,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    executeWith(Configs.CommunityInterpreted, "match (n)-->(b) with (n)-->() as p, count(b) as c return p, c",
+    executeWith(Configs.Interpreted, "match (n)-->(b) with (n)-->() as p, count(b) as c return p, c",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("Expand(All)"), expectPlansToFail = Configs.AllRulePlanners))
   }
 
@@ -339,7 +339,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val endNode = createNode()
     val rel = relate(node, endNode, "HAS")
 
-    executeWith(Configs.CommunityInterpreted, "MATCH (n:A) RETURN (n)-[:HAS]->() as p",
+    executeWith(Configs.Interpreted, "MATCH (n:A) RETURN (n)-[:HAS]->() as p",
       planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
         planDescription.find("Argument") shouldNot be(empty)
         planDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
@@ -358,7 +358,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     createLabeledNode("A")
     relate(node, createNode(), "HAS")
 
-    executeWith(Configs.CommunityInterpreted, "MATCH (n:A) RETURN count((n)-[:HAS]->()) as c",
+    executeWith(Configs.Interpreted, "MATCH (n:A) RETURN count((n)-[:HAS]->()) as c",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("Expand(All)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
   }

@@ -418,7 +418,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         graph.createConstraint("Person", "name")
 
         //WHEN
-        val result = profileWithExecute(Configs.CommunityInterpreted, "match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()")
+        val result = profileWithExecute(Configs.Interpreted, "match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()")
 
         //THEN
         assertDbHits(7)(result)("Expand(All)")

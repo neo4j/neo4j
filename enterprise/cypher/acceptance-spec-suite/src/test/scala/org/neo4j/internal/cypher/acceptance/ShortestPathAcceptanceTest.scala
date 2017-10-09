@@ -567,7 +567,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     relate(a2, a3, "T")
     relate(a3, a4, "T")
 
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(expectedToSucceed + Configs.SlottedInterpreted,
       """
         |MATCH p = (:A)-[:T*]-(:A)
         |WITH p WHERE length(p) > 1

@@ -97,8 +97,9 @@ object SlottedExpressionConverters extends ExpressionConverter {
     }
 
     val projector = project(e.step)
-//    val dependencies = e.step.dependencies.map(_.asInstanceOf[Variable].name) // TODO: Verify that we never need this after slot rewriting
-    val dependencies = null
+    // Symbol table dependencies is only used for runtime expressions by PatternMatcher. It would be nice to
+    // get rid of this from runtime expressions.
+    val dependencies = e.step.dependencies.flatMap(_.dependencies).map(_.name)
 
     SlottedProjectedPath(dependencies, projector)
   }
