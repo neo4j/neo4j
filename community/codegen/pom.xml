@@ -119,7 +119,7 @@ the relevant Commercial Agreement.
               <shadedPattern>org.neo4j.codegen.asm</shadedPattern>
             </relocation>
           </relocations>
-          <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+          <createDependencyReducedPom>false</createDependencyReducedPom>
         </configuration>
       </plugin>
     </plugins>
