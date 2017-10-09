@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_3.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, Statement}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.StatementHelper._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
