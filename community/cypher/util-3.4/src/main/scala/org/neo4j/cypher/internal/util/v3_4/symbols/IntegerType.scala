@@ -22,7 +22,6 @@ object IntegerType {
     override lazy val coercibleTo: Set[CypherType] = Set(CTFloat)
     override val toString = "Integer"
     override val toNeoTypeString = "INTEGER?"
-
   }
 }
 

@@ -19,7 +19,8 @@ package org.neo4j.cypher.internal.util.v3_4.symbols
 object ListType {
   private val anyCollectionTypeInstance = new ListTypeImpl(CTAny)
 
-  def apply(iteratedType: CypherType) = if (iteratedType == CTAny) anyCollectionTypeInstance else new ListTypeImpl(iteratedType)
+  def apply(iteratedType: CypherType) =
+    if (iteratedType == CTAny) anyCollectionTypeInstance else new ListTypeImpl(iteratedType)
 
   final case class ListTypeImpl(innerType: CypherType) extends ListType {
     val parentType = CTAny
@@ -31,7 +32,6 @@ object ListType {
 
     override val toString = s"List<$innerType>"
     override val toNeoTypeString = s"LIST? OF ${innerType.toNeoTypeString}"
-
 
     override def isAssignableFrom(other: CypherType): Boolean = other match {
       case otherCollection: ListType =>
@@ -62,7 +62,6 @@ object ListType {
     case _ => None
   }
 }
-
 
 sealed abstract class ListType extends CypherType {
   def innerType: CypherType

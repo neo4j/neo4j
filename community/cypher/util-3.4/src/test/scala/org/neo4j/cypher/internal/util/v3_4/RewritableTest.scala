@@ -22,23 +22,23 @@ object RewritableTest {
   trait Exp extends Product with Rewritable
   case class Val(int: Int) extends Exp {
     def dup(children: Seq[AnyRef]): this.type =
-      Val(children(0).asInstanceOf[Int]).asInstanceOf[this.type]
+      Val(children.head.asInstanceOf[Int]).asInstanceOf[this.type]
   }
   case class Add(lhs: Exp, rhs: Exp) extends Exp {
     def dup(children: Seq[AnyRef]): this.type =
-      Add(children(0).asInstanceOf[Exp], children(1).asInstanceOf[Exp]).asInstanceOf[this.type]
+      Add(children.head.asInstanceOf[Exp], children(1).asInstanceOf[Exp]).asInstanceOf[this.type]
   }
   case class Sum(args: Seq[Exp]) extends Exp {
     def dup(children: Seq[AnyRef]): this.type =
-      Sum(children(0).asInstanceOf[Seq[Exp]]).asInstanceOf[this.type]
+      Sum(children.head.asInstanceOf[Seq[Exp]]).asInstanceOf[this.type]
   }
   case class Pos(latlng: (Exp, Exp)) extends Exp {
     def dup(children: Seq[AnyRef]): this.type =
-      Pos(children(0).asInstanceOf[(Exp, Exp)]).asInstanceOf[this.type]
+      Pos(children.head.asInstanceOf[(Exp, Exp)]).asInstanceOf[this.type]
   }
   case class Options(args: Seq[(Exp, Exp)]) extends Exp {
     def dup(children: Seq[AnyRef]): this.type =
-      Options(children(0).asInstanceOf[Seq[(Exp, Exp)]]).asInstanceOf[this.type]
+      Options(children.head.asInstanceOf[Seq[(Exp, Exp)]]).asInstanceOf[this.type]
   }
 }
 

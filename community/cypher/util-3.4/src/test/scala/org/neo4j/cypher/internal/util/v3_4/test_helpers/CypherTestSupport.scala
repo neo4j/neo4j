@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.util.v3_4.test_helpers
 
 // Inherited by test mixin classes that need to manage resources
-trait CypherTestSupport  {
+trait CypherTestSupport {
   protected def initTest() {}
   protected def stopTest() {}
 }
-

@@ -23,7 +23,8 @@ trait IgnoreAllTests extends CypherFunSuite {
   def ignoranceRationale = ""
 
   abstract override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) {
-    val ignoredTestName = if (ignoranceRationale.isEmpty) testName else s"testName [$ignoranceRationale]"
+    val ignoredTestName =
+      if (ignoranceRationale.isEmpty) testName else s"testName [$ignoranceRationale]"
     ignore(ignoredTestName, testTags: _*)(testFun)
   }
 

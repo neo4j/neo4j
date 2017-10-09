@@ -21,7 +21,6 @@ object RelationshipType {
     val parentType = CTMap
     override val toString = "Relationship"
     override val toNeoTypeString = "RELATIONSHIP?"
-
   }
 }
 

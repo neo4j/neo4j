@@ -31,7 +31,12 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def unorderableValueException(value: String): T
 
-  def incomparableValuesException(operator: Option[String], lhs: String, rhs: String, cause: Throwable): T
+  def incomparableValuesException(
+      operator: Option[String],
+      lhs: String,
+      rhs: String,
+      cause: Throwable
+  ): T
 
   def arithmeticException(message: String, cause: Throwable): T
 
@@ -39,7 +44,13 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def invalidSemanticException(message: String, cause: Throwable): T
 
-  def indexHintException(variable: String, label: String, properties: Seq[String], message: String, cause: Throwable): T
+  def indexHintException(
+      variable: String,
+      label: String,
+      properties: Seq[String],
+      message: String,
+      cause: Throwable
+  ): T
 
   def hintException(message: String, cause: Throwable): T
 

@@ -30,9 +30,13 @@ object TypeRange {
 case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
   assert(upper.isEmpty || (lower isAssignableFrom upper.get), "Incompatible TypeRange bounds")
 
-  def contains(aType: CypherType): Boolean = (lower isAssignableFrom aType) && upper.fold(true)(aType isAssignableFrom)
+  def contains(aType: CypherType): Boolean =
+    (lower isAssignableFrom aType) && upper.fold(true)(aType isAssignableFrom)
 
-  def contains(that: TypeRange): Boolean = (lower isAssignableFrom that.lower) && upper.fold(true)(t => that.upper.fold(false)(_ isAssignableFrom t))
+  def contains(that: TypeRange): Boolean =
+    (lower isAssignableFrom that.lower) && upper.fold(true)(
+      t => that.upper.fold(false)(_ isAssignableFrom t)
+    )
 
   lazy val hasDefiniteSize: Boolean = upper.isDefined || !checkForAny(lower)
   private def checkForAny: CypherType => Boolean = {
@@ -42,16 +46,16 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
   }
 
   def &(that: TypeRange): Option[TypeRange] = this intersect that
-  def intersect(that: TypeRange): Option[TypeRange] = (lower greatestLowerBound that.lower).flatMap {
-    newLower =>
+  def intersect(that: TypeRange): Option[TypeRange] =
+    (lower greatestLowerBound that.lower).flatMap { newLower =>
       val newUpper = upper.fold(that.upper)(t => Some(that.upper.fold(t)(_ leastUpperBound t)))
       if (newUpper.isDefined && !(newLower isAssignableFrom newUpper.get))
         None
       else
         Some(TypeRange(newLower, newUpper))
-  }
+    }
 
-  def covariant = copy(upper = None)
+  def covariant: TypeRange = copy(upper = None)
 
   def constrain(aType: CypherType): Option[TypeRange] = this & TypeRange(aType, None)
 
@@ -64,17 +68,17 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
     (upper, other.upper) match {
       case (Some(u1), Some(u2)) =>
         Vector(TypeRange(newLower, Some(u1 leastUpperBound u2)))
-      case (Some(u1), None)     =>
+      case (Some(u1), None) =>
         if ((u1 isAssignableFrom other.lower) || (other.lower isAssignableFrom u1))
           Vector(TypeRange(newLower, Some(u1)))
         else
           Vector(TypeRange(newLower, Some(newLower)))
-      case (None, Some(u2))     =>
+      case (None, Some(u2)) =>
         if ((u2 isAssignableFrom lower) || (lower isAssignableFrom u2))
           Vector(TypeRange(newLower, Some(u2)))
         else
           Vector(TypeRange(newLower, Some(newLower)))
-      case (None, None)         =>
+      case (None, None) =>
         if (lower == other.lower)
           Vector(TypeRange(newLower, None))
         else if (lower isAssignableFrom other.lower)
