@@ -106,6 +106,18 @@ public class TestGraphProperties
     }
 
     @Test
+    public void getNonExistentGraphPropertyWithDefaultValue() throws Exception
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        PropertyContainer graphProperties = properties( db );
+        Transaction tx = db.beginTx();
+        assertEquals( "default", graphProperties.getProperty( "test", "default" ) );
+        tx.success();
+        tx.close();
+        db.shutdown();
+    }
+
+    @Test
     public void setManyGraphProperties() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();

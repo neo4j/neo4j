@@ -34,6 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class DataStatementArgumentVerificationTest
 {
@@ -48,7 +49,7 @@ public class DataStatementArgumentVerificationTest
         Value value = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertTrue( "should return NoProperty", value == Values.NO_VALUE );
+        assertTrue( "should return NoProperty", value == NO_VALUE );
     }
 
     @Test
@@ -62,7 +63,7 @@ public class DataStatementArgumentVerificationTest
         Value value = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertEquals( "should return NoProperty", value, Values.NO_VALUE );
+        assertEquals( "should return NoProperty", value, NO_VALUE );
     }
 
     @Test
@@ -76,7 +77,7 @@ public class DataStatementArgumentVerificationTest
         Object value = statement.graphGetProperty( StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertNull( "should return NoProperty", value );
+        assertEquals( "should return NoProperty", value, NO_VALUE );
     }
 
     @Test
