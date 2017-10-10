@@ -22,9 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import org.neo4j.time.Clocks;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
-import static java.lang.Math.min;
-import static java.lang.Runtime.getRuntime;
-
 /**
  * Convenience around executing and supervising {@link Stage stages}.
  */
@@ -73,7 +70,6 @@ public class ExecutionSupervisors
      */
     public static void superviseExecution( ExecutionMonitor monitor, Configuration config, Stage stage )
     {
-
         ExecutionSupervisor supervisor = new ExecutionSupervisor( Clocks.systemClock(), monitor );
         StageExecution execution = null;
         try

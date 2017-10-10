@@ -40,6 +40,8 @@ class SimpleDataGeneratorBatch<T>
     private final Distribution<String> relationshipTypes;
     private final Deserialization<T> deserialization;
     private final T[] target;
+    private final float factorNodeDuplicates;
+    private final float factorBadRelationships;
 
     private long cursor;
     private long position;
@@ -47,7 +49,8 @@ class SimpleDataGeneratorBatch<T>
     SimpleDataGeneratorBatch(
             Header header, long start, long randomSeed, long nodeCount,
             Distribution<String> labels, Distribution<String> relationshipTypes,
-            Deserialization<T> deserialization, T[] target )
+            Deserialization<T> deserialization, T[] target,
+            float factorNodeDuplicates, float factorBadRelationships )
     {
         this.header = header;
         this.start = start;
@@ -55,6 +58,8 @@ class SimpleDataGeneratorBatch<T>
         this.labels = labels;
         this.relationshipTypes = relationshipTypes;
         this.target = target;
+        this.factorNodeDuplicates = factorNodeDuplicates;
+        this.factorBadRelationships = factorBadRelationships;
         this.random = new Random( randomSeed );
         this.randoms = new Randoms( random, Randoms.DEFAULT );
         this.deserialization = deserialization;
@@ -78,7 +83,7 @@ class SimpleDataGeneratorBatch<T>
             switch ( entry.type() )
             {
             case ID:
-                deserialization.handle( entry, idValue( entry, start + cursor ) );
+                deserialization.handle( entry, idValueForNode( entry, start + cursor ) );
                 break;
             case PROPERTY:
                 deserialization.handle( entry, randomProperty( entry, random ) );
@@ -87,7 +92,11 @@ class SimpleDataGeneratorBatch<T>
                 deserialization.handle( entry, randomLabels( random ) );
                 break;
             case START_ID: case END_ID:
-                deserialization.handle( entry, idValue( entry, abs( random.nextLong() ) % nodeCount ) );
+                Object id = idValueForRelationship( entry, abs( random.nextLong() ) % nodeCount );
+                if ( id != null )
+                {
+                    deserialization.handle( entry, id );
+                }
                 break;
             case TYPE:
                 deserialization.handle( entry, randomRelationshipType( random ) );
@@ -107,7 +116,40 @@ class SimpleDataGeneratorBatch<T>
         }
     }
 
-    private Object idValue( Entry entry, long id )
+    private Object idValueForNode( Entry entry, long id )
+    {
+        if ( factorNodeDuplicates > 0 && id > 0 )
+        {
+            if ( random.nextFloat() <= factorNodeDuplicates )
+            {
+                // id between 0 - id
+                id = abs( random.nextLong() ) % id;
+            }
+        }
+
+        return objectifyId( entry, id );
+    }
+
+    private Object idValueForRelationship( Entry entry, long id )
+    {
+        if ( factorBadRelationships > 0 && id > 0 )
+        {
+            if ( random.nextFloat() <= factorBadRelationships )
+            {
+                if ( random.nextBoolean() )
+                {
+                    // simply missing field
+                    return null;
+                }
+                // referencing some very likely non-existent node id
+                id = random.nextLong();
+            }
+        }
+
+        return objectifyId( entry, id );
+    }
+
+    private Object objectifyId( Entry entry, long id )
     {
         switch ( entry.extractor().toString() )
         {
