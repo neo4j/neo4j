@@ -24,19 +24,10 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, lhsInfo: PipelineInformation, rhsInfo: PipelineInformation,
+case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, rhsInfo: PipelineInformation,
                             unionInfo: PipelineInformation,
                             mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
-                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
-
-
-  //We must map slots from lhs and rhs to the actual union output since the slots in the lhs and the rhs may appear in different order
-  //private val mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation) => Unit] = unionInfo.mapSlot {
-    //case (k, v: LongSlot) => (in, out, info) => out.setLongAt(info.getLongOffsetFor(k), in.getLongAt(v.offset))
-    //case (k, v: RefSlot) => (in, out, info) => out.setRefAt(info.getReferenceOffsetFor(k), in.getRefAt(v.offset))
-  //}
-
-  //MATCH (n) RETURN n UNION RETURN 42 AS n
+                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val left = lhs.createResults(state)
@@ -45,17 +36,28 @@ case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, lhsInfo: PipelineInformation, 
     new Iterator[ExecutionContext] {
       override def hasNext: Boolean = left.hasNext || right.hasNext
 
-      override def next(): ExecutionContext = if (left.hasNext) {
-        val in = left.next()
-        val out = PrimitiveExecutionContext(unionInfo)
-        mapSlots.foreach(f => f(in, out, lhsInfo, state))
-        out
-      } else {
+      override def next(): ExecutionContext = if (left.hasNext) left.next()
+      else {
         val in = right.next()
         val out = PrimitiveExecutionContext(unionInfo)
         mapSlots.foreach(f => f(in, out, rhsInfo, state))
         out
       }
+    }
+  }
+}
+
+case class FastUnionSlottedPipe(lhs: Pipe, rhs: Pipe)
+                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+  // This pipe is only applicable if the ordering of the variables on the lhs equals the ordering on the rhs
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val left = lhs.createResults(state)
+    val right = rhs.createResults(state)
+    new Iterator[ExecutionContext] {
+      override def hasNext: Boolean = left.hasNext || right.hasNext
+      override def next(): ExecutionContext = if (left.hasNext) left.next()
+      else right.next()
     }
   }
 }

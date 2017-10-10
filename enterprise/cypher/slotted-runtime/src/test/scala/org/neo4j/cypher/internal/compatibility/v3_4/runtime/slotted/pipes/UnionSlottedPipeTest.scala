@@ -45,7 +45,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
                                               rhsData: Traversable[Map[String, Any]]) = {
     val lhs = FakeSlottedPipe(lhsData.toIterator, lhsInfo)
     val rhs = FakeSlottedPipe(rhsData.toIterator, rhsInfo)
-    val union = UnionSlottedPipe(lhs, rhs, lhsInfo, rhsInfo, out, computeUnionSlots(lhsInfo, rhsInfo, out) )()
+    val union = UnionSlottedPipe(lhs, rhs, rhsInfo, out, computeUnionSlots(lhsInfo, rhsInfo, out) )()
     val context = mock[QueryContext]
     val nodeOps = mock[Operations[Node]]
     when(nodeOps.getById(any())).thenAnswer(new Answer[Node] {

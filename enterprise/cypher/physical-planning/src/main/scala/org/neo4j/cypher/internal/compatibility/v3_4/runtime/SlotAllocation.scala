@@ -284,21 +284,27 @@ object SlotAllocation {
         lhsPipeline
 
       case _: Union  =>
-        //MATCH (n) RETURN (n) A,B,C UNION ... RETURN C,B,A
+        //The outgoing pipeline should only contain the variables we join on
+        //if both lhs and rhs has a long slot with the same type the outgoing
+        //pipeline should also use a long slot, otherwise we use a ref slot.
         val outgoing = PipelineInformation.empty
         lhsPipeline.foreachSlot {
-          case (key, lhsSlot: LongSlot) => rhsPipeline.get(key).foreach {
+          case (key, lhsSlot: LongSlot) =>
+            //find all shared variables and look for other long slots with same type
+            rhsPipeline.get(key).foreach {
             case LongSlot(_, rhsNullable, typ, _) if typ == lhsSlot.typ =>
               outgoing.newLong(key, lhsSlot.nullable || rhsNullable, typ)
             case rhsSlot =>
               val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
               outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
-          }
-          case (key, lhsSlot) => rhsPipeline.get(key).foreach{
-            case rhsSlot =>
-              val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
-              outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
-          }
+            }
+          case (key, lhsSlot) =>
+            //We know lhs uses a ref slot so just look for shared variables.
+            rhsPipeline.get(key).foreach {
+              case rhsSlot =>
+                val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
+                outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
+            }
         }
         outgoing
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")

@@ -355,11 +355,21 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Union(_, _) =>
         val lhsInfo = pipelines(lhs.id)
         val rhsInfo = pipelines(rhs.id)
-
-        UnionSlottedPipe(lhs, rhs, lhsInfo, rhsInfo, pipeline, computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
+        //val lhsOverlap = overlaps(pipeline, lhsInfo) // since pipeline is constructed from lhs the overlap will always be true
+        val rhsOverlap = overlaps(pipeline, rhsInfo)
+        if(rhsOverlap == true)
+          FastUnionSlottedPipe(lhs, rhs)(id = id)
+        else
+          UnionSlottedPipe(lhs, rhs, rhsInfo, pipeline, computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
+  }
+
+  private def overlaps(source: PipelineInformation, toCheck: PipelineInformation):Boolean = {
+    source.mapSlot {
+      case (k, s) => s == toCheck.get(k).get
+    }.forall(_ == true)
   }
 }
 
