@@ -20,6 +20,7 @@
 package org.neo4j.helpers;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +32,8 @@ import java.util.function.Supplier;
 
 public abstract class FutureAdapter<V> implements Future<V>
 {
+    public static final Future<Void> VOID = CompletableFuture.completedFuture( null );
+
     @Override
     public boolean cancel( boolean mayInterruptIfRunning )
     {
@@ -43,6 +46,11 @@ public abstract class FutureAdapter<V> implements Future<V>
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * This class will be deleted as part of next major release. Please use {@link CompletableFuture#complete(Object)}
+     * instead.
+     */
+    @Deprecated
     public static class Present<V> extends FutureAdapter<V>
     {
         private final V value;
@@ -63,7 +71,6 @@ public abstract class FutureAdapter<V> implements Future<V>
         {
             return value;
         }
-
         @Override
         public V get( long timeout, TimeUnit unit )
         {
@@ -71,12 +78,15 @@ public abstract class FutureAdapter<V> implements Future<V>
         }
     }
 
+    /**
+     * This method will be deleted as part of next major release. Please use {@link CompletableFuture#complete(Object)}
+     * instead.
+     */
+    @Deprecated
     public static <T> Present<T> present( T value )
     {
         return new Present<>( value );
     }
-
-    public static final Future<Void> VOID = new Present<>( null );
 
     public static <T> Future<T> latchGuardedValue( final Supplier<T> supplier, final CountDownLatch guardedByLatch,
                                                    final String jobDescription )
