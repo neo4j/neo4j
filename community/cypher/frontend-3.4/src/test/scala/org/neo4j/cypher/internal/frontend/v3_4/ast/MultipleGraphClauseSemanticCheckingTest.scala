@@ -34,6 +34,33 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Query] = Query
 
+  test("allows bound nodes in single node pattern GRAPH OF") {
+    parsing(
+      """MATCH (a:Swedish)
+        |RETURN GRAPH result OF (a)""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errors shouldBe empty
+    }
+  }
+
+  test("allows bound relationships in GRAPH OF") {
+    parsing(
+      """MATCH (a)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[r]->(b)""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errors shouldBe empty
+    }
+  }
+
+  test("disallow undirected relationships in GRAPH OF") {
+    parsing(
+      """MATCH (a)-[r]->(b)
+        |RETURN GRAPH result OF (b)-[r]-(a)""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(Set("Only directed relationships are supported in GRAPH OF"))
+    }
+  }
+
   test("Weird no context graphs error") {
     parsing(
       """MATCH (n)-->(b:B)

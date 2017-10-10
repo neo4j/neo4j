@@ -27,6 +27,17 @@ object Pattern {
     case object Create extends SemanticContext
     case object CreateUnique extends SemanticContext
     case object Expression extends SemanticContext
+
+    case object GraphOf extends SemanticContext
+
+    def name(ctx: SemanticContext): String = ctx match {
+      case Match => "MATCH"
+      case Merge => "MERGE"
+      case Create => "CREATE"
+      case CreateUnique => "CREATE UNIQUE"
+      case Expression => "expression"
+      case GraphOf => "GRAPH OF"
+    }
   }
 
   object findDuplicateRelationships extends (Pattern => Set[Seq[Variable]]) {

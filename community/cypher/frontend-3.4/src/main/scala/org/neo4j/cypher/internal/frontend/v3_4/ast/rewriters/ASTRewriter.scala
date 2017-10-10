@@ -45,6 +45,8 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalE
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
       enableCondition(noUnnamedPatternElementsInMatch),
+      nameGraphOfPatternElements,
+      enableCondition(noUnnamedPatternElementsInGraphOf),
       normalizeMatchPredicates,
       normalizeNotEquals,
       enableCondition(containsNoNodesOfType[NotEquals]),
