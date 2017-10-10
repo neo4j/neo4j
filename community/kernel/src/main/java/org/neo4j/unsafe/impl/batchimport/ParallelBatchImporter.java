@@ -185,7 +185,7 @@ public class ParallelBatchImporter implements BatchImporter
             }
             // Import relationships (unlinked), properties
             Configuration relationshipConfig =
-                    configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
+                    configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
             RelationshipStage unlinkedRelationshipStage =
                     new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
                             badCollector, inputCache, neoStore, storeUpdateMonitor );
@@ -201,9 +201,7 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache.setHighNodeId( neoStore.getNodeStore().getHighId() );
             NodeDegreeCountStage nodeDegreeStage = new NodeDegreeCountStage( relationshipConfig,
                     neoStore.getRelationshipStore(), nodeRelationshipCache );
-            neoStore.startFlushingPageCache();
             executeStage( nodeDegreeStage );
-            neoStore.stopFlushingPageCache();
 
             linkData( nodeRelationshipCache, neoStore, unlinkedRelationshipStage.getDistribution(),
                     availableMemory );

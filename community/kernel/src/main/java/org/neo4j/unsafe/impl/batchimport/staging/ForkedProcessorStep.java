@@ -22,14 +22,11 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFieldOffset;
 
 /**
@@ -48,7 +45,6 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     protected static final int MAIN = 0;
     private final long COMPLETED_PROCESSORS_OFFSET = getFieldOffset( Unit.class, "completedProcessors" );
     private final long PROCESSING_TIME_OFFSET = getFieldOffset( Unit.class, "processingTime" );
-    private static final ParkStrategy PARK = new ParkStrategy.Park( IS_OS_WINDOWS ? 10_000 : 500, MICROSECONDS );
 
     private final Object[] forkedProcessors;
     private volatile int numberOfForkedProcessors;
@@ -189,10 +185,6 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
             UnsafeUtil.getAndAddLong( this, PROCESSING_TIME_OFFSET, time );
             int prevCompletedProcessors = UnsafeUtil.getAndAddInt( this, COMPLETED_PROCESSORS_OFFSET, 1 );
             assert prevCompletedProcessors < processors;
-            if ( prevCompletedProcessors == processors - 1 )
-            {
-                PARK.unpark( downstreamSender );
-            }
         }
     }
 

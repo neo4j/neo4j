@@ -30,7 +30,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
-import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
@@ -65,8 +64,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public void start( int orderingGuarantees )
     {
         super.start( orderingGuarantees );
-        this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, config.maxNumberOfProcessors(),
-                DEFAULT_PARK_STRATEGY, name(), Sender::new );
+        this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, config.maxNumberOfProcessors(), PARK, name(), Sender::new );
     }
 
     @Override

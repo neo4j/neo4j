@@ -36,7 +36,7 @@ public class NodeDegreeCountStage extends Stage
 {
     public NodeDegreeCountStage( Configuration config, RelationshipStore store, NodeRelationshipCache cache )
     {
-        super( "Node Degrees", config, ORDER_SEND_DOWNSTREAM );
+        super( "Node Degrees", config );
         add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, store, null ) );
         add( new CalculateDenseNodesStep( control(), config, cache ) );
