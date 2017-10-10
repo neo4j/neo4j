@@ -21,11 +21,23 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, lhsInfo: PipelineInformation, rhsInfo: PipelineInformation)
+case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, lhsInfo: PipelineInformation, rhsInfo: PipelineInformation,
+                            unionInfo: PipelineInformation,
+                            mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+
+
+  //We must map slots from lhs and rhs to the actual union output since the slots in the lhs and the rhs may appear in different order
+  //private val mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation) => Unit] = unionInfo.mapSlot {
+    //case (k, v: LongSlot) => (in, out, info) => out.setLongAt(info.getLongOffsetFor(k), in.getLongAt(v.offset))
+    //case (k, v: RefSlot) => (in, out, info) => out.setRefAt(info.getReferenceOffsetFor(k), in.getRefAt(v.offset))
+  //}
+
+  //MATCH (n) RETURN n UNION RETURN 42 AS n
+
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val left = lhs.createResults(state)
     val right = rhs.createResults(state)
@@ -34,16 +46,14 @@ case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, lhsInfo: PipelineInformation, 
       override def hasNext: Boolean = left.hasNext || right.hasNext
 
       override def next(): ExecutionContext = if (left.hasNext) {
-        val context = left.next()
-        //store some state
-        context
+        val in = left.next()
+        val out = PrimitiveExecutionContext(unionInfo)
+        mapSlots.foreach(f => f(in, out, lhsInfo, state))
+        out
       } else {
         val in = right.next()
-        val out = PrimitiveExecutionContext(lhsInfo)
-        lhsInfo.foreachSlot {
-          case (k, v: LongSlot) =>   //out.setLongAt(rhsInfo.getLongOffsetFor(k), in.getLongAt(v.offset))   // -> Problem: k != k
-          case (k, v: RefSlot) => out.setRefAt(rhsInfo.getReferenceOffsetFor(k), in.getRefAt(v.offset))
-        }
+        val out = PrimitiveExecutionContext(unionInfo)
+        mapSlots.foreach(f => f(in, out, rhsInfo, state))
         out
       }
     }

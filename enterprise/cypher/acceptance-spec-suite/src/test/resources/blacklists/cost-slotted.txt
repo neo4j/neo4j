@@ -84,13 +84,6 @@ Find no shortest path when a length limit prunes all candidates
 Find no shortest path when the start node is null
 Find all shortest paths
 Find a combination of a shortest path and a pattern expression
-Filter with AND/OR
-
-Should allow AND and OR with index and equality predicates
-Should allow AND and OR with index and inequality predicates
-Should allow AND and OR with index and STARTS WITH predicates
-Should allow AND and OR with index and regex predicates
-Should allow OR with index and regex predicates
 
 //SkipLimitAcceptance.feature
 Using a optional match after aggregation and before an aggregation

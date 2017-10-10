@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ColumnOrder => _, _}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.{computeUnionSlots, createProjectionsForResult}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
@@ -352,9 +353,68 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
 
       case Union(_, _) =>
-        UnionSlottedPipe(lhs, rhs, pipelines(lhs.id), pipelines(rhs.id))(id = id)
+        val lhsInfo = pipelines(lhs.id)
+        val rhsInfo = pipelines(rhs.id)
+
+        UnionSlottedPipe(lhs, rhs, lhsInfo, rhsInfo, pipeline, computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
+  }
+}
+
+object SlottedPipeBuilder {
+  private def createProjectionsForResult(columns: Seq[String], pipelineInformation1: PipelineInformation): Seq[(String, Expression)] = {
+    val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
+      k =>
+        pipelineInformation1(k) match {
+          case LongSlot(offset, false, CTNode, _) =>
+            k -> slottedExpressions.NodeFromSlot(offset)
+          case LongSlot(offset, true, CTNode, _) =>
+            k -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
+          case LongSlot(offset, false, CTRelationship, _) =>
+            k -> slottedExpressions.RelationshipFromSlot(offset)
+          case LongSlot(offset, true, CTRelationship, _) =>
+            k -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
+
+          case RefSlot(offset, _, _, _) =>
+            k -> slottedExpressions.ReferenceFromSlot(offset)
+
+          case _ =>
+            throw new InternalException(s"Did not find `$k` in the pipeline information")
+        }
+    }
+    runtimeColumns
+  }
+
+  //compute mapping from incoming to outgoing pipe line, the slot order may differ
+  //between the output and the input (lhs and rhs) and it may be the case that
+  //we have a reference slot in the output but a long slot on one of the inputs,
+  //e.g. MATCH (n) RETURN n UNION RETURN 42 AS n
+  def computeUnionSlots(lhsInfo: PipelineInformation, rhsInfo: PipelineInformation,
+                        out: PipelineInformation) = {
+    //find columns where output is a reference slot but where the input is a long slot
+    def findColums(input: PipelineInformation) = {
+      val slots = out.mapSlot {
+        case (k, slot: RefSlot) => input.get(k).get match {
+          case ls: LongSlot => Some(ls)
+          case _ => None
+        }
+        case _ => None
+      }.flatten.toIndexedSeq
+      slots.zip(createProjectionsForResult(slots.map(_.name), input).map(_._2)).toMap
+    }
+    //Compute how to convert input to output pipeline
+    val expressions = findColums(lhsInfo) ++ findColums(rhsInfo)
+    val mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit] = out.mapSlot {
+      case (k, v: LongSlot) => (in, out, info, _) =>
+        out.setLongAt(v.offset, in.getLongAt(info.getLongOffsetFor(k)))
+      case (k, v: RefSlot) => (in, out, info, state) => info.get(k).get match {
+        case l: LongSlot => //here we must map the long slot to a reference slot
+          out.setRefAt(v.offset, expressions(l)(in,state))
+        case _ => out.setRefAt(v.offset, in.getRefAt(info.getReferenceOffsetFor(k)))
+      }
+    }
+    mapSlots
   }
 }

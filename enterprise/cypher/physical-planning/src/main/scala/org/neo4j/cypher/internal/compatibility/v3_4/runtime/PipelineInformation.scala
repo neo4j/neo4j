@@ -21,8 +21,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 import scala.collection.mutable
 
@@ -184,6 +184,8 @@ class PipelineInformation(private var slots: Map[String, Slot],
 
   def foreachSlot[U](f: ((String,Slot)) => U): Unit =
     slots.foreach(f)
+
+  def mapSlot[U](f: ((String,Slot)) => U): Iterable[U] = slots.map(f)
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
 

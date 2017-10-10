@@ -284,8 +284,23 @@ object SlotAllocation {
         lhsPipeline
 
       case _: Union  =>
-        lhsPipeline //TODO/Fixme: This does not work with permutated variables
-
+        //MATCH (n) RETURN (n) A,B,C UNION ... RETURN C,B,A
+        val outgoing = PipelineInformation.empty
+        lhsPipeline.foreachSlot {
+          case (key, lhsSlot: LongSlot) => rhsPipeline.get(key).foreach {
+            case LongSlot(_, rhsNullable, typ, _) if typ == lhsSlot.typ =>
+              outgoing.newLong(key, lhsSlot.nullable || rhsNullable, typ)
+            case rhsSlot =>
+              val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
+              outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
+          }
+          case (key, lhsSlot) => rhsPipeline.get(key).foreach{
+            case rhsSlot =>
+              val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
+              outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
+          }
+        }
+        outgoing
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
