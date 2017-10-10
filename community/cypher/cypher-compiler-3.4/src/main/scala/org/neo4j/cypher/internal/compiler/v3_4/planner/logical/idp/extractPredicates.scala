@@ -114,8 +114,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode,
-                    MultiRelationshipPathStep(rel, _, NilPathStep))))))
+                    startNode: Variable,
+                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
             if fname == "relationships" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
@@ -135,8 +135,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode,
-                    MultiRelationshipPathStep(rel, _, NilPathStep))))))
+                    startNode: Variable,
+                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
             if fname == "nodes" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
@@ -156,8 +156,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode,
-                    MultiRelationshipPathStep(rel, _, NilPathStep))))))
+                    startNode: Variable,
+                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
             if fname == "relationships" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
@@ -177,8 +177,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode,
-                    MultiRelationshipPathStep(rel, _, NilPathStep))))))
+                    startNode: Variable,
+                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
             if fname == "nodes" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 

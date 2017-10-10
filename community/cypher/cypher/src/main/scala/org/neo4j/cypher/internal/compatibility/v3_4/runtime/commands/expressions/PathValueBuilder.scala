@@ -41,48 +41,55 @@ final class PathValueBuilder {
     this
   }
 
-  def addNode(node: NodeValue): PathValueBuilder = nullCheck(node) {
+  def addNode(nodeOrNull: AnyValue): PathValueBuilder = nullCheck(nodeOrNull) {
+    val node = nodeOrNull.asInstanceOf[NodeValue]
     previousNode = node
     nodes += node
     this
   }
 
-  def addIncomingRelationship(rel: EdgeValue): PathValueBuilder = nullCheck(rel) {
+  def addIncomingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
+    val rel = relOrNull.asInstanceOf[EdgeValue]
     rels += rel
     previousNode = rel.startNode()
     nodes += previousNode
     this
   }
 
-  def addOutgoingRelationship(rel: EdgeValue): PathValueBuilder = nullCheck(rel) {
+  def addOutgoingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
+    val rel = relOrNull.asInstanceOf[EdgeValue]
     rels += rel
     previousNode = rel.endNode()
     nodes += previousNode
     this
   }
 
-  def addUndirectedRelationship(rel: EdgeValue): PathValueBuilder = nullCheck(rel) {
+  def addUndirectedRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
+    val rel = relOrNull.asInstanceOf[EdgeValue]
     if (rel.startNode() == previousNode) addOutgoingRelationship(rel)
     else if (rel.endNode() == previousNode) addIncomingRelationship(rel)
     else throw new IllegalArgumentException(s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
   }
 
-  def addIncomingRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
-    val iterator = rels.iterator
+  def addIncomingRelationships(relsOrNull: AnyValue): PathValueBuilder = nullCheck(relsOrNull) {
+    val relsToAdd = relsOrNull.asInstanceOf[ListValue]
+    val iterator = relsToAdd.iterator
     while (iterator.hasNext)
       addIncomingRelationship(iterator.next().asInstanceOf[EdgeValue])
     this
   }
 
-  def addOutgoingRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
-    val iterator = rels.iterator
+  def addOutgoingRelationships(relsOrNull: AnyValue): PathValueBuilder = nullCheck(relsOrNull) {
+    val relsToAdd = relsOrNull.asInstanceOf[ListValue]
+    val iterator = relsToAdd.iterator
     while (iterator.hasNext)
       addOutgoingRelationship(iterator.next().asInstanceOf[EdgeValue])
     this
   }
 
-  def addUndirectedRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
-    val relIterator = rels.iterator
+  def addUndirectedRelationships(relsOrNull: AnyValue): PathValueBuilder = nullCheck(relsOrNull) {
+    val relsToAdd = relsOrNull.asInstanceOf[ListValue]
+    val relIterator = relsToAdd.iterator
 
     def consumeIterator(i: Iterator[AnyValue]) =
       while (i.hasNext)
@@ -105,7 +112,7 @@ final class PathValueBuilder {
   }
 
   private def nullCheck[A](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {
-    case null =>
+    case null | Values.NO_VALUE =>
       nulled = true
       this
 

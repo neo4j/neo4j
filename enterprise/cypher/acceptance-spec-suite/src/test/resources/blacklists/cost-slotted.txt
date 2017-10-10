@@ -42,14 +42,8 @@ Returning an `extract()` expression
 Using an `extract()` expression in a WITH
 Using an `extract()` expression in a WHERE
 Using a pattern expression and a CASE expression in a WHERE
-Pattern expressions and ORDER BY
-Returning a pattern expression
-Returning a pattern expression with label predicate
 Returning a pattern expression with bound nodes
-Using a pattern expression in a WITH
 Using a variable-length pattern expression in a WITH
-Using pattern expression in RETURN
-Aggregating on pattern expression
 Pattern expression inside list comprehension
 Filter using a pattern predicate that is a logical OR between an expression and a subquery
 Filter using a pattern predicate that is a logical OR between two expressions and a subquery
@@ -64,7 +58,6 @@ Using a pattern predicate after aggregation 1
 Using a pattern predicate after aggregation 2
 Returning a relationship from a pattern predicate
 Matching with complex composite pattern predicate
-Matching named path with variable length pattern and pattern predicates
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call
 In-query call to VOID procedure that takes no arguments
@@ -92,11 +85,6 @@ Find no shortest path when the start node is null
 Find all shortest paths
 Find a combination of a shortest path and a pattern expression
 Filter with AND/OR
-
-//OrderByAcceptance.feature - Unsupported orderability
-Ordering is well defined across all types, ascending
-Ordering is well defined across all types, descending
-
 
 Should allow AND and OR with index and equality predicates
 Should allow AND and OR with index and inequality predicates

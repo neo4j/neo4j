@@ -127,7 +127,7 @@ object expandSolverStep {
       case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)),
       FunctionInvocation(_, FunctionName(fname), false,
       Seq(PathExpression(
-      NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
+      NodePathStep(startNode: Variable, MultiRelationshipPathStep(rel: Variable, _, NilPathStep) ))) ))
         if (fname  == "nodes" || fname == "relationships")
           && startNode.name == nodeId.name
           && rel.name == patternRel.name.name =>
@@ -137,7 +137,7 @@ object expandSolverStep {
       case none@NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)),
       FunctionInvocation(_, FunctionName(fname), false,
       Seq(PathExpression(
-      NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
+      NodePathStep(startNode: Variable, MultiRelationshipPathStep(rel: Variable, _, NilPathStep) ))) ))
         if (fname  == "nodes" || fname == "relationships")
           && startNode.name == nodeId.name
           && rel.name == patternRel.name.name =>

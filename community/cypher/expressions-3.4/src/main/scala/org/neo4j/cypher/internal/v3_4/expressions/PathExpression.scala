@@ -16,26 +16,42 @@
  */
 package org.neo4j.cypher.internal.v3_4.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.Rewritable._
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InputPosition, Rewritable}
 
-sealed trait PathStep {
-  def dependencies: Set[Variable]
+sealed trait PathStep extends Product with Foldable with Rewritable {
+
+  self =>
+
+  def dependencies: Set[Expression]
+
+  def dup(children: Seq[AnyRef]): this.type =
+    if (children.iterator eqElements this.children)
+      this
+    else {
+      val constructor = this.copyConstructor
+      val params = constructor.getParameterTypes
+      val args = children.toVector
+      val ctorArgs = args
+      val duped = constructor.invoke(this, ctorArgs: _*)
+      duped.asInstanceOf[self.type]
+    }
 }
 
-final case class NodePathStep(node: Variable, next: PathStep) extends PathStep {
+final case class NodePathStep(node: Expression, next: PathStep) extends PathStep {
   val dependencies = next.dependencies + node
 }
 
-final case class SingleRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class SingleRelationshipPathStep(rel: Expression, direction: SemanticDirection, next: PathStep) extends PathStep {
   val dependencies = next.dependencies + rel
 }
 
-final case class MultiRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class MultiRelationshipPathStep(rel: Expression, direction: SemanticDirection, next: PathStep) extends PathStep {
   val dependencies = next.dependencies + rel
 }
 
 case object NilPathStep extends PathStep {
-  def dependencies = Set.empty[Variable]
+  def dependencies = Set.empty[Expression]
 }
 
 case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression
