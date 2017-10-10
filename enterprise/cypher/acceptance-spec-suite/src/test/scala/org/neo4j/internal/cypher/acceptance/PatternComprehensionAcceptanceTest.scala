@@ -135,6 +135,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | p] AS list"
 
     val result = executeWith(expectedToSucceed, query)
+
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
 
@@ -148,6 +149,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->() WHERE last(nodes(p)):End | p] AS list"
 
     val result = executeWith(expectedToSucceed, query)
+
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
 
@@ -161,6 +163,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->() where last(nodes(p)):End | p] AS list"
 
     val result = executeWith(expectedToSucceed, query)
+
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
 
@@ -172,6 +175,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->(b) WHERE head([p IN ['foo'] | true ]) | p] AS list"
 
     val result = executeWith(expectedToSucceedRestricted, query)
+
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
 
@@ -183,6 +187,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | {path: p, other: [p IN ['foo'] | true ]} ] AS list"
 
     val result = executeWith(expectedToSucceed, query)
+
     result.toList should equal(List(Map("list" -> List(Map("path" -> PathImpl(n1, r, n2), "other" -> List(true))))))
   }
 
