@@ -13,7 +13,6 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
-  neo4j-driver.js
   Netty/All-in-One
   rxjs.js
 ------------------------------------------------------------------------------
@@ -232,7 +231,6 @@ BSD License
   ieee754.js
   invariant.js
   joi.js
-  prop-types.js
   react-dnd-html5-backend.js
   react-dnd.js
   sprintf-js.js
@@ -485,6 +483,7 @@ MIT License
   pretty-format.js
   promise-polyfill.js
   promise.js
+  prop-types.js
   querystringify.js
   react-addons-pure-render-mixin.js
   react-dropzone.js
