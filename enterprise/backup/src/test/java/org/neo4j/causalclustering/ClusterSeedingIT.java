@@ -92,15 +92,15 @@ public class ClusterSeedingIT
         backupCluster.start();
         CoreGraphDatabase db = BackupCoreIT.createSomeData( backupCluster );
 
-        File backup = createBackup( db, "some-backup" );
+        File backup = createBackup( backupCluster, "some-backup" );
         backupCluster.shutdown();
 
         return backup;
     }
 
-    private File createBackup( CoreGraphDatabase db, String backupName ) throws Exception
+    private File createBackup( Cluster cluster, String backupName ) throws Exception
     {
-        String[] args = BackupCoreIT.backupArguments( backupAddress( db ), baseBackupDir, backupName );
+        String[] args = BackupCoreIT.backupArguments( backupAddress( cluster ), baseBackupDir, backupName );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( testDir.absolutePath(), args ) );
         return new File( baseBackupDir, backupName );
     }
@@ -132,7 +132,7 @@ public class ClusterSeedingIT
         cluster.start();
 
         // when: creating a backup
-        File backupDir = createBackup( cluster.getCoreMemberById( 0 ).database(), "the-backup" );
+        File backupDir = createBackup( cluster, "the-backup" );
 
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
@@ -154,7 +154,7 @@ public class ClusterSeedingIT
         createEmptyNodes( cluster, 100 );
 
         // when: creating a backup
-        File backupDir = createBackup( cluster.getCoreMemberById( 0 ).database(), "the-backup" );
+        File backupDir = createBackup( cluster, "the-backup" );
 
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
