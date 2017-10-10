@@ -97,7 +97,8 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
             RaftLog entryLog, long electionTimeout, long heartbeatInterval,
             RenewableTimeoutService renewableTimeoutService, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
-            InFlightCache inFlightCache, boolean refuseToBecomeLeader, Monitors monitors, Clock clock )
+            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting, Monitors monitors,
+            Clock clock )
     {
         this.myself = myself;
         this.electionTimeout = electionTimeout;
@@ -115,7 +116,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
         this.inFlightCache = inFlightCache;
         this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightCache,
-                logProvider );
+                logProvider, supportPreVoting );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
     }
