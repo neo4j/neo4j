@@ -40,14 +40,6 @@
         <exclude>**/.keep</exclude>
       </excludes>
     </fileSet>
-    <!-- non-maven jars -->
-    <fileSet>
-      <directory>src/main/distribution/binary</directory>
-      <outputDirectory/>
-      <includes>
-        <include>lib/*.jar</include>
-      </includes>
-    </fileSet>
     <!-- filter and chmod 755 shell scripts -->
     <!-- filter m4 scripts-->
     <fileSet>
@@ -138,6 +130,7 @@
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
+        <exclude>org.ow2.asm:*</exclude>
       </excludes>
     </dependencySet>
  </dependencySets>

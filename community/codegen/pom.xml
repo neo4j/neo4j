@@ -111,6 +111,7 @@ the relevant Commercial Agreement.
         <artifactId>maven-shade-plugin</artifactId>
         <groupId>org.apache.maven.plugins</groupId>
         <configuration>
+          <createDependencyReducedPom>false</createDependencyReducedPom>
           <artifactSet>
             <includes>
               <include>org.ow2.asm:*</include>
@@ -122,7 +123,6 @@ the relevant Commercial Agreement.
               <shadedPattern>org.neo4j.codegen.asm</shadedPattern>
             </relocation>
           </relocations>
-          <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
         </configuration>
       </plugin>
     </plugins>

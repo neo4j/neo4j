@@ -82,21 +82,13 @@
         </configuration>
         <executions>
           <execution>
-            <id>list-all-licenses-win</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
+            <id>list-all-licenses</id>
             <configuration>
-              <licensingRequirementFiles>
-                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+              <licensingRequirementFiles combine.children="append">
                 <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
-                <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-installer.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-NOTICE-win.txt</thirdPartyLicensingFilename>
-              <listPrependText>list-prefix.txt</listPrependText>
               <listReport>${project.artifactId}-${neo4j.version}-LICENSES-win.txt</listReport>
             </configuration>
           </execution>
@@ -128,6 +120,11 @@
                   </excludes>
                 </filter>
               </filters>
+              <artifactSet>
+                <excludes>
+                  <exclude>org.ow2.asm:*</exclude>
+                </excludes>
+              </artifactSet>
             </configuration>
           </execution>
         </executions>
