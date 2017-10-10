@@ -19,8 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -29,13 +32,18 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
 
+import static java.lang.String.format;
+
+import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultRelationshipDeserializer;
 
@@ -90,9 +98,66 @@ public class CsvInput implements Input
         this.config = config;
         this.badCollector = badCollector;
         this.validateRelationshipData = validateRelationshipData;
+
+        verifyHeaders();
     }
 
-    private void assertSaneConfiguration( Configuration config )
+    /**
+     * Verifies so that all headers in input files looks sane:
+     * <ul>
+     * <li>node/relationship headers can be parsed correctly</li>
+     * <li>relationship headers uses ID spaces previously defined in node headers</li>
+     * </ul>
+     */
+    private void verifyHeaders()
+    {
+        try
+        {
+            // parse all node headers and remember all ID spaces
+            for ( DataFactory<InputNode> dataFactory : nodeDataFactory )
+            {
+                try ( CharSeeker dataStream = charSeeker( dataFactory.create( config ).stream(), config, true ) )
+                {
+                    Header header = nodeHeaderFactory.create( dataStream, config, idType );
+                    Header.Entry idHeader = header.entry( Type.ID );
+                    if ( idHeader != null )
+                    {
+                        // will create this group inside groups, so no need to do something with the result of it right now
+                        groups.getOrCreate( idHeader.groupName() );
+                    }
+                }
+            }
+
+            // parse all relationship headers and verify all ID spaces
+            for ( DataFactory<InputRelationship> dataFactory : relationshipDataFactory )
+            {
+                try ( CharSeeker dataStream = charSeeker( dataFactory.create( config ).stream(), config, true ) )
+                {
+                    Header header = relationshipHeaderFactory.create( dataStream, config, idType );
+                    verifyRelationshipHeader( header, Type.START_ID, dataStream.sourceDescription() );
+                    verifyRelationshipHeader( header, Type.END_ID, dataStream.sourceDescription() );
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void verifyRelationshipHeader( Header header, Type type, String source )
+    {
+        Header.Entry entry = header.entry( type );
+        String groupName = entry.groupName();
+        if ( groups.get( groupName ) == null )
+        {
+            throw new HeaderException(
+                    format( "Relationship header %s in %s refers to ID space %s which no node header specifies",
+                    header, source, groupName != null ? groupName : Group.GLOBAL.name() ) );
+        }
+    }
+
+    private static void assertSaneConfiguration( Configuration config )
     {
         Map<Character,String> delimiters = new HashMap<>();
         delimiters.put( config.delimiter(), "delimiter" );
@@ -100,7 +165,7 @@ public class CsvInput implements Input
         checkUniqueCharacter( delimiters, config.quotationCharacter(), "quotation character" );
     }
 
-    private void checkUniqueCharacter( Map<Character,String> characters, char character, String characterDescription )
+    private static void checkUniqueCharacter( Map<Character,String> characters, char character, String characterDescription )
     {
         String conflict = characters.put( character, characterDescription );
         if ( conflict != null )

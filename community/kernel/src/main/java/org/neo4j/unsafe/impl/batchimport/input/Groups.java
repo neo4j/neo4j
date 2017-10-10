@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,8 +50,7 @@ public class Groups
         {
             if ( global != globalMode.booleanValue() )
             {
-                throw new IllegalStateException( "Mixing specified and unspecified group belongings " +
-                        "in a single import isn't supported" );
+                throw mixingOfGroupModesException();
             }
         }
 
@@ -65,5 +65,37 @@ public class Groups
             byName.put( name, group = new Group.Adapter( nextId++, name ) );
         }
         return group;
+    }
+
+    private IllegalStateException mixingOfGroupModesException()
+    {
+        return new IllegalStateException( "Mixing specified and unspecified group belongings " +
+                "in a single import isn't supported" );
+    }
+
+    public synchronized Group get( String name )
+    {
+        boolean global = name == null;
+        if ( globalMode != null && global != globalMode.booleanValue() )
+        {
+            throw mixingOfGroupModesException();
+        }
+
+        if ( name == null )
+        {
+            return Group.GLOBAL;
+        }
+
+        Group group = byName.get( name );
+        if ( group == null )
+        {
+            throw new HeaderException( "Group '" + name + "' not found. Available groups are: " + groupNames() );
+        }
+        return group;
+    }
+
+    private String groupNames()
+    {
+        return Arrays.toString( byName.keySet().toArray( new String[byName.keySet().size()] ) );
     }
 }

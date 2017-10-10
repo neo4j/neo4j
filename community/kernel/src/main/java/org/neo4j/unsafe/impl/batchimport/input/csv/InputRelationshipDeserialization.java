@@ -49,8 +49,8 @@ public class InputRelationshipDeserialization extends InputEntityDeserialization
     @Override
     public void initialize()
     {
-        this.startNodeGroup = groups.getOrCreate( header.entry( Type.START_ID ).groupName() );
-        this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );
+        this.startNodeGroup = groups.get( header.entry( Type.START_ID ).groupName() );
+        this.endNodeGroup = groups.get( header.entry( Type.END_ID ).groupName() );
     }
 
     @Override

@@ -44,7 +44,9 @@ import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.nodeData;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
 public class ExternalPropertiesDecoratorIT
 {
@@ -72,7 +74,7 @@ public class ExternalPropertiesDecoratorIT
                 config, idType, UpdateBehaviour.ADD, collector ) );
         Input input = new CsvInput(
                 nodeData( data( decorator, () -> mainData( count ) ) ), defaultFormatNodeFileHeader(),
-                null, null,
+                relationshipData(), defaultFormatRelationshipFileHeader(),
                 idType, config,
                 collector, processors, true );
 

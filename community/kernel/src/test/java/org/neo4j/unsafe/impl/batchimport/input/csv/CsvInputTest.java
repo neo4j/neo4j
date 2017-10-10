@@ -29,13 +29,16 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -70,11 +73,13 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.nodeData;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
 @RunWith( Parameterized.class )
@@ -103,7 +108,7 @@ public class CsvInputTest
                 header( entry( null, Type.ID, idType.extractor( extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ),
                         entry( "labels", Type.LABEL, extractors.string() ) ),
-                        null, null, idType, config( COMMAS ), silentBadCollector( 0 ),
+                        relationshipData(), defaultFormatRelationshipFileHeader(), idType, config( COMMAS ), silentBadCollector( 0 ),
                         getRuntime().availableProcessors(), true );
 
         // WHEN/THEN
@@ -122,7 +127,7 @@ public class CsvInputTest
         Iterable<DataFactory<InputRelationship>> data = dataIterable( data(
               "node1,node2,KNOWS,1234567\n" +
               "node2,node10,HACKS,987654" ) );
-        Input input = new CsvInput( null, null,
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(),
                 data,
                 header( entry( "from", Type.START_ID, idType.extractor( extractors ) ),
                         entry( "to", Type.END_ID, idType.extractor( extractors ) ),
@@ -143,16 +148,15 @@ public class CsvInputTest
     public void shouldCloseDataIteratorsInTheEnd() throws Exception
     {
         // GIVEN
-        CharReadable nodeData = charReader( "1" );
-        CharReadable relationshipData = charReader( "1,1" );
+        CapturingDataFactories<InputNode> nodeData = new CapturingDataFactories<>( config -> charReader( "1" ), NO_NODE_DECORATOR );
+        CapturingDataFactories<InputRelationship> relationshipData = new CapturingDataFactories<>( config -> charReader( "1,1" ),
+                defaultRelationshipType( "TYPE" ) );
+
         IdType idType = IdType.STRING;
-        Iterable<DataFactory<InputNode>> nodeDataIterable = dataIterable( given( nodeData ) );
-        Iterable<DataFactory<InputRelationship>> relationshipDataIterable =
-                dataIterable( data( relationshipData, defaultRelationshipType( "TYPE" ) ) );
         Input input = new CsvInput(
-                nodeDataIterable, header(
+                nodeData, header(
                         entry( null, Type.ID, idType.extractor( extractors ) ) ),
-                relationshipDataIterable, header(
+                relationshipData, header(
                         entry( null, Type.START_ID, idType.extractor( extractors ) ),
                         entry( null, Type.END_ID, idType.extractor( extractors ) ) ),
                 idType, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
@@ -168,8 +172,8 @@ public class CsvInputTest
         }
 
         // THEN
-        assertClosed( nodeData );
-        assertClosed( relationshipData );
+        assertClosed( nodeData.last() );
+        assertClosed( relationshipData.last() );
     }
 
     private void assertClosed( CharReadable reader )
@@ -199,7 +203,7 @@ public class CsvInputTest
                       entry( "unit", Type.PROPERTY, extractors.string() ),
                       entry( "type", Type.LABEL, extractors.string() ),
                       entry( "kills", Type.PROPERTY, extractors.int_() ) ),
-                null, null, IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ),
+                relationshipData(), defaultFormatRelationshipFileHeader(), IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ),
                 getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -224,7 +228,7 @@ public class CsvInputTest
                 header(
                       entry( null, Type.ID, extractors.long_() ),
                       entry( "name", Type.PROPERTY, extractors.string() ) ),
-                null, null, IdType.ACTUAL, config( COMMAS ), silentBadCollector( 4 ),
+                relationshipData(), defaultFormatRelationshipFileHeader(), IdType.ACTUAL, config( COMMAS ), silentBadCollector( 4 ),
                 getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -249,7 +253,7 @@ public class CsvInputTest
                                               "4,csv\n" );
         Iterable<DataFactory<InputNode>> data = dataIterable( group1, group2 );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
-                                    null, null,
+                                    relationshipData(), defaultFormatRelationshipFileHeader(),
                                     IdType.STRING, config( COMMAS ), silentBadCollector( 0 ),
                                     getRuntime().availableProcessors(), true );
 
@@ -276,7 +280,7 @@ public class CsvInputTest
                                             additiveLabels( addedLabels ) );
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(),
-                null, null, IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ),
+                relationshipData(), defaultFormatRelationshipFileHeader(), IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ),
                 getRuntime().availableProcessors(), true );
 
         // WHEN/THEN
@@ -304,7 +308,7 @@ public class CsvInputTest
                                                     "2,1," + defaultType,
                                                     defaultRelationshipType( defaultType ) );
         Iterable<DataFactory<InputRelationship>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( null, null,
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(),
                 dataIterable, defaultFormatRelationshipFileHeader(), IdType.ACTUAL, config( COMMAS ),
                 silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
@@ -327,7 +331,7 @@ public class CsvInputTest
                 "0,1," + type + "\n" +
                 "1,2," );
         Iterable<DataFactory<InputRelationship>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( null, null,
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(),
                 dataIterable, defaultFormatRelationshipFileHeader(), IdType.ACTUAL, config( COMMAS ),
                 silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
@@ -356,8 +360,8 @@ public class CsvInputTest
                 "Mattias,1\n" +
                 "Johan,2\n" );
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.STRING, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
@@ -378,8 +382,8 @@ public class CsvInputTest
                 "abc,Mattias,1\n" +
                 ",Johan,2\n" ); // this node is anonymous
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.STRING, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
@@ -400,8 +404,8 @@ public class CsvInputTest
                 "abc,Mattias,1\n" +
                 ",Johan,2\n" ); // this node is anonymous
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.STRING, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
@@ -422,7 +426,8 @@ public class CsvInputTest
                 "abc,Mattias,1\n" +
                 "def,Johan,2\n" ); // this node is anonymous
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING,
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(),
+                relationshipData(), defaultFormatRelationshipFileHeader(), IdType.STRING,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -444,7 +449,8 @@ public class CsvInputTest
                 "0,Mattias,1\n" +
                 "1,Johan,2\n" ); // this node is anonymous
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.ACTUAL,
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(),
+                relationshipData(), defaultFormatRelationshipFileHeader(), IdType.ACTUAL,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -466,8 +472,8 @@ public class CsvInputTest
                 "0,Mattias,\n" +            // here we leave out "extra" property
                 "1,Johan,Additional\n" );
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.ACTUAL,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
@@ -488,8 +494,8 @@ public class CsvInputTest
                 "0,Mattias,\n" +            // here we leave out "extra" property
                 "1,Johan,10\n" );
         Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.ACTUAL,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
@@ -568,7 +574,7 @@ public class CsvInputTest
                 data,
                 header( entry( null, Type.ID, group.name(), idType.extractor( extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ) ),
-                        null, null, idType, config( COMMAS ),
+                        relationshipData(), defaultFormatRelationshipFileHeader(), idType, config( COMMAS ),
                         silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN/THEN
@@ -585,13 +591,17 @@ public class CsvInputTest
     {
         // GIVEN
         IdType idType = IdType.ACTUAL;
-        Iterable<DataFactory<InputRelationship>> data = dataIterable( data(
-                "123,TYPE,234\n" +
-                "345,TYPE,456" ) );
         Groups groups = new Groups();
         Group startNodeGroup = groups.getOrCreate( "StartGroup" );
         Group endNodeGroup = groups.getOrCreate( "EndGroup" );
-        Input input = new CsvInput( null, null,
+        Iterable<DataFactory<InputNode>> nodeHeader = dataIterable(
+                data( ":ID(" + startNodeGroup.name() + ")" ),
+                data( ":ID(" + endNodeGroup.name() + ")" ) );
+
+        Iterable<DataFactory<InputRelationship>> data = dataIterable( data(
+                "123,TYPE,234\n" +
+                "345,TYPE,456" ) );
+        Input input = new CsvInput( nodeHeader, defaultFormatNodeFileHeader(),
                 data,
                 header( entry( null, Type.START_ID, startNodeGroup.name(), idType.extractor( extractors ) ),
                         entry( null, Type.TYPE, extractors.string() ),
@@ -618,7 +628,7 @@ public class CsvInputTest
                 "0,1,First\n" +
                 "2,3,Second\n", defaultRelationshipType( defaultType ) );
         Iterable<DataFactory<InputRelationship>> dataIterable = dataIterable( data );
-        Input input = new CsvInput( null, null, dataIterable, defaultFormatRelationshipFileHeader(),
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(), dataIterable, defaultFormatRelationshipFileHeader(),
                 IdType.ACTUAL, config( COMMAS ),
                 silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
@@ -641,7 +651,8 @@ public class CsvInputTest
                 "1,Mattias,10\n" +
                 "2,Johan,abc\n" +
                 "3,Emil,12" ) );
-        Input input = new CsvInput( data, DataFactories.defaultFormatNodeFileHeader(), null, null,
+        Input input = new CsvInput( data, DataFactories.defaultFormatNodeFileHeader(),
+                relationshipData(), defaultFormatRelationshipFileHeader(),
                 IdType.INTEGER, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -671,8 +682,8 @@ public class CsvInputTest
                 "1,Mattias,10,Person\n" +
                 "2,Johan,111,Person\n" +
                 "3,Emil,12,Person" ) );
-        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.INTEGER, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
@@ -693,7 +704,7 @@ public class CsvInputTest
                 "1,KNOWS,2,Mattias,10\n" +
                 "2,KNOWS,3,Johan,111\n" +
                 "3,KNOWS,4,Emil,12" ) );
-        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -714,8 +725,8 @@ public class CsvInputTest
         Iterable<DataFactory<InputNode>> data =
                 DataFactories.nodeData( CsvInputTest.data( ":ID,name\n1,Mattias",
                         new FailingNodeDecorator( failure ) ) );
-        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.INTEGER, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
@@ -738,8 +749,8 @@ public class CsvInputTest
                 "1,,\n" +
                 "2,a;b,10;20"
                 ) );
-        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER,
-                config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(),
+                IdType.INTEGER, config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN/THEN
         try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
@@ -758,7 +769,7 @@ public class CsvInputTest
         Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.data(
                 ":START_ID,:END_ID,:TYPE\n" +
                 ",1," ) );
-        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -781,7 +792,7 @@ public class CsvInputTest
         Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.data(
                 ":START_ID,:END_ID,:TYPE\n" +
                 "1,," ) );
-        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
 
         // WHEN
@@ -813,7 +824,8 @@ public class CsvInputTest
             }
         } );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
-                null, null, IdType.INTEGER, config, silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+                relationshipData(), defaultFormatRelationshipFileHeader(), IdType.INTEGER, config, silentBadCollector( 0 ),
+                getRuntime().availableProcessors(), true );
 
         // WHEN
         try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
@@ -829,7 +841,7 @@ public class CsvInputTest
     public void shouldIgnoreEmptyExtraColumns() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.data(
+        Iterable<DataFactory<InputNode>> data = nodeData( CsvInputTest.data(
                 ":ID,one\n" +
                 "1,test,\n" +
                 "2,test,,additional" ) );
@@ -837,7 +849,8 @@ public class CsvInputTest
         // WHEN
         Collector collector = mock( Collector.class );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
-                null, null, IdType.INTEGER, config( COMMAS ), collector, getRuntime().availableProcessors(), true );
+                relationshipData(), defaultFormatRelationshipFileHeader(), IdType.INTEGER, config( COMMAS ), collector,
+                getRuntime().availableProcessors(), true );
 
         // THEN
         try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
@@ -859,7 +872,7 @@ public class CsvInputTest
         Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.<InputRelationship>data(
                 ":START_ID,:END_ID,:TYPE\n" +
                 ",," ) );
-        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+        Input input = new CsvInput( nodeData(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors(), false );
 
         // WHEN
@@ -869,6 +882,95 @@ public class CsvInputTest
             assertNull( relationship.startNode() );
             assertNull( relationship.endNode() );
             assertNull( relationship.type() );
+        }
+    }
+
+    @Test
+    public void shouldFailOnUnparsableNodeHeader() throws Exception
+    {
+        // given
+        Iterable<DataFactory<InputNode>> data = nodeData( CsvInputTest.<InputNode>data( ":SOMETHING,abcde#rtg:123," ) );
+
+        try
+        {
+            // when
+            new CsvInput( data, defaultFormatNodeFileHeader(), relationshipData(), defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+                    COMMAS, mock( Collector.class ), getRuntime().availableProcessors(), false );
+            fail( "Should not parse" );
+        }
+        catch ( InputException e )
+        {
+            // then
+            // OK
+        }
+    }
+
+    @Test
+    public void shouldFailOnUnparsableRelationshipHeader() throws Exception
+    {
+        // given
+        Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.<InputRelationship>data(
+                ":SOMETHING,abcde#rtg:123," ) );
+
+        try
+        {
+            // when
+            new CsvInput( nodeData(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+                    COMMAS, mock( Collector.class ), getRuntime().availableProcessors(), false );
+            fail( "Should not parse" );
+        }
+        catch ( InputException e )
+        {
+            // then
+            // OK
+        }
+    }
+
+    @Test
+    public void shouldFailOnUndefinedGroupInRelationshipHeader() throws Exception
+    {
+        // given
+        Iterable<DataFactory<InputNode>> nodeData = nodeData(
+                CsvInputTest.<InputNode>data( ":ID(left)" ),
+                CsvInputTest.<InputNode>data( ":ID(right)" ) );
+        Iterable<DataFactory<InputRelationship>> relationshipData = relationshipData(
+                CsvInputTest.<InputRelationship>data( ":START_ID(left),:END_ID(rite)" ) );
+
+        try
+        {
+            // when
+            new CsvInput( nodeData, defaultFormatNodeFileHeader(), relationshipData, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+                    COMMAS, mock( Collector.class ), getRuntime().availableProcessors(), false );
+            fail( "Should not validate" );
+        }
+        catch ( InputException e )
+        {
+            // then
+            // OK
+        }
+    }
+
+    @Test
+    public void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader() throws Exception
+    {
+        // given
+        Iterable<DataFactory<InputNode>> nodeData = nodeData(
+                CsvInputTest.<InputNode>data( ":ID(left)" ),
+                CsvInputTest.<InputNode>data( ":ID(right)" ) );
+        Iterable<DataFactory<InputRelationship>> relationshipData = relationshipData(
+                CsvInputTest.<InputRelationship>data( ":START_ID(left),:END_ID(rite)" ) );
+
+        try
+        {
+            // when
+            new CsvInput( nodeData, defaultFormatNodeFileHeader(), relationshipData, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
+                    COMMAS, mock( Collector.class ), getRuntime().availableProcessors(), false );
+            fail( "Should not validate" );
+        }
+        catch ( InputException e )
+        {
+            // then
+            // OK
         }
     }
 
@@ -1003,6 +1105,51 @@ public class CsvInputTest
     private <ENTITY extends InputEntity> Iterable<DataFactory<ENTITY>> dataIterable( DataFactory... data )
     {
         return Iterables.<DataFactory<ENTITY>,DataFactory<ENTITY>>iterable( data );
+    }
+
+    private static class CapturingDataFactories<ENTITY extends InputEntity> implements Iterable<DataFactory<ENTITY>>
+    {
+        private final Function<Configuration,CharReadable> factory;
+        private CharReadable last;
+        private final Decorator<ENTITY> decorator;
+
+        CapturingDataFactories( Function<Configuration,CharReadable> factory, Decorator<ENTITY> decorator )
+        {
+            this.factory = factory;
+            this.decorator = decorator;
+        }
+
+        @Override
+        public Iterator<DataFactory<ENTITY>> iterator()
+        {
+            return Iterators.iterator( new DataFactory<ENTITY>()
+            {
+                @Override
+                public Data<ENTITY> create( Configuration config )
+                {
+                    return new Data<ENTITY>()
+                    {
+
+                        @Override
+                        public CharReadable stream()
+                        {
+                            return last = factory.apply( config );
+                        }
+
+                        @Override
+                        public Decorator<ENTITY> decorator()
+                        {
+                            return decorator;
+                        }
+                    };
+                }
+            } );
+        }
+
+        CharReadable last()
+        {
+            return last;
+        }
     }
 
     private static class FailingNodeDecorator implements Decorator<InputNode>
