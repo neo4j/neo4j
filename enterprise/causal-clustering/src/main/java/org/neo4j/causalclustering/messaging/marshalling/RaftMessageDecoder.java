@@ -41,6 +41,8 @@ import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.HEARTB
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.HEARTBEAT_RESPONSE;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.LOG_COMPACTION_INFO;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.NEW_ENTRY_REQUEST;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.PRE_VOTE_REQUEST;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.PRE_VOTE_RESPONSE;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.VOTE_REQUEST;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.VOTE_RESPONSE;
 
@@ -82,6 +84,23 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
             boolean voteGranted = channel.get() == 1;
 
             result = new RaftMessages.Vote.Response( from, term, voteGranted );
+        }
+        else if ( messageType.equals( PRE_VOTE_REQUEST ) )
+        {
+            MemberId candidate = retrieveMember( channel );
+
+            long term = channel.getLong();
+            long lastLogIndex = channel.getLong();
+            long lastLogTerm = channel.getLong();
+
+            result = new RaftMessages.PreVote.Request( from, term, candidate, lastLogIndex, lastLogTerm );
+        }
+        else if ( messageType.equals( PRE_VOTE_RESPONSE ) )
+        {
+            long term = channel.getLong();
+            boolean voteGranted = channel.get() == 1;
+
+            result = new RaftMessages.PreVote.Response( from, term, voteGranted );
         }
         else if ( messageType.equals( APPEND_ENTRIES_REQUEST ) )
         {
