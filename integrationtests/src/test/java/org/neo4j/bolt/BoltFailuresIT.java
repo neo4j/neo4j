@@ -50,11 +50,13 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -110,12 +112,14 @@ public class BoltFailuresIT
 
         BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
 
-        db = startDbWithBolt( new GraphDatabaseFactoryWithCustomBoltKernelExtension( extension ) );
+        int port = PortAuthority.allocatePort();
+
+        db = startDbWithBolt( new GraphDatabaseFactoryWithCustomBoltKernelExtension( extension ), port );
 
         try
         {
             // attempt to create a driver when server is unavailable
-            driver = createDriver();
+            driver = createDriver( port );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -131,11 +135,13 @@ public class BoltFailuresIT
         sessionMonitor.throwInSessionStarted();
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
-        db = startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ) );
+        int port = PortAuthority.allocatePort();
+
+        db = startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ), port );
         try
         {
             // attempt to create a driver when server is unavailable
-            driver = createDriver();
+            driver = createDriver( port );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -184,7 +190,8 @@ public class BoltFailuresIT
     public void boltServerLogsRealErrorWhenDriverIsClosedWithRunningTransactions() throws Exception
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider();
-        db = startTestDb( internalLogProvider );
+        int port = PortAuthority.allocatePort();
+        db = startTestDb( internalLogProvider, port );
 
         // create a dummy node
         db.execute( "CREATE (:Node)" ).close();
@@ -194,7 +201,7 @@ public class BoltFailuresIT
         Node node = single( db.findNodes( label( "Node" ) ) );
         tx.acquireWriteLock( node );
 
-        Driver driver = createDriver();
+        Driver driver = createDriver( port );
 
         // try to execute write query for the same node through the driver
         Future<?> writeThroughDriverFuture = updateAllNodesAsync( driver );
@@ -223,11 +230,13 @@ public class BoltFailuresIT
         monitorSetup.accept( sessionMonitor );
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
-        db = startTestDb( monitors );
+        int port = PortAuthority.allocatePort();
+
+        db = startTestDb( monitors, port );
 
         try
         {
-            driver = GraphDatabase.driver( "bolt://localhost", Config.build().withoutEncryption().toConfig() );
+            driver = GraphDatabase.driver( "bolt://localhost:" + port, Config.build().withoutEncryption().toConfig() );
             if ( shouldBeAbleToBeginTransaction )
             {
                 try ( Session session = driver.session();
@@ -252,8 +261,10 @@ public class BoltFailuresIT
         ThrowingSessionMonitor sessionMonitor = new ThrowingSessionMonitor();
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
-        db = startTestDb( monitors );
-        driver = createDriver();
+        int port = PortAuthority.allocatePort();
+
+        db = startTestDb( monitors, port );
+        driver = createDriver( port );
 
         // open a session and start a transaction, this will force driver to obtain
         // a network connection and bind it to the transaction
@@ -276,22 +287,24 @@ public class BoltFailuresIT
         }
     }
 
-    private GraphDatabaseService startTestDb( Monitors monitors )
+    private GraphDatabaseService startTestDb( Monitors monitors, int port )
     {
-        return startDbWithBolt( newDbFactory().setMonitors( monitors ) );
+        return startDbWithBolt( newDbFactory().setMonitors( monitors ), port );
     }
 
-    private GraphDatabaseService startTestDb( LogProvider internalLogProvider )
+    private GraphDatabaseService startTestDb( LogProvider internalLogProvider, int port )
     {
-        return startDbWithBolt( newDbFactory().setInternalLogProvider( internalLogProvider ) );
+        return startDbWithBolt( newDbFactory().setInternalLogProvider( internalLogProvider ), port );
     }
 
-    private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory )
+    private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory, int port )
     {
         return dbFactory.newEmbeddedDatabaseBuilder( dir.graphDbDir() )
                 .setConfig( boltConnector( "0" ).type, BOLT.name() )
                 .setConfig( boltConnector( "0" ).enabled, TRUE )
+                .setConfig( boltConnector( "0" ).listen_address, "localhost:" + port )
                 .setConfig( GraphDatabaseSettings.auth_enabled, FALSE )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, FALSE )
                 .newGraphDatabase();
     }
 
@@ -349,9 +362,9 @@ public class BoltFailuresIT
         return new TestEnterpriseGraphDatabaseFactory();
     }
 
-    private static Driver createDriver()
+    private static Driver createDriver( int port )
     {
-        return GraphDatabase.driver( "bolt://localhost", Config.build().withoutEncryption().toConfig() );
+        return GraphDatabase.driver( "bolt://localhost:" + port, Config.build().withoutEncryption().toConfig() );
     }
 
     private static Monitors newMonitorsSpy( ThrowingSessionMonitor sessionMonitor )

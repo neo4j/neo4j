@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 public class BoltHAIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withBolt( 8000 ).withCluster( clusterOfSize( 3 ) );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withBoltEnabled().withCluster( clusterOfSize( 3 ) );
 
     @Test
     public void shouldContinueServingBoltRequestsBetweenInternalRestarts() throws Throwable

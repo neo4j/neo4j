@@ -24,7 +24,9 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
@@ -43,7 +45,8 @@ public class BatchEndpointIT
             .withConfig( GraphDatabaseSettings.logs_directory,
                     getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.logs_directory ) )
             .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( GraphDatabaseSettings.auth_enabled, "false" );
+            .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     @Test
     public void requestsShouldNotFailWhenHttpLoggingIsOn()

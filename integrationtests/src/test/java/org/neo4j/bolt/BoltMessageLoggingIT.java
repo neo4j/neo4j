@@ -38,6 +38,8 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.DatabaseRule;
@@ -85,7 +87,7 @@ public class BoltMessageLoggingIT
             builder.setConfig( new BoltConnector( CONNECTOR_KEY ).listen_address, "localhost:0" );
             builder.setConfig( new BoltConnector( CONNECTOR_KEY ).encryption_level, DISABLED.toString() );
         }
-    }.startLazily();
+    }.withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).startLazily();
 
     private Driver driver;
 

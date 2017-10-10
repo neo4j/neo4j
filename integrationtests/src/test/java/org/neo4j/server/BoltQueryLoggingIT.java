@@ -33,7 +33,10 @@ import java.util.List;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,8 +61,9 @@ public class BoltQueryLoggingIT
             .withConfig( GraphDatabaseSettings.log_queries, "true")
             .withConfig( new BoltConnector( "bolt" ).type, "BOLT" )
             .withConfig( new BoltConnector( "bolt" ).enabled, "true" )
-            .withConfig( new BoltConnector( "bolt" ).address, "localhost:8776" )
-            .withConfig( new BoltConnector( "bolt" ).encryption_level, "DISABLED" );
+            .withConfig( new BoltConnector( "bolt" ).address, "localhost:" + PortAuthority.allocatePort() )
+            .withConfig( new BoltConnector( "bolt" ).encryption_level, "DISABLED" )
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
     }
 
     @Test
@@ -67,7 +71,7 @@ public class BoltQueryLoggingIT
     {
         // *** GIVEN ***
 
-        Socket socket = new Socket( "localhost", 8776 );
+        Socket socket = new Socket( "localhost", neo4j.boltURI().getPort() );
         DataInputStream dataIn = new DataInputStream( socket.getInputStream() );
         DataOutputStream dataOut = new DataOutputStream( socket.getOutputStream() );
 
@@ -119,7 +123,7 @@ public class BoltQueryLoggingIT
             assertTrue( line.contains( "ms: bolt-session\tbolt\tneo4j\tMyClient/1.0" ) );
             assertTrue( line.contains( "client/127.0.0.1:" ) );
             assertTrue( line.contains( "client/127.0.0.1:" ) );
-            assertTrue( line.contains( "server/127.0.0.1:8776" ) );
+            assertTrue( line.contains( "server/127.0.0.1:" + neo4j.boltURI().getPort() ) );
             assertTrue( line.contains( " - RETURN 1 AS num - {}" ) );
         }
 

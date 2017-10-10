@@ -162,7 +162,7 @@ public class ClusterManager
     private final boolean consistencyCheck;
     private final int firstInstanceId;
     private LifeSupport life;
-    private int baseBoltPort;
+    private boolean boltEnabled;
 
     private ClusterManager( Builder builder )
     {
@@ -176,7 +176,7 @@ public class ClusterManager
         this.availabilityChecks = builder.availabilityChecks;
         this.consistencyCheck = builder.consistencyCheck;
         this.firstInstanceId = builder.firstInstanceId;
-        this.baseBoltPort = builder.baseBoltPort;
+        this.boltEnabled = builder.boltEnabled;
     }
 
     private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
@@ -622,10 +622,9 @@ public class ClusterManager
         SELF withInstanceConfig( Map<String,IntFunction<String>> commonConfig );
 
         /**
-         * Enables bolt across the cluster, which is off by default. The port argument specifies the base port to
-         * use for calculating per instance ports.
+         * Enables bolt across the cluster, which is off by default.
          */
-        SELF withBolt( int port );
+        SELF withBoltEnabled();
 
         /**
          * Like {@link #withInstanceConfig(Map)}, but for individual settings, conveniently using
@@ -683,7 +682,7 @@ public class ClusterManager
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
         private boolean consistencyCheck;
         private int firstInstanceId = FIRST_SERVER_ID;
-        private int baseBoltPort = -1; // -1 stands for no bolt enabled, anything > 0 means bolt enabled
+        private boolean boltEnabled;
 
         public Builder( File root )
         {
@@ -742,9 +741,9 @@ public class ClusterManager
             return this;
         }
 
-        public Builder withBolt( int basePort )
+        public Builder withBoltEnabled()
         {
-            this.baseBoltPort = basePort;
+            this.boltEnabled = true;
             return this;
         }
 
@@ -1144,10 +1143,10 @@ public class ClusterManager
                 builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
             }
 
-            if ( baseBoltPort > 0 )
+            if ( boltEnabled )
             {
                 String listenAddress = "127.0.0.1";
-                int boltPort = baseBoltPort + serverId.toIntegerIndex();
+                int boltPort = PortAuthority.allocatePort();
                 AdvertisedSocketAddress advertisedSocketAddress = socketAddressForServer( listenAddress, boltPort );
                 String advertisedAddress = advertisedSocketAddress.getHostname();
                 String boltAdvertisedAddress = advertisedAddress + ":" + boltPort;

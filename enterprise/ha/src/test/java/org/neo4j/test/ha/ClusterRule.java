@@ -129,9 +129,9 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     @Override
-    public ClusterRule withBolt( int port )
+    public ClusterRule withBoltEnabled()
     {
-        return set( clusterManagerBuilder.withBolt( port ) );
+        return set( clusterManagerBuilder.withBoltEnabled() );
     }
 
     @Override

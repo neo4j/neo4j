@@ -36,9 +36,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.ha.ClusterRule;
@@ -203,7 +205,10 @@ public class HAClusterStartupIT
             GraphDatabaseService db = null;
             try
             {
-                db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( seedDir );
+                db = new EnterpriseGraphDatabaseFactory()
+                        .newEmbeddedDatabaseBuilder( seedDir )
+                        .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                        .newGraphDatabase();
                 createSomeData( db );
             }
             finally
