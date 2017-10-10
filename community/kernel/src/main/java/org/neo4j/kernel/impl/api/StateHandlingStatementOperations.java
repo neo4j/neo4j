@@ -764,7 +764,7 @@ public class StateHandlingStatementOperations implements
             if ( checkIndexState( descriptor,
                     state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
             {
-                // todo if index is in our state
+                return SchemaIndexProvider.UNDECIDED;
             }
         }
         return storeLayer.indexGetProviderDescriptor( descriptor );
