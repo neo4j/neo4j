@@ -17,19 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_2.ast.functions
+package org.neo4j.cypher.internal.frontend.v3_2.ast
 
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Function, FunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Reverse
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
-case object Reverse extends Function  {
-  def name = "reverse"
+class ReverseTest extends FunctionTestBase(FunctionName(Reverse.name)(null)) {
 
-  override protected def semanticCheck(ctx: Expression.SemanticContext, invocation: FunctionInvocation): SemanticCheck = {
-    checkArgs(invocation, 1) ifOkChain {
-      invocation.arguments(0).expectType(CTList(CTAny).covariant | CTString) chain
-        invocation.specifyType(invocation.arguments(0).types(_))
-    }
+  test("should reverse strings") {
+    testValidTypes(CTString)(CTString)
   }
+
+  test("should reverse lists") {
+    testValidTypes(CTList(CTNode))(CTList(CTNode))
+  }
+
+  test("should not reverse numbers") {
+    testInvalidApplication(CTInteger)(
+      "Type mismatch: expected String or List<T> but was Integer"
+    )
+  }
+
 }
