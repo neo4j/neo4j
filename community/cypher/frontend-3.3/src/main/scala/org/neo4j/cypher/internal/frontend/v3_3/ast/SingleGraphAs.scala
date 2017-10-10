@@ -93,7 +93,7 @@ final case class GraphOfAs(of: Pattern, as: Option[Variable], generated: Boolean
   override def withNewName(newName: Variable): GraphOfAs = copy(as = Some(newName))(position)
   override def asGenerated: GraphOfAs = copy(generated = true)(position)
 
-  override def semanticCheck: SemanticCheck = of.semanticCheck(Pattern.SemanticContext.Create)
+  override def semanticCheck: SemanticCheck = of.semanticCheck(Pattern.SemanticContext.GraphOf)
 }
 
 final case class GraphAtAs(at: GraphUrl, as: Option[Variable], generated: Boolean = false)(val position: InputPosition)
