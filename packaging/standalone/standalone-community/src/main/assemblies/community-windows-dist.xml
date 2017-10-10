@@ -121,6 +121,7 @@
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
+        <exclude>org.ow2.asm:*</exclude>
       </excludes>
     </dependencySet>
   </dependencySets>

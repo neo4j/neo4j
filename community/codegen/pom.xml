@@ -10,7 +10,6 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <asm.version>5.2</asm.version>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -120,7 +119,7 @@ the relevant Commercial Agreement.
               <shadedPattern>org.neo4j.codegen.asm</shadedPattern>
             </relocation>
           </relocations>
-          <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+          <createDependencyReducedPom>false</createDependencyReducedPom>
         </configuration>
       </plugin>
     </plugins>

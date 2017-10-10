@@ -25,7 +25,6 @@
   </scm>
 
   <modules>
-    <module>neo4j-desktop</module>
     <module>standalone</module>
   </modules>
 

@@ -18,6 +18,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
+    <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <license-text.header>AGPL-3-header.txt</license-text.header>
   </properties>
 

@@ -1,24 +1,14 @@
-Neo4j
-Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
-in this notice as "Neo Technology")
-   [http://neotechnology.com]
+Copyright (c) 2002-2017, "Neo Technology,"
+Network Engine for Objects in Lund AB [http://neotechnology.com]
 
-This product includes software ("Software") developed by Neo Technology.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
 
-The copyright in the bundled Neo4j graph database (including the
-Software) is owned by Neo Technology. The Software developed and owned
-by Neo Technology is licensed under the GNU GENERAL PUBLIC LICENSE
-Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
-to all third parties and that license, as required by the GPL, is
-included in the LICENSE.txt file.
-
-However, if you have executed an End User Software License and Services
-Agreement or an OEM Software License and Support Services Agreement, or
-another commercial license agreement with Neo Technology or one of its
-affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GPL and you may use the
-software solely pursuant to the terms of the relevant Commercial
-Agreement.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 Full license texts are found in LICENSES.txt.
 

@@ -83,7 +83,6 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
-    <licensing.phase>compile</licensing.phase>
     <lucene.version>5.5.0</lucene.version>
     <bouncycastle.version>1.53</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
@@ -106,6 +105,7 @@
 
     <scala.version>2.11.11</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
+    <asm.version>5.2</asm.version>
   </properties>
 
   <modules>
@@ -432,37 +432,8 @@
           </configuration>
           <executions>
             <execution>
-              <id>enforce-licensing-oss</id>
-              <phase>${licensing.phase}</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                  <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-oss.txt
-                </thirdPartyLicensingFilename>
-              </configuration>
-            </execution>
-            <execution>
-              <id>enforce-licensing-com</id>
-              <phase>${licensing.phase}</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                  <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}.txt</thirdPartyLicensingFilename>
-              </configuration>
-            </execution>
-            <execution>
               <id>list-all-licenses</id>
-              <phase>${licensing.phase}</phase>
+              <phase>compile</phase>
               <goals>
                 <goal>check</goal>
               </goals>
@@ -708,6 +679,26 @@
   </build>
 
   <profiles>
+    <!-- Only generate NOTICE and LICENSES files for projects with src/ directory -->
+    <profile>
+      <id>has-sources</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <exists>src</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>licensing-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Disable parallel execution with "-DsequentialTests" -->
     <profile>
       <id>parallelTestExecution</id>
       <activation>
@@ -719,6 +710,7 @@
         <forkCounts>1C</forkCounts>
       </properties>
     </profile>
+
     <!--
      Git information extraction profiles.
      Activate by adding the required Git information to the environment, e.g. on *nix:

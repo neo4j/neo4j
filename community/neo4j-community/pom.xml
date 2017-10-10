@@ -55,4 +55,13 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>licensing-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
