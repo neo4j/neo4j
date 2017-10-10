@@ -55,12 +55,6 @@
     <artifact id="ansi-regex.js" name="ansi-regex.js">
       <license>MIT</license>
     </artifact>
-    <artifact id="ansi-regex.js" name="ansi-regex.js">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="ansi-styles.js" name="ansi-styles.js">
-      <license>MIT</license>
-    </artifact>
     <artifact id="ansi-styles.js" name="ansi-styles.js">
       <license>MIT</license>
     </artifact>
@@ -112,9 +106,6 @@
     <artifact id="chalk.js" name="chalk.js">
       <license>MIT</license>
     </artifact>
-    <artifact id="chalk.js" name="chalk.js">
-      <license>MIT</license>
-    </artifact>
     <artifact id="check-error.js" name="check-error.js">
       <license>MIT</license>
     </artifact>
@@ -149,9 +140,6 @@
       <license>MIT</license>
     </artifact>
     <artifact id="concat-map.js" name="concat-map.js">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="core-js.js" name="core-js.js">
       <license>MIT</license>
     </artifact>
     <artifact id="core-js.js" name="core-js.js">
@@ -244,14 +232,8 @@
     <artifact id="has-flag.js" name="has-flag.js">
       <license>MIT</license>
     </artifact>
-    <artifact id="has-flag.js" name="has-flag.js">
-      <license>MIT</license>
-    </artifact>
     <artifact id="hoek.js" name="hoek.js">
       <license>BSD-3-Clause</license>
-    </artifact>
-    <artifact id="hoist-non-react-statics.js" name="hoist-non-react-statics.js">
-      <license>BSD</license>
     </artifact>
     <artifact id="hoist-non-react-statics.js" name="hoist-non-react-statics.js">
       <license>BSD-3-Clause</license>
@@ -269,9 +251,6 @@
       <license>BSD-3-Clause</license>
     </artifact>
     <artifact id="immutability-helper.js" name="immutability-helper.js">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="indent-string.js" name="indent-string.js">
       <license>MIT</license>
     </artifact>
     <artifact id="indent-string.js" name="indent-string.js">
@@ -388,9 +367,6 @@
     <artifact id="log-symbols.js" name="log-symbols.js">
       <license>MIT</license>
     </artifact>
-    <artifact id="log-symbols.js" name="log-symbols.js">
-      <license>MIT</license>
-    </artifact>
     <artifact id="log-update.js" name="log-update.js">
       <license>MIT</license>
     </artifact>
@@ -411,9 +387,6 @@
     </artifact>
     <artifact id="ms.js" name="ms.js">
       <license>MIT</license>
-    </artifact>
-    <artifact id="neo4j-driver.js" name="neo4j-driver.js">
-      <license>Apache-2.0</license>
     </artifact>
     <artifact id="node-fetch.js" name="node-fetch.js">
       <license>MIT</license>
@@ -493,17 +466,11 @@
     <artifact id="pretty-format.js" name="pretty-format.js">
       <license>MIT</license>
     </artifact>
-    <artifact id="pretty-format.js" name="pretty-format.js">
-      <license>MIT</license>
-    </artifact>
     <artifact id="promise-polyfill.js" name="promise-polyfill.js">
       <license>MIT</license>
     </artifact>
     <artifact id="promise.js" name="promise.js">
       <license>MIT</license>
-    </artifact>
-    <artifact id="prop-types.js" name="prop-types.js">
-      <license>BSD-3-Clause</license>
     </artifact>
     <artifact id="prop-types.js" name="prop-types.js">
       <license>MIT</license>
@@ -617,12 +584,6 @@
       <license>MIT</license>
     </artifact>
     <artifact id="suber.js" name="suber.js">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="supports-color.js" name="supports-color.js">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="supports-color.js" name="supports-color.js">
       <license>MIT</license>
     </artifact>
     <artifact id="supports-color.js" name="supports-color.js">
