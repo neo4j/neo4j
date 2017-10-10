@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
@@ -66,7 +67,6 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
@@ -96,8 +96,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final MultiPopulatorFactory multiPopulatorFactory;
     private final LogProvider logProvider;
     private final Monitor monitor;
-    private final JobScheduler scheduler;
     private final SchemaState schemaState;
+    private final IndexPopulationJobController populationJobController;
 
     enum State
     {
@@ -158,11 +158,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         this.indexRules = indexRules;
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
-        this.scheduler = scheduler;
         this.schemaState = schemaState;
         this.multiPopulatorFactory = multiPopulatorFactory;
         this.logProvider = logProvider;
         this.monitor = monitor;
+        this.populationJobController = new IndexPopulationJobController( scheduler );
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -340,10 +340,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     // We need to stop indexing service on shutdown since we can have transactions that are ongoing/finishing
     // after we start stopping components and those transactions should be able to finish successfully
     @Override
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         state = State.STOPPED;
         samplingController.stop();
+        populationJobController.stop();
         closeAllIndexes();
     }
 
@@ -557,6 +558,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         for ( long indexId : indexesToRebuild )
         {
             IndexProxy indexProxy = indexMap.removeIndexProxy( indexId );
+            assert indexProxy != null;
             indexProxy.drop();
         }
     }
@@ -691,7 +693,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private void startIndexPopulation( IndexPopulationJob job )
     {
-        scheduler.schedule( indexPopulation, job );
+        populationJobController.startIndexPopulation( job );
     }
 
     private String indexStateInfo( String tag, Long indexId, InternalIndexState state, IndexDescriptor descriptor )
