@@ -25,10 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, P
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe,
-                            lhsInfo: PipelineInformation,
-                            rhsInfo: PipelineInformation,
-                            unionInfo: PipelineInformation,
-                            mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
+                            lhsMapping: (ExecutionContext, QueryState) => ExecutionContext,
+                            rhsMapping: (ExecutionContext, QueryState) => ExecutionContext)
                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
@@ -37,82 +35,8 @@ case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe,
 
     new Iterator[ExecutionContext] {
       override def hasNext: Boolean = left.hasNext || right.hasNext
-
-      override def next(): ExecutionContext = if (left.hasNext) {
-        val in = left.next()
-        val out = PrimitiveExecutionContext(unionInfo)
-        mapSlots.foreach(f => f(in, out, lhsInfo, state))
-        out
-      }
-      else {
-        val in = right.next()
-        val out = PrimitiveExecutionContext(unionInfo)
-        mapSlots.foreach(f => f(in, out, rhsInfo, state))
-        out
-      }
-    }
-  }
-}
-
-case class FastLeftHandUnionSlottedPipe(lhs: Pipe, rhs: Pipe,
-                            rhsInfo: PipelineInformation,
-                            unionInfo: PipelineInformation,
-                            mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
-
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val left = lhs.createResults(state)
-    val right = rhs.createResults(state)
-
-    new Iterator[ExecutionContext] {
-      override def hasNext: Boolean = left.hasNext || right.hasNext
-
-      override def next(): ExecutionContext = if (left.hasNext) left.next()
-      else {
-        val in = right.next()
-        val out = PrimitiveExecutionContext(unionInfo)
-        mapSlots.foreach(f => f(in, out, rhsInfo, state))
-        out
-      }
-    }
-  }
-}
-
-case class FastRightHandUnionSlottedPipe(lhs: Pipe, rhs: Pipe,
-                            lhsInfo: PipelineInformation,
-                            unionInfo: PipelineInformation,
-                            mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
-
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val left = lhs.createResults(state)
-    val right = rhs.createResults(state)
-
-    new Iterator[ExecutionContext] {
-      override def hasNext: Boolean = left.hasNext || right.hasNext
-
-      override def next(): ExecutionContext = if (left.hasNext) {
-        val in = left.next()
-        val out = PrimitiveExecutionContext(unionInfo)
-        mapSlots.foreach(f => f(in, out, lhsInfo, state))
-        out
-      }
-      else right.next()
-    }
-  }
-}
-
-case class FastUnionSlottedPipe(lhs: Pipe, rhs: Pipe)
-                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
-  // This pipe is only applicable if the ordering of the variables on the lhs equals the ordering on the rhs
-
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val left = lhs.createResults(state)
-    val right = rhs.createResults(state)
-    new Iterator[ExecutionContext] {
-      override def hasNext: Boolean = left.hasNext || right.hasNext
-      override def next(): ExecutionContext = if (left.hasNext) left.next()
-      else right.next()
+      override def next(): ExecutionContext = if (left.hasNext) lhsMapping(left.next(), state)
+      else rhsMapping(right.next(), state)
     }
   }
 }

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ColumnOrder => _, _}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.{computeUnionSlots, createProjectionsForResult}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.computeUnionMapping
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
@@ -355,34 +355,13 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
 
       case Union(_, _) =>
-        def overlaps(toCheck: PipelineInformation): Boolean = {
-          pipeline.mapSlot {
-            //For long slots we need to make sure both offset and types match
-            //e.g we cannot allow mixing a node long slot with a relationship
-            //longslot
-            case (k, s: LongSlot) => s == toCheck.get(k).get
-            //For refslot is is ok that types etc differs, just make sure
-            //they have the same offset
-            case (k, s: RefSlot) => s.offset == toCheck.get(k).get.offset
-          }.forall(_ == true)
-        }
         val lhsInfo = pipelines(lhs.id)
         val rhsInfo = pipelines(rhs.id)
-        val lhsOverlap = overlaps(lhsInfo)
-        val rhsOverlap = overlaps(rhsInfo)
-        if (lhsOverlap && rhsOverlap) FastUnionSlottedPipe(lhs, rhs)(id = id)
-        else if (lhsOverlap) FastLeftHandUnionSlottedPipe(lhs, rhs, rhsInfo, pipeline,
-                                                          computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
-        else if (rhsOverlap) FastRightHandUnionSlottedPipe(lhs, rhs, lhsInfo, pipeline,
-                                                           computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
-        else UnionSlottedPipe(lhs, rhs, lhsInfo, rhsInfo, pipeline, computeUnionSlots(lhsInfo, rhsInfo, pipeline))(
-          id = id)
+        UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsInfo, pipeline), computeUnionMapping(rhsInfo, pipeline))(id = id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }
-
-
 }
 
 object SlottedPipeBuilder {
@@ -413,35 +392,57 @@ object SlottedPipeBuilder {
   //between the output and the input (lhs and rhs) and it may be the case that
   //we have a reference slot in the output but a long slot on one of the inputs,
   //e.g. MATCH (n) RETURN n UNION RETURN 42 AS n
-  def computeUnionSlots(lhsInfo: PipelineInformation, rhsInfo: PipelineInformation,
-                        out: PipelineInformation) = {
-    //find columns where output is a reference slot but where the input is a long slot
-    def findColums(input: PipelineInformation) = {
-      val slots: immutable.Seq[LongSlot] = out.mapSlot {
-        case (k, _: RefSlot) => input.get(k).get match {
-          case ls: LongSlot => Some(ls)
-          case _ => None
-        }
-        case _ => None
-      }.flatten.toIndexedSeq
+  def computeUnionMapping(in: PipelineInformation, out: PipelineInformation): (ExecutionContext, QueryState) => ExecutionContext = {
+    val overlaps: Boolean = out.mapSlot {
+      //For long slots we need to make sure both offset and types match
+      //e.g we cannot allow mixing a node long slot with a relationship
+      //longslot
+      case (k, s: LongSlot) => s == in.get(k).get
+      //For refslot is is ok that types etc differs, just make sure
+      //they have the same offset
+      case (k, s: RefSlot) => s.offset == in.get(k).get.offset
+    }.forall(_ == true)
 
-      val expressions: Seq[Expression] = createProjectionsForResult(slots.map(_.name), input).map(_._2)
+    //If we overlap we can just pass the result right throug
+    if (overlaps) (incoming: ExecutionContext, _: QueryState) => incoming
+    else {
+    //find columns where output is a reference slot but where the input is a long slot
+    val slots: immutable.Seq[LongSlot] = out.mapSlot {
+      case (k, _: RefSlot) => in.get(k).get match {
+        case ls: LongSlot => Some(ls)
+        case _ => None
+      }
+      case _ => None
+    }.flatten.toIndexedSeq
+
+      //projections contains methods for turning longslots to refslots
+      val projections: Seq[Expression] = createProjectionsForResult(slots.map(_.name), in).map(_._2)
 
       //ZIP [slot1, slot2,...] with [e1, e2, ...] to get a mapping from slot to expression
-      slots.zip(expressions).toMap
+      val expressions = slots.zip(projections).toMap
+
+      val mapSlots: Iterable[(ExecutionContext, ExecutionContext, QueryState) => Unit] = out.mapSlot {
+        case (k, v: LongSlot) =>
+          val sourceOffset = in.getLongOffsetFor(k)
+          (in, out, _) =>
+            out.setLongAt(v.offset, in.getLongAt(sourceOffset))
+        case (k, v: RefSlot) =>
+          in.get(k).get match {
+            case l: LongSlot => //here we must map the long slot to a reference slot
+              (in, out, state) =>
+                out.setRefAt(v.offset, expressions(l)(in, state))
+            case _ =>
+              val sourceOffset = in.getReferenceOffsetFor(k)
+              (in, out, _) =>
+                out.setRefAt(v.offset, in.getRefAt(sourceOffset))
+          }
+      }
+      //Create a new context and apply all transformations
+      (incoming: ExecutionContext, state: QueryState) =>
+        val outgoing = PrimitiveExecutionContext(out)
+        mapSlots.foreach(f => f(incoming, outgoing, state))
+        outgoing
     }
 
-    //Compute how to convert input to output pipeline
-    val expressions = findColums(lhsInfo) ++ findColums(rhsInfo)
-    val mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit] = out.mapSlot {
-      case (k, v: LongSlot) => (in, out, info, _) =>
-        out.setLongAt(v.offset, in.getLongAt(info.getLongOffsetFor(k)))
-      case (k, v: RefSlot) => (in, out, info, state) => info.get(k).get match {
-        case l: LongSlot => //here we must map the long slot to a reference slot
-          out.setRefAt(v.offset, expressions(l)(in,state))
-        case _ => out.setRefAt(v.offset, in.getRefAt(info.getReferenceOffsetFor(k)))
-      }
-    }
-    mapSlots
   }
 }
