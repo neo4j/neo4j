@@ -353,24 +353,28 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
 
       case Union(_, _) =>
+        def overlaps(toCheck: PipelineInformation): Boolean = {
+          pipeline.mapSlot {
+            case (k, s) => s == toCheck.get(k).get
+          }.forall(_ == true)
+        }
         val lhsInfo = pipelines(lhs.id)
         val rhsInfo = pipelines(rhs.id)
-        //val lhsOverlap = overlaps(pipeline, lhsInfo) // since pipeline is constructed from lhs the overlap will always be true
-        val rhsOverlap = overlaps(pipeline, rhsInfo)
-        if(rhsOverlap == true)
-          FastUnionSlottedPipe(lhs, rhs)(id = id)
-        else
-          UnionSlottedPipe(lhs, rhs, rhsInfo, pipeline, computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
+        val lhsOverlap = overlaps(lhsInfo)
+        val rhsOverlap = overlaps(rhsInfo)
+        if (lhsOverlap && rhsOverlap) FastUnionSlottedPipe(lhs, rhs)(id = id)
+        else if (lhsOverlap) FastLeftHandUnionSlottedPipe(lhs, rhs, rhsInfo, pipeline,
+                                                          computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
+        else if (rhsOverlap) FastRightHandUnionSlottedPipe(lhs, rhs, lhsInfo, pipeline,
+                                                           computeUnionSlots(lhsInfo, rhsInfo, pipeline))(id = id)
+        else UnionSlottedPipe(lhs, rhs, lhsInfo, rhsInfo, pipeline, computeUnionSlots(lhsInfo, rhsInfo, pipeline))(
+          id = id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }
 
-  private def overlaps(source: PipelineInformation, toCheck: PipelineInformation):Boolean = {
-    source.mapSlot {
-      case (k, s) => s == toCheck.get(k).get
-    }.forall(_ == true)
-  }
+
 }
 
 object SlottedPipeBuilder {

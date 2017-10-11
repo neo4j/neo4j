@@ -24,7 +24,38 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, rhsInfo: PipelineInformation,
+case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe,
+                            lhsInfo: PipelineInformation,
+                            rhsInfo: PipelineInformation,
+                            unionInfo: PipelineInformation,
+                            mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
+                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val left = lhs.createResults(state)
+    val right = rhs.createResults(state)
+
+    new Iterator[ExecutionContext] {
+      override def hasNext: Boolean = left.hasNext || right.hasNext
+
+      override def next(): ExecutionContext = if (left.hasNext) {
+        val in = left.next()
+        val out = PrimitiveExecutionContext(unionInfo)
+        mapSlots.foreach(f => f(in, out, lhsInfo, state))
+        out
+      }
+      else {
+        val in = right.next()
+        val out = PrimitiveExecutionContext(unionInfo)
+        mapSlots.foreach(f => f(in, out, rhsInfo, state))
+        out
+      }
+    }
+  }
+}
+
+case class FastLeftHandUnionSlottedPipe(lhs: Pipe, rhs: Pipe,
+                            rhsInfo: PipelineInformation,
                             unionInfo: PipelineInformation,
                             mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
@@ -43,6 +74,30 @@ case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe, rhsInfo: PipelineInformation,
         mapSlots.foreach(f => f(in, out, rhsInfo, state))
         out
       }
+    }
+  }
+}
+
+case class FastRightHandUnionSlottedPipe(lhs: Pipe, rhs: Pipe,
+                            lhsInfo: PipelineInformation,
+                            unionInfo: PipelineInformation,
+                            mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit])
+                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val left = lhs.createResults(state)
+    val right = rhs.createResults(state)
+
+    new Iterator[ExecutionContext] {
+      override def hasNext: Boolean = left.hasNext || right.hasNext
+
+      override def next(): ExecutionContext = if (left.hasNext) {
+        val in = left.next()
+        val out = PrimitiveExecutionContext(unionInfo)
+        mapSlots.foreach(f => f(in, out, lhsInfo, state))
+        out
+      }
+      else right.next()
     }
   }
 }
