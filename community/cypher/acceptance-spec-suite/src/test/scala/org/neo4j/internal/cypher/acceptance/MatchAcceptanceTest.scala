@@ -23,6 +23,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterators.single
+import org.neo4j.helpers.collection.MapUtil.map
 
 import scala.collection.JavaConverters._
 
@@ -600,6 +601,26 @@ return p""")
 
     resultNoAlias.close()
     resultWithAlias.close()
+  }
+
+  test("Parameter Maps on nodes in predicate should return correct results") {
+    val n1 = createNode("data" -> 3)
+    val n2 = createNode("data" -> 4)
+    val query = "MATCH (n) WHERE n = {param} RETURN n"
+    val result = graph.execute(query, map("param", map("data", new Integer(3))))
+
+    result.columnAs("n").asScala.toList should be(List(n1))
+  }
+
+  test("Parameter Maps on relationships in predicate should return correct results") {
+    val n1 = createNode()
+    val n2 = createNode()
+    val r1 = relate(n1, n2, "data" -> 3)
+    val r2 = relate(n1, n2, "data" -> 4)
+    val query = "MATCH ()-[r]->() WHERE r = {param} RETURN r"
+    val result = graph.execute(query, map("param", map("data", new Integer(3))))
+
+    result.columnAs("r").asScala.toList should be(List(r1))
   }
 
   /**

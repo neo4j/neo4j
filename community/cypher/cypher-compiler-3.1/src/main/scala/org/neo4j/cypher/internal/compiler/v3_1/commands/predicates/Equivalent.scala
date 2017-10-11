@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_1.{CRS, GeographicPoint}
-import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 
 import scala.collection.GenTraversableOnce
 import scala.collection.JavaConverters._
@@ -47,6 +47,8 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
       case (null, null) => true
       case (n1: Double, n2: Float) => mixedFloatEquality(n2, n1)
       case (n1: Float, n2: Double) => mixedFloatEquality(n1, n2)
+      case (n1: PropertyContainer, n2: Map[_, _]) => n1.getAllProperties.asScala == n2
+      case (n1: Map[_, _], n2: PropertyContainer) => n2.getAllProperties.asScala == n1
       case (a, b) => a == b
       case _ => false
     }
