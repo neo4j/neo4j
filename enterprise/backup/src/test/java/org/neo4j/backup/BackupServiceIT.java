@@ -98,6 +98,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static java.lang.Boolean.TRUE;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -127,6 +128,8 @@ public class BackupServiceIT
         {
         }
     };
+    private static final String PROP = "id";
+    private static final Label LABEL = Label.label( "LABEL" );
 
     private final Monitors monitors = new Monitors();
     private final IOLimiter limiter = IOLimiter.unlimited();
@@ -176,6 +179,7 @@ public class BackupServiceIT
         Config defaultConfig = dbRule.getConfigCopy();
 
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
         backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir, ConsistencyCheck.NONE, defaultConfig,
@@ -226,6 +230,7 @@ public class BackupServiceIT
         dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
 
         createAndIndexNode( db, 1 );
 
@@ -285,6 +290,7 @@ public class BackupServiceIT
     {
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         BackupService backupService = backupService();
 
         createAndIndexNode( db, 1 );
@@ -311,6 +317,7 @@ public class BackupServiceIT
         // given
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
         // Touch a random file
@@ -340,6 +347,7 @@ public class BackupServiceIT
         // given
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
         // Touch a random directory
@@ -369,6 +377,7 @@ public class BackupServiceIT
         // given
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
         // when
@@ -388,6 +397,7 @@ public class BackupServiceIT
         // given
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
         // when
@@ -528,6 +538,7 @@ public class BackupServiceIT
         // given
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -592,6 +603,7 @@ public class BackupServiceIT
         // given
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
         // when
@@ -611,6 +623,7 @@ public class BackupServiceIT
         // given
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
         createAndIndexNode( db, 2 );
         createAndIndexNode( db, 3 );
@@ -637,6 +650,7 @@ public class BackupServiceIT
         defaultBackupPortHostParams();
         Config defaultConfig = dbRule.getConfigCopy();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
         // when
@@ -659,6 +673,7 @@ public class BackupServiceIT
         dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         BackupService backupService = backupService();
 
         createAndIndexNode( db, 1 );
@@ -701,6 +716,7 @@ public class BackupServiceIT
         dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         BackupService backupService = backupService();
 
         createAndIndexNode( db, 1 );
@@ -743,6 +759,7 @@ public class BackupServiceIT
         Config defaultConfig = dbRule.getConfigCopy();
         dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         BackupService backupService = backupService();
 
         createAndIndexNode( db, 1 );
@@ -783,6 +800,29 @@ public class BackupServiceIT
     }
 
     @Test
+    public void backupShouldWorkWithReadOnlySourceDatabases() throws Exception
+    {
+        // Create some data
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
+        createAndIndexNode( db, 1 );
+
+        // Make it read-only
+        db = dbRule.restartDatabase( GraphDatabaseSettings.read_only.name(), TRUE.toString() );
+
+        // Take a backup
+        Config defaultConfig = dbRule.getConfigCopy();
+        BackupService backupService = backupService();
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.FULL,
+                defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+
+        // Then
+        db.shutdown();
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
+    }
+
+    @Test
     public void shouldDoFullBackupOnIncrementalFallbackToFullIfNoBackupFolderExists() throws Exception
     {
         // Given
@@ -790,6 +830,7 @@ public class BackupServiceIT
         Config defaultConfig = dbRule.getConfigCopy();
         dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
         BackupService backupService = backupService();
 
         createAndIndexNode( db, 1 );
@@ -815,6 +856,7 @@ public class BackupServiceIT
 
         final Barrier.Control barrier = new Barrier.Control();
         final GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db );
 
         createAndIndexNode( db, 1 ); // create some data
 
@@ -939,6 +981,7 @@ public class BackupServiceIT
         defaultBackupPortHostParams();
         Config defaultConfig = dbRule.getConfigCopy();
         GraphDatabaseAPI db1 = dbRule.getGraphDatabaseAPI();
+        createSchemaIndex( db1 );
         createAndIndexNode( db1, 1 );
 
         backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE,
@@ -975,13 +1018,26 @@ public class BackupServiceIT
         dbRule.setConfig( OnlineBackupSettings.online_backup_server, BACKUP_HOST + ":" + backupPort );
     }
 
+    private void createSchemaIndex( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( LABEL ).on( PROP ).create();
+            tx.success();
+        }
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+        }
+    }
+
     private void createAndIndexNode( GraphDatabaseService db, int i )
     {
         try ( Transaction tx = db.beginTx() )
         {
             Index<Node> index = db.index().forNodes( "delete_me" );
             Node node = db.createNode();
-            node.setProperty( "id", System.currentTimeMillis() + i );
+            node.setProperty( PROP, System.currentTimeMillis() + i );
             index.add( node, "delete", "me" );
             tx.success();
         }

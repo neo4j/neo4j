@@ -36,7 +36,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-public class ExplicitIndexAddDropConcurrently
+public class ExplicitIndexAddDropConcurrentlyTest
 {
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();

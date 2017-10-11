@@ -31,6 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -106,7 +107,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void shouldThrowIllegalArgumentChangingTypeOfField()
+    public void shouldThrowIllegalArgumentChangingTypeOfFieldOnNodeIndex()
     {
         String indexName = "index";
 
@@ -134,6 +135,40 @@ public class ExplicitIndexTest
         {
             Index<Node> nodeIndex = db.index().forNodes( indexName );
             nodeIndex.add( db.getNodeById( nodeId ), "key", ValueContext.numeric( 52 ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldThrowIllegalArgumentChangingTypeOfFieldOnRelationshipIndex()
+    {
+        String indexName = "index";
+
+        createRelationshipExplicitIndexWithSingleRelationship( db, indexName );
+
+        long relId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            Relationship rel = node.createRelationshipTo( node, TYPE );
+            relId = rel.getId();
+            RelationshipIndex index = db.index().forRelationships( indexName );
+            index.add( rel, "key", "otherValue" );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            RelationshipIndex index = db.index().forRelationships( indexName );
+            index.remove( db.getRelationshipById( relId ), "key" );
+            tx.success();
+        }
+
+        expectedException.expect( IllegalArgumentException.class );
+        try ( Transaction tx = db.beginTx() )
+        {
+            RelationshipIndex index = db.index().forRelationships( indexName );
+            index.add( db.getRelationshipById( relId ), "key", ValueContext.numeric( 52 ) );
             tx.success();
         }
     }

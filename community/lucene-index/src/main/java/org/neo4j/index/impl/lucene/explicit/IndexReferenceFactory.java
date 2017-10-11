@@ -19,12 +19,16 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 
 /**
  * Factory that build appropriate (read only or writable) {@link IndexReference} for provided {@link IndexIdentifier}
@@ -50,15 +54,26 @@ abstract class IndexReferenceFactory
      * @return newly create {@link IndexReference}
      *
      * @throws IOException in case of exception during accessing lucene reader/writer.
+     * @throws ExplicitIndexNotFoundKernelException if the index is dropped prior to, or concurrently with, this
+     * operation.
      */
-    abstract IndexReference createIndexReference( IndexIdentifier indexIdentifier ) throws IOException;
+    abstract IndexReference createIndexReference( IndexIdentifier indexIdentifier )
+            throws IOException, ExplicitIndexNotFoundKernelException;
 
     /**
-     * Refresh previously constructed indexReference.
-     * @param indexReference index reference to refresh
-     * @return refreshed index reference
+     * If nothing has changed underneath (since the searcher was last created or refreshed) {@code searcher} is
+     * returned. But if something has changed a refreshed searcher is returned. It makes use if the
+     * {@link DirectoryReader#openIfChanged(DirectoryReader, IndexWriter, boolean)} which faster than opening an index
+     * from scratch.
+     *
+     * @param indexReference the {@link IndexReference} to refresh.
+     * @return a refreshed version of the searcher or, if nothing has changed,
+     *         {@code null}.
+     * @throws RuntimeException if there's a problem with the index.
+     * @throws ExplicitIndexNotFoundKernelException if the index is dropped prior to, or concurrently with, this
+     * operation.
      */
-    abstract IndexReference refresh( IndexReference indexReference );
+    abstract IndexReference refresh( IndexReference indexReference ) throws ExplicitIndexNotFoundKernelException;
 
     Directory getIndexDirectory( IndexIdentifier identifier ) throws IOException
     {
@@ -66,6 +81,7 @@ abstract class IndexReferenceFactory
     }
 
     IndexSearcher newIndexSearcher( IndexIdentifier identifier, IndexReader reader )
+            throws ExplicitIndexNotFoundKernelException
     {
         IndexSearcher searcher = new IndexSearcher( reader );
         IndexType type = getType( identifier );
@@ -76,7 +92,7 @@ abstract class IndexReferenceFactory
         return searcher;
     }
 
-    IndexType getType( IndexIdentifier identifier )
+    IndexType getType( IndexIdentifier identifier ) throws ExplicitIndexNotFoundKernelException
     {
         return typeCache.getIndexType( identifier, false );
     }

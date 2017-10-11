@@ -19,19 +19,21 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+
 /**
  * The main way to access a explicit index. Even pure reads will need to get a hold of an object of this class
  * and to a query on. Blending of transaction state must also be handled within this object.
  */
 public interface ExplicitIndex
 {
-    ExplicitIndexHits get( String key, Object value );
+    ExplicitIndexHits get( String key, Object value ) throws ExplicitIndexNotFoundKernelException;
 
-    ExplicitIndexHits query( String key, Object queryOrQueryObject );
+    ExplicitIndexHits query( String key, Object queryOrQueryObject ) throws ExplicitIndexNotFoundKernelException;
 
-    ExplicitIndexHits query( Object queryOrQueryObject );
+    ExplicitIndexHits query( Object queryOrQueryObject ) throws ExplicitIndexNotFoundKernelException;
 
-    void addNode( long entity, String key, Object value );
+    void addNode( long entity, String key, Object value ) throws ExplicitIndexNotFoundKernelException;
 
     void remove( long entity, String key, Object value );
 
@@ -42,13 +44,17 @@ public interface ExplicitIndex
     void drop();
 
     // Relationship-index-specific accessors
-    ExplicitIndexHits get( String key, Object value, long startNode, long endNode );
+    ExplicitIndexHits get( String key, Object value, long startNode, long endNode )
+            throws ExplicitIndexNotFoundKernelException;
 
-    ExplicitIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode );
+    ExplicitIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode )
+            throws ExplicitIndexNotFoundKernelException;
 
-    ExplicitIndexHits query( Object queryOrQueryObject, long startNode, long endNode );
+    ExplicitIndexHits query( Object queryOrQueryObject, long startNode, long endNode )
+            throws ExplicitIndexNotFoundKernelException;
 
-    void addRelationship( long entity, String key, Object value, long startNode, long endNode );
+    void addRelationship( long entity, String key, Object value, long startNode, long endNode )
+            throws ExplicitIndexNotFoundKernelException;
 
     void removeRelationship( long entity, String key, Object value, long startNode, long endNode );
 

@@ -20,9 +20,6 @@
 package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -53,6 +50,7 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.util.Validators;
@@ -76,7 +74,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
     final IndexType type;
 
     protected final LuceneTransactionState transaction;
-    private final LuceneDataSource dataSource;
+    protected final LuceneDataSource dataSource;
     protected final IndexCommandFactory commandFactory;
 
     LuceneExplicitIndex( LuceneDataSource dataSource, IndexIdentifier identifier, LuceneTransactionState transaction,
@@ -104,7 +102,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
      * entity.
      */
     @Override
-    public void addNode( long entityId, String key, Object value )
+    public void addNode( long entityId, String key, Object value ) throws ExplicitIndexNotFoundKernelException
     {
         assertValidKey( key );
         assertValidValue( value );
@@ -199,7 +197,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
     }
 
     @Override
-    public ExplicitIndexHits get( String key, Object value )
+    public ExplicitIndexHits get( String key, Object value ) throws ExplicitIndexNotFoundKernelException
     {
         return query( type.get( key, value ), key, value, null );
     }
@@ -218,7 +216,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
      * {@link QueryContext#tradeCorrectnessForSpeed()}.
      */
     @Override
-    public ExplicitIndexHits query( String key, Object queryOrQueryObject )
+    public ExplicitIndexHits query( String key, Object queryOrQueryObject ) throws ExplicitIndexNotFoundKernelException
     {
         QueryContext context = queryOrQueryObject instanceof QueryContext ?
                 (QueryContext) queryOrQueryObject : null;
@@ -232,13 +230,14 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
      * @see #query(String, Object)
      */
     @Override
-    public ExplicitIndexHits query( Object queryOrQueryObject )
+    public ExplicitIndexHits query( Object queryOrQueryObject ) throws ExplicitIndexNotFoundKernelException
     {
         return query( null, queryOrQueryObject );
     }
 
     protected ExplicitIndexHits query( Query query, String keyForDirectLookup,
             Object valueForDirectLookup, QueryContext additionalParametersOrNull )
+            throws ExplicitIndexNotFoundKernelException
     {
         List<EntityId> simpleTransactionStateIds = new ArrayList<>();
         Collection<EntityId> removedIdsFromTransactionState = Collections.emptySet();
@@ -258,7 +257,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
                     transaction.getRemovedIds( this, query );
         }
         ExplicitIndexHits idIterator = null;
-        IndexReference searcher = null;
+        IndexReference searcher;
         dataSource.getReadLock();
         try
         {
@@ -460,6 +459,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
 
         @Override
         public void addRelationship( long entityId, String key, Object value, long startNode, long endNode )
+                throws ExplicitIndexNotFoundKernelException
         {
             assertValidKey( key );
             assertValidValue( value );
@@ -467,6 +467,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 oneValue = getCorrectValue( oneValue );
+                dataSource.assertValidType( key, oneValue, identifier );
                 transaction.add( this, entity, key, oneValue );
                 commandFactory.addRelationship( identifier.indexName, entityId, key, oneValue, startNode, endNode );
             }
@@ -474,6 +475,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
 
         @Override
         public ExplicitIndexHits get( String key, Object valueOrNull, long startNode, long endNode )
+                throws ExplicitIndexNotFoundKernelException
         {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
             if ( key != null && valueOrNull != null )
@@ -493,6 +495,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
 
         @Override
         public ExplicitIndexHits query( String key, Object queryOrQueryObjectOrNull, long startNode, long endNode )
+                throws ExplicitIndexNotFoundKernelException
         {
             QueryContext context = queryOrQueryObjectOrNull != null &&
                     queryOrQueryObjectOrNull instanceof QueryContext ?
@@ -551,6 +554,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
 
         @Override
         public ExplicitIndexHits query( Object queryOrQueryObjectOrNull, long startNode, long endNode )
+                throws ExplicitIndexNotFoundKernelException
         {
             return query( null, queryOrQueryObjectOrNull, startNode, endNode );
         }
