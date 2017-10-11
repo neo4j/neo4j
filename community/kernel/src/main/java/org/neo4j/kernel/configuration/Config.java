@@ -601,7 +601,7 @@ public class Config implements DiagnosticsProvider, Configuration
             {
                 params.put( setting, overriddenDefaults.get( setting ) );
             }
-            newValue = "<default value>";
+            newValue = getDefaultValueOf( setting );
         }
         else
         {
@@ -615,13 +615,16 @@ public class Config implements DiagnosticsProvider, Configuration
                 validator.validate( newEntry, ignore -> {} ); // Throws if invalid
             }
 
-            oldValue = params.put( setting, newValue );
-            if ( oldValue == null )
-            {
-                oldValue = "<default value>";
-            }
+            oldValue = getDefaultValueOf( setting );
+
+            params.put( setting, newValue );
         }
         log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
+    }
+
+    private String getDefaultValueOf( String setting )
+    {
+        return getValue( setting ).map( Object::toString ).orElse( "<no default>" );
     }
 
     private Optional<ConfigValue> findConfigValue( String setting )

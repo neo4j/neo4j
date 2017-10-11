@@ -373,9 +373,9 @@ public class ConfigTest
         config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "true" );
         config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "" );
 
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "<default value>", "false" );
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "false" );
         verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "false", "true" );
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "<default value>" );
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "true" );
         verifyNoMoreInteractions( log );
     }
 }
