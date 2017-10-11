@@ -70,7 +70,7 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void doNotTryToCommitWritersOnForceInReadOnlyMode() throws IOException
+    public void doNotTryToCommitWritersOnForceInReadOnlyMode() throws Exception
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
@@ -84,7 +84,7 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void notAllowIndexDeletionInReadOnlyMode() throws IOException
+    public void notAllowIndexDeletionInReadOnlyMode() throws Exception
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
@@ -98,7 +98,7 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void useReadOnlyIndexSearcherInReadOnlyModeForSingleInstance() throws IOException
+    public void useReadOnlyIndexSearcherInReadOnlyModeForSingleInstance() throws Exception
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
@@ -113,7 +113,7 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void useWritableIndexSearcherInReadOnlyModeForNonSingleInstance() throws IOException
+    public void useWritableIndexSearcherInReadOnlyModeForNonSingleInstance() throws Exception
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
@@ -128,7 +128,7 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void refreshReadOnlyIndexSearcherInReadOnlyMode() throws IOException
+    public void refreshReadOnlyIndexSearcherInReadOnlyMode() throws Exception
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
@@ -253,7 +253,7 @@ public class LuceneDataSourceTest
         return stringMap();
     }
 
-    private void prepareIndexesByIdentifiers( IndexIdentifier indexIdentifier )
+    private void prepareIndexesByIdentifiers( IndexIdentifier indexIdentifier ) throws Exception
     {
         Config config = Config.defaults();
         dataSource = life.add( getLuceneDataSource( config ) );

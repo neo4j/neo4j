@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexManager;
@@ -58,7 +57,7 @@ public class ReadOnlyIndexReferenceFactoryTest
     private IndexConfigStore indexStore;
 
     @Before
-    public void setUp() throws IOException
+    public void setUp() throws Exception
     {
         setupIndexInfrastructure();
     }
@@ -75,7 +74,7 @@ public class ReadOnlyIndexReferenceFactoryTest
     }
 
     @Test
-    public void refreshReadOnlyIndexReference() throws IOException
+    public void refreshReadOnlyIndexReference() throws Exception
     {
         ReadOnlyIndexReferenceFactory indexReferenceFactory = getReadOnlyIndexReferenceFactory();
         IndexReference indexReference = indexReferenceFactory.createIndexReference( indexIdentifier );
@@ -85,7 +84,7 @@ public class ReadOnlyIndexReferenceFactoryTest
         assertSame("Refreshed instance should be the same.", indexReference, refreshedIndex);
     }
 
-    private void setupIndexInfrastructure() throws IOException
+    private void setupIndexInfrastructure() throws Exception
     {
         File storeDir = getStoreDir();
         indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );

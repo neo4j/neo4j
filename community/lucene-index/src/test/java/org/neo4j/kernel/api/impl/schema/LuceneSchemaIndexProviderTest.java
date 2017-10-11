@@ -105,6 +105,19 @@ public class LuceneSchemaIndexProviderTest
         getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).newUpdater( IndexUpdateMode.ONLINE);
     }
 
+    @Test
+    public void indexForceMustBeAllowedInReadOnlyMode() throws Exception
+    {
+        // IndexAccessor.force is used in check-pointing, and must be allowed in read-only mode as it would otherwise
+        // prevent backups from working.
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
+        LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
+                new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
+
+        // We assert that 'force' does not throw an exception
+        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force();
+    }
+
     private void createEmptySchemaIndex( DirectoryFactory directoryFactory ) throws IOException
     {
         Config config = Config.defaults();
