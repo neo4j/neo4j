@@ -19,19 +19,18 @@
  */
 package org.neo4j.test.ha;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.client.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;

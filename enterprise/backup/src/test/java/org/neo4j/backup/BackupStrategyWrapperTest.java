@@ -20,7 +20,10 @@
 package org.neo4j.backup;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import java.io.File;
 
@@ -32,6 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -43,18 +47,21 @@ public class BackupStrategyWrapperTest
 {
     private BackupStrategy backupStrategyImplementation = mock( BackupStrategy.class );
     private OutsideWorld outsideWorld = mock( OutsideWorld.class );
-    private BackupCopyService backupCopyService = mock(BackupCopyService.class);
+    private BackupCopyService backupCopyService = mock( BackupCopyService.class );
 
     private BackupStrategyWrapper subject;
 
     private OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
 
     private FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
-    private File backupLocation = mock( File.class );
+    private File desiredBackupLocation = mock( File.class, "File<desiredBackupLocation>" );
+    private File availableFreshBackupLocation = mock( File.class, "File<availableFreshBackupLocation>" );
+    private File availableOldBackupLocation = mock( File.class, "File<availableOldBackupLocation>" );
     private OnlineBackupRequiredArguments requiredArguments = mock( OnlineBackupRequiredArguments.class );
     private Config config = mock( Config.class );
     private OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
     private PotentiallyErroneousState<BackupStageOutcome> SUCCESS = new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
+    private PotentiallyErroneousState<BackupStageOutcome> FAILURE = new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null );
     private PageCache pageCache = mock( PageCache.class );
     private BackupRecoveryService backupRecoveryService = mock( BackupRecoveryService.class );
 
@@ -62,9 +69,12 @@ public class BackupStrategyWrapperTest
     public void setup()
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );
-        when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( backupLocation );
+        when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( desiredBackupLocation );
+        when( backupCopyService.findAnAvailableLocationForNewFullBackup( any() ) ).thenReturn( availableFreshBackupLocation );
+        when( backupCopyService.findNewBackupLocationForBrokenExisting( any() ) ).thenReturn( availableOldBackupLocation );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn( SUCCESS );
+
         subject = new BackupStrategyWrapper( backupStrategyImplementation, backupCopyService, pageCache, config, backupRecoveryService );
     }
 
@@ -105,19 +115,19 @@ public class BackupStrategyWrapperTest
         subject.doBackup( onlineBackupContext );
 
         // then
-        verify( backupStrategyImplementation, never() ).performFullBackup( backupLocation, config, userProvidedAddress );
+        verify( backupStrategyImplementation, never() ).performFullBackup( desiredBackupLocation, config, userProvidedAddress );
     }
 
     @Test
     public void failedIncrementalFallsBackToFullWhenOptionSet()
     {
         // given conditions for incremental exist
-        when( backupCopyService.backupExists( any()  ) ).thenReturn( true );
+        when( backupCopyService.backupExists( any() ) ).thenReturn( true );
         when( requiredArguments.isFallbackToFull() ).thenReturn( true );
 
         // and incremental fails
-        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
 
         // when
         subject.doBackup( onlineBackupContext );
@@ -132,8 +142,8 @@ public class BackupStrategyWrapperTest
         // given
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
         when( requiredArguments.isFallbackToFull() ).thenReturn( false );
-        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
 
         // when
         subject.doBackup( onlineBackupContext );
@@ -152,12 +162,12 @@ public class BackupStrategyWrapperTest
         when( requiredArguments.isFallbackToFull() ).thenReturn( true );
 
         // and an incremental backup fails
-        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
 
         // and full backup fails
-        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ))
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
 
         // when backup is performed
         subject.doBackup( onlineBackupContext );
@@ -187,12 +197,12 @@ public class BackupStrategyWrapperTest
         when( backupCopyService.findAnAvailableLocationForNewFullBackup( desiredBackupLocation ) ).thenReturn( temporaryFullBackupLocation );
 
         // and incremental fails
-        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
 
         // and full passes
-        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null ) );
+        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null ) );
 
         // when
         PotentiallyErroneousState<BackupStrategyOutcome> state = subject.doBackup( onlineBackupContext );
@@ -217,15 +227,15 @@ public class BackupStrategyWrapperTest
         when( requiredArguments.isFallbackToFull() ).thenReturn( true );
 
         // and backup exists
-        when( backupCopyService.backupExists( any() )).thenReturn( true );
+        when( backupCopyService.backupExists( any() ) ).thenReturn( true );
 
         // and incremental fails
-        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ))
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
 
         // and full passes
-        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null ) );
+        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null ) );
 
         // when
         PotentiallyErroneousState<BackupStrategyOutcome> state = subject.doBackup( onlineBackupContext );
@@ -252,7 +262,7 @@ public class BackupStrategyWrapperTest
     public void performingIncrementalBackupDoesNotInvokeRecovery()
     {
         // given backup exists
-        when( backupCopyService.backupExists( any()  ) ).thenReturn( true );
+        when( backupCopyService.backupExists( any() ) ).thenReturn( true );
         when( requiredArguments.isFallbackToFull() ).thenReturn( true );
 
         // and incremental backups are successful
@@ -263,5 +273,79 @@ public class BackupStrategyWrapperTest
 
         // then
         verify( backupRecoveryService, never() ).recoverWithDatabase( any(), any(), any() );
+    }
+
+    @Test
+    public void successfulBackupsAreRecovered()
+    {
+        // given
+        fallbackToFullPasses();
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupRecoveryService ).recoverWithDatabase( any(), any(), any() );
+    }
+
+    @Test
+    public void unsuccessfulBackupsAreNotRecovered()
+    {
+        // given
+        bothBackupsFail();
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupRecoveryService, never() ).recoverWithDatabase( any(), any(), any() );
+    }
+
+    @Test
+    public void successfulFullBackupsAreRecoveredEvenIfNoBackupExisted() throws CommandFailed
+    {
+        // given a backup exists
+        when( backupCopyService.backupExists( desiredBackupLocation ) ).thenReturn( false );
+        when( backupCopyService.findAnAvailableLocationForNewFullBackup( desiredBackupLocation ) ).thenReturn( desiredBackupLocation );
+
+        // and
+        fallbackToFullPasses();
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupRecoveryService ).recoverWithDatabase( any(), any(), any() );
+    }
+
+    @Test
+    public void recoveryIsPerformedBeforeRename() throws CommandFailed
+    {
+        // given
+        fallbackToFullPasses();
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        InOrder recoveryBeforeRenameOrder = Mockito.inOrder( backupRecoveryService, backupCopyService );
+        recoveryBeforeRenameOrder.verify( backupRecoveryService ).recoverWithDatabase( eq( availableFreshBackupLocation ), any(), any() );
+        recoveryBeforeRenameOrder.verify( backupCopyService ).moveBackupLocation( eq( availableFreshBackupLocation ), eq( desiredBackupLocation ) );
+    }
+
+    // ====================================================================================================
+
+    private void bothBackupsFail()
+    {
+        when( requiredArguments.isFallbackToFull() ).thenReturn( true );
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn( FAILURE );
+        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn( FAILURE );
+    }
+
+    private void fallbackToFullPasses()
+    {
+        when( requiredArguments.isFallbackToFull() ).thenReturn( true );
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn( FAILURE );
+        when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn( SUCCESS );
     }
 }

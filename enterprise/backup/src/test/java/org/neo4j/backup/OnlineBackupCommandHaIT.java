@@ -32,16 +32,12 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -124,13 +120,13 @@ public class OnlineBackupCommandHaIT
         startDb( backupPort );
         assertEquals( "should not be able to do backup when noone is listening",
                 1,
-                runBackupToolInSameJvm( "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
+                runBackupTool( "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
         assertEquals(
                 0,
-                runBackupToolInSameJvm( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
@@ -138,7 +134,7 @@ public class OnlineBackupCommandHaIT
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolInSameJvm( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
@@ -162,15 +158,22 @@ public class OnlineBackupCommandHaIT
 
         // then backup is successful
         String ip = ":" + backupPort;
-        assertEquals( 0,
-                runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" ) );
+        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" + recordFormat ) );
+        db.shutdown();
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
     {
         while ( continueFlagReference.get() )
         {
-            createSomeData( db );
+            try
+            {
+                createSomeData( db );
+            }
+            catch ( DatabaseShutdownException ex )
+            {
+                break;
+            }
         }
     }
 
@@ -190,29 +193,6 @@ public class OnlineBackupCommandHaIT
         db.setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1" + ":" + backupPort );
         db.ensureStarted();
         createSomeData( db );
-    }
-
-    private static int runBackupToolInSameJvm( String... args )
-    {
-        OnlineBackupCommandProvider onlineBackupCommandProvider = new OnlineBackupCommandProvider();
-        Path homeDir = testDirectory.absolutePath().toPath();
-        Path configDir = homeDir.resolve( "config" );
-        AdminCommand backupCommand = onlineBackupCommandProvider.create( homeDir, configDir, new RealOutsideWorld() );
-        try
-        {
-            backupCommand.execute( args );
-            return 0;
-        }
-        catch ( IncorrectUsage incorrectUsage )
-        {
-            incorrectUsage.printStackTrace();
-            return 1;
-        }
-        catch ( CommandFailed commandFailed )
-        {
-            commandFailed.printStackTrace();
-            return commandFailed.code();
-        }
     }
 
     private static int runBackupTool( String... args )

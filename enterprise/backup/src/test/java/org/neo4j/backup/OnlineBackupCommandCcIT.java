@@ -36,17 +36,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -61,6 +57,7 @@ import org.neo4j.util.TestHelpers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -80,9 +77,6 @@ public class OnlineBackupCommandCcIT
     private File backupDir;
 
     private List<Runnable> oneOffShutdownTasks;
-    private static final Label label = Label.label( "any_label" );
-    private static final String PROP_NAME = "name";
-    private static final String PROP_RANDOM = "random";
 
     @Parameter
     public String recordFormat;
@@ -126,7 +120,7 @@ public class OnlineBackupCommandCcIT
                         "--name=defaultport" ) );
         assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport" ) );
 
-        createSomeData( clusterDatabase( cluster ) );
+        createSomeData( cluster );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
@@ -158,34 +152,25 @@ public class OnlineBackupCommandCcIT
         Cluster cluster = startCluster( recordFormat );
 
         // and the database has indexes
-        createIndexes( cluster.getDbWithAnyRole( Role.LEADER ).database() );
+        ClusterHelper.createIndexes( cluster.getDbWithAnyRole( Role.LEADER ).database() );
 
         // and the database is being populated
-        AtomicBoolean continueFlagReference = new AtomicBoolean( false );
-        new Thread( () -> repeatedlyPopulateDatabase( clusterLeader( cluster ).database(), continueFlagReference ) )
+        AtomicBoolean populateDatabaseFlag = new AtomicBoolean( true );
+        new Thread( () -> repeatedlyPopulateDatabase(  cluster, populateDatabaseFlag ) )
                 .start(); // populate db with number properties etc.
-        oneOffShutdownTasks.add( () -> continueFlagReference.set( false ) ); // kill thread
+        oneOffShutdownTasks.add( () -> populateDatabaseFlag.set( false ) ); // kill thread
 
         // then backup is successful
-        String ip = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
-        assertEquals( 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" ) );
+        String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=defaultport" ) );
     }
 
-    private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
+    private void repeatedlyPopulateDatabase( Cluster cluster, AtomicBoolean continueFlagReference )
     {
         while ( continueFlagReference.get() )
         {
-            createSomeData( db );
-        }
-    }
-
-    private void createIndexes( CoreGraphDatabase db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().indexFor( label ).on( PROP_NAME ).on( PROP_RANDOM ).create();
-            tx.success();
+            createSomeData( cluster );
         }
     }
 
@@ -201,21 +186,21 @@ public class OnlineBackupCommandCcIT
                 .withSharedCoreParam( GraphDatabaseSettings.record_format, recordFormat )
                 .withSharedReadReplicaParam( GraphDatabaseSettings.record_format, recordFormat );
         Cluster cluster = clusterRule.startCluster();
-        createSomeData( clusterDatabase( cluster ) );
+        createSomeData(  cluster );
         return cluster;
     }
 
-    public static DbRepresentation createSomeData( GraphDatabaseService db )
+    public static DbRepresentation createSomeData( Cluster cluster )
     {
-        try ( Transaction tx = db.beginTx() )
+        try
         {
-            Node node = db.createNode( label );
-            node.setProperty( PROP_NAME, "Neo" );
-            node.setProperty( PROP_RANDOM, Math.random() * 10000 );
-            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
-            tx.success();
+            cluster.coreTx( ClusterHelper::createSomeData );
         }
-        return DbRepresentation.of( db );
+        catch ( Exception e )
+        {
+            throw launderedException( e );
+        }
+        return DbRepresentation.of( clusterLeader( cluster ).database() );
     }
 
     private static CoreClusterMember clusterLeader( Cluster cluster )

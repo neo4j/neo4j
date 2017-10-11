@@ -80,6 +80,7 @@ import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
@@ -92,6 +93,8 @@ class BackupProtocolService
             "fallen too far behind the database transaction stream for incremental backup to be possible. You need to" +
             " perform a full backup at this point. You can modify this time interval by setting the '" +
             GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a higher value.";
+
+    static final String DIFFERENT_STORE_MESSAGE = "Target directory contains full backup of a logically different store.";
 
     private final Supplier<FileSystemAbstraction> fileSystemSupplier;
     private final LogProvider logProvider;
@@ -368,7 +371,7 @@ class BackupProtocolService
         }
         catch ( MismatchingStoreIdException e )
         {
-            throw new ExistingBackupWithDifferentStoreException( e );
+            throw new RuntimeException( DIFFERENT_STORE_MESSAGE, e );
         }
         catch ( RuntimeException | IOException e )
         {

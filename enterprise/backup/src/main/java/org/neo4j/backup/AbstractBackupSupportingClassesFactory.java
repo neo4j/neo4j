@@ -73,7 +73,7 @@ public abstract class AbstractBackupSupportingClassesFactory
     {
         PageCache pageCache = createPageCache( fileSystemAbstraction, config );
         return new BackupSupportingClasses(
-                backupDelegatorFormConfig( pageCache, config ),
+                backupDelegatorFromConfig( pageCache, config ),
                 haFromConfig( pageCache ),
                 pageCache );
     }
@@ -83,7 +83,7 @@ public abstract class AbstractBackupSupportingClassesFactory
         return new BackupProtocolService( () -> fileSystemAbstraction, logProvider, logDestination, monitors, pageCache );
     }
 
-    private BackupDelegator backupDelegatorFormConfig( PageCache pageCache, Config config )
+    private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )
     {
         PipelineHandlerAppenderFactory pipelineHandlerAppenderFactory = getPipelineHandlerAppenderFactory();
         PipelineHandlerAppender pipelineHandlerAppender = pipelineHandlerAppenderFactory.create( config, getDependencies(), logProvider );
