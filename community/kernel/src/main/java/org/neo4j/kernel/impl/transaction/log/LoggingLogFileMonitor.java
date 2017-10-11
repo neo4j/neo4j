@@ -81,13 +81,11 @@ public class LoggingLogFileMonitor implements
     @Override
     public void startedRotating( long currentVersion )
     {
-        log.info( format( "Rotating log version:%d", currentVersion ) );
     }
 
     @Override
     public void finishedRotating( long currentVersion )
     {
-        log.info( format( "Finished rotating log version:%d", currentVersion ) );
     }
 
     @Override
@@ -101,10 +99,10 @@ public class LoggingLogFileMonitor implements
     }
 
     @Override
-    public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
+    public void created( File logFile, long logVersion, long lastTransactionId )
     {
-        log.info( format( "Opened logical log [%s] version=%d, lastTxId=%d (%s)",
-                logFile, logVersion, lastTransactionId, clean ? "clean" : "recovered" ) );
+        log.info( format( "Rotated to transaction log [%s] version=%d, last transaction in previous log=%d",
+                logFile, logVersion, lastTransactionId ) );
     }
 
     @Override

@@ -45,15 +45,15 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     }
 
     @Override
-    public void prune( long upToLogVersion )
+    public void prune( long upToVersion, Monitor monitor )
     {
-        if ( upToLogVersion == INITIAL_LOG_VERSION )
+        if ( upToVersion == INITIAL_LOG_VERSION )
         {
             return;
         }
 
         threshold.init();
-        long upper = upToLogVersion - 1;
+        long upper = upToVersion - 1;
         boolean exceeded = false;
         while ( upper >= 0 )
         {
@@ -75,6 +75,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
 
         if ( !exceeded )
         {
+            monitor.noLogsPruned( upToVersion );
             return;
         }
 
@@ -97,7 +98,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
          * This if statement does nothing more complicated than checking if the next-to-last log would be prunned
          * and simply skipping it if so.
          */
-        if ( upper == upToLogVersion - 1 )
+        if ( upper == upToVersion - 1 )
         {
             upper--;
         }
@@ -108,5 +109,6 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
         {
             fileSystem.deleteFile( files.getLogFileForVersion( version ) );
         }
+        monitor.logsPruned( upToVersion, lower, upper );
     }
 }

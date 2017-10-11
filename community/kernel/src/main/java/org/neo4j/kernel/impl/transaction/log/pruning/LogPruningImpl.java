@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy.Monitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -33,11 +34,27 @@ public class LogPruningImpl implements LogPruning
     private final Lock pruneLock = new ReentrantLock();
     private final LogPruneStrategy pruneStrategy;
     private final Log msgLog;
+    private final Monitor monitor;
 
     public LogPruningImpl( LogPruneStrategy pruneStrategy, LogProvider logProvider )
     {
         this.pruneStrategy = pruneStrategy;
         this.msgLog = logProvider.getLog( getClass() );
+        this.monitor = new LogPruneStrategy.Monitor()
+        {
+            @Override
+            public void logsPruned( long upToVersion, long fromVersion, long toVersion )
+            {
+                msgLog.info( "Pruned log versions " + fromVersion + "-" + toVersion +
+                        ", last checkpoint was made in version " + upToVersion );
+            }
+
+            @Override
+            public void noLogsPruned( long upToVersion )
+            {
+                msgLog.info( "No log version pruned, last checkpoint was made in version " + upToVersion );
+            }
+        };
     }
 
     @Override
@@ -47,16 +64,13 @@ public class LogPruningImpl implements LogPruning
         // and it's OK to skip pruning if another one is doing so right now.
         if ( pruneLock.tryLock() )
         {
-            String prefix = "Log Rotation [" + upToVersion + "]: ";
-            msgLog.info( prefix + " Starting log pruning." );
             try
             {
-                pruneStrategy.prune( upToVersion );
+                pruneStrategy.prune( upToVersion, monitor );
             }
             finally
             {
                 pruneLock.unlock();
-                msgLog.info( prefix + " Log pruning complete." );
             }
         }
     }

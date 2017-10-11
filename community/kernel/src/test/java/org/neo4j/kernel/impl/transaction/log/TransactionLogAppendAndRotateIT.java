@@ -231,7 +231,7 @@ public class TransactionLogAppendAndRotateIT
         }
 
         @Override
-        public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
+        public void created( File logFile, long logVersion, long lastTransactionId )
         {
         }
     }
