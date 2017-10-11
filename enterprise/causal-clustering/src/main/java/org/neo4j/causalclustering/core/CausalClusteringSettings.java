@@ -224,7 +224,6 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "The catch up protocol times out if the given duration elapses with not network activity. " +
             "Every message received by the client from the server extends the time out duration." )
-    @Internal
     public static final Setting<Duration> catch_up_client_inactivity_timeout =
             setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "5s" );
 
