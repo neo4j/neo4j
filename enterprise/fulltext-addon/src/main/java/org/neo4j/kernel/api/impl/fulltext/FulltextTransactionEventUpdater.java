@@ -30,29 +30,25 @@ import java.util.concurrent.locks.Lock;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.logging.Log;
 
-class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
+class FulltextTransactionEventUpdater implements TransactionEventHandler<FulltextTransactionEventUpdater.FulltextTransactionContext>
 {
     private final FulltextProvider fulltextProvider;
-    private final Log log;
     private final FulltextUpdateApplier applier;
 
-    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider, Log log,
-                                     FulltextUpdateApplier applier )
+    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider, FulltextUpdateApplier applier )
     {
         this.fulltextProvider = fulltextProvider;
-        this.log = log;
         this.applier = applier;
     }
 
     @Override
-    public Object beforeCommit( TransactionData data ) throws Exception
+    public FulltextTransactionContext beforeCommit( TransactionData data ) throws Exception
     {
-        Map<Long,Map<String,Object>> nodeMap = new HashMap<Long,Map<String,Object>>();
-        Map<Long,Map<String,Object>> relationshipMap = new HashMap<Long,Map<String,Object>>();
+        Map<Long,Map<String,Object>> nodeMap = new HashMap<>();
+        Map<Long,Map<String,Object>> relationshipMap = new HashMap<>();
         Lock lock = fulltextProvider.readLockIndexConfiguration();
-        FulltextTransactioncontext fulltextTransactioncontext = new FulltextTransactioncontext( nodeMap, relationshipMap, lock );
+        FulltextTransactionContext fulltextTransactionContext = new FulltextTransactionContext( nodeMap, relationshipMap, lock );
 
         String[] nodeProperties = fulltextProvider.getNodeProperties();
         data.removedNodeProperties().forEach( propertyEntry ->
@@ -86,21 +82,20 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
         data.assignedRelationshipProperties().forEach(
                 propertyEntry -> relationshipMap.put( propertyEntry.entity().getId(),
                         propertyEntry.entity().getProperties( relationshipProperties ) ) );
-        return fulltextTransactioncontext;
+        return fulltextTransactionContext;
     }
 
     @Override
-    public void afterCommit( TransactionData data, Object state )
+    public void afterCommit( TransactionData data, FulltextTransactionContext state )
     {
         RuntimeException applyException = null;
         List<AsyncFulltextIndexOperation> completions = new ArrayList<>();
-        FulltextTransactioncontext context = (FulltextTransactioncontext) state;
         try
         {
             try
             {
-                Map<Long,Map<String,Object>> nodeMap = context.getNodeMap();
-                Map<Long,Map<String,Object>> relationshipMap = context.getRelationshipMap();
+                Map<Long,Map<String,Object>> nodeMap = state.getNodeMap();
+                Map<Long,Map<String,Object>> relationshipMap = state.getRelationshipMap();
 
                 //update node indices
                 for ( WritableFulltext nodeIndex : fulltextProvider.writableNodeIndices() )
@@ -143,24 +138,23 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
         }
         finally
         {
-            context.release();
+            state.release();
         }
     }
 
     @Override
-    public void afterRollback( TransactionData data, Object state )
+    public void afterRollback( TransactionData data, FulltextTransactionContext state )
     {
-        FulltextTransactioncontext context = (FulltextTransactioncontext) state;
-        context.release();
+        state.release();
     }
 
-    private static class FulltextTransactioncontext
+    public static class FulltextTransactionContext
     {
         private final Map<Long,Map<String,Object>> nodeMap;
         private final Map<Long,Map<String,Object>> relationshipMap;
         private final Lock lock;
 
-        private FulltextTransactioncontext( Map<Long,Map<String,Object>> nodeMap, Map<Long,Map<String,Object>> relationshipMap, Lock lock )
+        private FulltextTransactionContext( Map<Long,Map<String,Object>> nodeMap, Map<Long,Map<String,Object>> relationshipMap, Lock lock )
         {
             this.nodeMap = nodeMap;
             this.relationshipMap = relationshipMap;
