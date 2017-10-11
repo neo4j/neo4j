@@ -22,18 +22,22 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Aggregation(left: LogicalPlan,
+/**
+  * Aggregation is a more advanced version of Distinct, where source rows are grouped by the
+  * values of the groupingsExpressions. When the source is fully consumed, one row is produced
+  * for every group, containing the values of the groupingExpressions for that row, as well as
+  * aggregates computed on all the rows in that group.
+  */
+case class Aggregation(source: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
                        aggregationExpression: Map[String, Expression])
                       (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
 
-  def ap(newSolved: PlannerQuery with CardinalityEstimation) = copy()(newSolved)
-
-  val lhs = Some(left)
+  val lhs = Some(source)
 
   def rhs = None
 
-  val groupingKeys = groupingExpressions.keySet.map(IdName(_))
+  val groupingKeys: Set[IdName] = groupingExpressions.keySet.map(IdName(_))
 
-  val availableSymbols = groupingKeys ++ aggregationExpression.keySet.map(IdName(_))
+  val availableSymbols: Set[IdName] = groupingKeys ++ aggregationExpression.keySet.map(IdName(_))
 }

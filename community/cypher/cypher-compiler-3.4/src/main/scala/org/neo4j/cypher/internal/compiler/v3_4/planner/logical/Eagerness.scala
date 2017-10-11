@@ -303,7 +303,7 @@ object Eagerness {
 
       // L Ax (E R) => E Ax (L R)
       case apply@Apply(lhs, eager@Eager(inner)) =>
-        eager.copy(inner = Apply(lhs, inner)(apply.solved))(apply.solved)
+        eager.copy(source = Apply(lhs, inner)(apply.solved))(apply.solved)
 
       // L Ax (CN R) => CN Ax (L R)
       case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>

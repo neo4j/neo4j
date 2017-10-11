@@ -56,7 +56,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     logicalPlan should equal(
       Distinct(
-        left = Union(
+        source = Union(
           Projection(
             NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
             Map("a" -> Variable("  a@7") _)

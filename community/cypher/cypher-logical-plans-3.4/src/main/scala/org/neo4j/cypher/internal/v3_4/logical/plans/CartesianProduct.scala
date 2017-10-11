@@ -19,14 +19,20 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-
+/**
+  * Cartesian Product
+  *
+  * for ( leftRow <- left )
+  *   for ( rightRow <- right )
+  *     produce (leftRow merge rightRow)
+  */
 case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols
+  def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
 }

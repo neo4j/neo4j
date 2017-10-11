@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * Produce one row for every node in the graph. Each row contains the contents of argument, and
+  * a node assigned to the variable IdName.
+  */
 case class AllNodesScan(idName: IdName, argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan {
 
-  def availableSymbols = argumentIds + idName
+  def availableSymbols: Set[IdName] = argumentIds + idName
 }

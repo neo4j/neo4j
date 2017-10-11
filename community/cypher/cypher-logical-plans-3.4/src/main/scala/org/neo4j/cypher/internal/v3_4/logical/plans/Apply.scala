@@ -19,13 +19,23 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * For every row in left, set that row as the argument, and produce all rows from right
+  *
+  * for ( leftRow <- left ) {
+  *   right.setArgument( leftRow )
+  *   for ( rightRow <- right ) {
+  *     produce rightRow
+  *   }
+  * }
+  */
 case class Apply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  lazy val availableSymbols = left.availableSymbols ++ right.availableSymbols
+  lazy val availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
 }

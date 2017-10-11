@@ -92,13 +92,13 @@ case object unnestApply extends Rewriter {
 
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
     case apply@Apply(lhs, expand: Expand) =>
-      val newApply = apply.copy(right = expand.left)(apply.solved)
-      expand.copy(left = newApply)(apply.solved)
+      val newApply = apply.copy(right = expand.source)(apply.solved)
+      expand.copy(source = newApply)(apply.solved)
 
     // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
     case apply@Apply(lhs, expand: VarExpand) =>
-      val newApply = apply.copy(right = expand.left)(apply.solved)
-      expand.copy(left = newApply)(apply.solved)
+      val newApply = apply.copy(right = expand.source)(apply.solved)
+      expand.copy(source = newApply)(apply.solved)
 
     // L Ax (Arg LOJ R) => L LOJ R
     case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
@@ -109,5 +109,5 @@ case object unnestApply extends Rewriter {
       CreateNode(Apply(lhs, rhs)(apply.solved), name, labels, props)(apply.solved)
   })
 
-  override def apply(input: AnyRef) = instance.apply(input)
+  override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

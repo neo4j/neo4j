@@ -19,11 +19,33 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
+  * produces at least one row.
+  *
+  * for ( leftRow <- left ) {
+  *   right.setArgument( leftRow )
+  *   if ( right.nonEmpty ) {
+  *     produce leftRow
+  *   }
+  * }
+  */
 case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractSemiApply(left, right, solved)
 
+/**
+  * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
+  * produces no rows.
+  *
+  * for ( leftRow <- left ) {
+  *   right.setArgument( leftRow )
+  *   if ( right.isEmpty ) {
+  *     produce leftRow
+  *   }
+  * }
+  */
 case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractSemiApply(left, right, solved)
 
@@ -32,5 +54,5 @@ abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols
+  def availableSymbols: Set[IdName] = left.availableSymbols
 }

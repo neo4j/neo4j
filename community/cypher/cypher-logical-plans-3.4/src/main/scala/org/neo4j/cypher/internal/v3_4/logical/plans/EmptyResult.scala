@@ -21,14 +21,17 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
-case class EmptyResult(inner: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
+/*
+ * Produce zero rows, regardless of source.
+ */
+case class EmptyResult(source: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {
 
-  override def lhs: Option[LogicalPlan] = Some(inner)
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = inner.availableSymbols
+  override def availableSymbols: Set[IdName] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def strictness: StrictnessMode = inner.strictness
+  override def strictness: StrictnessMode = source.strictness
 }

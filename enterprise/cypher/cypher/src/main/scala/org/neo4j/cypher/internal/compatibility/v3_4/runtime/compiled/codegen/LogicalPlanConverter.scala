@@ -189,7 +189,6 @@ object LogicalPlanConverter {
           case plans.ManyQueryExpression(e: ast.ListLiteral) =>
             val expression = ToSet(createExpression(e)(context))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
-
             ForEachExpression(expressionVar, expression,
                               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
                                            actions))
@@ -197,8 +196,7 @@ object LogicalPlanConverter {
           //Unknown, try to cast to collection and then same as above
           case plans.ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(createExpression(e)(context)))
-            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
-                                         nullable = false)
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
             ForEachExpression(expressionVar, expression,
                               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
                                            actions))
@@ -235,16 +233,14 @@ object LogicalPlanConverter {
                                               createExpression(value)(context), actions)
               case _ =>
                 val expression = createExpression(e)(context)
-                val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
-                                             nullable = false)
+                val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
                 ForEachExpression(expressionVar, expression,
                                   SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
             }
 
           case exp =>
             val expression = ToSet(CastToCollection(createExpression(exp)(context)))
-            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
-                                         nullable = false)
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
             ForEachExpression(expressionVar, expression,
                               SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
         }
@@ -528,7 +524,7 @@ object LogicalPlanConverter {
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
 
-      val label = nodeCount.labelName.map(ll => ll.map(l => context.semanticTable.id(l).map(_.id) -> l.name))
+      val label = nodeCount.labelNames.map(ll => ll.map(l => context.semanticTable.id(l).map(_.id) -> l.name))
       (methodHandle, NodeCountFromCountStoreInstruction(opName, variable, label, actions) :: tl)
     }
   }

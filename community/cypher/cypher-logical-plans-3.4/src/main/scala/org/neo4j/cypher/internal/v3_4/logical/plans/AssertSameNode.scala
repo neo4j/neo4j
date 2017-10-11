@@ -21,11 +21,21 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * For every row in left, assert that all rows in right produce the same value
+  * for the variable IdName. Produce the rows from left.
+  *
+  * for ( leftRow <- left )
+  *   for ( rightRow <- right )
+  *     assert( leftRow(node) == rightRow(node) )
+  *   produce leftRow
+  */
+// TODO: rename this to MergeSomething...
 case class AssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols + node
+  def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols + node
 }

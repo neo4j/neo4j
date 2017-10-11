@@ -22,6 +22,10 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelName}
 
+/**
+  * For each input row, create a new node with the provided labels and properties,
+  * and assign it to the variable 'idName'.
+  */
 case class CreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LabelName], properties: Option[Expression])
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {

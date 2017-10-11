@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Limit(left: LogicalPlan, count: Expression, ties: Ties)
+/*
+ * Only produce the first 'count' rows from source.
+ */
+case class Limit(source: LogicalPlan, count: Expression, ties: Ties)
                 (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-  val lhs = Some(left)
+  val lhs = Some(source)
   val rhs = None
 
-  def availableSymbols = left.availableSymbols
+  def availableSymbols: Set[IdName] = source.availableSymbols
 }
 
 // Using a trait instead of a bool to make the code more readable
