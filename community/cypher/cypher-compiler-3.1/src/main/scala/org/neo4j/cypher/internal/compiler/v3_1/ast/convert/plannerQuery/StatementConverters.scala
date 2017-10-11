@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticTable, Foldable, ast}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.frontend.v3_1.{Foldable, SemanticTable, ast}
 
 object StatementConverters {
   import Foldable._
@@ -66,7 +66,6 @@ object StatementConverters {
         //UNION requires all queries to return the same variables
         assert(plannedQueries.nonEmpty)
         val returns = plannedQueries.head.returns
-        assert(plannedQueries.forall(_.returns == returns))
 
         UnionQuery(plannedQueries.map(_.build()), distinct, returns, PeriodicCommit(periodicCommitHint))
 
