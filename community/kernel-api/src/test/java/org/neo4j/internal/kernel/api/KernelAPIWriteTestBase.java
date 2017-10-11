@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.rules.TemporaryFolder;
@@ -32,7 +33,8 @@ public abstract class KernelAPIWriteTestBase<G extends KernelAPIWriteTestSupport
 {
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIWriteTestSupport testSupport;
-    protected static KernelAPI kernel;
+    protected Session session;
+    protected CursorFactory cursors;
     protected static GraphDatabaseService graphDb;
 
     /**
@@ -48,10 +50,18 @@ public abstract class KernelAPIWriteTestBase<G extends KernelAPIWriteTestSupport
             folder.create();
             testSupport = newTestSupport();
             testSupport.setup( folder.getRoot() );
-            kernel = testSupport.kernelToTest();
             graphDb = testSupport.graphBackdoor();
         }
         testSupport.beforeEachTest();
+        Kernel kernel = testSupport.kernelToTest();
+        session = kernel.beginSession( PermissionsFixture.allPermissions() );
+        cursors = kernel.cursors();
+    }
+
+    @After
+    public void closeSession()
+    {
+        session.close();
     }
 
     @AfterClass
@@ -62,7 +72,6 @@ public abstract class KernelAPIWriteTestBase<G extends KernelAPIWriteTestSupport
             testSupport.tearDown();
             folder.delete();
             testSupport = null;
-            kernel = null;
         }
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.values.storable.Value;
-
 /**
  * Defines the read operations of the Kernel API.
  */
@@ -119,6 +117,8 @@ public interface Read
      */
     void relationshipProperties( long reference, PropertyCursor cursor );
 
+    void graphProperties( PropertyCursor cursor );
+
     // hints to the page cache about data we will be accessing in the future:
 
     void futureNodeReferenceRead( long reference );
@@ -128,27 +128,4 @@ public interface Read
     void futureNodePropertyReferenceRead( long reference );
 
     void futureRelationshipPropertyReferenceRead( long reference );
-
-    // TOKEN/meta operations
-
-    IndexReference index( int label, int... properties );
-
-    int nodeLabel( String name );
-
-    int propertyKey( String name );
-
-    void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value );
-
-    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query );
-
-    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query );
-
-    void relationshipExplicitIndexGet(
-            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target );
-
-    void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target );
-
-    void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target );
 }

@@ -62,6 +62,12 @@ public class MockStore extends Read implements TestRule
     };
 
     @Override
+    long graphPropertiesReference()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     IndexReader indexReader( IndexReference index )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -336,18 +342,6 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public IndexReference index( int label, int... properties )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public int nodeLabel( String name )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public int propertyKey( String name )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

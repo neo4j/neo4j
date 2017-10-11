@@ -21,32 +21,20 @@ package org.neo4j.internal.kernel.api;
 
 import org.neo4j.values.storable.Value;
 
-/**
- * Defines the write operations of the Kernel API.
- */
-public interface Write
+public interface ExplicitIndexRead
 {
-    long nodeCreate();
+    void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value );
 
-    void nodeDelete( long node );
+    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query );
 
-    long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode );
+    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query );
 
-    void relationshipDelete( long relationship );
+    void relationshipExplicitIndexGet(
+            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target );
 
-    void nodeAddLabel( long node, int nodeLabel );
+    void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target );
 
-    void nodeRemoveLabel( long node, int nodeLabel );
-
-    Value nodeSetProperty( long node, int propertyKey, Value value );
-
-    Value nodeRemoveProperty( long node, int propertyKey );
-
-    Value relationshipSetProperty( long relationship, int propertyKey, Value value );
-
-    Value relationshipRemoveProperty( long node, int propertyKey );
-
-    Value graphSetProperty( int propertyKey, Value value );
-
-    Value graphRemoveProperty( int propertyKey );
+    void relationshipExplicitIndexQuery(
+            RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target );
 }

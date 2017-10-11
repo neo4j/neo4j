@@ -19,25 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public interface Transaction
+public interface Kernel
 {
-    long READ_ONLY_TRANSACTION = 0;
+    CursorFactory cursors();
 
-    long commit();
-
-    void rollback();
-
-    Read dataRead();
-
-    Write dataWrite();
-
-    ExplicitIndexRead indexRead();
-
-    ExplicitIndexWrite indexWrite();
-
-    SchemaRead schemaRead();
-
-    SchemaWrite schemaWrite();
-
-    Locks locks();
+    Session beginSession( Permissions permissions );
 }

@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.KernelAPI;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestSupport;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -46,7 +46,7 @@ class ReadTestSupport implements KernelAPIReadTestSupport
     }
 
     @Override
-    public KernelAPI kernelToTest()
+    public Kernel kernelToTest()
     {
         return new TempKernel( (GraphDatabaseAPI) db );
     }

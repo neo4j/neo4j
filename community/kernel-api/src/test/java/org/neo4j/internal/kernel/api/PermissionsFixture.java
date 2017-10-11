@@ -19,16 +19,15 @@
  */
 package org.neo4j.internal.kernel.api;
 
-/**
- * Entry point for the Kernel API
- *
- * Usage pattern is under development
- */
-public interface KernelAPI
+public class PermissionsFixture
 {
-    Transaction beginTransaction();
+    public static Permissions noPermissions()
+    {
+        return new Permissions();
+    }
 
-    CursorFactory cursors();
-
-    Token token();
+    public static Permissions allPermissions()
+    {
+        return new Permissions( Permissions.Grant.values() );
+    }
 }

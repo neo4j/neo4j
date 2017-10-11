@@ -56,13 +56,13 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
               PrimitiveLongSet nodes = Primitive.longSet() )
         {
             // when
-            read.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "this is it" ) );
+            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "this is it" ) );
 
             // then
             assertFoundNodes( cursor, 1, nodes );
 
             // when
-            read.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "not that" ) );
+            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "not that" ) );
 
             // then
             assertFoundNodes( cursor, 0, nodes );
@@ -77,26 +77,26 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
               PrimitiveLongSet nodes = Primitive.longSet() )
         {
             // when
-            read.nodeExplicitIndexQuery( cursor, "foo", "bar:this*" );
+            indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar:this*" );
 
             // then
             assertFoundNodes( cursor, 1, nodes );
 
             // when
             nodes.clear();
-            read.nodeExplicitIndexQuery( cursor, "foo", "bar", "this*" );
+            indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar", "this*" );
 
             // then
             assertFoundNodes( cursor, 1, nodes );
 
             // when
-            read.nodeExplicitIndexQuery( cursor, "foo", "bar:that*" );
+            indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar:that*" );
 
             // then
             assertFoundNodes( cursor, 0, nodes );
 
             // when
-            read.nodeExplicitIndexQuery( cursor, "foo", "bar", "that*" );
+            indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar", "that*" );
 
             // then
             assertFoundNodes( cursor, 0, nodes );
@@ -111,7 +111,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
               PrimitiveLongSet edges = Primitive.longSet() )
         {
             // when
-            read.relationshipExplicitIndexGet(
+            indexRead.relationshipExplicitIndexGet(
                     cursor,
                     "rels",
                     "alpha",
@@ -123,7 +123,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
             assertFoundRelationships( cursor, 1, edges );
 
             // when
-            read.relationshipExplicitIndexGet( cursor, "rels", "bar", stringValue( "not that" ), -1, -1 );
+            indexRead.relationshipExplicitIndexGet( cursor, "rels", "bar", stringValue( "not that" ), -1, -1 );
 
             // then
             assertFoundRelationships( cursor, 0, edges );
@@ -138,26 +138,26 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
                 PrimitiveLongSet relationships = Primitive.longSet() )
         {
             // when
-            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha:betting*", -1, -1 );
+            indexRead.relationshipExplicitIndexQuery( cursor, "rels", "alpha:betting*", -1, -1 );
 
             // then
             assertFoundRelationships( cursor, 1, relationships );
 
             // when
             relationships.clear();
-            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha", "betting*", -1,-1 );
+            indexRead.relationshipExplicitIndexQuery( cursor, "rels", "alpha", "betting*", -1,-1 );
 
             // then
             assertFoundRelationships( cursor, 1, relationships );
 
             // when
-            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha:that*", -1, -1 );
+            indexRead.relationshipExplicitIndexQuery( cursor, "rels", "alpha:that*", -1, -1 );
 
             // then
             assertFoundRelationships( cursor, 0, relationships );
 
             // when
-            read.relationshipExplicitIndexQuery( cursor, "rels", "alpha", "that*", -1, -1 );
+            indexRead.relationshipExplicitIndexQuery( cursor, "rels", "alpha", "that*", -1, -1 );
 
             // then
             assertFoundRelationships( cursor, 0, relationships );

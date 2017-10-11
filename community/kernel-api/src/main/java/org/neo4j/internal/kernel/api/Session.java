@@ -19,25 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public interface Transaction
+public interface Session extends AutoCloseable
 {
-    long READ_ONLY_TRANSACTION = 0;
+    Transaction beginTransaction();
 
-    long commit();
+    Token token();
 
-    void rollback();
-
-    Read dataRead();
-
-    Write dataWrite();
-
-    ExplicitIndexRead indexRead();
-
-    ExplicitIndexWrite indexWrite();
-
-    SchemaRead schemaRead();
-
-    SchemaWrite schemaWrite();
-
-    Locks locks();
+    @Override
+    void close();
 }

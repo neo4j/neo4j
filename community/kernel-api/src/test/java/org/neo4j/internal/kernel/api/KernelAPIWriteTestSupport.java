@@ -30,7 +30,7 @@ public interface KernelAPIWriteTestSupport
 
     void beforeEachTest();
 
-    KernelAPI kernelToTest();
+    Kernel kernelToTest();
 
     /**
      * Backdoor to allow asserting on write effects

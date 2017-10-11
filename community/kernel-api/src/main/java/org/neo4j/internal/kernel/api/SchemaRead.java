@@ -19,25 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public interface Transaction
+public interface SchemaRead
 {
-    long READ_ONLY_TRANSACTION = 0;
-
-    long commit();
-
-    void rollback();
-
-    Read dataRead();
-
-    Write dataWrite();
-
-    ExplicitIndexRead indexRead();
-
-    ExplicitIndexWrite indexWrite();
-
-    SchemaRead schemaRead();
-
-    SchemaWrite schemaWrite();
-
-    Locks locks();
+    IndexReference index( int label, int... properties );
 }

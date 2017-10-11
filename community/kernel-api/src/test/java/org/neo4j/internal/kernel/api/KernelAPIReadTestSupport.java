@@ -31,7 +31,7 @@ public interface KernelAPIReadTestSupport
 
     void beforeEachTest();
 
-    KernelAPI kernelToTest();
+    Kernel kernelToTest();
 
     void tearDown();
 }

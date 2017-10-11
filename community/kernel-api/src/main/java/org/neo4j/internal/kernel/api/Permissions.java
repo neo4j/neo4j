@@ -19,25 +19,30 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public interface Transaction
+import java.util.Collections;
+import java.util.EnumSet;
+
+public final class Permissions
 {
-    long READ_ONLY_TRANSACTION = 0;
+    enum Grant
+    {
+        DATA_READ,
+        DATA_WRITE,
+        SCHEMA_READ,
+        SCHEMA_WRITE,
+        TOKEN_WRITE
+    }
 
-    long commit();
+    private final EnumSet<Grant> grants;
 
-    void rollback();
+    Permissions( Grant... grants )
+    {
+        this.grants = EnumSet.noneOf( Grant.class );
+        Collections.addAll( this.grants, grants );
+    }
 
-    Read dataRead();
-
-    Write dataWrite();
-
-    ExplicitIndexRead indexRead();
-
-    ExplicitIndexWrite indexWrite();
-
-    SchemaRead schemaRead();
-
-    SchemaWrite schemaWrite();
-
-    Locks locks();
+    boolean permits( Grant grant )
+    {
+        return grants.contains( grant );
+    }
 }

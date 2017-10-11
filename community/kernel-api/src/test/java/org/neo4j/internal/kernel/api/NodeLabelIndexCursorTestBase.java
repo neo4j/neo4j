@@ -52,10 +52,10 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldFindNodesByLabel() throws Exception
     {
         // given
-        int one = read.nodeLabel( "One" );
-        int two = read.nodeLabel( "Two" );
-        int three = read.nodeLabel( "Three" );
-        int first = read.nodeLabel( "First" );
+        int one = token.nodeLabel( "One" );
+        int two = token.nodeLabel( "Two" );
+        int three = token.nodeLabel( "Three" );
+        int first = token.nodeLabel( "First" );
         try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -90,8 +90,8 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldFindNodesByDisjunction() throws Exception
     {
         // given
-        int first = read.nodeLabel( "First" );
-        int two = read.nodeLabel( "Two" );
+        int first = token.nodeLabel( "First" );
+        int two = token.nodeLabel( "Two" );
         /// find nodes with the First Two labels...
         try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
@@ -108,8 +108,8 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldFindNodesByConjunction() throws Exception
     {
         // given
-        int first = read.nodeLabel( "First" );
-        int two = read.nodeLabel( "Two" );
+        int first = token.nodeLabel( "First" );
+        int two = token.nodeLabel( "Two" );
         // find the First node with label Two...
         try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )

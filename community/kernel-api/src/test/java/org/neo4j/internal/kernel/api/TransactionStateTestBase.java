@@ -38,20 +38,20 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
     public void shouldSeeNodeInTransaction() throws Exception
     {
         long nodeId;
-        try ( Transaction tx = kernel.beginTransaction() )
+        Transaction tx = session.beginTransaction();
         {
-            nodeId = tx.nodeCreate();
-            try ( NodeCursor node = kernel.cursors().allocateNodeCursor() )
+            nodeId = tx.dataWrite().nodeCreate();
+            try ( NodeCursor node = cursors.allocateNodeCursor() )
             {
-                tx.singleNode( nodeId, node );
+                tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
                 assertEquals( nodeId, node.nodeReference() );
                 assertFalse( "should only find one node", node.next() );
             }
-            tx.success();
+            tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertEquals( nodeId, graphDb.getNodeById( nodeId ).getId() );
         }
@@ -64,15 +64,15 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         int labelId;
         final String labelName = "Town";
 
-        try ( Transaction tx = kernel.beginTransaction() )
+        Transaction tx = session.beginTransaction();
         {
-            nodeId = tx.nodeCreate();
-            labelId = kernel.token().labelGetOrCreateForName( labelName );
-            tx.nodeAddLabel( nodeId, labelId );
+            nodeId = tx.dataWrite().nodeCreate();
+            labelId = session.token().labelGetOrCreateForName( labelName );
+            tx.dataWrite().nodeAddLabel( nodeId, labelId );
 
-            try ( NodeCursor node = kernel.cursors().allocateNodeCursor() )
+            try ( NodeCursor node = cursors.allocateNodeCursor() )
             {
-                tx.singleNode( nodeId, node );
+                tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
 
                 LabelSet labels = node.labels();
@@ -80,10 +80,10 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
                 assertEquals( labelId, labels.label( 0 ) );
                 assertFalse( "should only find one node", node.next() );
             }
-            tx.success();
+            tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),
@@ -100,41 +100,41 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         final String toDeleteName = "ToDelete";
         final String toAddName = "ToAdd";
 
-        try ( Transaction tx = kernel.beginTransaction() )
+        Transaction tx = session.beginTransaction();
         {
-            nodeId = tx.nodeCreate();
-            toRetain = kernel.token().labelGetOrCreateForName( toRetainName );
-            toDelete = kernel.token().labelGetOrCreateForName( toDeleteName );
-            tx.nodeAddLabel( nodeId, toRetain );
-            tx.nodeAddLabel( nodeId, toDelete );
-            tx.success();
+            nodeId = tx.dataWrite().nodeCreate();
+            toRetain = session.token().labelGetOrCreateForName( toRetainName );
+            toDelete = session.token().labelGetOrCreateForName( toDeleteName );
+            tx.dataWrite().nodeAddLabel( nodeId, toRetain );
+            tx.dataWrite().nodeAddLabel( nodeId, toDelete );
+            tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),
                     equalTo( Iterables.iterable( label( toRetainName ), label( toDeleteName ) ) ) );
         }
 
-        try ( Transaction tx = kernel.beginTransaction() )
+        tx = session.beginTransaction();
         {
-            toAdd = kernel.token().labelGetOrCreateForName( toAddName );
-            tx.nodeAddLabel( nodeId, toAdd );
-            tx.nodeRemoveLabel( nodeId, toDelete );
+            toAdd = session.token().labelGetOrCreateForName( toAddName );
+            tx.dataWrite().nodeAddLabel( nodeId, toAdd );
+            tx.dataWrite().nodeRemoveLabel( nodeId, toDelete );
 
-            try ( NodeCursor node = kernel.cursors().allocateNodeCursor() )
+            try ( NodeCursor node = cursors.allocateNodeCursor() )
             {
-                tx.singleNode( nodeId, node );
+                tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
 
                 assertLabels( node.labels(), toRetain, toAdd );
                 assertFalse( "should only find one node", node.next() );
             }
-            tx.success();
+            tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),

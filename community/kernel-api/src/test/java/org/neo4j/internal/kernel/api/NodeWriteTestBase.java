@@ -36,13 +36,13 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     public void shouldCreateNode() throws Exception
     {
         long node;
-        try ( Transaction tx = kernel.beginTransaction() )
+        Transaction tx = session.beginTransaction();
         {
-            node = tx.nodeCreate();
-            tx.success();
+            node = tx.dataWrite().nodeCreate();
+            tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertEquals( node, graphDb.getNodeById( node ).getId() );
         }
@@ -52,13 +52,13 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     public void shouldRollbackOnFailure() throws Exception
     {
         long node;
-        try ( Transaction tx = kernel.beginTransaction() )
+        Transaction tx = session.beginTransaction();
         {
-            node = tx.nodeCreate();
-            tx.failure();
+            node = tx.dataWrite().nodeCreate();
+            tx.rollback();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             graphDb.getNodeById( node );
             fail( "There should be no node" );
@@ -75,15 +75,15 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node;
         int labelId;
         final String labelName = "Town";
-        try ( Transaction tx = kernel.beginTransaction() )
+        Transaction tx = session.beginTransaction();
         {
-            node = tx.nodeCreate();
-            labelId = kernel.token().labelGetOrCreateForName( labelName );
-            tx.nodeAddLabel( node, labelId );
-            tx.success();
+            node = tx.dataWrite().nodeCreate();
+            labelId = session.token().labelGetOrCreateForName( labelName );
+            tx.dataWrite().nodeAddLabel( node, labelId );
+            tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( node ).getLabels(),
@@ -104,14 +104,14 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             tx.success();
         }
 
-        try ( Transaction tx = kernel.beginTransaction() )
+        Transaction tx = session.beginTransaction();
         {
-            labelId = kernel.token().labelGetOrCreateForName( labelName );
-            tx.nodeRemoveLabel( nodeId, labelId );
-            tx.success();
+            labelId = session.token().labelGetOrCreateForName( labelName );
+            tx.dataWrite().nodeRemoveLabel( nodeId, labelId );
+            tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),

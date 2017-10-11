@@ -47,4 +47,8 @@ public interface Token
     void propertyKeyCreateForName( String propertyKeyName, int id ) throws SomeException;
 
     void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws SomeException;
+
+    int nodeLabel( String name );
+
+    int propertyKey( String name );
 }

@@ -45,7 +45,10 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-abstract class Read implements org.neo4j.internal.kernel.api.Read
+abstract class Read implements
+        org.neo4j.internal.kernel.api.Read,
+        org.neo4j.internal.kernel.api.ExplicitIndexRead,
+        org.neo4j.internal.kernel.api.SchemaRead
 {
     static final long FILTER_MASK = 0x2000_0000_0000_0000L;
 
@@ -256,6 +259,14 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read
     {
         ((PropertyCursor) cursor).init( reference );
     }
+
+    @Override
+    public final void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    {
+        ((PropertyCursor) cursor).init( graphPropertiesReference() );
+    }
+
+    abstract long graphPropertiesReference();
 
     @Override
     public final void nodeExplicitIndexLookup(

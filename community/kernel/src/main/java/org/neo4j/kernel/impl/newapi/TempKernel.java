@@ -21,15 +21,22 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.KernelAPI;
+import org.neo4j.internal.kernel.api.ExplicitIndexRead;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.Permissions;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.values.storable.Value;
 
-class TempKernel implements KernelAPI
+class TempKernel implements Kernel, Session
 {
     private final Transaction tx;
     private final Cursors cursors;
@@ -56,9 +63,20 @@ class TempKernel implements KernelAPI
     }
 
     @Override
+    public Session beginSession( Permissions permissions )
+    {
+        return this;
+    }
+
+    @Override
     public Token token()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return tx;
+    }
+
+    @Override
+    public void close()
+    {
     }
 
     private static class Transaction extends Store implements org.neo4j.internal.kernel.api.Transaction
@@ -69,76 +87,54 @@ class TempKernel implements KernelAPI
         }
 
         @Override
-        public void success()
+        public long commit()
+        {
+            return READ_ONLY_TRANSACTION;
+        }
+
+        @Override
+        public void rollback()
         {
         }
 
         @Override
-        public void failure()
+        public Read dataRead()
         {
+            return this;
         }
 
         @Override
-        public void close() throws Exception
-        {
-        }
-
-        @Override
-        public long nodeCreate()
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void nodeDelete( long node )
+        public Write dataWrite()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
 
         @Override
-        public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode )
+        public ExplicitIndexRead indexRead()
+        {
+            return this;
+        }
+
+        @Override
+        public ExplicitIndexWrite indexWrite()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
 
         @Override
-        public void relationshipDelete( long relationship )
+        public SchemaRead schemaRead()
+        {
+            return this;
+        }
+
+        @Override
+        public SchemaWrite schemaWrite()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
 
         @Override
-        public void nodeAddLabel( long node, int nodeLabel )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void nodeRemoveLabel( long node, int nodeLabel )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void nodeSetProperty( long node, int propertyKey, Object value )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void nodeRemoveProperty( long node, int propertyKey )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void relationshipSetProperty( long relationship, int propertyKey, Value value )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void relationshipRemoveProperty( long node, int propertyKey )
+        public Locks locks()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }

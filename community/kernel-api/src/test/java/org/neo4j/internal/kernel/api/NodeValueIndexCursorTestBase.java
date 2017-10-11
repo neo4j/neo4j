@@ -76,9 +76,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformExactLookup() throws Exception
     {
         // given
-        int label = read.nodeLabel( "Node" );
-        int prop = read.propertyKey( "prop" );
-        IndexReference index = read.index( label, prop );
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -118,9 +118,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformStringPrefixSearch() throws Exception
     {
         // given
-        int label = read.nodeLabel( "Node" );
-        int prop = read.propertyKey( "prop" );
-        IndexReference index = read.index( label, prop );
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -136,9 +136,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformStringSuffixSearch() throws Exception
     {
         // given
-        int label = read.nodeLabel( "Node" );
-        int prop = read.propertyKey( "prop" );
-        IndexReference index = read.index( label, prop );
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -154,9 +154,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformStringContainmentSearch() throws Exception
     {
         // given
-        int label = read.nodeLabel( "Node" );
-        int prop = read.propertyKey( "prop" );
-        IndexReference index = read.index( label, prop );
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -172,9 +172,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformStringRangeSearch() throws Exception
     {
         // given
-        int label = read.nodeLabel( "Node" );
-        int prop = read.propertyKey( "prop" );
-        IndexReference index = read.index( label, prop );
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -219,9 +219,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformNumericRangeSearch() throws Exception
     {
         // given
-        int label = read.nodeLabel( "Node" );
-        int prop = read.propertyKey( "prop" );
-        IndexReference index = read.index( label, prop );
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -259,9 +259,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformIndexScan() throws Exception
     {
         // given
-        int label = read.nodeLabel( "Node" );
-        int prop = read.propertyKey( "prop" );
-        IndexReference index = read.index( label, prop );
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {

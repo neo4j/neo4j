@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
@@ -60,7 +61,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-class Store extends Read
+class Store extends Read implements Token
 {
     private final RelationshipGroupStore groupStore;
     private final PropertyStore propertyStore;
@@ -80,6 +81,12 @@ class Store extends Read
         this.groupStore = stores.getRelationshipGroupStore();
         this.propertyStore = stores.getPropertyStore();
         this.explicitIndexes = new Lazy<>( explicitIndexes );
+    }
+
+    @Override
+    long graphPropertiesReference()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
@@ -136,6 +143,42 @@ class Store extends Read
     {
         IndexDescriptor indexDescriptor = read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
         return new IndexReference( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE, label, properties );
+    }
+
+    @Override
+    public int labelGetOrCreateForName( String labelName ) throws SomeException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws SomeException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws SomeException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void labelCreateForName( String labelName, int id ) throws SomeException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws SomeException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws SomeException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

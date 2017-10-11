@@ -33,9 +33,13 @@ public abstract class KernelAPIReadTestBase<G extends KernelAPIReadTestSupport>
 {
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIReadTestSupport testSupport;
-    protected static KernelAPI kernel;
+    private Session session;
+    private Transaction tx;
     protected CursorFactory cursors;
-    protected Transaction read;
+    protected Read read;
+    protected ExplicitIndexRead indexRead;
+    protected SchemaRead schemaRead;
+    protected Token token;
 
     /**
      * Creates a new instance of KernelAPITestSupport, which will be used to execute the concrete test
@@ -58,18 +62,23 @@ public abstract class KernelAPIReadTestBase<G extends KernelAPIReadTestSupport>
             folder.create();
             testSupport = newTestSupport();
             testSupport.setup( folder.getRoot(), this::createTestGraph );
-            kernel = testSupport.kernelToTest();
         }
+        Kernel kernel = testSupport.kernelToTest();
+        session = kernel.beginSession( PermissionsFixture.allPermissions() );
         testSupport.beforeEachTest();
         cursors = kernel.cursors();
-        read = kernel.beginTransaction();
+        tx = session.beginTransaction();
+        token = session.token();
+        read = tx.dataRead();
+        indexRead = tx.indexRead();
+        schemaRead = tx.schemaRead();
     }
 
     @After
     public void closeTransaction() throws Exception
     {
-        read.success();
-        read.close();
+        tx.commit();
+        session.close();
     }
 
     @AfterClass
@@ -80,7 +89,6 @@ public abstract class KernelAPIReadTestBase<G extends KernelAPIReadTestSupport>
             testSupport.tearDown();
             folder.delete();
             testSupport = null;
-            kernel = null;
         }
     }
 }
