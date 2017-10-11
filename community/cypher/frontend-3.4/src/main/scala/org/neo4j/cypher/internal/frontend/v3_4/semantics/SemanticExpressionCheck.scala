@@ -264,7 +264,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:ShortestPathExpression =>
         SemanticPatternCheck.declareVariables(Pattern.SemanticContext.Expression)(x.pattern) chain
           SemanticPatternCheck.check(Pattern.SemanticContext.Expression)(x.pattern) chain
-          specifyType(CTList(CTPath), x)
+          specifyType(if (x.pattern.single) CTPath else CTList(CTPath), x)
 
       case x:PatternExpression =>
         SemanticPatternCheck.check(Pattern.SemanticContext.Expression, x.pattern) chain

@@ -89,6 +89,7 @@ trait ListSupport {
     case x: Map[_, _]       => Iterable(x)
     case x: JavaMap[_, _]   => Iterable(x.asScala)
     case x: Traversable[_]  => x.toIterable
+    case x: Iterator[_]     => x.toIterable
     case x: JavaIterable[_] => x.asScala.map {
       case y: JavaMap[_, _] => y.asScala
       case y                => y
