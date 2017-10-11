@@ -286,6 +286,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     case _ => Double.MaxValue
   }
 
+  private val nodeIndexSeekCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = {
+    case (_: AllNodesScan, _) => 1000000000.0
+    case (_: NodeIndexSeek, _) => 0.1
+    case (Expand(plan, _, _, _, _, _, _), input) => nodeIndexSeekCost((plan, input))
+    case (Selection(_, plan), input) => nodeIndexSeekCost((plan, input))
+    case _ => 1000.0
+  }
+
   test("should plan index scan for exists(n.prop)") {
     implicit val plan = new given {
       indexOn("Awesome", "prop")
@@ -722,4 +730,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan should equal(distinct)
   }
 
+  test("should use transitive closure to figure out we can use index") {
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexSeekCost
+    } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE a.name = b.prop AND b.prop = 42 RETURN b")._2 should beLike {
+      case Selection(_, Expand(NodeIndexSeek(IdName("a"), _, _, _, _), _, _, _, _, _, _)) => ()
+    }
+  }
 }
