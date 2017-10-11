@@ -31,7 +31,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   var nodeC: Node = _
   var nodeD: Node = _
 
-  override def databaseConfig = Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false")
+  override def databaseConfig() = Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false")
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -39,6 +39,72 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     nodeB = createLabeledNode("B")
     nodeC = createLabeledNode("C")
     nodeD = createLabeledNode("D")
+  }
+
+  test("shortest path in a with clause") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH shortestPath((a)-[:REL]->(b)) AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List(List(nodeA, nodeB)))
+  }
+
+  test("shortest path in a with clause and no paths found") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH shortestPath((a)-[:XXX]->(b)) AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List(null))
+  }
+
+  test("all shortest paths in a with clause") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH allShortestPaths((a)-[:REL]->(b)) AS p
+        | UNWIND p AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List(List(nodeA, nodeB)))
+  }
+
+  test("all shortest paths in a with clause and no paths found") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH allShortestPaths((a)-[:XXX]->(b)) AS p
+        | UNWIND p AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List.empty)
   }
 
   // THESE NEED TO BE REVIEWED FOR SEMANTIC CORRECTNESS
