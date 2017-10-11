@@ -42,15 +42,20 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     private final Groups groups = new Groups();
     private final IdType idType;
     private final String className = getClass().getSimpleName();
+    private final float factorNodeDuplicates;
+    private final float factorBadRelationships;
 
     public SimpleDataGenerator( Header nodeHeader, Header relationshipHeader, long randomSeed,
-            long nodeCount, int labelCount, int relationshipTypeCount, IdType idType )
+            long nodeCount, int labelCount, int relationshipTypeCount, IdType idType,
+            float factorNodeDuplicates, float factorBadRelationships )
     {
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
         this.randomSeed = randomSeed;
         this.nodeCount = nodeCount;
         this.idType = idType;
+        this.factorNodeDuplicates = factorNodeDuplicates;
+        this.factorBadRelationships = factorBadRelationships;
         this.labels = new Distribution<>( tokens( "Label", labelCount ) );
         this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
     }
@@ -60,7 +65,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
         return batch -> new SimpleDataGeneratorBatch<>( nodeHeader, batch.getStart(), randomSeed + batch.getStart(),
                 nodeCount, labels, relationshipTypes,
                 new InputNodeDeserialization( nodeHeader, SimpleDataGenerator.this, groups, idType.idsAreExternal() ),
-                new InputNode[batch.getSize()] ).get();
+                new InputNode[batch.getSize()], factorNodeDuplicates, factorBadRelationships ).get();
     }
 
     public Function<Range,InputRelationship[]> relationships()
@@ -68,7 +73,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
         return batch -> new SimpleDataGeneratorBatch<>( relationshipHeader, batch.getStart(),
                 randomSeed + batch.getStart(), nodeCount, labels, relationshipTypes,
                 new InputRelationshipDeserialization( relationshipHeader, SimpleDataGenerator.this, groups ),
-                new InputRelationship[batch.getSize()] ).get();
+                new InputRelationship[batch.getSize()], factorNodeDuplicates, factorBadRelationships ).get();
     }
 
     private static String[] tokens( String prefix, int count )

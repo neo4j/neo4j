@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
@@ -83,12 +84,27 @@ public class QuickImport
         Configuration config = COMMAS;
 
         Extractors extractors = new Extractors( config.arrayDelimiter() );
-        IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
+        IdType idType = IdType.valueOf( args.get( "id-type", IdType.INTEGER.name() ) );
 
         Header nodeHeader = parseNodeHeader( args, idType, extractors );
         Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
 
+        Config dbConfig;
+        String dbConfigFileName = args.get( ImportTool.Options.DATABASE_CONFIG.key(), null );
+        if ( dbConfigFileName != null )
+        {
+            dbConfig = new Config.Builder().withFile( new File( dbConfigFileName ) ).build();
+        }
+        else
+        {
+            dbConfig = Config.defaults();
+        }
+
+        boolean highIo = args.getBoolean( ImportTool.Options.HIGH_IO.key() );
+
         FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
+        long pageCacheMemory = args.getNumber( "pagecache-memory",
+                org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY ).longValue();
         org.neo4j.unsafe.impl.batchimport.Configuration importConfig =
                 new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
@@ -103,14 +119,29 @@ public class QuickImport
             {
                 return args.getNumber( dense_node_threshold.name(), DEFAULT.denseNodeThreshold() ).intValue();
             }
+
+            @Override
+            public boolean parallelRecordReadsWhenWriting()
+            {
+                return highIo;
+            }
+
+            @Override
+            public long pageCacheMemory()
+            {
+                return pageCacheMemory;
+            }
         };
 
+        float factorBadNodeData = args.getNumber( "factor-bad-node-data", 0 ).floatValue();
+        float factorBadRelationshipData = args.getNumber( "factor-bad-relationship-data", 0 ).floatValue();
+
         SimpleDataGenerator generator = new SimpleDataGenerator( nodeHeader, relationshipHeader, randomSeed,
-                nodeCount, labelCount, relationshipTypeCount, idType );
+                nodeCount, labelCount, relationshipTypeCount, idType, factorBadNodeData, factorBadRelationshipData );
         Input input = new DataGeneratorInput(
                 nodeCount, relationshipCount,
                 generator.nodes(), generator.relationships(),
-                idType, silentBadCollector( 0 ) );
+                idType, silentBadCollector( BadCollector.UNLIMITED_TOLERANCE ) );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
@@ -122,7 +153,7 @@ public class QuickImport
             else
             {
                 consumer = new ParallelBatchImporter( dir, fileSystem, importConfig,
-                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), Config.defaults() );
+                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), dbConfig );
             }
             consumer.doImport( input );
         }
