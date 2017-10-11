@@ -41,6 +41,8 @@ import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
 
+import scala.collection.immutable
+
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
                          monitors: Monitors,
@@ -355,7 +357,13 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Union(_, _) =>
         def overlaps(toCheck: PipelineInformation): Boolean = {
           pipeline.mapSlot {
-            case (k, s) => s == toCheck.get(k).get
+            //For long slots we need to make sure both offset and types match
+            //e.g we cannot allow mixing a node long slot with a relationship
+            //longslot
+            case (k, s: LongSlot) => s == toCheck.get(k).get
+            //For refslot is is ok that types etc differs, just make sure
+            //they have the same offset
+            case (k, s: RefSlot) => s.offset == toCheck.get(k).get.offset
           }.forall(_ == true)
         }
         val lhsInfo = pipelines(lhs.id)
@@ -409,15 +417,20 @@ object SlottedPipeBuilder {
                         out: PipelineInformation) = {
     //find columns where output is a reference slot but where the input is a long slot
     def findColums(input: PipelineInformation) = {
-      val slots = out.mapSlot {
-        case (k, slot: RefSlot) => input.get(k).get match {
+      val slots: immutable.Seq[LongSlot] = out.mapSlot {
+        case (k, _: RefSlot) => input.get(k).get match {
           case ls: LongSlot => Some(ls)
           case _ => None
         }
         case _ => None
       }.flatten.toIndexedSeq
-      slots.zip(createProjectionsForResult(slots.map(_.name), input).map(_._2)).toMap
+
+      val expressions: Seq[Expression] = createProjectionsForResult(slots.map(_.name), input).map(_._2)
+
+      //ZIP [slot1, slot2,...] with [e1, e2, ...] to get a mapping from slot to expression
+      slots.zip(expressions).toMap
     }
+
     //Compute how to convert input to output pipeline
     val expressions = findColums(lhsInfo) ++ findColums(rhsInfo)
     val mapSlots: Iterable[(ExecutionContext, ExecutionContext, PipelineInformation, QueryState) => Unit] = out.mapSlot {
