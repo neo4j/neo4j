@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.graphdb.QueryExecutionException
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -83,5 +84,14 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
         Map("name" -> "Actor 1", "movies" -> Seq(
           Map("title" -> "Movie 2"),
           Map("title" -> "Movie 1"))))))
+  }
+
+  test("not(), when right of a =, should give a helpful error message") {
+    val query = "RETURN true = not(42 = 32)"
+
+    val thrown = intercept[QueryExecutionException] {
+      graph.execute(query)
+    }
+    thrown.getMessage should include("Unknown function 'not'. If you intended to use the negation expression, surround it with parentheses.")
   }
 }
