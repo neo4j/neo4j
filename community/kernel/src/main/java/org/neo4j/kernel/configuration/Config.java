@@ -571,11 +571,11 @@ public class Config implements DiagnosticsProvider, Configuration
      * @implNote No migration or config validation is done. If you need this you have to refactor this method.
      *
      * @param setting The setting to set to the specified value.
-     * @param value The new value to set, passing {@code null} or empty should reset the value back to default value.
+     * @param newValue The new value to set, passing {@code null} or empty should reset the value back to default value.
      * @throws IllegalArgumentException if the provided setting is unknown or not dynamic.
      * @throws InvalidSettingException if the value is not formatted correctly.
      */
-    public void updateDynamicSetting( String setting, String value ) throws IllegalArgumentException, InvalidSettingException
+    public void updateDynamicSetting( String setting, String newValue ) throws IllegalArgumentException, InvalidSettingException
     {
         // Make sure the setting is valid and is marked as dynamic
         Optional<ConfigValue> option = findConfigValue( setting );
@@ -591,19 +591,22 @@ public class Config implements DiagnosticsProvider, Configuration
             throw new IllegalArgumentException( "Setting is not dynamic and can not be changed at runtime" );
         }
 
-        if ( value == null || value.isEmpty() )
+        String oldValue;
+
+        if ( newValue == null || newValue.isEmpty() )
         {
             // Empty means we want to delete the configured value and fallback to the default value
-            params.remove( setting );
+            oldValue = params.remove( setting );
             if ( overriddenDefaults.containsKey( setting ) )
             {
                 params.put( setting, overriddenDefaults.get( setting ) );
             }
+            newValue = getDefaultValueOf( setting );
         }
         else
         {
             // Change setting, make sure it's valid
-            Map<String,String> newEntry = stringMap( setting, value );
+            Map<String,String> newEntry = stringMap( setting, newValue );
             List<SettingValidator> settingValidators = configOptions.stream()
                     .map( ConfigOptions::settingGroup )
                     .collect( Collectors.toList() );
@@ -612,8 +615,16 @@ public class Config implements DiagnosticsProvider, Configuration
                 validator.validate( newEntry, ignore -> {} ); // Throws if invalid
             }
 
-            params.put( setting, value );
+            oldValue = getDefaultValueOf( setting );
+
+            params.put( setting, newValue );
         }
+        log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
+    }
+
+    private String getDefaultValueOf( String setting )
+    {
+        return getValue( setting ).map( Object::toString ).orElse( "<no default>" );
     }
 
     private Optional<ConfigValue> findConfigValue( String setting )

@@ -33,6 +33,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.DocumentedDefaultValue;
+import org.neo4j.configuration.Dynamic;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
@@ -352,5 +353,29 @@ public class ConfigTest
         assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
         config.augmentDefaults( MySettingsWithDefaults.hello, "new default" );
         assertEquals( "new default", config.get( MySettingsWithDefaults.hello ) );
+    }
+
+    public static class MyDynamicSettings implements LoadableConfig
+    {
+        @Dynamic
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+    }
+
+    @Test
+    public void updateDynamicShouldLogChanges() throws Exception
+    {
+        Config config = Config.builder().withConfigClasses( Collections.singletonList( new MyDynamicSettings() ) ).build();
+
+        Log log = mock( Log.class );
+        config.setLogger( log );
+
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false" );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "true" );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "" );
+
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "false" );
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "false", "true" );
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "true" );
+        verifyNoMoreInteractions( log );
     }
 }
