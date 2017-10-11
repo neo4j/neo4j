@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Where
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, Condition}
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.{Rewriter, topDown}
+import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp, topDown}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.annotation.tailrec
@@ -55,23 +55,51 @@ case object transitiveClosure extends StatementRewriter {
     }
 
     //Collects property equalities, e.g `a.prop = 42`
-    private def collect(e: Expression): Map[Property, Expression] = e.treeFold(Map.empty[Property, Expression]) {
+    private def collect(e: Expression): Closures = e.treeFold(Closures.empty) {
       case _: Or => (acc) => (acc, None)
       case _: And => (acc) => (acc, Some(identity))
-      case Equals(_: Property, _: Property) => (acc) => (acc, None)
-      case Equals(p: Property, other) => (acc) => (acc + (p -> other), None)
+      case Equals(p1: Property, p2: Property) => (acc) => (acc.withEquivalence(p1 -> p2), None)
+      case Equals(p: Property, other) => (acc) => (acc.withMapping(p -> other), None)
     }
 
-    private val whereRewriter: Rewriter = topDown(Rewriter.lift {
+    //NOTE that this might introduce duplicate predicates, however at a later rewrite
+    //when AND is turned into ANDS we remove all duplicates
+    private val whereRewriter: Rewriter = bottomUp(Rewriter.lift {
       case and@And(lhs, rhs) =>
-        val inner = andRewriter(collect(lhs) ++ collect(rhs))
-        and.copy(lhs = lhs.endoRewrite(inner), rhs = rhs.endoRewrite(inner))(and.position)
+        val closures = collect(lhs) ++ collect(rhs)
+        val inner = andRewriter(closures)
+        val newAnd = and.copy(lhs = lhs.endoRewrite(inner), rhs = rhs.endoRewrite(inner))(and.position)
+
+        //ALSO take care of case WHERE b.prop = a.prop AND b.prop = 42
+        //turns into WHERE b.prop = a.prop AND b.prop = 42 AND a.prop = 42
+        closures.emergentEqualities.foldLeft(newAnd) {
+          case (acc, (prop, expr)) => And(acc, Equals(prop, expr)(acc.position))(acc.position)
+        }
     })
 
-    private def andRewriter(map: Map[Property, Expression]): Rewriter = topDown(Rewriter.lift {
-      case equals@Equals(p1: Property, p2: Property) if map.contains(p2) =>
-        equals.copy(rhs = map(p2))(equals.position)
+    private def andRewriter(closures: Closures): Rewriter = bottomUp(Rewriter.lift {
+      case equals@Equals(p1: Property, p2: Property) if closures.mapping.contains(p2) =>
+        equals.copy(rhs = closures.mapping(p2))(equals.position)
     })
+  }
+
+  case class Closures(mapping: Map[Property, Expression] = Map.empty,
+                      equivalence: Map[Property, Property] = Map.empty) {
+
+    def withMapping(e:(Property,Expression)): Closures = copy(mapping = mapping + e)
+    def withEquivalence(e:(Property,Property)): Closures = copy(equivalence = equivalence + e )
+
+    def emergentEqualities: Map[Property, Expression] = {
+      val sharedKeys = equivalence.keySet.intersect(mapping.keySet)
+
+      sharedKeys.map(k => equivalence(k) -> mapping(k)).toMap -- mapping.keySet
+    }
+
+    def ++(other: Closures): Closures = copy(mapping ++ other.mapping, equivalence ++ other.equivalence)
+  }
+
+  object Closures {
+    def empty = Closures()
   }
 
 }

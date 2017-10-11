@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{rewriteEqualityToInPredicate, transitiveClosure}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, transitiveClosure}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -36,8 +36,8 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("MATCH (a)-->(b) WHERE b.prop = a.prop AND b.prop = 42") {
     shouldRewrite(
-      "MATCH (a)-->(b) WHERE a.prop = b.prop AND b.prop = 42",
-      "MATCH (a)-->(b) WHERE a.prop = 42 AND b.prop = 42")
+      "MATCH (a)-->(b) WHERE b.prop = a.prop AND b.prop = 42",
+      "MATCH (a)-->(b) WHERE b.prop = 42 AND a.prop = 42")
   }
 
   test("MATCH (a)-->(b) WHERE a.prop = b.prop OR b.prop = 42") {
@@ -73,9 +73,13 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
     val expected = parser.parse(to).asInstanceOf[Query]
 
     val input = LogicalPlanState(null, null, null, Some(original))
-    val result = transitiveClosure.transform(input, ContextHelper.create())
+    //We use CNFNormalizer to get it to the canonical form without duplicates
+    val result = (transitiveClosure andThen  CNFNormalizer).transform(input, ContextHelper.create())
 
-    result.statement should equal(expected)
+    //We must also use CNFNormalizer on the expected to get the AND -> ANDS rewrite
+    val expectedInput = LogicalPlanState(null, null, null, Some(expected))
+    val expectedResult = CNFNormalizer.transform(expectedInput, ContextHelper.create())
+    result.statement() should equal(expectedResult.statement())
   }
 
   private def shouldNotRewrite(q: String) {
