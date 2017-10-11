@@ -101,7 +101,7 @@ object expandSolverStep {
         val legacyPredicates = extractLegacyPredicates(availablePredicates, patternRel, nodeId)
 
         context.logicalPlanProducer.planVarExpand(
-          left = sourcePlan,
+          source = sourcePlan,
           from = nodeId,
           dir = dir,
           to = otherSide,

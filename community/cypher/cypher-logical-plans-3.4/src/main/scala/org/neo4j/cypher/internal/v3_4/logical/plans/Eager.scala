@@ -21,13 +21,16 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Eager(inner: LogicalPlan)
+/**
+  * Consumes and buffers all source rows, and then produces them.
+  */
+case class Eager(source: LogicalPlan)
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with EagerLogicalPlan {
 
-  override def availableSymbols: Set[IdName] = inner.availableSymbols
+  override def availableSymbols: Set[IdName] = source.availableSymbols
 
-  override def lhs: Option[LogicalPlan] = Some(inner)
+  override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None
 }

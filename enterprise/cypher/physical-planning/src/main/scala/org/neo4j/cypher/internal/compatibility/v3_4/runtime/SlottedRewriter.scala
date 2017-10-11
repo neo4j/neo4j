@@ -68,7 +68,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
         The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
         We need to use the incoming pipeline info for predicate rewriting
          */
-        val incomingPipeline = pipelineInformation(oldPlan.left.assignedId)
+        val incomingPipeline = pipelineInformation(oldPlan.source.assignedId)
         val rewriter = rewriteCreator(incomingPipeline, oldPlan)
 
         val newNodePredicate = oldPlan.nodePredicate.endoRewrite(rewriter)

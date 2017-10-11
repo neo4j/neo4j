@@ -22,10 +22,15 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Distinct(left: LogicalPlan,
+/**
+  * Distinct produces source rows without changing them, but omitting rows
+  * which have been produced before. That is, the order of rows is unchanged, but each
+  * unique combination of values is only produced once.
+  */
+case class Distinct(source: LogicalPlan,
                     groupingExpressions: Map[String, Expression])
                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
-  override def lhs = Some(left)
+  override def lhs = Some(source)
 
   override def rhs: Option[LogicalPlan] = None
 

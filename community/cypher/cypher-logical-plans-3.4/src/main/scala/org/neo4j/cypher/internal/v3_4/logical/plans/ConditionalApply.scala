@@ -21,11 +21,25 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * This is a variation of apply, which only executes 'right' on a given condition.
+  *
+  * for ( leftRow <- left ) {
+  *   if ( condition( leftRow ) ) {
+  *     produce leftRow
+  *   } else {
+  *     right.setArgument( leftRow )
+  *     for ( rightRow <- right ) {
+  *       produce rightRow
+  *     }
+  *   }
+  * }
+  */
 case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
+  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols ++ items
 }

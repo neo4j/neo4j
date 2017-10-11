@@ -22,7 +22,12 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
-case class NodeCountFromCountStore(idName: IdName, labelName: List[Option[LabelName]], argumentIds: Set[IdName])
+/**
+  * Produce a single row with the contents of argument and a new value 'idName'. For each label in 'labelNames' the
+  * number of nodes with that label is fetched from the counts store. These counts are multiplied together, and the
+  * result is assigned to 'idName'
+  */
+case class NodeCountFromCountStore(idName: IdName, labelNames: List[Option[LabelName]], argumentIds: Set[IdName])
                                     (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 

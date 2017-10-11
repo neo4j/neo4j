@@ -28,19 +28,19 @@ case object cleanUpEager extends Rewriter {
 
     // E E L => E L
     case eager@Eager(Eager(source)) =>
-      eager.copy(inner = source)(eager.solved)
+      eager.copy(source = source)(eager.solved)
 
     // E U => U E
     case eager@Eager(unwind@UnwindCollection(source, _, _)) =>
-      unwind.copy(left = eager.copy(inner = source)(eager.solved))(eager.solved)
+      unwind.copy(left = eager.copy(source = source)(eager.solved))(eager.solved)
 
     // E LCSV => LCSV E
     case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _)) =>
-      loadCSV.copy(source = eager.copy(inner = source)(eager.solved))(eager.solved)
+      loadCSV.copy(source = eager.copy(source = source)(eager.solved))(eager.solved)
 
     // LIMIT E => E LIMIT
     case limit@Limit(eager@Eager(source), _, _8) =>
-      eager.copy(inner = limit.copy(left = source)(limit.solved))(limit.solved)
+      eager.copy(source = limit.copy(source = source)(limit.solved))(limit.solved)
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

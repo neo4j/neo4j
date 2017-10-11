@@ -21,6 +21,10 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * For each nodeId in 'nodeIds', fetch the corresponding node. Produce one row with the contents of argument and
+  * the node (assigned to 'idName').
+  */
 case class NodeByIdSeek(idName: IdName, nodeIds: SeekableArgs, argumentIds: Set[IdName])
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {

@@ -22,6 +22,10 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
+/**
+  * Produce one row for every node in the graph labelled 'label'. This row contains the node (assigned to 'idName')
+  * and the contents of argument.
+  */
 case class NodeByLabelScan(idName: IdName, label: LabelName, argumentIds: Set[IdName])
                           (val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan {

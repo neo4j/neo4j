@@ -121,7 +121,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     Expand(left, from, dir, pattern.types, to, pattern.name, mode)(solved)
   }
 
-  def planVarExpand(left: LogicalPlan,
+  def planVarExpand(source: LogicalPlan,
                     from: IdName,
                     dir: SemanticDirection,
                     to: IdName,
@@ -136,12 +136,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     case l: VarPatternLength =>
       val projectedDir = projectedDirection(pattern, from, dir)
 
-      val solved = left.solved.amendQueryGraph(_
+      val solved = source.solved.amendQueryGraph(_
         .addPatternRelationship(pattern)
         .addPredicates(solvedPredicates: _*)
       )
       VarExpand(
-        left = left,
+        source = source,
         from = from,
         dir = dir,
         projectedDir = projectedDir,

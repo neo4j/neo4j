@@ -22,19 +22,21 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-// Argument is used inside of an Apply to feed the row from the LHS of the Apply to the leaf of the RHS
+/**
+  * Argument produces a single row with the contents of argument.
+  */
 case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
                     (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap)
   extends LogicalLeafPlan {
 
-  def availableSymbols = argumentIds
+  def availableSymbols: Set[IdName] = argumentIds
 
-  override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation) =
+  override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): Argument =
     copy(argumentIds)(newSolved)(typeInfo)
 
   override def copyPlan(): LogicalPlan = this.copy(argumentIds)(solved)(typeInfo).asInstanceOf[this.type]
 
-  override def dup(children: Seq[AnyRef]) = children.size match {
+  override def dup(children: Seq[AnyRef]): Argument.this.type = children.size match {
     case 1 =>
       copy(children.head.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]
   }

@@ -21,14 +21,17 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
-case class ErrorPlan(inner: LogicalPlan, exception: Exception)(val solved: PlannerQuery with CardinalityEstimation)
+/**
+  * Throws exception if evaluated.
+  */
+case class ErrorPlan(source: LogicalPlan, exception: Exception)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {
 
-  override val lhs: Option[LogicalPlan] = Some(inner)
+  override val lhs: Option[LogicalPlan] = Some(source)
 
   override val rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[IdName] = inner.availableSymbols
+  override def availableSymbols: Set[IdName] = source.availableSymbols
 
-  override def strictness: StrictnessMode = inner.strictness
+  override def strictness: StrictnessMode = source.strictness
 }

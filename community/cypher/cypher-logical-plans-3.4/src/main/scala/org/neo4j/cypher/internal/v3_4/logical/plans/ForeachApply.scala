@@ -20,13 +20,26 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * ForeachApply is a side-effect type apply, which operates on a list value. Each left row is used to compute a
+  * list, and each value in this list applied as the argument to right. Left rows are produced unchanged.
+  *
+  * for ( leftRow <- left)
+  *   list <- expression.evaluate( leftRow )
+  *   for ( value <- list )
+  *     right.setArgument( value )
+  *     for ( rightRow <- right )
+  *       // just consume
+  *
+  *   produce leftRow
+  */
 case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
+  def availableSymbols: Set[IdName] = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
 }
