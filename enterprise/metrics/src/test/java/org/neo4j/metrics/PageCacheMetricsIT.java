@@ -69,6 +69,7 @@ public class PageCacheMetricsIT
     {
         metricsDirectory = testDirectory.directory( "metrics" );
         database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+                .setConfig( MetricsSettings.metricsEnabled, Settings.FALSE  )
                 .setConfig( MetricsSettings.neoPageCacheEnabled, Settings.TRUE  )
                 .setConfig( MetricsSettings.csvEnabled, Settings.TRUE )
                 .setConfig( MetricsSettings.csvInterval, "100ms" )

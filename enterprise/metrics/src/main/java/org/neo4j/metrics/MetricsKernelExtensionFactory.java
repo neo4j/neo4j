@@ -19,12 +19,14 @@
  */
 package org.neo4j.metrics;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.metrics.source.Neo4jMetricsBuilder;
+import org.neo4j.scheduler.JobScheduler;
 
 public class MetricsKernelExtensionFactory extends KernelExtensionFactory<MetricsKernelExtensionFactory.Dependencies>
 {
@@ -33,6 +35,10 @@ public class MetricsKernelExtensionFactory extends KernelExtensionFactory<Metric
         Config configuration();
 
         LogService logService();
+
+        FileSystemAbstraction fileSystemAbstraction();
+
+        JobScheduler scheduler();
     }
 
     public MetricsKernelExtensionFactory()

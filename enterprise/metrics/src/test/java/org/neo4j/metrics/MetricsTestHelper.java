@@ -46,7 +46,7 @@ public class MetricsTestHelper
         return readLongValueAndAssert( metricFile, ( one, two ) -> true );
     }
 
-    static long readLongValueAndAssert( File metricFile, BiPredicate<Long,Long> assumption )
+    public static long readLongValueAndAssert( File metricFile, BiPredicate<Long,Long> assumption )
             throws IOException, InterruptedException
     {
         return readValueAndAssert( metricFile, 0L, Long::parseLong, assumption );

@@ -37,6 +37,8 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -50,6 +52,7 @@ public class CsvOutputTest
     private final LifeRule life = new LifeRule();
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final JobScheduler jobScheduler = new OnDemandJobScheduler();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( life );
@@ -73,7 +76,7 @@ public class CsvOutputTest
                 MetricsSettings.csvInterval.name(), "10ms",
                 MetricsSettings.csvPath.name(), "the-metrics-dir",
                 GraphDatabaseSettings.neo4j_home.name(), home.getAbsolutePath() );
-        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
+        life.add( createCsvOutput( config ) );
 
         // WHEN
         life.start();
@@ -91,13 +94,18 @@ public class CsvOutputTest
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
                 MetricsSettings.csvPath.name(), outputFPath.getAbsolutePath() );
-        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
+        life.add( createCsvOutput( config ) );
 
         // WHEN
         life.start();
 
         // THEN
         waitForFileToAppear( outputFPath );
+    }
+
+    private CsvOutput createCsvOutput( Config config )
+    {
+        return new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext, fileSystemRule, jobScheduler );
     }
 
     private Config config( String... keysValues )

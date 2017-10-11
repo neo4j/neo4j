@@ -28,12 +28,17 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
+import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -52,7 +57,7 @@ public class MetricsSettings implements LoadableConfig
     @Description( "The default enablement value for all the supported metrics. Set this to `false` to turn off all " +
                   "metrics by default. The individual settings can then be used to selectively re-enable specific " +
                   "metrics." )
-    public static Setting<Boolean> metricsEnabled = setting( "metrics.enabled", BOOLEAN, FALSE );
+    public static Setting<Boolean> metricsEnabled = setting( "metrics.enabled", BOOLEAN, TRUE );
 
     @Description( "The default enablement value for all Neo4j specific support metrics. Set this to `false` to turn " +
                   "off all Neo4j specific metrics by default. The individual `metrics.neo4j.*` metrics can then be " +
@@ -120,7 +125,7 @@ public class MetricsSettings implements LoadableConfig
 
     // CSV settings
     @Description( "Set to `true` to enable exporting metrics to CSV files" )
-    public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", BOOLEAN, FALSE );
+    public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", BOOLEAN, TRUE );
 
     @Description( "The target location of the CSV files: a path to a directory wherein a CSV file per reported " +
                   "field  will be written." )
@@ -129,6 +134,15 @@ public class MetricsSettings implements LoadableConfig
     @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
                   "the CSV files." )
     public static Setting<Duration> csvInterval = setting( "metrics.csv.interval", DURATION, "3s" );
+
+    @Description( "The file size in bytes at which the csv files will auto-rotate. If set to zero then no " +
+            "rotation will occur. Accepts a binary suffix `k`, `m` or `g`." )
+    public static final Setting<Long> csvRotationThreshold = buildSetting( "metrics.csv.rotation.size",
+            BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
+
+    @Description( "Maximum number of history files for the csv files." )
+    public static final Setting<Integer> csvMaxArchives = buildSetting( "metrics.csv.rotation.keep_number",
+            INTEGER, "7" ).constraint( min( 1 ) ).build();
 
     // Graphite settings
     @Description( "Set to `true` to enable exporting metrics to Graphite." )

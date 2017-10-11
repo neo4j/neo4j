@@ -23,11 +23,13 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.metrics.MetricsSettings;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.graphiteEnabled;
@@ -41,15 +43,19 @@ public class EventReporterBuilder
     private final Log logger;
     private final KernelContext kernelContext;
     private final LifeSupport life;
+    private FileSystemAbstraction fileSystem;
+    private JobScheduler scheduler;
 
     public EventReporterBuilder( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext,
-            LifeSupport life )
+            LifeSupport life, FileSystemAbstraction fileSystem, JobScheduler scheduler )
     {
         this.config = config;
         this.registry = registry;
         this.logger = logger;
         this.kernelContext = kernelContext;
         this.life = life;
+        this.fileSystem = fileSystem;
+        this.scheduler = scheduler;
     }
 
     public CompositeEventReporter build()
@@ -58,7 +64,7 @@ public class EventReporterBuilder
         final String prefix = createMetricsPrefix( config );
         if ( config.get( csvEnabled ) )
         {
-            CsvOutput csvOutput = new CsvOutput( config, registry, logger, kernelContext );
+            CsvOutput csvOutput = new CsvOutput( config, registry, logger, kernelContext, fileSystem, scheduler );
             reporter.add( csvOutput );
             life.add( csvOutput );
         }
