@@ -34,7 +34,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   var nodeC: Node = _
   var nodeD: Node = _
 
-  override def databaseConfig = Map(
+  override def databaseConfig() = Map(
     GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false",
     GraphDatabaseSettings.cypher_idp_solver_duration_threshold -> "10000")
   // Added an increased duration to make up for the test running in parallel, should preferably be solved in a different way
@@ -45,6 +45,74 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     nodeB = createLabeledNode("B")
     nodeC = createLabeledNode("C")
     nodeD = createLabeledNode("D")
+  }
+
+  // TODO The next four tests are expected to work with 3.1 and 3.2 and rule planner (not 2.3!) as soon as the dependencies are updated
+  val excludedConfigs = Configs.Version3_2 + Configs.Version3_1 + Configs.AllRulePlanners
+  test("shortest path in a with clause") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH shortestPath((a)-[:REL]->(b)) AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List(List(nodeA, nodeB)))
+  }
+
+  test("shortest path in a with clause and no paths found") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH shortestPath((a)-[:XXX]->(b)) AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List(null))
+  }
+
+  test("all shortest paths in a with clause") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH allShortestPaths((a)-[:REL]->(b)) AS p
+        | UNWIND p AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List(List(nodeA, nodeB)))
+  }
+
+  test("all shortest paths in a with clause and no paths found") {
+
+    relate(nodeA, nodeB)
+
+    val query =
+      """
+        | MATCH (a:A), (b:B)
+        | WITH allShortestPaths((a)-[:XXX]->(b)) AS p
+        | UNWIND p AS x
+        | RETURN nodes(x)
+      """.stripMargin
+
+    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+
+    result should equal(List.empty)
   }
 
   // THESE NEED TO BE REVIEWED FOR SEMANTIC CORRECTNESS
