@@ -19,19 +19,21 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+
 /**
  * The main way to access a legacy index. Even pure reads will need to get a hold of an object of this class
  * and to a query on. Blending of transaction state must also be handled within this object.
  */
 public interface LegacyIndex
 {
-    LegacyIndexHits get( String key, Object value );
+    LegacyIndexHits get( String key, Object value ) throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits query( String key, Object queryOrQueryObject );
+    LegacyIndexHits query( String key, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits query( Object queryOrQueryObject );
+    LegacyIndexHits query( Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException;
 
-    void addNode( long entity, String key, Object value );
+    void addNode( long entity, String key, Object value ) throws LegacyIndexNotFoundKernelException;
 
     void remove( long entity, String key, Object value );
 
@@ -42,13 +44,17 @@ public interface LegacyIndex
     void drop();
 
     // Relationship-index-specific accessors
-    LegacyIndexHits get( String key, Object value, long startNode, long endNode );
+    LegacyIndexHits get( String key, Object value, long startNode, long endNode )
+            throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode );
+    LegacyIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode )
+            throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode );
+    LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode )
+            throws LegacyIndexNotFoundKernelException;
 
-    void addRelationship( long entity, String key, Object value, long startNode, long endNode );
+    void addRelationship( long entity, String key, Object value, long startNode, long endNode )
+            throws LegacyIndexNotFoundKernelException;
 
     void removeRelationship( long entity, String key, Object value, long startNode, long endNode );
 

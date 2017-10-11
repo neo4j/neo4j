@@ -44,7 +44,6 @@ public class LuceneKernelExtension extends LifecycleAdapter
     {
         this( storeDir, config, indexStore, fileSystemAbstraction, indexProviders, OperationalMode.single );
     }
-
     public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders, OperationalMode operationalMode )
     {
@@ -59,7 +58,6 @@ public class LuceneKernelExtension extends LifecycleAdapter
     @Override
     public void init()
     {
-
         LuceneIndexImplementation indexImplementation =
                 new LuceneIndexImplementation( storeDir, config, indexStore, fileSystemAbstraction, operationalMode );
         indexProviders.registerIndexProvider( LuceneIndexImplementation.SERVICE_NAME, indexImplementation );

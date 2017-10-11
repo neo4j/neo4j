@@ -37,7 +37,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -237,8 +237,8 @@ public class TestIndexDeletion
         }
         catch ( ExecutionException e )
         {
-            assertThat( e.getCause(), instanceOf( IllegalStateException.class ) );
-            assertThat( e.getCause().getMessage(), containsString( "Unknown index" ) );
+            assertThat( e.getCause(), instanceOf( NotFoundException.class ) );
+            assertThat( e.getCause().getMessage().toLowerCase(), containsString( "index 'index' doesn't exist" ) );
         }
 
         secondTx.rollback();

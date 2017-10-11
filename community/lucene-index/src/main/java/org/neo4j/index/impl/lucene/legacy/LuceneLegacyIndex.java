@@ -20,9 +20,6 @@
 package org.neo4j.index.impl.lucene.legacy;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -53,6 +50,7 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.util.Validators;
@@ -76,7 +74,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
     final IndexType type;
 
     protected final LuceneTransactionState transaction;
-    private final LuceneDataSource dataSource;
+    protected final LuceneDataSource dataSource;
     protected final IndexCommandFactory commandFactory;
 
     LuceneLegacyIndex( LuceneDataSource dataSource, IndexIdentifier identifier, LuceneTransactionState transaction,
@@ -104,7 +102,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
      * entity.
      */
     @Override
-    public void addNode( long entityId, String key, Object value )
+    public void addNode( long entityId, String key, Object value ) throws LegacyIndexNotFoundKernelException
     {
         assertValidKey( key );
         assertValidValue( value );
@@ -199,7 +197,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
     }
 
     @Override
-    public LegacyIndexHits get( String key, Object value )
+    public LegacyIndexHits get( String key, Object value ) throws LegacyIndexNotFoundKernelException
     {
         return query( type.get( key, value ), key, value, null );
     }
@@ -218,7 +216,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
      * {@link QueryContext#tradeCorrectnessForSpeed()}.
      */
     @Override
-    public LegacyIndexHits query( String key, Object queryOrQueryObject )
+    public LegacyIndexHits query( String key, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
     {
         QueryContext context = queryOrQueryObject instanceof QueryContext ?
                 (QueryContext) queryOrQueryObject : null;
@@ -232,13 +230,14 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
      * @see #query(String, Object)
      */
     @Override
-    public LegacyIndexHits query( Object queryOrQueryObject )
+    public LegacyIndexHits query( Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
     {
         return query( null, queryOrQueryObject );
     }
 
     protected LegacyIndexHits query( Query query, String keyForDirectLookup,
             Object valueForDirectLookup, QueryContext additionalParametersOrNull )
+            throws LegacyIndexNotFoundKernelException
     {
         List<EntityId> simpleTransactionStateIds = new ArrayList<>();
         Collection<EntityId> removedIdsFromTransactionState = Collections.emptySet();
@@ -258,7 +257,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
                     transaction.getRemovedIds( this, query );
         }
         LegacyIndexHits idIterator = null;
-        IndexReference searcher = null;
+        IndexReference searcher;
         dataSource.getReadLock();
         try
         {
@@ -460,6 +459,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
 
         @Override
         public void addRelationship( long entityId, String key, Object value, long startNode, long endNode )
+                throws LegacyIndexNotFoundKernelException
         {
             assertValidKey( key );
             assertValidValue( value );
@@ -467,6 +467,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 oneValue = getCorrectValue( oneValue );
+                dataSource.assertValidType( key, oneValue, identifier );
                 transaction.add( this, entity, key, oneValue );
                 commandFactory.addRelationship( identifier.indexName, entityId, key, oneValue, startNode, endNode );
             }
@@ -474,6 +475,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
 
         @Override
         public LegacyIndexHits get( String key, Object valueOrNull, long startNode, long endNode )
+                throws LegacyIndexNotFoundKernelException
         {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
             if ( key != null && valueOrNull != null )
@@ -493,6 +495,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
 
         @Override
         public LegacyIndexHits query( String key, Object queryOrQueryObjectOrNull, long startNode, long endNode )
+                throws LegacyIndexNotFoundKernelException
         {
             QueryContext context = queryOrQueryObjectOrNull != null &&
                     queryOrQueryObjectOrNull instanceof QueryContext ?
@@ -551,6 +554,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
 
         @Override
         public LegacyIndexHits query( Object queryOrQueryObjectOrNull, long startNode, long endNode )
+                throws LegacyIndexNotFoundKernelException
         {
             return query( null, queryOrQueryObjectOrNull, startNode, endNode );
         }

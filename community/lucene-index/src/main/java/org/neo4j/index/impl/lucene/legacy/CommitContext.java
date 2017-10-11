@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+
 /**
  * This presents a context for each {@link LuceneCommand} when they are
  * committing its data.
@@ -50,7 +52,7 @@ class CommitContext implements Closeable
         this.recovery = isRecovery;
     }
 
-    void ensureWriterInstantiated()
+    void ensureWriterInstantiated() throws LegacyIndexNotFoundKernelException
     {
         if ( searcher == null )
         {

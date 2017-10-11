@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 class IndexTypeCache
@@ -37,21 +38,21 @@ class IndexTypeCache
         this.indexStore = indexStore;
     }
 
-    IndexType getIndexType( IndexIdentifier identifier, boolean recovery )
+    IndexType getIndexType( IndexIdentifier identifier, boolean recovery ) throws LegacyIndexNotFoundKernelException
     {
         Pair<Integer, IndexType> type = cache.get( identifier );
         Map<String, String> config = indexStore.get( identifier.entityType.entityClass(), identifier.indexName );
-        if ( type != null && config.hashCode() == type.first() )
-        {
-            return type.other();
-        }
         if ( config == null )
         {
             if ( recovery )
             {
                 return null;
             }
-            throw new IllegalStateException( "Unknown index " + identifier );
+            throw new LegacyIndexNotFoundKernelException( "Index '%s' doesn't exist.", identifier );
+        }
+        if ( type != null && config.hashCode() == type.first() )
+        {
+            return type.other();
         }
         type = Pair.of( config.hashCode(), IndexType.getIndexType( config ) );
         cache.put( identifier, type );

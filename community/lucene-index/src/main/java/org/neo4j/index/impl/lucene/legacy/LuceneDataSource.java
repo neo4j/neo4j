@@ -27,9 +27,11 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
@@ -43,9 +45,9 @@ import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,10 +60,12 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -151,6 +155,7 @@ public class LuceneDataSource extends LifecycleAdapter
     }
 
     public void assertValidType( String key, Object value, IndexIdentifier identifier )
+            throws LegacyIndexNotFoundKernelException
     {
         DocValuesType expectedType;
         String expectedTypeName;
@@ -166,18 +171,26 @@ public class LuceneDataSource extends LifecycleAdapter
         }
         Map<String,DocValuesType> stringDocValuesTypeMap = indexTypeMap.get( identifier );
         // If the index searcher has never been loaded, we need to load it now to populate the map.
-        if ( stringDocValuesTypeMap == null )
+        int iterations = 0; // Iterate a bit in case we race with an index drop or create.
+        while ( stringDocValuesTypeMap == null && iterations++ < 20 )
         {
+            // We don't use ensureInstantiated because we want to surface the exception in this case.
             getIndexSearcher( identifier ).close();
             stringDocValuesTypeMap = indexTypeMap.get( identifier );
         }
-        DocValuesType actualType;
 
-        actualType = stringDocValuesTypeMap.putIfAbsent( key, expectedType );
+        if ( stringDocValuesTypeMap == null )
+        {
+            // Looks like we are running into some adversarial racing, so let's just give up.
+            throw new LegacyIndexNotFoundKernelException( "Index '%s' doesn't exist.", identifier );
+        }
+
+        DocValuesType actualType = stringDocValuesTypeMap.putIfAbsent( key, expectedType );
         if ( actualType != null && !actualType.equals( expectedType ) )
         {
-            throw new IllegalArgumentException(
-                    String.format( "Cannot index '%s' for key '%s', since this key has been used to index another %s.", value, key, expectedTypeName ) );
+            throw new IllegalArgumentException( String.format(
+                    "Cannot index '%s' for key '%s', since this key has been used to index another %s.",
+                    value, key, expectedTypeName ) );
         }
     }
 
@@ -186,7 +199,7 @@ public class LuceneDataSource extends LifecycleAdapter
         return new File( storeDir, "index" );
     }
 
-    IndexType getType( IndexIdentifier identifier, boolean recovery )
+    IndexType getType( IndexIdentifier identifier, boolean recovery ) throws LegacyIndexNotFoundKernelException
     {
         return typeCache.getIndexType( identifier, recovery );
     }
@@ -276,7 +289,7 @@ public class LuceneDataSource extends LifecycleAdapter
         return TopFieldCollector.create( sorting, n, false, true, false );
     }
 
-    IndexReference getIndexSearcher( IndexIdentifier identifier )
+    IndexReference getIndexSearcher( IndexIdentifier identifier ) throws LegacyIndexNotFoundKernelException
     {
         assertNotClosed();
         IndexReference searcher = indexSearchers.get( identifier );
@@ -311,6 +324,7 @@ public class LuceneDataSource extends LifecycleAdapter
     }
 
     synchronized IndexReference syncGetIndexSearcher( IndexIdentifier identifier )
+            throws LegacyIndexNotFoundKernelException
     {
         try
         {
@@ -320,7 +334,9 @@ public class LuceneDataSource extends LifecycleAdapter
                 indexReference = indexReferenceFactory.createIndexReference( identifier );
                 indexSearchers.put( identifier, indexReference );
                 ConcurrentHashMap<String,DocValuesType> fieldTypes = new ConcurrentHashMap<>();
-                for ( LeafReaderContext leafReaderContext : indexReference.getSearcher().getTopReaderContext().leaves() )
+                IndexSearcher searcher = indexReference.getSearcher();
+                List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
+                for ( LeafReaderContext leafReaderContext : leaves )
                 {
                     for ( FieldInfo fieldInfo : leafReaderContext.reader().getFieldInfos() )
                     {
@@ -344,11 +360,11 @@ public class LuceneDataSource extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
-    private IndexReference refreshSearcherIfNeeded( IndexReference searcher )
+    private IndexReference refreshSearcherIfNeeded( IndexReference searcher ) throws LegacyIndexNotFoundKernelException
     {
         if ( searcher.checkAndClearStale() )
         {
@@ -434,16 +450,16 @@ public class LuceneDataSource extends LifecycleAdapter
         }
     }
 
-    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
-    { // Never include logical logs since they are of little importance
+    private ResourceIterator<File> listWritableStoreFiles() throws IOException
+    {
         final Collection<File> files = new ArrayList<>();
         final Collection<Pair<SnapshotDeletionPolicy,IndexCommit>> snapshots = new ArrayList<>();
         makeSureAllIndexesAreInstantiated();
-        for ( IndexReference writer : getAllIndexes() )
+        for ( IndexReference index : getAllIndexes() )
         {
-            SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getWriter().getConfig()
+            SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) index.getWriter().getConfig()
                     .getIndexDeletionPolicy();
-            File indexDirectory = getFileDirectory( baseStorePath, writer.getIdentifier() );
+            File indexDirectory = getFileDirectory( baseStorePath, index.getIdentifier() );
             IndexCommit commit;
             try
             {
@@ -459,7 +475,7 @@ public class LuceneDataSource extends LifecycleAdapter
                  *
                  * For the time being we just do a commit and try again.
                  */
-                writer.getWriter().commit();
+                index.getWriter().commit();
                 commit = deletionPolicy.snapshot();
             }
 
@@ -482,25 +498,67 @@ public class LuceneDataSource extends LifecycleAdapter
             @Override
             public void close()
             {
+                RuntimeException exception = null;
                 for ( Pair<SnapshotDeletionPolicy,IndexCommit> policyAndCommit : snapshots )
                 {
                     try
                     {
                         policyAndCommit.first().release( policyAndCommit.other() );
                     }
-                    catch ( IOException e )
+                    catch ( IOException | RuntimeException e )
                     {
-                        // TODO What to do?
-                        e.printStackTrace();
+                        if ( exception == null )
+                        {
+                            exception = e instanceof IOException ?
+                                        new UncheckedIOException( (IOException) e ) :
+                                        (RuntimeException) e;
+                        }
+                        else
+                        {
+                            exception.addSuppressed( e );
+                        }
                     }
+                }
+                if ( exception != null )
+                {
+                    throw exception;
                 }
             }
         };
     }
 
+    private ResourceIterator<File> listReadOnlyStoreFiles() throws IOException
+    {
+        // In read-only mode we don't need to take a snapshot, because the index will not be modified.
+        final Collection<File> files = new ArrayList<>();
+        makeSureAllIndexesAreInstantiated();
+        for ( IndexReference index : getAllIndexes() )
+        {
+            File indexDirectory = getFileDirectory( baseStorePath, index.getIdentifier() );
+            IndexSearcher searcher = index.getSearcher();
+            try ( IndexReader indexReader = searcher.getIndexReader() )
+            {
+                DirectoryReader directoryReader = (DirectoryReader) indexReader;
+                IndexCommit commit = directoryReader.getIndexCommit();
+                for ( String fileName : commit.getFileNames() )
+                {
+                    files.add( new File( indexDirectory, fileName ) );
+                }
+            }
+        }
+        return Iterators.asResourceIterator( files.iterator() );
+    }
+
     public ResourceIterator<File> listStoreFiles() throws IOException
     {
-        return listStoreFiles( false );
+        if ( readOnly )
+        {
+            return listReadOnlyStoreFiles();
+        }
+        else
+        {
+            return listWritableStoreFiles();
+        }
     }
 
     private void makeSureAllIndexesAreInstantiated()
@@ -510,8 +568,7 @@ public class LuceneDataSource extends LifecycleAdapter
             Map<String, String> config = indexStore.get( Node.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, name );
-                getIndexSearcher( identifier ).close();
+                ensureInstantiated( new IndexIdentifier( IndexEntityType.Node, name ) );
             }
         }
         for ( String name : indexStore.getNames( Relationship.class ) )
@@ -519,9 +576,21 @@ public class LuceneDataSource extends LifecycleAdapter
             Map<String, String> config = indexStore.get( Relationship.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Relationship, name );
-                getIndexSearcher( identifier ).close();
+                ensureInstantiated( new IndexIdentifier( IndexEntityType.Relationship, name ) );
             }
+        }
+    }
+
+    private void ensureInstantiated( IndexIdentifier identifier )
+    {
+        try
+        {
+            IndexReference indexSearcher = getIndexSearcher( identifier );
+            indexSearcher.close();
+        }
+        catch ( LegacyIndexNotFoundKernelException ignore )
+        {
+            // Ignore supposedly concurrently dropped indexes.
         }
     }
 
