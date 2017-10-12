@@ -24,13 +24,17 @@ import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 
 object PipelineInformation {
-  def empty = new PipelineInformation(Map.empty, 0, 0)
+  def empty = new PipelineInformation(mutable.Map.empty, 0, 0)
 
-  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int) =
-    new PipelineInformation(slots, numberOfLongs, numberOfReferences)
+  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int) = {
+
+    val stringToSlot = mutable.Map(slots.toSeq: _*)
+    new PipelineInformation(stringToSlot, numberOfLongs, numberOfReferences)
+
+  }
 
   def toString(startFrom: LogicalPlan, m: Map[LogicalPlan, PipelineInformation]): String = {
     var lastSeen = 0
@@ -104,13 +108,14 @@ object PipelineInformation {
 
       //Slots
       result.append("Slots:\n")
-      pipeline.info.slots.values.foreach {
-        slot =>
+      pipeline.info.slots.foreach {
+        case (key, slot) =>
           val s = if (slot.isInstanceOf[LongSlot]) "L" else "V"
           val r = if (slot.nullable) "T" else "F"
 
-          result.append(s"[$s $r ${slot.offset} ${slot.typ}] -> ${slot.name}\n")
+          result.append(s"[$s $r ${slot.offset} ${slot.typ}] -> ${key}\n")
       }
+
       result.append("\n")
 
       // Dependencies:
@@ -134,38 +139,58 @@ object PipelineInformation {
   }
 }
 
-class PipelineInformation(private var slots: Map[String, Slot],
+class PipelineInformation(private val slots: mutable.Map[String, Slot],
                           val initialNumberOfLongs: Int,
                           val initialNumberOfReferences: Int) {
 
   var numberOfLongs = initialNumberOfLongs
   var numberOfReferences = initialNumberOfReferences
 
+  private val aliases: mutable.Set[String] = mutable.Set()
+
+  def addAliasFor(slot: Slot, key: String): PipelineInformation = {
+    checkNotAlreadyTaken(key, slot)
+    slots.put(key, slot)
+    aliases.add(key)
+    slotAliases.addBinding(slot, key)
+    this
+  }
+
+  def isAlias(key: String): Boolean = {
+    aliases.contains(key)
+  }
+  private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
+
   def apply(key: String): Slot = slots.apply(key)
 
   def get(key: String): Option[Slot] = slots.get(key)
 
   def add(key: String, slotInformation: Slot): Unit = slotInformation match {
-    case LongSlot(_, nullable, typ, _) => newLong(key, nullable, typ)
-    case RefSlot(_, nullable, typ, _) => newReference(key, nullable, typ)
+    case LongSlot(_, nullable, typ) => newLong(key, nullable, typ)
+    case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)
   }
 
-  def seedClone(): PipelineInformation = {
-    new PipelineInformation(this.slots, numberOfLongs, numberOfReferences)
+  def breakPipelineAndClone(): PipelineInformation = {
+    val newPipeline = new PipelineInformation(this.slots.clone(), numberOfLongs, numberOfReferences)
+    newPipeline.aliases ++= aliases
+    newPipeline.slotAliases ++= slotAliases
+    newPipeline
   }
 
-  def newLong(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
-    val slot = LongSlot(numberOfLongs, nullable, typ, name)
-    checkNotAlreadyTaken(name, slot)
-    slots = slots + (name -> slot)
+  def newLong(key: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
+    val slot = LongSlot(numberOfLongs, nullable, typ)
+    checkNotAlreadyTaken(key, slot)
+    slots.put(key, slot)
+    slotAliases.addBinding(slot, key)
     numberOfLongs = numberOfLongs + 1
     this
   }
 
-  def newReference(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
-    val slot = RefSlot(numberOfReferences, nullable, typ, name)
-    checkNotAlreadyTaken(name, slot)
-    slots = slots + (name -> slot)
+  def newReference(key: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
+    val slot = RefSlot(numberOfReferences, nullable, typ)
+    checkNotAlreadyTaken(key, slot)
+    slots.put(key, slot)
+    slotAliases.addBinding(slot, key)
     numberOfReferences = numberOfReferences + 1
     this
   }
@@ -179,12 +204,18 @@ class PipelineInformation(private var slots: Map[String, Slot],
   def getLongOffsetFor(name: String): Int = slots.get(name) match {
     case Some(s: LongSlot) => s.offset
     case Some(s) => throw new InternalException(s"Uh oh... There was no long slot for `$name`. It was a $s")
-    case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
+    case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
 
+  // NOTE: This will give duplicate slots when we have aliases
   def foreachSlot[U](f: ((String,Slot)) => U): Unit =
     slots.foreach(f)
 
+  // NOTE: This will give duplicate slots when we have aliases
+  def foreachSlotOrdered[U](f: ((String,Slot)) => U): Unit =
+    slots.toSeq.sortBy(_._2)(SlotOrdering).foreach(f)
+
+  // NOTE: This will give duplicate slots when we have aliases
   def mapSlot[U](f: ((String,Slot)) => U): Iterable[U] = slots.map(f)
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
@@ -203,9 +234,47 @@ class PipelineInformation(private var slots: Map[String, Slot],
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
-  override def toString = s"PipelineInformation(slots=$slots, longs=$numberOfLongs, objs=$numberOfReferences)"
+  override def toString = s"PipelineInformation(longs=$numberOfLongs, objs=$numberOfReferences, slots=$slots)"
 
   private def checkNotAlreadyTaken(key: String, slot: Slot) =
     if (slots.contains(key))
       throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${slots.get(key).get})")
+
+  /**
+    * NOTE: Only use for debugging
+    */
+  def getLongSlots: immutable.IndexedSeq[SlotWithAliases] =
+    slotAliases.toIndexedSeq.collect {
+      case (slot: LongSlot, aliases) => LongSlotWithAliases(slot, aliases.toSet)
+    }.sorted(SlotWithAliasesOrdering)
+
+  /**
+    * NOTE: Only use for debugging
+    */
+  def getRefSlots: immutable.IndexedSeq[SlotWithAliases] =
+    slotAliases.toIndexedSeq.collect {
+      case (slot: RefSlot, aliases) => RefSlotWithAliases(slot, aliases.toSet)
+    }.sorted(SlotWithAliasesOrdering)
+
+  object SlotWithAliasesOrdering extends Ordering[SlotWithAliases] {
+    def compare(x: SlotWithAliases, y: SlotWithAliases): Int = (x, y) match {
+      case (_: LongSlotWithAliases, _: RefSlotWithAliases) =>
+        -1
+      case (_: RefSlotWithAliases, _: LongSlotWithAliases) =>
+        1
+      case _ =>
+        x.slot.offset - y.slot.offset
+    }
+  }
+
+  object SlotOrdering extends Ordering[Slot] {
+    def compare(x: Slot, y: Slot): Int = (x, y) match {
+      case (_: LongSlot, _: RefSlot) =>
+        -1
+      case (_: RefSlot, _: LongSlot) =>
+        1
+      case _ =>
+        x.offset - y.offset
+    }
+  }
 }

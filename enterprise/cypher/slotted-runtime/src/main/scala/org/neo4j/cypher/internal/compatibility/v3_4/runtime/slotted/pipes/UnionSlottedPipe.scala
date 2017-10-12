@@ -35,8 +35,11 @@ case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe,
 
     new Iterator[ExecutionContext] {
       override def hasNext: Boolean = left.hasNext || right.hasNext
-      override def next(): ExecutionContext = if (left.hasNext) lhsMapping(left.next(), state)
-      else rhsMapping(right.next(), state)
+      override def next(): ExecutionContext =
+        if (left.hasNext)
+          lhsMapping(left.next(), state)
+        else
+          rhsMapping(right.next(), state)
     }
   }
 }

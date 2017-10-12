@@ -235,9 +235,9 @@ object TopSlottedPipeTestSupport {
     results.map {
       case c: PrimitiveExecutionContext =>
         slot match {
-          case RefSlot(offset, _, _, _) =>
+          case RefSlot(offset, _, _) =>
             c.getRefAt(offset)
-          case LongSlot(offset, _, _, _) =>
+          case LongSlot(offset, _, _) =>
             c.getLongAt (offset)
         }
     }.toList
@@ -262,7 +262,7 @@ object TopSlottedPipeTestSupport {
     topPipe.createResults(QueryStateHelper.empty).map {
       case c: PrimitiveExecutionContext =>
         (slots(0), slots(1)) match {
-          case (RefSlot(offset1, _, _, _), RefSlot(offset2, _, _, _)) =>
+          case (RefSlot(offset1, _, _), RefSlot(offset2, _, _)) =>
             (c.getRefAt(offset1), c.getRefAt(offset2))
           case _ =>
             throw new InternalException("LongSlot not yet supported in the test framework")

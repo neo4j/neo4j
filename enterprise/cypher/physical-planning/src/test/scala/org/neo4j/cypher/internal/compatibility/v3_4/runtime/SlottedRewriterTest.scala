@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
@@ -29,12 +30,13 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, ProduceResult, Selection, _}
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, ProduceResult, Selection, _}
 
 class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
-  private def nodeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTNode, name = name)
-  private def edgeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTRelationship, name = name)
+  private def nodeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTNode)
+  private def edgeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTRelationship)
 
   test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n") {
     val allNodes = AllNodesScan(IdName("x"), Set.empty)(solved)
@@ -43,7 +45,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode, "x")), 1, 0)
+    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
     val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
       allNodes.assignedId -> pipeline,
       selection.assignedId -> pipeline,
@@ -104,7 +106,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
     val pipelineInformation = PipelineInformation(Map(
-      "a" -> LongSlot(0, nullable = true, typ = CTNode, name = "a")
+      "a" -> LongSlot(0, nullable = true, typ = CTNode)
     ), numberOfLongs = 1, numberOfReferences = 0)
 
     val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
@@ -132,7 +134,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode, "x")), 1, 0)
+    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
     val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
       allNodes.assignedId -> pipeline,
       selection.assignedId -> pipeline,
@@ -189,8 +191,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val nodeOffset = 0
     val propOffset = 0
     val pipeline = PipelineInformation(Map(
-      "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode, "n"),
-      "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny, "n.prop")),
+      "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode),
+      "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny)),
       1, 1)
     val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
       allNodes.assignedId -> pipeline,
