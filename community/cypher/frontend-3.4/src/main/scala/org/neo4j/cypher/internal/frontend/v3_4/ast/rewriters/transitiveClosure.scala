@@ -17,9 +17,10 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Where
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, Condition}
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.annotation.tailrec
@@ -42,17 +43,9 @@ case object transitiveClosure extends StatementRewriter {
 
     def apply(that: AnyRef): AnyRef = instance.apply(that)
 
-    private val instance: Rewriter = topDown(Rewriter.lift {
-      case where@Where(expression) =>
-        recurse(where, w => w.endoRewrite(whereRewriter))
+    private val instance: Rewriter = bottomUp(Rewriter.lift {
+      case where: Where => fixedPoint((w: Where) => w.endoRewrite(whereRewriter))(where)
     })
-
-    @tailrec
-    private def recurse(in: Where, f: Where => Where): Where = {
-      val out = f(in)
-      if (in == out) out
-      else recurse(out, f)
-    }
 
     //Collects property equalities, e.g `a.prop = 42`
     private def collect(e: Expression): Closures = e.treeFold(Closures.empty) {
