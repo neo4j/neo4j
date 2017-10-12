@@ -1212,11 +1212,17 @@ public class IndexingServiceTest
                     visitor( invocation.getArgument( 2 ) );
             return new StoreScan<IndexPopulationFailedKernelException>()
             {
+                private volatile boolean stop;
+
                 @Override
                 public void run() throws IndexPopulationFailedKernelException
                 {
                     for ( NodeUpdates update : updates )
                     {
+                        if ( stop )
+                        {
+                            return;
+                        }
                         visitor.visit( update );
                     }
                 }
@@ -1224,7 +1230,7 @@ public class IndexingServiceTest
                 @Override
                 public void stop()
                 {
-                    throw new UnsupportedOperationException();
+                    stop = true;
                 }
 
                 @Override

@@ -159,16 +159,13 @@ public class IndexPopulationIT
 
     private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
     {
-        for ( int j = 0; j < 100; j++ )
+        for ( int j = 0; j < 10_000; j++ )
         {
-            for ( int i = 0; i < 100; i++ )
+            try ( Transaction transaction = database.beginTx() )
             {
-                try ( Transaction transaction = database.beginTx() )
-                {
-                    Node node = database.createNode( testLabel );
-                    node.setProperty( propertyName, RandomStringUtils.randomAlphabetic( 10 ) );
-                    transaction.success();
-                }
+                Node node = database.createNode( testLabel );
+                node.setProperty( propertyName, RandomStringUtils.randomAlphabetic( 10 ) );
+                transaction.success();
             }
         }
     }

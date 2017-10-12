@@ -28,7 +28,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 
-public class IndexPopulationJobController
+class IndexPopulationJobController
 {
     private final Set<IndexPopulationJob> populationJobs =
             Collections.newSetFromMap( new ConcurrentHashMap<IndexPopulationJob,Boolean>() );
@@ -39,7 +39,7 @@ public class IndexPopulationJobController
         this.scheduler = scheduler;
     }
 
-    public void stop() throws ExecutionException, InterruptedException
+    void stop() throws ExecutionException, InterruptedException
     {
         for ( IndexPopulationJob job : populationJobs )
         {
@@ -47,13 +47,13 @@ public class IndexPopulationJobController
         }
     }
 
-    public void startIndexPopulation( IndexPopulationJob job )
+    void startIndexPopulation( IndexPopulationJob job )
     {
         populationJobs.add( job );
         scheduler.schedule( indexPopulation, new IndexPopulationJobWrapper( job, this ) );
     }
 
-    public void indexPopulationCompleted( IndexPopulationJob populationJob )
+    void indexPopulationCompleted( IndexPopulationJob populationJob )
     {
         populationJobs.remove( populationJob );
     }
@@ -68,8 +68,7 @@ public class IndexPopulationJobController
         private IndexPopulationJob indexPopulationJob;
         private IndexPopulationJobController jobController;
 
-        IndexPopulationJobWrapper( IndexPopulationJob indexPopulationJob,
-                IndexPopulationJobController jobController )
+        IndexPopulationJobWrapper( IndexPopulationJob indexPopulationJob, IndexPopulationJobController jobController )
         {
             this.indexPopulationJob = indexPopulationJob;
             this.jobController = jobController;
