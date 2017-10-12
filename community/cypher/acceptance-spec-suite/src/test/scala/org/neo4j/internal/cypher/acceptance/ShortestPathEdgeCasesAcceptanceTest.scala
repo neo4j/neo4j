@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 
@@ -108,4 +110,39 @@ class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with N
     val results = executeWithCostPlannerOnly(query)
     results.toList should equal(List(Map("nodes" -> List(1,2,3,4,14,13,26))))
   }
+
+  test("Predicate should associate with correct shortestPath in complex query") {
+    // Given query with two shortestPath expressions and a predicate that depends on both paths
+    val query =
+      """
+        |MATCH (r1:Road) WHERE r1.latitude = 51.357397146246264 AND r1.longitude = -0.20153965352074504
+        |MATCH (r2:Road) WHERE r2.latitude = 51.36272835382321 AND r2.longitude = -0.16836400394638354
+        |MATCH path = shortestpath((r1)-[:CONNECTS*]-(r2))
+        |WITH r1, r2, path
+        |MATCH returnPath = shortestpath((r2)-[:CONNECTS*]-(r1))
+        |WHERE none(rel in relationships(returnPath) where rel in relationships(path))
+        |RETURN returnPath
+      """.stripMargin
+
+    // When executing this query
+    val result = executeUsingCostPlannerOnly(query)
+    val shortestPathOperations = result.executionPlanDescription().find("ShortestPath")
+    val (shortestPathWithPredicate, shortestPathWithoutPredicate) = shortestPathOperations.partition { op =>
+      op.variables.contains("returnPath")
+    }
+
+    // Then the predicate should only be associated with the correct shortestPath pattern
+    shortestPathWithPredicate.size should be(1)
+    shortestPathWithoutPredicate.size should be(1)
+    val withPredicateOther = shortestPathWithPredicate.head.arguments.map(_.toString).mkString(", ")
+    val withoutPredicateOther = shortestPathWithoutPredicate.head.arguments.map(_.toString).mkString(", ")
+    withPredicateOther should include("RelationshipFunction")
+    withoutPredicateOther should not include "RelationshipFunction"
+  }
+
+  def executeUsingCostPlannerOnly(query: String) =
+    eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any]) match {
+      case e: ClosingExecutionResult => RewindableExecutionResult(e.inner)
+    }
+
 }
