@@ -54,7 +54,7 @@ trait CypherSerializer {
     case x               => x.toString
   }
 
-  protected def serializeWithType(x: Any)(implicit qs: QueryState) = s"${serialize(x, qs.query)} (${x.getClass.getSimpleName})"
+  protected def serializeWithType(x: Any)(implicit qs: QueryState) = s"${serialize(x, qs.query)}${Option(x).map(" (" +_.getClass.getSimpleName + ")").getOrElse("")}"
 
   private def makeString(m: QueryContext => Map[String, Any], qtx: QueryContext) = m(qtx).map {
     case (k, v) => k + " -> " + serialize(v, qtx)
