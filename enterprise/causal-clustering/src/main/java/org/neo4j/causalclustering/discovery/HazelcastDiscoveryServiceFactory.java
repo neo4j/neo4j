@@ -51,7 +51,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
                 logProvider, config, myself, topologyServiceRetryStrategy );
     }
 
-    private static void configureHazelcast( Config config, LogProvider logProvider )
+    static void configureHazelcast( Config config, LogProvider logProvider )
     {
         // tell hazelcast to not phone home
         GroupProperty.PHONE_HOME_ENABLED.setSystemProperty( "false" );
