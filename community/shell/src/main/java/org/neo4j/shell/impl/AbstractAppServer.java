@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.TextUtil;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
@@ -39,7 +40,6 @@ import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.TabCompletion;
-import org.neo4j.shell.TextUtil;
 
 /**
  * A common implementation of an {@link AppShellServer}. The server can be given
@@ -120,7 +120,7 @@ public abstract class AbstractAppServer extends SimpleAppServer
             Continuation commandResult = null;
             for ( String command : line.split( Pattern.quote( "&&" ) ) )
             {
-                command = TextUtil.removeSpaces( command );
+                command = removeSpaces( command );
                 command = replaceAlias( command, session );
                 AppCommandParser parser = new AppCommandParser( this, command );
                 commandResult = parser.app().execute( parser, session, out );
@@ -131,6 +131,19 @@ public abstract class AbstractAppServer extends SimpleAppServer
         {
             throw wrapException( e );
         }
+    }
+
+    private static String removeSpaces( String command )
+    {
+        while ( command.length() > 0 && command.charAt( 0 ) == ' ' )
+        {
+            command = command.substring( 1 );
+        }
+        while ( command.length() > 0 && command.charAt( command.length() - 1 ) == ' ' )
+        {
+            command = command.substring( 0, command.length() - 1 );
+        }
+        return command;
     }
 
     protected String replaceAlias( String line, Session session )

@@ -20,6 +20,7 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
+import static org.neo4j.tooling.ImportTool.parseFileArgumentList;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 
@@ -58,9 +60,8 @@ public class ImportCommand implements AdminCommand
                 }
             } )
             .withDatabase()
-            .withAdditionalConfig()
-            .withArgument( new OptionalNamedArg( "from", "source-directory", "",
-                    "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) );
+            .withAdditionalConfig();
+
     private static final Arguments csvArguments = new Arguments()
             .withArgument( new OptionalNamedArg( "mode", "csv", "csv", "Import a collection of CSV files." )
             {
@@ -71,24 +72,46 @@ public class ImportCommand implements AdminCommand
                 }
             } )
             .withDatabase()
+            .withAdditionalConfig();
+
+    private static final Arguments allArguments = new Arguments()
+            .withDatabase()
             .withAdditionalConfig()
+            .withArgument( new OptionalNamedArg( "mode", allowedModes, "csv",
+                    "Import a collection of CSV files or a pre-3.0 installation." ) );
+
+    private static void includeDatabaseArguments( Arguments arguments )
+    {
+        arguments
+            .withArgument( new OptionalNamedArg( "from", "source-directory", "",
+                    "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) );
+    }
+
+    private static void includeCsvArguments( Arguments arguments )
+    {
+        arguments
             .withArgument( new OptionalNamedArg( "report-file", "filename", DEFAULT_REPORT_FILE_NAME,
                     "File in which to store the report of the csv-import." ) )
-            .withArgument( new OptionalNamedArg( "nodes[:Label1:Label2]", "\"file1,file2,...\"", "",
+            .withArgument( new OptionalNamedArgWithMetadata( "nodes",
+                    ":Label1:Label2",
+                    "\"file1,file2,...\"", "",
                     "Node CSV header and data. Multiple files will be logically seen as " +
                             "one big file from the perspective of the importer. The first line " +
                             "must contain the header. Multiple data sources like these can be " +
                             "specified in one import, where each data source has its own header. " +
-                            "Note that file groups must be enclosed in quotation marks." ) )
-            .withArgument( new OptionalNamedArg( "relationships[:RELATIONSHIP_TYPE]", "\"file1,file2,...\"", "",
+                    "Note that file groups must be enclosed in quotation marks." ) )
+            .withArgument( new OptionalNamedArgWithMetadata( "relationships",
+                    ":RELATIONSHIP_TYPE",
+                    "\"file1,file2,...\"",
+                    "",
                     "Relationship CSV header and data. Multiple files will be logically " +
                             "seen as one big file from the perspective of the importer. The first " +
                             "line must contain the header. Multiple data sources like these can be " +
                             "specified in one import, where each data source has its own header. " +
-                            "Note that file groups must be enclosed in quotation marks." ) )
+                    "Note that file groups must be enclosed in quotation marks." ) )
             .withArgument( new OptionalNamedArg( "id-type", new String[]{"STRING", "INTEGER", "ACTUAL"},
                     "STRING", "Each node must provide a unique id. This is used to find the correct " +
-                    "nodes when creating relationships. Possible values are\n" +
+                    "nodes when creating relationships. Possible values are:\n" +
                     "  STRING: arbitrary strings for identifying nodes,\n" +
                     "  INTEGER: arbitrary integer values for identifying nodes,\n" +
                     "  ACTUAL: (advanced) actual node ids.\n" +
@@ -126,74 +149,25 @@ public class ImportCommand implements AdminCommand
                     "Maximum memory that neo4j-admin can use for various data structures and caching " +
                             "to improve performance. " +
                             "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
-                            "." ) );
-
-    private static final Arguments allArguments = new Arguments()
-            .withDatabase()
-            .withAdditionalConfig()
-            .withArgument( new OptionalNamedArg( "mode", allowedModes, "csv",
-                    "Import a collection of CSV files or a pre-3.0 installation." ) )
-            .withArgument( new OptionalNamedArg( "from", "source-directory", "",
-                    "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) )
-            .withArgument( new OptionalNamedArg( "report-file", "filename", DEFAULT_REPORT_FILE_NAME,
-                    "File in which to store the report of the csv-import." ) )
-            .withArgument( new OptionalNamedArgWithMetadata( "nodes",
-                    ":Label1:Label2",
-                    "\"file1,file2,...\"", "",
-                    "Node CSV header and data. Multiple files will be logically seen as " +
-                            "one big file from the perspective of the importer. The first line " +
-                            "must contain the header. Multiple data sources like these can be " +
-                            "specified in one import, where each data source has its own header. " +
-                            "Note that file groups must be enclosed in quotation marks." ) )
-            .withArgument( new OptionalNamedArgWithMetadata( "relationships",
-                    ":RELATIONSHIP_TYPE",
-                    "\"file1,file2,...\"",
+                            "." ) )
+            .withArgument( new OptionalNamedArg( "f",
+                    "File containing all arguments to this import",
                     "",
-                    "Relationship CSV header and data. Multiple files will be logically " +
-                            "seen as one big file from the perspective of the importer. The first " +
-                            "line must contain the header. Multiple data sources like these can be " +
-                            "specified in one import, where each data source has its own header. " +
-                            "Note that file groups must be enclosed in quotation marks." ) )
-            .withArgument( new OptionalNamedArg( "id-type", new String[]{"STRING", "INTEGER", "ACTUAL"},
-                    "STRING", "Each node must provide a unique id. This is used to find the correct " +
-                    "nodes when creating relationships. Possible values are:\n" +
-                    "  STRING: arbitrary strings for identifying nodes,\n" +
-                    "  INTEGER: arbitrary integer values for identifying nodes,\n" +
-                    "  ACTUAL: (advanced) actual node ids.\n" +
-                    "For more information on id handling, please see the Neo4j Manual: " +
-                    "https://neo4j.com/docs/operations-manual/current/tools/import/" ) )
-            .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
-                    "Character set that input data is encoded in." ) )
-            .withArgument( new OptionalBooleanArg( "ignore-extra-columns", false,
-                    "If un-specified columns should be ignored during the import." ) )
-            .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
-                    "If duplicate nodes should be ignored during the import." ) )
-            .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
-                    "If relationships referring to missing nodes should be ignored during the import." ) )
-            .withArgument( new OptionalBooleanArg( "multiline-fields",
-                    DEFAULT.multilineFields(),
-                    "Whether or not fields from input source can span multiple lines," +
-                            " i.e. contain newline characters." ) )
-            .withArgument( new OptionalNamedArg( "delimiter",
-                    String.valueOf( COMMAS.delimiter() ),
-                    String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
-            .withArgument( new OptionalNamedArg( "array-delimiter",
-                    String.valueOf( COMMAS.delimiter() ),
-                    String.valueOf( COMMAS.arrayDelimiter() ),
-                    "Delimiter character between array elements within a value in CSV data." ) )
-            .withArgument( new OptionalNamedArg( "quote",
-                    "quotation-character",
-                    String.valueOf( COMMAS.quotationCharacter() ),
-                    "Character to treat as quotation character for values in CSV data. "
-                            + "Quotes can be escaped as per RFC 4180 by doubling them, for example \"\" would be " +
-                            "interpreted as a literal \". You cannot escape using \\." ) )
-            .withArgument( new OptionalNamedArg( "max-memory",
-                    "max-memory-that-importer-can-use",
-                    String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
-                    "Maximum memory that neo4j-admin can use for various data structures and caching " +
-                            "to improve performance. " +
-                            "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
-                            "." ) );
+                    "File containing all arguments, used as an alternative to supplying all arguments on the command line directly."
+                            + "Each argument can be on a separate line or multiple arguments per line separated by space."
+                            + "Arguments containing spaces needs to be quoted."
+                            + "Supplying other arguments in addition to this file argument is not supported." ) );
+    }
+
+    static
+    {
+        includeDatabaseArguments( databaseArguments );
+        includeDatabaseArguments( allArguments );
+
+        includeCsvArguments( csvArguments );
+        includeCsvArguments( allArguments );
+    }
+
     public static Arguments databaseArguments()
     {
         return databaseArguments;
@@ -236,13 +210,22 @@ public class ImportCommand implements AdminCommand
 
         try
         {
-            mode = allArguments.parse( args ).get("mode" );
+            mode = allArguments.parse( args ).get( "mode" );
+            Optional<Path> fileArgument = allArguments.getOptionalPath( "f" );
+            if ( fileArgument.isPresent() )
+            {
+                allArguments.parse( parseFileArgumentList( fileArgument.get().toFile() ) );
+            }
             database = allArguments.get( "database" );
             additionalConfigFile = allArguments.getOptionalPath( "additional-config" );
         }
         catch ( IllegalArgumentException e )
         {
             throw new IncorrectUsage( e.getMessage() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
 
         try
@@ -261,11 +244,11 @@ public class ImportCommand implements AdminCommand
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
-    private Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
+    private static Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
     {
         if ( additionalConfigFile.isPresent() )
         {

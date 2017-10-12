@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
+package org.neo4j.helpers;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,7 +44,7 @@ public class TextUtil
     {
         // Sort data strings on length.
         Map<Integer, List<String>> lengthMap =
-            new HashMap<Integer, List<String>>();
+            new HashMap<>();
         int longest = 0;
         for ( String key : data.keySet() )
         {
@@ -62,7 +62,7 @@ public class TextUtil
             }
             else
             {
-                innerList = new ArrayList<String>();
+                innerList = new ArrayList<>();
                 lengthMap.put( innerKey, innerList );
             }
             innerList.add( key );
@@ -116,17 +116,17 @@ public class TextUtil
         return lastWord;
     }
 
-    public static String[] splitAndKeepEscapedSpaces( String string, boolean preserveEscapes )
+    private static String[] splitAndKeepEscapedSpaces( String string, boolean preserveEscapes )
     {
-        Collection<String> result = new ArrayList<String>();
+        Collection<String> result = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         for ( int i = 0; i < string.length(); i++ )
         {
             char ch = string.charAt( i );
             if ( ch == ' ' )
             {
-                boolean isGluedSpace = i > 0 && string.charAt( i - 1 ) == '\\';
-                if ( !isGluedSpace )
+                boolean isEscapedSpace = i > 0 && string.charAt( i - 1 ) == '\\';
+                if ( !isEscapedSpace )
                 {
                     result.add( current.toString() );
                     current = new StringBuilder();
@@ -146,29 +146,6 @@ public class TextUtil
         return result.toArray( new String[result.size()] );
     }
 
-    public static String multiplyString( String string, int times )
-    {
-        StringBuilder result = new StringBuilder();
-        for ( int i = 0; i < times; i++ )
-        {
-            result.append( string );
-        }
-        return result.toString();
-    }
-
-    public static String removeSpaces( String command )
-    {
-        while ( command.length() > 0 && command.charAt( 0 ) == ' ' )
-        {
-            command = command.substring( 1 );
-        }
-        while ( command.length() > 0 && command.charAt( command.length() - 1 ) == ' ' )
-        {
-            command = command.substring( 0, command.length() - 1 );
-        }
-        return command;
-    }
-
     /**
      * Tokenizes a string, regarding quotes.
      *
@@ -177,7 +154,7 @@ public class TextUtil
      */
     public static String[] tokenizeStringWithQuotes( String string )
     {
-        return tokenizeStringWithQuotes( string, true );
+        return tokenizeStringWithQuotes( string, true, false );
     }
 
     /**
@@ -189,15 +166,16 @@ public class TextUtil
      *
      * @param string the string to tokenize.
      * @param trim  whether or not to trim each token.
+     * @param preserveEscapeCharacters whether or not to preserve escape characters '\', otherwise skip them.
      * @return the tokens from the line.
      */
-    public static String[] tokenizeStringWithQuotes( String string, boolean trim )
+    public static String[] tokenizeStringWithQuotes( String string, boolean trim, boolean preserveEscapeCharacters )
     {
         if ( trim )
         {
             string = string.trim();
         }
-        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> result = new ArrayList<>();
         string = string.trim();
         boolean inside = string.startsWith( "\"" );
         StringTokenizer quoteTokenizer = new StringTokenizer( string, "\"" );
@@ -219,22 +197,10 @@ public class TextUtil
             }
             else
             {
-                Collections.addAll( result, TextUtil.splitAndKeepEscapedSpaces( token, false ) );
+                Collections.addAll( result, TextUtil.splitAndKeepEscapedSpaces( token, preserveEscapeCharacters ) );
             }
             inside = !inside;
         }
         return result.toArray( new String[result.size()] );
-    }
-
-    public static String stripFromQuotes( String string )
-    {
-        if ( string != null )
-        {
-            if ( string.startsWith( "\"" ) && string.endsWith( "\"" ) )
-            {
-                return string.substring( 1, string.length() - 1 );
-            }
-        }
-        return string;
     }
 }

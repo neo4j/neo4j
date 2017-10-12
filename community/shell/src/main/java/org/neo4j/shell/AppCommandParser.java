@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.shell.apps.NoopApp;
 
-import static org.neo4j.shell.TextUtil.tokenizeStringWithQuotes;
+import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
 
 /**
  * Parses a line from the client with the intention of interpreting it as
@@ -126,7 +126,7 @@ public class AppCommandParser
     private void parseParameters( String line ) throws ShellException
     {
         String rest = line.substring( appName.length() ).trim();
-        String[] parsed = tokenizeStringWithQuotes( rest, false );
+        String[] parsed = tokenizeStringWithQuotes( rest, false, false );
         for ( int i = 0; i < parsed.length; i++ )
         {
             String string = parsed[i];

@@ -30,8 +30,6 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.util.json.JSONParser;
 
-import static org.neo4j.shell.TextUtil.stripFromQuotes;
-
 /**
  * Mimics the Bash application "export" and uses the client session
  * {@link Session} as the data container.
@@ -90,5 +88,17 @@ public class Export extends AbstractApp
     private Object stripFromQuotesIfString( Object value )
     {
         return value instanceof String ? stripFromQuotes( value.toString() ) : value;
+    }
+
+    private static String stripFromQuotes( String string )
+    {
+        if ( string != null )
+        {
+            if ( string.startsWith( "\"" ) && string.endsWith( "\"" ) )
+            {
+                return string.substring( 1, string.length() - 1 );
+            }
+        }
+        return string;
     }
 }
