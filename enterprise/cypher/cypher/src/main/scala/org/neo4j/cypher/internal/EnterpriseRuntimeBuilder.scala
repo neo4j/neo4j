@@ -31,7 +31,7 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] = {
 
     def pickInterpretedExecutionPlan() =
-      BuildEnterpriseInterpretedExecutionPlan andThen
+      BuildSlottedExecutionPlan andThen
         If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
           BuildInterpretedExecutionPlan
         }
@@ -47,13 +47,13 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
         BuildInterpretedExecutionPlan
 
       case Some(SlottedRuntimeName) if useErrorsOverWarnings =>
-        BuildEnterpriseInterpretedExecutionPlan andThen
+        BuildSlottedExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
             Do((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
           }
 
       case Some(SlottedRuntimeName) =>
-        BuildEnterpriseInterpretedExecutionPlan andThen
+        BuildSlottedExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
             Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
               BuildInterpretedExecutionPlan

@@ -151,7 +151,7 @@ public class CompatibilitySpecSuiteTest
             tags = { "~@pending" },
             strict = true
     )
-    public static class CostInterpretedEnterprise extends Base
+    public static class CostSlotted extends Base
     {
     }
 
