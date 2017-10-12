@@ -22,8 +22,20 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
-case class SetNodePropertiesFromMap(source: LogicalPlan, idName: IdName, expression: Expression, removeOtherProps: Boolean)
-                    (val solved: PlannerQuery with CardinalityEstimation)
+/**
+  * for ( row <- source )
+  *   node = row.get(idName)
+  *   for ( (key,value) <- row.evaluate( expression ) )
+  *     node.setProperty( key, value )
+  *
+  *   produce row
+  */
+case class SetNodePropertiesFromMap(
+                                     source: LogicalPlan,
+                                     idName: IdName,
+                                     expression: Expression,
+                                     removeOtherProps: Boolean
+                                   )(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)

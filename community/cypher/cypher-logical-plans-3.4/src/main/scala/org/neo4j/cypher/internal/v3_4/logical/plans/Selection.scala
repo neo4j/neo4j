@@ -20,16 +20,21 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Selection(predicates: Seq[Expression], left: LogicalPlan)
-                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+/**
+  * For each source row, produce it if all predicates are true.
+  */
+case class Selection(
+                      predicates: Seq[Expression],
+                      source: LogicalPlan
+                    )(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
 
-  val lhs = Some(left)
+  val lhs = Some(source)
   def rhs = None
 
-  def numPredicates = predicates.size
+  def numPredicates: Int = predicates.size
 
-  def availableSymbols = left.availableSymbols
+  def availableSymbols: Set[IdName] = source.availableSymbols
 }

@@ -21,12 +21,16 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Optional(inputPlan: LogicalPlan, protectedSymbols: Set[IdName] = Set.empty)
+/**
+  * Produces source rows, unless source is empty. In that case, a single row is produced containing argument and any
+  * non-argument variables set to NO_VALUE.
+  */
+case class Optional(source: LogicalPlan, protectedSymbols: Set[IdName] = Set.empty)
                    (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
-  val lhs = Some(inputPlan)
+  val lhs = Some(source)
   val rhs = None
 
-  def availableSymbols = inputPlan.availableSymbols
+  def availableSymbols: Set[IdName] = source.availableSymbols
 }

@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-case class ProduceResult(columns: Seq[String], inner: LogicalPlan) extends LogicalPlan {
-  val lhs = Some(inner)
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
-  def solved = inner.solved
+/**
+  * For every source row, produce a row containing only the variables in 'columns'
+  */
+case class ProduceResult(source: LogicalPlan, columns: Seq[String]) extends LogicalPlan {
 
-  def availableSymbols = inner.availableSymbols
-
+  val lhs = Some(source)
   def rhs = None
 
-  def strictness = inner.strictness
+  def solved: PlannerQuery with CardinalityEstimation = source.solved
+
+  def availableSymbols: Set[IdName] = source.availableSymbols
+
+  def strictness: StrictnessMode = source.strictness
 }

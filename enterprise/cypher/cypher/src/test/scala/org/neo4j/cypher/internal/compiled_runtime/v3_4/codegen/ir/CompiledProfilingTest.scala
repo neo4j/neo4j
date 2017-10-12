@@ -112,7 +112,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
       val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
       val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
-      val plan = plans.ProduceResult(List("foo"), projection)
+      val plan = plans.ProduceResult(projection, List("foo"))
       plan.assignIds()
 
       // when

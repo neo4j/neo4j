@@ -22,7 +22,16 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PatternLength, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.expressions.RelTypeName
 
-case class ProjectEndpoints(left: LogicalPlan,
+/**
+  * For every source row, consider the path described by the relationships in 'rel'
+  *
+  *   If rel == NO_VALUE or rel does not match the specified 'types', do nothing
+  *   If directed, produce one row containing source and the start and end nodes of rel
+  *   If not directed, produce two rows:
+  *     one like the directed case
+  *     one like the directed case, but with start and end node swapped, and rel = reverse(rel)
+  */
+case class ProjectEndpoints(source: LogicalPlan,
                             rel: IdName,
                             start: IdName,
                             startInScope: Boolean,
@@ -33,8 +42,8 @@ case class ProjectEndpoints(left: LogicalPlan,
                             length: PatternLength)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
-  val lhs = Some(left)
+  val lhs = Some(source)
   def rhs = None
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + rel + start + end
+  def availableSymbols: Set[IdName] = source.availableSymbols + rel + start + end
 }

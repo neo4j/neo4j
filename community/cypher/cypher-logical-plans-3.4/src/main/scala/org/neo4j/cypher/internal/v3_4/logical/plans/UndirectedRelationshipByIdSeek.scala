@@ -21,6 +21,12 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * For each relationship id in 'relIds', fetch the corresponding relationship. For each relationship,
+  * produce two rows containing argument and the relationship assigned to 'idName'. In addition, one of these
+  * rows has the relationship start node as 'leftNode' and the end node as 'rightNode', while the other produced
+  * row has the end node as 'leftNode' = endNode and the start node as 'rightNode'.
+  */
 case class UndirectedRelationshipByIdSeek(idName: IdName,
                                           relIds: SeekableArgs,
                                           leftNode: IdName,
@@ -28,5 +34,5 @@ case class UndirectedRelationshipByIdSeek(idName: IdName,
                                           argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
+  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, leftNode, rightNode)
 }

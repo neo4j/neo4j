@@ -178,7 +178,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       val state = LogicalPlanState(queryString, None, IDPPlannerName)
       val output = pipeLine.transform(state, context)
-      val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].inner
+      val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].source
       (output.periodicCommit, logicalPlan, output.semanticTable())
     }
 

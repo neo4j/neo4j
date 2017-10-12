@@ -44,7 +44,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
     monitors.addMonitorListener(monitor)
 
     // When
-    process(monitors, ProduceResult(Seq.empty, SingleRow()(solved)))
+    process(monitors, ProduceResult(SingleRow()(solved), Seq.empty))
 
     // Then
     monitor.successfullyPlanned should equal(true)

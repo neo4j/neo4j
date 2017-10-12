@@ -21,6 +21,21 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * Join two result streams using a hash table. 'Left' is completely consumed and buffered in a hash table, using a
+  * tuple consisting of the values assigned to 'nodes'. For every 'right' row, lookup the corresponding 'left' rows
+  * based on 'nodes'. For each corresponding left row, merge that with the current right row and produce.
+  *
+  * hashTable = {}
+  * for ( leftRow <- left )
+  *   group = hashTable.getOrUpdate( key( leftRow, nodes ), List[Row]() )
+  *   group += leftRow
+  *
+  * for ( rightRow <- right )
+  *   group = hashTable.get( key( rightRow, nodes ) )
+  *   for ( leftRow <- group )
+  *     produce (leftRow merge rightRow)
+  */
 case class NodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with EagerLogicalPlan {
@@ -28,5 +43,5 @@ case class NodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPla
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols
+  def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
 }

@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Sort(left: LogicalPlan, sortItems: Seq[ColumnOrder])
+/**
+  * Buffer all source rows and sort them according to 'sortItems'. Produce the rows in sorted order.
+  */
+case class Sort(source: LogicalPlan, sortItems: Seq[ColumnOrder])
                (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with EagerLogicalPlan  {
 
-  val lhs = Some(left)
+  val lhs = Some(source)
   val rhs = None
 
-  def availableSymbols = left.availableSymbols
+  def availableSymbols: Set[IdName] = source.availableSymbols
 }
