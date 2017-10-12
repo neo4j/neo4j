@@ -388,11 +388,13 @@ object SlottedPipeBuilder {
     runtimeColumns
   }
 
+  type RowMapping = (ExecutionContext, QueryState) => ExecutionContext
+
   //compute mapping from incoming to outgoing pipe line, the slot order may differ
   //between the output and the input (lhs and rhs) and it may be the case that
   //we have a reference slot in the output but a long slot on one of the inputs,
   //e.g. MATCH (n) RETURN n UNION RETURN 42 AS n
-  def computeUnionMapping(in: PipelineInformation, out: PipelineInformation): (ExecutionContext, QueryState) => ExecutionContext = {
+  def computeUnionMapping(in: PipelineInformation, out: PipelineInformation): RowMapping = {
     val overlaps: Boolean = out.mapSlot {
       //For long slots we need to make sure both offset and types match
       //e.g we cannot allow mixing a node long slot with a relationship
