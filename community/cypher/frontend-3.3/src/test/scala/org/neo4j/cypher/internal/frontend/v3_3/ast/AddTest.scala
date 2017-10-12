@@ -69,13 +69,35 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
 
   test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Float, Integer, String or List<Integer> but was Boolean"
+      "Type mismatch: expected Float, Integer, String or List<T> but was Boolean"
     )
-    testInvalidApplication(CTList(CTInteger), CTString)(
-      "Type mismatch: expected Integer, List<Integer> or List<List<Integer>> but was String"
-    )
-    testInvalidApplication(CTList(CTInteger), CTList(CTString))(
-      "Type mismatch: expected Integer, List<Integer> or List<List<Integer>> but was List<String>"
-    )
+  }
+
+  test("should concatenate different typed lists") {
+    testValidTypes(CTList(CTInteger), CTList(CTString))(CTList(CTAny))
+  }
+
+  test("should concatenate vector element of other type after list") {
+    testValidTypes(CTInteger, CTList(CTString))(CTList(CTAny))
+  }
+
+  test("should concatenate vector element of other type before list") {
+    testValidTypes(CTList(CTInteger), CTString)(CTList(CTAny))
+  }
+
+  test("should concatenate same typed lists") {
+    testValidTypes(CTList(CTInteger), CTList(CTInteger))(CTList(CTInteger))
+  }
+
+  test("should concatenate nested lists") {
+    testValidTypes(CTList(CTList(CTInteger)), CTList(CTList(CTInteger)))(CTList(CTList(CTInteger)))
+    testValidTypes(CTList(CTList(CTInteger)), CTList(CTInteger))(CTList(CTAny))
+    testValidTypes(CTList(CTList(CTInteger)), CTInteger)(CTList(CTAny))
+  }
+
+  test("should work with ORed types") {
+    testValidTypes(CTInteger | CTList(CTString), CTList(CTString) | CTInteger)(CTList(CTAny) | CTList(CTString) | CTInteger)
+    testValidTypes(CTInteger | CTList(CTInteger), CTString)(CTString | CTList(CTAny))
+    testValidTypes(CTInteger | CTList(CTInteger), CTBoolean)(CTList(CTAny))
   }
 }
