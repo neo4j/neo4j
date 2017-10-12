@@ -19,37 +19,28 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
+import org.neo4j.kernel.impl.util.Dependencies;
 
-@Service.Implementation( BackupSupportingClassesFactoryProvider.class )
-public class CommunityBackupSupportingClassesFactoryProvider extends BackupSupportingClassesFactoryProvider
+public class DummyCommercialBackupSupportingClassesFactoryProvider extends BackupSupportingClassesFactoryProvider
 {
-    public CommunityBackupSupportingClassesFactoryProvider()
-    {
-        super( null );
-    }
 
     @Override
     public AbstractBackupSupportingClassesFactory getFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
     {
-        return new CommunityBackupSupportingClassesFactory( backupModuleResolveAtRuntime );
+        return new AbstractBackupSupportingClassesFactory( backupModuleResolveAtRuntime )
+        {
+            @Override
+            protected PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory()
+            {
+                return null;
+            }
+        };
     }
 
     @Override
     protected int getPriority()
     {
-        return 0;
-    }
-
-    /**
-     * Create a new instance of a service implementation identified with the
-     * specified key(s).
-     *
-     * @param key the main key for identifying this service implementation
-     * @param altKeys alternative spellings of the identifier of this service
-     */
-    protected CommunityBackupSupportingClassesFactoryProvider( String key, String... altKeys )
-    {
-        super( key, altKeys );
+        return -1;
     }
 }

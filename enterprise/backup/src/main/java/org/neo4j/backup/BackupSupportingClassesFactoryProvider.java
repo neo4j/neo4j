@@ -19,9 +19,14 @@
  */
 package org.neo4j.backup;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
+
 import org.neo4j.helpers.Service;
 
-public class BackupSupportingClassesFactoryProvider extends Service
+public abstract class BackupSupportingClassesFactoryProvider extends Service
 {
 
     /**
@@ -39,5 +44,26 @@ public class BackupSupportingClassesFactoryProvider extends Service
     protected BackupSupportingClassesFactoryProvider()
     {
         super( "key", new String[0] );
+    }
+
+    public abstract AbstractBackupSupportingClassesFactory getFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime );
+
+    public static Optional<BackupSupportingClassesFactoryProvider> findBestProvider()
+    {
+        return StreamSupport.stream( load( BackupSupportingClassesFactoryProvider.class ).spliterator(), false )
+                .sorted( ( l, r ) -> r.getPriority() - l.getPriority() )
+                .findFirst();
+    }
+
+    /**
+     * The higher the priority value, the greater the preference
+     * @return
+     */
+    protected abstract int getPriority();
+
+    @Override
+    public String toString()
+    {
+        return super.getClass().getName();
     }
 }

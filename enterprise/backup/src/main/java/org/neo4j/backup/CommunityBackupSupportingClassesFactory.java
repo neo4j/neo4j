@@ -25,26 +25,14 @@ import org.neo4j.kernel.impl.util.Dependencies;
 
 public class CommunityBackupSupportingClassesFactory extends AbstractBackupSupportingClassesFactory
 {
-    CommunityBackupSupportingClassesFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
+    public CommunityBackupSupportingClassesFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
     {
         super( backupModuleResolveAtRuntime );
     }
 
     @Override
-    Dependencies getDependencies()
-    {
-        return null;
-    }
-
-    @Override
-    PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory()
+    protected PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory()
     {
         return new NoOpPipelineHandlerAppenderFactory();
-    }
-
-    @Override
-    int getPriority()
-    {
-        return 0;
     }
 }
