@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.List;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.Token;

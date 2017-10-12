@@ -25,7 +25,7 @@ import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;

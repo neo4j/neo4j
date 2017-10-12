@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime.bookmarking;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;

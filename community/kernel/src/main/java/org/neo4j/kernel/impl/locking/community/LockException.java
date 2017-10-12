@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+
 /**
  * TODO: Consolidate into a standardized hierarchy of lock exceptions, extending from
- * {@link org.neo4j.kernel.api.exceptions.KernelException}.
+ * {@link KernelException}.
  */
 public class LockException extends RuntimeException
 {

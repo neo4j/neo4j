@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 /**
  * This exception is thrown when committing a transaction contains

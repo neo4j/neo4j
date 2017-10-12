@@ -19,11 +19,12 @@
  */
 package org.neo4j.storageengine.api.lock;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Acquiring a lock failed. This is a runtime exception now to ease the transition from the old lock interface, but
- * it should be made into a {@link org.neo4j.kernel.api.exceptions.KernelException} asap.
+ * it should be made into a {@link KernelException} asap.
  */
 public class AcquireLockTimeoutException extends RuntimeException implements Status.HasStatus
 {

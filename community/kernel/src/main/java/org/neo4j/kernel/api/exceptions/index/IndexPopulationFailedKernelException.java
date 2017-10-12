@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.exceptions.index;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 

@@ -32,8 +32,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{QueryContext, QueryTransacti
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.CypherExecutionException
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
+import org.neo4j.internal.kernel.api.TokenNameLookup
+import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
 

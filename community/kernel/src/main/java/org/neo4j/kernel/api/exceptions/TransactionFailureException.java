@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+
 /**
  * This class (in its current form - 2013-05-07) is a vector for exceptions thrown by a transaction manager, for
  * carrying the exception through the Kernel API stack to be rethrown on a higher level.

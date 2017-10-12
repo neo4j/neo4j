@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.schema.constaints;
 
-import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 
 public class RelExistenceConstraintDescriptor extends ConstraintDescriptor

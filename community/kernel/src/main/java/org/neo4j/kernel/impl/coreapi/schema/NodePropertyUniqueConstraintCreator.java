@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
 {
