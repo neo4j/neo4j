@@ -66,7 +66,7 @@ public class OperationsFacadeTest
         }
 
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement())
+              Statement statement = db.statement() )
         {
             ReadOperations readOperations = statement.readOperations();
             labelId = readOperations.labelGetForName( LABEL1.name() );
