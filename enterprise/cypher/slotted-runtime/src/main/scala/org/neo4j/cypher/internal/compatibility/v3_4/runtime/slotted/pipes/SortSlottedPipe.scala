@@ -43,7 +43,7 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
 
 object ExecutionContextOrdering {
   def comparator(order: ColumnOrder): scala.Ordering[ExecutionContext] = order.slot match {
-    case LongSlot(offset, _, _, _) =>
+    case LongSlot(offset, _, _) =>
       new scala.Ordering[ExecutionContext] {
         override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
           val aVal = a.getLongAt(offset)
@@ -52,7 +52,7 @@ object ExecutionContextOrdering {
         }
       }
 
-    case RefSlot(offset, _, _, _) =>
+    case RefSlot(offset, _, _) =>
       new scala.Ordering[ExecutionContext] {
         override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
           val aVal = a.getRefAt(offset)
