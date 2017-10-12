@@ -19,6 +19,9 @@
  */
 package org.neo4j.backup;
 
+import org.neo4j.helpers.Service;
+
+@Service.Implementation( BackupSupportingClassesFactoryProvider.class )
 public class CommunityBackupSupportingClassesFactoryProvider extends BackupSupportingClassesFactoryProvider
 {
     public CommunityBackupSupportingClassesFactoryProvider()
