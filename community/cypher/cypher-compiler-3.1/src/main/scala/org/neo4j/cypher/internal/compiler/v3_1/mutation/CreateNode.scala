@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, Literal, Null}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
@@ -44,6 +44,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {
       case (k, v:Any) => k -> Literal(v)
+      case (k, null) => k -> Null()
     }
 
     def createNodeWithPropertiesAndLabels(props: Map[String, Expression]): ExecutionContext = {
