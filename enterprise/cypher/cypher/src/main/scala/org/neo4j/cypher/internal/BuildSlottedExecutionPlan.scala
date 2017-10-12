@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.logical.plans.{IndexUsage, LogicalPlan, LogicalPlanId}
 import org.neo4j.values.virtual.MapValue
 
-object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
+object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
