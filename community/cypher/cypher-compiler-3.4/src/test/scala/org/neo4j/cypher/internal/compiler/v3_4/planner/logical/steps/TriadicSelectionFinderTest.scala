@@ -239,6 +239,6 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
     val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
     val selectionB = Selection(labelPredicates :+ relationshipUniqueness, expand2B)(solved)
-    TriadicSelection(predicateExpressionCase, expand1, IdName("a"), IdName("b"), IdName("c"), selectionB)(solved)
+    TriadicSelection(expand1, selectionB, predicateExpressionCase, IdName("a"), IdName("b"), IdName("c"))(solved)
   }
 }

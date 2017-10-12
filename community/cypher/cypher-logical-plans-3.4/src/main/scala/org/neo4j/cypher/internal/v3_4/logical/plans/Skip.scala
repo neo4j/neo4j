@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Skip(left: LogicalPlan, count: Expression)
+case class Skip(source: LogicalPlan, count: Expression)
                (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-  val lhs = Some(left)
+  val lhs = Some(source)
   val rhs = None
 
-  def availableSymbols = left.availableSymbols
+  def availableSymbols: Set[IdName] = source.availableSymbols
 }

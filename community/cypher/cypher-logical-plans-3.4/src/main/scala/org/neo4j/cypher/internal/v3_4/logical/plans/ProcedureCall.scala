@@ -21,13 +21,19 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class ProcedureCall(left: LogicalPlan, call: ResolvedCall)
+/**
+  * For every source row, call the procedure 'call'.
+  *
+  *   If the procedure returns a stream, produce one row per result in this stream with result appended to the row
+  *   If the procedure returns void, produce the source row
+  */
+case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)
                         (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
-  override val lhs = Some(left)
 
+  override val lhs = Some(source)
   override def rhs = None
 
   override def availableSymbols: Set[IdName] =
-    left.availableSymbols ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
+    source.availableSymbols ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
 }

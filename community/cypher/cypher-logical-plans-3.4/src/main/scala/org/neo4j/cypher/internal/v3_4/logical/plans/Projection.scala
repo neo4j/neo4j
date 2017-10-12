@@ -22,10 +22,15 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
+/**
+  * For each source row, produce the source row augmented with 'expressions'. For entry in
+  * 'expressions', the produced row get an extra variable name as the key, with the value of
+  * the expression.
+  */
+case class Projection(source: LogicalPlan, expressions: Map[String, Expression])
                      (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-  val lhs = Some(left)
+  val lhs = Some(source)
   val rhs = None
 
-  val availableSymbols = left.availableSymbols ++ expressions.keySet.map(IdName(_))
+  val availableSymbols: Set[IdName] = source.availableSymbols ++ expressions.keySet.map(IdName(_))
 }

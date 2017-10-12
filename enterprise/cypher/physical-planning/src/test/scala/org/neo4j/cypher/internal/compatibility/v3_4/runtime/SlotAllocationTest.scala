@@ -420,7 +420,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given UNWIND [1,2,3] as x RETURN x
     val leaf = SingleRow()(solved)
     val unwind = UnwindCollection(leaf, IdName("x"), listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
-    val produceResult = ProduceResult(Seq("x"), unwind)
+    val produceResult = ProduceResult(unwind, Seq("x"))
     produceResult.assignIds()
 
     // when
@@ -444,7 +444,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val leaf = SingleRow()(solved)
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val sort = Sort(unwind, List(Ascending(xVarName)))(solved)
-    val produceResult = ProduceResult(Seq("x"), sort)
+    val produceResult = ProduceResult(sort, Seq("x"))
     produceResult.assignIds()
 
     // when
@@ -465,12 +465,12 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("semi apply") {
     // MATCH (x) WHERE (x) -[:r]-> (y) ....
-    testSemiApply(SemiApply(_, _))
+    testSemiApply(SemiApply)
   }
 
   test("anti semi apply") {
     // MATCH (x) WHERE NOT (x) -[:r]-> (y) ....
-    testSemiApply(AntiSemiApply(_, _))
+    testSemiApply(AntiSemiApply)
   }
 
   def testSemiApply(

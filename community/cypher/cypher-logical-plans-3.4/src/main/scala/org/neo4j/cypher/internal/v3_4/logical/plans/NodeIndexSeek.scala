@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
+/**
+  * For every node with the given label and property values, produces one row with that node.
+  */
 case class NodeIndexSeek(idName: IdName,
                          label: LabelToken,
                          propertyKeys: Seq[PropertyKeyToken],
@@ -30,5 +33,5 @@ case class NodeIndexSeek(idName: IdName,
                          argumentIds: Set[IdName])
                         (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {
 
-  def availableSymbols = argumentIds + idName
+  def availableSymbols: Set[IdName] = argumentIds + idName
 }

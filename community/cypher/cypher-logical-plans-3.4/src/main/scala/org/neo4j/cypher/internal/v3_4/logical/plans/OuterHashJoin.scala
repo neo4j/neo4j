@@ -21,6 +21,11 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * Variant of NodeHashJoin. Also builds a hash table using 'left' and produces merged left and right rows using this
+  * table. In addition, also produces left and right rows with missing key values, and right rows that do not match
+  * in the hash table. In these additional rows, variables from the opposing stream are set to NO_VALUE.
+  */
 case class OuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
                         (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with EagerLogicalPlan {
@@ -28,5 +33,5 @@ case class OuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPl
   val lhs = Some(left)
   val rhs = Some(right)
 
-  val availableSymbols = left.availableSymbols ++ right.availableSymbols
+  val availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
 }

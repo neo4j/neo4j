@@ -22,6 +22,10 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
+/**
+  * For each source row, add the labels in 'labelNamed' to the node 'idName'.
+  * The source row is produced.
+  */
 case class SetLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LabelName])
                     (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {

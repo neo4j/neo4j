@@ -88,7 +88,7 @@ case object unnestApply extends Rewriter {
     // L Ax (π R) => π(L Ax R)
     case origApply@Apply(lhs, p@Projection(rhs, _)) =>
       val newApply = Apply(lhs, rhs)(origApply.solved)
-      p.copy(left = newApply)(origApply.solved)
+      p.copy(source = newApply)(origApply.solved)
 
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
     case apply@Apply(lhs, expand: Expand) =>

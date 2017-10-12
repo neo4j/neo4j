@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * Produce a single row with the contents of argument
+  */
 case class SingleRow()(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
   val argumentIds: Set[IdName] = Set.empty
 
-  def availableSymbols = argumentIds
+  def availableSymbols: Set[IdName] = argumentIds
 }

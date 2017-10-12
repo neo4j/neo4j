@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
-/*
-  * This operator does a full scan of an index, returning all entries that contain a string value
+/**
+  * This operator does a full scan of an index, producing rows for all entries that contain a string value
   *
   * It's much slower than an index seek, since all index entries must be examined, but also much faster than an
   * all-nodes scan or label scan followed by a property value filter.
@@ -37,5 +37,5 @@ case class NodeIndexContainsScan(idName: IdName,
                                 (val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan {
 
-  def availableSymbols = argumentIds + idName
+  def availableSymbols: Set[IdName] = argumentIds + idName
 }

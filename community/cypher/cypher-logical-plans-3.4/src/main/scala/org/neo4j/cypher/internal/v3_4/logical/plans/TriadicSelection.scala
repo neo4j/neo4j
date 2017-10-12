@@ -21,50 +21,51 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-/*
-Triadic selection is used to solve a common query pattern:
-MATCH (a)-->(b)-->(c) WHERE NOT (a)-->(c)
-
-If this query can be solved by starting from (a) and expand first (a)-->(b)
-and expanding (b)-->(c), we can repalce the filter with a triadic selection
-that runs the (a)-->(b) as its left hand side, caching the results for use in
-filtering the results of its right hand side which is the (b)-->(c) expands.
-The filtering is based on the pattern expression predicate. The classical
-example is the friend of a friend that is not already a friend, as shown above,
-but this works for other cases too, like fof that is a friend.
-
-Since the two expands are done by sub-plans, they can be substantially more
-complex than single expands. However, what patterns actually get here need to
-be identified by the triadic selection finder.
-
-In effect the triadic selection interprets the predicate pattern in:
-    MATCH (<source>){-->(build)}{-->(target)}
-    WHERE NOT (<source>)-->(<target>)
-
-as the predicate:
-
-    WHERE (<target>) NOT IN Set(<build>, for <source>)
-
-With a plan that looks like:
-
-+TriadicSelection (c) NOT IN (b)
-| \
-| +<target>       (b)-->(c)
-| |
-| +Argument       (b)
-|
-+<build>          (a)-->(b)
-|
-+<source>         (a)
- */
-case class TriadicSelection(positivePredicate: Boolean /*false means NOT(pattern)*/ ,
-                            left: LogicalPlan /*produces rows with 'source' and 'seen'*/ ,
-                            sourceId: IdName, seenId: IdName, targetId: IdName,
-                            right: LogicalPlan /*given rows with 'source' and 'seen', produces rows with 'target'*/)
-                           (val solved: PlannerQuery with CardinalityEstimation)
+/**
+  * Triadic selection is used to solve a common query pattern:
+  * MATCH (a)-->(b)-->(c) WHERE NOT (a)-->(c)
+  *
+  * If this query can be solved by starting from (a) and expand first (a)-->(b)
+  * and expanding (b)-->(c), we can replace the filter with a triadic selection
+  * that runs the (a)-->(b) as its left hand side, caching the results for use in
+  * filtering the results of its right hand side which is the (b)-->(c) expands.
+  * The filtering is based on the pattern expression predicate. The classical
+  * example is the friend of a friend that is not already a friend, as shown above,
+  * but this works for other cases too, like fof that is a friend.
+  *
+  * Since the two expands are done by sub-plans, they can be substantially more
+  * complex than single expands. However, what patterns actually get here need to
+  * be identified by the triadic selection finder.
+  *
+  * In effect the triadic selection interprets the predicate pattern in:
+  *     MATCH (<source>){-->(build)}{-->(target)}
+  *     WHERE NOT (<source>)-->(<target>)
+  *
+  * as the predicate:
+  *
+  * WHERE (<target>) NOT IN Set(<build>, for <source>)
+  *
+  * With a plan that looks like:
+  *
+  * +TriadicSelection (c) NOT IN (b)
+  * | \
+  * | +<target>       (b)-->(c)
+  * | |
+  * | +Argument       (b)
+  * |
+  * +<build>          (a)-->(b)
+  * |
+  * +<source>         (a)
+  */
+case class TriadicSelection(
+                             left: LogicalPlan,
+                             right: LogicalPlan,
+                             positivePredicate: Boolean,
+                             sourceId: IdName, seenId: IdName, targetId: IdName
+                           )(val solved: PlannerQuery with CardinalityEstimation)
 extends LogicalPlan with LazyLogicalPlan {
-  override def lhs: Option[LogicalPlan] = Some(left)
 
+  override def lhs: Option[LogicalPlan] = Some(left)
   override def rhs: Option[LogicalPlan] = Some(right)
 
   override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols

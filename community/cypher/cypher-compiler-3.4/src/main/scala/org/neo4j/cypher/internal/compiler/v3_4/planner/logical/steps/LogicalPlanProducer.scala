@@ -524,7 +524,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                            predicate: Expression)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = (left.solved ++ right.solved).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-    TriadicSelection(positivePredicate, left, sourceId, seenId, targetId, right)(solved)
+    TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId)(solved)
   }
 
   def planCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)
