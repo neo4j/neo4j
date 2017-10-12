@@ -19,22 +19,29 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Value;
 
 public interface ExplicitIndexRead
 {
-    void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value );
+    void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value )
+            throws KernelException;
 
-    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query );
+    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query )
+            throws KernelException;
 
-    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query );
+    void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query )
+            throws KernelException;
 
     void relationshipExplicitIndexGet(
-            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target );
+            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target )
+            throws KernelException;
 
     void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target );
+            RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target )
+            throws KernelException;
 
     void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target );
+            RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target )
+            throws KernelException;
 }
