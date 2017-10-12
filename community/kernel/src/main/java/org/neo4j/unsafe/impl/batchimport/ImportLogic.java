@@ -158,7 +158,7 @@ public class ImportLogic implements Closeable
         idMapper = input.idMapper( numberArrayFactory );
         idGenerator = input.idGenerator();
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
-        memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
+        memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper, neoStore );
         nodes = input.nodes();
         relationships = input.relationships();
         cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
@@ -261,7 +261,7 @@ public class ImportLogic implements Closeable
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         nodeRelationshipCache.setHighNodeId( neoStore.getNodeStore().getHighId() );
         NodeDegreeCountStage nodeDegreeStage = new NodeDegreeCountStage( relationshipConfig,
-                neoStore.getRelationshipStore(), nodeRelationshipCache );
+                neoStore.getRelationshipStore(), nodeRelationshipCache, memoryUsageStats );
         executeStage( nodeDegreeStage );
         nodeRelationshipCache.countingCompleted();
         availableMemoryForLinking = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, neoStore );
@@ -424,7 +424,7 @@ public class ImportLogic implements Closeable
     public void defragmentRelationshipGroups()
     {
         // Defragment relationships groups for better performance
-        new RelationshipGroupDefragmenter( config, executionMonitor, numberArrayFactory )
+        new RelationshipGroupDefragmenter( config, executionMonitor, RelationshipGroupDefragmenter.Monitor.EMPTY, numberArrayFactory )
                 .run( max( maxMemory, peakMemoryUsage ), neoStore, neoStore.getNodeStore().getHighId() );
     }
 

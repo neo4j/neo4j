@@ -38,12 +38,14 @@ import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
 
 import static java.lang.String.format;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
+import static org.neo4j.unsafe.impl.batchimport.input.Input.Estimates.UNKNOWN;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultRelationshipDeserializer;
 
@@ -236,5 +238,12 @@ public class CsvInput implements Input
     public Collector badCollector()
     {
         return badCollector;
+    }
+
+    @Override
+    public Estimates calculateEstimates()
+    {
+        // TODO
+        return Inputs.knownEstimates( UNKNOWN, UNKNOWN );
     }
 }

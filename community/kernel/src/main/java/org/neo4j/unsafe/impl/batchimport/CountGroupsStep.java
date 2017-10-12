@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * After this step is {@link #done()} all BOTH ID fields in the rel group cache will contain,
@@ -32,9 +33,10 @@ public class CountGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
 {
     private final RelationshipGroupCache cache;
 
-    public CountGroupsStep( StageControl control, Configuration config, RelationshipGroupCache groupCache )
+    public CountGroupsStep( StageControl control, Configuration config, RelationshipGroupCache groupCache,
+            StatsProvider... additionalStatsProviders )
     {
-        super( control, "COUNT", config, 1 );
+        super( control, "COUNT", config, 1, additionalStatsProviders );
         this.cache = groupCache;
     }
 

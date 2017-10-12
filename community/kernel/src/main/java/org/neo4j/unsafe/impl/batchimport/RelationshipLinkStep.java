@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Links relationship chains together, the "prev" pointers of them. "next" pointers are set when
@@ -40,9 +41,10 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
     private final boolean forwards;
 
     public RelationshipLinkStep( StageControl control, Configuration config,
-            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes, boolean forwards )
+            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes, boolean forwards,
+            StatsProvider... additionalStatsProvider )
     {
-        super( control, "LINK", config );
+        super( control, "LINK", config, additionalStatsProvider );
         this.cache = cache;
         this.filter = filter;
         this.nodeTypes = nodeTypes;

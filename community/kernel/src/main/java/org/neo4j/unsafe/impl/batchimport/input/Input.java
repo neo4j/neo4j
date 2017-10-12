@@ -30,6 +30,17 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
  */
 public interface Input
 {
+    interface Estimates
+    {
+        long UNKNOWN = -1;
+
+        long numberOfNodes();
+
+        long numberOfRelationships();
+
+        // TODO add whatever is needed here
+    }
+
     /**
      * Provides all {@link InputNode input nodes} for an import. The returned {@link InputIterable iterable's}
      * {@link InputIterable#iterator() iterator()} method may be called multiple times.
@@ -65,4 +76,9 @@ public interface Input
      * and {@link InputNode duplicate nodes} to an output stream for later handling.
      */
     Collector badCollector();
+
+    /**
+     * @return {@link Estimates} for this input w/o reading through it entirely.
+     */
+    Estimates calculateEstimates();
 }

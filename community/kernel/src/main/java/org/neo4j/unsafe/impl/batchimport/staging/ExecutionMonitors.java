@@ -19,9 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor.DEFAULT_WIDTH;
-
 /**
  * Common {@link ExecutionMonitor} implementations.
  */
@@ -34,7 +31,9 @@ public class ExecutionMonitors
 
     public static ExecutionMonitor defaultVisible()
     {
-        return new SpectrumExecutionMonitor( 2, SECONDS, System.out, DEFAULT_WIDTH );
+        return new MultiExecutionMonitor(
+                new OnDemandDetailsExecutionMonitor( System.out ),
+                new HumanUnderstandableExecutionMonitor( System.out ) );
     }
 
     private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()

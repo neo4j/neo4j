@@ -27,6 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.forwards;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
@@ -37,12 +38,13 @@ public class RelationshipLinkforwardStage extends Stage
 
     public RelationshipLinkforwardStage( String topic, Configuration config, RelationshipStore store,
             NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
-            Predicate<RelationshipRecord> denseChangeFilter, int nodeTypes )
+            Predicate<RelationshipRecord> denseChangeFilter, int nodeTypes,
+            StatsProvider... additionalStatsProvider )
     {
         super( NAME, topic, config, ORDER_SEND_DOWNSTREAM );
         add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, store, readFilter ) );
-        add( new RelationshipLinkforwardStep( control(), config, cache, denseChangeFilter, nodeTypes ) );
+        add( new RelationshipLinkforwardStep( control(), config, cache, denseChangeFilter, nodeTypes, additionalStatsProvider ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
     }
 }

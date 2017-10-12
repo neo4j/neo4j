@@ -94,6 +94,7 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -114,6 +115,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_L
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -376,9 +378,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
             InputIterable<InputRelationship> relationships =
                     legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
+            Estimates estimates = knownEstimates(
+                    legacyStore.getNodeStore().getNumberOfIdsInUse(),
+                    legacyStore.getRelationshipStore().getNumberOfIdsInUse() );
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
-                            Collectors.badCollector( badOutput, 0 ) ) );
+                            Collectors.badCollector( badOutput, 0 ), estimates ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written

@@ -31,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
 public class NodeCountInputs implements Input
 {
@@ -119,5 +120,11 @@ public class NodeCountInputs implements Input
     public Collector badCollector()
     {
         return bad;
+    }
+
+    @Override
+    public Estimates calculateEstimates()
+    {
+        return knownEstimates( nodeCount, 0 );
     }
 }

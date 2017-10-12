@@ -25,6 +25,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
+import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static java.lang.Long.max;
@@ -45,7 +46,7 @@ import static org.neo4j.helpers.Format.bytes;
  *
  * @see RelationshipGroupDefragmenter
  */
-public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>, AutoCloseable
+public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>, AutoCloseable, MemoryStatsVisitor.Visitable
 {
     public static final int GROUP_ENTRY_SIZE = 1/*header*/ + 3/*type*/ + 6/*relationship id*/ * 3/*all directions*/;
 
@@ -300,6 +301,14 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                 }
             }
         };
+    }
+
+    @Override
+    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+    {
+        groupCountCache.acceptMemoryStatsVisitor( visitor );
+        cache.acceptMemoryStatsVisitor( visitor );
+        offsets.acceptMemoryStatsVisitor( visitor );
     }
 
     @Override

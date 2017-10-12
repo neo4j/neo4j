@@ -83,6 +83,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
 /**
  * Idea is to test a {@link MultipleIndexPopulator} and {@link BatchingMultipleIndexPopulator} with a bunch of indexes,
@@ -407,6 +408,12 @@ public class MultipleIndexPopulationStressIT
             {
                 throw new RuntimeException( e );
             }
+        }
+
+        @Override
+        public Estimates calculateEstimates()
+        {
+            return knownEstimates( count, 0 );
         }
     }
 }

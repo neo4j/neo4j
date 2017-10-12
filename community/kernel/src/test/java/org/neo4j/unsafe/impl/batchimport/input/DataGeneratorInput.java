@@ -36,6 +36,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
@@ -139,6 +140,12 @@ public class DataGeneratorInput implements Input
     public Collector badCollector()
     {
         return badCollector;
+    }
+
+    @Override
+    public Estimates calculateEstimates()
+    {
+        return knownEstimates( nodes, relationships );
     }
 
     public static Header sillyNodeHeader( IdType idType, Extractors extractors )
