@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import scala.collection.mutable
 
 object PipelineInformation {
-  def empty = new PipelineInformation(Map.empty, 0, 0)
+  def empty = new PipelineInformation(mutable.Map.empty, 0, 0)
 
   def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int) =
-    new PipelineInformation(slots, numberOfLongs, numberOfReferences)
+    new PipelineInformation(mutable.Map(slots.toSeq:_*), numberOfLongs, numberOfReferences)
 
   def toString(startFrom: LogicalPlan, m: Map[LogicalPlan, PipelineInformation]): String = {
     var lastSeen = 0
@@ -104,13 +104,14 @@ object PipelineInformation {
 
       //Slots
       result.append("Slots:\n")
-      pipeline.info.slots.values.foreach {
-        slot =>
+      pipeline.info.slots.foreach {
+        case (key, slot) =>
           val s = if (slot.isInstanceOf[LongSlot]) "L" else "V"
           val r = if (slot.nullable) "T" else "F"
 
-          result.append(s"[$s $r ${slot.offset} ${slot.typ}] -> ${slot.name}\n")
+          result.append(s"[$s $r ${slot.offset} ${slot.typ}] -> ${key}\n")
       }
+
       result.append("\n")
 
       // Dependencies:
@@ -134,38 +135,51 @@ object PipelineInformation {
   }
 }
 
-class PipelineInformation(private var slots: Map[String, Slot],
+class PipelineInformation(private val slots: mutable.Map[String, Slot],
                           val initialNumberOfLongs: Int,
                           val initialNumberOfReferences: Int) {
 
   var numberOfLongs = initialNumberOfLongs
   var numberOfReferences = initialNumberOfReferences
 
+  private val aliases: mutable.Set[String] = mutable.Set()
+
+  def addAliasFor(slot: Slot, key: String): PipelineInformation = {
+    checkNotAlreadyTaken(key, slot)
+    slots.put(key, slot)
+    aliases.add(key)
+    this
+  }
+
+  def isAlias(key: String): Boolean = {
+    aliases.contains(key)
+  }
+
   def apply(key: String): Slot = slots.apply(key)
 
   def get(key: String): Option[Slot] = slots.get(key)
 
   def add(key: String, slotInformation: Slot): Unit = slotInformation match {
-    case LongSlot(_, nullable, typ, _) => newLong(key, nullable, typ)
-    case RefSlot(_, nullable, typ, _) => newReference(key, nullable, typ)
+    case LongSlot(_, nullable, typ) => newLong(key, nullable, typ)
+    case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)
   }
 
   def seedClone(): PipelineInformation = {
     new PipelineInformation(this.slots, numberOfLongs, numberOfReferences)
   }
 
-  def newLong(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
-    val slot = LongSlot(numberOfLongs, nullable, typ, name)
-    checkNotAlreadyTaken(name, slot)
-    slots = slots + (name -> slot)
+  def newLong(key: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
+    val slot = LongSlot(numberOfLongs, nullable, typ)
+    checkNotAlreadyTaken(key, slot)
+    slots.put(key, slot)
     numberOfLongs = numberOfLongs + 1
     this
   }
 
-  def newReference(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
-    val slot = RefSlot(numberOfReferences, nullable, typ, name)
-    checkNotAlreadyTaken(name, slot)
-    slots = slots + (name -> slot)
+  def newReference(key: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
+    val slot = RefSlot(numberOfReferences, nullable, typ)
+    checkNotAlreadyTaken(key, slot)
+    slots.put(key, slot)
     numberOfReferences = numberOfReferences + 1
     this
   }

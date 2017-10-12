@@ -163,10 +163,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         OptionalSlottedPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
       case Projection(_, expressions) =>
-        val expressionsWithSlots = expressions map {
-          case (k, e) =>
+        val expressionsWithSlots: Map[Int, Expression] = expressions collect {
+          case (k, e) if refSlotAndNotAlias(pipeline, k) =>
             val slot = pipeline.get(k).get
-            slot -> convertExpressions(e)
+            slot.offset -> convertExpressions(e)
         }
         ProjectionSlottedPipe(source, expressionsWithSlots)(id)
 
@@ -262,6 +262,11 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
+  private def refSlotAndNotAlias(pipeline: PipelineInformation, k: String) = {
+    !pipeline.isAlias(k) &&
+      pipeline.get(k).forall(_.isInstanceOf[RefSlot])
+  }
+
   private def translateColumnOrder(pipeline: PipelineInformation, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
     case plans.Ascending(IdName(name)) => {
       pipeline.get(name) match {
@@ -285,15 +290,15 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
   private def createProjectionForIdentifier(pipelineInformation1: PipelineInformation)(identifier: String) = {
     pipelineInformation1(identifier) match {
-      case LongSlot(offset, false, CTNode, _) =>
+      case LongSlot(offset, false, CTNode) =>
         identifier -> slottedExpressions.NodeFromSlot(offset)
-      case LongSlot(offset, true, CTNode, _) =>
+      case LongSlot(offset, true, CTNode) =>
         identifier -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
-      case LongSlot(offset, false, CTRelationship, _) =>
+      case LongSlot(offset, false, CTRelationship) =>
         identifier -> slottedExpressions.RelationshipFromSlot(offset)
-      case LongSlot(offset, true, CTRelationship, _) =>
+      case LongSlot(offset, true, CTRelationship) =>
         identifier -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
-      case RefSlot(offset, _, _, _) =>
+      case RefSlot(offset, _, _) =>
         identifier -> slottedExpressions.ReferenceFromSlot(offset)
       case _ =>
         throw new InternalException(s"Did not find `$identifier` in the pipeline information")

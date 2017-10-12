@@ -173,6 +173,12 @@ object SlotAllocation {
         expressions foreach {
           case (key, parserAst.Variable(ident)) if key == ident =>
           // it's already there. no need to add a new slot for it
+
+          case (key, parserAst.Variable(ident)) if key != ident =>
+            val slot = incomingPipeline.get(ident).getOrElse(
+              throw new SlotAllocationFailed(s"Tried to lookup key $key that should be in pipeline but wasn't"))
+            incomingPipeline.addAliasFor(slot, key)
+
           case (key, _) =>
             incomingPipeline.newReference(key, nullable = true, CTAny)
         }

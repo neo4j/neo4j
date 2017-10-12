@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 object PrimitiveExecutionContext {
-  def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0, 0))
+  def empty = new PrimitiveExecutionContext(PipelineInformation.empty)
 }
 
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {

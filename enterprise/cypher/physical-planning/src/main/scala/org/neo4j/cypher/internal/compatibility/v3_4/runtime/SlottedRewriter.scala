@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, Projection, VarExpand, _}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.{functions => frontendFunctions}
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, Projection, VarExpand, _}
+import org.neo4j.cypher.internal.v3_4.{functions => frontendFunctions}
 
 import scala.collection.mutable
 
@@ -126,14 +126,14 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case prop@Property(Variable(key), PropertyKeyName(propKey)) =>
 
         pipelineInformation(key) match {
-          case LongSlot(offset, nullable, typ, name) =>
+          case LongSlot(offset, nullable, typ) =>
             val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
 
             val propExpression = (typ, maybeToken) match {
-              case (CTNode, Some(token)) => NodeProperty(offset, token, s"$name.$propKey")
-              case (CTNode, None) => NodePropertyLate(offset, propKey, s"$name.$propKey")
-              case (CTRelationship, Some(token)) => RelationshipProperty(offset, token, s"$name.$propKey")
-              case (CTRelationship, None) => RelationshipPropertyLate(offset, propKey, s"$name.$propKey")
+              case (CTNode, Some(token)) => NodeProperty(offset, token, s"$key.$propKey")
+              case (CTNode, None) => NodePropertyLate(offset, propKey, s"$key.$propKey")
+              case (CTRelationship, Some(token)) => RelationshipProperty(offset, token, s"$key.$propKey")
+              case (CTRelationship, None) => RelationshipPropertyLate(offset, propKey, s"$key.$propKey")
               case _ => throw new InternalException(s"Expressions on object other then nodes and relationships are not yet supported")
             }
             if (nullable)
@@ -141,7 +141,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
             else
               propExpression
 
-          case RefSlot(offset, _, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
+          case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
         }
 
       case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
@@ -157,19 +157,19 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case GetDegree(Variable(n), typ, direction) =>
         val maybeToken: Option[String] = typ.map(r => r.name)
         pipelineInformation(n) match {
-          case LongSlot(offset, false, CTNode, _) => GetDegreePrimitive(offset, maybeToken, direction)
-          case LongSlot(offset, true, CTNode, _) => NullCheck(offset, GetDegreePrimitive(offset, maybeToken, direction))
+          case LongSlot(offset, false, CTNode) => GetDegreePrimitive(offset, maybeToken, direction)
+          case LongSlot(offset, true, CTNode) => NullCheck(offset, GetDegreePrimitive(offset, maybeToken, direction))
           case _ => throw new CantCompileQueryException(s"Invalid slot for GetDegree: $n")
         }
 
       case Variable(k) =>
         pipelineInformation.get(k) match {
           case Some(slot) => slot match {
-            case LongSlot(offset, false, CTNode, name) => NodeFromSlot(offset, name)
-            case LongSlot(offset, true, CTNode, name) => NullCheck(offset, NodeFromSlot(offset, name))
-            case LongSlot(offset, false, CTRelationship, name) => RelationshipFromSlot(offset, name)
-            case LongSlot(offset, true, CTRelationship, name) => NullCheck(offset, RelationshipFromSlot(offset, name))
-            case RefSlot(offset, _, _, _) => ReferenceFromSlot(offset)
+            case LongSlot(offset, false, CTNode) => NodeFromSlot(offset, k)
+            case LongSlot(offset, true, CTNode) => NullCheck(offset, NodeFromSlot(offset, k))
+            case LongSlot(offset, false, CTRelationship) => RelationshipFromSlot(offset, k)
+            case LongSlot(offset, true, CTRelationship) => NullCheck(offset, RelationshipFromSlot(offset, k))
+            case RefSlot(offset, _, _) => ReferenceFromSlot(offset)
             case _ =>
               throw new CantCompileQueryException("Unknown type for `" + k + "` in the pipeline information")
           }
@@ -182,8 +182,8 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case Variable(key) =>
             val slot = pipelineInformation(key)
             slot match {
-              case LongSlot(offset, true, _, _) => NullCheck(offset, IdFromSlot(offset))
-              case LongSlot(offset, false, _, _) => IdFromSlot(offset)
+              case LongSlot(offset, true, _) => NullCheck(offset, IdFromSlot(offset))
+              case LongSlot(offset, false, _) => IdFromSlot(offset)
               case _ => idFunction // Don't know how to specialize this
             }
           case _ => idFunction // Don't know how to specialize this
@@ -216,17 +216,17 @@ class SlottedRewriter(tokenContext: TokenContext) {
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 
     val propExpression = (slot, maybeToken) match {
-      case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTNode =>
-        NodePropertyExists(offset, token, s"$name.$propKey")
+      case (LongSlot(offset, _, typ), Some(token)) if typ == CTNode =>
+        NodePropertyExists(offset, token, s"$key.$propKey")
 
-      case (LongSlot(offset, _, typ, name), None) if typ == CTNode =>
-        NodePropertyExistsLate(offset, propKey, s"$name.$propKey")
+      case (LongSlot(offset, _, typ), None) if typ == CTNode =>
+        NodePropertyExistsLate(offset, propKey, s"$key.$propKey")
 
-      case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTRelationship =>
-        RelationshipPropertyExists(offset, token, s"$name.$propKey")
+      case (LongSlot(offset, _, typ), Some(token)) if typ == CTRelationship =>
+        RelationshipPropertyExists(offset, token, s"$key.$propKey")
 
-      case (LongSlot(offset, _, typ, name), None) if typ == CTRelationship =>
-        RelationshipPropertyExistsLate(offset, propKey, s"$name.$propKey")
+      case (LongSlot(offset, _, typ), None) if typ == CTRelationship =>
+        RelationshipPropertyExistsLate(offset, propKey, s"$key.$propKey")
 
       case _ => throw new CantCompileQueryException(s"Expressions on object other then nodes and relationships are not yet supported")
     }
