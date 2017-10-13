@@ -29,3 +29,21 @@ sealed trait Slot {
 
 case class LongSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot
 case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot
+
+sealed trait SlotWithAliases {
+  def slot: Slot
+  def aliases: Set[String]
+
+  protected def makeString: String = {
+    val aliasesString = s"${aliases.mkString("'", "','", "'")}"
+    f"${slot}%-30s ${aliasesString}%-10s"
+  }
+}
+
+case class LongSlotWithAliases(slot: LongSlot, aliases: Set[String]) extends SlotWithAliases {
+  override def toString: String = makeString
+}
+
+case class RefSlotWithAliases(slot: RefSlot, aliases: Set[String]) extends SlotWithAliases {
+  override def toString: String = makeString
+}
