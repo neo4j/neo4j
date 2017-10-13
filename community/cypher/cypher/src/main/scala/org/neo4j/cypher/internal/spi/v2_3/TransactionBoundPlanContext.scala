@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor

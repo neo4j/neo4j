@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.schema;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 

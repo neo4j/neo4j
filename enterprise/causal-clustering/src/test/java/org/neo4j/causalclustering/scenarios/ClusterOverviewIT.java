@@ -45,6 +45,7 @@ import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.Role;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -267,7 +268,7 @@ public class ClusterOverviewIT
     }
 
     private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )
-            throws org.neo4j.kernel.api.exceptions.KernelException, InterruptedException
+            throws KernelException, InterruptedException
     {
         assertEventually( "should have overview from core " + coreServerId,
                 () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );

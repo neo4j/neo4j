@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;

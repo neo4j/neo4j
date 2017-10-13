@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -49,7 +50,7 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     }
 
     @Override
-    public synchronized int getOrCreate( String name ) throws org.neo4j.kernel.api.exceptions.KernelException
+    public synchronized int getOrCreate( String name ) throws KernelException
     {
         KernelAPI kernel = kernelSupplier.get();
         try ( KernelTransaction transaction = kernel.newTransaction( Type.implicit, AUTH_DISABLED ) )

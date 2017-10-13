@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+
 public class LabelNotFoundKernelException extends KernelException
 {
     public LabelNotFoundKernelException( String message, Exception cause )

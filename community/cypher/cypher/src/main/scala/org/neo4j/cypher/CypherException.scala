@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.kernel.api.exceptions.{KernelException, Status}
+import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.Status
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause)
 with Status.HasStatus {

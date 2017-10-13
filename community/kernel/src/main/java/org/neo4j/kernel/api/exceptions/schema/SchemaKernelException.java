@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.exceptions.schema;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 

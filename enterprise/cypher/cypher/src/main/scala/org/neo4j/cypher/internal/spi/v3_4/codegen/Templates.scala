@@ -39,8 +39,10 @@ import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.exceptions.{EntityNotFoundException, KernelException}
-import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
+import org.neo4j.internal.kernel.api.TokenNameLookup
+import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException
+import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.storable.{Value, Values}

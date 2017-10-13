@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship, ConstraintViolationException => KernelConstraintViolationException}
-import org.neo4j.kernel.api.TokenNameLookup
-import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.internal.kernel.api.TokenNameLookup
+import org.neo4j.internal.kernel.api.exceptions.KernelException
 
 class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
