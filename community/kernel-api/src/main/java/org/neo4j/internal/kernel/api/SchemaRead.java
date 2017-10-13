@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * Surface for getting schema information, such as fetching specific indexes or constraints.
+ */
 public interface SchemaRead
 {
     IndexReference index( int label, int... properties );

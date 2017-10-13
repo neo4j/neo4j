@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * Allocates Cursors. To read data from the Kernel, Cursors are needed. A Cursor factory let's the Kernel consumer
+ * allocate all types of cursors, which can then be reused for multiple read operations.
+ */
 public interface CursorFactory
 {
     // entities

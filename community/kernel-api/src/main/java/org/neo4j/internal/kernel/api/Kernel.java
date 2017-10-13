@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * The Kernel.
+ */
 public interface Kernel
 {
     CursorFactory cursors();

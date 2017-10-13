@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * Methods for acquiring and releasing locks.
+ */
 public interface Locks
 {
 }

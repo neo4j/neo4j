@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Defines the read operations of the Kernel API.
+ * Defines the graph read operations of the Kernel.
  */
 public interface Read
 {

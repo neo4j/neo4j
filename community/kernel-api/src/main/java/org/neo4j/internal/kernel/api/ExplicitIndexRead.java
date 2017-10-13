@@ -22,6 +22,9 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Value;
 
+/**
+ * Operations for querying and seeking in explicit indexes.
+ */
 public interface ExplicitIndexRead
 {
     void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value )

@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * A cursor for accessing data in an explicit index.
+ */
 interface ExplicitIndexCursor
 {
     int totalExpectedCursorSize();

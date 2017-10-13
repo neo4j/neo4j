@@ -71,7 +71,7 @@ class Store extends Read implements Token
     private final StoreReadLayer read;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
-    public Store( RecordStorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
+    Store( RecordStorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
     {
         read = engine.storeReadLayer();
         statement = read.newStatement();

@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * Surface for creating and dropping indexes and constraints.
+ */
 public interface SchemaWrite
 {
 }

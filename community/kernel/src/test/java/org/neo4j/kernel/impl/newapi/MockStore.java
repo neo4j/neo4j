@@ -176,7 +176,7 @@ public class MockStore extends Read implements TestRule
         };
     }
 
-    private static abstract class Record<R extends AbstractBaseRecord>
+    private abstract static class Record<R extends AbstractBaseRecord>
     {
         abstract void initialize( R record );
     }

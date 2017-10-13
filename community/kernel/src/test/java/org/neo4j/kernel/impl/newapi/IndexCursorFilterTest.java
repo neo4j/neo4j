@@ -171,7 +171,7 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
         throw new UnsupportedOperationException( "should not be called in these tests" );
     }
 
-    private static abstract class Event
+    private abstract static class Event
     {
         static class Initialize extends Event
         {

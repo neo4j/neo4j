@@ -54,13 +54,4 @@ public interface IndexCursorProgressor
 
         void done();
     }
-//
-//    interface RelationshipManualCursor
-//    {
-//        void initialize( IndexCursorProgressor progressor, int expectedSize );
-//
-//        boolean node( long reference, float score, long source, int type, long target );
-//
-//        void done();
-//    }
 }

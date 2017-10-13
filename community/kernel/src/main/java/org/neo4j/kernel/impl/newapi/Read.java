@@ -86,6 +86,7 @@ abstract class Read implements
                     }
                     break;
                 default:
+                    break;
                 }
             }
             if ( j > 0 )

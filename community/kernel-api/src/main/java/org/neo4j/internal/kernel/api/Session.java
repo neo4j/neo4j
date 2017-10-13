@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * A Session is used to gain
+ */
 public interface Session extends AutoCloseable
 {
     Transaction beginTransaction();
