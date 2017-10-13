@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen
 
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, symbols}
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, One, ZeroOneOrMany, symbols}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.aggregation.AggregationConverter.aggregateExpressionConverter
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.aggregation.Distinct
@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly.immutableMapValue
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.v3_4.logical.plans
-import org.neo4j.cypher.internal.v3_4.logical.plans.{ColumnOrder, One, ZeroOneOrMany}
+import org.neo4j.cypher.internal.v3_4.logical.plans.ColumnOrder
 
 object LogicalPlanConverter {
 

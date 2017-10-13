@@ -97,7 +97,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val pipeline = pipelines(plan.assignedId)
 
     plan match {
-      case ProduceResult(columns, _) =>
+      case ProduceResult(_, columns) =>
         val runtimeColumns = createProjectionsForResult(columns, pipeline)
         ProduceResultSlottedPipe(source, runtimeColumns)(id)
 

@@ -465,12 +465,12 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("semi apply") {
     // MATCH (x) WHERE (x) -[:r]-> (y) ....
-    testSemiApply(SemiApply)
+    testSemiApply(SemiApply(_,_))
   }
 
   test("anti semi apply") {
     // MATCH (x) WHERE NOT (x) -[:r]-> (y) ....
-    testSemiApply(AntiSemiApply)
+    testSemiApply(AntiSemiApply(_,_))
   }
 
   def testSemiApply(
