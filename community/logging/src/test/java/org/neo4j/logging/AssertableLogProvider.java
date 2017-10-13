@@ -21,6 +21,7 @@ package org.neo4j.logging;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.hamcrest.StringDescription;
 import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
@@ -303,17 +304,16 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
     // TEST TOOLS
     //
 
-    private static final Matcher<Class> ANY_CLASS_MATCHER = any( Class.class );
     private static final Matcher<Level> DEBUG_LEVEL_MATCHER = equalTo( Level.DEBUG );
     private static final Matcher<Level> INFO_LEVEL_MATCHER = equalTo( Level.INFO );
     private static final Matcher<Level> WARN_LEVEL_MATCHER = equalTo( Level.WARN );
     private static final Matcher<Level> ERROR_LEVEL_MATCHER = equalTo( Level.ERROR );
     private static final Matcher<Level> ANY_LEVEL_MATCHER = any( Level.class );
-    private static final Matcher<String> ANY_MESSAGE_MATCHER = any( String.class );
+    private static final Matcher<String> ANY_MESSAGE_MATCHER = anyOf( any( String.class ), nullValue() );
     private static final Matcher<Object[]> NULL_ARGUMENTS_MATCHER = nullValue( Object[].class );
-    private static final Matcher<Object[]> ANY_ARGUMENTS_MATCHER = any( Object[].class );
+    private static final Matcher<Object[]> ANY_ARGUMENTS_MATCHER = anyOf( any( Object[].class ), nullValue() );
     private static final Matcher<Throwable> NULL_THROWABLE_MATCHER = nullValue( Throwable.class );
-    private static final Matcher<Throwable> ANY_THROWABLE_MATCHER = any( Throwable.class );
+    private static final Matcher<Throwable> ANY_THROWABLE_MATCHER = anyOf( any( Throwable.class ), nullValue() );
 
     public static final class LogMatcher
     {
@@ -452,6 +452,12 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         {
             return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, format,
                     arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+        }
+
+        public LogMatcher anyError()
+        {
+            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, Matchers.any( String.class ),
+                    ANY_ARGUMENTS_MATCHER, ANY_THROWABLE_MATCHER );
         }
 
         public LogMatcher error( String message )

@@ -19,11 +19,13 @@
  */
 package schema;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -41,6 +43,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -128,6 +133,39 @@ public class IndexPopulationIT
             try ( ResourceIterator<Node> nodes = database.findNodes( nodesLabel ) )
             {
                 assertEquals( 1, Iterators.count( nodes ) );
+            }
+        }
+    }
+
+    @Test
+    public void shutdownDatabaseDuringIndexPopulations()
+    {
+        AssertableLogProvider assertableLogProvider = new AssertableLogProvider( true );
+        File storeDir = directory.directory( "shutdownDbTest" );
+        Label testLabel = Label.label( "testLabel" );
+        String propertyName = "testProperty";
+        GraphDatabaseService shutDownDb = new TestGraphDatabaseFactory().setInternalLogProvider( assertableLogProvider )
+                                                                      .newEmbeddedDatabase( storeDir );
+        prePopulateDatabase( shutDownDb, testLabel, propertyName );
+
+        try ( Transaction transaction = shutDownDb.beginTx() )
+        {
+            shutDownDb.schema().indexFor( testLabel ).on( propertyName ).create();
+            transaction.success();
+        }
+        shutDownDb.shutdown();
+        assertableLogProvider.assertNone( AssertableLogProvider.inLog( IndexPopulationJob.class ).anyError() );
+    }
+
+    private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
+    {
+        for ( int j = 0; j < 10_000; j++ )
+        {
+            try ( Transaction transaction = database.beginTx() )
+            {
+                Node node = database.createNode( testLabel );
+                node.setProperty( propertyName, RandomStringUtils.randomAlphabetic( 10 ) );
+                transaction.success();
             }
         }
     }
