@@ -236,7 +236,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case LoadCSVPlan(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping) =>
         LoadCSVPipe(source, format, buildExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
 
-      case ProduceResult(columns, _) =>
+      case ProduceResult(_, columns) =>
         ProduceResultsPipe(source, columns)(id = id)
 
       case CreateNode(_, idName, labels, props) =>
@@ -387,7 +387,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)
 
-      case TriadicSelection(positivePredicate, _, sourceId, seenId, targetId, _) =>
+      case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
         TriadicSelectionPipe(positivePredicate, lhs, sourceId.name, seenId.name, targetId.name, rhs)(id = id)
 
       case ValueHashJoin(_, _, ASTEquals(lhsExpression, rhsExpression)) =>

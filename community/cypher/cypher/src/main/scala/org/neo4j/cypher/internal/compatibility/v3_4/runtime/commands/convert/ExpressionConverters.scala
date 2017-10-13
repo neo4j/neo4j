@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.v3_4.expressions.{SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{ManySeekableArgs, SeekableArgs, SingleSeekableArg}
 import org.neo4j.graphdb.Direction
 
 trait ExpressionConverter {

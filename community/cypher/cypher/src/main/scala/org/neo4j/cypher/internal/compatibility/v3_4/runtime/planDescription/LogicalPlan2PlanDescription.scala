@@ -355,7 +355,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case _: SemiApply =>
         PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables)
 
-      case TriadicSelection(_, _, IdName(source), IdName(seen), IdName(target), _) =>
+      case TriadicSelection(_, _, _, IdName(source), IdName(seen), IdName(target)) =>
         PlanDescriptionImpl(id, "TriadicSelection", children, Seq(KeyNames(Seq(source, seen, target))), variables)
 
       case _: Union =>
