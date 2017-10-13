@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -77,6 +78,30 @@ public interface ResourceIterator<T> extends Iterator<T>, Resource
             public R next()
             {
                 return map.apply( ResourceIterator.this.next() );
+            }
+        };
+    }
+
+    @SuppressWarnings( "unchecked" )
+    static <T> ResourceIterator<T> empty()
+    {
+        return new ResourceIterator()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return false;
+            }
+
+            @Override
+            public T next()
+            {
+                return (T)Collections.EMPTY_LIST.iterator().next();
+            }
+
+            @Override
+            public void close()
+            {
             }
         };
     }

@@ -19,17 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation
 
-import java.util.function.BiConsumer
-
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.ListSupport
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.MapValue
 
 import scala.collection.Map
 
@@ -44,59 +35,9 @@ trait GraphElementPropertyFunctions extends ListSupport {
     def symboltableDependencies: Set[String] = m.values.flatMap(_.symbolTableDependencies).toSet
   }
 
-  def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext,
-                    state: QueryState) {
-    props.foreach {
-      case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
-      case (key, expression) => setSingleValue(expression, context, pc, key, state)
-    }
-  }
-
   def toString(m: Map[String, Expression]): String = m.map {
     case (k, e) => "%s: %s".format(k, e.toString)
   }.mkString("{", ", ", "}")
-
-  def getMapFromExpression(v: AnyValue): MapValue = {
-    v match {
-      case null => throw new InvalidArgumentException("Property map expression is null")
-      case x if x == Values.NO_VALUE => throw new InvalidArgumentException("Property map expression is null")
-      case m: MapValue => m
-      case _ => throw new CypherTypeException(
-        s"Don't know how to extract parameters from this type: ${v.getClass.getName}")
-    }
-  }
-
-  private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer,
-                                 state: QueryState) {
-    val map = getMapFromExpression(expression(context, state))
-
-    pc match {
-      case n: Node => map.foreach(new BiConsumer[String, AnyValue] {
-        override def accept(key: String, value: AnyValue): Unit =
-          state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
-      })
-
-      case r: Relationship => map.foreach(new BiConsumer[String, AnyValue] {
-        override def accept(key: String, value: AnyValue): Unit =
-          state.query.relationshipOps.setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
-      })
-    }
-  }
-
-  private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String,
-                             state: QueryState) {
-    val unsafeValue: AnyValue = expression(context, state)
-    if (unsafeValue != Values.NO_VALUE) {
-      val value = makeValueNeoSafe(unsafeValue)
-      pc match {
-        case n: Node =>
-          state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), value)
-
-        case r: Relationship =>
-          state.query.relationshipOps.setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), value)
-      }
-    }
-  }
 }
 
 
