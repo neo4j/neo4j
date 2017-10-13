@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Effects, ReadsAllNodes}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -45,9 +44,8 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 
 case class NodeStartPipe(source: Pipe,
                          name: String,
-                         createSource: EntityProducer[Node],
-                         itemEffects: Effects = Effects(ReadsAllNodes))
-                        (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                         createSource: EntityProducer[Node]
+                        )(val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends StartPipe[Node](source, name, createSource) {
   def variableType = CTNode
 
