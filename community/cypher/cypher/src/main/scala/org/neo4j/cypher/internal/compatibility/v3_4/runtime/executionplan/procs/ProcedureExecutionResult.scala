@@ -37,7 +37,7 @@ import org.neo4j.helpers.ValueUtils
 import org.neo4j.helpers.ValueUtils._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{of => _, _}
+import org.neo4j.values.storable.Values.{of => DONT_USE_OMG, _}
 
 /**
   * Execution result of a Procedure

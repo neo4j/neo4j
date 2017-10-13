@@ -45,7 +45,7 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
       }
       case NodeByLabelScanPipe(_, label) if cardinality(label.getOptId(planContext)) > threshold =>
         acc => (LargeLabelFound, Some(identity))
-      case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) if cardinality(id) > threshold =>
+      case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id)) if cardinality(id) > threshold =>
         acc => (LargeLabelFound, Some(identity))
     }
 

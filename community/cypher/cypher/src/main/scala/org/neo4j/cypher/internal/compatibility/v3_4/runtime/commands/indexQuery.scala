@@ -68,7 +68,7 @@ object indexQuery extends GraphElementPropertyFunctions {
       if (results.size == 1)
         results.head
       else
-        new IteratorOfIterarors[Node](results)
+        results.iterator.flatten
 
     // Index range seek over range of values
     case RangeQueryExpression(rangeWrapper) =>
@@ -115,32 +115,4 @@ object indexQuery extends GraphElementPropertyFunctions {
   }
 }
 
-class IteratorOfIterarors[T](inner: Seq[Iterator[T]]) extends Iterator[T] {
-  private var _buffer: Option[T] = None
-  private var _innerIterator = inner.toIterator
-  private var _current: Iterator[T] = Iterator.empty
 
-  fillBuffer()
-
-  override def hasNext: Boolean = _buffer.nonEmpty
-
-  override def next(): T = {
-    if (isEmpty) Iterator.empty.next()
-
-    val res = _buffer.get
-    fillBuffer()
-    res
-  }
-
-  private def fillBuffer(): Unit = {
-
-    while (_current.isEmpty && _innerIterator.nonEmpty) {
-      _current = _innerIterator.next()
-    }
-
-    if (_current.isEmpty)
-      _buffer = None
-    else
-      _buffer = Some(_current.next())
-  }
-}

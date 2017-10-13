@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
 import org.neo4j.cypher.internal.util.v3_4.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.GetGraphElements
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.Argument
@@ -134,14 +133,6 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val queryText = query(m, state)
         state.query.relationshipOps.indexQuery(idxName, queryText)
-      }
-  }
-
-  val relationshipById: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
-    case (planContext, startItem @ RelationshipById(varName, ids, _)) =>
-      asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        GetGraphElements.getElements[Relationship](ids(m, state), varName, (id) =>
-          state.query.relationshipOps.getById(id))
       }
   }
 
