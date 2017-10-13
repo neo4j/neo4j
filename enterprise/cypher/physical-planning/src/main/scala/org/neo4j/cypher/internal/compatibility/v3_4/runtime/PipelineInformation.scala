@@ -29,8 +29,12 @@ import scala.collection.mutable
 object PipelineInformation {
   def empty = new PipelineInformation(mutable.Map.empty, 0, 0)
 
-  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int) =
-    new PipelineInformation(mutable.Map(slots.toSeq:_*), numberOfLongs, numberOfReferences)
+  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int) = {
+
+    val stringToSlot = mutable.Map(slots.toSeq: _*)
+    new PipelineInformation(stringToSlot, numberOfLongs, numberOfReferences)
+
+  }
 
   def toString(startFrom: LogicalPlan, m: Map[LogicalPlan, PipelineInformation]): String = {
     var lastSeen = 0
@@ -165,7 +169,7 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
   }
 
   def seedClone(): PipelineInformation = {
-    new PipelineInformation(this.slots, numberOfLongs, numberOfReferences)
+    new PipelineInformation(this.slots.clone(), numberOfLongs, numberOfReferences)
   }
 
   def newLong(key: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
