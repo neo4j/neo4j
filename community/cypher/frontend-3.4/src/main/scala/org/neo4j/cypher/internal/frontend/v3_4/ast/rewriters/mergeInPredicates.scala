@@ -24,11 +24,18 @@ import org.neo4j.cypher.internal.v3_4.expressions._
 /**
   * Merges multiple IN predicates into one.
   *
-  * For example, MATCH (n) WHERE n.prop IN [1,2,3] AND [2,3,4] RETURN n.prop
-  * will be rewritten into MATCH (n) WHERE n.prop IN [2,3]
+  * Examples:
+  *   MATCH (n) WHERE n.prop IN [1,2,3] AND [2,3,4] RETURN n.prop
+  *   => MATCH (n) WHERE n.prop IN [2,3]
+  *
+  *   MATCH (n) WHERE n.prop IN [1,2,3] OR [2,3,4] RETURN n.prop
+  *   => MATCH (n) WHERE n.prop IN [1,2,3,4]
+  *
+  *   MATCH (n) WHERE n.prop IN [1,2,3] AND [4,5,6] RETURN n.prop
+  *   => MATCH (n) WHERE FALSE
   *
   * NOTE: this rewriter must be applied before auto parameterization, since after
-  * that we are just dealing with parameters.
+  * that we are just dealing with opaque parameters.
   */
 case object mergeInPredicates extends Rewriter {
 
@@ -37,46 +44,55 @@ case object mergeInPredicates extends Rewriter {
   private val inner: Rewriter = bottomUp(Rewriter.lift {
     case where@Where(e) =>
       val rewrittenPredicates = e.endoRewrite(bottomUp(Rewriter.lift {
+        //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
         case and@And(lhs, rhs) =>
-          val rewriter = inRewriter(collectInPredicates(lhs, rhs))
-          val newLhs = lhs.endoRewrite(rewriter)
-          val newRhs = rhs.endoRewrite(rewriter)
-          if (newLhs == newRhs) newLhs
-          else and.copy(lhs = newLhs, rhs = newRhs)(and.position)
+          rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
+        //Look for `a IN [...] OR a IN [...]` and compute union of lists
+        case or@Or(lhs, rhs) =>
+          rewriteBinaryOperator(or, (a, b) => a union b,
+              (l, r) => or.copy(l, r)(or.position))
       }))
-
       where.copy(expression = rewrittenPredicates)(where.position)
   })
 
-  private def inRewriter(map: Map[Expression, Seq[Expression]]) = bottomUp(Rewriter.lift({
-    case in@In(a, l@ListLiteral(_)) =>
-      val expressions = map(a)
-      if (expressions.nonEmpty) in.copy(rhs = l.copy(map(a))(l.position))(in.position)
+  //Takes a binary operator a merge operator and a copy constructor
+  //and rewrites the binary operator
+  private def rewriteBinaryOperator(binary: BinaryOperatorExpression,
+                            merge: (Seq[Expression], Seq[Expression]) => Seq[Expression],
+                            copy: (Expression, Expression) => Expression): Expression = {
+    val rewriter = inRewriter(collectInPredicates(merge)(binary.lhs, binary.rhs))
+    val newLhs = binary.lhs.endoRewrite(rewriter)
+    val newRhs = binary.rhs.endoRewrite(rewriter)
+    if (newLhs == newRhs) newLhs
+    else  copy(newLhs,newRhs)
+  }
+
+  //Rewrites a IN [] by using the the provided map of precomputed lists
+  //a IN ... is rewritten to a IN inPredicates(a)
+  private def inRewriter(inPredicates: Map[Expression, Seq[Expression]]) = bottomUp(Rewriter.lift({
+    case in@In(a, list@ListLiteral(_)) =>
+      val expressions = inPredicates(a)
+      if (expressions.nonEmpty) in.copy(rhs = list.copy(expressions)(list.position))(in.position)
       else False()(in.position)
   }))
 
-  //Collect all a IN [..] as a map, with {a -> [...], ...}
-  private def collectInPredicates(expressions: Expression*): Map[Expression, Seq[Expression]] = {
+  //Given `a IN A ... b IN B ... a IN C` and use `merge` to merge all the lists with the same key.
+  //Returns {a -> merge(A,B), b -> C}
+  private def collectInPredicates(merge: (Seq[Expression], Seq[Expression]) => Seq[Expression])
+                                 (expressions: Expression*): Map[Expression, Seq[Expression]] = {
     val maps = expressions.map(_.treeFold(Map.empty[Expression, Seq[Expression]]) {
       case In(a, ListLiteral(exprs)) => (map) => {
-        val values = map.get(a).map(current => current intersect exprs).getOrElse(exprs).distinct
+        //if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
+        val values = map.get(a).map(current => merge(current,exprs)).getOrElse(exprs).distinct
         (map + (a -> values), None)
       }
     })
+    //Take list of maps, [map1,map2,...] and merge the using the provided `merge` to
+    //merge lists
     maps.reduceLeft((acc, current) => {
       val sharedKeys = acc.keySet intersect current.keySet
-      val updates = sharedKeys.map(k => k -> (acc(k) intersect current(k)).distinct)
+      val updates = sharedKeys.map(k => k -> merge(acc(k), current(k)).distinct)
       acc ++ updates ++ (current -- sharedKeys)
     })
   }
 }
-
-//Actual   :Query(None,SingleQuery(List(Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),Some(Where(
-//
-// And(
-//  And(
-//    And(
-//      In(Property(Variable(a),PropertyKeyName(prop)),ListLiteral(List(SignedDecimalIntegerLiteral(2), SignedDecimalIntegerLiteral(3)))),
-//      In(Property(Variable(a),PropertyKeyName(foo)),ListLiteral(List(StringLiteral(bar))))),
-//    In(Property(Variable(a),PropertyKeyName(prop)),ListLiteral(List(SignedDecimalIntegerLiteral(2), SignedDecimalIntegerLiteral(3))))),
-// In(Property(Variable(a),PropertyKeyName(foo)),ListLiteral(List(StringLiteral(bar)))))))), Return(false,ReturnItems(true,List()),None,None,None,None,Set()))))

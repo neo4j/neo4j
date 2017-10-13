@@ -33,10 +33,6 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
       "MATCH (a) WHERE a.prop IN [2,3] RETURN *")
   }
 
-  test("MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] RETURN *") {
-    shouldNotRewrite("MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] RETURN *")
-  }
-
   test("MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [4,5,6] RETURN *") {
     shouldRewrite(
       "MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [4,5,6] RETURN *",
@@ -52,13 +48,37 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
   test("MATCH (a) WHERE (a.prop IN [1,2,3] AND a.prop IN [2,3,4]) OR (a.prop IN [2,3,4] AND a.prop IN [3,4,5]) RETURN *") {
     shouldRewrite(
       "MATCH (a) WHERE (a.prop IN [1,2,3] AND a.prop IN [2,3,4]) OR (a.prop IN [2,3,4] AND a.prop IN [3,4,5]) RETURN *",
-      "MATCH (a) WHERE a.prop IN [2,3] OR a.prop IN [3,4] RETURN *")
+      "MATCH (a) WHERE a.prop IN [2,3,4] RETURN *")
   }
 
   test("MATCH (a) WHERE a.prop IN [1,2,3] AND a.foo IN ['foo', 'bar'] AND a.prop IN [2,3,4] AND a.foo IN ['bar'] RETURN *") {
     shouldRewrite(
       "MATCH (a) WHERE a.prop IN [1,2,3] AND a.foo IN ['foo','bar'] AND a.prop IN [2,3,4] AND a.foo IN ['bar'] RETURN *",
       "MATCH (a) WHERE a.prop IN [2,3] AND a.foo IN ['bar'] RETURN *")
+  }
+
+  test("MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] RETURN *") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] RETURN *",
+      "MATCH (a) WHERE a.prop IN [1,2,3,4] RETURN *")
+  }
+
+  test("MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] OR a.prop IN [3,4,5] RETURN *") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] OR a.prop IN [3,4,5] RETURN *",
+      "MATCH (a) WHERE a.prop IN [1,2,3,4,5] RETURN *")
+  }
+
+  test("MATCH (a) WHERE (a.prop IN [1,2,3] OR a.prop IN [2,3,4]) AND (a.prop IN [2,3,4] OR a.prop IN [3,4,5]) RETURN *") {
+    shouldRewrite(
+      "MATCH (a) WHERE (a.prop IN [1,2,3] OR a.prop IN [2,3,4]) AND (a.prop IN [2,3,4] OR a.prop IN [3,4,5]) RETURN *",
+      "MATCH (a) WHERE a.prop IN [2,3,4] RETURN *")
+  }
+
+  test("MATCH (a) WHERE a.prop IN [1,2,3] OR a.foo IN ['foo', 'bar'] OR a.prop IN [2,3,4] OR a.foo IN ['bar'] RETURN *") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [1,2,3] OR a.foo IN ['foo','bar'] OR a.prop IN [2,3,4] OR a.foo IN ['bar'] RETURN *",
+      "MATCH (a) WHERE a.prop IN [1,2,3,4] OR a.foo IN ['foo','bar'] RETURN *")
   }
 
   private def shouldRewrite(from: String, to: String) {
@@ -68,9 +88,5 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     val result = mergeInPredicates(original)
 
     common(result) should equal(common(expected))
-  }
-
-  private def shouldNotRewrite(q: String) {
-    shouldRewrite(q, q)
   }
 }
