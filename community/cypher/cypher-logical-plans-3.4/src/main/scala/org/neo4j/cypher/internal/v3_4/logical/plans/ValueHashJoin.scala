@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.expressions.Equals
-/*
-Represents a common hash join on values and not node ids. The definition of a value join is an equality predicate
-between two expressions that have different, non-empty variable-dependency sets.
- */
+
+/**
+  * The definition of a value join is an equality predicate between two expressions that
+  * have different, non-empty variable-dependency sets.
+  */
 case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
                         (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override def availableSymbols = left.availableSymbols ++ right.availableSymbols
+  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
 }

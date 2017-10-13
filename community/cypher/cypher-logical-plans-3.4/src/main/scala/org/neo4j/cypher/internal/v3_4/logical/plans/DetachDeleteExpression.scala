@@ -22,6 +22,11 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
+/**
+  * For each input row, delete the entity specified by 'expression' from the graph. If the entity is a
+  *   node) all it's relationships are also deleted
+  *   path) all nodes in the path and all their relationships are deleted.
+  */
 case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {

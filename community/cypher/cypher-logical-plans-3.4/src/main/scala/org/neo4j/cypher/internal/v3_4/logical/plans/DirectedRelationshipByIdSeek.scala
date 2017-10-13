@@ -21,6 +21,14 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * For each relationship id in 'relIds', fetch the corresponding relationship. For each relationship,
+  * produce one row containing:
+  *   - argument
+  *   - the relationship as 'idName'
+  *   - the start node as 'startNode'
+  *   - the end node as 'endNode'
+  */
 case class DirectedRelationshipByIdSeek(idName: IdName,
                                         relIds: SeekableArgs,
                                         startNode: IdName,

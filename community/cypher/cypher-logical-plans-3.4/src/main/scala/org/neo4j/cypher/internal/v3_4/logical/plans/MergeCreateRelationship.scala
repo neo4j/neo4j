@@ -22,6 +22,13 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
 
+/**
+  * For each input row, create a new relationship with the provided type and properties,
+  * and assign it to the variable 'idName'.
+  *
+  * This is a special version of CreateRelationship, which is used in a merge plan after checking that no relationship
+  * with the same type and properties exist between the given nodes.
+  */
 case class MergeCreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: RelTypeName, endNode: IdName,
                                    properties: Option[Expression])
                                   (val solved: PlannerQuery with CardinalityEstimation)
