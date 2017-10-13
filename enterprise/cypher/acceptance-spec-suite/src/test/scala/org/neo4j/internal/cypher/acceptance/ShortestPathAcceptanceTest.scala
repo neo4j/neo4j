@@ -52,7 +52,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+    // this should be tested on both planners after 3.1.8 has been released
+    val result = innerExecute(query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(List(nodeA, nodeB)))
   }
@@ -68,7 +69,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+    // this should be tested on both planners after 3.1.8 has been released
+    val result = innerExecute(query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(null))
   }
@@ -85,7 +87,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+    // this should be tested on both planners after 3.1.8 has been released
+    val result = innerExecute(query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(List(nodeA, nodeB)))
   }
@@ -102,7 +105,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWithAllPlanners(query).columnAs[List[Node]]("nodes(x)").toList
+    // this should be tested on both planners after 3.1.8 has been released
+    val result = innerExecute(query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List.empty)
   }
