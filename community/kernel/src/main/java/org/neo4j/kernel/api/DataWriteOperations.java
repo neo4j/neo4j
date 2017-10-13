@@ -91,7 +91,7 @@ public interface DataWriteOperations
     Value graphRemoveProperty( int propertyKeyId );
 
     /**
-     * Creates a explicit index in a separate transaction if not yet available.
+     * Creates an explicit index in a separate transaction if not yet available.
      */
     void nodeExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
@@ -102,7 +102,7 @@ public interface DataWriteOperations
     //===========================================
 
     /**
-     * Creates a explicit index in a separate transaction if not yet available.
+     * Creates an explicit index in a separate transaction if not yet available.
      */
     void relationshipExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
 

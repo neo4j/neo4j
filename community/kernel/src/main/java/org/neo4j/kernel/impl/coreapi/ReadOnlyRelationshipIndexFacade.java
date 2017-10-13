@@ -25,7 +25,7 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
 
 /**
- * Wraps a explicit index to prevent writes to it - exposing it as a read-only index.
+ * Wraps an explicit index to prevent writes to it - exposing it as a read-only index.
  */
 public class ReadOnlyRelationshipIndexFacade extends ReadOnlyIndexFacade<Relationship> implements RelationshipIndex
 {
