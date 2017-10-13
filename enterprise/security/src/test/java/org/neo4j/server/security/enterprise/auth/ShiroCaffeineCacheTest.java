@@ -45,8 +45,9 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldFailToCreateAuthCacheForTTLZero()
+    public void shouldFailToCreateAuthCacheForTTLZeroIfUsingTLL()
     {
+        new ShiroCaffeineCache<>( fakeTicker::read, Runnable::run, 0, 5, false );
         try
         {
             new ShiroCaffeineCache<>( fakeTicker::read, Runnable::run, 0, 5, true );
