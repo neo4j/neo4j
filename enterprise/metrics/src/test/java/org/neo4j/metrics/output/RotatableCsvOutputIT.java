@@ -81,12 +81,12 @@ public class RotatableCsvOutputIT
                 ( newValue, currentValue ) -> newValue >= currentValue );
         assertEquals( 1, committedTransactions );
 
+        File metricsFile2 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode();
             transaction.success();
         }
-        File metricsFile2 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
         long oldCommittedTransactions = readLongValueAndAssert( metricsFile2,
                 ( newValue, currentValue ) -> newValue >= currentValue );
         assertEquals( 1, oldCommittedTransactions );
