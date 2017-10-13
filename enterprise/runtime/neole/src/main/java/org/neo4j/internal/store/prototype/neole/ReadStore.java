@@ -190,6 +190,12 @@ public class ReadStore extends MemoryManager implements Read
     }
 
     @Override
+    public void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public void futureNodeReferenceRead( long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -209,64 +215,6 @@ public class ReadStore extends MemoryManager implements Read
 
     @Override
     public void futureRelationshipPropertyReferenceRead( long reference )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public IndexReference index( int label, int... properties )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public int nodeLabel( String name )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public int propertyKey( String name )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void nodeExplicitIndexLookup(
-            NodeExplicitIndexCursor cursor, String index, String key, Value value )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void relationshipExplicitIndexGet(
-            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

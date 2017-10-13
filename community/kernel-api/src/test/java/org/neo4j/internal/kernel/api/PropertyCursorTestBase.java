@@ -40,6 +40,7 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
+    @SuppressWarnings( "SpellCheckingInspection" )
     private static final String LONG_STRING = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque "
             + "eget nibh cursus, efficitur risus non, ultrices justo. Nulla laoreet eros mi, non molestie magna "
             + "luctus in. Fusce nibh neque, tristique ultrices laoreet et, aliquet non dolor. Donec ultrices nisi "
@@ -76,10 +77,17 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             + "Proin massa enim, accumsan ac libero at, iaculis sodales tellus. Vivamus fringilla justo sed luctus "
             + "tincidunt. Sed placerat fringilla ex, vel placerat sem faucibus eget. Vestibulum semper dui sit amet "
             + "efficitur blandit. Donec eu tellus velit. Etiam a mi nec massa euismod posuere. Cras eget lacus leo.";
+
     private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
             floatProp, doubleProp, trueProp, falseProp, charProp, emptyStringProp, shortStringProp, longStringProp,
             utf8Prop, smallArray, bigArray, allProps;
+
     private static String chinese = "造Unicode之";
+
+    protected boolean supportsBigProperties()
+    {
+        return true;
+    }
 
     @Override
     void createTestGraph( GraphDatabaseService graphDb )
@@ -127,11 +135,17 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             all.setProperty( "charProp", 'x' );
             all.setProperty( "emptyStringProp", "" );
             all.setProperty( "shortStringProp", "hello" );
-            all.setProperty( "longStringProp", LONG_STRING );
+            if ( supportsBigProperties() )
+            {
+                all.setProperty( "longStringProp", LONG_STRING );
+            }
             all.setProperty( "utf8Prop", chinese );
 
-            all.setProperty( "smallArray", new int[] {1, 2, 3, 4} );
-            all.setProperty( "bigArray", new String[] {LONG_STRING} );
+            if ( supportsBigProperties() )
+            {
+                all.setProperty( "smallArray", new int[] {1, 2, 3, 4} );
+                all.setProperty( "bigArray", new String[] {LONG_STRING} );
+            }
 
             allProps = all.getId();
 
@@ -183,10 +197,16 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         assertAccessSingleProperty( charProp, Values.of( 'x' ) );
         assertAccessSingleProperty( emptyStringProp, Values.of( "" ) );
         assertAccessSingleProperty( shortStringProp, Values.of( "hello" ) );
-        assertAccessSingleProperty( longStringProp, Values.of( LONG_STRING ) );
+        if ( supportsBigProperties() )
+        {
+            assertAccessSingleProperty( longStringProp, Values.of( LONG_STRING ) );
+        }
         assertAccessSingleProperty( utf8Prop, Values.of( chinese ) );
-        assertAccessSingleProperty( smallArray, Values.of( new int[] {1, 2, 3, 4} ) );
-        assertAccessSingleProperty( bigArray, Values.of( new String[] {LONG_STRING} ) );
+        if ( supportsBigProperties() )
+        {
+            assertAccessSingleProperty( smallArray, Values.of( new int[] {1, 2, 3, 4} ) );
+            assertAccessSingleProperty( bigArray, Values.of( new String[] {LONG_STRING} ) );
+        }
     }
 
     @Test
@@ -220,12 +240,15 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertTrue( "charProp", values.contains( 'x' ) );
             assertTrue( "emptyStringProp", values.contains( "" ) );
             assertTrue( "shortStringProp", values.contains( "hello" ) );
-            assertTrue( "longStringProp", values.contains( LONG_STRING ) );
             assertTrue( "utf8Prop", values.contains( chinese ) );
-            assertThat( "smallArray", values, hasItem( intArray( 1, 2, 3, 4 ) ) );
-            assertThat( "bigArray", values, hasItem( arrayContaining( LONG_STRING ) ) );
-
-            assertEquals( "number of values", 16, values.size() );
+            if ( supportsBigProperties() )
+            {
+                assertTrue( "longStringProp", values.contains( LONG_STRING ) );
+                assertThat( "smallArray", values, hasItem( intArray( 1, 2, 3, 4 ) ) );
+                assertThat( "bigArray", values, hasItem( arrayContaining( LONG_STRING ) ) );
+            }
+            int expected = supportsBigProperties() ? 16 : 13;
+            assertEquals( "number of values", expected, values.size() );
         }
     }
 

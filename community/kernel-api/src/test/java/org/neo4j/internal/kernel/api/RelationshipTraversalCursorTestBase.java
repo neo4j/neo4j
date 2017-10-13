@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,6 +42,16 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         extends KernelAPIReadTestBase<G>
 {
     private static long bare, start, end, sparse, dense;
+
+    protected boolean supportsDirectTraversal()
+    {
+        return true;
+    }
+
+    protected boolean supportsSparseNodes()
+    {
+        return true;
+    }
 
     @Override
     void createTestGraph( GraphDatabaseService graphDb )
@@ -334,7 +345,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
 
             read.singleNode( sparse, node );
             assertTrue( "access sparse node", node.next() );
-            assertFalse( "sparse node", node.isDense() );
+            assertFalse( "sparse node", node.isDense() && supportsSparseNodes() );
         }
     }
 
@@ -365,24 +376,28 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     @Test
     public void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
+        Assume.assumeTrue( supportsSparseNodes() && supportsDirectTraversal() );
         traverseWithoutGroups( sparse, false );
     }
 
     @Test
     public void shouldTraverseDenseNodeWithoutGroups() throws Exception
     {
+        Assume.assumeTrue( supportsDirectTraversal() );
         traverseWithoutGroups( dense, false );
     }
 
     @Test
     public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
+        Assume.assumeTrue( supportsSparseNodes() );
         traverseWithoutGroups( sparse, true );
     }
 
     @Test
     public void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
+        Assume.assumeTrue( supportsDirectTraversal() );
         traverseWithoutGroups( dense, true );
     }
 
