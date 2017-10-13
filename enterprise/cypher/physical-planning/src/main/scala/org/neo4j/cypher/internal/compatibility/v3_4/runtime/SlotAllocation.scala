@@ -89,7 +89,7 @@ object SlotAllocation {
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
           val argumentPipeline = outputStack.top
-          argumentStack.push(argumentPipeline.seedClone())
+          argumentStack.push(argumentPipeline.breakPipelineAndClone())
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
@@ -147,13 +147,13 @@ object SlotAllocation {
         outgoing
 
       case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline.newLong(to, nullable, CTNode)
         newPipeline
 
       case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline
 
@@ -185,13 +185,13 @@ object SlotAllocation {
         incomingPipeline
 
       case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline.newLong(to, nullable = true, CTNode)
         newPipeline
 
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline
 
@@ -209,7 +209,7 @@ object SlotAllocation {
                        _,
                        _,
                        _) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
 
         // We allocate these on the incoming pipeline after cloning it, since we don't need these slots in
         // the produced rows
@@ -240,12 +240,12 @@ object SlotAllocation {
         incomingPipeline
 
       case UnwindCollection(_, IdName(variable), expression) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
 
       case Eager(_) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
@@ -278,7 +278,7 @@ object SlotAllocation {
         rhsPipeline
 
       case _: CartesianProduct =>
-        val newPipeline = lhsPipeline.seedClone()
+        val newPipeline = lhsPipeline.breakPipelineAndClone()
         rhsPipeline.foreachSlot {
           case (k, slot) =>
             newPipeline.add(k, slot)

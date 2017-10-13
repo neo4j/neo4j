@@ -168,7 +168,7 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
     case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)
   }
 
-  def seedClone(): PipelineInformation = {
+  def breakPipelineAndClone(): PipelineInformation = {
     new PipelineInformation(this.slots.clone(), numberOfLongs, numberOfReferences)
   }
 

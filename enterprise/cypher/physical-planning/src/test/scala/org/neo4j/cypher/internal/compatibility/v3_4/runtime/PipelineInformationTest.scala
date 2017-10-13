@@ -66,7 +66,7 @@ class PipelineInformationTest extends CypherFunSuite {
       "x" -> LongSlot(0, nullable = false, CTNode),
       "y" -> LongSlot(1, nullable = false, CTNode)),
       numberOfLongs = 2, numberOfReferences = 0)
-    val clone: PipelineInformation = pipeline.seedClone()
+    val clone: PipelineInformation = pipeline.breakPipelineAndClone()
     pipeline should equal(clone)
 
     // when
