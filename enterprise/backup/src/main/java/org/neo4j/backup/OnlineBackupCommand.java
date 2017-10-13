@@ -25,6 +25,7 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.io.pagecache.PageCache;
 
 public class OnlineBackupCommand implements AdminCommand
 {
@@ -62,7 +63,7 @@ public class OnlineBackupCommand implements AdminCommand
         checkDestination( onlineBackupContext.getRequiredArguments().getReportDir() );
 
         BackupFlow backupFlow = backupFlowFactory.backupFlow( onlineBackupContext, backupSupportingClasses.getBackupProtocolService(),
-                backupSupportingClasses.getBackupDelegator() );
+                backupSupportingClasses.getBackupDelegator(), backupSupportingClasses.getPageCache() );
 
         backupFlow.performBackup( onlineBackupContext );
         outsideWorld.stdOutLine( "Backup complete." );

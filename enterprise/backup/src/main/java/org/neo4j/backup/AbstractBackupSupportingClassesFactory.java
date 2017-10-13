@@ -32,7 +32,6 @@ import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -72,8 +71,11 @@ public abstract class AbstractBackupSupportingClassesFactory
      */
     BackupSupportingClasses createSupportingClassesForBackupStrategies( Config config )
     {
-        PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
-        return new BackupSupportingClasses( backupDelegatorFormConfig( pageCache, config ), haFromConfig( pageCache ) );
+        PageCache pageCache = createPageCache( fileSystemAbstraction, config );
+        return new BackupSupportingClasses(
+                backupDelegatorFromConfig( pageCache, config ),
+                haFromConfig( pageCache ),
+                pageCache );
     }
 
     private BackupProtocolService haFromConfig( PageCache pageCache )
@@ -81,7 +83,7 @@ public abstract class AbstractBackupSupportingClassesFactory
         return new BackupProtocolService( () -> fileSystemAbstraction, logProvider, logDestination, monitors, pageCache );
     }
 
-    private BackupDelegator backupDelegatorFormConfig( PageCache pageCache, Config config )
+    private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )
     {
         PipelineHandlerAppenderFactory pipelineHandlerAppenderFactory = getPipelineHandlerAppenderFactory();
         PipelineHandlerAppender pipelineHandlerAppender = pipelineHandlerAppenderFactory.create( config, getDependencies(), logProvider );
@@ -98,6 +100,11 @@ public abstract class AbstractBackupSupportingClassesFactory
     private static BackupDelegator backupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient )
     {
         return new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, new ClearIdService( new IdGeneratorWrapper() ) );
+    }
+
+    private static PageCache createPageCache( FileSystemAbstraction fileSystemAbstraction, Config config )
+    {
+        return ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
     }
 
     private Dependencies getDependencies()

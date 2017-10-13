@@ -80,6 +80,7 @@ import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
@@ -100,7 +101,7 @@ class BackupProtocolService
     private final Log log;
     private final OutputStream logDestination;
     private final Monitors monitors;
-    private final Optional<PageCache> pageCacheOptional;
+    private final PageCache pageCache;
 
     BackupProtocolService()
     {
@@ -109,8 +110,8 @@ class BackupProtocolService
 
     BackupProtocolService( OutputStream logDestination )
     {
-        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination,
-                new Monitors(), null );
+        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination, new Monitors(),
+                createPageCache( new DefaultFileSystemAbstraction() ) );
     }
 
     BackupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, OutputStream logDestination, Monitors monitors,
@@ -121,7 +122,7 @@ class BackupProtocolService
         this.log = logProvider.getLog( getClass() );
         this.logDestination = logDestination;
         this.monitors = monitors;
-        this.pageCacheOptional = Optional.ofNullable( pageCache );
+        this.pageCache = pageCache;
         monitors.addMonitorListener( new StoreCopyClientLoggingMonitor( log ), getClass().getName() );
     }
 
@@ -148,7 +149,7 @@ class BackupProtocolService
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
-        try ( PageCache pageCache = this.pageCacheOptional.orElse( createPageCache( fileSystem, tuningConfiguration ) ) )
+        try
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
                     loadKernelExtensions(), logProvider, fileSystem, pageCache,
@@ -201,7 +202,7 @@ class BackupProtocolService
 
         Map<String,String> configParams = config.getRaw();
 
-        try ( PageCache pageCache = this.pageCacheOptional.orElse( createPageCache( fileSystem, config ) ) )
+        try
         {
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
             long backupStartTime = System.currentTimeMillis();
@@ -328,7 +329,7 @@ class BackupProtocolService
         return !fileSystem.isDirectory( targetDirectory ) || 0 == fileSystem.listFiles( targetDirectory ).length;
     }
 
-    private static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache,
+    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache,
             Map<String,String> config )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );

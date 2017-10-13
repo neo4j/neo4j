@@ -27,8 +27,10 @@ import java.util.List;
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -37,6 +39,8 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.configuration.Settings.listenAddress;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class TestHelpers
 {
@@ -76,7 +80,15 @@ public class TestHelpers
         return new ProcessStreamHandler( process, false ).waitForResult();
     }
 
-    public static String backupAddress( GraphDatabaseAPI graphDatabase )
+    public static String backupAddressCc( GraphDatabaseAPI graphDatabase )
+    {
+        ListenSocketAddress hostnamePort = graphDatabase.getDependencyResolver().resolveDependency( Config.class ).get(
+                listenAddress( "causal_clustering.transaction_listen_address", 6000 ) );
+
+        return hostnamePort.toString();
+    }
+
+    public static String backupAddressHa( GraphDatabaseAPI graphDatabase )
     {
         HostnamePort hostnamePort = graphDatabase
                 .getDependencyResolver()

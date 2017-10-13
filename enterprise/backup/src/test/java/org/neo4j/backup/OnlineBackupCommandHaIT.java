@@ -20,6 +20,8 @@
 package org.neo4j.backup;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,10 +32,14 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -75,6 +81,11 @@ public class OnlineBackupCommandHaIT
         return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
     }
 
+    private List<Runnable> oneOffShutdownTasks;
+    private static final Label label = Label.label( "any_label" );
+    private static final String PROP_NAME = "name";
+    private static final String PROP_RANDOM = "random";
+
     private static DbRepresentation createSomeData( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
@@ -85,6 +96,18 @@ public class OnlineBackupCommandHaIT
             tx.success();
         }
         return DbRepresentation.of( db );
+    }
+
+    @Before
+    public void resetTasks()
+    {
+        oneOffShutdownTasks = new ArrayList<>();
+    }
+
+    @After
+    public void shutdownTasks()
+    {
+        oneOffShutdownTasks.forEach( Runnable::run );
     }
 
     @Test
@@ -116,6 +139,51 @@ public class OnlineBackupCommandHaIT
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
+    }
+
+    @Test
+    public void dataIsInAUsableStateAfterBackup() throws Exception
+    {
+        // given database exists
+        int backupPort = PortAuthority.allocatePort();
+        startDb( backupPort );
+
+        // and the database has indexes
+        createIndexes( db );
+
+        // and the database is being populated
+        AtomicBoolean continueFlagReference = new AtomicBoolean( true );
+        new Thread( () -> repeatedlyPopulateDatabase( db, continueFlagReference ) ).start(); // populate db with number properties etc.
+        oneOffShutdownTasks.add( () -> continueFlagReference.set( false ) ); // kill thread
+
+        // then backup is successful
+        String ip = ":" + backupPort;
+        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" + recordFormat ) );
+        db.shutdown();
+    }
+
+    private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
+    {
+        while ( continueFlagReference.get() )
+        {
+            try
+            {
+                createSomeData( db );
+            }
+            catch ( DatabaseShutdownException ex )
+            {
+                break;
+            }
+        }
+    }
+
+    private void createIndexes( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label ).on( PROP_NAME ).on( PROP_RANDOM ).create();
+            tx.success();
+        }
     }
 
     private void startDb( Integer backupPort )

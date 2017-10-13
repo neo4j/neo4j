@@ -25,6 +25,7 @@ import org.neo4j.com.ComException;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
@@ -49,6 +50,10 @@ public class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
             backupProtocolService.doIncrementalBackup( resolvedAddress.getHost(), resolvedAddress.getPort(), backupDestination, ConsistencyCheck.NONE, timeout,
                     config );
             return new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
+        }
+        catch ( MismatchingStoreIdException e )
+        {
+            return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
         }
         catch ( IncrementalBackupNotPossibleException e )
         {

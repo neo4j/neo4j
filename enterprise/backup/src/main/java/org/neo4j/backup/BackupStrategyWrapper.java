@@ -20,21 +20,34 @@
 package org.neo4j.backup;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.helpers.OptionalHostnamePort;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static org.neo4j.backup.BackupProtocolService.startTemporaryDb;
 
 class BackupStrategyWrapper
 {
     private final BackupStrategy backupStrategy;
     private final BackupCopyService backupCopyService;
+    private final BackupRecoveryService backupRecoveryService;
 
-    BackupStrategyWrapper( BackupStrategy backupStrategy, BackupCopyService backupCopyService )
+    private final PageCache pageCache;
+    private final Config config;
+
+    BackupStrategyWrapper( BackupStrategy backupStrategy, BackupCopyService backupCopyService, PageCache pageCache, Config config,
+            BackupRecoveryService backupRecoveryService )
     {
         this.backupStrategy = backupStrategy;
         this.backupCopyService = backupCopyService;
+        this.pageCache = pageCache;
+        this.config = config;
+        this.backupRecoveryService = backupRecoveryService;
     }
 
     /**
@@ -57,15 +70,17 @@ class BackupStrategyWrapper
     private PotentiallyErroneousState<BackupStrategyOutcome> performBackupWithoutLifecycle( OnlineBackupContext onlineBackupContext )
     {
         File backupLocation = onlineBackupContext.getResolvedLocationFromName();
-        PotentiallyErroneousState<BackupStageOutcome> state;
         final File userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
         final OptionalHostnamePort userSpecifiedAddress = onlineBackupContext.getRequiredArguments().getAddress();
         final Config config = onlineBackupContext.getConfig();
+
         if ( backupCopyService.backupExists( backupLocation ) )
         {
-            state = backupStrategy.performIncrementalBackup( userSpecifiedBackupLocation, config, userSpecifiedAddress );
+            PotentiallyErroneousState<BackupStageOutcome> state =
+                    backupStrategy.performIncrementalBackup( userSpecifiedBackupLocation, config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
             boolean incrementalWasSuccessful = BackupStageOutcome.SUCCESS.equals( state.getState() );
+
             if ( fullBackupWontWork || incrementalWasSuccessful )
             {
                 return describeOutcome( state );
@@ -82,25 +97,35 @@ class BackupStrategyWrapper
     {
         final File userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
         File temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
-        PotentiallyErroneousState<BackupStageOutcome> state =
-                backupStrategy.performFullBackup( temporaryFullBackupLocation, onlineBackupContext.getConfig(),
-                        onlineBackupContext.getRequiredArguments().getAddress() );
+        PotentiallyErroneousState<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, onlineBackupContext.getConfig(),
+                onlineBackupContext.getRequiredArguments().getAddress() );
 
-        boolean aBackupAlreadyExisted = userSpecifiedBackupLocation.equals( temporaryFullBackupLocation );
-        if ( BackupStageOutcome.SUCCESS.equals( state.getState() ) && !aBackupAlreadyExisted )
+        boolean aBackupAlreadyExisted =
+                userSpecifiedBackupLocation.equals( temporaryFullBackupLocation ); // NOTE temporaryFullBackupLocation can be equal to desired
+
+        if ( BackupStageOutcome.SUCCESS.equals( state.getState() ) )
         {
-            File newBackupLocationForPreExistingBackup = backupCopyService.findNewBackupLocationForBrokenExisting( userSpecifiedBackupLocation );
-            try
+            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, config );
+            if ( !aBackupAlreadyExisted )
             {
-                backupCopyService.moveBackupLocation( userSpecifiedBackupLocation, newBackupLocationForPreExistingBackup );
-                backupCopyService.moveBackupLocation( temporaryFullBackupLocation, userSpecifiedBackupLocation );
-            }
-            catch ( CommandFailed commandFailed )
-            {
-                return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, commandFailed );
+                try
+                {
+                    renameTemporaryBackupToExpected( temporaryFullBackupLocation, userSpecifiedBackupLocation );
+                }
+                catch ( CommandFailed commandFailed )
+                {
+                    return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, commandFailed );
+                }
             }
         }
         return state;
+    }
+
+    private void renameTemporaryBackupToExpected( File temporaryFullBackupLocation, File userSpecifiedBackupLocation ) throws CommandFailed
+    {
+        File newBackupLocationForPreExistingBackup = backupCopyService.findNewBackupLocationForBrokenExisting( userSpecifiedBackupLocation );
+        backupCopyService.moveBackupLocation( userSpecifiedBackupLocation, newBackupLocationForPreExistingBackup );
+        backupCopyService.moveBackupLocation( temporaryFullBackupLocation, userSpecifiedBackupLocation );
     }
 
     private PotentiallyErroneousState<BackupStrategyOutcome> describeOutcome( PotentiallyErroneousState<BackupStageOutcome> strategyStageOutcome )

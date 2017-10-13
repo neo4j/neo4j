@@ -164,13 +164,13 @@ public class BackupProtocolServiceIT
     private BackupProtocolService backupService()
     {
         return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
-                FormattedLogProvider.toOutputStream( NULL_OUTPUT ), NULL_OUTPUT, new Monitors(), null );
+                FormattedLogProvider.toOutputStream( NULL_OUTPUT ), NULL_OUTPUT, new Monitors(), pageCacheRule.getPageCache( fileSystemRule.get() ) );
     }
 
     private BackupProtocolService backupService( LogProvider logProvider )
     {
-        return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
-                logProvider, NULL_OUTPUT, new Monitors(), null );
+        return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ), logProvider, NULL_OUTPUT,
+                new Monitors(), pageCacheRule.getPageCache( fileSystemRule.get() ) );
     }
 
     @Test
