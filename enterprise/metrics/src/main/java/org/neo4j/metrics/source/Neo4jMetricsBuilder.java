@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -132,8 +133,12 @@ public class Neo4jMetricsBuilder
 
         if ( config.get( MetricsSettings.neoCountsEnabled ) )
         {
-            life.add( new EntityCountMetrics( registry, dependencies.entityCountStats() ) );
-            result = true;
+            if ( kernelContext.databaseInfo().edition != Edition.community &&
+                    kernelContext.databaseInfo().edition != Edition.unknown )
+            {
+                life.add( new EntityCountMetrics( registry, dependencies.entityCountStats() ) );
+                result = true;
+            }
         }
 
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )

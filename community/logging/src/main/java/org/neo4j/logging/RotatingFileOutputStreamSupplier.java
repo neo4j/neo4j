@@ -308,7 +308,6 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             finally
             {
                 rotating.set( false );
-                logFileLock.writeLock().unlock();
                 try
                 {
                     bufferingOutputStream.writeTo( streamWrapper );
@@ -317,6 +316,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 {
                     rotationListener.rotationError( e, streamWrapper );
                 }
+                logFileLock.writeLock().unlock();
             }
         };
 

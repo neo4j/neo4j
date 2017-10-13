@@ -21,6 +21,7 @@ package org.neo4j.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -30,6 +31,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.metrics.output.CompositeEventReporter;
 import org.neo4j.metrics.output.EventReporterBuilder;
 import org.neo4j.metrics.source.Neo4jMetricsBuilder;
+import org.neo4j.scheduler.JobScheduler;
 
 public class MetricsExtension implements Lifecycle
 {
@@ -42,10 +44,13 @@ public class MetricsExtension implements Lifecycle
     {
         LogService logService = dependencies.logService();
         Config configuration = dependencies.configuration();
+        FileSystemAbstraction fileSystem = dependencies.fileSystemAbstraction();
+        JobScheduler scheduler = dependencies.scheduler();
         logger = logService.getUserLog( getClass() );
 
         MetricRegistry registry = new MetricRegistry();
-        reporter = new EventReporterBuilder( configuration, registry, logger, kernelContext, life ).build();
+        reporter = new EventReporterBuilder( configuration, registry, logger, kernelContext, life, fileSystem,
+                scheduler ).build();
         metricsBuilt = new Neo4jMetricsBuilder( registry, reporter, configuration, logService, kernelContext,
                                                 dependencies, life ).build();
     }

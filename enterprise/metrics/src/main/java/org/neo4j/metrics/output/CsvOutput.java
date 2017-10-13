@@ -20,13 +20,10 @@
 package org.neo4j.metrics.output;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 
 import java.io.File;
@@ -34,11 +31,16 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.metrics.MetricsSettings;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvInterval;
@@ -50,19 +52,24 @@ public class CsvOutput implements Lifecycle, EventReporter
     private final MetricRegistry registry;
     private final Log logger;
     private final KernelContext kernelContext;
-    private ScheduledReporter csvReporter;
+    private final FileSystemAbstraction fileSystem;
+    private final JobScheduler scheduler;
+    private RotatableCsvReporter csvReporter;
     private File outputPath;
 
-    public CsvOutput( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext )
+    CsvOutput( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext,
+            FileSystemAbstraction fileSystem, JobScheduler scheduler )
     {
         this.config = config;
         this.registry = registry;
         this.logger = logger;
         this.kernelContext = kernelContext;
+        this.fileSystem = fileSystem;
+        this.scheduler = scheduler;
     }
 
     @Override
-    public void init()
+    public void init() throws IOException
     {
         // Setup CSV reporting
         File configuredPath = config.get( csvPath );
@@ -71,12 +78,15 @@ public class CsvOutput implements Lifecycle, EventReporter
             throw new IllegalArgumentException( csvPath.name() + " configuration is required since " +
                                                 csvEnabled.name() + " is enabled" );
         }
+        Long rotationThreshold = config.get( MetricsSettings.csvRotationThreshold );
+        Integer maxArchives = config.get( MetricsSettings.csvMaxArchives );
         outputPath = absoluteFileOrRelativeTo( kernelContext.storeDir(), configuredPath );
-        csvReporter = CsvReporter.forRegistry( registry )
+        csvReporter = RotatableCsvReporter.forRegistry( registry )
                 .convertRatesTo( TimeUnit.SECONDS )
                 .convertDurationsTo( TimeUnit.MILLISECONDS )
-                .filter( MetricFilter.ALL )
                 .formatFor( Locale.US )
+                .outputStreamSupplierFactory(
+                        getFileRotatingFileOutputStreamSupplier( rotationThreshold, maxArchives ) )
                 .build( ensureDirectoryExists( outputPath ) );
     }
 
@@ -103,32 +113,37 @@ public class CsvOutput implements Lifecycle, EventReporter
     public void report( SortedMap<String,Gauge> gauges, SortedMap<String,Counter> counters,
             SortedMap<String,Histogram> histograms, SortedMap<String,Meter> meters, SortedMap<String,Timer> timers )
     {
-        /*
-         * The synchronized is needed here since the `report` method called below is also called by the recurring
-         * scheduled thread.  In order to avoid races with that thread we synchronize on the same monitor
-         * before reporting.
-         */
-        synchronized ( csvReporter )
-        {
-            csvReporter.report( gauges, counters, histograms, meters, timers );
-        }
+        csvReporter.report( gauges, counters, histograms, meters, timers );
     }
 
-    private File ensureDirectoryExists( File dir )
+    private BiFunction<File,RotatingFileOutputStreamSupplier.RotationListener,RotatingFileOutputStreamSupplier> getFileRotatingFileOutputStreamSupplier(
+            Long rotationThreshold, Integer maxArchives )
     {
-        if ( !dir.exists() )
+        return ( File file, RotatingFileOutputStreamSupplier.RotationListener listener ) ->
         {
-            if ( !dir.mkdirs() )
+            try
             {
-                throw new IllegalStateException(
-                        "Could not create path for CSV files: " + dir.getAbsolutePath() );
+                return new RotatingFileOutputStreamSupplier( fileSystem, file, rotationThreshold, 0, maxArchives,
+                        scheduler.executor( JobScheduler.Groups.metricsLogRotations ), listener );
             }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+    }
+
+    private File ensureDirectoryExists( File dir ) throws IOException
+    {
+        if ( !fileSystem.fileExists( dir ) )
+        {
+            fileSystem.mkdirs( dir );
         }
-        if ( dir.isFile() )
+        if ( !fileSystem.isDirectory( dir ) )
         {
             throw new IllegalStateException(
                     "The given path for CSV files points to a file, but a directory is required: " +
-                    dir.getAbsolutePath() );
+                            dir.getAbsolutePath() );
         }
         return dir;
     }

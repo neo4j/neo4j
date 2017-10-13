@@ -19,12 +19,11 @@
  */
 package org.neo4j.metrics;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
 
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
@@ -57,7 +57,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class BoltMetricsIT
 {
     @Rule
-    public TemporaryFolder tmpDir = new TemporaryFolder();
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private GraphDatabaseAPI db;
     private TransportConnection conn;
@@ -68,13 +68,14 @@ public class BoltMetricsIT
         int port = PortAuthority.allocatePort();
 
         // Given
-        File metricsFolder = tmpDir.newFolder( "metrics" );
+        File metricsFolder = testDirectory.directory( "metrics" );
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder()
+                .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( new BoltConnector( "bolt" ).type, "BOLT" )
                 .setConfig( new BoltConnector( "bolt" ).enabled, "true" )
                 .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:" + port )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
+                .setConfig( MetricsSettings.metricsEnabled, "false" )
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )
                 .setConfig( MetricsSettings.csvEnabled, "true" )
                 .setConfig( MetricsSettings.csvInterval, "100ms" )
