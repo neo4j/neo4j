@@ -20,12 +20,42 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * Like SemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produces without
+  * executing right.
+  *
+  * for ( leftRow <- left ) {
+  *   if ( leftRow.evaluate( expr) ) {
+  *     produce leftRow
+  *   } else {
+  *     right.setArgument( leftRow )
+  *     if ( right.nonEmpty ) {
+  *       produce leftRow
+  *     }
+  *   }
+  * }
+  */
 case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)
                             (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractSelectOrSemiApply(left, right, expr, solved)
 
+/**
+  * Like AntiSemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produces without
+  * executing right.
+  *
+  * for ( leftRow <- left ) {
+  *   if ( leftRow.evaluate( expr) ) {
+  *     produce leftRow
+  *   } else {
+  *     right.setArgument( leftRow )
+  *     if ( right.isEmpty ) {
+  *       produce leftRow
+  *     }
+  *   }
+  * }
+  */
 case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)
                                 (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractSelectOrSemiApply(left, right, expr, solved)
@@ -36,5 +66,5 @@ abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols
+  def availableSymbols: Set[IdName] = left.availableSymbols
 }

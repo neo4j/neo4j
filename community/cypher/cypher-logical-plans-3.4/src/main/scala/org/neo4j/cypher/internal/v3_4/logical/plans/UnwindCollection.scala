@@ -22,11 +22,16 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class UnwindCollection(left: LogicalPlan, variable: IdName, expression: Expression)
+/**
+  * For each source row, evaluate 'expression'. If 'expression' evaluates to a list, produce one row per list
+  * element, containing the source row and the element assigned to 'variable'. If 'expression' does not evaluate to a
+  * list, produce nothing.
+  */
+case class UnwindCollection(source: LogicalPlan, variable: IdName, expression: Expression)
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
-  val lhs = Some(left)
+  val lhs = Some(source)
   def rhs = None
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + variable
+  def availableSymbols: Set[IdName] = source.availableSymbols + variable
 }

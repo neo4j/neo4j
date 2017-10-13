@@ -20,16 +20,20 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, ShortestPathPattern}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, ShortestPathPattern}
 
-case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern,
+/**
+  * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
+  * row containing the source row and the found path.
+  */
+case class FindShortestPaths(source: LogicalPlan, shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty,
                              withFallBack: Boolean = false, disallowSameNode: Boolean = true)
                             (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
-  val lhs = Some(left)
+  val lhs = Some(source)
   def rhs = None
 
-  def availableSymbols = left.availableSymbols ++ shortestPath.availableSymbols
+  def availableSymbols: Set[IdName] = source.availableSymbols ++ shortestPath.availableSymbols
 }

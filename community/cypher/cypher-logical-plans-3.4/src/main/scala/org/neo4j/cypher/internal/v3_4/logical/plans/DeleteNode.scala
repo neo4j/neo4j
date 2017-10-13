@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
 /**
-  * For each input row, delete the node specified by the expression from the graph.
+  * For each input row, delete the node specified by 'expression' from the graph.
   */
 case class DeleteNode(source: LogicalPlan, expression: Expression)
                            (val solved: PlannerQuery with CardinalityEstimation)

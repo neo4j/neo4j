@@ -22,10 +22,40 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
+/**
+  * Like LetSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without
+  * executing right.
+  *
+  * for ( leftRow <- left ) {
+  *   if ( leftRow.evaluate( expr) ) {
+  *     produce leftRow
+  *   } else {
+  *     right.setArgument( leftRow )
+  *     if ( right.nonEmpty ) {
+  *       produce leftRow
+  *     }
+  *   }
+  * }
+  */
 case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
                                (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
 
+/**
+  * Like LetAntiSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without
+  * executing right.
+  *
+  * for ( leftRow <- left ) {
+  *   if ( leftRow.evaluate( expr) ) {
+  *     produce leftRow
+  *   } else {
+  *     right.setArgument( leftRow )
+  *     if ( right.isEmpty ) {
+  *       produce leftRow
+  *     }
+  *   }
+  * }
+  */
 case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
                                    (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
@@ -36,5 +66,5 @@ abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPla
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols + idName
+  def availableSymbols: Set[IdName] = left.availableSymbols + idName
 }
