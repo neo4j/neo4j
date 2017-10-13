@@ -43,7 +43,16 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
 
 object ExecutionContextOrdering {
   def comparator(order: ColumnOrder): scala.Ordering[ExecutionContext] = order.slot match {
-    case LongSlot(offset, _, _) =>
+    case LongSlot(offset, true, _) =>
+      new scala.Ordering[ExecutionContext] {
+        override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
+          val aVal = a.getLongAt(offset)
+          val bVal = b.getLongAt(offset)
+          order.compareNullableLongs(aVal, bVal)
+        }
+      }
+
+    case LongSlot(offset, false, _) =>
       new scala.Ordering[ExecutionContext] {
         override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
           val aVal = a.getLongAt(offset)
@@ -68,14 +77,17 @@ sealed trait ColumnOrder {
 
   def compareValues(a: AnyValue, b: AnyValue): Int
   def compareLongs(a: Long, b: Long): Int
+  def compareNullableLongs(a: Long, b: Long): Int
 }
 
 case class Ascending(slot: Slot) extends ColumnOrder {
   override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(a, b)
   override def compareLongs(a: Long, b: Long): Int = java.lang.Long.compare(a, b)
+  override def compareNullableLongs(a: Long, b: Long): Int = java.lang.Long.compareUnsigned(a, b)
 }
 
 case class Descending(slot: Slot) extends ColumnOrder {
   override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(b, a)
   override def compareLongs(a: Long, b: Long): Int = java.lang.Long.compare(b, a)
+  override def compareNullableLongs(a: Long, b: Long): Int = java.lang.Long.compareUnsigned(b, a)
 }
