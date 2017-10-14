@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.v3_4.expressions._
   * Merges multiple IN predicates into one.
   *
   * Examples:
-  *   MATCH (n) WHERE n.prop IN [1,2,3] AND [2,3,4] RETURN n.prop
-  *   => MATCH (n) WHERE n.prop IN [2,3]
+  * MATCH (n) WHERE n.prop IN [1,2,3] AND [2,3,4] RETURN n.prop
+  * => MATCH (n) WHERE n.prop IN [2,3]
   *
-  *   MATCH (n) WHERE n.prop IN [1,2,3] OR [2,3,4] RETURN n.prop
-  *   => MATCH (n) WHERE n.prop IN [1,2,3,4]
+  * MATCH (n) WHERE n.prop IN [1,2,3] OR [2,3,4] RETURN n.prop
+  * => MATCH (n) WHERE n.prop IN [1,2,3,4]
   *
-  *   MATCH (n) WHERE n.prop IN [1,2,3] AND [4,5,6] RETURN n.prop
-  *   => MATCH (n) WHERE FALSE
+  * MATCH (n) WHERE n.prop IN [1,2,3] AND [4,5,6] RETURN n.prop
+  * => MATCH (n) WHERE FALSE
   *
   * NOTE: this rewriter must be applied before auto parameterization, since after
   * that we are just dealing with opaque parameters.
@@ -42,29 +42,25 @@ case object mergeInPredicates extends Rewriter {
   def apply(that: AnyRef): AnyRef = inner.apply(that)
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
-    case where@Where(e) =>
-      val rewrittenPredicates = e.endoRewrite(bottomUp(Rewriter.lift {
-        //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
-        case and@And(lhs, rhs) =>
-          rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
-        //Look for `a IN [...] OR a IN [...]` and compute union of lists
-        case or@Or(lhs, rhs) =>
-          rewriteBinaryOperator(or, (a, b) => a union b,
-              (l, r) => or.copy(l, r)(or.position))
-      }))
-      where.copy(expression = rewrittenPredicates)(where.position)
+    //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
+    case and@And(lhs, rhs) =>
+      rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
+    //Look for `a IN [...] OR a IN [...]` and compute union of lists
+    case or@Or(lhs, rhs) =>
+      rewriteBinaryOperator(or, (a, b) => a union b,
+                            (l, r) => or.copy(l, r)(or.position))
   })
 
   //Takes a binary operator a merge operator and a copy constructor
   //and rewrites the binary operator
   private def rewriteBinaryOperator(binary: BinaryOperatorExpression,
-                            merge: (Seq[Expression], Seq[Expression]) => Seq[Expression],
-                            copy: (Expression, Expression) => Expression): Expression = {
+                                    merge: (Seq[Expression], Seq[Expression]) => Seq[Expression],
+                                    copy: (Expression, Expression) => Expression): Expression = {
     val rewriter = inRewriter(collectInPredicates(merge)(binary.lhs, binary.rhs))
     val newLhs = binary.lhs.endoRewrite(rewriter)
     val newRhs = binary.rhs.endoRewrite(rewriter)
     if (newLhs == newRhs) newLhs
-    else  copy(newLhs,newRhs)
+    else copy(newLhs, newRhs)
   }
 
   //Rewrites a IN [] by using the the provided map of precomputed lists
@@ -83,7 +79,7 @@ case object mergeInPredicates extends Rewriter {
     val maps = expressions.map(_.treeFold(Map.empty[Expression, Seq[Expression]]) {
       case In(a, ListLiteral(exprs)) => (map) => {
         //if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
-        val values = map.get(a).map(current => merge(current,exprs)).getOrElse(exprs).distinct
+        val values = map.get(a).map(current => merge(current, exprs)).getOrElse(exprs).distinct
         (map + (a -> values), None)
       }
     })

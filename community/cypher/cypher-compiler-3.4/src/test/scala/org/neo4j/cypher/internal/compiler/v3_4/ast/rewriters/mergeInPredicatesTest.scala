@@ -81,6 +81,11 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
       "MATCH (a) WHERE a.prop IN [1,2,3,4] OR a.foo IN ['foo','bar'] RETURN *")
   }
 
+  test("MATCH (n) RETURN n.prop IN [1,2,3] AND n.prop IN [3,4,5]") {
+    shouldRewrite("MATCH (n) RETURN n.prop IN [1,2,3] AND n.prop IN [3,4,5] AS FOO",
+                  "MATCH (n) RETURN n.prop IN [3] AS FOO")
+  }
+
   private def shouldRewrite(from: String, to: String) {
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
