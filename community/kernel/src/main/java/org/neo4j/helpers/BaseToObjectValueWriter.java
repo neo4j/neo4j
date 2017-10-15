@@ -388,6 +388,12 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         writeValue( value );
     }
 
+    @Override
+    public void writeJavaObject( Object object )
+    {
+        writeValue( object );
+    }
+
     private interface Writer
     {
         void write( Object value );

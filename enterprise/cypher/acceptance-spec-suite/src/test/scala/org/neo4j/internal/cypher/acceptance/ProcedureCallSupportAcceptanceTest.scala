@@ -111,4 +111,22 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
       "prop"
     )
   }
+
+
+  //NOTE this is unwanted behaviour, however since we were careless about sanitizing inputs (https://xkcd.com/327/)
+  //we are stuck with this behavior until 4.0, consider it extremely deprecated and remove as soon as possible.
+  test("Support passing arbitrary object in and out of a procedure") {
+    // Given
+    registerDummyInOutProcedure(Neo4jTypes.NTAny)
+    class Arbitrary {
+      val foo = 42
+    }
+    val value = new Arbitrary
+
+    // When
+    val result = graph.execute("CALL my.first.proc({p})", map("p",value))
+
+    // Then
+    result.next().get("out0") should equal(value)
+  }
 }

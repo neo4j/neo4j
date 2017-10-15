@@ -63,4 +63,9 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
     {
         // do nothing, this is an ugly hack.
     }
+
+    default void writeJavaObject( Object object )
+    {
+        // do nothing, this is an ugly hack.
+    }
 }
