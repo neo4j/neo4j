@@ -323,7 +323,7 @@ public final class ValueUtils
         @Override
         public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
         {
-            writer.writeJavaObject( object );
+            writer.writeArbitraryJavaObject( object );
         }
     }
 }

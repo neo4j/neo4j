@@ -54,17 +54,14 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void endPoint() throws E;
 
-    default void writeVirtualNodeHack( Object node )
-    {
-        // do nothing, this is an ugly hack.
-    }
-
-    default void writeVirtualEdgeHack( Object relationship )
-    {
-        // do nothing, this is an ugly hack.
-    }
-
-    default void writeJavaObject( Object object )
+    /**
+     * This is a temporary hack in order to support some cases for procedures where we
+     * hadn't been careful enough about sanitizing inputs
+     *
+     * @param object the object to serialize.
+     */
+    @Deprecated
+    default void writeArbitraryJavaObject( Object object )
     {
         // do nothing, this is an ugly hack.
     }
