@@ -29,13 +29,10 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -89,7 +86,7 @@ public abstract class AbstractBackupSupportingClassesFactory
     private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )
     {
         PipelineHandlerAppenderFactory pipelineHandlerAppenderFactory = getPipelineHandlerAppenderFactory();
-        PipelineHandlerAppender pipelineHandlerAppender = pipelineHandlerAppenderFactory.create( config, getDependencies( logProvider, config ), logProvider );
+        PipelineHandlerAppender pipelineHandlerAppender = pipelineHandlerAppenderFactory.create( config, getDependencies(), logProvider );
         CatchUpClient catchUpClient = new CatchUpClient( logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, monitors, pipelineHandlerAppender );
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
         StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider );
@@ -110,11 +107,10 @@ public abstract class AbstractBackupSupportingClassesFactory
         return ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
     }
 
-    protected Dependencies getDependencies( LogProvider logProvider, Config config )
+    private Dependencies getDependencies()
     {
         return new Dependencies();
     }
 
     protected abstract PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory();
-
 }

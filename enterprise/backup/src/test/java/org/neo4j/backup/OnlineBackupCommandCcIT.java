@@ -118,7 +118,7 @@ public class OnlineBackupCommandCcIT
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
-        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir) );
+        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport" ) );
 
         createSomeData( cluster );
         assertEquals(
@@ -127,7 +127,7 @@ public class OnlineBackupCommandCcIT
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
-        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
+        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport" ) );
     }
 
     @Test
@@ -174,7 +174,7 @@ public class OnlineBackupCommandCcIT
         }
     }
 
-    public static CoreGraphDatabase clusterDatabase( Cluster cluster )
+    private static CoreGraphDatabase clusterDatabase( Cluster cluster )
     {
         return clusterLeader( cluster ).database();
     }
@@ -208,7 +208,7 @@ public class OnlineBackupCommandCcIT
         return cluster.getDbWithRole( Role.LEADER );
     }
 
-    public static DbRepresentation getBackupDbRepresentation( String name, File backupDir )
+    private DbRepresentation getBackupDbRepresentation( String name )
     {
         Config config = Config.defaults();
         config.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
