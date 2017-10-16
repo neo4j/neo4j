@@ -124,17 +124,10 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceed, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a", expectedDifferentResults = Configs.AbsolutelyAll)
-      val result = results.columnAs("a").next().asInstanceOf[Node]
+        executeWith(expectedSucceed, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
 
       // then
-      countNodes() should equal(1)
-      labels(result) should equal(Set("Person"))
-      graph.inTx {
-        result.getProperty("id") should equal(23)
-        result.getProperty("country") should equal("Sweden")
-        result.getProperty("mail") should equal("emil@neo.com")
-      }
+      results.toSet should equal(Set(Map("a.id" -> 23, "a.mail" -> "emil@neo.com", "a.country" -> "Sweden", "labels(a)" -> List("Person"))))
     }
 
     test(s"$constraintCreator: should_create_on_merge_using_multiple_unique_indexes_and_labels_if_found_no_nodes") {
@@ -144,17 +137,10 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceed, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a", expectedDifferentResults = Configs.AbsolutelyAll)
-      val result = results.columnAs("a").next().asInstanceOf[Node]
+        executeWith(expectedSucceed, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
 
       // then
-      countNodes() should equal(1)
-      labels(result) should equal(Set("Person", "User"))
-      graph.inTx {
-        result.getProperty("id") should equal(23)
-        result.getProperty("country") should equal("Sweden")
-        result.getProperty("mail") should equal("emil@neo.com")
-      }
+      results.toSet should equal(Set(Map("a.id" -> 23, "a.mail" -> "emil@neo.com", "a.country" -> "Sweden", "labels(a)" -> List("Person", "User"))))
     }
 
     test(s"$constraintCreator: should_fail_on_merge_using_multiple_unique_indexes_if_found_different_nodes") {
