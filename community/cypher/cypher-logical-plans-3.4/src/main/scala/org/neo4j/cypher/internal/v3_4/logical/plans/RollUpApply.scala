@@ -33,12 +33,11 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   * Note about nullableIdentifiers: when any of these identifiers is null, the collection
   * should be null.
   */
-case class RollUpApply(
-                        left: LogicalPlan,
-                        right: LogicalPlan,
-                        collectionName: IdName,
-                        variableToCollect: IdName,
-                        nullableVariables: Set[IdName]
+case class RollUpApply(left: LogicalPlan,
+                       right: LogicalPlan,
+                       collectionName: IdName,
+                       variableToCollect: IdName,
+                       nullableVariables: Set[IdName]
                       )(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 

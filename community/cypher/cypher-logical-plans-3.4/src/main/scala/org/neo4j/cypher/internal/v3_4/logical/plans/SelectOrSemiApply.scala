@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
 /**
-  * Like SemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produces without
+  * Like SemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
   * executing right.
   *
   * for ( leftRow <- left ) {
@@ -42,7 +42,7 @@ case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expres
   extends AbstractSelectOrSemiApply(left, right, expr, solved)
 
 /**
-  * Like AntiSemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produces without
+  * Like AntiSemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
   * executing right.
   *
   * for ( leftRow <- left ) {

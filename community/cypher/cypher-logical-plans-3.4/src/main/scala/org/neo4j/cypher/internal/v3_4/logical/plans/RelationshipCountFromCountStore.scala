@@ -31,12 +31,11 @@ import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, RelTypeName}
   * is fetched from the counts store. These counts are summed, and the result is
   * assigned to 'idName'.
   */
-case class RelationshipCountFromCountStore(
-                                            idName: IdName,
-                                            startLabel: Option[LabelName],
-                                            typeNames: Seq[RelTypeName],
-                                            endLabel: Option[LabelName],
-                                            argumentIds: Set[IdName]
+case class RelationshipCountFromCountStore(idName: IdName,
+                                           startLabel: Option[LabelName],
+                                           typeNames: Seq[RelTypeName],
+                                           endLabel: Option[LabelName],
+                                           argumentIds: Set[IdName]
                                           )(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 

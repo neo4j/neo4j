@@ -27,14 +27,13 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName, Sema
   * provided constraints. Produce one row per traversed relationships, and add the
   * relationship and end node as values on the produced rows.
   */
-case class Expand(
-                   source: LogicalPlan,
-                   from: IdName,
-                   dir: SemanticDirection,
-                   types: Seq[RelTypeName],
-                   to: IdName,
-                   relName: IdName,
-                   mode: ExpansionMode = ExpandAll
+case class Expand(source: LogicalPlan,
+                  from: IdName,
+                  dir: SemanticDirection,
+                  types: Seq[RelTypeName],
+                  to: IdName,
+                  relName: IdName,
+                  mode: ExpansionMode = ExpandAll
                  )(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
@@ -45,17 +44,17 @@ case class Expand(
 
 /**
   * This works exactly like Expand, but if no matching relationships are found, a single
-  * row is produced instead populated by the argument.
+  * row is produced instead populated by the argument, and the 'relName' and 'to' variables
+  * are set to NO_VALUE.
   */
-case class OptionalExpand(
-                           source: LogicalPlan,
-                           from: IdName,
-                           dir: SemanticDirection,
-                           types: Seq[RelTypeName],
-                           to: IdName,
-                           relName: IdName,
-                           mode: ExpansionMode = ExpandAll,
-                           predicates: Seq[Expression] = Seq.empty
+case class OptionalExpand(source: LogicalPlan,
+                          from: IdName,
+                          dir: SemanticDirection,
+                          types: Seq[RelTypeName],
+                          to: IdName,
+                          relName: IdName,
+                          mode: ExpansionMode = ExpandAll,
+                          predicates: Seq[Expression] = Seq.empty
                          )(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 

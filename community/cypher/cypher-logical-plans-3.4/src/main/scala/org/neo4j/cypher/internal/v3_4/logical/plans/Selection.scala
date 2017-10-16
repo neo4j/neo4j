@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
 /**
   * For each source row, produce it if all predicates are true.
   */
-case class Selection(
-                      predicates: Seq[Expression],
-                      source: LogicalPlan
+case class Selection(predicates: Seq[Expression],
+                     source: LogicalPlan
                     )(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
 
