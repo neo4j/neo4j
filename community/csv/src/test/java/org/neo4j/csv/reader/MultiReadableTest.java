@@ -22,7 +22,6 @@ package org.neo4j.csv.reader;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.neo4j.collection.RawIterator;
@@ -30,6 +29,8 @@ import org.neo4j.collection.RawIterator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.csv.reader.Readables.wrap;
 
 public class MultiReadableTest
 {
@@ -42,7 +43,7 @@ public class MultiReadableTest
                 {"where this", "is the second line"},
                 {"and here comes", "the third line"}
         };
-        RawIterator<Reader,IOException> readers = readerIteratorFromStrings( data, null );
+        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, null );
         CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), CONFIG, true );
 
         // WHEN/THEN
@@ -64,8 +65,8 @@ public class MultiReadableTest
         };
 
         // WHEN
-        RawIterator<Reader,IOException> readers = readerIteratorFromStrings( data, '\n' );
-        CharSeeker seeker = CharSeekers.charSeeker( Readables.sources( readers ), CONFIG, true );
+        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, '\n' );
+        CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), CONFIG, true );
 
         // WHEN/THEN
         for ( String[] line : data )
@@ -84,8 +85,8 @@ public class MultiReadableTest
                 {"this is", "the first line"},        // 21+delimiter+newline = 23 characters
                 {"where this", "is the second line"}, // 28+delimiter+newline = 30 characters
         };
-        RawIterator<Reader,IOException> readers = readerIteratorFromStrings( data, '\n' );
-        CharReadable reader = Readables.sources( readers );
+        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, '\n' );
+        CharReadable reader = new MultiReadable( readers );
         assertEquals( 0L, reader.position() );
         SectionedCharBuffer buffer = new SectionedCharBuffer( 15 );
 
@@ -124,10 +125,10 @@ public class MultiReadableTest
         assertTrue( mark.isEndOfLine() );
     }
 
-    private RawIterator<Reader,IOException> readerIteratorFromStrings(
+    private RawIterator<CharReadable,IOException> readerIteratorFromStrings(
             final String[][] data, final Character lineEnding )
     {
-        return new RawIterator<Reader,IOException>()
+        return new RawIterator<CharReadable,IOException>()
         {
             private int cursor;
 
@@ -138,16 +139,17 @@ public class MultiReadableTest
             }
 
             @Override
-            public Reader next()
+            public CharReadable next()
             {
-                return new StringReader( join( data[cursor++] ) )
+                String string = join( data[cursor++] );
+                return wrap( new StringReader( string )
                 {
                     @Override
                     public String toString()
                     {
                         return "Reader" + cursor;
                     }
-                };
+                }, string.length() * 2 );
             }
 
             private String join( String[] strings )

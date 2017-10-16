@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.id.BatchingIdSequence;
 import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -38,7 +39,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPropertyRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 

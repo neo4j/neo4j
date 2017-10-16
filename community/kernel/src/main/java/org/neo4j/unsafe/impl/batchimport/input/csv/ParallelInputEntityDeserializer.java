@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.csv.reader.ProcessingSource;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.csv.reader.SourceTraceability;
@@ -73,7 +74,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             Validator<ENTITY> validator, Class<ENTITY> entityClass )
     {
         // Reader of chunks, characters aligning to nearest newline
-        source = new ProcessingSource( data.stream(), config.bufferSize(), maxProcessors );
+        source = new ProcessingSource( new MultiReadable( data.stream() ), config.bufferSize(), maxProcessors );
         try
         {
             // Read first chunk explicitly here since it contains the header

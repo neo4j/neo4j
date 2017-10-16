@@ -765,7 +765,7 @@ public class BufferedCharSeekerTest
 
     private CharSeeker seeker( String data, Configuration config )
     {
-        return seeker( wrap( stringReaderWithName( data, TEST_SOURCE ) ), config );
+        return seeker( wrap( stringReaderWithName( data, TEST_SOURCE ), data.length() * 2 ), config );
     }
 
     private Reader stringReaderWithName( String data, final String name )
@@ -854,10 +854,12 @@ public class BufferedCharSeekerTest
     {
         private final StringReader reader;
         private final int maxBytesPerRead;
+        private final String data;
         private int position;
 
         ControlledCharReadable( String data, int maxBytesPerRead )
         {
+            this.data = data;
             this.reader = new StringReader( data );
             this.maxBytesPerRead = maxBytesPerRead;
         }
@@ -886,6 +888,12 @@ public class BufferedCharSeekerTest
         public String sourceDescription()
         {
             return getClass().getSimpleName();
+        }
+
+        @Override
+        public long length()
+        {
+            return data.length() * 2;
         }
     }
 }

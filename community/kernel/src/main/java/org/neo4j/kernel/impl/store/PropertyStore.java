@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
@@ -319,9 +320,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     private static class PropertyBlockValueWriter implements ValueWriter<IllegalArgumentException>
     {
-        private PropertyBlock block;
-        private int keyId;
-        private DynamicRecordAllocator stringAllocator;
+        private final PropertyBlock block;
+        private final int keyId;
+        private final DynamicRecordAllocator stringAllocator;
         private final boolean allowStorePoints;
 
         PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePoints )
@@ -347,19 +348,19 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         @Override
         public void writeInteger( byte value ) throws IllegalArgumentException
         {
-            setSingleBlockValue( block, keyId, PropertyType.BYTE, (long) value );
+            setSingleBlockValue( block, keyId, PropertyType.BYTE, value );
         }
 
         @Override
         public void writeInteger( short value ) throws IllegalArgumentException
         {
-            setSingleBlockValue( block, keyId, PropertyType.SHORT, (long) value );
+            setSingleBlockValue( block, keyId, PropertyType.SHORT, value );
         }
 
         @Override
         public void writeInteger( int value ) throws IllegalArgumentException
         {
-            setSingleBlockValue( block, keyId, PropertyType.INT, (long) value );
+            setSingleBlockValue( block, keyId, PropertyType.INT, value );
         }
 
         @Override
@@ -544,5 +545,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     public boolean allowStorePoints()
     {
         return allowStorePoints;
+    }
+
+    /**
+     * @return a calculator of property value sizes. The returned instance is designed to be used multiple times by a single thread only.
+     */
+    public ToIntFunction<Value[]> newValueEncodedSizeCalculator()
+    {
+        return new PropertyValueRecordSizeCalculator( this );
     }
 }

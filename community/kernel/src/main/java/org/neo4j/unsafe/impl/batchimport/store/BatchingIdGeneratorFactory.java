@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.id.BatchingIdSequence;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;

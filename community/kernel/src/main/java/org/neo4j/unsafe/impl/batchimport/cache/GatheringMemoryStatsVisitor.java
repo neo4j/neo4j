@@ -51,6 +51,11 @@ public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
         return offHeapUsage;
     }
 
+    public long getTotalUsage()
+    {
+        return heapUsage + offHeapUsage;
+    }
+
     @Override
     public String toString()
     {

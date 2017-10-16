@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -95,6 +96,7 @@ public class ImportLogic implements Closeable
     private final RecordFormats recordFormats;
     private final CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
     private final long maxMemory;
+    private final Dependencies dependencies = new Dependencies();
 
     // This map contains additional state that gets populated, created and used throughout the stages.
     // The reason that this is a map is to allow for a uniform way of accessing and loading this stage
@@ -127,11 +129,10 @@ public class ImportLogic implements Closeable
      * @param logService {@link LogService} to use.
      * @param executionMonitor {@link ExecutionMonitor} to follow progress as the import proceeds.
      * @param recordFormats which {@link RecordFormats record format} to use for the created db.
-     * @param input {@link Input} containing the data to import.
      */
     public ImportLogic( File storeDir, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            RecordFormats recordFormats, Input input )
+            RecordFormats recordFormats )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
@@ -141,11 +142,9 @@ public class ImportLogic implements Closeable
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment( executionMonitor, config );
         this.maxMemory = config.maxMemoryUsage();
-
-        initialize( input );
     }
 
-    private void initialize( Input input )
+    public void initialize( Input input ) throws IOException
     {
         log.info( "Import starting" );
         startTime = currentTimeMillis();
@@ -162,6 +161,10 @@ public class ImportLogic implements Closeable
         nodes = input.nodes();
         relationships = input.relationships();
         cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
+        dependencies.satisfyDependencies( input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() ),
+                idMapper, neoStore, nodeRelationshipCache );
+
+        executionMonitor.initialize( dependencies );
     }
 
     /**

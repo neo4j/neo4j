@@ -196,7 +196,13 @@ public class ParallelBatchImporterTest
                     idMapper, idGenerator,
                     /*insanely high bad tolerance, but it will actually never be that many*/
                     silentBadCollector( RELATIONSHIP_COUNT ),
-                    knownEstimates( NODE_COUNT, RELATIONSHIP_COUNT ) ) );
+                    knownEstimates(
+                            NODE_COUNT, RELATIONSHIP_COUNT,
+                            NODE_COUNT * TOKENS.length / 2,
+                            RELATIONSHIP_COUNT * TOKENS.length / 2,
+                            NODE_COUNT * TOKENS.length / 2 * Long.BYTES,
+                            RELATIONSHIP_COUNT * TOKENS.length / 2 * Long.BYTES,
+                            NODE_COUNT * TOKENS.length / 2 ) ) );
 
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory()

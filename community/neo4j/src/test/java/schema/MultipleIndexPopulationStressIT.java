@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
@@ -75,6 +76,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -411,9 +413,9 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public Estimates calculateEstimates()
+        public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
         {
-            return knownEstimates( count, 0 );
+            return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
         }
     }
 }

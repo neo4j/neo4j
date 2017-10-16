@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
@@ -34,9 +35,11 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
+import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
+
+import static org.neo4j.unsafe.impl.batchimport.IdRangeInput.idRangeInput;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
@@ -143,9 +146,41 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public Estimates calculateEstimates()
+    public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
     {
-        return knownEstimates( nodes, relationships );
+        int sampleSize = 100;
+        InputNode[] nodeSample = nodeGenerator.apply( idRangeInput( sampleSize, sampleSize ).next() );
+        double labelsPerNodeEstimate = sampleLabels( nodeSample );
+        double[] nodePropertyEstimate = sampleProperties( nodeSample, valueSizeCalculator );
+        double[] relationshipPropertyEstimate = sampleProperties( relGenerator.apply( idRangeInput( sampleSize, sampleSize ).next() ),
+                valueSizeCalculator );
+        return Inputs.knownEstimates(
+                nodes, relationships,
+                (long) (nodes * nodePropertyEstimate[0]), (long) (relationships * relationshipPropertyEstimate[0]),
+                (long) (nodes * nodePropertyEstimate[1]), (long) (relationships * relationshipPropertyEstimate[1]),
+                (long) (nodes * labelsPerNodeEstimate) );
+    }
+
+    private static double sampleLabels( InputNode[] nodes )
+    {
+        int labels = 0;
+        for ( InputNode node : nodes )
+        {
+            labels += node.labels().length;
+        }
+        return (double) labels / nodes.length;
+    }
+
+    private static double[] sampleProperties( InputEntity[] sample, ToIntFunction<Value[]> valueSizeCalculator )
+    {
+        int propertiesPerEntity = sample[0].propertyCount();
+        long propertiesSize = 0;
+        for ( InputEntity entity : sample )
+        {
+            propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator );
+        }
+        double propertySizePerEntity = (double) propertiesSize / sample.length;
+        return new double[] {propertiesPerEntity, propertySizePerEntity};
     }
 
     public static Header sillyNodeHeader( IdType idType, Extractors extractors )

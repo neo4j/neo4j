@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
+import org.neo4j.kernel.impl.store.id.BatchingIdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
 /**
  * {@link DynamicRecordAllocator} that allocates new {@link DynamicRecord dynamic records} which has,

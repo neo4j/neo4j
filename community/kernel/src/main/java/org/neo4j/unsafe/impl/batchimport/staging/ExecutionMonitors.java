@@ -32,8 +32,8 @@ public class ExecutionMonitors
     public static ExecutionMonitor defaultVisible()
     {
         return new MultiExecutionMonitor(
-                new OnDemandDetailsExecutionMonitor( System.out ),
-                new HumanUnderstandableExecutionMonitor( System.out ) );
+                new HumanUnderstandableExecutionMonitor( System.out ),
+                new OnDemandDetailsExecutionMonitor( System.out ) );
     }
 
     private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()

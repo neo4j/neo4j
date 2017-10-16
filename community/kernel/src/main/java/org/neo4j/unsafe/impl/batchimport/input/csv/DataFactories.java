@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
@@ -38,13 +39,13 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
-import static org.neo4j.csv.reader.Readables.files;
+import static org.neo4j.csv.reader.Readables.individualFiles;
+import static org.neo4j.csv.reader.Readables.iterator;
 
 /**
  * Provides common implementations of factories required by f.ex {@link CsvInput}.
@@ -59,6 +60,10 @@ public class DataFactories
      * Creates a {@link DataFactory} where data exists in multiple files. If the first line of the first file is a header,
      * {@link #defaultFormatNodeFileHeader()} can be used to extract that.
      *
+     * @param decorator Decorator for this data.
+     * @param charset {@link Charset} to read data in.
+     * @param files the files making up the data.
+     *
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Decorator<ENTITY> decorator,
@@ -72,16 +77,9 @@ public class DataFactories
         return config -> new Data<ENTITY>()
         {
             @Override
-            public CharReadable stream()
+            public RawIterator<CharReadable,IOException> stream()
             {
-                try
-                {
-                    return files( charset, files );
-                }
-                catch ( IOException e )
-                {
-                    throw new InputException( e.getMessage(), e );
-                }
+                return individualFiles( charset, files );
             }
 
             @Override
@@ -93,6 +91,7 @@ public class DataFactories
     }
 
     /**
+     * @param decorator Decorator for this data.
      * @param readable we need to have this as a {@link Factory} since one data file may be opened and scanned
      * multiple times.
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
@@ -103,9 +102,9 @@ public class DataFactories
         return config -> new Data<ENTITY>()
         {
             @Override
-            public CharReadable stream()
+            public RawIterator<CharReadable,IOException> stream()
             {
-                return readable.get();
+                return iterator( reader -> reader, readable.get() );
             }
 
             @Override

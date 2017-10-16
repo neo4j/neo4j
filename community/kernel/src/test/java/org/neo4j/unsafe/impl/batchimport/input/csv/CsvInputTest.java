@@ -27,15 +27,16 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.csv.reader.Readables;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
@@ -998,12 +999,12 @@ public class CsvInputTest
         } );
     }
 
-    private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharReadable data )
+    private static <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharReadable data )
     {
         return config -> dataItem( data, InputEntityDecorators.noDecorator() );
     }
 
-    private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final CharReadable data,
+    private static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final CharReadable data,
             final Decorator<ENTITY> decorator )
     {
         return config -> dataItem( data, decorator );
@@ -1012,20 +1013,7 @@ public class CsvInputTest
     private static <ENTITY extends InputEntity> Data<ENTITY> dataItem( final CharReadable data,
             final Decorator<ENTITY> decorator )
     {
-        return new Data<ENTITY>()
-        {
-            @Override
-            public CharReadable stream()
-            {
-                return data;
-            }
-
-            @Override
-            public Decorator<ENTITY> decorator()
-            {
-                return decorator;
-            }
-        };
+        return DataFactories.data( decorator, () -> data ).create( COMMAS /*doesn't matter here in this test*/ );
     }
 
     private void assertRelationship( InputRelationship relationship,
@@ -1098,7 +1086,7 @@ public class CsvInputTest
 
     private static CharReadable charReader( String data )
     {
-        return wrap( new StringReader( data ) );
+        return wrap( data );
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )
@@ -1125,9 +1113,10 @@ public class CsvInputTest
             return Iterators.iterator( config -> new Data<ENTITY>()
             {
                 @Override
-                public CharReadable stream()
+                public RawIterator<CharReadable,IOException> stream()
                 {
-                    return last = factory.apply( config );
+                    last = factory.apply( config );
+                    return Readables.iterator( in -> in, last );
                 }
 
                 @Override

@@ -21,7 +21,6 @@ package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collections;
 
 import org.neo4j.csv.reader.CharSeeker;
@@ -199,7 +198,7 @@ public class QuickImport
 
     private static CharSeeker seeker( String definition, Configuration config )
     {
-        return CharSeekers.charSeeker( Readables.wrap( new StringReader( definition ) ),
+        return CharSeekers.charSeeker( Readables.wrap( definition ),
                 new org.neo4j.csv.reader.Configuration.Overridden( config )
         {
             @Override

@@ -113,4 +113,10 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
     {
         return new ThreadAheadReadable( actual, bufferSize );
     }
+
+    @Override
+    public long length()
+    {
+        return actual.length();
+    }
 }

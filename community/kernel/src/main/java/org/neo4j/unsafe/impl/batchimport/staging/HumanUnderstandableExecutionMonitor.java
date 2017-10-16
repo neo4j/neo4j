@@ -23,7 +23,6 @@ import java.io.PrintStream;
 import java.util.TimeZone;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.unsafe.impl.batchimport.CountGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.IdMapperPreparationStage;
 import org.neo4j.unsafe.impl.batchimport.NodeDegreeCountStage;
@@ -33,10 +32,13 @@ import org.neo4j.unsafe.impl.batchimport.RelationshipGroupStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.ScanAndCacheGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.SparseNodeFirstRelationshipStage;
+import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.lang.Integer.min;
 import static java.lang.Long.max;
@@ -46,6 +48,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.count;
 import static org.neo4j.helpers.Format.date;
+import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterables.last;
 
 /**
@@ -54,6 +57,12 @@ import static org.neo4j.helpers.collection.Iterables.last;
  */
 public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 {
+    private static final String ESTIMATED_REQUIRED_MEMORY_USAGE = "Estimated required memory usage";
+    private static final String ESTIMATED_DISK_SPACE_USAGE = "Estimated disk space usage";
+    private static final String ESTIMATED_NUMBER_OF_RELATIONSHIP_PROPERTIES = "Estimated number of relationship properties";
+    private static final String ESTIMATED_NUMBER_OF_RELATIONSHIPS = "Estimated number of relationships";
+    private static final String ESTIMATED_NUMBER_OF_NODE_PROPERTIES = "Estimated number of node properties";
+    private static final String ESTIMATED_NUMBER_OF_NODES = "Estimated number of nodes";
     private static final int DOT_GROUP_SIZE = 10;
     private static final int DOT_GROUPS_PER_LINE = 5;
     private static final int PERCENTAGES_PER_LINE = 5;
@@ -78,6 +87,47 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     public void initialize( DependencyResolver dependencyResolver )
     {
         this.dependencyResolver = dependencyResolver;
+        Estimates estimates = dependencyResolver.resolveDependency( Estimates.class );
+        BatchingNeoStores neoStores = dependencyResolver.resolveDependency( BatchingNeoStores.class );
+        IdMapper idMapper = dependencyResolver.resolveDependency( IdMapper.class );
+        NodeRelationshipCache nodeRelationshipCache = dependencyResolver.resolveDependency( NodeRelationshipCache.class );
+
+        long biggestCacheMemory = defensivelyPadMemoryEstimate( max(
+                idMapper.calculateMemoryUsage( estimates.numberOfNodes() ),
+                nodeRelationshipCache.calculateMemoryUsage( estimates.numberOfNodes() ) ) );
+        printStageHeader( "Import starting",
+                ESTIMATED_NUMBER_OF_NODES, count( estimates.numberOfNodes() ),
+                ESTIMATED_NUMBER_OF_NODE_PROPERTIES, count( estimates.numberOfNodeProperties() ),
+                ESTIMATED_NUMBER_OF_RELATIONSHIPS, count( estimates.numberOfRelationships() ),
+                ESTIMATED_NUMBER_OF_RELATIONSHIP_PROPERTIES, count( estimates.numberOfRelationshipProperties() ),
+                ESTIMATED_DISK_SPACE_USAGE, bytes(
+                        nodesDiskUsage( estimates, neoStores ) +
+                        relationshipsDiskUsage( estimates, neoStores ) +
+                        // TODO also add some padding to include relationship groups?
+                        estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() ),
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( baselineMemoryRequirement( neoStores ) + biggestCacheMemory ) );
+        out.println();
+    }
+
+    private static long baselineMemoryRequirement( BatchingNeoStores neoStores )
+    {
+        GatheringMemoryStatsVisitor memoryVisitor = new GatheringMemoryStatsVisitor();
+        neoStores.acceptMemoryStatsVisitor( memoryVisitor );
+        long otherMemory = memoryVisitor.getTotalUsage();
+        return otherMemory;
+    }
+
+    private static long nodesDiskUsage( Estimates estimates, BatchingNeoStores neoStores )
+    {
+        return  // node store
+                estimates.numberOfNodes() * neoStores.getNodeStore().getRecordSize() +
+                // label index (1 byte per label is not a terrible estimate)
+                estimates.numberOfNodeLabels();
+    }
+
+    private static long relationshipsDiskUsage( Estimates estimates, BatchingNeoStores neoStores )
+    {
+        return estimates.numberOfRelationships() * neoStores.getRelationshipStore().getRecordSize();
     }
 
     @Override
@@ -91,7 +141,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             // - prepare id mapper
             initializeNodeImport(
                     dependencyResolver.resolveDependency( Input.Estimates.class ),
-                    dependencyResolver.resolveDependency( IdMapper.class ) );
+                    dependencyResolver.resolveDependency( IdMapper.class ),
+                    dependencyResolver.resolveDependency( BatchingNeoStores.class ) );
         }
         else if ( execution.getStageName().equals( RelationshipStage.NAME ) )
         {
@@ -99,7 +150,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
             // Import relationships:
             // - import relationships
-            initializeRelationshipImport( dependencyResolver.resolveDependency( Input.Estimates.class ) );
+            initializeRelationshipImport(
+                    dependencyResolver.resolveDependency( Input.Estimates.class ),
+                    dependencyResolver.resolveDependency( BatchingNeoStores.class ),
+                    dependencyResolver.resolveDependency( NodeRelationshipCache.class ) );
         }
         else if ( execution.getStageName().equals( NodeDegreeCountStage.NAME ) )
         {
@@ -119,7 +173,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             // Misc:
             // - relationship group defragmentation
             // - counts store
-            initializeMisc( dependencyResolver.resolveDependency( NeoStores.class ) );
+            initializeMisc( dependencyResolver.resolveDependency( BatchingNeoStores.class ) );
         }
         else if ( includeStage( execution ) )
         {
@@ -134,35 +188,42 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         // TODO print some end stats for this stage?
     }
 
-    private void initializeNodeImport( Estimates estimates, IdMapper idMapper )
+    private void initializeNodeImport( Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
     {
-        // TODO with the estimates... should there be a way of continuously re-estimating those,
-        //      or will Estimates actually do that internally?
-        // Let's say that import will stands for 70% of the dots,
-        // preparing the ID mapper 30% (depending on the amount of collisions).
-        long numberOfNodes = estimates.numberOfNodes();
         // TODO how to handle UNKNOWN?
+        long numberOfNodes = estimates.numberOfNodes();
         printStageHeader( "(1/4) Node import",
-                "number of nodes", count( numberOfNodes ),
-                // TODO disk usage
-                "memory", "+" + bytes( padIdMapperMemoryEstimate( idMapper.calculateMemoryUsage( numberOfNodes ) ) ) );
+                ESTIMATED_NUMBER_OF_NODES, count( numberOfNodes ),
+                ESTIMATED_DISK_SPACE_USAGE, bytes(
+                        // node store
+                        nodesDiskUsage( estimates, neoStores ) +
+                        // property store(s)
+                        estimates.sizeOfNodeProperties() ),
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
+                        baselineMemoryRequirement( neoStores ) +
+                        defensivelyPadMemoryEstimate( idMapper.calculateMemoryUsage( numberOfNodes ) ) ) );
 
         // A difficulty with the goal here is that we don't know how much woek there is to be done in id mapper preparation stage.
         // In addition to nodes themselves and SPLIT,SORT,DETECT there may be RESOLVE,SORT,DEDUPLICATE too, if there are collisions
-        // TODO have some way of weighting progress of some stages vs. others, like ID mapper preparation stages could weight less than node stage
         long goal = idMapper.needsPreparation()
                 ? (long) (numberOfNodes + weighted( IdMapperPreparationStage.NAME, numberOfNodes * 4 ))
                 : numberOfNodes;
         initializeProgress( goal );
     }
 
-    private void initializeRelationshipImport( Estimates estimates )
+    private void initializeRelationshipImport( Estimates estimates, BatchingNeoStores neoStores,
+            NodeRelationshipCache nodeRelationshipCache )
     {
         long numberOfRelationships = estimates.numberOfRelationships();
         // TODO how to handle UNKNOWN?
         printStageHeader( "(2/4) Relationship import",
-                // TODO disk usage
-                "number of relationships", count( numberOfRelationships ) );
+                ESTIMATED_NUMBER_OF_RELATIONSHIPS, count( numberOfRelationships ),
+                ESTIMATED_DISK_SPACE_USAGE, bytes(
+                        relationshipsDiskUsage( estimates, neoStores ) +
+                        estimates.sizeOfRelationshipProperties() ),
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
+                        baselineMemoryRequirement( neoStores ) +
+                        defensivelyPadMemoryEstimate( nodeRelationshipCache.calculateMemoryUsage( estimates.numberOfNodes() ) ) ) );
         initializeProgress( numberOfRelationships );
     }
 
@@ -172,7 +233,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         initializeProgress( actualRelationshipCount * 3 ); // node degrees + forwards and backwards, ignore the other stages
     }
 
-    private void initializeMisc( NeoStores stores )
+    private void initializeMisc( BatchingNeoStores stores )
     {
         printStageHeader( "(4/4) Post processing" );
         // written groups + node counts + relationship counts
@@ -182,10 +243,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 actualRelationshipCount );
     }
 
-    private static long padIdMapperMemoryEstimate( long calculateMemoryUsage )
+    private static long defensivelyPadMemoryEstimate( long bytes )
     {
-        // TODO this estimate is w/o collisions, add 10% to be defensive?
-        return (long) (calculateMemoryUsage * 1.1);
+        return (long) (bytes * 1.1);
     }
 
     private void initializeProgress( long goal )
@@ -211,14 +271,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
         while ( currentLine < line || (currentLine == line && currentDotOnLine < dotOnLine) )
         {
-            if ( currentLine < line )
-            {
-                currentDotOnLine = printDots( currentDotOnLine, dotsPerLine() );
-            }
-            else
-            {
-                currentDotOnLine = printDots( currentDotOnLine, dotOnLine );
-            }
+            int target = currentLine < line ? dotsPerLine() : dotOnLine;
+            printDots( currentDotOnLine, target );
+            currentDotOnLine = target;
 
             if ( currentLine < line || currentDotOnLine == dotsPerLine() )
             {
@@ -242,8 +297,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         return percentage + "%";
     }
 
-    private int printDots( int current, int target )
+    private void printDots( int from, int target )
     {
+        int current = from;
         while ( current < target )
         {
             if ( current > 0 && current % DOT_GROUP_SIZE == 0 )
@@ -253,7 +309,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             out.print( "." );
             current++;
         }
-        return current;
     }
 
     private int dotOf( long progress )
@@ -280,7 +335,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         out.println( name + " " + date( TimeZone.getDefault() ) );
         if ( data.length > 0 )
         {
-            out.println( "Estimates:" );
             for ( int i = 0; i < data.length; )
             {
                 out.println( "  " + data[i++] + ": " + data[i++] );
@@ -304,8 +358,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     @Override
     public void done( long totalTimeMillis, String additionalInformation )
     {
-        // TODO print something profound
         endPrevious();
+
+        out.println();
+        out.println( "IMPORT DONE in " + duration( totalTimeMillis ) + ". " + additionalInformation );
     }
 
     @Override
