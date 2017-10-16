@@ -377,12 +377,6 @@ public class Neo4jPack
         }
 
         @Override
-        public void writeString( char[] value, int offset, int length ) throws IOException
-        {
-            pack( String.valueOf( value, offset, length ) );
-        }
-
-        @Override
         public void beginArray( int size, ArrayType arrayType ) throws IOException
         {
             switch ( arrayType )

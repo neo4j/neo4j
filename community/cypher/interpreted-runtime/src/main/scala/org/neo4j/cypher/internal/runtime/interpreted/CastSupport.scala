@@ -195,9 +195,6 @@ object CastSupport {
 
     override def writeString(value: Char): Unit = write(value)
 
-    override def writeString(value: Array[Char], offset: Int, length: Int): Unit = write(
-      new String(value, offset, length))
-
     override def beginArray(size: Int, arrayType: ValueWriter.ArrayType): Unit = fail()
 
     override def endArray(): Unit = fail()

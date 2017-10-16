@@ -69,13 +69,6 @@ public interface ValueWriter<E extends Exception>
         writeString( new String( bytes, offset, length, StandardCharsets.UTF_8 ) );
     }
 
-    default void writeString( char[] value ) throws E
-    {
-        writeString( value, 0, value.length );
-    }
-
-    void writeString( char[] value, int offset, int length ) throws E;
-
     void beginArray( int size, ArrayType arrayType ) throws E;
 
     void endArray() throws E;
@@ -131,11 +124,6 @@ public interface ValueWriter<E extends Exception>
 
         @Override
         public void writeString( char value ) throws E
-        {   // no-op
-        }
-
-        @Override
-        public void writeString( char[] value, int offset, int length ) throws E
         {   // no-op
         }
 
