@@ -25,7 +25,6 @@ import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
 
 public class GroupsTest
 {
@@ -53,42 +52,26 @@ public class GroupsTest
         assertEquals( 1, otherGroup.id() );
     }
 
-    @Test
+    @Test( expected = IllegalStateException.class )
     public void shouldFailOnMixedGroupModeInGetOrCreate() throws Exception
     {
         // given
         Groups groups = new Groups();
         groups.getOrCreate( null );
 
-        try
-        {
-            // when
-            groups.getOrCreate( "Something" );
-            fail( "Should fail" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then OK
-        }
+        // when
+        groups.getOrCreate( "Something" );
     }
 
-    @Test
+    @Test( expected = IllegalStateException.class )
     public void shouldFailOnMixedGroupModeInGetOrCreate2() throws Exception
     {
         // given
         Groups groups = new Groups();
         groups.getOrCreate( "Something" );
 
-        try
-        {
-            // when
-            groups.getOrCreate( null );
-            fail( "Should fail" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then OK
-        }
+        // when
+        groups.getOrCreate( null );
     }
 
     @Test
@@ -120,41 +103,25 @@ public class GroupsTest
         assertSame( Group.GLOBAL, group );
     }
 
-    @Test
+    @Test( expected = IllegalStateException.class )
     public void shouldFailOnMixedGroupModeInGet() throws Exception
     {
         // given
         Groups groups = new Groups();
         groups.getOrCreate( "Something" );
 
-        try
-        {
-            // when
-            groups.get( null );
-            fail( "Should fail" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then OK
-        }
+        // when
+        groups.get( null );
     }
 
-    @Test
+    @Test( expected = IllegalStateException.class )
     public void shouldFailOnMixedGroupModeInGet2() throws Exception
     {
         // given
         Groups groups = new Groups();
         groups.getOrCreate( null );
 
-        try
-        {
-            // when
-            groups.get( "Something" );
-            fail( "Should fail" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then OK
-        }
+        // when
+        groups.get( "Something" );
     }
 }

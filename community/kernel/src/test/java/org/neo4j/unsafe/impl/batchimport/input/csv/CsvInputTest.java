@@ -1122,26 +1122,18 @@ public class CsvInputTest
         @Override
         public Iterator<DataFactory<ENTITY>> iterator()
         {
-            return Iterators.iterator( new DataFactory<ENTITY>()
+            return Iterators.iterator( config -> new Data<ENTITY>()
             {
                 @Override
-                public Data<ENTITY> create( Configuration config )
+                public CharReadable stream()
                 {
-                    return new Data<ENTITY>()
-                    {
+                    return last = factory.apply( config );
+                }
 
-                        @Override
-                        public CharReadable stream()
-                        {
-                            return last = factory.apply( config );
-                        }
-
-                        @Override
-                        public Decorator<ENTITY> decorator()
-                        {
-                            return decorator;
-                        }
-                    };
+                @Override
+                public Decorator<ENTITY> decorator()
+                {
+                    return decorator;
                 }
             } );
         }

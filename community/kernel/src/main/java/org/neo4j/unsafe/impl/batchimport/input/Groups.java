@@ -48,7 +48,7 @@ public class Groups
         }
         else
         {
-            if ( global != globalMode.booleanValue() )
+            if ( global != globalMode )
             {
                 throw mixingOfGroupModesException();
             }
@@ -76,7 +76,7 @@ public class Groups
     public synchronized Group get( String name )
     {
         boolean global = name == null;
-        if ( globalMode != null && global != globalMode.booleanValue() )
+        if ( globalMode != null && global != globalMode )
         {
             throw mixingOfGroupModesException();
         }
