@@ -30,6 +30,7 @@ import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
@@ -37,12 +38,16 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 
 /**
  * Basic implementation of a {@link Step}. Does the most plumbing job of building a step implementation.
  */
 public abstract class AbstractStep<T> implements Step<T>
 {
+    public static final ParkStrategy PARK = new ParkStrategy.Park( IS_OS_WINDOWS ? 10_000 : 500, MICROSECONDS );
+
     private final StageControl control;
     private volatile String name;
     @SuppressWarnings( "rawtypes" )

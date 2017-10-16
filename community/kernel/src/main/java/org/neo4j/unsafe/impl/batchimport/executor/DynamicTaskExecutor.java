@@ -31,7 +31,9 @@ import org.neo4j.function.Suppliers;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -40,8 +42,6 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  */
 public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
 {
-    public static final ParkStrategy DEFAULT_PARK_STRATEGY = new ParkStrategy.Park( 10, MILLISECONDS );
-
     private final BlockingQueue<Task<LOCAL>> queue;
     private final ParkStrategy parkStrategy;
     private final String processorThreadNamePrefix;
