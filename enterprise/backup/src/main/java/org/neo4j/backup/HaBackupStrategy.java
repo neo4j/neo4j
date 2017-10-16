@@ -55,14 +55,9 @@ public class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
         {
             return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
         }
-        catch ( IncrementalBackupNotPossibleException e )
-        {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, e );
-            // This means the existing backup was so old, that an incremental backup was not possible
-        }
         catch ( RuntimeException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.WRONG_PROTOCOL, e );
+            return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, e );
         }
     }
 
