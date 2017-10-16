@@ -314,7 +314,7 @@ public class DataFactories
             else
             {
                 type = Type.PROPERTY;
-                extractor = extractors.valueOf( typeSpec );
+                extractor = parsePropertyType( typeSpec, extractors );
             }
 
             return new Header.Entry( name, type, groupName, extractor );
@@ -362,10 +362,23 @@ public class DataFactories
             else
             {
                 type = Type.PROPERTY;
-                extractor = extractors.valueOf( typeSpec );
+                extractor = parsePropertyType( typeSpec, extractors );
             }
 
             return new Header.Entry( name, type, groupName, extractor );
+        }
+
+    }
+
+    private static Extractor<?> parsePropertyType( String typeSpec, Extractors extractors )
+    {
+        try
+        {
+            return extractors.valueOf( typeSpec );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new HeaderException( "Unable to parse header", e );
         }
     }
 

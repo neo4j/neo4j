@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class GroupsTest
 {
@@ -49,5 +50,78 @@ public class GroupsTest
         // THEN
         Group otherGroup = groups.getOrCreate( "MyOtherGroup" );
         assertEquals( 1, otherGroup.id() );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void shouldFailOnMixedGroupModeInGetOrCreate() throws Exception
+    {
+        // given
+        Groups groups = new Groups();
+        groups.getOrCreate( null );
+
+        // when
+        groups.getOrCreate( "Something" );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void shouldFailOnMixedGroupModeInGetOrCreate2() throws Exception
+    {
+        // given
+        Groups groups = new Groups();
+        groups.getOrCreate( "Something" );
+
+        // when
+        groups.getOrCreate( null );
+    }
+
+    @Test
+    public void shouldGetCreatedGroup() throws Exception
+    {
+        // given
+        Groups groups = new Groups();
+        String name = "Something";
+        Group createdGroup = groups.getOrCreate( name );
+
+        // when
+        Group gottenGroup = groups.get( name );
+
+        // then
+        assertSame( createdGroup, gottenGroup );
+    }
+
+    @Test
+    public void shouldGetGlobalGroup() throws Exception
+    {
+        // given
+        Groups groups = new Groups();
+        groups.getOrCreate( null );
+
+        // when
+        Group group = groups.get( null );
+
+        // then
+        assertSame( Group.GLOBAL, group );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void shouldFailOnMixedGroupModeInGet() throws Exception
+    {
+        // given
+        Groups groups = new Groups();
+        groups.getOrCreate( "Something" );
+
+        // when
+        groups.get( null );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void shouldFailOnMixedGroupModeInGet2() throws Exception
+    {
+        // given
+        Groups groups = new Groups();
+        groups.getOrCreate( null );
+
+        // when
+        groups.get( "Something" );
     }
 }
