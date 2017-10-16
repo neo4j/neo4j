@@ -130,13 +130,6 @@ public final class ArrayEncoder
         }
 
         @Override
-        public void writeString( char[] value, int offset, int length )
-        {
-            builder.append( value, offset, length );
-            builder.append( '|' );
-        }
-
-        @Override
         public void beginArray( int size, ArrayType arrayType )
         {
             if ( size > 0 )

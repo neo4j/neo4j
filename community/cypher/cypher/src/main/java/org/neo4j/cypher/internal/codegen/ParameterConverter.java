@@ -335,12 +335,6 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeString( char[] value, int offset, int length ) throws RuntimeException
-    {
-        writeValue( new String( value, offset, length ) );
-    }
-
-    @Override
     public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
     {
         stack.push( new ArrayWriter( size, arrayType ) );

@@ -225,12 +225,6 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeString( char[] value, int offset, int length )
-    {
-        writeString( new String( value, offset, length ) );
-    }
-
-    @Override
     public void beginArray( int size, ArrayType arrayType )
     {
         stack.push( new ListWriter() );

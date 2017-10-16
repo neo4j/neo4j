@@ -110,12 +110,6 @@ public class ThrowingValueWriterTest
         }
 
         @Override
-        public void writeString( char[] value, int offset, int length ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
         public void beginArray( int size, ArrayType arrayType ) throws TestException
         {
             throw new TestException();

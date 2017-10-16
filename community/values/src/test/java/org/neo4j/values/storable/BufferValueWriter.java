@@ -153,12 +153,6 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeString( char[] value, int offset, int length )
-    {
-        buffer.add( Specials.charArray( value, offset, length ) );
-    }
-
-    @Override
     public void beginArray( int size, ArrayType arrayType )
     {
         buffer.add( Specials.beginArray( size, arrayType ) );
@@ -179,11 +173,6 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     @SuppressWarnings( "WeakerAccess" )
     public static class Specials
     {
-        public static Special charArray( char[] value, int offset, int length )
-        {
-            return new Special( WriteCharArray, format( "%d %d %d", Arrays.hashCode( value ), offset, length ) );
-        }
-
         public static Special byteArray( byte[] value )
         {
             return new Special( WriteByteArray, Arrays.hashCode( value ) );
