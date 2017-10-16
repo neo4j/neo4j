@@ -29,8 +29,9 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   for ( rightRow <- right )
   *     assert( leftRow(node) == rightRow(node) )
   *   produce leftRow
+  *
+  * This operator is planned for merges using unique index seeks.
   */
-// TODO: rename this to MergeSomething...
 case class AssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 

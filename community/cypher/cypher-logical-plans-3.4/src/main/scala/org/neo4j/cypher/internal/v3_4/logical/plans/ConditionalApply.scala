@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
 /**
-  * This is a variation of apply, which only executes 'right' on a given condition.
+  * This is a variation of apply, which only executes 'right' if all variables in 'items' != NO_VALUE.
   *
   * for ( leftRow <- left ) {
   *   if ( condition( leftRow ) ) {

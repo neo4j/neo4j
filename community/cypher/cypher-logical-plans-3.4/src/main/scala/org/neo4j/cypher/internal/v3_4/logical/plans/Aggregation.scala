@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   * values of the groupingsExpressions. When the source is fully consumed, one row is produced
   * for every group, containing the values of the groupingExpressions for that row, as well as
   * aggregates computed on all the rows in that group.
+  *
+  * If there are no groupingExpressions, aggregates are computed over all source rows.
   */
 case class Aggregation(source: LogicalPlan,
                        groupingExpressions: Map[String, Expression],

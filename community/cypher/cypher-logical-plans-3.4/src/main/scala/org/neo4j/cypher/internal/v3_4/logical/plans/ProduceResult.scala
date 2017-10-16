@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
 /**
-  * For every source row, produce a row containing only the variables in 'columns'
+  * For every source row, produce a row containing only the variables in 'columns'. The ProduceResult operator is
+  * always planned as the root operator in a logical plan tree.
   */
 case class ProduceResult(source: LogicalPlan, columns: Seq[String]) extends LogicalPlan {
 
