@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
 import org.neo4j.OnlineBackupCommandSection;
@@ -92,15 +91,8 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
 
         return new OnlineBackupCommand( outsideWorld,
                 onlineBackupContextLoader,
-                BackupSupportingClassesFactoryProvider.findBestProvider()
-                        .orElseThrow( noProviderException() )
-                        .getFactory( backupModuleResolveAtRuntime ),
+                new CommunityBackupSupportingClassesFactory( backupModuleResolveAtRuntime ),
                 new BackupFlowFactory( backupModuleResolveAtRuntime )
         );
-    }
-
-    private static Supplier<IllegalStateException> noProviderException()
-    {
-        return () -> new IllegalStateException( "Unable to find a suitable backup supporting classes provider in the classpath" );
     }
 }
