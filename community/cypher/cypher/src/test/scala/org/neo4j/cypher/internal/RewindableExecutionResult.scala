@@ -73,6 +73,7 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 2.3"))
           }
         }
       case _ =>
@@ -92,6 +93,7 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
           }
         }
       case _ =>
@@ -111,6 +113,7 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.2"))
           }
         }
       case _ =>
