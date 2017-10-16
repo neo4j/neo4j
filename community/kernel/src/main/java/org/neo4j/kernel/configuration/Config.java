@@ -572,10 +572,11 @@ public class Config implements DiagnosticsProvider, Configuration
      *
      * @param setting The setting to set to the specified value.
      * @param newValue The new value to set, passing {@code null} or empty should reset the value back to default value.
+     * @param origin The source of the change, e.g. {@code dbms.setConfigValue()}.
      * @throws IllegalArgumentException if the provided setting is unknown or not dynamic.
      * @throws InvalidSettingException if the value is not formatted correctly.
      */
-    public void updateDynamicSetting( String setting, String newValue ) throws IllegalArgumentException, InvalidSettingException
+    public void updateDynamicSetting( String setting, String newValue, String origin ) throws IllegalArgumentException, InvalidSettingException
     {
         // Make sure the setting is valid and is marked as dynamic
         Optional<ConfigValue> option = findConfigValue( setting );
@@ -601,7 +602,7 @@ public class Config implements DiagnosticsProvider, Configuration
             {
                 params.put( setting, overriddenDefaults.get( setting ) );
             }
-            newValue = getDefaultValueOf( setting );
+            newValue = "default (" + getConfiguredValueOf( setting ) + ")";
         }
         else
         {
@@ -615,14 +616,17 @@ public class Config implements DiagnosticsProvider, Configuration
                 validator.validate( newEntry, ignore -> {} ); // Throws if invalid
             }
 
-            oldValue = getDefaultValueOf( setting );
+            oldValue = getConfiguredValueOf( setting );
 
-            params.put( setting, newValue );
+            if ( params.put( setting, newValue ) == null )
+            {
+                oldValue = "default (" + oldValue + ")";
+            }
         }
-        log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
+        log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'", setting, oldValue, newValue, origin );
     }
 
-    private String getDefaultValueOf( String setting )
+    private String getConfiguredValueOf( String setting )
     {
         return getValue( setting ).map( Object::toString ).orElse( "<no default>" );
     }
