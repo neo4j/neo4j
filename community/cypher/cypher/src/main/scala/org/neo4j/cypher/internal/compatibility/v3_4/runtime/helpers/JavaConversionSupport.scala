@@ -24,27 +24,12 @@ import org.neo4j.cypher.internal.util.v3_4.EntityNotFoundException
 
 object JavaConversionSupport {
 
-  def asScala(iterator: PrimitiveLongIterator): Iterator[Long] = new Iterator[Long] {
-    def hasNext = iterator.hasNext
-    def next() = iterator.next()
-  }
-
-  def mapToScala[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = new Iterator[T] {
-    def hasNext = iterator.hasNext
-    def next() = f(iterator.next())
-  }
-
   def asScala(iterator: PrimitiveIntIterator): Iterator[Int] = new Iterator[Int] {
     def hasNext = iterator.hasNext
     def next() = iterator.next()
   }
 
   def asScalaENFXSafe(iterator: PrimitiveIntIterator): Iterator[Int] = makeENFXSafe(iterator.hasNext, iterator.next)(identity)
-
-  def mapToScala[T](iterator: PrimitiveIntIterator)(f: Int => T): Iterator[T] = new Iterator[T] {
-    def hasNext = iterator.hasNext
-    def next() = f(iterator.next())
-  }
 
   // Same as mapToScala, but handles concurrency exceptions by swallowing exceptions
   def mapToScalaENFXSafe[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = makeENFXSafe(iterator.hasNext, iterator.next)(f)

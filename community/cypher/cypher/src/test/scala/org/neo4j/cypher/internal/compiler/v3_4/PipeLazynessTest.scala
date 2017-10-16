@@ -21,12 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{ShortestPath, SingleNode, SortItem}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.True
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{ShortestPath, SingleNode, SortItem}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb._
@@ -37,14 +35,12 @@ import scala.collection.JavaConverters._
 This test fixture tries to assert that Pipe declaring that they are lazy
 in fact are lazy. Every Pipe should be represented here
  */
-
 class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
   test("test") {
     distinctPipe.!!()
     filterPipe.!!()
     shortestPathPipe.!!()
-    startPipe.!!()
   }
 
   implicit class IsNotEager(pair: (Pipe, LazyIterator[Map[String, Any]])) {
@@ -88,19 +84,6 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   }
 
   private val sortByX: List[SortItem] = List(SortItem(Variable("x"), ascending = true))
-
-  private def startPipe = {
-    val node = mock[Node]
-    val (iter, src) = emptyFakes
-    val pipe = NodeStartPipe(src, "y", new EntityProducer[Node] {
-      def producerType: String = "SingleNodeMock"
-
-      def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
-
-      def arguments: Seq[Argument] = Seq.empty[Argument]
-    })()
-    (pipe, iter)
-  }
 
   private def unionPipe = {
     val (iter, src) = emptyFakes

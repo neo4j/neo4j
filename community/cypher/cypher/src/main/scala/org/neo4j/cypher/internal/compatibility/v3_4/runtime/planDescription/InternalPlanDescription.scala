@@ -289,14 +289,6 @@ final case class PlanDescriptionImpl(id: LogicalPlanId,
     s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
   }
 
-  def render(builder: StringBuilder, separator: String, levelSuffix: String) {
-    ???
-  }
-
-  def render(builder: StringBuilder) {
-    ???
-  }
-
   private def renderSources = {
     arguments.flatMap {
       case SourceCode(className, sourceCode) => Some(s"=== Java Source: $className ===$NL$sourceCode")

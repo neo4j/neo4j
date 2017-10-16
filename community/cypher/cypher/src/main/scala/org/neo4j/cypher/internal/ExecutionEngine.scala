@@ -41,6 +41,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.values.virtual.MapValue
+
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
 /**

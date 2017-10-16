@@ -36,7 +36,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
                                   notifications: Set[Notification])
   extends InternalExecutionResult {
 
-  def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()
+  def javaIterator: ResourceIterator[util.Map[String, Any]] = ResourceIterator.empty()
   def columnAs[T](column: String) = Iterator.empty
   override def javaColumns: util.List[String] = Collections.emptyList()
 
@@ -52,7 +52,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
        |+--------------------------------------------+
        |""".stripMargin
 
-  def javaColumnAs[T](column: String): ResourceIterator[T] = new EmptyResourceIterator()
+  def javaColumnAs[T](column: String): ResourceIterator[T] = ResourceIterator.empty()
 
   def planDescriptionRequested = true
 
@@ -68,16 +68,4 @@ case class ExplainExecutionResult(fieldNames: Array[String],
   override def executionMode: ExecutionMode = ExplainMode
 
   override def withNotifications(added: Notification*): InternalExecutionResult = copy(notifications = notifications ++ added)
-}
-
-final class EmptyResourceIterator[T]() extends ResourceIterator[T] {
-  def close() {}
-
-  def next(): T= Iterator.empty.next()
-
-  def remove() {
-    throw new UnsupportedOperationException
-  }
-
-  def hasNext = false
 }

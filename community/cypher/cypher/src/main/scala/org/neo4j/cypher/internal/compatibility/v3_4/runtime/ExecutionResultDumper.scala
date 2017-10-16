@@ -22,9 +22,14 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import java.io.{PrintWriter, StringWriter}
 
 import org.neo4j.cypher.internal.QueryStatistics
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v3_4.helpers.IsList
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
-case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: QueryStatistics) extends CypherSerializer {
+import scala.collection.Map
+
+case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: QueryStatistics) {
 
   def dumpToString(implicit query: QueryContext): String = {
     val stringWriter = new StringWriter()
@@ -93,5 +98,47 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
     })
     columnSizes.toMap
   }
+
+  private def makeSize(txt: String, wantedSize: Int): String = {
+    val actualSize = txt.length()
+    if (actualSize > wantedSize) {
+      txt.slice(0, wantedSize)
+    } else if (actualSize < wantedSize) {
+      txt + repeat(" ", wantedSize - actualSize)
+    } else txt
+  }
+
+  private def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
+
+  private def serializeProperties(x: PropertyContainer, qtx: QueryContext): String = {
+    val (ops, id, deleted) = x match {
+      case n: Node => (qtx.nodeOps, n.getId, qtx.nodeOps.isDeletedInThisTx(n.getId))
+      case r: Relationship => (qtx.relationshipOps, r.getId, qtx.relationshipOps.isDeletedInThisTx(r.getId))
+    }
+
+    val keyValStrings = if (deleted) Iterator("deleted")
+    else ops.propertyKeyIds(id).
+      map(pkId => qtx.getPropertyKeyName(pkId) + ":" + serialize(ops.getProperty(id, pkId).asObject(), qtx))
+
+    keyValStrings.mkString("{", ",", "}")
+  }
+
+  import scala.collection.JavaConverters._
+  private def serialize(a: Any, qtx: QueryContext): String = a match {
+    case x: Node         => x.toString + serializeProperties(x, qtx)
+    case x: Relationship => ":" + x.getType.name() + "[" + x.getId + "]" + serializeProperties(x, qtx)
+    case x: Any if x.isInstanceOf[Map[_, _]] => makeString(_ => x.asInstanceOf[Map[String, Any]], qtx)
+    case x: Any if x.isInstanceOf[java.util.Map[_, _]] => makeString(_ => x.asInstanceOf[java.util.Map[String, Any]].asScala, qtx)
+    case IsList(coll)    => coll.map(elem => serialize(elem, qtx)).mkString("[", ",", "]")
+    case x: String       => "\"" + x + "\""
+    case v: KeyToken     => v.name
+    case Some(x)         => x.toString
+    case null            => "<null>"
+    case x               => x.toString
+  }
+
+  private def makeString(m: QueryContext => Map[String, Any], qtx: QueryContext) = m(qtx).map {
+    case (k, v) => k + " -> " + serialize(v, qtx)
+  }.mkString("{", ", ", "}")
 }
 

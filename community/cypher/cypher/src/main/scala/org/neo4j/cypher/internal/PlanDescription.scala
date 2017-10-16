@@ -33,8 +33,5 @@ trait PlanDescription {
 
   def asJava: javacompat.PlanDescription
 
-  def render(builder: StringBuilder) {}
-  def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
-
   def identifiers: Set[String]
 }

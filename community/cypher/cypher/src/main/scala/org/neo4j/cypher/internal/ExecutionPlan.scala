@@ -20,12 +20,9 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
-import org.neo4j.graphdb.{Result, Transaction}
-import org.neo4j.kernel.api.Statement
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.values.virtual.MapValue
-
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
 
 trait ExecutionPlan {
 
