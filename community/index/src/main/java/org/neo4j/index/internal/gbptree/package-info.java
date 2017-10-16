@@ -29,7 +29,7 @@
  * <h1>Entries move from left to right</h1>
  * When we make structural changes to the tree we are only allowed to move entries to the right, never to the left.
  * {@link org.neo4j.index.internal.gbptree.SeekCursor Readers} rely on this assumption being true to read correct
- * entries without missing anything. This is also way backwards seek needs to be done with extra care. Moving entries
+ * entries without missing anything. This is also why backwards seek needs to be done with extra care. Moving entries
  * to the left within a page (during remove) is acceptable and readers use {@link org.neo4j.io.pagecache.PageCursor#shouldRetry()}
  * to handle this case.
  * <h1>Split, merge and rebalance</h1>
@@ -103,7 +103,7 @@
  * Call this key the "bubble key" and the internal node where we found it the "bubble source". The bubble key is the
  * new splitter key that divide subtree A from subtree B and we need to replace old splitter key with this.
  * <p>
- * Replacing the splitter key is not enough however. We also need to remove the remove bubble key from the bubble
+ * Replacing the splitter key is not enough however. We also need to remove the bubble key from the bubble
  * source. This might leave bubble source with no keys and only one child. If all of the internal nodes in subtree
  * of leaf A looks like this when we try to find the bubble key then there is no such key to be found and we can
  * safely completely remove this subtree from common ancestor. We can think of this process as the key bubbling up
@@ -140,11 +140,11 @@
  * We split a node A into A' and B'. To reflect this in parent we need to insert a new child pointer (to B') and a
  * splitter key that divide range A' from range B'. This key is the leftmost in B'. The splitter key is passed up to
  * parent together with new child pointer to be inserted. Note that even though we pass the splitter key up, we also
- * keep it i B'.
+ * keep it in B'.
  * <p>
  * When inserting new splitter key and child pointer in parent node it can cause an overflow such that we need to
  * split parent as well. Splitting an internal node is done in a similar fashion to splitting a leaf node with the
- * slight difference that we do not keep the new splitter key among the two internal nodes but instead just pass i
+ * slight difference that we do not keep the new splitter key among the two internal nodes but instead just pass it
  * up to parent (or parent's parent if you will).
  * <p>
  * This splitting of parents can spread all the way up to the root, in which case we have added a new level in the tree.
