@@ -186,11 +186,11 @@ public class LuceneDataSource extends LifecycleAdapter
         }
 
         DocValuesType actualType = stringDocValuesTypeMap.putIfAbsent( key, expectedType );
-        if ( actualType != null && !actualType.equals( expectedType ) )
+        if ( actualType != null && !actualType.equals( DocValuesType.NONE ) && !actualType.equals( expectedType ) )
         {
             throw new IllegalArgumentException( String.format(
-                    "Cannot index '%s' for key '%s', since this key has been used to index another %s.",
-                    value, key, expectedTypeName ) );
+                    "Cannot index '%s' for key '%s', since this key has been used to index %s. Raw value of the index type is %s", value, key, expectedTypeName,
+                    actualType ) );
         }
     }
 
