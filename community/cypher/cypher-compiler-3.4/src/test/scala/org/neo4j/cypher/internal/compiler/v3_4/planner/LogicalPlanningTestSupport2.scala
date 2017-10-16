@@ -145,6 +145,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       AstRewriting(newPlain, literalExtraction = Never) andThen
       RewriteProcedureCalls andThen
       Namespacer andThen
+      transitiveClosure andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
       LateAstRewriting andThen

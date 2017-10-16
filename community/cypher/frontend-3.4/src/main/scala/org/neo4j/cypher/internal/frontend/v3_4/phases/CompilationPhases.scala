@@ -34,6 +34,7 @@ object CompilationPhases {
   def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =
     SemanticAnalysis(warn = false) andThen
       Namespacer andThen
+      transitiveClosure andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
       LateAstRewriting
