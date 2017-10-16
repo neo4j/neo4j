@@ -20,7 +20,6 @@
 package org.neo4j.helpers;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +36,7 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -129,8 +129,7 @@ public final class ValueUtils
             }
             else
             {
-                throw new IllegalArgumentException(
-                        String.format( "Cannot convert %s to AnyValue", object.getClass().getName() ) );
+                return new JavaObjectAnyValue( object );
             }
         }
     }
@@ -292,5 +291,39 @@ public final class ValueUtils
     public static EdgeValue fromRelationshipProxy( Relationship relationship )
     {
         return new RelationshipProxyWrappingEdgeValue( relationship );
+    }
+
+    public static final class JavaObjectAnyValue extends AnyValue
+    {
+        private final Object object;
+        //The object is null checked before calling constructor
+        private JavaObjectAnyValue( Object object )
+        {
+            assert object != null;
+            this.object = object;
+        }
+
+        public Object asObject()
+        {
+            return object;
+        }
+
+        @Override
+        protected boolean eq( Object other )
+        {
+            return other != null && other.equals( object );
+        }
+
+        @Override
+        protected int computeHash()
+        {
+            return object.hashCode();
+        }
+
+        @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            writer.writeArbitraryJavaObject( object );
+        }
     }
 }
