@@ -111,4 +111,16 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
       "prop"
     )
   }
+
+  test("Fail when trying to pass arbitrary object in and out of a procedure") {
+    // Given
+    registerDummyInOutProcedure(Neo4jTypes.NTAny)
+    class Arbitrary {
+      val foo = 42
+    }
+    val value = new Arbitrary
+
+    // When & then
+    intercept[IllegalArgumentException](graph.execute("CALL my.first.proc({p})", map("p", value)))
+  }
 }
