@@ -43,7 +43,9 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -226,73 +228,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     public static void encodeValue( PropertyBlock block, int keyId, Value value,
             DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator )
     {
-        // TODO: use ValueWriter
-        Object asObject = value.asObject();
-        if ( asObject instanceof String )
-        {   // Try short string first, i.e. inlined in the property block
-            String string = (String) asObject;
-            if ( LongerShortString.encode( keyId, string, block, PropertyType.getPayloadSize() ) )
-            {
-                return;
-            }
+        if ( value instanceof ArrayValue )
+        {
+            Object asObject = value.asObject();
 
-            // Fall back to dynamic string store
-            byte[] encodedString = encodeString( string );
-            List<DynamicRecord> valueRecords = new ArrayList<>();
-            allocateStringRecords( valueRecords, encodedString, stringAllocator );
-            setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
-            for ( DynamicRecord valueRecord : valueRecords )
-            {
-                valueRecord.setType( PropertyType.STRING.intValue() );
-            }
-            block.setValueRecords( valueRecords );
-        }
-        else if ( asObject instanceof Integer )
-        {
-            setSingleBlockValue( block, keyId, PropertyType.INT, ((Integer) asObject).longValue() );
-        }
-        else if ( asObject instanceof Boolean )
-        {
-            setSingleBlockValue( block, keyId, PropertyType.BOOL, (Boolean) asObject ? 1L : 0L );
-        }
-        else if ( asObject instanceof Float )
-        {
-            setSingleBlockValue( block, keyId, PropertyType.FLOAT, Float.floatToRawIntBits( (Float) asObject ) );
-        }
-        else if ( asObject instanceof Long )
-        {
-
-            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) <<
-                                       StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS);
-            if ( ShortArray.LONG.getRequiredBits( (Long) asObject ) <= 35 )
-            {   // We only need one block for this value, special layout compared to, say, an integer
-                block.setSingleBlock( keyAndType | (1L << 28) | ((Long) asObject << 29) );
-            }
-            else
-            {   // We need two blocks for this value
-                block.setValueBlocks( new long[]{keyAndType, (Long) asObject} );
-            }
-        }
-        else if ( asObject instanceof Double )
-        {
-            block.setValueBlocks( new long[]{ keyId |
-                    (((long) PropertyType.DOUBLE.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS),
-                    Double.doubleToRawLongBits( (Double) asObject )} );
-        }
-        else if ( asObject instanceof Byte )
-        {
-            setSingleBlockValue( block, keyId, PropertyType.BYTE, ((Byte) asObject).longValue() );
-        }
-        else if ( asObject instanceof Character )
-        {
-            setSingleBlockValue( block, keyId, PropertyType.CHAR, (Character) asObject );
-        }
-        else if ( asObject instanceof Short )
-        {
-            setSingleBlockValue( block, keyId, PropertyType.SHORT, ((Short) asObject).longValue() );
-        }
-        else if ( asObject.getClass().isArray() )
-        {   // Try short array first, i.e. inlined in the property block
+            // Try short array first, i.e. inlined in the property block
             if ( ShortArray.encode( keyId, asObject, block, PropertyType.getPayloadSize() ) )
             {
                 return;
@@ -310,7 +250,127 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else
         {
-            throw new IllegalArgumentException( "Unknown property type on: " + asObject + ", " + asObject.getClass() );
+            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator ) );
+        }
+    }
+
+    private static class PropertyBlockValueWriter implements ValueWriter<IllegalArgumentException>
+    {
+        private PropertyBlock block;
+        private int keyId;
+        private DynamicRecordAllocator stringAllocator;
+
+        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator )
+        {
+            this.block = block;
+            this.keyId = keyId;
+            this.stringAllocator = stringAllocator;
+        }
+
+        @Override
+        public void writeNull() throws IllegalArgumentException
+        {
+            throw new IllegalArgumentException( "Cannot write null values to the property store" );
+        }
+
+        @Override
+        public void writeBoolean( boolean value ) throws IllegalArgumentException
+        {
+            setSingleBlockValue( block, keyId, PropertyType.BOOL, value ? 1L : 0L );
+        }
+
+        @Override
+        public void writeInteger( byte value ) throws IllegalArgumentException
+        {
+            setSingleBlockValue( block, keyId, PropertyType.BYTE, (long) value );
+        }
+
+        @Override
+        public void writeInteger( short value ) throws IllegalArgumentException
+        {
+            setSingleBlockValue( block, keyId, PropertyType.SHORT, (long) value );
+        }
+
+        @Override
+        public void writeInteger( int value ) throws IllegalArgumentException
+        {
+            setSingleBlockValue( block, keyId, PropertyType.INT, (long) value );
+        }
+
+        @Override
+        public void writeInteger( long value ) throws IllegalArgumentException
+        {
+            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) <<
+                                       StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS);
+            if ( ShortArray.LONG.getRequiredBits( value ) <= 35 )
+            {   // We only need one block for this value, special layout compared to, say, an integer
+                block.setSingleBlock( keyAndType | (1L << 28) | (value << 29) );
+            }
+            else
+            {   // We need two blocks for this value
+                block.setValueBlocks( new long[]{keyAndType, value} );
+            }
+        }
+
+        @Override
+        public void writeFloatingPoint( float value ) throws IllegalArgumentException
+        {
+            setSingleBlockValue( block, keyId, PropertyType.FLOAT, Float.floatToRawIntBits( value ) );
+        }
+
+        @Override
+        public void writeFloatingPoint( double value ) throws IllegalArgumentException
+        {
+            block.setValueBlocks( new long[]{
+                    keyId | (((long) PropertyType.DOUBLE.intValue())
+                             << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS),
+                    Double.doubleToRawLongBits( value )
+            } );
+        }
+
+        @Override
+        public void writeString( String value ) throws IllegalArgumentException
+        {
+            // Try short string first, i.e. inlined in the property block
+            if ( LongerShortString.encode( keyId, value, block, PropertyType.getPayloadSize() ) )
+            {
+                return;
+            }
+
+            // Fall back to dynamic string store
+            byte[] encodedString = encodeString( value );
+            List<DynamicRecord> valueRecords = new ArrayList<>();
+            allocateStringRecords( valueRecords, encodedString, stringAllocator );
+            setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
+            for ( DynamicRecord valueRecord : valueRecords )
+            {
+                valueRecord.setType( PropertyType.STRING.intValue() );
+            }
+            block.setValueRecords( valueRecords );
+        }
+
+        @Override
+        public void writeString( char value ) throws IllegalArgumentException
+        {
+            setSingleBlockValue( block, keyId, PropertyType.CHAR, value );
+        }
+
+        @Override
+        public void beginArray( int size, ArrayType arrayType ) throws IllegalArgumentException
+        {
+            throw new IllegalArgumentException( "Cannot persist arrays to property store using ValueWriter" );
+        }
+
+        @Override
+        public void endArray() throws IllegalArgumentException
+        {
+            throw new IllegalArgumentException( "Cannot persist arrays to property store using ValueWriter" );
+        }
+
+        @Override
+        public void writeByteArray( byte[] value ) throws IllegalArgumentException
+        {
+            throw new IllegalArgumentException( "Cannot persist arrays to property store using ValueWriter" );
         }
     }
 
