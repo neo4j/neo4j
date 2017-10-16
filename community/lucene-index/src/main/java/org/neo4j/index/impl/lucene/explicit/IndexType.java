@@ -374,6 +374,7 @@ public abstract class IndexType
         else
         {
             removeFieldsFromDocument( document, key, value );
+            restoreSortFields( document );
         }
     }
 
