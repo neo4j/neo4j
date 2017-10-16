@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 case class SingleRowSlottedPipe(pipelineInformation: PipelineInformation)(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
-
-  def internalCreateResults(state: QueryState) =
-    Iterator(PrimitiveExecutionContext(pipelineInformation))
+  def internalCreateResults(state: QueryState) = {
+    val context = PrimitiveExecutionContext(pipelineInformation)
+    state.copyArgumentStateTo(context,
+      pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
+    Iterator(context)
+  }
 }
