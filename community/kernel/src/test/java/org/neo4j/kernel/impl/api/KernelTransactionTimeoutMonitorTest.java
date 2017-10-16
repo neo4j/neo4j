@@ -61,8 +61,8 @@ public class KernelTransactionTimeoutMonitorTest
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 1, 3 );
         KernelTransactionImplementation tx2 = prepareTxMock( 1, 8 );
-        KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle( tx1 );
-        KernelTransactionImplementationHandle handle2 = new KernelTransactionImplementationHandle( tx2 );
+        KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle( tx1, fakeClock );
+        KernelTransactionImplementationHandle handle2 = new KernelTransactionImplementationHandle( tx2, fakeClock );
         transactions.add( handle1 );
         transactions.add( handle2 );
 
@@ -98,8 +98,8 @@ public class KernelTransactionTimeoutMonitorTest
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 3, 0 );
         KernelTransactionImplementation tx2 = prepareTxMock( 4, 0 );
-        KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle( tx1 );
-        KernelTransactionImplementationHandle handle2 = new KernelTransactionImplementationHandle( tx2 );
+        KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle( tx1, fakeClock );
+        KernelTransactionImplementationHandle handle2 = new KernelTransactionImplementationHandle( tx2, fakeClock );
         transactions.add( handle1 );
         transactions.add( handle2 );
 

@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public interface MonotonicCounter
 {
-    long incrementAndGet();
+    long increment();
 
     static MonotonicCounter newAtomicMonotonicCounter()
     {
@@ -32,9 +32,17 @@ public interface MonotonicCounter
             private final AtomicLong value = new AtomicLong( 0L );
 
             @Override
-            public long incrementAndGet()
+            public long increment()
             {
-                return value.incrementAndGet();
+                int initialValue;
+                int incrementedValue;
+                do
+                {
+                    initialValue = value.intValue();
+                    incrementedValue = initialValue < 0 ? 0 : initialValue + 1;
+                }
+                while ( !value.compareAndSet( initialValue, incrementedValue ) );
+                return incrementedValue;
             }
         };
     }

@@ -35,7 +35,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long pins;
     private long unpins;
     private long hits;
+    private long historicalHits;
     private long faults;
+    private long historicalFaults;
     private long bytesRead;
     private long bytesWritten;
     private long evictions;
@@ -65,10 +67,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         if ( hits > 0 )
         {
             pageCacheTracer.hits( hits );
+            historicalHits = Math.addExact( historicalHits, hits );
         }
         if ( faults > 0 )
         {
             pageCacheTracer.faults( faults );
+            historicalFaults = Math.addExact( historicalFaults, faults );
         }
         if ( bytesRead > 0 )
         {
@@ -91,6 +95,18 @@ public class DefaultPageCursorTracer implements PageCursorTracer
             pageCacheTracer.flushes( flushes );
         }
         reset();
+    }
+
+    @Override
+    public long accumulatedHits()
+    {
+        return Math.addExact( historicalHits, hits );
+    }
+
+    @Override
+    public long accumulatedFaults()
+    {
+        return Math.addExact( historicalFaults, faults );
     }
 
     private void reset()

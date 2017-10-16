@@ -294,6 +294,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     final void stopQueryExecution( ExecutingQuery executingQuery )
     {
         this.executingQueryList = executingQueryList.remove( executingQuery );
+        transaction.getStatistics().addWaitingTime( executingQuery.reportedWaitingTimeNanos() );
     }
 
     public StorageStatement getStoreStatement()

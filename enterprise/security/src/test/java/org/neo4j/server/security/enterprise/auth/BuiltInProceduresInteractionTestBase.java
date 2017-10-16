@@ -43,11 +43,13 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
+import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -55,6 +57,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -69,7 +72,7 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.enterprise.builtinprocs.QueryStatusResult.UTC_ZONE_ID;
+import static org.neo4j.kernel.enterprise.builtinprocs.ProceduresTimeFormatHelper.UTC_ZONE_ID;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
@@ -77,74 +80,189 @@ import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
 
-    /*
-    This surface is hidden in 3.1, to possibly be completely removed or reworked later
-    ==================================================================================
-     */
     //---------- list running transactions -----------
 
-    //@Test
+    @Test
     public void shouldListSelfTransaction()
     {
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+                r -> assertKeyIs( r, "username", "adminSubject" ) );
     }
 
-    //@Test
-    public void shouldNotListTransactionsIfNotAdmin()
+    @Test
+    public void listBlockedTransactions() throws Throwable
     {
-        assertFail( noneSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
-        assertFail( readSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
-        assertFail( writeSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
+        assertEmpty( adminSubject, "CREATE (:MyNode {prop: 2})" );
+        String firstModifier = "MATCH (n:MyNode) set n.prop=3";
+        String secondModifier = "MATCH (n:MyNode) set n.prop=4";
+        DoubleLatch latch = new DoubleLatch( 2 );
+        DoubleLatch blockedModifierLatch = new DoubleLatch( 2 );
+        OffsetDateTime startTime = OffsetDateTime.now( UTC_ZONE_ID );
+
+        ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
+        tx.execute( threading, writeSubject, firstModifier );
+        latch.start();
+        latch.waitForAllToStart();
+
+        ThreadedTransaction<S> tx2 = new ThreadedTransaction<>( neo, blockedModifierLatch );
+        tx2.executeEarly( threading, writeSubject, KernelTransaction.Type.explicit, secondModifier );
+
+        waitTransactionToStartWaitingForTheLock();
+
+        blockedModifierLatch.startAndWaitForAllToStart();
+        String query = "CALL dbms.listTransactions()";
+        assertSuccess( adminSubject, query, r ->
+        {
+            List<Map<String,Object>> maps = collectResults( r );
+
+            Matcher<Map<String,Object>> listTransaction = listedTransactionOfInteractionLevel( startTime,
+                    "adminSubject", query );
+            Matcher<Map<String,Object>> blockedQueryMatcher = allOf( anyOf( hasCurrentQuery( secondModifier ),
+                    hasCurrentQuery( firstModifier ) ), hasStatus( "Blocked by:" ) );
+            Matcher<Map<String,Object>> executedModifier = allOf( hasCurrentQuery(""), hasStatus( "Running" ) );
+
+            assertThat( maps, matchesOneToOneInAnyOrder( listTransaction, blockedQueryMatcher, executedModifier ) );
+        } );
+
+        latch.finishAndWaitForAllToFinish();
+        tx.closeAndAssertSuccess();
+        blockedModifierLatch.finishAndWaitForAllToFinish();
     }
 
-    //@Test
-    public void shouldListTransactions() throws Throwable
+    private void waitTransactionToStartWaitingForTheLock() throws InterruptedException
     {
-        DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransaction<S> write1 = new ThreadedTransaction<>( neo, latch );
-        ThreadedTransaction<S> write2 = new ThreadedTransaction<>( neo, latch );
+        while ( !Thread.getAllStackTraces().keySet().stream().anyMatch(
+                ThreadingRule.waitingWhileIn( LockingStatementOperations.class, "exclusiveOptimisticLock" ) ) )
+        {
+            TimeUnit.MILLISECONDS.sleep( 10 );
+        }
+    }
 
-        String q1 = write1.executeCreateNode( threading, writeSubject );
-        String q2 = write2.executeCreateNode( threading, writeSubject );
+    @Test
+    public void listTransactionWithMetadata() throws Throwable
+    {
+        String setMetaDataQuery = "CALL dbms.setTXMetaData( { realUser: 'MyMan' } )";
+        String matchQuery = "MATCH (n) RETURN n";
+        String listTransactionsQuery = "CALL dbms.listTransactions()";
+
+        DoubleLatch latch = new DoubleLatch( 2 );
+        OffsetDateTime startTime = OffsetDateTime.now( UTC_ZONE_ID );
+
+        ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
+        tx.execute( threading, writeSubject, setMetaDataQuery, matchQuery );
+
         latch.startAndWaitForAllToStart();
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "activeTransactions",
-                        map( "adminSubject", "1", "writeSubject", "2" ) ) );
+        assertSuccess( adminSubject, listTransactionsQuery, r ->
+        {
+            List<Map<String,Object>> maps = collectResults( r );
+            Matcher<Map<String,Object>> thisTransaction =
+                    listedTransactionOfInteractionLevel( startTime, "adminSubject", listTransactionsQuery );
+            Matcher<Map<String,Object>> matchQueryTransactionMatcher =
+                    listedTransactionWithMetaData( startTime, "writeSubject", matchQuery,  map( "realUser", "MyMan" ) );
+
+            assertThat( maps, matchesOneToOneInAnyOrder( thisTransaction, matchQueryTransactionMatcher ) );
+        } );
+
+        latch.finishAndWaitForAllToFinish();
+        tx.closeAndAssertSuccess();
+    }
+
+    @Test
+    public void listAllTransactionsWhenRunningAsAdmin() throws Throwable
+    {
+        DoubleLatch latch = new DoubleLatch( 3, true );
+        OffsetDateTime startTime = OffsetDateTime
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+
+        ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
+
+        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
+        String q2 = read2.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
+        latch.startAndWaitForAllToStart();
+
+        String query = "CALL dbms.listTransactions()";
+        assertSuccess( adminSubject, query, r ->
+        {
+            List<Map<String,Object>> maps = collectResults( r );
+
+            Matcher<Map<String,Object>> thisTransaction = listedTransactionOfInteractionLevel( startTime, "adminSubject", query );
+            Matcher<Map<String,Object>> matcher1 = listedTransaction( startTime, "readSubject", q1 );
+            Matcher<Map<String,Object>> matcher2 = listedTransaction( startTime, "writeSubject", q2 );
+
+            assertThat( maps, matchesOneToOneInAnyOrder( matcher1, matcher2, thisTransaction ) );
+        } );
 
         latch.finishAndWaitForAllToFinish();
 
-        write1.closeAndAssertSuccess();
-        write2.closeAndAssertSuccess();
+        read1.closeAndAssertSuccess();
+        read2.closeAndAssertSuccess();
     }
 
-    //@Test
-    public void shouldListRestrictedTransaction()
+    @Test
+    public void shouldOnlyListOwnTransactionsWhenNotRunningAsAdmin() throws Throwable
     {
-        final DoubleLatch doubleLatch = new DoubleLatch( 2 );
+        DoubleLatch latch = new DoubleLatch( 3, true );
+        OffsetDateTime startTime = OffsetDateTime
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+        ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
 
-        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, EMPTY_RUNNABLE,
-                EMPTY_RUNNABLE ) );
+        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
+        String ignored = read2.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
+        latch.startAndWaitForAllToStart();
 
-        new Thread( () -> assertEmpty( writeSubject, "CALL test.waitForLatch()" ) ).start();
-        doubleLatch.startAndWaitForAllToStart();
+        String query = "CALL dbms.listTransactions()";
+        assertSuccess( readSubject, query, r ->
+        {
+            List<Map<String,Object>> maps = collectResults( r );
+
+            Matcher<Map<String,Object>> thisTransaction = listedTransaction( startTime, "readSubject", query );
+            Matcher<Map<String,Object>> queryMatcher = listedTransaction( startTime, "readSubject", q1 );
+
+            assertThat( maps, matchesOneToOneInAnyOrder( queryMatcher, thisTransaction ) );
+        } );
+
+        latch.finishAndWaitForAllToFinish();
+
+        read1.closeAndAssertSuccess();
+        read2.closeAndAssertSuccess();
+    }
+
+    @Test
+    public void shouldListAllTransactionsWithAuthDisabled() throws Throwable
+    {
+        neo.tearDown();
+        neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
+
+        DoubleLatch latch = new DoubleLatch( 2, true );
+        OffsetDateTime startTime = OffsetDateTime
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+
+        ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
+
+        String q = read.execute( threading, neo.login( "user1", "" ), "UNWIND [1,2,3] AS x RETURN x" );
+        latch.startAndWaitForAllToStart();
+
+        String query = "CALL dbms.listTransactions()";
         try
         {
-            assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                    r -> assertKeyIsMap( r, "username", "activeTransactions",
-                            map( "adminSubject", "1", "writeSubject", "1" ) ) );
+            assertSuccess( neo.login( "admin", "" ), query, r ->
+            {
+                List<Map<String,Object>> maps = collectResults( r );
+
+                Matcher<Map<String,Object>> thisQuery = listedTransactionOfInteractionLevel( startTime, "", query ); // admin
+                Matcher<Map<String,Object>> matcher1 = listedTransaction( startTime, "", q ); // user1
+                assertThat( maps, matchesOneToOneInAnyOrder( matcher1, thisQuery ) );
+            } );
         }
         finally
         {
-            doubleLatch.finishAndWaitForAllToFinish();
+            latch.finishAndWaitForAllToFinish();
         }
+        read.closeAndAssertSuccess();
     }
-
-    /*
-    ==================================================================================
-     */
 
     //---------- list running queries -----------
 
@@ -156,7 +274,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String listQueriesQuery = "CALL dbms.listQueries()";
 
         DoubleLatch latch = new DoubleLatch( 2 );
-        OffsetDateTime startTime = OffsetDateTime.now();
+        OffsetDateTime startTime = OffsetDateTime.now( UTC_ZONE_ID );
 
         ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
         tx.execute( threading, writeSubject, setMetaDataQuery, matchQuery );
@@ -1137,6 +1255,18 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     //---------- matchers-----------
 
+    private Matcher<Map<String,Object>> listedTransactionOfInteractionLevel( OffsetDateTime startTime, String
+            username, String currentQuery )
+    {
+        return allOf(
+                hasCurrentQuery( currentQuery ),
+                hasUsername( username ),
+                hasTransactionId(),
+                hasStartTimeAfter( startTime ),
+                hasProtocol( neo.getConnectionProtocol() )
+        );
+    }
+
     private Matcher<Map<String,Object>> listedQuery( OffsetDateTime startTime, String username, String query )
     {
         return allOf(
@@ -1145,6 +1275,16 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 hasQueryId(),
                 hasStartTimeAfter( startTime ),
                 hasNoParameters()
+        );
+    }
+
+    private Matcher<Map<String,Object>> listedTransaction( OffsetDateTime startTime, String username, String currentQuery )
+    {
+        return allOf(
+                hasCurrentQuery( currentQuery ),
+                hasUsername( username ),
+                hasTransactionId(),
+                hasStartTimeAfter( startTime )
         );
     }
 
@@ -1177,10 +1317,32 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         );
     }
 
+    private Matcher<Map<String,Object>> listedTransactionWithMetaData( OffsetDateTime startTime, String username,
+            String currentQuery, Map<String,Object> metaData )
+    {
+        return allOf(
+                hasCurrentQuery( currentQuery ),
+                hasUsername( username ),
+                hasTransactionId(),
+                hasStartTimeAfter( startTime ),
+                hasMetaData( metaData )
+        );
+    }
+
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String,Object>> hasQuery( String query )
     {
         return (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
+    }
+
+    private Matcher<Map<String,Object>> hasCurrentQuery( String currentQuery )
+    {
+        return (Matcher) hasEntry( equalTo( "currentQuery" ), equalTo( currentQuery ) );
+    }
+
+    private Matcher<Map<String,Object>> hasStatus( String statusPrefix )
+    {
+        return (Matcher) hasEntry( equalTo( "status" ), startsWith( statusPrefix ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -1196,6 +1358,14 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         Matcher valueMatcher =
                 allOf( (Matcher) isA( String.class ), (Matcher) containsString( QueryId.QUERY_ID_PREFIX ) );
         return hasEntry( queryId, valueMatcher );
+    }
+
+    private Matcher<Map<String,Object>> hasTransactionId()
+    {
+        Matcher<String> transactionId = equalTo( "transactionId" );
+        Matcher valueMatcher =
+                allOf( (Matcher) isA( String.class ), (Matcher) containsString( "transaction-" ) );
+        return hasEntry( transactionId, valueMatcher );
     }
 
     @SuppressWarnings( "unchecked" )

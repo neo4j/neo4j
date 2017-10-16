@@ -76,6 +76,40 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
+    public void accumulateHitsReporting()
+    {
+        pinAndHit();
+        pinAndHit();
+
+        assertEquals( 2, pageCursorTracer.hits() );
+        assertEquals( 2, pageCursorTracer.accumulatedHits() );
+
+        pageCursorTracer.reportEvents();
+        pinAndHit();
+
+        assertEquals( 1, pageCursorTracer.hits() );
+        assertEquals( 3, pageCursorTracer.accumulatedHits() );
+    }
+
+    @Test
+    public void accumulatedFaultsReporting()
+    {
+        pinFaultAndHit();
+        pinFaultAndHit();
+
+        assertEquals( 2, pageCursorTracer.faults() );
+        assertEquals( 2, pageCursorTracer.accumulatedFaults() );
+
+        pageCursorTracer.reportEvents();
+        pinFaultAndHit();
+        pinFaultAndHit();
+
+        assertEquals( 2,  pageCursorTracer.faults() );
+        assertEquals( 4, pageCursorTracer.accumulatedFaults() );
+        assertEquals( 0, pageCursorTracer.accumulatedHits() );
+    }
+
+    @Test
     public void countHitsOnlyForPinEventsWithoutPageFaults()
     {
         pinAndHit();

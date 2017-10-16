@@ -37,11 +37,11 @@ public abstract class HeapAllocation
     }
 
     /**
-     * Returns the current CPU time used by the thread, in nanoseconds.
+     * Returns number of allocated bytes by the thread.
      *
      * @param thread
      *         the thread to get the used CPU time for.
-     * @return the current CPU time used by the thread, in nanoseconds.
+     * @return number of allocated bytes for specified thread.
      */
     public final long allocatedBytes( Thread thread )
     {
@@ -49,11 +49,11 @@ public abstract class HeapAllocation
     }
 
     /**
-     * Returns the current CPU time used by the thread, in nanoseconds.
+     * Returns number of allocated bytes by the thread.
      *
      * @param threadId
-     *         the id of the thread to get the used CPU time for.
-     * @return the current CPU time used by the thread, in nanoseconds.
+     *         the id of the thread to get the allocation information for.
+     * @return number of allocated bytes for specified threadId.
      */
     public abstract long allocatedBytes( long threadId );
 

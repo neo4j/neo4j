@@ -44,6 +44,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
@@ -335,7 +337,8 @@ public class KernelTransactionTerminationTest
             super( mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
                     mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, () -> mock( ExplicitIndexTransactionState.class ),
-                    mock( Pool.class ), Clocks.fakeClock(), TransactionTracer.NULL,
+                    mock( Pool.class ), Clocks.fakeClock(), CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
+                    TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
                             mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite() );
 
@@ -349,7 +352,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AUTH_DISABLED, 0L );
+            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AUTH_DISABLED, 0L, 1L );
             monitor.reset();
             return this;
         }

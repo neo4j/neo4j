@@ -67,7 +67,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         MapValue queryParameters
     )
     {
-        long queryId = lastQueryId.incrementAndGet();
+        long queryId = lastQueryId.increment();
         Thread thread = Thread.currentThread();
         long threadId = thread.getId();
         String threadName = thread.getName();

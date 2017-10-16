@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 
-public class ActiveLocksQueryResult
+public class TransactionId
 {
-    public final String mode;
-    public final String resourceType;
-    public final long resourceId;
+    private static final String USER_TRANSACTION_ID_PREFIX = "transaction-";
 
-    public ActiveLocksQueryResult( ActiveLock lock )
+    private TransactionId()
     {
-        this.mode = lock.mode();
-        this.resourceType = lock.resourceType().name();
-        this.resourceId = lock.resourceId();
+    }
+
+    static String ofTransactionHandle( KernelTransactionHandle transaction )
+    {
+        return USER_TRANSACTION_ID_PREFIX + transaction.getUserTransactionId();
     }
 }

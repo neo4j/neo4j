@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -45,6 +46,8 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -382,7 +385,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
             transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                    AUTH_DISABLED, 0L );
+                    AUTH_DISABLED, 0L, 1L );
             transaction.txState();
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
@@ -444,7 +447,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
         transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                securityContext(), 0L );
+                securityContext(), 0L, 1L );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -663,7 +666,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L, 0L );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -683,7 +686,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L, 0L );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
@@ -702,6 +705,44 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.close();
     }
 
+    @Test
+    public void resetTransactionStatisticsOnRelease() throws TransactionFailureException
+    {
+        KernelTransactionImplementation transaction = newTransaction( 1000 );
+        transaction.getStatistics().addWaitingTime( 1 );
+        transaction.getStatistics().addWaitingTime( 1 );
+        assertEquals( 2, transaction.getStatistics().getWaitingTimeNanos( 0 ) );
+        transaction.close();
+        assertEquals( 0, transaction.getStatistics().getWaitingTimeNanos( 0 ) );
+    }
+
+    @Test
+    public void reportTransactionStatistics()
+    {
+        KernelTransactionImplementation transaction = newTransaction( 100 );
+        KernelTransactionImplementation.Statistics statistics =
+                new KernelTransactionImplementation.Statistics( transaction, new ThreadBasedCpuClock(),
+                        new ThreadBasedAllocation() );
+        PredictablePageCursorTracer tracer = new PredictablePageCursorTracer();
+        statistics.init( 2, tracer );
+
+        assertEquals( 2, statistics.cpuTimeMillis() );
+        assertEquals( 2, statistics.heapAllocateBytes() );
+        assertEquals( 1, statistics.totalTransactionPageCacheFaults() );
+        assertEquals( 4, statistics.totalTransactionPageCacheHits() );
+        statistics.addWaitingTime( 1 );
+        assertEquals( 1, statistics.getWaitingTimeNanos( 0 ) );
+
+        statistics.reset();
+
+        statistics.init( 4, tracer );
+        assertEquals( 4, statistics.cpuTimeMillis() );
+        assertEquals( 4, statistics.heapAllocateBytes() );
+        assertEquals( 2, statistics.totalTransactionPageCacheFaults() );
+        assertEquals( 6, statistics.totalTransactionPageCacheHits() );
+        assertEquals( 0, statistics.getWaitingTimeNanos( 0 ) );
+    }
+
     private SecurityContext securityContext()
     {
         return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
@@ -712,8 +753,48 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         for ( int i = 0; i < times; i++ )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L );
+            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L, 0L );
             tx.close();
+        }
+    }
+
+    private static class ThreadBasedCpuClock extends CpuClock
+    {
+        private long iteration;
+        @Override
+        public long cpuTimeNanos( long threadId )
+        {
+            iteration++;
+            return MILLISECONDS.toNanos( iteration * threadId );
+        }
+    }
+
+    private static class ThreadBasedAllocation extends HeapAllocation
+    {
+        private long iteration;
+        @Override
+        public long allocatedBytes( long threadId )
+        {
+            iteration++;
+            return iteration * threadId;
+        }
+    }
+
+    private static class PredictablePageCursorTracer extends DefaultPageCursorTracer
+    {
+        private long iteration = 1;
+
+        @Override
+        public long accumulatedHits()
+        {
+            iteration++;
+            return iteration * 2;
+        }
+
+        @Override
+        public long accumulatedFaults()
+        {
+            return iteration;
         }
     }
 }

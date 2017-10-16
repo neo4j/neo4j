@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.query;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
@@ -158,6 +160,7 @@ public class ExecutingQuery
         long planningDoneNanos = this.planningDoneNanos;
         // guarded by barrier - like planningDoneNanos
         PlannerInfo planner = status.isPlanning() ? null : this.plannerInfo;
+        List<ActiveLock> waitingOnLocks = status.isWaitingOnLocks() ? status.waitingOnLocks() : Collections.emptyList();
         // just needs to be captured at some point...
         long activeLockCount = this.activeLockCount.getAsLong();
         long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQueryId );
@@ -184,6 +187,7 @@ public class ExecutingQuery
                 NANOSECONDS.toMillis( waitTimeNanos ),
                 status.name(),
                 status.toMap( currentTimeNanos ),
+                waitingOnLocks,
                 activeLockCount,
                 heapAllocatedBytes
         );
@@ -250,6 +254,16 @@ public class ExecutingQuery
     public Map<String,Object> transactionAnnotationData()
     {
         return transactionAnnotationData;
+    }
+
+    public long reportedWaitingTimeNanos()
+    {
+        return waitTimeNanos;
+    }
+
+    public long totalWaitingTimeNanos( long currentTimeNanos )
+    {
+        return waitTimeNanos + status.waitTimeNanos( currentTimeNanos );
     }
 
     ClientConnectionInfo clientConnection()

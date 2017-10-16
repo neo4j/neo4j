@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -26,6 +27,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
@@ -86,6 +88,12 @@ public interface KernelTransactionHandle
     SecurityContext securityContext();
 
     /**
+     * Metadata of underlying transaction that transaction has when handle was created.
+     * @return underlying transaction metadata
+     */
+    Map<String, Object> getMetaData();
+
+    /**
      * Transaction termination reason that transaction had when handle was created.
      *
      * @return transaction termination reason.
@@ -101,6 +109,13 @@ public interface KernelTransactionHandle
     boolean isUnderlyingTransaction( KernelTransaction tx );
 
     /**
+     * User transaction id of underlying transaction. User transaction id is positive long number.
+     * Should be unique across transactions.
+     * @return user transaction id
+     */
+    long getUserTransactionId();
+
+    /**
      * @return a list of all queries currently executing that use the underlying transaction
      */
     Stream<ExecutingQuery> executingQueries();
@@ -109,4 +124,10 @@ public interface KernelTransactionHandle
      * @return the lock requests granted for this transaction.
      */
     Stream<? extends ActiveLock> activeLocks();
+
+    /**
+     * Provide underlying transaction execution statistics. For example: elapsed time, allocated bytes etc
+     * @return transaction statistics projection
+     */
+    TransactionExecutionStatistic transactionStatistic();
 }

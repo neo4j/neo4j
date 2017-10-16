@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.time.Clock;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -60,6 +59,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -71,6 +72,8 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -107,7 +110,7 @@ public class KernelTransactionsTest
     public final ExpectedException expectedException = ExpectedException.none();
 
     private static final long TEST_TIMEOUT = 10_000;
-    private static final Clock clock = Clock.systemUTC();
+    private static final SystemNanoClock clock = Clocks.nanoClock();
     private static AvailabilityGuard availabilityGuard;
 
     @Before
@@ -449,6 +452,29 @@ public class KernelTransactionsTest
                 kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L ) );
     }
 
+    @Test
+    public void incrementalUserTransactionId() throws Throwable
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        try ( KernelTransaction kernelTransaction = kernelTransactions
+                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), 0L ) )
+        {
+            assertEquals( 1, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
+        }
+
+        try ( KernelTransaction kernelTransaction = kernelTransactions
+                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), 0L ) )
+        {
+            assertEquals( 2, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
+        }
+
+        try ( KernelTransaction kernelTransaction = kernelTransactions
+                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), 0L ) )
+        {
+            assertEquals( 3, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
+        }
+    }
+
     private void stopKernelTransactions( KernelTransactions kernelTransactions )
     {
         try
@@ -552,19 +578,20 @@ public class KernelTransactionsTest
     private static KernelTransactions createTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
-            Clock clock, AvailabilityGuard availabilityGuard )
+            SystemNanoClock clock, AvailabilityGuard availabilityGuard )
     {
         return new KernelTransactions( statementLocksFactory,
                 null, statementOperations, null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard,
-                tracers, storageEngine, new Procedures(), transactionIdStore, clock, new CanWrite() );
+                tracers, storageEngine, new Procedures(), transactionIdStore, clock, CpuClock.NOT_AVAILABLE,
+                HeapAllocation.NOT_AVAILABLE, new CanWrite() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
-            Clock clock, AvailabilityGuard availabilityGuard )
+            SystemNanoClock clock, AvailabilityGuard availabilityGuard )
     {
         return new TestKernelTransactions( statementLocksFactory, null, statementOperations,
                 null, DEFAULT,
@@ -618,14 +645,13 @@ public class KernelTransactionsTest
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
                 ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
-                StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, Clock clock,
+                StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard,
                     txHeaderFactory, transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks,
                     transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
-                    clock,
-                    accessCapability );
+                    clock, CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE, accessCapability );
         }
 
         @Override

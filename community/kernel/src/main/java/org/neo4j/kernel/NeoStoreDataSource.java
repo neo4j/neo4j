@@ -655,9 +655,20 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                                       IndexConfigStore indexConfigStore,
                                       TransactionIdStore transactionIdStore,
                                       AvailabilityGuard availabilityGuard,
-                                      Clock clock,
+                                      SystemNanoClock clock,
                                       PropertyAccessor propertyAccessor ) throws KernelException, IOException
     {
+        CpuClock cpuClock = CpuClock.NOT_AVAILABLE;
+        if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
+        {
+            cpuClock = CpuClock.CPU_CLOCK;
+        }
+        HeapAllocation heapAllocation = HeapAllocation.NOT_AVAILABLE;
+        if ( config.get( GraphDatabaseSettings.track_query_allocation ) )
+        {
+            heapAllocation = HeapAllocation.HEAP_ALLOCATION;
+        }
+
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
 
@@ -675,13 +686,14 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, databaseSchemaState, explicitIndexStore ) );
+                        constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClock, heapAllocation ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
-                availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, accessCapability ) );
+                availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
+                cpuClock, heapAllocation, accessCapability ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -803,7 +815,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
-            ExplicitIndexStore explicitIndexStore )
+            ExplicitIndexStore explicitIndexStore, CpuClock cpuClock, HeapAllocation heapAllocation )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:
@@ -811,16 +823,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeReadLayer,
                 autoIndexing, constraintIndexCreator, explicitIndexStore );
 
-        CpuClock cpuClock = CpuClock.NOT_AVAILABLE;
-        if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
-        {
-            cpuClock = CpuClock.CPU_CLOCK;
-        }
-        HeapAllocation heapAllocation = HeapAllocation.NOT_AVAILABLE;
-        if ( config.get( GraphDatabaseSettings.track_query_allocation ) )
-        {
-            heapAllocation = HeapAllocation.HEAP_ALLOCATION;
-        }
         QueryRegistrationOperations queryRegistrationOperations =
                 new StackingQueryRegistrationOperations( clock, cpuClock, heapAllocation );
 

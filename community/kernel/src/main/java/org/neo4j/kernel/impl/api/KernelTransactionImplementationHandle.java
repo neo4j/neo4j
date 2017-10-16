@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * A {@link KernelTransactionHandle} that wraps the given {@link KernelTransactionImplementation}.
@@ -43,11 +45,14 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long startTime;
     private final long timeoutMillis;
     private final KernelTransactionImplementation tx;
+    private final SystemNanoClock clock;
     private final SecurityContext securityContext;
     private final Optional<Status> terminationReason;
     private final ExecutingQueryList executingQueries;
+    private final Map<String,Object> metaData;
+    private final long userTransactionId;
 
-    KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
+    KernelTransactionImplementationHandle( KernelTransactionImplementation tx, SystemNanoClock clock )
     {
         this.txReuseCount = tx.getReuseCount();
         this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
@@ -57,7 +62,10 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.securityContext = tx.securityContext();
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQueries = tx.executingQueries();
+        this.metaData = tx.getMetaData();
+        this.userTransactionId = tx.userTransactionId();
         this.tx = tx;
+        this.clock = clock;
     }
 
     @Override
@@ -103,6 +111,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
+    public Map<String,Object> getMetaData()
+    {
+        return metaData;
+    }
+
+    @Override
     public Optional<Status> terminationReason()
     {
         return terminationReason;
@@ -115,6 +129,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
+    public long getUserTransactionId()
+    {
+        return userTransactionId;
+    }
+
+    @Override
     public Stream<ExecutingQuery> executingQueries()
     {
         return executingQueries.queries();
@@ -124,6 +144,19 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public Stream<? extends ActiveLock> activeLocks()
     {
         return tx.activeLocks();
+    }
+
+    @Override
+    public TransactionExecutionStatistic transactionStatistic()
+    {
+        if ( txReuseCount == tx.getReuseCount() )
+        {
+            return new TransactionExecutionStatistic( tx, clock, startTime );
+        }
+        else
+        {
+            return TransactionExecutionStatistic.NOT_AVAILABLE;
+        }
     }
 
     @Override

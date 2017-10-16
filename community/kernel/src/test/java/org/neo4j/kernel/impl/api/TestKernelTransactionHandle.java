@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 
@@ -86,6 +88,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
+    public Map<String,Object> getMetaData()
+    {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public Optional<Status> terminationReason()
     {
         return tx.getReasonIfTerminated();
@@ -98,6 +106,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
+    public long getUserTransactionId()
+    {
+        return tx.getTransactionId();
+    }
+
+    @Override
     public Stream<ExecutingQuery> executingQueries()
     {
         throw new UnsupportedOperationException();
@@ -106,7 +120,13 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     @Override
     public Stream<? extends ActiveLock> activeLocks()
     {
-        throw new UnsupportedOperationException();
+        return Stream.empty();
+    }
+
+    @Override
+    public TransactionExecutionStatistic transactionStatistic()
+    {
+        return TransactionExecutionStatistic.NOT_AVAILABLE;
     }
 
     @Override
