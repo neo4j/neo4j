@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4
 
+import scala.collection.JavaConversions._
+
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
   def remove(cache: LFUCache[K, T])(key: K, userKey: String)
+  def clearCache(cache: LFUCache[K, T])
 }
 
 class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
@@ -46,6 +49,10 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
       }.next()
     }
   }
+
+  def clear(): Unit = {
+    cacheAccessor.clearCache(cache)
+  }
 }
 
 class MonitoringCacheAccessor[K <: AnyRef, T <: AnyRef](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
@@ -68,5 +75,11 @@ class MonitoringCacheAccessor[K <: AnyRef, T <: AnyRef](monitor: CypherCacheHitM
   def remove(cache: LFUCache[K, T])(key: K, userKey: String): Unit = {
     cache.remove(key)
     monitor.cacheDiscard(key, userKey)
+  }
+
+  def clearCache(cache: LFUCache[K, T]): Unit = {
+    val map = cache.inner.asMap()
+    map.keySet().toSet.foreach(((key: K) => monitor.cacheDiscard(key, "Cleared the cache"))) // TODO: change text?)
+    cache.clear()
   }
 }

@@ -46,4 +46,9 @@ class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) extends ((K, => V) => V)
   def containsKey(key: K) = inner.asMap().containsKey(key)
 
   def apply(key: K, value: => V): V = getOrElseUpdate(key, value)
+
+  def clear(): Unit = {
+    inner.invalidateAll()
+    inner.cleanUp()
+  }
 }
