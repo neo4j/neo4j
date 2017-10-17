@@ -62,4 +62,12 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     serialize(LegacyExpressions(Map("1" -> Literal(42), "2" -> Literal(56)))) should equal(
       "{1 : Literal(42), 2 : Literal(56)}")
   }
+
+  test("serialize something that includes a regex should work") {
+    val value = "GenericCase(Vector((any(  x@40 in n.values where   x@40 =~ Literal(^T-?\\d+$)),SubstringFunction(ContainerIndex(FilterFunction(n.values,  x@106,  x@106 =~ Literal(^T-?\\d+$)),Literal(0)),Literal(1),None))),Some(Literal(1))) == {p0}"
+    serialize(KeyNames(Seq(value))) should equal (
+      "GenericCase(Vector((any(x in n.values where x =~ Literal(^T-?\\d+$)),SubstringFunction(ContainerIndex(FilterFunction(n.values,x,x =~ Literal(^T-?\\d+$)),Literal(0)),Literal(1),None))),Some(Literal(1))) == {p0}"
+    )
+  }
+
 }
