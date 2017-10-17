@@ -19,6 +19,7 @@
  */
 package org.neo4j.concurrencytest;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,6 +42,7 @@ public class LegacyIndexAddDropConcurrentlyTest
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
+    @Ignore
     @Test
     public void shouldHandleConcurrentIndexDropping() throws Exception
     {
