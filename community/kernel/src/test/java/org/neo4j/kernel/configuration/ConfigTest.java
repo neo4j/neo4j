@@ -44,6 +44,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -125,7 +126,8 @@ public class ConfigTest
 
     private static Config Config( Map<String,String> params )
     {
-        return Config.fromSettings( params ).withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+        return Config.fromSettings( params )
+                     .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
     }
 
     @Rule
@@ -200,9 +202,9 @@ public class ConfigTest
         assertTrue( confFile.createNewFile() );
 
         Config config = Config.fromFile( confFile )
-                .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
-                .withSetting( "ha.jibberish", "baah" )
-                .withSetting( "dbms.jibberish", "booh" ).build();
+                              .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
+                              .withSetting( "ha.jibberish", "baah" )
+                              .withSetting( "dbms.jibberish", "booh" ).build();
 
         // When
         config.setLogger( log );
@@ -224,10 +226,11 @@ public class ConfigTest
         assertTrue( confFile.createNewFile() );
 
         Config config = Config.fromFile( confFile )
-                .withSetting( MySettingsWithDefaults.oldHello, "baah" )
-                .withSetting( MySettingsWithDefaults.oldSetting, "booh" )
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings, new GraphDatabaseSettings() ) )
-                .build();
+                              .withSetting( MySettingsWithDefaults.oldHello, "baah" )
+                              .withSetting( MySettingsWithDefaults.oldSetting, "booh" )
+                              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings,
+                                      new GraphDatabaseSettings() ) )
+                              .build();
 
         // When
         config.setLogger( log );
@@ -245,9 +248,10 @@ public class ConfigTest
     {
         // Given
         Config config = Config.builder()
-                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                .withSetting( MySettingsWithDefaults.hello, "ABC")
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+                              .withSetting( MySettingsWithDefaults.secretSetting, "false" )
+                              .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
+                              .build();
 
         // Then
         assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
@@ -260,14 +264,15 @@ public class ConfigTest
     {
         // Given
         Config config = Config.builder()
-                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                .withConfigClasses( Arrays.asList( new MySettingsWithDefaults(), myMigratingSettings ) ).build();
+                              .withSetting( MySettingsWithDefaults.secretSetting, "false" )
+                              .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                              .withConfigClasses( Arrays.asList( new MySettingsWithDefaults(), myMigratingSettings ) )
+                              .build();
 
         // Then
         assertEquals( Optional.of( "<documented default value>" ),
                 config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() )
-                        .documentedDefaultValue() );
+                      .documentedDefaultValue() );
         assertEquals( Optional.empty(),
                 config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).documentedDefaultValue() );
     }
@@ -277,18 +282,18 @@ public class ConfigTest
     {
         // Should not throw
         Config.builder()
-                .withSetting( MySettingsWithDefaults.hello, "neo4j" )
-                .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+              .withSetting( MySettingsWithDefaults.hello, "neo4j" )
+              .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
+              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
         expect.expect( InvalidSettingException.class );
         expect.expectMessage( "Setting hello has to set to neo4j" );
 
         // Should throw
         Config.builder()
-                .withSetting( MySettingsWithDefaults.hello, "not-neo4j" )
-                .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+              .withSetting( MySettingsWithDefaults.hello, "not-neo4j" )
+              .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
+              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
     }
 
     @Group( "a.b.c" )
@@ -304,11 +309,11 @@ public class ConfigTest
         assertTrue( confFile.createNewFile() );
 
         Config config = Config.fromFile( confFile )
-                .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
-                .withSetting( "a.b.c.first.jibberish", "baah" )
-                .withSetting( "a.b.c.second.jibberish", "baah" )
-                .withSetting( "a.b.c.third.jibberish", "baah" )
-                .withSetting( "a.b.c.forth.jibberish", "baah" ).build();
+                              .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
+                              .withSetting( "a.b.c.first.jibberish", "baah" )
+                              .withSetting( "a.b.c.second.jibberish", "baah" )
+                              .withSetting( "a.b.c.third.jibberish", "baah" )
+                              .withSetting( "a.b.c.forth.jibberish", "baah" ).build();
 
         Set<String> identifiers = config.identifiersFromGroup( GroupedSetting.class );
         Set<String> expectedIdentifiers = new HashSet<>( Arrays.asList( "first", "second", "third", "forth" ) );
@@ -339,11 +344,11 @@ public class ConfigTest
         Connector httpConnector = new HttpConnector();
         Connector boltConnector = new BoltConnector();
         Config config = Config.builder()
-                .withSetting( httpConnector.enabled, "true" )
-                .withSetting( httpConnector.type, Connector.ConnectorType.HTTP.name() )
-                .withSetting( boltConnector.enabled, "true" )
-                .withSetting( boltConnector.type, Connector.ConnectorType.BOLT.name() )
-                .withConnectorsDisabled().build();
+                              .withSetting( httpConnector.enabled, "true" )
+                              .withSetting( httpConnector.type, Connector.ConnectorType.HTTP.name() )
+                              .withSetting( boltConnector.enabled, "true" )
+                              .withSetting( boltConnector.type, Connector.ConnectorType.BOLT.name() )
+                              .withConnectorsDisabled().build();
         assertFalse( config.get( httpConnector.enabled ) );
         assertFalse( config.get( boltConnector.enabled ) );
     }
@@ -368,7 +373,7 @@ public class ConfigTest
     {
         String settingName = MyDynamicSettings.boolSetting.name();
         String changedMessage = "Setting changed: '%s' changed from '%s' to '%s'";
-        Config config = Config.builder().withConfigClasses( Collections.singletonList( new MyDynamicSettings() ) ).build();
+        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
 
         Log log = mock( Log.class );
         config.setLogger( log );
