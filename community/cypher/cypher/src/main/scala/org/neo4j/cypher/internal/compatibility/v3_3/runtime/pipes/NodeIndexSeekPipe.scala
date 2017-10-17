@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.indexQuery
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QueryExpression}
-import org.neo4j.helpers.ValueUtils.fromNodeProxy
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,

@@ -44,11 +44,11 @@ import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, Descending, _}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
-import org.neo4j.helpers.ValueUtils
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.time.Clocks
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
