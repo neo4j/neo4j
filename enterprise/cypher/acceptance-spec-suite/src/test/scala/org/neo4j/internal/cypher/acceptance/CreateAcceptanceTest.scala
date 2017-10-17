@@ -91,4 +91,25 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.executionPlanDescription()
   }
 
+  //Not TCK material
+  // This test exposed a bug in the slotted runtime where it could mix up long slots with ref slots
+  test("should not accidentally create relationship between the wrong nodes") {
+    val a = createLabeledNode("A")
+    val b = createLabeledNode("B")
+
+    val query =
+      """
+        |MATCH (a:A), (b:B)
+        |WITH a, b as x
+        |CREATE (x)-[r:T]->(x)
+        |WITH r
+        |MATCH (:B)-[:T]->(:B)
+        |RETURN count(*) as c
+      """.stripMargin
+
+    val result = graph.execute(query)
+
+    assert(result.hasNext)
+    result.next.get("c") shouldEqual(1)
+  }
 }

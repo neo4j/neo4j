@@ -214,14 +214,14 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         DistinctSlottedPipe(source, pipeline, grouping)(id)
 
       case CreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
-        val fromOffset = pipeline(startNode).offset
-        val endOffset = pipeline(endNode).offset
+        val fromOffset = pipeline.getLongOffsetFor(startNode)
+        val endOffset = pipeline.getLongOffsetFor(endNode)
         CreateRelationshipSlottedPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,
                                        pipeline, props.map(convertExpressions))(id = id)
 
       case MergeCreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
-        val fromOffset = pipeline(startNode).offset
-        val endOffset = pipeline(endNode).offset
+        val fromOffset = pipeline.getLongOffsetFor(startNode)
+        val endOffset = pipeline.getLongOffsetFor(endNode)
         MergeCreateRelationshipSlottedPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable),
                                             endOffset, pipeline, props.map(convertExpressions))(id = id)
 
