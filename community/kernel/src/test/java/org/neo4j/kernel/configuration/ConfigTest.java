@@ -22,6 +22,7 @@ package org.neo4j.kernel.configuration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.InOrder;
 
 import java.io.File;
 import java.util.Arrays;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -364,18 +366,21 @@ public class ConfigTest
     @Test
     public void updateDynamicShouldLogChanges() throws Exception
     {
+        String settingName = MyDynamicSettings.boolSetting.name();
+        String changedMessage = "Setting changed: '%s' changed from '%s' to '%s'";
         Config config = Config.builder().withConfigClasses( Collections.singletonList( new MyDynamicSettings() ) ).build();
 
         Log log = mock( Log.class );
         config.setLogger( log );
 
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false" );
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "true" );
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "" );
+        config.updateDynamicSetting( settingName, "false" );
+        config.updateDynamicSetting( settingName, "true" );
+        config.updateDynamicSetting( settingName, "" );
 
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "false" );
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "false", "true" );
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "true" );
+        InOrder order = inOrder( log );
+        order.verify( log ).info( changedMessage, settingName, "true", "false" );
+        order.verify( log ).info( changedMessage, settingName, "false", "true" );
+        order.verify( log ).info( changedMessage, settingName, "true", "true" );
         verifyNoMoreInteractions( log );
     }
 }
