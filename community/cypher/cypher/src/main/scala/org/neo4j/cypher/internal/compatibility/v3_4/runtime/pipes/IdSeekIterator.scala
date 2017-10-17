@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.spi.v3_4.Operations
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.helpers.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 abstract class IdSeekIterator[T <: PropertyContainer]

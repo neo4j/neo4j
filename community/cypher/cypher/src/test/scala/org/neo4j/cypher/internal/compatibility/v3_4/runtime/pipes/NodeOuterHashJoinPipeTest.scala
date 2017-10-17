@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConvers
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.ValueUtils.fromNodeProxy
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
 

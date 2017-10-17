@@ -21,7 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Map;
 
-import org.neo4j.helpers.ValueUtils;
+import org.neo4j.kernel.impl.util.ValueUtils;
 
 public class BoltBuiltInProceduresInteractionIT extends BuiltInProceduresInteractionTestBase<BoltInteraction.BoltSubject>
 {

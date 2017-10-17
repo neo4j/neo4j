@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConvers
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.helpers.ValueUtils.{asListOfEdges, fromNodeProxy}
+import org.neo4j.kernel.impl.util.ValueUtils.{asListOfEdges, fromNodeProxy}
 import org.neo4j.values.AnyValue
 
 class ProjectEndpointsPipeTest extends CypherFunSuite {

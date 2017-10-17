@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_4.{Operations, QueryContext}
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues

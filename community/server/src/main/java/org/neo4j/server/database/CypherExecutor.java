@@ -39,8 +39,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
-import static org.neo4j.helpers.ValueUtils.asMapValue;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public class CypherExecutor extends LifecycleAdapter

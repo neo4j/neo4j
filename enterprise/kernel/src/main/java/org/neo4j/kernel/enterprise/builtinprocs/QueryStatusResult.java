@@ -22,25 +22,21 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.BaseToObjectValueWriter;
+import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;

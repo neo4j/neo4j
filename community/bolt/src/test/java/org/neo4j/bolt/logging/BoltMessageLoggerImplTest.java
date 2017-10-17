@@ -38,8 +38,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.logging.BoltMessageLoggerImpl.CORRELATION_ATTRIBUTE_KEY;
-import static org.neo4j.helpers.ValueUtils.asMapValue;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 
 @RunWith( MockitoJUnitRunner.class )
 public class BoltMessageLoggerImplTest

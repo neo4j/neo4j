@@ -43,7 +43,7 @@ import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{InputPosition, Notification, ResourceIterator}
-import org.neo4j.helpers.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 import scala.collection.JavaConverters._

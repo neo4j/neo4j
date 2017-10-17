@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.spatial.{Geometry, Point}
-import org.neo4j.helpers.ValueUtils
-import org.neo4j.helpers.ValueUtils._
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{of => DONT_USE_OMG, _}
@@ -88,7 +88,7 @@ class ProcedureExecutionResult(context: QueryContext,
   }
 
   private def transform[T](value: AnyRef, f: T => AnyValue): AnyValue = {
-    if (value == null) Values.NO_VALUE
+    if (value == null) NO_VALUE
     else f(value.asInstanceOf[T])
   }
 

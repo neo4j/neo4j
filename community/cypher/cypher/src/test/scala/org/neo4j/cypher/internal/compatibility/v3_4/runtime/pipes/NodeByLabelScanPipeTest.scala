@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.ValueUtils.fromNodeProxy
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 
 class NodeByLabelScanPipeTest extends CypherFunSuite {
 

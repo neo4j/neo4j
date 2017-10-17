@@ -22,7 +22,6 @@ package org.neo4j.server.rest.transactional;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 public class TransitionalPeriodTransactionMessContainer

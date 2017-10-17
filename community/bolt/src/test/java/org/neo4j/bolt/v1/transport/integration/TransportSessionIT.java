@@ -40,8 +40,8 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.ValueUtils;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;

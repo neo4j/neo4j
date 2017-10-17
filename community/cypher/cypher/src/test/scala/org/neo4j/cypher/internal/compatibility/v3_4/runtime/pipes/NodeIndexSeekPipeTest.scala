@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, PropertyKeyName}
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.ValueUtils.fromNodeProxy
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.stringValue
 
 class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {
