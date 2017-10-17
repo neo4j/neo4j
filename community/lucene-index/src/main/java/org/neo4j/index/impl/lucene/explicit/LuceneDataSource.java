@@ -298,7 +298,7 @@ public class LuceneDataSource extends LifecycleAdapter
         {
             return syncGetIndexSearcher( identifier );
         }
-        synchronized ( searcher )
+        synchronized ( this )
         {
             /*
              * We need to get again a reference to the searcher because it might be so that
