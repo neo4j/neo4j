@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.isGraphKernelResultValue
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
-import org.neo4j.helpers.ValueUtils.asMapValue
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.Statement
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.transaction.TransactionStats
+import org.neo4j.kernel.impl.util.ValueUtils.asMapValue
 
 import scala.collection.JavaConverters._
 

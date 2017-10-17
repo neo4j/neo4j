@@ -28,7 +28,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.InetSocketAddress;
 import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -36,15 +35,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.SuppressOutput;

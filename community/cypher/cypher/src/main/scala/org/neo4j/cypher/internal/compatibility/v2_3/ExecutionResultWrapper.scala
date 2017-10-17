@@ -42,7 +42,7 @@ import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.helpers.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 import scala.collection.JavaConverters._

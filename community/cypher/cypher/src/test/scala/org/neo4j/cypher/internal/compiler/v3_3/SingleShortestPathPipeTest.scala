@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.withQueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.virtual.PathValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 

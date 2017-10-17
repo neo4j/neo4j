@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.kernel.impl.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +34,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.helpers.NodeProxyWrappingNodeValue;
+import org.neo4j.helpers.RelationshipProxyWrappingEdgeValue;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
