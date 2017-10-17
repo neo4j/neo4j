@@ -612,9 +612,11 @@ public class Config implements DiagnosticsProvider, Configuration
                 validator.validate( newEntry, ignore -> {} ); // Throws if invalid
             }
 
-            oldValue = getDefaultValueOf( setting );
-
-            params.put( setting, newValue );
+            synchronized ( params )
+            {
+                oldValue = getDefaultValueOf( setting );
+                params.put( setting, newValue );
+            }
         }
         log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
     }
