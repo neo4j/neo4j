@@ -88,7 +88,7 @@ public class FulltextProvider implements AutoCloseable
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
         factory = new FulltextFactory( fileSystem, storeDir, analyzerClassName );
-        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
+        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, applier );
         nodeProperties = ConcurrentHashMap.newKeySet();
         relationshipProperties = ConcurrentHashMap.newKeySet();
         writableNodeIndices = new ConcurrentHashMap<>();

@@ -41,11 +41,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  */
 public class BloomFulltextConfig implements LoadableConfig
 {
-    public static final String UNSUPPORTED_PROPERTY_KEY_REGEX = "^(?!" + LUCENE_FULLTEXT_ADDON_PREFIX + ").+$";
-    public static final BiFunction<List<String>,Function<String,String>,List<String>> ILLEGAL_VALUE_CONSTRAINT =
-            illegalValueMessage( "Must not contain '" + LUCENE_FULLTEXT_ADDON_PREFIX + "'", matchesAny(
-                    UNSUPPORTED_PROPERTY_KEY_REGEX ) );
-
     @Description( "Enable the fulltext addon for bloom." )
     @Internal
     static final Setting<Boolean> bloom_enabled = setting( "unsupported.dbms.bloom_enabled", BOOLEAN, FALSE );
