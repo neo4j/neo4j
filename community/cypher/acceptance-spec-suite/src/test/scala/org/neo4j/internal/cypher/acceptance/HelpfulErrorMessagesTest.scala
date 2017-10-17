@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport, SyntaxException}
 
 class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -48,6 +48,36 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTe
     withEachPlanner { execute =>
       val exception = intercept[IncomparableValuesException](execute("UNWIND {things} AS thing RETURN max(thing)", Seq("things" -> List("1", 2))))
       exception.getMessage should startWith("Cannot perform MAX on mixed types.")
+    }
+  }
+
+  test("should provide sensible error message when omitting colon before relationship type on create") {
+    withEachPlanner { execute =>
+      val exception = intercept[SyntaxException](execute("CREATE (a)-[ASSOCIATED_WITH]->(b)", Seq.empty))
+      val exceptionMsg = "Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?"
+      exception.getMessage should include(exceptionMsg)
+    }
+  }
+
+  test("should provide sensible error message when trying to add multiple relationship types on create") {
+    withEachPlanner { execute =>
+      val exception = intercept[SyntaxException] (execute("CREATE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)", Seq.empty))
+      exception.getMessage should include("A single relationship type must be specified for CREATE.")
+    }
+  }
+
+  test("should provide sensible error message when omitting colon before relationship type on merge") {
+    withEachPlanner { execute =>
+      val exception = intercept[SyntaxException](execute("MERGE (a)-[ASSOCIATED_WITH]->(b)", Seq.empty))
+      val exceptionMsg = "Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?"
+      exception.getMessage should include(exceptionMsg)
+    }
+  }
+
+  test("should provide sensible error message when trying to add multiple relationship types on merge") {
+    withEachPlanner { execute =>
+      val exception = intercept[SyntaxException] (execute("MERGE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)", Seq.empty))
+      exception.getMessage should include("A single relationship type must be specified for MERGE.")
     }
   }
 }
