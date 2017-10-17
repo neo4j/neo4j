@@ -333,7 +333,9 @@ class BackupProtocolService
             Map<String,String> config )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
-        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config )
+        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory )
+                .setConfig( config )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
     }
 
