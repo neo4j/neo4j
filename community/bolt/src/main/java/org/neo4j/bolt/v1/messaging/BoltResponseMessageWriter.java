@@ -27,7 +27,7 @@ import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.BaseToObjectValueWriter;
+import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.PrettyPrinter;
