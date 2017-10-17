@@ -363,6 +363,14 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         writeValue( value );
     }
 
+    /**
+     * @deprecated This method was part of the private API not intentionally made public
+     */
+    public void writeString( char[] value, int offset, int length ) throws RuntimeException
+    {
+        writeValue( new String( value, offset, length ) );
+    }
+
     @Override
     public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
     {
