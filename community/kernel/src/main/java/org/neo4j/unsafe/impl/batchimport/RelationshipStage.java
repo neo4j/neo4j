@@ -57,6 +57,8 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class RelationshipStage extends Stage
 {
+    public static final String NAME = "Relationships";
+
     private RelationshipTypeCheckerStep typer;
 
     public RelationshipStage( Configuration config, IoMonitor writeMonitor,
@@ -64,7 +66,7 @@ public class RelationshipStage extends Stage
             Collector badCollector, InputCache inputCache,
             BatchingNeoStores neoStore, EntityStoreUpdaterStep.Monitor storeUpdateMonitor ) throws IOException
     {
-        super( "Relationships", config, ORDER_SEND_DOWNSTREAM );
+        super( NAME, null, config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(),
                 InputRelationship.class, r -> true ) );
         if ( !relationships.supportsMultiplePasses() )

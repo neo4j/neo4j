@@ -32,20 +32,25 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.SimpleDataGenerator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
-import static org.neo4j.tooling.DataGeneratorInput.bareboneNodeHeader;
-import static org.neo4j.tooling.DataGeneratorInput.bareboneRelationshipHeader;
+import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -130,6 +135,13 @@ public class QuickImport
             {
                 return pageCacheMemory;
             }
+
+            @Override
+            public long maxMemoryUsage()
+            {
+                String custom = args.get( ImportTool.Options.MAX_MEMORY.key(), null );
+                return custom != null ? ImportTool.parseMaxMemory( custom ) : DEFAULT.maxMemoryUsage();
+            }
         };
 
         float factorBadNodeData = args.getNumber( "factor-bad-node-data", 0 ).floatValue();
@@ -151,8 +163,9 @@ public class QuickImport
             }
             else
             {
-                consumer = new ParallelBatchImporter( dir, fileSystem, importConfig,
-                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), dbConfig );
+                consumer = new ParallelBatchImporter( dir, fileSystem, null, importConfig,
+                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), EMPTY, dbConfig,
+                        RecordFormatSelector.selectForConfig( dbConfig, sysoutLogProvider ) );
             }
             consumer.doImport( input );
         }

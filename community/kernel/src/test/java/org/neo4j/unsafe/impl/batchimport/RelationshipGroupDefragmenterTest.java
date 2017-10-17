@@ -89,11 +89,12 @@ public class RelationshipGroupDefragmenterTest
     private BatchingNeoStores stores;
 
     @Before
-    public void start()
+    public void start() throws IOException
     {
         stores = BatchingNeoStores.batchingNeoStores( fileSystemRule.get(),
                 directory.absolutePath(), format, CONFIG, NullLogService.getInstance(),
                 AdditionalInitialIds.EMPTY, Config.defaults() );
+        stores.createNew();
     }
 
     @After

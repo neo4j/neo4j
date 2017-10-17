@@ -25,10 +25,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -100,8 +102,19 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
         {
             typeTokenRepository.getOrCreateId( sortedTypes[i].getKey() );
         }
-        distribution = new RelationshipTypeDistribution( sortedTypes );
+        distribution = new RelationshipTypeDistribution( convert( sortedTypes ) );
         super.done();
+    }
+
+    private static Pair<Object,Long>[] convert( Entry<Object,MutableLong>[] sortedTypes )
+    {
+        @SuppressWarnings( "unchecked" )
+        Pair<Object,Long>[] result = new Pair[sortedTypes.length];
+        for ( int i = 0; i < sortedTypes.length; i++ )
+        {
+            result[i] = Pair.of( sortedTypes[i].getKey(), sortedTypes[i].getValue().longValue() );
+        }
+        return result;
     }
 
     public RelationshipTypeDistribution getDistribution()

@@ -57,6 +57,7 @@ public class BatchingNeoStoresIT
                         logService, AdditionalInitialIds.EMPTY, config ) )
         {
             // empty block
+            batchingNeoStores.createNew();
         }
         provider.assertNone( AssertableLogProvider.inLog( MetricsExtension.class ).any() );
     }

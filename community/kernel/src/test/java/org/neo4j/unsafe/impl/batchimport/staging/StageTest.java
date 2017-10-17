@@ -46,7 +46,7 @@ public class StageTest
                 return 10;
             }
         };
-        Stage stage = new Stage( "Test stage", config, ORDER_SEND_DOWNSTREAM );
+        Stage stage = new Stage( "Test stage", null, config, ORDER_SEND_DOWNSTREAM );
         long batches = 1000;
         final long items = batches * config.batchSize();
         stage.add( new PullingProducerStep( stage.control(), config )

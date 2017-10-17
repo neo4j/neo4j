@@ -135,7 +135,7 @@ public class ProcessorAssignmentStrategies
         protected void registerProcessorCount( StageExecution execution )
         {
             Map<String,Integer> byStage = new HashMap<>();
-            processors.put( execution.getStageName(), byStage );
+            processors.put( execution.name(), byStage );
             for ( Step<?> step : execution.steps() )
             {
                 byStage.put( step.name(), step.processors( 0 ) );

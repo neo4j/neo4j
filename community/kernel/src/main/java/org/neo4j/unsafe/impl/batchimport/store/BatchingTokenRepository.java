@@ -51,11 +51,13 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     private final Map<String,Integer> tokens = new HashMap<>();
     private final TokenStore<RECORD, TOKEN> store;
     private int highId;
+    private int highestCreatedId;
 
     public BatchingTokenRepository( TokenStore<RECORD,TOKEN> store )
     {
         this.store = store;
         this.highId = (int)store.getHighId();
+        this.highestCreatedId = highId - 1;
     }
 
     /**
@@ -165,6 +167,11 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
      */
     public void close()
     {
+        flush();
+    }
+
+    public void flush()
+    {
         // Batch-friendly record access
         BatchingRecordAccess<RECORD, Void> recordAccess = new BatchingRecordAccess<RECORD, Void>()
         {
@@ -177,11 +184,14 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
 
         // Create the tokens
         TokenCreator<RECORD, TOKEN> creator = new TokenCreator<>( store );
-        int highest = 1;
+        int highest = highestCreatedId;
         for ( Map.Entry<Integer,String> tokenToCreate : sortCreatedTokensById() )
         {
-            creator.createToken( tokenToCreate.getValue(), tokenToCreate.getKey(), recordAccess );
-            highest = Math.max( highest, tokenToCreate.getKey() );
+            if ( tokenToCreate.getKey() > highestCreatedId )
+            {
+                creator.createToken( tokenToCreate.getValue(), tokenToCreate.getKey(), recordAccess );
+                highest = Math.max( highest, tokenToCreate.getKey() );
+            }
         }
 
         // Store them
@@ -192,6 +202,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             highestId = max( highestId, record.getIntId() );
         }
         store.setHighestPossibleIdInUse( highestId );
+        highestCreatedId = highestId;
     }
 
     private Iterable<Map.Entry<Integer,String>> sortCreatedTokensById()

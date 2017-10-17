@@ -34,10 +34,12 @@ import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
  */
 public class IdMapperPreparationStage extends Stage
 {
+    public static final String NAME = "Prepare node index";
+
     public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodes,
             Collector collector, StatsProvider memoryUsageStats )
     {
-        super( "Prepare node index", config );
+        super( NAME, null, config, 0 );
         add( new IdMapperPreparationStep( control(), config,
                 idMapper, idsOf( nodes ), collector, memoryUsageStats ) );
     }

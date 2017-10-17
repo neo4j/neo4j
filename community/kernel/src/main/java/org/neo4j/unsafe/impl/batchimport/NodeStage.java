@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -60,6 +59,8 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class NodeStage extends Stage
 {
+    public static final String NAME = "Nodes";
+
     private final NodeStore nodeStore;
 
     public NodeStage( Configuration config, IoMonitor writeMonitor,
@@ -68,7 +69,7 @@ public class NodeStage extends Stage
             EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
             StatsProvider memoryUsage ) throws IOException
     {
-        super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
+        super( NAME, null, config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class, t -> true ) );
         if ( !nodes.supportsMultiplePasses() )
         {

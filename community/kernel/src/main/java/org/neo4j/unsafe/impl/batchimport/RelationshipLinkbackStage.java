@@ -27,8 +27,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
-
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.backwards;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 /**
  * Sets {@link RelationshipRecord#setFirstPrevRel(long)} and {@link RelationshipRecord#setSecondPrevRel(long)}
@@ -48,11 +48,13 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.backwards;
  */
 public class RelationshipLinkbackStage extends Stage
 {
+    public static final String NAME = "Relationship <-- Relationship";
+
     public RelationshipLinkbackStage( String topic, Configuration config, RelationshipStore store,
             NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
             Predicate<RelationshipRecord> changeFilter, int nodeTypes )
     {
-        super( "Relationship --> Relationship" + topic, config );
+        super( NAME, topic, config, ORDER_SEND_DOWNSTREAM );
         add( new BatchFeedStep( control(), config, backwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, store, readFilter ) );
         add( new RelationshipLinkbackStep( control(), config, cache, changeFilter, nodeTypes ) );

@@ -872,7 +872,10 @@ public class EncodingIdMapper implements IdMapper
     public void close()
     {
         dataCache.close();
-        trackerCache.close();
+        if ( trackerCache != null )
+        {
+            trackerCache.close();
+        }
         if ( collisionSourceDataCache != null )
         {
             collisionTrackerCache.close();

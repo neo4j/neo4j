@@ -51,8 +51,10 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -77,6 +79,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
@@ -109,8 +112,10 @@ public class CsvInputBatchImportIT
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
+        Config dbConfig = Config.defaults();
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
-                smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), Config.defaults() );
+                null, smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), EMPTY, dbConfig,
+                RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ) );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
 

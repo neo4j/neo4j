@@ -31,10 +31,12 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
  */
 public class RelationshipGroupStage extends Stage
 {
+    public static final String NAME = "RelationshipGroup";
+
     public RelationshipGroupStage( String topic, Configuration config,
             RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
     {
-        super( "RelationshipGroup" + topic, config );
+        super( NAME, topic, config, 0 );
         add( new ReadGroupRecordsByCacheStep( control(), config, store, cache ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
     }
