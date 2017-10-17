@@ -596,11 +596,8 @@ public class Config implements DiagnosticsProvider, Configuration
         if ( newValue == null || newValue.isEmpty() )
         {
             // Empty means we want to delete the configured value and fallback to the default value
-            oldValue = params.remove( setting );
-            if ( overriddenDefaults.containsKey( setting ) )
-            {
-                params.put( setting, overriddenDefaults.get( setting ) );
-            }
+            boolean hasDefault = overriddenDefaults.containsKey( setting );
+            oldValue = hasDefault ? params.put( setting, overriddenDefaults.get( setting ) ) : params.remove( setting );
             newValue = getDefaultValueOf( setting );
         }
         else
