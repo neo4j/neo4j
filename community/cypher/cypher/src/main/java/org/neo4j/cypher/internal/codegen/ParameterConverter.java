@@ -262,19 +262,6 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws RuntimeException
-    {
-        stack.push( new PointWriter( coordinateReferenceSystem ) );
-    }
-
-    @Override
-    public void endPoint() throws RuntimeException
-    {
-        assert !stack.isEmpty();
-        writeValue( stack.pop().value() );
-    }
-
-    @Override
     public void writeNull() throws RuntimeException
     {
         writeValue( null );
@@ -351,6 +338,27 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         writeValue( value );
+    }
+
+    @Override
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
+    {
+        switch(crs) {
+        case WGS84:
+            writeValue( new GeographicPoint( coordinate[0], coordinate[1],
+                    new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( crs.name, crs.code,
+                            crs.href ) ) );
+            break;
+
+        case Cartesian:
+            writeValue( new CartesianPoint( coordinate[0], coordinate[1],
+                    new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( crs.name, crs.code,
+                            crs.href ) ) );
+            break;
+
+        default:
+            throw new IllegalArgumentException( crs + " is not a supported coordinate reference system" );
+        }
     }
 
     private interface Writer

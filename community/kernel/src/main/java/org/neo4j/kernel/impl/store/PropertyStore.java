@@ -46,6 +46,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
+import org.neo4j.values.virtual.CoordinateReferenceSystem;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -371,6 +372,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         public void writeByteArray( byte[] value ) throws IllegalArgumentException
         {
             throw new IllegalArgumentException( "Cannot persist arrays to property store using ValueWriter" );
+        }
+
+        @Override
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IllegalArgumentException
+        {
+            // TODO
+            throw new IllegalArgumentException( "Cannot persist points to property store" );
         }
     }
 

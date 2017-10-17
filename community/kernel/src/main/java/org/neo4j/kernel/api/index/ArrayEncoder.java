@@ -25,6 +25,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.CoordinateReferenceSystem;
 
 public final class ArrayEncoder
 {
@@ -127,6 +128,20 @@ public final class ArrayEncoder
         {
             builder.append( base64Encoder.encodeToString( UTF8.encode( Character.toString( value ) ) ) );
             builder.append( '|' );
+        }
+
+        @Override
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "Arrays of points are not yet supported." );
+            // Possible implementation:
+//            builder.append( (double) crs.code() );
+//            for ( double c : coordinate )
+//            {
+//                builder.append( "," );
+//                builder.append( c );
+//            }
+//            builder.append( '|' );
         }
 
         @Override

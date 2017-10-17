@@ -171,10 +171,6 @@ object CastSupport {
     override def writePath(nodes: Array[NodeValue],
                            edges: Array[EdgeValue]): Unit = fail()
 
-    override def beginPoint(coordinateReferenceSystem: CoordinateReferenceSystem): Unit = fail()
-
-    override def endPoint(): Unit = fail()
-
     override def writeNull(): Unit = fail()
 
     override def writeBoolean(value: Boolean): Unit = write(value)
@@ -201,6 +197,10 @@ object CastSupport {
 
     override def writeByteArray(value: Array[Byte]): Unit = {
       _array = value
+    }
+
+    override def writePoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Unit = {
+      throw new UnsupportedOperationException("Arrays of points are not yet supported")
     }
   }
 

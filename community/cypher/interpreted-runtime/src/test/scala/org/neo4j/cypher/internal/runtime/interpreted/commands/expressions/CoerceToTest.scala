@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.Values._
-import org.neo4j.values.virtual.PointValue
 import org.neo4j.values.virtual.VirtualValues._
 
 import scala.language.postfixOps

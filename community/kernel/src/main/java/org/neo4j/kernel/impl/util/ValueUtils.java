@@ -47,7 +47,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.PointValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.stream.StreamSupport.stream;
@@ -173,11 +173,11 @@ public final class ValueUtils
         List<Double> coordinate = geometry.getCoordinates().get( 0 ).getCoordinate();
         if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.code )
         {
-            return VirtualValues.pointCartesian( coordinate.get( 0 ), coordinate.get( 1 ) );
+            return Values.pointCartesian( coordinate.get( 0 ), coordinate.get( 1 ) );
         }
         else if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.WGS84.code )
         {
-            return VirtualValues.pointGeographic( coordinate.get( 0 ), coordinate.get( 1 ) );
+            return Values.pointGeographic( coordinate.get( 0 ), coordinate.get( 1 ) );
         }
         else
         {
@@ -261,17 +261,17 @@ public final class ValueUtils
             double y = ((NumberValue) map.get( "y" )).doubleValue();
             if ( !map.containsKey( "crs" ) )
             {
-                return VirtualValues.pointCartesian( x, y );
+                return Values.pointCartesian( x, y );
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
             if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.type() ) )
             {
-                return VirtualValues.pointCartesian( x, y );
+                return Values.pointCartesian( x, y );
             }
             else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.type() ) )
             {
-                return VirtualValues.pointGeographic( x, y );
+                return Values.pointGeographic( x, y );
             }
             else
             {
@@ -284,13 +284,13 @@ public final class ValueUtils
             double longitude = ((NumberValue) map.get( "longitude" )).doubleValue();
             if ( !map.containsKey( "crs" ) )
             {
-                return VirtualValues.pointGeographic( longitude, latitude );
+                return Values.pointGeographic( longitude, latitude );
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
             if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.type() ) )
             {
-                return VirtualValues.pointGeographic( longitude, latitude );
+                return Values.pointGeographic( longitude, latitude );
             }
             else
             {

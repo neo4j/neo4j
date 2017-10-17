@@ -69,11 +69,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
 
     protected abstract Relationship newRelationshipProxyById( long id );
 
-    protected abstract Point newGeographicPoint( double longitude, double latitude, String name, int code,
-            String href );
-
-    protected abstract Point newCartesianPoint( double x, double y, String name, int code, String href );
-
     public Object value()
     {
         assert stack.size() == 1;
@@ -318,17 +313,43 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         } );
     }
 
+    // TODO undefault and implement in subclasses?
     @Override
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
+    {
+        throw new UnsupportedOperationException();
+    };
+
+    // TODO remove the next five methods, once this class moved to a non-public API location
+    @Deprecated
     public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws RuntimeException
     {
-        stack.push( new PointWriter( coordinateReferenceSystem ) );
+        throw new UnsupportedOperationException();
     }
 
-    @Override
+    @Deprecated
     public void endPoint() throws RuntimeException
     {
-        assert !stack.isEmpty();
-        writeValue( stack.pop().value() );
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    protected Point newGeographicPoint( double longitude, double latitude, String name, int code,
+            String href )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void writeString( char[] value, int offset, int length ) throws RuntimeException
+    {
+        writeValue( new String( value, offset, length ) );
     }
 
     @Override
@@ -389,14 +410,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeString( char value ) throws RuntimeException
     {
         writeValue( value );
-    }
-
-    /**
-     * @deprecated This method was part of the private API not intentionally made public
-     */
-    public void writeString( char[] value, int offset, int length ) throws RuntimeException
-    {
-        writeValue( new String( value, offset, length ) );
     }
 
     @Override
@@ -548,42 +561,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         public Object value()
         {
             return list;
-        }
-    }
-
-    private class PointWriter implements Writer
-    {
-        //TODO it is quite silly that the point writer doesn't give me the whole thing at once
-        private final double[] coordinates = new double[2];
-        private int index;
-        private final CoordinateReferenceSystem crs;
-
-        PointWriter( CoordinateReferenceSystem crs )
-        {
-            this.crs = crs;
-        }
-
-        @Override
-        public void write( Object value )
-        {
-            coordinates[index++] = (double) value;
-        }
-
-        @Override
-        public Object value()
-        {
-            if ( crs.code() == CoordinateReferenceSystem.WGS84.code() )
-            {
-                return newGeographicPoint( coordinates[0], coordinates[1], crs.name, crs.code, crs.href );
-            }
-            else if ( crs.code() == CoordinateReferenceSystem.Cartesian.code() )
-            {
-                return newCartesianPoint( coordinates[0], coordinates[1], crs.name, crs.code, crs.href );
-            }
-            else
-            {
-                throw new IllegalArgumentException( crs + " is not a supported coordinate reference system" );
-            }
         }
     }
 }

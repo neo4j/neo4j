@@ -152,16 +152,22 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem )
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
     {
-        stack.push( new PointWriter( coordinateReferenceSystem ) );
-    }
-
-    @Override
-    public void endPoint()
-    {
-        assert !stack.isEmpty();
-        append( stack.pop().done() );
+        append( "{geometry: {type: \"Point\", coordinates: [" );
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            append( Double.toString( coordinate[i] ) );
+            if ( i != coordinate.length - 1 )
+            {
+                append( "," );
+            }
+        }
+        append( "], crs: {type: link, properties: {href: \"" );
+        append( crs.href );
+        append( "\", code: " );
+        append( Integer.toString( crs.code ) );
+        append( "}}}}" );
     }
 
     @Override
@@ -366,38 +372,6 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         public String done()
         {
             return builder.append( "]" ).toString();
-        }
-    }
-
-    private class PointWriter extends BaseWriter
-    {
-        private int index;
-        private String[] coordinates = new String[2];
-        private final CoordinateReferenceSystem crs;
-
-        PointWriter( CoordinateReferenceSystem crs )
-        {
-            this.crs = crs;
-        }
-
-        @Override
-        public void append( String value )
-        {
-            coordinates[index++] = value;
-        }
-
-        @Override
-        public String done()
-        {
-            return format(
-                    "{geometry: " +
-                    "{type: \"Point\", coordinates: [%s, %s], crs: " +
-                    "{type: link, " +
-                    "properties: {href: \"%s\", code: %d}" +
-                    "}" +
-                    "}" +
-                    "}",
-                    coordinates[0], coordinates[1], crs.href(), crs.code() );
         }
     }
 }

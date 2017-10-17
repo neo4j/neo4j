@@ -33,6 +33,7 @@ public enum ValueGroup
     TEXT_ARRAY,
     BOOLEAN_ARRAY,
     NUMBER_ARRAY,
+    GEOMETRY,
     TEXT,
     BOOLEAN,
     NUMBER,

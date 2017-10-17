@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.values.virtual.CoordinateReferenceSystem;
+
 public class ThrowingValueWriterTest
 {
     @Rule
@@ -123,6 +125,12 @@ public class ThrowingValueWriterTest
 
         @Override
         public void writeByteArray( byte[] value ) throws TestException
+        {
+            throw new TestException();
+        }
+
+        @Override
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws TestException
         {
             throw new TestException();
         }
