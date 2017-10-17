@@ -34,7 +34,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.RelationshipProxyWrappingEdgeValue;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;

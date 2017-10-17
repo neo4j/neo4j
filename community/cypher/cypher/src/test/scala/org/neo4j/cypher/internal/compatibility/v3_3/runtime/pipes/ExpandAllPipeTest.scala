@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 
 class ExpandAllPipeTest extends CypherFunSuite {
 
@@ -53,7 +55,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
     // then
     val (single :: Nil) = result
     single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1),
-                              "b" -> fromNodeProxy(endNode1)))
+                                  "b" -> fromNodeProxy(endNode1)))
   }
 
   test("should return no relationships for types that have not been defined yet") {
