@@ -33,8 +33,8 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -181,8 +181,16 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             File storeDir = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
             checkDbState( storeDir, config );
+
+            // Only output progress indicator if a console receives the output
+            ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
+            if ( System.console() != null )
+            {
+                progressMonitorFactory = ProgressMonitorFactory.textual( System.out );
+            }
+
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
-                    .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),
+                    .runFullConsistencyCheck( storeDir, config, progressMonitorFactory,
                             FormattedLogProvider.toOutputStream( System.out ), fileSystem, verbose,
                             reportDir.toFile(),
                             new ConsistencyFlags(
