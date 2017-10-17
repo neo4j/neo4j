@@ -78,7 +78,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
           taskCloser.close(success = true)
           val logger = context.notificationLogger
           ExplainExecutionResult(compiled.columns.toArray,
-                                 compiled.planDescription, READ_ONLY, logger.notifications.map(asKernelNotification(logger.offset)))
+                                 compiled.planDescription.get(), READ_ONLY, logger.notifications.map(asKernelNotification(logger.offset)))
         } else
           compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext),
                                           params, taskCloser)
@@ -103,10 +103,10 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
   private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
       val tracer = new ProfilingTracer(queryContext.transactionalContext.kernelStatisticProvider)
-      (description: InternalPlanDescription) =>
+      (description: Provider[InternalPlanDescription]) =>
         (new Provider[InternalPlanDescription] {
 
-          override def get(): InternalPlanDescription = description.map {
+          override def get(): InternalPlanDescription = description.get().map {
             plan: InternalPlanDescription =>
               val data = tracer.get(plan.id)
               plan.
@@ -118,9 +118,6 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
                 addArgument(Arguments.Time(data.time()))
           }
         }, Some(tracer))
-    case _ => (description: InternalPlanDescription) =>
-      (new Provider[InternalPlanDescription] {
-        override def get(): InternalPlanDescription = description
-      }, None)
+    case _ => (description: Provider[InternalPlanDescription]) => (description, None)
   }
 }

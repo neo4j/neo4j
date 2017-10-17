@@ -34,15 +34,15 @@ import org.neo4j.values.virtual.MapValue
 
 object ExecutionPlanBuilder {
   type DescriptionProvider =
-    (InternalPlanDescription => (Provider[InternalPlanDescription], Option[QueryExecutionTracer]))
+    (Provider[InternalPlanDescription] => (Provider[InternalPlanDescription], Option[QueryExecutionTracer]))
 
   def tracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
       val tracer = new ProfilingTracer(queryContext.transactionalContext.kernelStatisticProvider)
-      (description: InternalPlanDescription) =>
+      (description: Provider[InternalPlanDescription]) =>
         (new Provider[InternalPlanDescription] {
 
-          override def get(): InternalPlanDescription = description.map {
+          override def get(): InternalPlanDescription = description.get().map {
             plan: InternalPlanDescription =>
               val data = tracer.get(plan.id)
 
@@ -55,10 +55,7 @@ object ExecutionPlanBuilder {
                 addArgument(Arguments.Time(data.time()))
           }
         }, Some(tracer))
-    case _ => (description: InternalPlanDescription) =>
-      (new Provider[InternalPlanDescription] {
-        override def get(): InternalPlanDescription = description
-      }, None)
+    case _ => (description: Provider[InternalPlanDescription]) => (description, None)
   }
 }
 
@@ -66,7 +63,7 @@ case class CompiledPlan(updating: Boolean,
                         periodicCommit: Option[PeriodicCommitInfo] = None,
                         fingerprint: Option[PlanFingerprint] = None,
                         plannerUsed: PlannerName,
-                        planDescription: InternalPlanDescription,
+                        planDescription: Provider[InternalPlanDescription],
                         columns: Seq[String],
                         executionResultBuilder: RunnablePlan,
                         plannedIndexUsage: Seq[IndexUsage] = Seq.empty)

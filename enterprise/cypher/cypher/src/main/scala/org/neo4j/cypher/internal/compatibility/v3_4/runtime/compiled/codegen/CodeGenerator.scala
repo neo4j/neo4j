@@ -66,11 +66,15 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
             None
         }
 
-        val descriptionTree = LogicalPlan2PlanDescription(plan, plannerName)
-        val description: InternalPlanDescription = query.code.foldLeft(descriptionTree) {
-          case (descriptionRoot, code) => descriptionRoot.addArgument(code)
-        }.addArgument(Runtime(CompiledRuntimeName.toTextOutput))
-          .addArgument(RuntimeImpl(CompiledRuntimeName.name))
+        val description = new Provider[InternalPlanDescription] {
+          override def get(): InternalPlanDescription = {
+            val d = LogicalPlan2PlanDescription(plan, plannerName)
+            query.code.foldLeft(d) {
+              case (descriptionRoot, code) => descriptionRoot.addArgument(code)
+            }.addArgument(Runtime(CompiledRuntimeName.toTextOutput))
+              .addArgument(RuntimeImpl(CompiledRuntimeName.name))
+          }
+        }
 
         val builder = new RunnablePlan {
           def apply(queryContext: QueryContext, execMode: ExecutionMode,
