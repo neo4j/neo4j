@@ -67,9 +67,13 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
   }
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = fcnSignature match {
-    case None if qualifiedName == QualifiedName(Seq(), "not") => SemanticError(s"Unknown function '$qualifiedName'. " +
-      s"If you intended to use the negation expression, surround it with parentheses.", position)
-    case None => SemanticError(s"Unknown function '$qualifiedName'", position)
+    case None =>
+      qualifiedName match {
+        case QualifiedName(Seq(), qn) if qn.equalsIgnoreCase("not") =>
+          SemanticError(s"Unknown function '$qualifiedName'. " +
+            s"If you intended to use the negation expression, surround it with parentheses.", position)
+        case _ => SemanticError(s"Unknown function '$qualifiedName'", position)
+      }
     case Some(signature) =>
       val expectedNumArgs = signature.inputSignature.length
       val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
