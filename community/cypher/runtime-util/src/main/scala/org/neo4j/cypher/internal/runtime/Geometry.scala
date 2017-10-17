@@ -27,6 +27,8 @@ import org.neo4j.graphdb.spatial.{Coordinate, Point}
 
 import scala.beans.BeanProperty
 
+
+// FIXME Does not handle more than 2 dimensions
 abstract class ScalaPoint extends Point {
   def x: Double
   def y: Double
@@ -80,26 +82,6 @@ object CRS {
 }
 
 object Points {
-  def fromMap(map: collection.Map[String, Any]): Point = {
-    if (map.contains("x") && map.contains("y")) {
-      val x = safeToDouble(map("x"))
-      val y = safeToDouble(map("y"))
-      val crsName = map.getOrElse("crs", CRS.Cartesian.name).asInstanceOf[String]
-      val crs = CRS.fromName(crsName)
-      crs match {
-        case CRS.WGS84 => GeographicPoint(x, y, crs)
-        case _ => CartesianPoint(x, y, crs)
-      }
-    } else if (map.contains("latitude") && map.contains("longitude")) {
-      val crsName = map.getOrElse("crs", CRS.WGS84.name).asInstanceOf[String]
-      if (crsName != CRS.WGS84.name) throw new InvalidArgumentException(s"'$crsName' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
-      val latitude = safeToDouble(map("latitude"))
-      val longitude = safeToDouble(map("longitude"))
-      GeographicPoint(longitude, latitude, CRS.fromName(crsName))
-    } else {
-      throw new InvalidArgumentException("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'")
-    }
-  }
   private def safeToDouble(value: Any) = value match {
     case n: Number => n.doubleValue()
     case other => throw new CypherTypeException(other.getClass.getSimpleName + " is not a valid coordinate type.")

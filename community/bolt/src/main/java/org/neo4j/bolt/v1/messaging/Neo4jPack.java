@@ -297,17 +297,11 @@ public class Neo4jPack
         }
 
         @Override
-        public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws IOException
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
         {
             error = new Error( Status.Request.Invalid,
                     "Point is not yet supported as a return type in Bolt" );
             packNull();
-        }
-
-        @Override
-        public void endPoint() throws IOException
-        {
-            //Do nothing
         }
 
         @Override

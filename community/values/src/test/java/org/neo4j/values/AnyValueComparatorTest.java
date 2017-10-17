@@ -33,6 +33,8 @@ import org.neo4j.values.virtual.VirtualValueTestUtil;
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.pointCartesian;
+import static org.neo4j.values.storable.Values.pointGeographic;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
@@ -43,8 +45,6 @@ import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.node;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
-import static org.neo4j.values.virtual.VirtualValues.pointCartesian;
-import static org.neo4j.values.virtual.VirtualValues.pointGeographic;
 
 public class AnyValueComparatorTest
 {
@@ -119,7 +119,7 @@ public class AnyValueComparatorTest
 
             // SCALARS AND POINTS
 
-            // Point
+            // Point TODO move to ValueComparatorTest
             pointCartesian( -1.0, -1.0 ),
             pointCartesian( 1.0, 1.0 ),
             pointCartesian( 1.0, 2.0 ),

@@ -23,6 +23,8 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.neo4j.values.virtual.CoordinateReferenceSystem;
+
 import static java.lang.String.format;
 
 /**
@@ -251,6 +253,16 @@ public final class Values
     public static ShortArray shortArray( short[] value )
     {
         return new ShortArray.Direct( value );
+    }
+
+    public static PointValue pointCartesian( double x, double y )
+    {
+        return new PointValue( CoordinateReferenceSystem.Cartesian, x, y );
+    }
+
+    public static PointValue pointGeographic( double longitude, double latitude )
+    {
+        return new PointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
     }
 
     // BOXED FACTORY METHODS

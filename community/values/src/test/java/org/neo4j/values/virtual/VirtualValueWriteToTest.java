@@ -29,23 +29,21 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.BufferAnyValueWriter;
 import org.neo4j.values.storable.BufferValueWriter.Specials;
 
+import static org.neo4j.values.BufferAnyValueWriter.Specials.beginList;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.beginMap;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.endList;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.endMap;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeEdge;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeEdgeReference;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNode;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNodeReference;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writePath;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.beginList;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.beginMap;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.beginPoint;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.endList;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.endMap;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.endPoint;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeEdge;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeEdgeReference;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNode;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNodeReference;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writePath;
 import static org.neo4j.values.virtual.VirtualValues.edge;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
@@ -105,20 +103,6 @@ public class VirtualValueWriteToTest
                                         edgeValue( 100L, nodeValue( 40L, stringArray( "L" ), emptyMap() ),
                                                 nodeValue( 20L, stringArray( "L" ), emptyMap() ),
                                                 stringValue( "T" ), emptyMap() )} )
-                ),
-                shouldWrite(
-                        VirtualValues.pointCartesian( 2.0, -4.0 ),
-                        beginPoint( CoordinateReferenceSystem.Cartesian ),
-                        2.0,
-                        -4.0,
-                        endPoint()
-                ),
-                shouldWrite(
-                        VirtualValues.pointGeographic( 2.0, -4.0 ),
-                        beginPoint( CoordinateReferenceSystem.WGS84 ),
-                        2.0,
-                        -4.0,
-                        endPoint()
                 ),
                 // map( list( map( list() ) ) )
                 shouldWrite(

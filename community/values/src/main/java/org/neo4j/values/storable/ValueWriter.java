@@ -21,6 +21,8 @@ package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.values.virtual.CoordinateReferenceSystem;
+
 /**
  * Writer of values.
  * <p>
@@ -41,7 +43,8 @@ public interface ValueWriter<E extends Exception>
         DOUBLE,
         BOOLEAN,
         STRING,
-        CHAR
+        CHAR,
+        POINT
     }
 
     void writeNull() throws E;
@@ -74,6 +77,8 @@ public interface ValueWriter<E extends Exception>
     void endArray() throws E;
 
     void writeByteArray( byte[] value ) throws E;
+
+    void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E;
 
     class Adapter<E extends Exception> implements ValueWriter<E>
     {
@@ -139,6 +144,11 @@ public interface ValueWriter<E extends Exception>
 
         @Override
         public void writeByteArray( byte[] value ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
         {   // no-op
         }
     }

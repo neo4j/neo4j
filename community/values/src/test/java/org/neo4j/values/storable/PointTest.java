@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.virtual;
+package org.neo4j.values.storable;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
-import static org.neo4j.values.virtual.VirtualValues.pointCartesian;
-import static org.neo4j.values.virtual.VirtualValues.pointGeographic;
+import static org.neo4j.values.storable.Values.pointCartesian;
+import static org.neo4j.values.storable.Values.pointGeographic;
 
 public class PointTest
 {
@@ -72,5 +71,19 @@ public class PointTest
     {
         assertTrue( pointCartesian( 1, 2 ).valueGroup() != null );
         assertTrue( pointGeographic( 1, 2 ).valueGroup() != null );
+    }
+
+    private static void assertEqual( Value a, Value b )
+    {
+        assertTrue( String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ), a.equals( b ) );
+        assertTrue( String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ), b.equals( a ) );
+        assertTrue( String.format( "%s should have same hashcode as %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+                a.hashCode() == b.hashCode() );
+    }
+
+    private static void assertNotEqual( Value a, Value b )
+    {
+        assertFalse( a + " should not equal " + b, a.equals( b ) );
+        assertFalse( b + "should not equal " + a, b.equals( a ) );
     }
 }

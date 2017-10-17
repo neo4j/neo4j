@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{DoubleValue, Values}
-import org.neo4j.values.virtual.PointValue
+import org.neo4j.values.storable.{DoubleValue, PointValue, Values}
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
@@ -78,8 +77,8 @@ object CartesianCalculator extends DistanceCalculator {
     p1.getCoordinateReferenceSystem.code() == CRS.Cartesian.code && p2.getCoordinateReferenceSystem.code() == CRS.Cartesian.code
 
   override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
-    val p1Coordinates = p1.coordinates()
-    val p2Coordinates = p2.coordinates()
+    val p1Coordinates = p1.coordinate()
+    val p2Coordinates = p2.coordinate()
 
     sqrt((p2Coordinates(0) - p1Coordinates(0)) * (p2Coordinates(0) - p1Coordinates(0)) +
            (p2Coordinates(1) - p1Coordinates(1)) * (p2Coordinates(1) - p1Coordinates(1)))
@@ -94,8 +93,8 @@ object HaversinCalculator extends DistanceCalculator {
     p1.getCoordinateReferenceSystem.code() == CRS.WGS84.code && p2.getCoordinateReferenceSystem.code == CRS.WGS84.code
 
   override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
-    val c1Coord = p1.coordinates()
-    val c2Coord = p2.coordinates()
+    val c1Coord = p1.coordinate()
+    val c2Coord = p2.coordinate()
     val c1: Array[Double] = Array(toRadians(c1Coord(0)), toRadians(c1Coord(1)))
     val c2: Array[Double] = Array(toRadians(c2Coord(0)), toRadians(c2Coord(1)))
     val dx = c2(0) - c1(0)

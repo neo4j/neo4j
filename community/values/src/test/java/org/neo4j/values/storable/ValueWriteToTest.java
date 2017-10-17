@@ -57,6 +57,8 @@ public class ValueWriteToTest
                 shouldWrite( 'x', 'x' ),
                 shouldWrite( "Hi", "Hi" ),
                 shouldWrite( Values.NO_VALUE, (Object) null ),
+                shouldWrite( Values.pointCartesian( 1, 2 ), Values.pointCartesian( 1, 2 ) ),
+                shouldWrite( Values.pointGeographic( 1, 2 ), Values.pointGeographic( 1, 2 ) ),
 
                 // array properties
                 shouldWrite( new byte[]{1, 2, 3}, byteArray( new byte[]{1, 2, 3} ) ),
