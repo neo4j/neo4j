@@ -83,6 +83,8 @@ public class CoreServerModule
     public static final String CLUSTER_ID_NAME = "cluster-id";
     public static final String LAST_FLUSHED_NAME = "last-flushed";
 
+    private final CatchupServer catchupServer;
+
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
     public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule,
@@ -177,7 +179,7 @@ public class CoreServerModule
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
+        catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
@@ -197,6 +199,11 @@ public class CoreServerModule
         life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         life.add( coreLife );
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
+    }
+
+    public CatchupServer getCatchupServer()
+    {
+        return catchupServer;
     }
 
     private static Map<String,String> backupDisabledSettings()

@@ -150,10 +150,17 @@ public class StoreCopyClient
     private final PageCache pageCache;
     private final Monitor monitor;
     private final boolean forensics;
+    private final FileMovePropagator fileMovePropagator;
+
+    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
+            FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics )
+    {
+        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMovePropagator() );
+    }
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
             LogProvider logProvider, FileSystemAbstraction fs,
-            PageCache pageCache, Monitor monitor, boolean forensics )
+            PageCache pageCache, Monitor monitor, boolean forensics, FileMovePropagator fileMovePropagator )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -163,6 +170,7 @@ public class StoreCopyClient
         this.pageCache = pageCache;
         this.monitor = monitor;
         this.forensics = forensics;
+        this.fileMovePropagator = fileMovePropagator;
     }
 
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest,
@@ -183,6 +191,7 @@ public class StoreCopyClient
             monitor.startReceivingStoreFiles();
             try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
                     new ToFileStoreWriter( tempStore, fs, monitor, pageCache, storeFileMoveActions ) ) ) )
+            // TODO delete these notes - storeFileMoveActions get populated during write based on file name
             {
                 monitor.finishReceivingStoreFiles();
                 // Update highest archived log id
@@ -208,7 +217,7 @@ public class StoreCopyClient
             // Note that the stream is lazy, so the file system traversal won't happen until *after* the store files
             // have been moved. Thus we ensure that we only attempt to move them once.
             Stream<FileMoveAction> moveActionStream = Stream.concat(
-                    storeFileMoveActions.stream(), traverseGenerateMoveActions( tempStore, tempStore ) );
+                    storeFileMoveActions.stream(), fileMovePropagator.traverseGenerateMoveActions( tempStore, tempStore ) );
             moveAfterCopy.move( moveActionStream, tempStore, storeDir );
         }
         finally
@@ -216,30 +225,6 @@ public class StoreCopyClient
             // All done, delete temp directory
             FileUtils.deleteRecursively( tempStore );
         }
-    }
-
-    private static Stream<FileMoveAction> traverseGenerateMoveActions( File dir, File basePath )
-    {
-        // Note that flatMap is an *intermediate operation* and therefor always lazy.
-        // It is very important that the stream we return only *lazily* calls out to expandTraverseFiles!
-        return Stream.of( dir ).flatMap( d -> expandTraverseFiles( d, basePath ) );
-    }
-
-    private static Stream<FileMoveAction> expandTraverseFiles( File dir, File basePath )
-    {
-        File[] listing = dir.listFiles();
-        if ( listing == null )
-        {
-            // Weird, we somehow listed files for something that is no longer a directory. It's either a file,
-            // or doesn't exists. If the pathname no longer exists, then we are safe to return null here,
-            // because the flatMap in traverseGenerateMoveActions will just ignore it.
-            return dir.isFile() ? Stream.of( FileMoveAction.copyViaFileSystem( dir, basePath ) ) : null;
-        }
-        Stream<File> files = Arrays.stream( listing ).filter( File::isFile );
-        Stream<File> dirs = Arrays.stream( listing ).filter( File::isDirectory );
-        Stream<FileMoveAction> moveFiles = files.map( f -> FileMoveAction.copyViaFileSystem( f, basePath ) );
-        Stream<FileMoveAction> traverseDirectories = dirs.flatMap( d -> traverseGenerateMoveActions( d, basePath ) );
-        return Stream.concat( moveFiles, traverseDirectories );
     }
 
     private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws Exception

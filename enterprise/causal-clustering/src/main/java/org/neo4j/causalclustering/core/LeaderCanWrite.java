@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -29,12 +30,12 @@ import static java.lang.String.format;
 
 public class LeaderCanWrite implements AccessCapability
 {
-    private RaftMachine raftMachine;
+    private RaftMachineIface raftMachine;
     public static final String NOT_LEADER_ERROR_MSG =
             "No write operations are allowed directly on this database. Writes must pass through the leader. " +
                     "The role of this server is: %s";
 
-    LeaderCanWrite( RaftMachine raftMachine )
+    LeaderCanWrite( RaftMachineIface raftMachine )
     {
         this.raftMachine = raftMachine;
     }

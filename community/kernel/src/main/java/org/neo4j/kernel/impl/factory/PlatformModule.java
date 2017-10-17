@@ -129,8 +129,7 @@ public class PlatformModule
     {
         this.databaseInfo = databaseInfo;
         this.dataSourceManager = new DataSourceManager();
-        dependencies = new org.neo4j.kernel.impl.util.Dependencies(
-                new DataSourceManager.DependencyResolverSupplier( dataSourceManager ) );
+        dependencies = new org.neo4j.kernel.impl.util.Dependencies( new DataSourceManager.DependencyResolverSupplier( dataSourceManager ) );
         dependencies.satisfyDependency( databaseInfo );
 
         clock = dependencies.satisfyDependency( createClock() );

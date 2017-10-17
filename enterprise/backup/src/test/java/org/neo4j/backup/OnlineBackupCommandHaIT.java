@@ -20,6 +20,10 @@
 package org.neo4j.backup;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.hamcrest.Matcher;
+import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.IsNot;
+import org.hamcrest.core.IsSame;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -30,11 +34,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.internal.matchers.CompareEqual;
+import org.mockito.internal.matchers.Not;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -51,11 +58,15 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
@@ -130,8 +141,11 @@ public class OnlineBackupCommandHaIT
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
+        DbRepresentation oldData = getDbRepresentation();
         assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
         createSomeData( db );
+        Assert.assertEventually( "The data retrieved from the database eventually will be different after we have stored data to it",
+                this::getDbRepresentation, not( equalTo( oldData ) ), 1, TimeUnit.MINUTES );
         assertEquals(
                 0,
                 runBackupTool( "--from", "127.0.0.1:" + backupPort,
@@ -162,6 +176,42 @@ public class OnlineBackupCommandHaIT
         db.shutdown();
     }
 
+    @Test
+    public void backupIsOnByDefault() throws Exception
+    {
+        // given database exists, but backup is not explicitly set
+        int backupPort = PortAuthority.allocatePort();
+        String backupName = "customport" + recordFormat;
+        startDb( backupPort, null );
+
+        // when backup is performed
+        int output = runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName );
+
+        // then
+        assertEquals( "Backup was successful", 0, output );
+    }
+
+    @Test
+    public void backupProtocolCanBeSwitchedOff() throws Exception
+    {
+        // given database exists but backup is explicitly turned off
+        int backupPort = PortAuthority.allocatePort();
+        String backupName = "customport" + recordFormat;
+        startDb( backupPort, false );
+
+        // when backup is performed
+        int output = runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName );
+
+        // then
+        assertEquals( "Backup was not successful", 1, output );
+    }
+
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
     {
         while ( continueFlagReference.get() )
@@ -188,9 +238,24 @@ public class OnlineBackupCommandHaIT
 
     private void startDb( Integer backupPort )
     {
+        startDb( backupPort, true );
+    }
+
+    private void startDb( Integer backupPort, Boolean backupEnabled )
+    {
         db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
-        db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         db.setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1" + ":" + backupPort );
+        if ( backupEnabled == null )
+        {
+        }
+        else if ( backupEnabled )
+        {
+            db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
+        }
+        else
+        {
+            db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+        }
         db.ensureStarted();
         createSomeData( db );
     }

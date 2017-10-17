@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.state.machines.id;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
 
@@ -34,12 +35,12 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
     private static final BooleanSupplier ALWAYS_FALSE = () -> false;
 
     private CommandIndexTracker commandIndexTracker;
-    private final RaftMachine raftMachine;
+    private final RaftMachineIface raftMachine;
     private final MemberId myself;
 
     private volatile BooleanSupplier currentSupplier = ALWAYS_FALSE;
 
-    public IdReusabilityCondition( CommandIndexTracker commandIndexTracker, RaftMachine raftMachine, MemberId myself )
+    public IdReusabilityCondition( CommandIndexTracker commandIndexTracker, RaftMachineIface raftMachine, MemberId myself )
     {
         this.commandIndexTracker = commandIndexTracker;
         this.raftMachine = raftMachine;
@@ -75,7 +76,7 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
 
         private volatile boolean hasAppliedOldTransactions;
 
-        LeaderIdReusabilityCondition( CommandIndexTracker commandIndexTracker, RaftMachine raftMachine )
+        LeaderIdReusabilityCondition( CommandIndexTracker commandIndexTracker, RaftMachineIface raftMachine )
         {
             this.commandIndexTracker = commandIndexTracker;
 

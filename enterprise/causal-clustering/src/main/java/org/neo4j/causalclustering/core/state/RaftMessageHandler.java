@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
@@ -37,14 +38,14 @@ public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.C
 {
     private final LocalDatabase localDatabase;
     private final Log log;
-    private final RaftMachine raftMachine;
+    private final RaftMachineIface raftMachine;
     private final CoreStateDownloader downloader;
     private final CommandApplicationProcess applicationProcess;
 
     private ClusterId boundClusterId;
 
     public RaftMessageHandler( LocalDatabase localDatabase, LogProvider logProvider,
-            RaftMachine raftMachine, CoreStateDownloader downloader,
+            RaftMachineIface raftMachine, CoreStateDownloader downloader,
             CommandApplicationProcess applicationProcess )
     {
         this.localDatabase = localDatabase;

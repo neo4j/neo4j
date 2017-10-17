@@ -58,5 +58,4 @@ public interface FileMoveAction
             Files.copy( originalPath, resolvedPath, copyOptions );
         };
     }
-
 }

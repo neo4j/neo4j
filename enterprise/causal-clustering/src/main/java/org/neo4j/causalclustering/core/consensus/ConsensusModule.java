@@ -63,7 +63,7 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.refuse_to
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.time.Clocks.systemClock;
 
-public class ConsensusModule
+public class ConsensusModule implements ConsensusModuleIface
 {
     public static final String RAFT_MEMBERSHIP_NAME = "membership";
     public static final String RAFT_TERM_NAME = "term";
@@ -180,7 +180,7 @@ public class ConsensusModule
         return raftLog;
     }
 
-    public RaftMachine raftMachine()
+    public RaftMachineIface raftMachine()
     {
         return raftMachine;
     }

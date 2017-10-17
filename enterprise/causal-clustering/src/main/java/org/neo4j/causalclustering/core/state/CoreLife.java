@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.identity.BoundState;
@@ -29,7 +30,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class CoreLife implements Lifecycle
 {
-    private final RaftMachine raftMachine;
+    private final RaftMachineIface raftMachine;
     private final LocalDatabase localDatabase;
     private final ClusterBinder clusterBinder;
 
@@ -39,7 +40,7 @@ public class CoreLife implements Lifecycle
     private CoreSnapshotService snapshotService;
 
     public CoreLife(
-            RaftMachine raftMachine,
+            RaftMachineIface raftMachine,
             LocalDatabase localDatabase,
             ClusterBinder clusterBinder,
             CommandApplicationProcess commandApplicationProcess,

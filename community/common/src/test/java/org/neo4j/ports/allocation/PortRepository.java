@@ -67,7 +67,7 @@ public class PortRepository
             }
             catch ( IOException e )
             {
-                throw new IllegalStateException( "This will never happen - LWN", e );
+                throw new IllegalStateException( "This will never happen - LWN; This could be due to too many open files (check `ulimit -n`)", e );
             }
         }
 

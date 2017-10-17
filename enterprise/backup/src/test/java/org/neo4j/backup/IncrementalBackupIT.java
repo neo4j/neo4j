@@ -89,16 +89,19 @@ public class IncrementalBackupIT
         int port = PortAuthority.allocatePort();
         server = startServer( serverPath, "127.0.0.1:" + port );
 
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1", port );
+        OnlineBackupCommandBuilder onlineBackup = new OnlineBackupCommandBuilder()
+                .withHost( "127.0.0.1" )
+                .withPort( port )
+                .withFallbackToFull( true );
 
-        backup.full( backupPath.getPath() );
+        onlineBackup.backup( backupPath );
 
         assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData2( serverPath );
         server = startServer( serverPath, "127.0.0.1:" + port );
-        backup.incremental( backupPath.getPath() );
+        onlineBackup.withFallbackToFull( false ).backup( backupPath );
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
@@ -129,16 +132,19 @@ public class IncrementalBackupIT
         int port = PortAuthority.allocatePort();
         server = startServer( serverPath, "127.0.0.1:" + port );
 
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1", port);
+        OnlineBackupCommandBuilder onlineBackup = new OnlineBackupCommandBuilder()
+                .withHost( "127.0.0.1" )
+                .withPort( port )
+                .withFallbackToFull( true );
 
-        backup.full( backupPath.getPath() );
+        onlineBackup.backup( backupPath );
 
         assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = createTransactiongWithWeirdRelationshipGroupRecord( serverPath );
         server = startServer( serverPath, "127.0.0.1:" + port );
-        backup.incremental( backupPath.getPath() );
+        onlineBackup.withFallbackToFull( false ).backup( backupPath );
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }

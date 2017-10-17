@@ -49,6 +49,7 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
         StoreId storeId;
         try
         {
+            System.out.println( "From address is" + fromAddress );
             storeId = backupDelegator.fetchStoreId( fromAddress );
         }
         catch ( StoreIdDownloadFailedException e )
@@ -87,6 +88,7 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
     @Override
     public void start() throws Throwable
     {
+        System.out.println("CC Starting");
         super.start();
         backupDelegator.start();
     }

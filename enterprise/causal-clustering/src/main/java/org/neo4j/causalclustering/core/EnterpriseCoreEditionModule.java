@@ -106,6 +106,7 @@ import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_topology_refresh;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
 
 /**
@@ -116,10 +117,16 @@ public class EnterpriseCoreEditionModule extends EditionModule
 {
     private final ConsensusModule consensusModule;
     private final ReplicationModule replicationModule;
-    private final CoreTopologyService topologyService;
+    protected final CoreTopologyService topologyService;
     protected final LogProvider logProvider;
     protected final Config config;
     private CoreStateMachinesModule coreStateMachinesModule;
+    private CoreServerModule coreServerModule;
+
+    public CoreServerModule getCoreServerModule()
+    {
+        return coreServerModule;
+    }
 
     public enum RaftLogImplementation
     {
@@ -161,8 +168,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
         procedures.registerProcedure( ReplicationBenchmarkProcedure.class );
     }
 
-    EnterpriseCoreEditionModule( final PlatformModule platformModule,
-            final DiscoveryServiceFactory discoveryServiceFactory )
+    EnterpriseCoreEditionModule( final PlatformModule platformModule, final DiscoveryServiceFactory discoveryServiceFactory )
+    {
+        this( platformModule, discoveryServiceFactory, DEFAULT_CONSENSUS_MODULE_SUPPLIER );
+    }
+
+    EnterpriseCoreEditionModule( final PlatformModule platformModule, final DiscoveryServiceFactory discoveryServiceFactory,
+            ConsensusModuleSupplier consensusModuleSupplier )
     {
         final Dependencies dependencies = platformModule.dependencies;
         config = platformModule.config;
@@ -227,8 +239,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>( raftOutbound,
                 identityModule.myself(), messageLogger );
 
-        consensusModule = new ConsensusModule( identityModule.myself(), platformModule, loggingOutbound,
-                clusterStateDirectory.get(), topologyService );
+        consensusModule = consensusModuleSupplier.constructConsensusModule( identityModule.myself(), platformModule, loggingOutbound, clusterStateDirectory.get(), topologyService );
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 
@@ -252,7 +263,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
+        coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
                 coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
                 messageLogger, databaseHealthSupplier, pipelineHandlerAppender );
 
@@ -263,6 +274,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
         life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
     }
+
+    interface ConsensusModuleSupplier
+    {
+        ConsensusModule constructConsensusModule( MemberId myself, PlatformModule platformModule, Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound,
+                File clusterStateDirectory, CoreTopologyService topologyService );
+    }
+
+    static ConsensusModuleSupplier DEFAULT_CONSENSUS_MODULE_SUPPLIER = ConsensusModule::new;
 
     protected ClusteringModule getClusteringModule( PlatformModule platformModule,
                                                   DiscoveryServiceFactory discoveryServiceFactory,

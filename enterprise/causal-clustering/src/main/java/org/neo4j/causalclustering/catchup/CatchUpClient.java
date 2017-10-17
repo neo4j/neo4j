@@ -105,7 +105,10 @@ public class CatchUpClient extends LifecycleAdapter
         {
             this.destination = destination;
             handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
-            Bootstrap bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
+            Bootstrap bootstrap = new Bootstrap()
+                    .group( eventLoopGroup )
+                    .channel( NioSocketChannel.class )
+                    .handler( new ChannelInitializer<SocketChannel>()
             {
                 @Override
                 protected void initChannel( SocketChannel ch ) throws Exception
