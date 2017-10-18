@@ -121,6 +121,13 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         expressions.map(x => parens(e, x)).mkString(" OR ")
       case ShortestPathExpression(s@ShortestPaths(r:RelationshipChain, _)) =>
         s"${s.name}(${pattern(r)})"
+      case ReduceExpression(ReduceScope(Variable(acc), Variable(identifier), expression), init, list) =>
+        val a = backtick(acc)
+        val v = backtick(identifier)
+        val i = this.apply(init)
+        val l = this.apply(list)
+        val e = this.apply(expression)
+        s"reduce($a = $i, $v IN $l | $e)"
       case _: ExtractScope | _: FilterScope | _: ReduceScope =>
         // These are not really expressions, they are part of expressions
         ""
