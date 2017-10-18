@@ -31,6 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,6 +58,7 @@ import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
@@ -77,6 +81,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final List<ConfigOptions> configOptions;
 
     private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
+    private final Map<String, Collection<BiConsumer<String,String>>> updateListeners = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
     private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>();
@@ -571,11 +576,12 @@ public class Config implements DiagnosticsProvider, Configuration
      * @implNote No migration or config validation is done. If you need this you have to refactor this method.
      *
      * @param setting The setting to set to the specified value.
-     * @param newValue The new value to set, passing {@code null} or empty should reset the value back to default value.
+     * @param update The new value to set, passing {@code null} or the empty string should reset the value back to default value.
      * @throws IllegalArgumentException if the provided setting is unknown or not dynamic.
      * @throws InvalidSettingException if the value is not formatted correctly.
      */
-    public void updateDynamicSetting( String setting, String newValue ) throws IllegalArgumentException, InvalidSettingException
+    public void updateDynamicSetting( String setting, String update )
+            throws IllegalArgumentException, InvalidSettingException
     {
         // Make sure the setting is valid and is marked as dynamic
         Optional<ConfigValue> option = findConfigValue( setting );
@@ -592,8 +598,9 @@ public class Config implements DiagnosticsProvider, Configuration
         }
 
         String oldValue;
+        String newValue;
 
-        if ( newValue == null || newValue.isEmpty() )
+        if ( update == null || update.isEmpty() )
         {
             // Empty means we want to delete the configured value and fallback to the default value
             boolean hasDefault = overriddenDefaults.containsKey( setting );
@@ -603,7 +610,7 @@ public class Config implements DiagnosticsProvider, Configuration
         else
         {
             // Change setting, make sure it's valid
-            Map<String,String> newEntry = stringMap( setting, newValue );
+            Map<String,String> newEntry = stringMap( setting, update );
             List<SettingValidator> settingValidators = configOptions.stream()
                     .map( ConfigOptions::settingGroup )
                     .collect( Collectors.toList() );
@@ -615,10 +622,12 @@ public class Config implements DiagnosticsProvider, Configuration
             synchronized ( params )
             {
                 oldValue = getDefaultValueOf( setting );
-                params.put( setting, newValue );
+                params.put( setting, update );
             }
+            newValue = update;
         }
         log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
+        updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
     }
 
     private String getDefaultValueOf( String setting )
@@ -630,6 +639,18 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         return configOptions.stream().map( it -> it.asConfigValues( params ) ).flatMap( List::stream )
                 .filter( it -> it.name().equals( setting ) ).findFirst();
+    }
+
+    public <V> void registerDynamicUpdateListener( Setting<V> setting, BiConsumer<V,V> listener )
+    {
+        String key = setting.name();
+        BiConsumer<String,String> projectedListener = ( oldValStr, newValStr ) ->
+        {
+            V oldVal = setting.apply( s -> oldValStr );
+            V newVal = setting.apply( s -> newValStr );
+            listener.accept( oldVal, newVal );
+        };
+        updateListeners.computeIfAbsent( key, k -> new ConcurrentLinkedQueue<>() ).add( projectedListener );
     }
 
     /**

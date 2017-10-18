@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.DocumentedDefaultValue;
@@ -387,5 +388,20 @@ public class ConfigTest
         order.verify( log ).info( changedMessage, settingName, "false", "true" );
         order.verify( log ).info( changedMessage, settingName, "true", "true" );
         verifyNoMoreInteractions( log );
+    }
+
+    @Test
+    public void updateDynamicShouldInformRegisteredCallbacks() throws Exception
+    {
+        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        AtomicInteger counter = new AtomicInteger( 0 );
+        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( previous, update ) ->
+        {
+            counter.getAndIncrement();
+            assertTrue( previous );
+            assertFalse( update );
+        } );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false" );
+        assertThat( counter.get(), is( 1 ) );
     }
 }
