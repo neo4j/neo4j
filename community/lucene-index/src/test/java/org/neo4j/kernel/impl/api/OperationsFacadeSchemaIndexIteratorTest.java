@@ -54,6 +54,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -295,27 +296,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
             List<Long> actual2 = new ArrayList<>();
 
             // Interleave
-            while ( iter1.hasNext() && iter2.hasNext() )
-            {
-                if ( rnd.nextBoolean() )
-                {
-                    actual1.add( iter1.next() );
-                }
-                else
-                {
-                    actual2.add( iter2.next() );
-                }
-            }
-
-            // Empty the rest
-            while ( iter1.hasNext() )
-            {
-                actual1.add( iter1.next() );
-            }
-            while ( iter2.hasNext() )
-            {
-                actual2.add( iter2.next() );
-            }
+            exhaustInterleaved( iter1, actual1, iter2, actual2 );
 
             // then
             indexCoordinator.assertExistsResult( actual1 );
@@ -338,27 +319,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
             List<Long> actual2 = new ArrayList<>();
 
             // Interleave
-            while ( iter1.hasNext() && iter2.hasNext() )
-            {
-                if ( rnd.nextBoolean() )
-                {
-                    actual1.add( iter1.next() );
-                }
-                else
-                {
-                    actual2.add( iter2.next() );
-                }
-            }
-
-            // Empty the rest
-            while ( iter1.hasNext() )
-            {
-                actual1.add( iter1.next() );
-            }
-            while ( iter2.hasNext() )
-            {
-                actual2.add( iter2.next() );
-            }
+            exhaustInterleaved( iter1, actual1, iter2, actual2 );
 
             // then
             indexCoordinator.assertExactResult( actual1 );
@@ -382,27 +343,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
             List<Long> actual2 = new ArrayList<>();
 
             // Interleave
-            while ( iter1.hasNext() && iter2.hasNext() )
-            {
-                if ( rnd.nextBoolean() )
-                {
-                    actual1.add( iter1.next() );
-                }
-                else
-                {
-                    actual2.add( iter2.next() );
-                }
-            }
-
-            // Empty the rest
-            while ( iter1.hasNext() )
-            {
-                actual1.add( iter1.next() );
-            }
-            while ( iter2.hasNext() )
-            {
-                actual2.add( iter2.next() );
-            }
+            exhaustInterleaved( iter1, actual1, iter2, actual2 );
 
             // then
             indexCoordinator.assertRangeResult( actual1 );
@@ -411,15 +352,30 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
     }
 
-    // multipleIteratorsNotNestedExists
-    // multipleIteratorsNotNestedExact
-    // multipleIteratorsNotNestedRange
-    // multipleIteratorsNestedInnerNewExists
-    // multipleIteratorsNestedInnerNewExact
-    // multipleIteratorsNestedInnerNewRange
-    // multipleIteratorsNestedInterleavedExists
-    // multipleIteratorsNestedInterleavedExact
-    // multipleIteratorsNestedInterleavedRange
+    private void exhaustInterleaved( PrimitiveLongIterator source1, List<Long> target1, PrimitiveLongIterator source2, List<Long> target2 )
+    {
+        while ( source1.hasNext() && source2.hasNext() )
+        {
+            if ( rnd.nextBoolean() )
+            {
+                target1.add( source1.next() );
+            }
+            else
+            {
+                target2.add( source2.next() );
+            }
+        }
+
+        // Empty the rest
+        while ( source1.hasNext() )
+        {
+            target1.add( source1.next() );
+        }
+        while ( source2.hasNext() )
+        {
+            target2.add( source2.next() );
+        }
+    }
 
     private static class StringCompositeIndexCoordinator extends IndexCoordinator
     {
@@ -807,9 +763,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
 
         void assertSameContent( List<Long> actual, List<Long> expected )
         {
-            actual.sort( Long::compareTo );
-            expected.sort( Long::compareTo );
-            assertThat( actual, is( expected ) );
+            assertThat( actual, is( containsInAnyOrder( expected.toArray() ) ) );
         }
 
         abstract void assertExactResult( List<Long> result );
