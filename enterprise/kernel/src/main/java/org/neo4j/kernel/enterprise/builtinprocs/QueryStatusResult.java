@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.virtual.MapValue;
 
@@ -153,19 +154,9 @@ public class QueryStatusResult
         }
 
         @Override
-        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
+        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
-            return point( longitude, latitude, name, code, href );
-        }
-
-        @Override
-        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
-        {
-            return point( x, y, name, code, href );
-        }
-
-        private Point point( double x, double y, String name, int code, String href )
-        {
+            //TODO: Is this required perhaps PointValue is sufficient without mapping to public?
             return new Point()
             {
                 @Override
@@ -177,7 +168,7 @@ public class QueryStatusResult
                 @Override
                 public List<Coordinate> getCoordinates()
                 {
-                    return singletonList( new Coordinate( x, y ) );
+                    return singletonList( new Coordinate( coordinate ) );
                 }
 
                 @Override
@@ -188,19 +179,19 @@ public class QueryStatusResult
                         @Override
                         public int getCode()
                         {
-                            return code;
+                            return crs.code;
                         }
 
                         @Override
                         public String getType()
                         {
-                            return name;
+                            return crs.name;
                         }
 
                         @Override
                         public String getHref()
                         {
-                            return href;
+                            return crs.href;
                         }
                     };
                 }

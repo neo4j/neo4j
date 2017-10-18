@@ -69,6 +69,8 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
 
     protected abstract Relationship newRelationshipProxyById( long id );
 
+    protected abstract Point newPoint( CoordinateReferenceSystem crs, double[] coordinate );
+
     public Object value()
     {
         assert stack.size() == 1;
@@ -313,12 +315,11 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         } );
     }
 
-    // TODO undefault and implement in subclasses?
     @Override
-    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
+    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
     {
-        throw new UnsupportedOperationException();
-    };
+        writeValue( newPoint( crs, coordinate ) );
+    }
 
     @Override
     public void writeNull() throws RuntimeException

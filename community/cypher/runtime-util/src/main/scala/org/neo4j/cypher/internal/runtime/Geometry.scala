@@ -24,6 +24,7 @@ import java.util.Collections
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.spatial
 import org.neo4j.graphdb.spatial.{Coordinate, Point}
+import org.neo4j.values.virtual.CoordinateReferenceSystem
 
 import scala.beans.BeanProperty
 
@@ -82,6 +83,15 @@ object CRS {
 }
 
 object Points {
+  // TODO: Is this necessary, perhaps PointValue is sufficient for use in Cypher-land
+  def fromValue(crsValue: CoordinateReferenceSystem, coordinate: Array[Double]) = {
+    val crs = CRS.fromName(crsValue.name)
+    if (crs == CRS.WGS84) {
+      new GeographicPoint(coordinate(0), coordinate(1), crs)
+    } else {
+      new CartesianPoint(coordinate(0), coordinate(1), crs)
+    }
+  }
   private def safeToDouble(value: Any) = value match {
     case n: Number => n.doubleValue()
     case other => throw new CypherTypeException(other.getClass.getSimpleName + " is not a valid coordinate type.")

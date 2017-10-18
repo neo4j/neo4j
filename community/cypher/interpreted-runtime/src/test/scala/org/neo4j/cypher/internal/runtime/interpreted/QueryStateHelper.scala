@@ -25,6 +25,7 @@ import org.mockito.{ArgumentMatchers, Mockito}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
+import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -33,8 +34,8 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+import org.neo4j.values.virtual.{CoordinateReferenceSystem, MapValue}
 
 import scala.collection.mutable
 
@@ -87,6 +88,7 @@ object QueryStateHelper {
     val writer = new BaseToObjectValueWriter[RuntimeException] {
       override protected def newNodeProxyById(id: Long): Node = ???
       override protected def newRelationshipProxyById(id: Long): Relationship = ???
+      override protected def newPoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Point = ???
     }
     any.writeTo(writer)
     writer.value()
