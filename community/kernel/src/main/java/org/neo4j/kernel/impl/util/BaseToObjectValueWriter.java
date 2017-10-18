@@ -320,38 +320,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         throw new UnsupportedOperationException();
     };
 
-    // TODO remove the next five methods, once this class moved to a non-public API location
-    @Deprecated
-    public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws RuntimeException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public void endPoint() throws RuntimeException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    protected Point newGeographicPoint( double longitude, double latitude, String name, int code,
-            String href )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    protected Point newCartesianPoint( double x, double y, String name, int code, String href )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public void writeString( char[] value, int offset, int length ) throws RuntimeException
-    {
-        writeValue( new String( value, offset, length ) );
-    }
-
     @Override
     public void writeNull() throws RuntimeException
     {
