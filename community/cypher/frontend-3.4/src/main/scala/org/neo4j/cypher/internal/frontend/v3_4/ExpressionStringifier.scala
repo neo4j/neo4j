@@ -153,8 +153,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
   }
 
   private def backtick(txt: String) = {
-    val c = txt.toCharArray
-    val needsBackticks = !(Character.isJavaIdentifierStart(c(0)) && c.tail.forall(Character.isJavaIdentifierPart))
+    val needsBackticks = !(Character.isJavaIdentifierStart(txt.head) && txt.tail.forall(Character.isJavaIdentifierPart))
     if (needsBackticks)
       s"`$txt`"
     else
