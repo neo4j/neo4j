@@ -406,11 +406,11 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
     val plan = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "NAME", NoChildren, arguments, Set("n"))
     renderAsTreeTable(plan) should equal(
-      """+----------+----------------+------+---------+-----------+----------------------------+
-        || Operator | Estimated Rows | Rows | DB Hits | Variables | Other                      |
-        |+----------+----------------+------+---------+-----------+----------------------------+
-        || +NAME    |              1 |   42 |      33 | n         | NOT(anon[123] = anon[321]) |
-        |+----------+----------------+------+---------+-----------+----------------------------+
+      """+----------+----------------+------+---------+-----------+-------------------------------+
+        || Operator | Estimated Rows | Rows | DB Hits | Variables | Other                         |
+        |+----------+----------------+------+---------+-----------+-------------------------------+
+        || +NAME    |              1 |   42 |      33 | n         | not `anon[123]` = `anon[321]` |
+        |+----------+----------------+------+---------+-----------+-------------------------------+
         |""".stripMargin)
   }
 
@@ -465,7 +465,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       """+----------+----------------+------+---------+-----------+-------+
         || Operator | Estimated Rows | Rows | DB Hits | Variables | Other |
         |+----------+----------------+------+---------+-----------+-------+
-        || +NAME    |              1 |   42 |      33 | n         | id    |
+        || +NAME    |              1 |   42 |      33 | n         | `id`  |
         |+----------+----------------+------+---------+-----------+-------+
         |""".stripMargin)
   }
@@ -484,7 +484,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       """+----------+----------------+------+---------+-----------+-------+
         || Operator | Estimated Rows | Rows | DB Hits | Variables | Other |
         |+----------+----------------+------+---------+-----------+-------+
-        || +NAME    |              1 |   42 |      33 | n         | id    |
+        || +NAME    |              1 |   42 |      33 | n         | `id`  |
         |+----------+----------------+------+---------+-----------+-------+
         |""".stripMargin)
   }
