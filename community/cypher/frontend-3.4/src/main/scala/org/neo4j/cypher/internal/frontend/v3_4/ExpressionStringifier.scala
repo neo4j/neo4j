@@ -25,7 +25,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       case StringLiteral(txt) =>
         var containsSingle = false
         var containsDouble = false
-        txt.toCharArray foreach {
+        txt foreach {
           case '"' => containsDouble = true
           case '\'' => containsSingle = true
           case _ =>
@@ -125,7 +125,6 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         // These are not really expressions, they are part of expressions
         ""
       case _ =>
-        println(s"$ast failed on default, trying extender")
         extender(ast)
     }
   }
@@ -156,7 +155,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
   }
 
   private def props(prepend: String, e: Option[Expression]): String = {
-    val separator = if(prepend=="") "" else " "
+    val separator = if(prepend.isEmpty) "" else " "
     e.map(e => s"$separator${this.apply(e)}").getOrElse(prepend)
   }
 
