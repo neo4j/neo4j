@@ -271,8 +271,8 @@ public final class Values
      * Generic value factory method.
      * <p>
      * Beware, this method is intended for converting externally supplied values to the internal Value type, and to
-     * make testing convenient. Passing a Value as in parameter should never be needed, and will throw an
-     * UnsupportedOperationException.
+     * make testing convenient. Passing a Value as in parameter should never be needed. It will return the
+     * passed value.
      * <p>
      * This method does defensive copying of arrays, while the explicit *Array() factory methods do not.
      *
@@ -348,8 +348,7 @@ public final class Values
         }
         if ( value instanceof Value )
         {
-            throw new UnsupportedOperationException(
-                    "Converting a Value to a Value using Values.of() is not supported." );
+            return (Value) value;
         }
 
         // otherwise fail

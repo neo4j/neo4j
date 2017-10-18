@@ -30,6 +30,10 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
+
+import static org.neo4j.values.storable.Values.pointCartesian;
+import static org.neo4j.values.storable.Values.pointGeographic;
+
 public class ValueComparisonTest
 {
     @Rule
@@ -38,6 +42,16 @@ public class ValueComparisonTest
     private Comparator<Value> comparator = Values.COMPARATOR;
 
     private Object[] objs = new Object[]{
+            // POINTS
+            pointGeographic( -1.0, -1.0 ),
+            pointGeographic( 1.0, 1.0 ),
+            pointGeographic( 1.0, 2.0 ),
+            pointGeographic( 2.0, 1.0 ),
+            pointCartesian( -1.0, -1.0 ),
+            pointCartesian( 1.0, 1.0 ),
+            pointCartesian( 1.0, 2.0 ),
+            pointCartesian( 2.0, 1.0 ),
+
             // ARRAYS
             new String[]{},
             new String[]{"a"},
