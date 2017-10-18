@@ -26,7 +26,7 @@ import org.neo4j.values.virtual.CoordinateReferenceSystem;
 
 import static java.lang.String.format;
 
-public class PointValue extends ScalarValue
+public class PointValue extends ScalarValue implements Comparable<PointValue>
 {
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
@@ -101,6 +101,34 @@ public class PointValue extends ScalarValue
     protected boolean eq( Object other )
     {
         return other != null && other instanceof Value && equals( (Value) other );
+    }
+
+    public int compareTo( PointValue other )
+    {
+        int cmpCRS = this.crs.code - other.crs.code;
+        if ( cmpCRS != 0 )
+        {
+            return cmpCRS;
+        }
+
+        if ( this.coordinate.length > other.coordinate.length )
+        {
+            return 1;
+        }
+        else if ( this.coordinate.length < other.coordinate.length )
+        {
+            return -1;
+        }
+
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            int cmpVal = (int) (this.coordinate[i] - other.coordinate[i]);
+            if ( cmpVal != 0 )
+            {
+                return cmpVal;
+            }
+        }
+        return 0;
     }
 
     @Override
