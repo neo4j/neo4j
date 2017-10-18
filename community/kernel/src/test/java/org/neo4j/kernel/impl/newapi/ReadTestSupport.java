@@ -21,9 +21,13 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestSupport;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -31,12 +35,20 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 class ReadTestSupport implements KernelAPIReadTestSupport
 {
+    private final Map<Setting,String> settings = new HashMap<>();
     private GraphDatabaseService db;
+
+    void addSetting( Setting setting, String value )
+    {
+        settings.put( setting, value );
+    }
 
     @Override
     public void setup( File storeDir, Consumer<GraphDatabaseService> create ) throws IOException
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir );
+        settings.forEach( graphDatabaseBuilder::setConfig );
+        db = graphDatabaseBuilder.newGraphDatabase();
         create.accept( db );
     }
 
