@@ -43,21 +43,7 @@
       </comments>
     </license>
   </licenses>
-
-  <repositories>
-    <repository>
-      <id>neo4j-releases-repository</id>
-      <name>Neo4j Maven 2 releases repository</name>
-      <url>http://m2.neo4j.org/content/repositories/releases/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-    </repository>
-  </repositories>
-
+  
   <build>
     <plugins>
       <plugin>
