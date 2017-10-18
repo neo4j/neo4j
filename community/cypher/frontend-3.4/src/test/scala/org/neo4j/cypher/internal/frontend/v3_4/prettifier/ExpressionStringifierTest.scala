@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4
+package org.neo4j.cypher.internal.frontend.v3_4.prettifier
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.parser.Expressions
