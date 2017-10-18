@@ -391,7 +391,15 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldInformRegisteredCallbacks() throws Exception
+    public void updateDynamicShouldThrowIfSettingIsNotDynamic() throws Exception
+    {
+        Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
+        expect.expect( IllegalArgumentException.class );
+        config.updateDynamicSetting( MySettingsWithDefaults.hello.name(), "hello" );
+    }
+
+    @Test
+    public void updateDynamicShouldInformRegisteredListeners() throws Exception
     {
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         AtomicInteger counter = new AtomicInteger( 0 );
@@ -403,5 +411,40 @@ public class ConfigTest
         } );
         config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false" );
         assertThat( counter.get(), is( 1 ) );
+    }
+
+    @Test
+    public void updateDynamicShouldNotAllowInvalidSettings() throws Exception
+    {
+        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        expect.expect( InvalidSettingException.class );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "this is not a boolean" );
+    }
+
+    @Test
+    public void registeringUpdateListenerOnNonDynamicSettingMustThrow() throws Exception
+    {
+        Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
+        expect.expect( IllegalArgumentException.class );
+        config.registerDynamicUpdateListener( MySettingsWithDefaults.hello, (a,b) -> fail( "never called" ) );
+    }
+
+    @Test
+    public void updateDynamicShouldLogExceptionsFromUpdateListeners() throws Exception
+    {
+        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        IllegalStateException exception = new IllegalStateException( "Boo" );
+        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, (a,b) ->
+        {
+            throw exception;
+        } );
+        Log log = mock( Log.class );
+        config.setLogger( log );
+        String settingName = MyDynamicSettings.boolSetting.name();
+
+        config.updateDynamicSetting( settingName, "" );
+
+        verify( log ).error( "Failure when notifying listeners after dynamic setting change; " +
+                             "new setting might not have taken effect: Boo", exception );
     }
 }

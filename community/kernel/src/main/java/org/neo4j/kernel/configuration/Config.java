@@ -583,19 +583,7 @@ public class Config implements DiagnosticsProvider, Configuration
     public void updateDynamicSetting( String setting, String update )
             throws IllegalArgumentException, InvalidSettingException
     {
-        // Make sure the setting is valid and is marked as dynamic
-        Optional<ConfigValue> option = findConfigValue( setting );
-
-        if ( !option.isPresent() )
-        {
-            throw new IllegalArgumentException( "Unknown setting: " + setting );
-        }
-
-        ConfigValue configValue = option.get();
-        if ( !configValue.dynamic() )
-        {
-            throw new IllegalArgumentException( "Setting is not dynamic and can not be changed at runtime" );
-        }
+        verifyValidDynamicSetting( setting );
 
         String oldValue;
         String newValue;
@@ -630,6 +618,22 @@ public class Config implements DiagnosticsProvider, Configuration
         updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
     }
 
+    private void verifyValidDynamicSetting( String setting )
+    {
+        Optional<ConfigValue> option = findConfigValue( setting );
+
+        if ( !option.isPresent() )
+        {
+            throw new IllegalArgumentException( "Unknown setting: " + setting );
+        }
+
+        ConfigValue configValue = option.get();
+        if ( !configValue.dynamic() )
+        {
+            throw new IllegalArgumentException( "Setting is not dynamic and can not be changed at runtime" );
+        }
+    }
+
     private String getDefaultValueOf( String setting )
     {
         return getValue( setting ).map( Object::toString ).orElse( "<no default>" );
@@ -641,16 +645,36 @@ public class Config implements DiagnosticsProvider, Configuration
                 .filter( it -> it.name().equals( setting ) ).findFirst();
     }
 
+    /**
+     * Register a listener for dynamic updates to the given setting.
+     * <p>
+     * The listener will get called whenever the {@link #updateDynamicSetting(String, String)} method is used to change
+     * the given setting, and the listener will be supplied the parsed values of the old and the new configuration
+     * value.
+     *
+     * @param setting The {@link Setting} to listen for changes to.
+     * @param listener The listener callback that will be notified of any configuration changes to the given setting.
+     * @param <V> The value type of the setting.
+     */
     public <V> void registerDynamicUpdateListener( Setting<V> setting, BiConsumer<V,V> listener )
     {
-        String key = setting.name();
+        String settingName = setting.name();
+        verifyValidDynamicSetting( settingName );
         BiConsumer<String,String> projectedListener = ( oldValStr, newValStr ) ->
         {
-            V oldVal = setting.apply( s -> oldValStr );
-            V newVal = setting.apply( s -> newValStr );
-            listener.accept( oldVal, newVal );
+            try
+            {
+                V oldVal = setting.apply( s -> oldValStr );
+                V newVal = setting.apply( s -> newValStr );
+                listener.accept( oldVal, newVal );
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failure when notifying listeners after dynamic setting change; " +
+                           "new setting might not have taken effect: " + e.getMessage(), e );
+            }
         };
-        updateListeners.computeIfAbsent( key, k -> new ConcurrentLinkedQueue<>() ).add( projectedListener );
+        updateListeners.computeIfAbsent( settingName, k -> new ConcurrentLinkedQueue<>() ).add( projectedListener );
     }
 
     /**
