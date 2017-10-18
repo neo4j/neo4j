@@ -343,7 +343,8 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     @Override
     public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
     {
-        switch(crs) {
+        switch ( crs )
+        {
         case WGS84:
             writeValue( new GeographicPoint( coordinate[0], coordinate[1],
                     new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( crs.name, crs.code,
