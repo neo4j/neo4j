@@ -426,7 +426,7 @@ public class ConfigTest
     {
         Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
         expect.expect( IllegalArgumentException.class );
-        config.registerDynamicUpdateListener( MySettingsWithDefaults.hello, (a,b) -> fail( "never called" ) );
+        config.registerDynamicUpdateListener( MySettingsWithDefaults.hello, ( a, b ) -> fail( "never called" ) );
     }
 
     @Test
@@ -434,7 +434,7 @@ public class ConfigTest
     {
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         IllegalStateException exception = new IllegalStateException( "Boo" );
-        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, (a,b) ->
+        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( a, b ) ->
         {
             throw exception;
         } );
