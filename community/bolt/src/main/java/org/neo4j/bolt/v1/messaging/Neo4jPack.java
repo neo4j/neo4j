@@ -655,13 +655,7 @@ public class Neo4jPack
         }
 
         @Override
-        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
-        {
-            throw new UnsupportedOperationException( "Cannot unpack points" );
-        }
-
-        @Override
-        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
             throw new UnsupportedOperationException( "Cannot unpack points" );
         }
