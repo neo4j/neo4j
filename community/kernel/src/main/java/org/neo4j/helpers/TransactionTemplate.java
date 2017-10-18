@@ -132,8 +132,7 @@ public class TransactionTemplate
         } );
     }
 
-    public <T> T execute( Function<Transaction, T> txFunction )
-            throws TransactionFailureException
+    public <T> T execute( Function<Transaction, T> txFunction ) throws TransactionFailureException
     {
         Throwable txEx = null;
         for ( int i = 0; i < retries; i++ )
@@ -163,28 +162,16 @@ public class TransactionTemplate
                 }
                 catch ( InterruptedException e )
                 {
-                    throw new TransactionFailureException( "Interrupted", e );
+                    TransactionFailureException interrupted = new TransactionFailureException( "Interrupted", e );
+                    monitor.failed( interrupted );
+                    throw interrupted;
                 }
 
                 monitor.retrying();
             }
         }
 
-        if ( txEx instanceof TransactionFailureException )
-        {
-            throw (TransactionFailureException) txEx;
-        }
-        else if ( txEx instanceof Error )
-        {
-            throw (Error) txEx;
-        }
-        else if ( txEx instanceof RuntimeException )
-        {
-            throw (RuntimeException) txEx;
-        }
-        else
-        {
-            throw new TransactionFailureException( "Failed", txEx );
-        }
+        monitor.failed( txEx );
+        throw new TransactionFailureException( "Failed", txEx );
     }
 }
