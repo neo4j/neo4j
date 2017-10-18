@@ -79,8 +79,8 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
   }
 
   def decorate(plan: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription = {
-    verifyProfileReady()
-    () => {}
+    () => {
+      verifyProfileReady()
       plan() map {
         input: InternalPlanDescription =>
           val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
@@ -95,6 +95,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
             .addArgument(Arguments.PageCacheMisses(misses))
             .addArgument(Arguments.PageCacheHitRatio(hitRatio))
       }
+    }
   }
 
   def innerDecorator(owningPipe: Pipe): PipeDecorator = new PipeDecorator {
