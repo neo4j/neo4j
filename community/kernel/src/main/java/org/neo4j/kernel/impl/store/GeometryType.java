@@ -46,7 +46,7 @@ public enum GeometryType
                     int dimension = getDimension( firstBlock );
                     if ( dimension > 3 )
                     {
-                        throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported in the PropertyStore" );
+                        return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
                     }
                     return 1 + dimension;
                 }
@@ -93,8 +93,15 @@ public enum GeometryType
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )
     {
-        int gtype = getGeometryType( firstBlock );
-        return find( gtype ).calculateNumberOfBlocksUsedForGeometry( firstBlock );
+        GeometryType geometryType = find( getGeometryType( firstBlock ) );
+        if ( geometryType == null )
+        {
+            return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
+        }
+        else
+        {
+            return geometryType.calculateNumberOfBlocksUsedForGeometry( firstBlock );
+        }
     }
 
     private static GeometryType find( int gtype )
@@ -106,7 +113,7 @@ public enum GeometryType
                 return type;
             }
         }
-        throw new IllegalArgumentException( "No such GeometryType: " + gtype );
+        return null;
     }
 
     public static Value decode( PropertyBlock block )
