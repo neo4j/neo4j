@@ -8,11 +8,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-compiler-3.4</artifactId>
+  <artifactId>neo4j-cypher-planner-3.4</artifactId>
   <packaging>jar</packaging>
   <version>3.4.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compiler 3.4</name>
-  <description>Compiler for Cypher 3.4</description>
+  <name>Neo4j - Cypher Planner 3.4</name>
+  <description>Planner for Cypher 3.4</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
