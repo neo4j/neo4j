@@ -24,7 +24,6 @@ import java.net.{InetAddress, InetSocketAddress}
 import java.io.IOException
 import java.util.concurrent.Executors
 import scala.collection.mutable
-import scala.collection.mutable.HashMap
 
 trait HttpServerTestSupport {
   def boundInfo: InetSocketAddress

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
 import org.neo4j.cypher.internal.frontend.v3_4.rewriters.IfNoParameter
+import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
 
 class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
   val monitorTag = "cypher3.3"

@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_4.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, Predicate, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}

@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Variable
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.True
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{ShortestPath, SingleNode, SortItem}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, SortItem}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
+import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb._

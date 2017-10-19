@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-
 sealed abstract class CypherUpdateStrategy(plannerName: String) extends CypherOption(plannerName)
 
 case object CypherUpdateStrategy extends CypherOptionCompanion[CypherUpdateStrategy] {

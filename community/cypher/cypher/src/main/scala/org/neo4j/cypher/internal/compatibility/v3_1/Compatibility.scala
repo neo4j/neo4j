@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 import java.util.Collections.emptyList
 import java.util.function.BiConsumer
 
+import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1
@@ -29,9 +30,10 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan => E
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
+import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
-import org.neo4j.cypher.internal.spi.v3_4.{TransactionalContextWrapper => TransactionalContextWrapperV3_4}
+import org.neo4j.cypher.internal.runtime.interpreted.{TransactionalContextWrapper => TransactionalContextWrapperV3_4}
 import org.neo4j.cypher.internal.{frontend, _}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.GraphDatabaseQueryService

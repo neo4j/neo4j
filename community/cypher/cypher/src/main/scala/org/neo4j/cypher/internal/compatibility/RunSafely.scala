@@ -19,6 +19,4 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-trait RunSafely {
-  def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T
-}
+

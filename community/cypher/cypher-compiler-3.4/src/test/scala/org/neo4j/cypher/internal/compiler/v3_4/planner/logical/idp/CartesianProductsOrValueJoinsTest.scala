@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.v3_4.expressions.Equals
 
 class CartesianProductsOrValueJoinsTest

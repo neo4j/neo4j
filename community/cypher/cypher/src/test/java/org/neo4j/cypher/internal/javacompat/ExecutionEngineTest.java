@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelAPI;

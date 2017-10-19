@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{CostMode
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Phase
-import org.neo4j.cypher.internal.ir.v3_4.{Cost, PeriodicCommit, PlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{PeriodicCommit, PlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.util.v3_4.Cost
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult}
 
 case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {

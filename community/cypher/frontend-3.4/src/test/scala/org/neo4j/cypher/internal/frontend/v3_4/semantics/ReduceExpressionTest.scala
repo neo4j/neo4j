@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.semantics
 import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.v3_4.expressions.{ReduceExpression, Variable}
+import org.neo4j.cypher.internal.v3_4.expressions.{DummyExpression, ReduceExpression, Variable}
 
 class ReduceExpressionTest extends SemanticFunSuite {
 

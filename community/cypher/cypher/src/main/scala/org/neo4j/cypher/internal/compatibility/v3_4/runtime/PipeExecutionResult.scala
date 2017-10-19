@@ -22,14 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.InternalQueryType
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{MapBasedRow, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.Version
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly.immutableMapValues
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.MapBasedRow
+import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.Version
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor

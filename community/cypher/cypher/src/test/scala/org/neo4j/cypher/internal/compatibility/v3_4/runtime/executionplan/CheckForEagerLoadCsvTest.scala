@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{AllNodesScanPipe, EagerPipe, LoadCSVPipe}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AllNodesScanPipe, EagerPipe, LoadCSVPipe}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.HasHeaders

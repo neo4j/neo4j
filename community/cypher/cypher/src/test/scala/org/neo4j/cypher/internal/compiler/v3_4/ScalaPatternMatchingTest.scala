@@ -20,17 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.RelatedTo
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.PatternGraphBuilder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.PatternMatchingBuilder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.RelatedTo
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.PatternMatchingBuilder
+import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, PatternGraphBuilder, QueryStateTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.values.AnyValue
 
 class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
   val symbols = SymbolTable(Map("a" -> CTNode))

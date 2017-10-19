@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import java.io.{PrintWriter, StringWriter}
 
-import org.neo4j.cypher.internal.QueryStatistics
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.IsList
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
+import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.Map

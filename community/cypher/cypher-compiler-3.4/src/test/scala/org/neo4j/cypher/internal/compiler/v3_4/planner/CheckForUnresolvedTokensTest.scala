@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.cypher.internal.compiler.v3_4.IDPPlannerName
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.RecordingNotificationLogge
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport {
 

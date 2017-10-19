@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import java.util.function.BiConsumer
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.makeValueNeoSafe
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, makeValueNeoSafe}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue

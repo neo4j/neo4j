@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{EagerPipe, LoadCSVPipe, Pipe}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{EagerLoadCsvNotification, InternalNotification}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{EagerPipe, LoadCSVPipe, Pipe}
 
 object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
 

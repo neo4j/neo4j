@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.QueryStatistics
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 
 import scala.collection.Map
 

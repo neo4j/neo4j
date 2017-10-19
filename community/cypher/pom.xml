@@ -41,9 +41,12 @@
         <module>util-3.4</module>
         <module>ir-3.4</module>
         <module>cypher-compiler-3.4</module>
+        <module>planner-spi-3.4</module>
         <module>expressions-3.4</module>
         <module>cypher</module>
         <module>cypher-logical-plans-3.4</module>
+        <module>runtime-util</module>
+        <module>interpreted-runtime</module>
       </modules>
     </profile>
   </profiles>

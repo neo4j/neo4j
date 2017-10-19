@@ -23,13 +23,13 @@ import java.math
 import java.math.RoundingMode
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics._
-import org.neo4j.cypher.internal.compiler.v3_4.{IndexDescriptor, PrefixRange}
-import org.neo4j.cypher.internal.frontend.v3_4.LabelId
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, Selections, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, Selections}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics._
+import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, Selectivity}
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans.PrefixRange
 
 trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity

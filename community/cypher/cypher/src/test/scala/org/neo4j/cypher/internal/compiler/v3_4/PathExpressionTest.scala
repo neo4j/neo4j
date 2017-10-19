@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{NonEmpty, True}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.commands._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{NonEmpty, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateTestSupport}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.{FALSE, TRUE}

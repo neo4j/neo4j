@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.spi
 
-import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_4.spi._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.util.v3_4._
 
 import scala.language.reflectiveCalls
 

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.KernelAPI;

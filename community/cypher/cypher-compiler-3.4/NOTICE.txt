@@ -27,6 +27,9 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Caffeine cache
+  Lucene Core
+  Lucene Memory
+  Netty/All-in-One
   parboiled-core
   parboiled-scala
 
@@ -35,4 +38,8 @@ BSD - Scala License
 
 BSD License
   Scala Compiler
+
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 

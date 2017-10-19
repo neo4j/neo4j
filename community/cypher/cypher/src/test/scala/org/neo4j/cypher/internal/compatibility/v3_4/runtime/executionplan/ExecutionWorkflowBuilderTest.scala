@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{EagerResultIterator, _}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
+import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.v3_4.logical.plans.SingleRow
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Equals, True}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{predicates, expressions => legacy}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{predicates, expressions => legacy}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, ParserTest}
 import org.parboiled.scala._

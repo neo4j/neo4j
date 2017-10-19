@@ -108,6 +108,11 @@
       <artifactId>neo4j-cypher-logical-plans-3.4</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-planner-spi-3.4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- neo4j testing -->
 
@@ -128,7 +133,23 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-expression-3.4</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-planner-spi-3.4</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

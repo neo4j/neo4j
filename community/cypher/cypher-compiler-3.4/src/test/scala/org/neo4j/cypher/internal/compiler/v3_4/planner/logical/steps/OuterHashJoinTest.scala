@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluat
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, OuterHashJoin}
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.Cost
 import org.neo4j.cypher.internal.v3_4.expressions.{PatternExpression, SemanticDirection}
 
 class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {

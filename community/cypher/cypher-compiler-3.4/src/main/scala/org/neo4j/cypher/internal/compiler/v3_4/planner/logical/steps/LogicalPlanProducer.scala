@@ -188,8 +188,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   }
 
   def planNodeIndexSeek(idName: IdName,
-                        label: ast.LabelToken,
-                        propertyKeys: Seq[ast.PropertyKeyToken],
+                        label: LabelToken,
+                        propertyKeys: Seq[PropertyKeyToken],
                         valueExpr: QueryExpression[Expression],
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
@@ -204,8 +204,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   }
 
   def planNodeIndexScan(idName: IdName,
-                        label: ast.LabelToken,
-                        propertyKey: ast.PropertyKeyToken,
+                        label: LabelToken,
+                        propertyKey: PropertyKeyToken,
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
@@ -219,8 +219,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   }
 
   def planNodeIndexContainsScan(idName: IdName,
-                                label: ast.LabelToken,
-                                propertyKey: ast.PropertyKeyToken,
+                                label: LabelToken,
+                                propertyKey: PropertyKeyToken,
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
@@ -235,8 +235,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   }
 
   def planNodeIndexEndsWithScan(idName: IdName,
-                                label: ast.LabelToken,
-                                propertyKey: ast.PropertyKeyToken,
+                                label: LabelToken,
+                                propertyKey: PropertyKeyToken,
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
@@ -266,8 +266,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   }
 
   def planNodeUniqueIndexSeek(idName: IdName,
-                              label: ast.LabelToken,
-                              propertyKeys: Seq[ast.PropertyKeyToken],
+                              label: LabelToken,
+                              propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,

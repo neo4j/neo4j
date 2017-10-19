@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.internal.InternalExecutionResult;
+import org.neo4j.cypher.internal.runtime.InternalExecutionResult;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
