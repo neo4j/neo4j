@@ -238,16 +238,16 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
     * NOTE: Only use for debugging
     */
   def getLongSlots: immutable.IndexedSeq[SlotWithAliases] =
-    slots.toIndexedSeq.collect {
-      case (k, slot: LongSlot) => LongSlotWithAliases(slot, slotAliases.get(slot).getOrElse(Set.empty).toSet)
+    slotAliases.toIndexedSeq.collect {
+      case (slot: LongSlot, aliases) => LongSlotWithAliases(slot, aliases.toSet)
     }.sorted(SlotWithAliasesOrdering)
 
   /**
     * NOTE: Only use for debugging
     */
   def getRefSlots: immutable.IndexedSeq[SlotWithAliases] =
-    slots.toIndexedSeq.collect {
-      case (k, slot: RefSlot) => RefSlotWithAliases(slot, slotAliases.get(slot).getOrElse(Set.empty).toSet)
+    slotAliases.toIndexedSeq.collect {
+      case (slot: RefSlot, aliases) => RefSlotWithAliases(slot, aliases.toSet)
     }.sorted(SlotWithAliasesOrdering)
 
   object SlotWithAliasesOrdering extends Ordering[SlotWithAliases] {
