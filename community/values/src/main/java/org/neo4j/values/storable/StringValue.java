@@ -183,6 +183,11 @@ public abstract class StringValue extends TextValue
         {
             return value().length();
         }
+
+        public byte[] bytes()
+        {
+            return bytes;
+        }
     }
 }
 

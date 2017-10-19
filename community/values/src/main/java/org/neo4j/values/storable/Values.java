@@ -23,6 +23,8 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.neo4j.values.storable.StringValue.UTF8StringValue;
+
 import static java.lang.String.format;
 
 /**
@@ -107,14 +109,14 @@ public final class Values
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
-    public static TextValue utf8Value( byte[] bytes )
+    public static UTF8StringValue utf8Value( byte[] bytes )
     {
         return utf8Value( bytes, 0, bytes.length );
     }
 
-    public static TextValue utf8Value( byte[] bytes, int offset, int length )
+    public static UTF8StringValue utf8Value( byte[] bytes, int offset, int length )
     {
-        return new StringValue.UTF8StringValue( bytes, offset, length );
+        return new UTF8StringValue( bytes, offset, length );
     }
 
     public static TextValue stringValue( String value )
