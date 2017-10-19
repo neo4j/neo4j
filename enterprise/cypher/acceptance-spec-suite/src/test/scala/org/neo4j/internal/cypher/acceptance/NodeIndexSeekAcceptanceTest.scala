@@ -70,7 +70,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |OR (c.prop1 = 11 AND c.prop2 = 11))
         |RETURN c""".stripMargin
 
-    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexSeek", 2)
         plan should useOperators("Union")
@@ -90,7 +90,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |OR (c.prop1 > 10 AND c.prop2 <= 11))
         |RETURN c""".stripMargin
 
-    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
@@ -110,7 +110,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |OR (c.prop1 STARTS WITH '11_' AND c.prop2 STARTS WITH '11_'))
         |RETURN c""".stripMargin
 
-    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexSeekByRange", 2)
         plan should useOperators("Union")
@@ -130,7 +130,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |OR (c.prop1 =~ '11_.*' AND c.prop2 =~ '11_.*'))
         |RETURN c""".stripMargin
 
-    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
@@ -148,7 +148,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |WHERE c.prop =~ '1_.*' OR c.prop =~ '11_.*'
         |RETURN c""".stripMargin
 
-    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")

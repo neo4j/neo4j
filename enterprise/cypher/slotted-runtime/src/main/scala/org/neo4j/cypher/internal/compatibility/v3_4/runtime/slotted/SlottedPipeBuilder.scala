@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ColumnOrder => _, _}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.computeUnionMapping
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
@@ -39,6 +40,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
+
+import scala.collection.immutable
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
@@ -351,7 +354,97 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val refOffsets = refIds.map(e => pipeline.getReferenceOffsetFor(e.name))
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
 
+      case Union(_, _) =>
+        val lhsInfo = pipelines(lhs.id)
+        val rhsInfo = pipelines(rhs.id)
+        UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsInfo, pipeline), computeUnionMapping(rhsInfo, pipeline))(id = id)
+
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
+  }
+}
+
+object SlottedPipeBuilder {
+  private def createProjectionsForResult(columns: Seq[String], pipelineInformation1: PipelineInformation): Seq[(String, Expression)] = {
+    val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
+      k =>
+        pipelineInformation1(k) match {
+          case LongSlot(offset, false, CTNode, _) =>
+            k -> slottedExpressions.NodeFromSlot(offset)
+          case LongSlot(offset, true, CTNode, _) =>
+            k -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
+          case LongSlot(offset, false, CTRelationship, _) =>
+            k -> slottedExpressions.RelationshipFromSlot(offset)
+          case LongSlot(offset, true, CTRelationship, _) =>
+            k -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
+
+          case RefSlot(offset, _, _, _) =>
+            k -> slottedExpressions.ReferenceFromSlot(offset)
+
+          case _ =>
+            throw new InternalException(s"Did not find `$k` in the pipeline information")
+        }
+    }
+    runtimeColumns
+  }
+
+  type RowMapping = (ExecutionContext, QueryState) => ExecutionContext
+
+  //compute mapping from incoming to outgoing pipe line, the slot order may differ
+  //between the output and the input (lhs and rhs) and it may be the case that
+  //we have a reference slot in the output but a long slot on one of the inputs,
+  //e.g. MATCH (n) RETURN n UNION RETURN 42 AS n
+  def computeUnionMapping(in: PipelineInformation, out: PipelineInformation): RowMapping = {
+    val overlaps: Boolean = out.mapSlot {
+      //For long slots we need to make sure both offset and types match
+      //e.g we cannot allow mixing a node long slot with a relationship
+      //longslot
+      case (k, s: LongSlot) => s == in.get(k).get
+      //For refslot is is ok that types etc differs, just make sure
+      //they have the same offset
+      case (k, s: RefSlot) => s.offset == in.get(k).get.offset
+    }.forall(_ == true)
+
+    //If we overlap we can just pass the result right throug
+    if (overlaps) (incoming: ExecutionContext, _: QueryState) => incoming
+    else {
+    //find columns where output is a reference slot but where the input is a long slot
+    val slots: immutable.Seq[LongSlot] = out.mapSlot {
+      case (k, _: RefSlot) => in.get(k).get match {
+        case ls: LongSlot => Some(ls)
+        case _ => None
+      }
+      case _ => None
+    }.flatten.toIndexedSeq
+
+      //projections contains methods for turning longslots to refslots
+      val projections: Seq[Expression] = createProjectionsForResult(slots.map(_.name), in).map(_._2)
+
+      //ZIP [slot1, slot2,...] with [e1, e2, ...] to get a mapping from slot to expression
+      val expressions = slots.zip(projections).toMap
+
+      val mapSlots: Iterable[(ExecutionContext, ExecutionContext, QueryState) => Unit] = out.mapSlot {
+        case (k, v: LongSlot) =>
+          val sourceOffset = in.getLongOffsetFor(k)
+          (in, out, _) =>
+            out.setLongAt(v.offset, in.getLongAt(sourceOffset))
+        case (k, v: RefSlot) =>
+          in.get(k).get match {
+            case l: LongSlot => //here we must map the long slot to a reference slot
+              (in, out, state) =>
+                out.setRefAt(v.offset, expressions(l)(in, state))
+            case _ =>
+              val sourceOffset = in.getReferenceOffsetFor(k)
+              (in, out, _) =>
+                out.setRefAt(v.offset, in.getRefAt(sourceOffset))
+          }
+      }
+      //Create a new context and apply all transformations
+      (incoming: ExecutionContext, state: QueryState) =>
+        val outgoing = PrimitiveExecutionContext(out)
+        mapSlots.foreach(f => f(incoming, outgoing, state))
+        outgoing
+    }
+
   }
 }

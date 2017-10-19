@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_4.LabelId
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, _}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => logicalPlans}
-import org.neo4j.cypher.internal.v3_4.expressions._
 
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -591,5 +591,54 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
         "c" -> RefSlot(0, nullable = false, CTList(CTAny), "c")
       ), numberOfLongs = 0, numberOfReferences = 1)
     )
+  }
+
+  test("should handle UNION of two primitive nodes") {
+    // given
+    val lhs = AllNodesScan(x, Set.empty)(solved)
+    val rhs = AllNodesScan(x, Set.empty)(solved)
+    val plan = Union(lhs, rhs)(solved)
+    plan.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(plan)
+
+    // then
+    allocations should have size 3
+    allocations(plan.assignedId) should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))
+  }
+
+  test("should handle UNION of one primitive relationship and one node") {
+    // given MATCH (y)<-[x]-(z) UNION MATCH (x) (sort of)
+    val allNodesScan = AllNodesScan(y, Set.empty)(solved)
+    val lhs = Expand(allNodesScan, y, SemanticDirection.INCOMING, Seq.empty, z, x, ExpandAll)(solved)
+    val rhs = AllNodesScan(x, Set.empty)(solved)
+    val plan = Union(lhs, rhs)(solved)
+    plan.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(plan)
+
+    // then
+    allocations should have size 4
+    allocations(plan.assignedId) should equal(
+      PipelineInformation(Map("x" -> RefSlot(0, nullable = false, CTAny, "x")), 0, 1))
+  }
+
+  test("should handle UNION of projected variables") {
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val lhs = Projection(allNodesScan, Map("A" -> varFor("x")))(solved)
+    val rhs = Projection(SingleRow()(solved), Map("A" -> literalInt(42)))(solved)
+    val plan = Union(lhs, rhs)(solved)
+    plan.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(plan)
+
+    // then
+    allocations should have size 5
+    allocations(plan.assignedId) should equal(
+      PipelineInformation(Map("A" -> RefSlot(0, nullable = true, CTAny, "A")), 0, 1))
   }
 }
