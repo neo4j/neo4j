@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.virtual.MapValue;
 
@@ -156,7 +156,6 @@ public class QueryStatusResult
         @Override
         protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
-            //TODO: Is this required perhaps PointValue is sufficient without mapping to public?
             return new Point()
             {
                 @Override
@@ -174,26 +173,7 @@ public class QueryStatusResult
                 @Override
                 public CRS getCRS()
                 {
-                    return new CRS()
-                    {
-                        @Override
-                        public int getCode()
-                        {
-                            return crs.code;
-                        }
-
-                        @Override
-                        public String getType()
-                        {
-                            return crs.name;
-                        }
-
-                        @Override
-                        public String getHref()
-                        {
-                            return crs.href;
-                        }
-                    };
+                    return crs;
                 }
             };
         }

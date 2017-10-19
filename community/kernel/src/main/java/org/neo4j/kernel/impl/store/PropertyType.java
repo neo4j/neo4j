@@ -190,8 +190,21 @@ public enum PropertyType
         {
             return ShortArray.calculateNumberOfBlocksUsed( firstBlock );
         }
+    },
+    GEOMETRY( 13 )
+    {
+        @Override
+        public Value value( PropertyBlock block, PropertyStore store )
+        {
+            return GeometryType.decode( block );
+        }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return GeometryType.calculateNumberOfBlocksUsed( firstBlock );
+        }
     };
-    // TODO add Point to enum
 
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING = -1;
@@ -260,6 +273,8 @@ public enum PropertyType
             return SHORT_STRING;
         case 12:
             return SHORT_ARRAY;
+        case 13:
+            return GEOMETRY;
         default:
             return null;
         }

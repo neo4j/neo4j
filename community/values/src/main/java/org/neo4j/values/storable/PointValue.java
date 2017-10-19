@@ -20,26 +20,25 @@
 package org.neo4j.values.storable;
 
 import java.util.Arrays;
+import java.util.List;
 
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.utils.PrettyPrinter;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
 
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 
-public class PointValue extends ScalarValue implements Comparable<PointValue>
+public class PointValue extends ScalarValue implements Comparable<PointValue>, Point
 {
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
 
-    PointValue( CoordinateReferenceSystem crs, double[] coordinate )
+    PointValue( CoordinateReferenceSystem crs, double... coordinate )
     {
         this.crs = crs;
         this.coordinate = coordinate;
-    }
-
-    PointValue( CoordinateReferenceSystem crs, double x, double y )
-    {
-        this( crs, new double[]{x, y} );
     }
 
     @Override
@@ -134,8 +133,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>
     @Override
     public Object asObjectCopy()
     {
-        // TODO
-        throw new UnsupportedOperationException();
+        return new PointValue( this.crs, this.coordinate );
     }
 
     public CoordinateReferenceSystem getCoordinateReferenceSystem()
@@ -162,5 +160,17 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>
     public String toString()
     {
         return format( "Point{ %s, %s}", getCoordinateReferenceSystem().name, Arrays.toString( coordinate ) );
+    }
+
+    @Override
+    public List<Coordinate> getCoordinates()
+    {
+        return singletonList( new Coordinate( coordinate ) );
+    }
+
+    @Override
+    public CRS getCRS()
+    {
+        return crs;
     }
 }

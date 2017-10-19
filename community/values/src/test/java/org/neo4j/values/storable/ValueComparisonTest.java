@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
-
 import static org.neo4j.values.storable.Values.pointCartesian;
 import static org.neo4j.values.storable.Values.pointGeographic;
 

@@ -22,8 +22,10 @@ package org.neo4j.values.storable;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Point;
 
 import static java.lang.String.format;
 
@@ -270,6 +272,7 @@ public final class Values
         return new ShortArray.Direct( value );
     }
 
+    // TODO either remove or move to a test class
     public static PointValue pointCartesian( double x, double y )
     {
         return new PointValue( CoordinateReferenceSystem.Cartesian, x, y );
@@ -278,6 +281,38 @@ public final class Values
     public static PointValue pointGeographic( double longitude, double latitude )
     {
         return new PointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
+    }
+
+    public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
+    {
+        return new PointValue( crs, coordinate );
+    }
+
+    public static PointValue point( Point point )
+    {
+        List<Double> coordinate = point.getCoordinate().getCoordinate();
+        double[] coords = new double[coordinate.size()];
+        for ( int i = 0; i < coords.length; i++ )
+        {
+            coords[i] = coordinate.get( i );
+        }
+        return new PointValue( crs( point.getCRS() ), coords );
+    }
+
+    public static CoordinateReferenceSystem crs( CRS crs )
+    {
+        if ( crs.getHref().equals( CoordinateReferenceSystem.WGS84.href ) )
+        {
+            return CoordinateReferenceSystem.WGS84;
+        }
+        else if ( crs.getHref().equals( CoordinateReferenceSystem.Cartesian.href ) )
+        {
+            return CoordinateReferenceSystem.Cartesian;
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unknown CRS: " + crs );
+        }
     }
 
     // BOXED FACTORY METHODS
@@ -374,6 +409,10 @@ public final class Values
                 return NoValue.NO_VALUE;
             }
             throw new IllegalArgumentException( "[null] is not a supported property value" );
+        }
+        if ( value instanceof Point )
+        {
+            return Values.point( (Point) value );
         }
         if ( value instanceof Value )
         {

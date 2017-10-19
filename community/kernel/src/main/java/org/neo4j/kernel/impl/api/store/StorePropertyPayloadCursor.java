@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -49,6 +50,7 @@ import static org.neo4j.kernel.impl.store.PropertyType.BYTE;
 import static org.neo4j.kernel.impl.store.PropertyType.CHAR;
 import static org.neo4j.kernel.impl.store.PropertyType.DOUBLE;
 import static org.neo4j.kernel.impl.store.PropertyType.FLOAT;
+import static org.neo4j.kernel.impl.store.PropertyType.GEOMETRY;
 import static org.neo4j.kernel.impl.store.PropertyType.INT;
 import static org.neo4j.kernel.impl.store.PropertyType.LONG;
 import static org.neo4j.kernel.impl.store.PropertyType.SHORT;
@@ -226,6 +228,12 @@ class StorePropertyPayloadCursor
         return PropertyUtil.readArrayFromBuffer( buffer );
     }
 
+    Value geometryValue()
+    {
+        assertOfType( GEOMETRY );
+        return GeometryType.decode( data, position );
+    }
+
     Value value()
     {
         switch ( type() )
@@ -254,6 +262,8 @@ class StorePropertyPayloadCursor
             return shortArrayValue();
         case ARRAY:
             return arrayValue();
+        case GEOMETRY:
+            return geometryValue();
         default:
             throw new IllegalStateException( "No such type:" + type() );
         }

@@ -74,7 +74,7 @@ trait DistanceCalculator {
 
 object CartesianCalculator extends DistanceCalculator {
   override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.code() == CRS.Cartesian.code && p2.getCoordinateReferenceSystem.code() == CRS.Cartesian.code
+    p1.getCoordinateReferenceSystem.code == CRS.Cartesian.code && p2.getCoordinateReferenceSystem.code == CRS.Cartesian.code
 
   override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
     val p1Coordinates = p1.coordinate()
@@ -90,7 +90,7 @@ object HaversinCalculator extends DistanceCalculator {
   private val EARTH_RADIUS_METERS = 6378140.0
 
   override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.code() == CRS.WGS84.code && p2.getCoordinateReferenceSystem.code == CRS.WGS84.code
+    p1.getCoordinateReferenceSystem.code == CRS.WGS84.code && p2.getCoordinateReferenceSystem.code == CRS.WGS84.code
 
   override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
     val c1Coord = p1.coordinate()

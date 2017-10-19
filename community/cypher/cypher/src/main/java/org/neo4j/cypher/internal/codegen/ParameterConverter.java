@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.cypher.internal.runtime.CRS;
 import org.neo4j.cypher.internal.runtime.CartesianPoint;
 import org.neo4j.cypher.internal.runtime.GeographicPoint;
 import org.neo4j.graphdb.Node;
@@ -39,12 +40,14 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 /**
  * Used for turning parameters into appropriate types in the compiled runtime
@@ -343,21 +346,16 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     @Override
     public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
     {
-        switch ( crs )
+        if ( crs.equals( WGS84 ) )
         {
-        case WGS84:
-            writeValue( new GeographicPoint( coordinate[0], coordinate[1],
-                    new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( crs.name, crs.code,
-                            crs.href ) ) );
-            break;
-
-        case Cartesian:
-            writeValue( new CartesianPoint( coordinate[0], coordinate[1],
-                    new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( crs.name, crs.code,
-                            crs.href ) ) );
-            break;
-
-        default:
+            writeValue( new GeographicPoint( coordinate[0], coordinate[1], new CRS( crs.name, crs.code, crs.href ) ) );
+        }
+        else if ( crs.equals( Cartesian ) )
+        {
+            writeValue( new CartesianPoint( coordinate[0], coordinate[1], new CRS( crs.name, crs.code, crs.href ) ) );
+        }
+        else
+        {
             throw new IllegalArgumentException( crs + " is not a supported coordinate reference system" );
         }
     }
@@ -492,44 +490,6 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
         public Object value()
         {
             return list;
-        }
-    }
-
-    private class PointWriter implements Writer
-    {
-        //TODO it is quite silly that the point writer doesn't give me the whole thing at once
-        private final double[] coordinates = new double[2];
-        private int index;
-        private final CoordinateReferenceSystem crs;
-
-        PointWriter( CoordinateReferenceSystem crs )
-        {
-            this.crs = crs;
-        }
-
-        @Override
-        public void write( Object value )
-        {
-            coordinates[index++] = (double) value;
-        }
-
-        @Override
-        public Object value()
-        {
-            if ( crs.code() == CoordinateReferenceSystem.WGS84.code() )
-            {
-                return new GeographicPoint( coordinates[0], coordinates[1],
-                        new org.neo4j.cypher.internal.runtime.CRS( crs.name, crs.code, crs.href ) );
-            }
-            else if ( crs.code() == CoordinateReferenceSystem.Cartesian.code() )
-            {
-                return new CartesianPoint( coordinates[0], coordinates[1],
-                        new org.neo4j.cypher.internal.runtime.CRS( crs.name, crs.code, crs.href ) );
-            }
-            else
-            {
-                throw new IllegalArgumentException( crs + " is not a supported coordinate reference system" );
-            }
         }
     }
 }

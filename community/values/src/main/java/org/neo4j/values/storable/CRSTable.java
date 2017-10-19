@@ -17,36 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.virtual;
+package org.neo4j.values.storable;
 
-public enum CoordinateReferenceSystem
+public enum CRSTable
 {
-    Cartesian( "cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/" ),
-    WGS84( "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/" );
-
+    CUSTOM( "custom", 0 ),
+    EPSG( "epsg", 1 ),
+    SR_ORG( "sr-org", 2 );
     public final String name;
-    public final int code;
-    public final String href;
+    public final int tableId;
 
-    CoordinateReferenceSystem( String name, int code, String href )
+    CRSTable( String name, int tableId )
     {
         this.name = name;
-        this.code = code;
-        this.href = href;
+        this.tableId = tableId;
     }
 
-    public int code()
+    public static CRSTable find( int tableId )
     {
-        return code;
+        for ( CRSTable table : CRSTable.values() )
+        {
+            if ( tableId == table.tableId )
+            {
+                return table;
+            }
+        }
+        throw new IllegalArgumentException( "No known Coordinate Reference System table: " + tableId );
     }
 
-    public String type()
+    public String href( int code )
     {
-        return name;
-    }
-
-    public String href()
-    {
-        return href;
+        if ( tableId == CUSTOM.tableId )
+        {
+            return "crs://" + name + "/" + code + "/";
+        }
+        else
+        {
+            return "http://spatialreference.org/ref/" + name + "/" + code + "/";
+        }
     }
 }

@@ -25,8 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
-
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.BeginArray;

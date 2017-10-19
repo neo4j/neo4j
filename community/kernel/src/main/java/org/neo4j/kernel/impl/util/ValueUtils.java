@@ -41,7 +41,7 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -265,11 +265,11 @@ public final class ValueUtils
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.type() ) )
+            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.name ) )
             {
                 return Values.pointCartesian( x, y );
             }
-            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.type() ) )
+            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name ) )
             {
                 return Values.pointGeographic( x, y );
             }
@@ -288,7 +288,7 @@ public final class ValueUtils
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.type() ) )
+            if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name ) )
             {
                 return Values.pointGeographic( longitude, latitude );
             }
