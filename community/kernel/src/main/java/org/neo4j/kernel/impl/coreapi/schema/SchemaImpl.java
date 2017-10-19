@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
@@ -39,12 +38,12 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -508,7 +507,7 @@ public class SchemaImpl implements Schema
                 }
                 catch ( InvalidTransactionTypeKernelException e )
                 {
-                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                    throw new ConstraintViolationException( e.getMessage(), e );
                 }
             }
         }
@@ -544,7 +543,7 @@ public class SchemaImpl implements Schema
                 }
                 catch ( InvalidTransactionTypeKernelException e )
                 {
-                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                    throw new ConstraintViolationException( e.getMessage(), e );
                 }
             }
         }
@@ -579,7 +578,7 @@ public class SchemaImpl implements Schema
                 }
                 catch ( InvalidTransactionTypeKernelException e )
                 {
-                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                    throw new ConstraintViolationException( e.getMessage(), e );
                 }
             }
         }
@@ -610,7 +609,7 @@ public class SchemaImpl implements Schema
                 }
                 catch ( InvalidTransactionTypeKernelException e )
                 {
-                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                    throw new ConstraintViolationException( e.getMessage(), e );
                 }
             }
         }
