@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -135,7 +136,8 @@ public class StoreMigratorIT
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( storeDirectory, pageCache, fs,
+        StoreFactory storeFactory = new StoreFactory(
+                storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
@@ -174,7 +176,8 @@ public class StoreMigratorIT
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( storeDirectory, pageCache, fs,
+        StoreFactory storeFactory = new StoreFactory(
+                storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
         logProvider.assertNoLogCallContaining( "ERROR" );
@@ -214,7 +217,8 @@ public class StoreMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( storeDirectory, pageCache, fs, logService.getInternalLogProvider() );
+                new StoreFactory( storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                        logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
 

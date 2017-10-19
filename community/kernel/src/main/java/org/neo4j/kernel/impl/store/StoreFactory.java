@@ -27,11 +27,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
 /**
  * Factory for Store implementations. Can also be used to create empty stores.
@@ -70,24 +70,11 @@ public class StoreFactory
     private final RecordFormats recordFormats;
     private final OpenOption[] openOptions;
 
-    public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem, LogProvider logProvider )
-    {
-        this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                logProvider );
-    }
-
-    public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem,
-            RecordFormats recordFormats, LogProvider logProvider )
-    {
-        this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                recordFormats, logProvider );
-    }
-
     public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
     {
         this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                RecordFormatSelector.selectForStoreOrConfig( config, storeDir, fileSystemAbstraction, pageCache, logProvider ),
+                selectForStoreOrConfig( config, storeDir, fileSystemAbstraction, pageCache, logProvider ),
                 logProvider );
     }
 

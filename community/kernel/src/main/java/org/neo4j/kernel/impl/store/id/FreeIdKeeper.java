@@ -94,6 +94,11 @@ public class FreeIdKeeper implements Closeable
         this.freeIdCount = stackPosition / ID_ENTRY_SIZE;
     }
 
+    static long countFreeIds( StoreChannel channel ) throws IOException
+    {
+        return channel.size() / ID_ENTRY_SIZE;
+    }
+
     public void freeId( long id )
     {
         freeIds.add( id );

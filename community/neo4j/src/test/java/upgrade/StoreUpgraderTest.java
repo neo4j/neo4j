@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -257,7 +258,9 @@ public class StoreUpgraderTest
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
 
         // Then
-        StoreFactory factory = new StoreFactory( dbDirectory, pageCache, fileSystem, NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory(
+                dbDirectory, allowMigrateConfig, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
+                NullLogProvider.getInstance() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),

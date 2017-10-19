@@ -267,6 +267,11 @@ public class IdGeneratorImpl implements IdGenerator
         return IdContainer.readHighId( fileSystem, file );
     }
 
+    public static long readDefragCount( FileSystemAbstraction fileSystem, File file ) throws IOException
+    {
+        return IdContainer.readDefragCount( fileSystem, file );
+    }
+
     @Override
     public synchronized long getNumberOfIdsInUse()
     {

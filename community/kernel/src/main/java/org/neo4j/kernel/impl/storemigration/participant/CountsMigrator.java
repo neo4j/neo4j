@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -154,8 +156,9 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         RecordFormats recordFormats = selectForVersion( expectedStoreVersion );
-        StoreFactory storeFactory = new StoreFactory( storeDirToReadFrom, pageCache, fileSystem, recordFormats,
-                logProvider );
+        IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
+        StoreFactory storeFactory = new StoreFactory( storeDirToReadFrom, config, idGeneratorFactory, pageCache,
+                fileSystem, recordFormats, logProvider );
         try ( NeoStores neoStores = storeFactory
                 .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN ) )
