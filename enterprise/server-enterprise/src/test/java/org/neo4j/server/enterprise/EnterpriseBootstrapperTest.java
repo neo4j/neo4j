@@ -167,11 +167,11 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         private LogProvider userLogProvider;
 
         @Override
-        protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies,
-                LogProvider userLogProvider )
+        protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
+                                             LogProvider userLogProvider )
         {
             this.userLogProvider = userLogProvider;
-            return super.createNeoServer( configurator, dependencies, userLogProvider );
+            return super.createNeoServer( config, dependencies, userLogProvider );
         }
 
         LogProvider getUserLogProvider()

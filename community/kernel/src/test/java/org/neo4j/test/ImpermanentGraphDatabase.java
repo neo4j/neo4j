@@ -43,7 +43,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
@@ -184,21 +183,8 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     private static Config withForcedInMemoryConfiguration( Config config )
     {
-        return config.with( stringMap( ephemeral.name(), TRUE ) )
-                .withDefaults( stringMap( pagecache_memory.name(), "8M" ) );
+        return config.augment( ephemeral.name(), TRUE ).augment( pagecache_memory.name(), "8M" );
     }
-
-    /*private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
-    {
-        Map<String, String> result = new HashMap<>( params );
-        // To signal to index provides that we should be in-memory
-        result.put( ephemeral.name(), TRUE );
-        if ( !result.containsKey( pagecache_memory.name() ) )
-        {
-            result.put( pagecache_memory.name(), "8M" );
-        }
-        return result;
-    }*/
 
     protected static class ImpermanentPlatformModule extends PlatformModule
     {
@@ -206,7 +192,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                           Dependencies dependencies,
                                           GraphDatabaseFacade graphDatabaseFacade )
         {
-            super( storeDir, withForcedInMemoryConfiguration(config), databaseInfo, dependencies, graphDatabaseFacade );
+            super( storeDir, withForcedInMemoryConfiguration( config ), databaseInfo, dependencies, graphDatabaseFacade );
         }
 
         @Override
