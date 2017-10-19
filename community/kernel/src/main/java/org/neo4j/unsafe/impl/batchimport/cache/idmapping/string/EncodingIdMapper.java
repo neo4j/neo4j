@@ -752,7 +752,7 @@ public class EncodingIdMapper implements IdMapper
     private long findIndex( LongArray array, long value )
     {
         // can't be done on unsorted data
-        long low = 0 + 0;
+        long low = 0;
         long high = highestSetIndex;
         while ( low <= high )
         {
