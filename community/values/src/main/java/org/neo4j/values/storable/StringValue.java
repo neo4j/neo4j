@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static java.lang.String.format;
 
@@ -120,11 +121,11 @@ public abstract class StringValue extends TextValue
      * Just as a normal StringValue but is backed by a byte array and does string
      * serialization lazily.
       *
-      * TODO in this implementation most operation will actually load the string
-      * such as hashCode, length, equals etc. These could be implemented using
-      * the byte array directly
+      * TODO in this implementation most operations will actually load the string
+      * such as hashCode, length. These could be implemented using
+      * the byte array directly in later optimizations
      */
-    static final class UTF8StringValue extends StringValue
+    public static final class UTF8StringValue extends StringValue
     {
         private volatile String value;
         private final byte[] bytes;
@@ -143,6 +144,19 @@ public abstract class StringValue extends TextValue
         public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
         {
             writer.writeUTF8( bytes, offset, length );
+        }
+
+        @Override
+        public boolean equals( Value value )
+        {
+            if ( value instanceof UTF8StringValue )
+            {
+                return Arrays.equals( bytes, ((UTF8StringValue) value).bytes );
+            }
+            else
+            {
+                return super.equals( value );
+            }
         }
 
         @Override
