@@ -46,9 +46,8 @@ public class LuceneSchemaIndexBuilderTest
     @Test
     public void readOnlyIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor )
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getReadOnlyConfig() )
                 .withFileSystem( fileSystemRule.get() )
-                .withConfig( getReadOnlyConfig() )
                 .withOperationalMode( OperationalMode.single )
                 .withIndexRootFolder( testDir.directory( "a" ) )
                 .build() )
@@ -60,8 +59,7 @@ public class LuceneSchemaIndexBuilderTest
     @Test
     public void writableIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor )
-                .withConfig( getDefaultConfig() )
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getDefaultConfig() )
                 .withFileSystem( fileSystemRule.get() )
                 .withOperationalMode( OperationalMode.single )
                 .withIndexRootFolder( testDir.directory( "b" ) )

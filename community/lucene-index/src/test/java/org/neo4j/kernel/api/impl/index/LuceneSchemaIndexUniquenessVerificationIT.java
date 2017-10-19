@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -83,7 +84,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
         Factory<IndexWriterConfig> configFactory = new TestConfigFactory();
-        index = LuceneSchemaIndexBuilder.create( descriptor )
+        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( new File( testDir.directory( "uniquenessVerification" ), "index" ) )
                 .withWriterConfig( configFactory )
