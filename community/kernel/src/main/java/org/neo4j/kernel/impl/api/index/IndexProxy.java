@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -86,6 +87,8 @@ public interface IndexProxy extends LabelSchemaSupplier
     SchemaIndexProvider.Descriptor getProviderDescriptor();
 
     InternalIndexState getState();
+
+    IndexCapability getIndexCapability();
 
     /**
      * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}.

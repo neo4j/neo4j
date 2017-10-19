@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -73,6 +74,12 @@ public class UpdateCapturingIndexProvider extends SchemaIndexProvider
     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
         return actual.getInitialState( indexId, descriptor );
+    }
+
+    @Override
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    {
+        return actual.getCapability( indexDescriptor );
     }
 
     @Override

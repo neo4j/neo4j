@@ -300,9 +300,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int badLabel = token.nodeLabel( "BAD_LABEL" );
         int badProp = token.propertyKey( "badProp" );
 
-        assertEquals( "bad label", IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
-        assertEquals( "bad prop", IndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
-        assertEquals( "just bad", IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
+        assertEquals( "bad label", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
+        assertEquals( "bad prop", CapableIndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
+        assertEquals( "just bad", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
     }
 
     private long nodeWithProp( GraphDatabaseService graphDb, Object value )

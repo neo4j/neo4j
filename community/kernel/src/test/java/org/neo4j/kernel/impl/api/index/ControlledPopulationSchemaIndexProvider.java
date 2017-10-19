@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -107,6 +108,12 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
         return initialIndexState;
+    }
+
+    @Override
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    {
+        return IndexCapability.NO_CAPABILITY;
     }
 
     public void setInitialIndexState( InternalIndexState initialIndexState )

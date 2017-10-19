@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -37,6 +38,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class FailedIndexProxyTest
 {
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
+    private final IndexCapability indexCapability = mock( IndexCapability.class );
     private final String userDescription = "description";
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
     private final IndexPopulationFailure indexPopulationFailure = mock( IndexPopulationFailure.class );
@@ -47,8 +49,8 @@ public class FailedIndexProxyTest
     {
         // given
         FailedIndexProxy index = new FailedIndexProxy(
-                IndexDescriptorFactory.forLabel( 1, 2 ), providerDescriptor, userDescription,
-                indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
+                IndexDescriptorFactory.forLabel( 1, 2 ), providerDescriptor, indexCapability,
+                userDescription, indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
 
         // when
         index.drop();
@@ -66,10 +68,9 @@ public class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( IndexDescriptorFactory.forLabel( 0, 0 ),
-                new SchemaIndexProvider.Descriptor( "foo", "bar" ), "foo",
-                mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover,
-                logProvider ).drop();
+        new FailedIndexProxy( IndexDescriptorFactory.forLabel( 0, 0 ), new SchemaIndexProvider.Descriptor( "foo", "bar" ), indexCapability,
+                "foo", mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ),
+                indexCountsRemover, logProvider ).drop();
 
         // then
         logProvider.assertAtLeastOnce(

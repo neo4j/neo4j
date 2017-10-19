@@ -19,17 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-/**
- * Surface for getting schema information, such as fetching specific indexes or constraints.
- */
-public interface SchemaRead
+public enum IndexOrderCapability
 {
-    /**
-     * Acquire a reference to the index mapping the given {@code label} and {@code properties}.
-     *
-     * @param label the index label
-     * @param properties the index properties
-     * @return the IndexReference, or {@link IndexReference#NO_INDEX} if such an index does not exist.
-     */
-    CapableIndexReference index( int label, int... properties );
+    ASCENDING, DESCENDING
 }

@@ -25,6 +25,7 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -342,7 +343,7 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public IndexDescriptor index( int label, int... properties )
+    public CapableIndexReference index( int label, int... properties )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -161,6 +162,12 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
             monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
+    }
+
+    @Override
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    {
+        return IndexCapability.NO_CAPABILITY;
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -34,14 +35,18 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
+    private final IndexCapability indexCapability;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulationFailure populationFailure;
 
-    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor, IndexPopulationFailure populationFailure )
+    AbstractSwallowingIndexProxy( IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor,
+            IndexCapability indexCapability,
+            IndexPopulationFailure populationFailure )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
+        this.indexCapability = indexCapability;
         this.populationFailure = populationFailure;
     }
 
@@ -73,6 +78,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public void force()
     {
+    }
+
+    @Override
+    public IndexCapability getIndexCapability()
+    {
+        return indexCapability;
     }
 
     @Override

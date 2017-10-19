@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -46,6 +47,7 @@ public class OnlineIndexProxy implements IndexProxy
     final IndexAccessor accessor;
     private final IndexStoreView storeView;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final IndexCapability indexCapability;
     private final IndexCountsRemover indexCountsRemover;
     private boolean started;
 
@@ -75,15 +77,20 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    public OnlineIndexProxy( long indexId, IndexDescriptor descriptor,
-            IndexAccessor accessor, IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor,
+    OnlineIndexProxy( long indexId,
+            IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor,
+            IndexCapability indexCapability,
+            IndexAccessor accessor,
+            IndexStoreView storeView,
             boolean forcedIdempotentMode )
     {
         this.indexId = indexId;
         this.descriptor = descriptor;
+        this.accessor = accessor;
         this.storeView = storeView;
         this.providerDescriptor = providerDescriptor;
-        this.accessor = accessor;
+        this.indexCapability = indexCapability;
         this.forcedIdempotentMode = forcedIdempotentMode;
         this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
     }
@@ -136,6 +143,12 @@ public class OnlineIndexProxy implements IndexProxy
     public InternalIndexState getState()
     {
         return InternalIndexState.ONLINE;
+    }
+
+    @Override
+    public IndexCapability getIndexCapability()
+    {
+        return indexCapability;
     }
 
     @Override

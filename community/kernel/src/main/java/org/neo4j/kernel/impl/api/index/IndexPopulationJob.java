@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.neo4j.function.Suppliers;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -37,8 +38,8 @@ import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
- * {@link #addPopulator(IndexPopulator, long, IndexDescriptor, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor,
- * String, FlippableIndexProxy, FailedIndexProxyFactory)}
+ * {@link #addPopulator(IndexPopulator, long, IndexDescriptor, SchemaIndexProvider.Descriptor, IndexCapability, String,
+ * FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
 public class IndexPopulationJob implements Runnable
@@ -65,21 +66,23 @@ public class IndexPopulationJob implements Runnable
      * @param populator {@link IndexPopulator} to participate.
      * @param descriptor {@link IndexDescriptor} describing the index.
      * @param providerDescriptor provider of this index.
+     * @param indexCapability capability of this index.
      * @param indexUserDescription user description of this index.
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
      * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
-    public void addPopulator( IndexPopulator populator,
+    void addPopulator( IndexPopulator populator,
             long indexId,
             IndexDescriptor descriptor,
             SchemaIndexProvider.Descriptor providerDescriptor,
-            String indexUserDescription ,
+            IndexCapability indexCapability,
+            String indexUserDescription,
             FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        this.multiPopulator.addPopulator( populator, indexId, descriptor, providerDescriptor, flipper,
-                failedIndexProxyFactory, indexUserDescription );
+        this.multiPopulator.addPopulator( populator, indexId, descriptor, providerDescriptor, indexCapability,
+                flipper, failedIndexProxyFactory, indexUserDescription );
     }
 
     /**
@@ -134,7 +137,7 @@ public class IndexPopulationJob implements Runnable
         storeScan.run();
     }
 
-    public PopulationProgress getPopulationProgress()
+    PopulationProgress getPopulationProgress()
     {
         if ( storeScan == null )
         {

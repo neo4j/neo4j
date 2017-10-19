@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -30,6 +31,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
 {
     private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final IndexCapability indexCapability;
     private final IndexPopulator populator;
     private final String indexUserDescription;
     private final IndexCountsRemover indexCountsRemover;
@@ -37,6 +39,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
 
     FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
                                        SchemaIndexProvider.Descriptor providerDescriptor,
+                                       IndexCapability indexCapability,
                                        IndexPopulator populator,
                                        String indexUserDescription,
                                        IndexCountsRemover indexCountsRemover,
@@ -44,6 +47,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
+        this.indexCapability = indexCapability;
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;
@@ -53,9 +57,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     @Override
     public IndexProxy create( Throwable failure )
     {
-        return
-            new FailedIndexProxy(
-                descriptor, providerDescriptor,
-                indexUserDescription, populator, failure( failure ), indexCountsRemover, logProvider );
+        return new FailedIndexProxy( descriptor, providerDescriptor, indexCapability, indexUserDescription, populator, failure( failure ),
+                indexCountsRemover, logProvider );
     }
 }

@@ -28,6 +28,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -247,6 +248,20 @@ public class FlippableIndexProxy implements IndexProxy
         try
         {
             return delegate.getState();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public IndexCapability getIndexCapability()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.getIndexCapability();
         }
         finally
         {

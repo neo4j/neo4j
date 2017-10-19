@@ -58,6 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorUpdatesTest
@@ -125,7 +126,7 @@ public class MultipleIndexPopulatorUpdatesTest
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,
-                mock( SchemaIndexProvider.Descriptor.class ),
+                mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY,
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 
@@ -167,7 +168,7 @@ public class MultipleIndexPopulatorUpdatesTest
                 boolean forceStoreScan )
         {
 
-            return new ListenableNodeScanViewNodeStoreScan( nodeStore, locks, propertyStore, labelUpdateVisitor,
+            return new ListenableNodeScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelUpdateVisitor,
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, processListener );
         }
 

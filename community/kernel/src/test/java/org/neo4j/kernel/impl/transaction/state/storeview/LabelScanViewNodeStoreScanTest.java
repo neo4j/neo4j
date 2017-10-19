@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -49,6 +50,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
 public class LabelScanViewNodeStoreScanTest
 {
@@ -86,7 +88,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )
     {
-        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, null, null, null );
+        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, NO_CAPABILITY, null, null, null );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
@@ -105,10 +107,10 @@ public class LabelScanViewNodeStoreScanTest
         @Override
         public IndexPopulation createPopulation( IndexPopulator populator, long indexId,
                 IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
+                IndexCapability indexCapability, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
                 String indexUserDescription )
         {
-            return super.createPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
+            return super.createPopulation( populator, indexId, descriptor, providerDescriptor, indexCapability, flipper,
                             failedIndexProxyFactory, indexUserDescription );
         }
     }

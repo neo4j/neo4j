@@ -61,6 +61,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @RunWith( MockitoJUnitRunner.class )
@@ -432,8 +433,8 @@ public class MultipleIndexPopulatorTest
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,
-                mock( SchemaIndexProvider.Descriptor.class ), flippableIndexProxy,
-                failedIndexProxyFactory, "userIndexDescription" );
+                mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY,
+                flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id )

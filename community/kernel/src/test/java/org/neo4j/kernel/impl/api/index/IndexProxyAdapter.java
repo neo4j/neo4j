@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -58,6 +59,12 @@ public class IndexProxyAdapter implements IndexProxy
     public InternalIndexState getState()
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IndexCapability getIndexCapability()
+    {
+        return null;
     }
 
     @Override

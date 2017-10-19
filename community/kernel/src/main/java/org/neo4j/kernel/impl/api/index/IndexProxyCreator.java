@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -34,7 +35,7 @@ import static java.lang.String.format;
 /**
  * Helper class of {@link IndexingService}. Used mainly as factory of index proxies.
  */
-public class IndexProxyCreator
+class IndexProxyCreator
 {
     private final IndexSamplingConfig samplingConfig;
     private final IndexStoreView storeView;
@@ -42,11 +43,11 @@ public class IndexProxyCreator
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
 
-    public IndexProxyCreator( IndexSamplingConfig samplingConfig,
-                            IndexStoreView storeView,
-                            SchemaIndexProviderMap providerMap,
-                            TokenNameLookup tokenNameLookup,
-                            LogProvider logProvider )
+    IndexProxyCreator( IndexSamplingConfig samplingConfig,
+            IndexStoreView storeView,
+            SchemaIndexProviderMap providerMap,
+            TokenNameLookup tokenNameLookup,
+            LogProvider logProvider )
     {
         this.samplingConfig = samplingConfig;
         this.storeView = storeView;
@@ -55,33 +56,34 @@ public class IndexProxyCreator
         this.logProvider = logProvider;
     }
 
-    public IndexProxy createPopulatingIndexProxy( final long ruleId,
-                                                  final IndexDescriptor descriptor,
-                                                  final SchemaIndexProvider.Descriptor providerDescriptor,
-                                                  final boolean flipToTentative,
-                                                  final IndexingService.Monitor monitor,
-                                                  final IndexPopulationJob populationJob ) throws IOException
+    IndexProxy createPopulatingIndexProxy( final long ruleId,
+            final IndexDescriptor descriptor,
+            final SchemaIndexProvider.Descriptor providerDescriptor,
+            final boolean flipToTentative,
+            final IndexingService.Monitor monitor,
+            final IndexPopulationJob populationJob ) throws IOException
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
+        IndexCapability indexCapability = indexCapabilityFromProvider( providerDescriptor, descriptor );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
                 descriptor,
                 providerDescriptor,
+                indexCapability,
                 populator,
                 indexUserDescription,
                 new IndexCountsRemover( storeView, ruleId ),
-                logProvider
-        );
+                logProvider );
 
         PopulatingIndexProxy populatingIndex =
-                new PopulatingIndexProxy( descriptor, providerDescriptor, populationJob );
+                new PopulatingIndexProxy( descriptor, providerDescriptor, indexCapability, populationJob );
 
-        populationJob.addPopulator( populator, ruleId, descriptor, providerDescriptor, indexUserDescription,
-                flipper, failureDelegateFactory );
+        populationJob.addPopulator( populator, ruleId, descriptor, providerDescriptor, indexCapability,
+                indexUserDescription, flipper, failureDelegateFactory );
 
         flipper.flipTo( populatingIndex );
 
@@ -93,9 +95,11 @@ public class IndexProxyCreator
                     new OnlineIndexProxy(
                             ruleId,
                             descriptor,
+                            providerDescriptor,
+                            indexCapabilityFromProvider( providerDescriptor, descriptor ),
                             onlineAccessorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig ),
                             storeView,
-                            providerDescriptor, true );
+                            true );
             if ( flipToTentative )
             {
                 return new TentativeConstraintIndexProxy( flipper, onlineProxy );
@@ -106,24 +110,26 @@ public class IndexProxyCreator
         return new ContractCheckingIndexProxy( flipper, false );
     }
 
-    public IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor,
-                                                  SchemaIndexProvider.Descriptor providerDescriptor )
+    IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor )
     {
-        IndexProxy proxy = new RecoveringIndexProxy( descriptor, providerDescriptor );
+        IndexCapability indexCapability = indexCapabilityFromProvider( providerDescriptor, descriptor );
+        IndexProxy proxy = new RecoveringIndexProxy( descriptor, providerDescriptor, indexCapability );
         return new ContractCheckingIndexProxy( proxy, true );
     }
 
-    public IndexProxy createOnlineIndexProxy( long ruleId,
-                                              IndexDescriptor descriptor,
-                                              SchemaIndexProvider.Descriptor providerDescriptor )
+    IndexProxy createOnlineIndexProxy( long ruleId,
+            IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor )
     {
         // TODO Hook in version verification/migration calls to the SchemaIndexProvider here
         try
         {
             IndexAccessor onlineAccessor =
                     onlineAccessorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
+            IndexCapability indexCapability = indexCapabilityFromProvider( providerDescriptor, descriptor );
             IndexProxy proxy;
-            proxy = new OnlineIndexProxy( ruleId, descriptor, onlineAccessor, storeView, providerDescriptor, false );
+            proxy = new OnlineIndexProxy( ruleId, descriptor, providerDescriptor, indexCapability, onlineAccessor, storeView, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
             return proxy;
         }
@@ -136,24 +142,23 @@ public class IndexProxyCreator
         }
     }
 
-    public IndexProxy createFailedIndexProxy( long ruleId,
-                                              IndexDescriptor descriptor,
-                                              SchemaIndexProvider.Descriptor providerDescriptor,
-                                              IndexPopulationFailure populationFailure )
+    IndexProxy createFailedIndexProxy( long ruleId,
+            IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor,
+            IndexPopulationFailure populationFailure )
     {
-        IndexPopulator indexPopulator =
-                populatorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
+        IndexPopulator indexPopulator = populatorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
+        IndexCapability indexCapability = indexCapabilityFromProvider( providerDescriptor, descriptor );
         String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexProxy proxy;
         proxy = new FailedIndexProxy(
                 descriptor,
-                providerDescriptor,
+                providerDescriptor, indexCapability,
                 indexUserDescription,
                 indexPopulator,
                 populationFailure,
                 new IndexCountsRemover( storeView, ruleId ),
-                logProvider
-        );
+                logProvider );
         proxy = new ContractCheckingIndexProxy( proxy, true );
         return proxy;
     }
@@ -178,5 +183,11 @@ public class IndexProxyCreator
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
         return indexProvider.getOnlineAccessor( ruleId, descriptor, samplingConfig );
+    }
+
+    private IndexCapability indexCapabilityFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
+            IndexDescriptor indexDescriptor )
+    {
+        return providerMap.apply( providerDescriptor ).getCapability( indexDescriptor );
     }
 }

@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -33,9 +34,11 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 {
-    public RecoveringIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor )
+    RecoveringIndexProxy( IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor,
+            IndexCapability indexCapability )
     {
-        super( descriptor, providerDescriptor, null );
+        super( descriptor, providerDescriptor, indexCapability, null );
     }
 
     @Override

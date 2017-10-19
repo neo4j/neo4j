@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -42,15 +43,18 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 public class PopulatingIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
+    private final IndexCapability indexCapability;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulationJob job;
 
-    public PopulatingIndexProxy( IndexDescriptor descriptor,
-                                 SchemaIndexProvider.Descriptor providerDescriptor,
-                                 IndexPopulationJob job )
+    PopulatingIndexProxy( IndexDescriptor descriptor,
+            SchemaIndexProvider.Descriptor providerDescriptor,
+            IndexCapability indexCapability,
+            IndexPopulationJob job )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
+        this.indexCapability = indexCapability;
         this.job = job;
     }
 
@@ -114,6 +118,12 @@ public class PopulatingIndexProxy implements IndexProxy
     public InternalIndexState getState()
     {
         return InternalIndexState.POPULATING;
+    }
+
+    @Override
+    public IndexCapability getIndexCapability()
+    {
+        return indexCapability;
     }
 
     @Override

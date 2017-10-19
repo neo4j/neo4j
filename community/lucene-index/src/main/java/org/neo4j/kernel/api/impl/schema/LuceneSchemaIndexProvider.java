@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -140,6 +141,12 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
+    }
+
+    @Override
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    {
+        return IndexCapability.NO_CAPABILITY;
     }
 
     @Override
