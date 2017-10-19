@@ -35,10 +35,10 @@ import org.neo4j.server.NeoServer;
 public class EnterpriseBootstrapper extends CommunityBootstrapper
 {
     @Override
-    protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies,
+    protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
             LogProvider userLogProvider )
     {
-        return new EnterpriseNeoServer( configurator, dependencies, userLogProvider );
+        return new EnterpriseNeoServer( config, dependencies, userLogProvider );
     }
 
     @Override

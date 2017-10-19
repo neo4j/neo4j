@@ -52,7 +52,7 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Config config )
             {
                 return new EnterpriseGraphDatabase( storeDir,
-                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        config.augment( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
                         state.databaseDependencies() );
             }
         };
