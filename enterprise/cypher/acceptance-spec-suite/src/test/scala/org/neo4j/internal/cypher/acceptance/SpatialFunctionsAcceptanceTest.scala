@@ -303,16 +303,32 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     failWithError(config, "RETURN point(1) as dist", List("Type mismatch: expected Map, Node or Relationship but was Integer"))
   }
 
-  ignore("point function should be assignable to node property") {
+  test("point function should be assignable to node property") {
     // Given
     createLabeledNode("Place")
 
     // When
-    val result = executeWith(expectedToSucceed, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location",
+    val config = expectedToSucceed - Configs.SlottedInterpreted - Configs.Cost3_1 - Configs.AllRulePlanners
+    val result = executeWith(config, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> GeographicPoint(12.78, 56.7, CRS.WGS84))))
+  }
+
+  test("point function should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point")
+
+    // When
+    val config = Configs.All - Configs.Cost2_3 - Configs.Cost3_1 - Configs.AllRulePlanners
+    val result = executeWith(config, "MATCH (p:Place) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    result.toList should equal(List(Map("point" -> GeographicPoint(12.78, 56.7, CRS.WGS84))))
   }
 }

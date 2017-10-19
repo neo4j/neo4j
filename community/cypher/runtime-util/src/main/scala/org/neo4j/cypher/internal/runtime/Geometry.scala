@@ -84,7 +84,7 @@ object CRS {
 object Points {
   // TODO: Is this necessary, perhaps PointValue is sufficient for use in Cypher-land
   def fromValue(crsValue: CoordinateReferenceSystem, coordinate: Array[Double]) = {
-    val crs = CRS.fromName(crsValue.name)
+    val crs = CRS.fromSRID(crsValue.code)
     if (crs == CRS.WGS84) {
       new GeographicPoint(coordinate(0), coordinate(1), crs)
     } else {
