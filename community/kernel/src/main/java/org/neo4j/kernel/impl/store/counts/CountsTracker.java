@@ -106,14 +106,12 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
             @Override
             public void beforeRotation( File source, File target, Headers headers )
             {
-                log.info( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
-                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 
             @Override
             public void rotationSucceeded( File source, File target, Headers headers )
             {
-                log.info( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
+                log.info( format( "Rotated counts store at transaction %d to [%s], from [%s].",
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 

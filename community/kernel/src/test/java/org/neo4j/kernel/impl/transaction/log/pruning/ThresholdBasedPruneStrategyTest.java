@@ -26,6 +26,7 @@ import java.io.File;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy.Monitor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,6 +48,7 @@ public class ThresholdBasedPruneStrategyTest
     public void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws Exception
     {
         // Given
+        File fileName0 = new File( "logical.log.v0" );
         File fileName1 = new File( "logical.log.v1" );
         File fileName2 = new File( "logical.log.v2" );
         File fileName3 = new File( "logical.log.v3" );
@@ -60,6 +62,7 @@ public class ThresholdBasedPruneStrategyTest
         when( files.getLogFileForVersion( 3 ) ).thenReturn( fileName3 );
         when( files.getLogFileForVersion( 2 ) ).thenReturn( fileName2 );
         when( files.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
+        when( files.getLogFileForVersion( 0 ) ).thenReturn( fileName0 );
 
         when( fileSystem.fileExists( fileName6 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName5 ) ).thenReturn( true );
@@ -67,19 +70,22 @@ public class ThresholdBasedPruneStrategyTest
         when( fileSystem.fileExists( fileName3 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName0 ) ).thenReturn( true );
 
         when( fileSystem.getFileSize( any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
 
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( false );
 
         final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, threshold );
+        Monitor monitor = mock( Monitor.class );
 
         // When
-        strategy.prune( 7L );
+        strategy.prune( 7L, monitor );
 
         // Then
         verify( threshold, times( 1 ) ).init();
         verify( fileSystem, times( 0 ) ).deleteFile( any() );
+        verify( monitor ).noLogsPruned( 7L );
     }
 
     @Test
@@ -119,16 +125,17 @@ public class ThresholdBasedPruneStrategyTest
         when( fileSystem.getFileSize( any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
 
         final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(
-                fileSystem, logFileInfo, files, threshold
-        );
+                fileSystem, logFileInfo, files, threshold );
+        Monitor monitor = mock( Monitor.class );
 
         // When
-        strategy.prune( 7L );
+        strategy.prune( 7L, monitor );
 
         // Then
         verify( threshold, times( 1 ) ).init();
         verify( fileSystem, times( 1 ) ).deleteFile( fileName1 );
         verify( fileSystem, times( 1 ) ).deleteFile( fileName2 );
         verify( fileSystem, times( 1 ) ).deleteFile( fileName3 );
+        verify( monitor ).logsPruned( 7L, 1, 3 );
     }
 }

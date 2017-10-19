@@ -34,7 +34,7 @@ public class LogPruneStrategyFactory
     public static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
-        public void prune( long upToLogVersion )
+        public void prune( long upToLogVersion, Monitor monitor )
         {
             // do nothing
         }

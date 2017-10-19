@@ -44,12 +44,12 @@ public class PhysicalLogFile implements LogFile, Lifecycle
 {
     public interface Monitor
     {
-        void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
+        void created( File logFile, long logVersion, long lastTransactionId );
 
         class Adapter implements Monitor
         {
             @Override
-            public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
+            public void created( File logFile, long logVersion, long lastTransactionId )
             {
             }
         }
@@ -244,7 +244,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
             writeLogHeader( headerBuffer, forVersion, lastTxId );
             logHeaderCache.putHeader( forVersion, lastTxId );
             storeChannel.writeAll( headerBuffer );
-            monitor.opened( toOpen, forVersion, lastTxId, true );
+            monitor.created( toOpen, forVersion, lastTxId );
         }
         byte formatVersion = header == null ? CURRENT_LOG_VERSION : header.logFormatVersion;
         return new PhysicalLogVersionedStoreChannel( storeChannel, forVersion, formatVersion );

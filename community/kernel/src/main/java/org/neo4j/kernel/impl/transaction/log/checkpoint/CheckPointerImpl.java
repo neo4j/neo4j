@@ -34,6 +34,10 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.Format.duration;
+
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
     private final TransactionAppender appender;
@@ -145,7 +149,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             long lastClosedTransactionId = lastClosedTransaction[0];
             LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
             String prefix = triggerInfo.describe( lastClosedTransactionId );
-            msgLog.info( prefix + " Starting check pointing..." );
             /*
              * Check kernel health before going into waiting for transactions to be closed, to avoid
              * getting into a scenario where we would await a condition that would potentially never
@@ -156,20 +159,18 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * First we flush the store. If we fail now or during the flush, on recovery we'll find the
              * earlier check point and replay from there all the log entries. Everything will be ok.
              */
-            msgLog.info( prefix + " Starting store flush..." );
+            msgLog.info( prefix + " checkpoint started..." );
+            long startTime = currentTimeMillis();
             storageEngine.flushAndForce( ioLimiter );
-            msgLog.info( prefix + " Store flush completed" );
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
              * repair the damages.
              */
             databaseHealth.assertHealthy( IOException.class );
-            msgLog.info( prefix + " Starting appending check point entry into the tx log..." );
             appender.checkPoint( logPosition, logCheckPointEvent );
             threshold.checkPointHappened( lastClosedTransactionId );
-            msgLog.info( prefix + " Appending check point entry into the tx log completed" );
-            msgLog.info( prefix + " Check pointing completed" );
+            msgLog.info( prefix + " checkpoint completed in " + duration( currentTimeMillis() - startTime ) );
             /*
              * Prune up to the version pointed from the latest check point,
              * since it might be an earlier version than the current log version.
@@ -183,7 +184,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             // Why only log failure here? It's because check point can potentially be made from various
             // points of execution e.g. background thread triggering check point if needed and during
             // shutdown where it's better to have more control over failure handling.
-            msgLog.error( "Error performing check point", t );
+            msgLog.error( "Checkpoint failed", t );
             throw t;
         }
     }
