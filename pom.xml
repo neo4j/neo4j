@@ -167,8 +167,6 @@
             <subpackages>org.neo4j.backup:org.neo4j.graphalgo:org.neo4j.cypher.export:org.neo4j.cypher.javacompat:org.neo4j.graphdb:org.neo4j.helpers:org.neo4j.helpers.collection:org.neo4j.index:org.neo4j.jmx:org.neo4j.management:org.neo4j.server.helpers:org.neo4j.server.plugins:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.unsafe.batchinsert:org.neo4j.logging:org.neo4j.procedure</subpackages>
             <!-- ...unless the package contains -->
             <excludePackageNames>*.impl.*:*.internal.*:org.neo4j.helpers.progress:org.neo4j.logging.async:org.neo4j.server.rest.repr.formats:org.neo4j.server.rest.repr.util</excludePackageNames>
-            <!-- remove these excludes once 3.3.0 is out -->
-            <excludes>org.neo4j.helpers.BaseToObjectValueWriter:org.neo4j.helpers.NodeProxyWrappingNodeValue:org.neo4j.helpers.RelationshipProxyWrappingEdgeValue:org.neo4j.helpers.ValueUtils</excludes>
 
             <!-- Defines grouping for overview -->
             <groups>
@@ -266,14 +264,6 @@
               <include>org/neo4j/logging/slf4j/*</include>
               <include>org/neo4j/procedure/*</include>
             </includes>
-
-            <!-- remove these excludes once 3.3.0 is out -->
-            <excludes>
-              <exclude>org/neo4j/helpers/BaseToObjectValueWriter</exclude>
-              <exclude>org/neo4j/helpers/NodeProxyWrappingNodeValue</exclude>
-              <exclude>org/neo4j/helpers/RelationshipProxyWrappingEdgeValue</exclude>
-              <exclude>org/neo4j/helpers/ValueUtils</exclude>
-            </excludes>
 
             <!-- Ignored changes -->
             <ignored>
