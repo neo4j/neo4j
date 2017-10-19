@@ -204,7 +204,7 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
   def getLongOffsetFor(name: String): Int = slots.get(name) match {
     case Some(s: LongSlot) => s.offset
     case Some(s) => throw new InternalException(s"Uh oh... There was no long slot for `$name`. It was a $s")
-    case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
+    case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
 
   def foreachSlot[U](f: ((String,Slot)) => U): Unit =

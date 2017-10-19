@@ -298,7 +298,7 @@ object SlotAllocation {
           case (key, lhsSlot: LongSlot) =>
             //find all shared variables and look for other long slots with same type
             rhsPipeline.get(key).foreach {
-            case LongSlot(_, rhsNullable, typ, _) if typ == lhsSlot.typ =>
+            case LongSlot(_, rhsNullable, typ) if typ == lhsSlot.typ =>
               outgoing.newLong(key, lhsSlot.nullable || rhsNullable, typ)
             case rhsSlot =>
               val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny

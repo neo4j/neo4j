@@ -606,7 +606,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // then
     allocations should have size 3
     allocations(plan.assignedId) should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
   }
 
   test("should handle UNION of one primitive relationship and one node") {
@@ -623,7 +623,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // then
     allocations should have size 4
     allocations(plan.assignedId) should equal(
-      PipelineInformation(Map("x" -> RefSlot(0, nullable = false, CTAny, "x")), 0, 1))
+      PipelineInformation(Map("x" -> RefSlot(0, nullable = false, CTAny)), 0, 1))
   }
 
   test("should handle UNION of projected variables") {
@@ -639,6 +639,6 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // then
     allocations should have size 5
     allocations(plan.assignedId) should equal(
-      PipelineInformation(Map("A" -> RefSlot(0, nullable = true, CTAny, "A")), 0, 1))
+      PipelineInformation(Map("A" -> RefSlot(0, nullable = true, CTAny)), 0, 1))
   }
 }
