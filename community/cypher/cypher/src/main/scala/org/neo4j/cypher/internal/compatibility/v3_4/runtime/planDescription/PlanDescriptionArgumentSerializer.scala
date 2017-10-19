@@ -21,27 +21,34 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.frontend.v3_4.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.v3_4.expressions
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
   private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
   private val DEDUP_PATTERN =   """  (.+)@\d+""".r
+  private val stringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
+  private def asPrettyString(e: expressions.Expression): String =
+    if (e == null)
+      "null"
+    else
+      removeGeneratedNames(stringifier(e))
+
   def serialize(arg: Argument): AnyRef = {
 
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
-      case Expression(expr) => if (expr == null) "" else removeGeneratedNames(expr.asCanonicalStringVal)
-      case Expressions(expressions) => expressions.map({
-        case (k, v) if v != null => s"$k : ${v.asCanonicalStringVal}"
-        case (k, _) => s"$k : null"
-      }).mkString("{", ", ", "}")
+      case Expression(expr) => asPrettyString(expr)
+      case Expressions(expressions) => expressions.map {
+        case (k, v) => s"$k : ${asPrettyString(v)}"
+      }.mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
       case ExplicitIndex(index) => index
       case Index(label, properties) => s":$label(${properties.mkString(",")})"
-      case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${if (p == null) "null" else p.asCanonicalStringVal})"
+      case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${asPrettyString(p)})"
       case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
@@ -91,7 +98,7 @@ object PlanDescriptionArgumentSerializer {
     }
   }
 
-   def removeGeneratedNames(s: String) = {
+   def removeGeneratedNames(s: String): String = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
     DEDUP_PATTERN.replaceAllIn(named, _.group(1))
   }
