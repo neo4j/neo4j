@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -52,7 +51,7 @@ public class TransactionPositionLocatorTest
     private final LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, null, startPosition );
     private final LogEntryCommand command = new LogEntryCommand(
             new Command.NodeCommand( new NodeRecord( 42 ), new NodeRecord( 42 ) ) );
-    private final LogEntryCommit commit = new OnePhaseCommit( txId, System.currentTimeMillis() );
+    private final LogEntryCommit commit = new LogEntryCommit( txId, System.currentTimeMillis() );
 
     @Test
     public void shouldFindTransactionLogPosition() throws IOException

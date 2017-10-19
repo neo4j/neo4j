@@ -37,7 +37,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
 public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
@@ -178,7 +178,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                 case TX_START:
                     startEntry = logEntry.as();
                     break;
-                case TX_1P_COMMIT:
+                case TX_COMMIT:
                     LogEntryCommit commit = logEntry.as();
                     if ( commit.getTxId() == startTransactionId )
                     {

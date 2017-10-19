@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -165,7 +164,7 @@ public class BatchingTransactionAppenderTest
 
         LogEntryStart start = new LogEntryStart( 0, 0, 0L, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
-        LogEntryCommit commit = new OnePhaseCommit( nextTxId, 0L );
+        LogEntryCommit commit = new LogEntryCommit( nextTxId, 0L );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
@@ -213,7 +212,7 @@ public class BatchingTransactionAppenderTest
 
         LogEntryStart start = new LogEntryStart( 0, 0, 0L, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
-        LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0L );
+        LogEntryCommit commit = new LogEntryCommit( latestCommittedTxWhenStarted + 2, 0L );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 

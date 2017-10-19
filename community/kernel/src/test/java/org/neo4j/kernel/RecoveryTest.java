@@ -51,10 +51,10 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -123,7 +123,7 @@ public class RecoveryTest
             writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
             lastCommittedTxStartEntry = new LogEntryStart( 0, 1, 2L, 3L, new byte[0], lastCommittedTxPosition );
             writer.writeCommitEntry( 4L, 5L );
-            lastCommittedTxCommitEntry = new OnePhaseCommit( 4L, 5L );
+            lastCommittedTxCommitEntry = new LogEntryCommit( 4L, 5L );
 
             // check point pointing to the previously committed transaction
             writer.writeCheckPointEntry( lastCommittedTxPosition );
@@ -135,7 +135,7 @@ public class RecoveryTest
             expectedStartEntry = new LogEntryStart( 0, 1, 6L, 4L, new byte[0], marker.newPosition() );
 
             writer.writeCommitEntry( 5L, 7L );
-            expectedCommitEntry = new OnePhaseCommit( 5L, 7L );
+            expectedCommitEntry = new LogEntryCommit( 5L, 7L );
 
             return true;
         } );

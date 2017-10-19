@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
 import static org.junit.Assert.assertEquals;
@@ -61,7 +61,7 @@ public class RecoveryProgressIndicatorTest
         when( transactionCursor.next() ).thenAnswer( new NextTransactionAnswer( transactionsToRecover ) );
         when( reverseTransactionCursor.get() ).thenReturn( transactionRepresentation );
         when( transactionCursor.get() ).thenReturn( transactionRepresentation );
-        when( transactionRepresentation.getCommitEntry() ).thenReturn( new OnePhaseCommit( lastCommittedTransactionId, 1L ) );
+        when( transactionRepresentation.getCommitEntry() ).thenReturn( new LogEntryCommit( lastCommittedTransactionId, 1L ) );
 
         when( recoveryService.getRecoveryStartInformation() ).thenReturn( startInformation );
         when( recoveryService.getTransactionsInReverseOrder( recoveryStartPosition ) ).thenReturn( reverseTransactionCursor );

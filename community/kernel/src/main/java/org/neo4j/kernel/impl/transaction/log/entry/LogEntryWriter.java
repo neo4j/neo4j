@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
@@ -64,7 +64,7 @@ public class LogEntryWriter
 
     public void writeCommitEntry( long transactionId, long timeWritten ) throws IOException
     {
-        writeLogEntryHeader( TX_1P_COMMIT );
+        writeLogEntryHeader( TX_COMMIT );
         channel.putLong( transactionId ).putLong( timeWritten );
     }
 

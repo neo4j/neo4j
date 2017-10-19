@@ -25,8 +25,9 @@ import java.util.List;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
 
 /**
  * Groups {@link LogEntry} instances transaction by transaction
@@ -67,7 +68,7 @@ public class TransactionLogEntryCursor implements IOCursor<LogEntry[]>
     private static boolean isBreakPoint( LogEntry entry )
     {
         byte type = entry.getType();
-        return type == TX_1P_COMMIT || type == CHECK_POINT;
+        return type == TX_COMMIT || type == CHECK_POINT;
     }
 
     @Override

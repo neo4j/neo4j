@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -82,7 +82,7 @@ public class ChunkedTransactionStreamTest
     private CommittedTransactionRepresentation tx( long txId )
     {
         CommittedTransactionRepresentation tx = mock( CommittedTransactionRepresentation.class );
-        when( tx.getCommitEntry() ).thenReturn( new OnePhaseCommit( txId, 0 ) );
+        when( tx.getCommitEntry() ).thenReturn( new LogEntryCommit( txId, 0 ) );
         return tx;
     }
 }

@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
 public class TransactionLogEntryCursorTest
@@ -50,10 +50,10 @@ public class TransactionLogEntryCursorTest
     {
         // GIVEN
         // tx 1
-        List<LogEntry> tx1 = makeTransaction( TX_START, COMMAND, TX_1P_COMMIT );
+        List<LogEntry> tx1 = makeTransaction( TX_START, COMMAND, TX_COMMIT );
 
         // tx 2
-        List<LogEntry> tx2 = makeTransaction( TX_START, COMMAND, COMMAND, TX_1P_COMMIT );
+        List<LogEntry> tx2 = makeTransaction( TX_START, COMMAND, COMMAND, TX_COMMIT );
 
         // All transactions
 
@@ -78,7 +78,7 @@ public class TransactionLogEntryCursorTest
     {
         // GIVEN
         // tx 1
-        List<LogEntry> tx1 = makeTransaction( TX_START, COMMAND, COMMAND, COMMAND, TX_1P_COMMIT );
+        List<LogEntry> tx1 = makeTransaction( TX_START, COMMAND, COMMAND, COMMAND, TX_COMMIT );
 
         // tx 2
         List<LogEntry> tx2 = makeTransaction( TX_START, COMMAND, COMMAND );

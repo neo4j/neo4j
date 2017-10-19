@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -124,7 +124,7 @@ public class ResponsePackerTest
         public boolean next() throws IOException
         {
             transaction = new CommittedTransactionRepresentation( null, null,
-                    new OnePhaseCommit( txId++, 0 ) );
+                    new LogEntryCommit( txId++, 0 ) );
             return true;
         }
 

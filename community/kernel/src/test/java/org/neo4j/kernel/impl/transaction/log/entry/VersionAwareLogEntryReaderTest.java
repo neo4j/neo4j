@@ -69,11 +69,11 @@ public class VersionAwareLogEntryReaderTest
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
-        final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
+        final LogEntryCommit commit = new LogEntryCommit( version, 42, 21 );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.put( version.byteCode() );
-        channel.put( LogEntryByteCodes.TX_1P_COMMIT );
+        channel.put( LogEntryByteCodes.TX_COMMIT );
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );
 
