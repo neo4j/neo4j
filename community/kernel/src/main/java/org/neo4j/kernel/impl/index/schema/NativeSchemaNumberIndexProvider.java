@@ -89,8 +89,8 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
-            throws IOException
+    public IndexAccessor getOnlineAccessor(
+            long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( indexId );
         NumberLayout layout;
@@ -105,8 +105,9 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
         }
-        return new NativeSchemaNumberIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                indexId );
+        return new NativeSchemaNumberIndexAccessor<>(
+                pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
+                samplingConfig );
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
@@ -47,13 +48,22 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
         extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexAccessor
 {
     private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
+    private final IndexSamplingConfig samplingConfig;
 
-    NativeSchemaNumberIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile,
-            Layout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, SchemaIndexProvider.Monitor monitor,
-            IndexDescriptor descriptor, long indexId ) throws IOException
+    NativeSchemaNumberIndexAccessor(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            File storeFile,
+            Layout<KEY,VALUE> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            SchemaIndexProvider.Monitor monitor,
+            IndexDescriptor descriptor,
+            long indexId,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
+        this.samplingConfig = samplingConfig;
         instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
     }
 
@@ -95,7 +105,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     public IndexReader newReader()
     {
         assertOpen();
-        return new NativeSchemaNumberIndexReader<>( tree, layout );
+        return new NativeSchemaNumberIndexReader<>( tree, layout, samplingConfig );
     }
 
     @Override
