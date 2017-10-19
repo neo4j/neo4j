@@ -11,6 +11,7 @@ Group=neo4j
 Environment="NEO4J_CONF=/etc/neo4j" "NEO4J_HOME=/var/lib/neo4j"
 LimitNOFILE=60000
 TimeoutSec=120
+SuccessExitStatus=143
 
 [Install]
 WantedBy=multi-user.target
