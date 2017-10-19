@@ -62,7 +62,7 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTe
   test("should provide sensible error message when trying to add multiple relationship types on create") {
     withEachPlanner { execute =>
       val exception = intercept[SyntaxException] (execute("CREATE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)", Seq.empty))
-      exception.getMessage should include("A single relationship type must be specified for CREATE.")
+      exception.getMessage should include("A single relationship type must be specified for CREATE")
     }
   }
 
@@ -77,7 +77,7 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTe
   test("should provide sensible error message when trying to add multiple relationship types on merge") {
     withEachPlanner { execute =>
       val exception = intercept[SyntaxException] (execute("MERGE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)", Seq.empty))
-      exception.getMessage should include("A single relationship type must be specified for MERGE.")
+      exception.getMessage should include("A single relationship type must be specified for MERGE")
     }
   }
 }
