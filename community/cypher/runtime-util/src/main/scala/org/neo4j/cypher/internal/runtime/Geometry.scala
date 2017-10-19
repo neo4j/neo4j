@@ -24,12 +24,10 @@ import java.util.Collections
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.spatial
 import org.neo4j.graphdb.spatial.{Coordinate, Point}
-import org.neo4j.values.virtual.CoordinateReferenceSystem
+import org.neo4j.values.storable.CoordinateReferenceSystem
 
 import scala.beans.BeanProperty
 
-
-// FIXME Does not handle more than 2 dimensions
 abstract class ScalaPoint extends Point {
   def x: Double
   def y: Double
@@ -54,6 +52,7 @@ case class GeographicPoint(longitude: Double, latitude: Double,
   def y: Double = latitude
 }
 
+//TODO: These classes could be removed since CoordinateReferenceSystem implements the public API too
 case class CRS(@BeanProperty name: String, @BeanProperty code: Int, @BeanProperty href: String) extends spatial.CRS {
   override def getType: String = name
 }

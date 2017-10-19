@@ -60,6 +60,7 @@ class PropertyCursor extends PartialPropertyCursor
      * 10: ARRAY  REFERENCE
      * 11: SHORT STRING
      * 12: SHORT ARRAY
+     * 13: GEOMETRY
      * </pre>
      * <h2>value formats</h2>
      * <pre>
@@ -83,6 +84,12 @@ class PropertyCursor extends PartialPropertyCursor
      *                                                                                 0 means 64, other values "normal"
      *            [xxxx,xxxx] [xxxx,xxxx] [xxxx,    ] [    ,    ] payload(+ maybe in next block) (0xFFFF_FF00_0000_0000)
      *                                                            bits are densely packed, bytes torn across blocks
+     * POINT:     [    ,    ] [    ,    ] [    ,    ] [    ,    ] [xxxx,type][K][K][K] geometry subtype
+     *            [    ,    ] [    ,    ] [    ,    ] [    ,xxxx] [    ,type][K][K][K] dimension
+     *            [    ,    ] [    ,    ] [    ,    ] [xxxx,    ] [    ,type][K][K][K] CRSTable
+     *            [    ,    ] [xxxx,xxxx] [xxxx,xxxx] [    ,    ] [    ,type][K][K][K] CRS code
+     *            [    ,   x] [    ,    ] [    ,    ] [    ,    ] [    ,type][K][K][K] Precision flag: 0=double, 1=float
+     *            values in next dimension long blocks
      * </pre>
      */
     static final int RECORD_SIZE = 41;

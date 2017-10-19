@@ -42,7 +42,7 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;

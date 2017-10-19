@@ -23,8 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
-
 public class ThrowingValueWriterTest
 {
     @Rule

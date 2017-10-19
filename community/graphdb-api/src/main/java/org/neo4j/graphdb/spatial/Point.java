@@ -35,5 +35,11 @@ public interface Point extends Geometry
     {
         return getCoordinates().get( 0 );
     }
+
+    @Override
+    default String getGeometryType()
+    {
+        return "Point";
+    }
 }
 

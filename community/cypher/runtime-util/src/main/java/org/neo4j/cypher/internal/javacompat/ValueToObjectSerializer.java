@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public class ValueToObjectSerializer extends BaseToObjectValueWriter<RuntimeException>
 {
@@ -51,7 +51,6 @@ public class ValueToObjectSerializer extends BaseToObjectValueWriter<RuntimeExce
     @Override
     protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
-        // TODO: Is this necessary, perhaps PointValue is sufficient for use in Cypher-land
         return Points.fromValue( crs, coordinate );
     }
 }

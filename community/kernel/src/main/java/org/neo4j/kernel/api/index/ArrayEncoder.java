@@ -25,7 +25,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public final class ArrayEncoder
 {

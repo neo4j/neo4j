@@ -21,8 +21,6 @@ package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
 
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
-
 /**
  * Writer of values.
  * <p>
