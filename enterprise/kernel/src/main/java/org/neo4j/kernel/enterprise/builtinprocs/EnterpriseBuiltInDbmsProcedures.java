@@ -282,7 +282,7 @@ public class EnterpriseBuiltInDbmsProcedures
         assertAdmin();
 
         Config config = resolver.resolveDependency( Config.class );
-        config.updateDynamicSetting( setting, value ); // throws if something goes wrong
+        config.updateDynamicSetting( setting, value, "dbms.setConfigValue" ); // throws if something goes wrong
     }
 
     /*

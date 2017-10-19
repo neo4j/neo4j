@@ -369,13 +369,16 @@ public class ConfigTest
         Log log = mock( Log.class );
         config.setLogger( log );
 
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false" );
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "true" );
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "" );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false", "test" );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "true", "test" );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "", "test" );
 
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "false" );
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "false", "true" );
-        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s'", MyDynamicSettings.boolSetting.name(), "true", "true" );
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s' via '%s'",
+                MyDynamicSettings.boolSetting.name(), "default (true)", "false", "test" );
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s' via '%s'",
+                MyDynamicSettings.boolSetting.name(), "false", "true", "test" );
+        verify( log ).info("Setting changed: '%s' changed from '%s' to '%s' via '%s'",
+                MyDynamicSettings.boolSetting.name(), "true", "default (true)", "test" );
         verifyNoMoreInteractions( log );
     }
 }
