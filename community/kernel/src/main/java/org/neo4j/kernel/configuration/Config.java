@@ -280,6 +280,8 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
+     * <p>
+     * Note that this method can <em>only</em> be used before the database has started.
      *
      * @param changes settings to add and override
      */
@@ -287,6 +289,24 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         Map<String,String> params = new HashMap<>( this.params );
         params.putAll( changes );
+        replaceSettings( params, false );
+        return this;
+    }
+
+    /**
+     * Augment the existing config with a new setting, overriding any existing setting by that name, but keeping all old
+     * non-overlapping ones.
+     * <p>
+     * Note that this method can <em>only</em> be used before the database has started.
+     *
+     * @param settingName The name of the setting to change.
+     * @param value The new value for the setting.
+     * @return This Config instance.
+     */
+    public Config augment( String settingName, String value )
+    {
+        Map<String,String> params = new HashMap<>( this.params );
+        params.put( settingName, value );
         replaceSettings( params, false );
         return this;
     }
