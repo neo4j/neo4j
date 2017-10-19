@@ -35,7 +35,16 @@ class PrettifierTest extends CypherFunSuite {
         """RETURN DISTINCT a, b AS X, 3 + 3 AS six
           |  ORDER BY b.prop ASCENDING, b.foo DESCENDING
           |  SKIP 1
-          |  LIMIT 2""".stripMargin
+          |  LIMIT 2""".stripMargin,
+
+      "match (a) return a" ->
+        """MATCH (a)
+          |RETURN a""".stripMargin,
+
+      "match (a) where a.prop = 42 return a" ->
+        """MATCH (a)
+          |  WHERE a.prop = 42
+          |RETURN a""".stripMargin
     )
 
   tests foreach {

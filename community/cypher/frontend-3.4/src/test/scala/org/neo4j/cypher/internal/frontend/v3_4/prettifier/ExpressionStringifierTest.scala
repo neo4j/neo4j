@@ -71,7 +71,8 @@ class ExpressionStringifierTest
         "case n.prop when 1 then \"1\" when 2 then \"2\" else \"4\" end",
       "not(((1) = (2)) and ((3) = (4)))" -> "not (1 = 2 AND 3 = 4)",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age)" ->
-        "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age)"
+        "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age)",
+      "$param1+{param2}" -> "$param1 + $param2"
     )
 
   tests foreach {

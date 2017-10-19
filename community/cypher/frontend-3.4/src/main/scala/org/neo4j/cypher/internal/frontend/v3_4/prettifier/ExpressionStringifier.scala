@@ -56,7 +56,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         val is = items.map({ case (k, e) => s"${backtick(k.name)}: ${this.apply(e)}" }).mkString(", ")
         s"{$is}"
       case Parameter(name, _) =>
-        s"$name"
+        s"$$${backtick(name)}"
       case _: CountStar =>
         s"count(*)"
       case e@IsNull(arg) =>
@@ -165,7 +165,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
     e.map(e => s"$separator${this.apply(e)}").getOrElse(prepend)
   }
 
-  private def node(nodePattern: NodePattern): String = {
+  def node(nodePattern: NodePattern): String = {
     val name = nodePattern.variable.map(this.apply).getOrElse("")
     val labels = if (nodePattern.labels.isEmpty) "" else
       nodePattern.labels.map(l => backtick(l.name)).mkString(":", ":", "")
@@ -194,7 +194,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       s"$lArrow-[$info]-$rArrow"
   }
 
-  private def pattern(relationshipChain: RelationshipChain): String = {
+  def pattern(relationshipChain: RelationshipChain): String = {
     val r = node(relationshipChain.rightNode)
     val middle = edge(relationshipChain.relationship)
     val l = relationshipChain.element match {
