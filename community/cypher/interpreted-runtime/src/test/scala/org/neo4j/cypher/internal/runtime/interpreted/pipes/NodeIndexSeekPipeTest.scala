@@ -22,15 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal, Variable}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal, Variable}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.stringValue

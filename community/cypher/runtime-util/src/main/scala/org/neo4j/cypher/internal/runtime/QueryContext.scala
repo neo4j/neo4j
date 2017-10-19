@@ -159,11 +159,7 @@ trait QueryContext extends TokenContext {
   def asObject(value: AnyValue): Any
 
   // Legacy dependency between kernel and compiler
-  def variableLengthPathExpand(realNode: Long,
-                               minHops: Option[Int],
-                               maxHops: Option[Int],
-                               direction: SemanticDirection,
-                               relTypes: Seq[String]): Iterator[Path]
+  def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path]
 
   def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                          filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]

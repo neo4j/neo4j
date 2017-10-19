@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.ArithmeticException
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class DivideTest extends CypherFunSuite {

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.ReferenceFromSlot
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite

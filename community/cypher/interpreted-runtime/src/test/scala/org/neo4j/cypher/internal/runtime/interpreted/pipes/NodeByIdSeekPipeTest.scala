@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite

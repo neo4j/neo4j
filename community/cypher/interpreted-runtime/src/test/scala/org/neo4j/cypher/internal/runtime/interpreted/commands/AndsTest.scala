@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Ands, Not, Predicate, True}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class AndsTest extends CypherFunSuite {

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryContextAdaptation}
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryContextAdaptation, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{EagerReadWriteCallMode, LazyReadOnlyCallMode, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -54,7 +54,7 @@ class ProcedureCallPipeTest
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
+    pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
       ExecutionContext.from("a" ->2, "r" -> "take 1/2"),
       ExecutionContext.from("a" ->2, "r" -> "take 2/2")
@@ -76,7 +76,7 @@ class ProcedureCallPipeTest
     )()
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
+    pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
       ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
       ExecutionContext.from("a" -> 2, "r" -> "take 2/2")
@@ -98,7 +98,7 @@ class ProcedureCallPipeTest
     )()
 
     val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
+    pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1),
       ExecutionContext.from("a" -> 2)
     ))
