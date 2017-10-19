@@ -78,22 +78,23 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
     databaseInfo.edition != Edition.community
   }
 
-  def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription = {
-    verifyProfileReady()
+  def decorate(plan: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription = {
+    () => {
+      verifyProfileReady()
+      plan() map {
+        input: InternalPlanDescription =>
+          val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
+          val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
+          val (hits: Long, misses: Long) = pageCacheStats.getOrElse(input.id, (0L, 0L))
+          val hitRatio = MathUtil.portion(hits, misses)
 
-    plan map {
-      input: InternalPlanDescription =>
-        val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
-        val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
-        val (hits: Long, misses: Long) = pageCacheStats.getOrElse(input.id, (0L, 0L))
-        val hitRatio = MathUtil.portion(hits, misses)
-
-        input
-          .addArgument(Arguments.Rows(rows))
-          .addArgument(Arguments.DbHits(dbHits))
-          .addArgument(Arguments.PageCacheHits(hits))
-          .addArgument(Arguments.PageCacheMisses(misses))
-          .addArgument(Arguments.PageCacheHitRatio(hitRatio))
+          input
+            .addArgument(Arguments.Rows(rows))
+            .addArgument(Arguments.DbHits(dbHits))
+            .addArgument(Arguments.PageCacheHits(hits))
+            .addArgument(Arguments.PageCacheMisses(misses))
+            .addArgument(Arguments.PageCacheHitRatio(hitRatio))
+      }
     }
   }
 
@@ -107,7 +108,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
 
     def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
-    def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription =
+    def decorate(plan: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription =
       outerProfiler.decorate(plan, verifyProfileReady)
   }
 

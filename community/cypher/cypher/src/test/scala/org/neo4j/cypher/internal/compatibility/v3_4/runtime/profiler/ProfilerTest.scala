@@ -46,10 +46,10 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => planDescription, verifyProfileReady = () => {})
 
     //THEN
-    assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 20)
+    assertRecorded(decoratedResult(), "foo", expectedRows = 10, expectedDbHits = 20)
   }
 
   test("report page cache statistics for simplest case") {
@@ -64,10 +64,10 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => planDescription, verifyProfileReady = () => {})
 
     //THEN
-    assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 20,
+    assertRecorded(decoratedResult(), "foo", expectedRows = 10, expectedDbHits = 20,
       expectedPageCacheHits = 2, expectedPageCacheMisses = 7)
   }
 
@@ -91,12 +91,12 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe3.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => planDescription, verifyProfileReady = () => {})
 
     //THEN
-    assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 25)
-    assertRecorded(decoratedResult, "bar", expectedRows = 20, expectedDbHits = 40)
-    assertRecorded(decoratedResult, "baz", expectedRows = 1, expectedDbHits = 2)
+    assertRecorded(decoratedResult(), "foo", expectedRows = 10, expectedDbHits = 25)
+    assertRecorded(decoratedResult(), "bar", expectedRows = 20, expectedDbHits = 40)
+    assertRecorded(decoratedResult(), "baz", expectedRows = 1, expectedDbHits = 2)
   }
 
   test("report page cache statistic for multiple pipes case") {
@@ -113,12 +113,12 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe3.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => planDescription, verifyProfileReady = () => {})
 
     //THEN
-    assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 25, expectedPageCacheHits = 2, expectedPageCacheMisses = 7)
-    assertRecorded(decoratedResult, "bar", expectedRows = 20, expectedDbHits = 40, expectedPageCacheHits = 10, expectedPageCacheMisses = 28)
-    assertRecorded(decoratedResult, "baz", expectedRows = 1, expectedDbHits = 2, expectedPageCacheHits = 25, expectedPageCacheMisses = 33)
+    assertRecorded(decoratedResult(), "foo", expectedRows = 10, expectedDbHits = 25, expectedPageCacheHits = 2, expectedPageCacheMisses = 7)
+    assertRecorded(decoratedResult(), "bar", expectedRows = 20, expectedDbHits = 40, expectedPageCacheHits = 10, expectedPageCacheMisses = 28)
+    assertRecorded(decoratedResult(), "baz", expectedRows = 1, expectedDbHits = 2, expectedPageCacheHits = 25, expectedPageCacheMisses = 33)
   }
 
   test("should count stuff going through Apply multiple times") {
@@ -140,10 +140,10 @@ class ProfilerTest extends CypherFunSuite {
 
     // WHEN we create the results,
     materialize(apply.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => planDescription, verifyProfileReady = () => {})
 
     // THEN
-    assertRecorded(decoratedResult, "rhs", expectedRows = 10 * 20, expectedDbHits = 10 * 30)
+    assertRecorded(decoratedResult(), "rhs", expectedRows = 10 * 20, expectedDbHits = 10 * 30)
   }
 
   test("count dbhits for NestedPipes") {
@@ -168,10 +168,10 @@ class ProfilerTest extends CypherFunSuite {
 
     // WHEN we create the results,
     materialize(pipeUnderInspection.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => planDescription, verifyProfileReady = () => {})
 
     // THEN the ProjectionNewPipe has correctly recorded the dbhits
-    assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = DB_HITS)
+    assertRecorded(decoratedResult(), "Projection", expectedRows = 1, expectedDbHits = DB_HITS)
   }
 
   test("count page cache hits for NestedPipes") {
@@ -196,10 +196,10 @@ class ProfilerTest extends CypherFunSuite {
 
     // WHEN we create the results,
     materialize(pipeUnderInspection.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => planDescription, verifyProfileReady = () => {})
 
     // THEN the ProjectionNewPipe has correctly recorded the page cache hits
-    assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = 2, expectedPageCacheHits = 3, expectedPageCacheMisses = 4)
+    assertRecorded(decoratedResult(), "Projection", expectedRows = 1, expectedDbHits = 2, expectedPageCacheHits = 3, expectedPageCacheMisses = 4)
   }
 
   test("count dbhits for deeply nested NestedPipes") {
@@ -232,10 +232,10 @@ class ProfilerTest extends CypherFunSuite {
       "innerInner" -> innerInnerPipe,
       "Projection" -> pipeUnderInspection
     )
-    val decoratedResult = profiler.decorate(description, verifyProfileReady = () => {})
+    val decoratedResult = profiler.decorate(() => description, verifyProfileReady = () => {})
 
     // THEN the ProjectionNewPipe has correctly recorded the dbhits
-    assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = DB_HITS * 2)
+    assertRecorded(decoratedResult(), "Projection", expectedRows = 1, expectedDbHits = DB_HITS * 2)
   }
 
   test("should not count rows multiple times when the same pipe is used multiple times") {

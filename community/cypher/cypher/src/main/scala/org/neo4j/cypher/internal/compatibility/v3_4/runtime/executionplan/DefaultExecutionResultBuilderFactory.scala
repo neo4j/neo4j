@@ -89,14 +89,14 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                               notificationLogger: InternalNotificationLogger,
                               runtimeName: RuntimeName): InternalExecutionResult = {
       val queryType: InternalQueryType = getQueryType
-      val planDescription: InternalPlanDescription =
-        LogicalPlan2PlanDescription(logicalPlan, pipeInfo.plannerUsed)
+      val planDescription =
+        () => LogicalPlan2PlanDescription(logicalPlan, pipeInfo.plannerUsed)
           .addArgument(Runtime(runtimeName.toTextOutput))
           .addArgument(RuntimeImpl(runtimeName.name))
       if (planType == ExplainMode) {
         //close all statements
         taskCloser.close(success = true)
-        ExplainExecutionResult(columns.toArray, planDescription, queryType,
+        ExplainExecutionResult(columns.toArray, planDescription(), queryType,
                                notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
       } else {
         val results = pipeInfo.pipe.createResults(state)
@@ -121,8 +121,8 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       resultIterator
     }
 
-    private def buildDescriptor(planDescription: InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription =
-      () => pipeDecorator.decorate(planDescription, verifyProfileReady)
+    private def buildDescriptor(planDescription: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription =
+      pipeDecorator.decorate(planDescription, verifyProfileReady)
   }
 
   private def getQueryType = {
