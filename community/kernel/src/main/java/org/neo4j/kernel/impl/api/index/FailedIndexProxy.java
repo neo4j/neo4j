@@ -24,12 +24,9 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -43,16 +40,14 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     private final IndexCountsRemover indexCountsRemover;
     private final Log log;
 
-    FailedIndexProxy( IndexDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor,
-            IndexCapability indexCapability,
+    FailedIndexProxy( IndexMeta indexMeta,
             String indexUserDescription,
             IndexPopulator populator,
             IndexPopulationFailure populationFailure,
             IndexCountsRemover indexCountsRemover,
             LogProvider logProvider )
     {
-        super( descriptor, providerDescriptor, indexCapability, populationFailure );
+        super( indexMeta, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;

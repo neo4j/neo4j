@@ -125,8 +125,8 @@ public class MultipleIndexPopulatorUpdatesTest
             long indexId, IndexDescriptor descriptor, IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,
-                mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY,
+        return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
+                new IndexMeta( descriptor, mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY ),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 
@@ -172,7 +172,7 @@ public class MultipleIndexPopulatorUpdatesTest
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, processListener );
         }
 
-        public void setProcessListener( Listener<NodeRecord> processListener )
+        void setProcessListener( Listener<NodeRecord> processListener )
         {
             this.processListener = processListener;
         }

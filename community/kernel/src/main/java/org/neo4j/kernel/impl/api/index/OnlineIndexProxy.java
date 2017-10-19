@@ -43,11 +43,9 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 public class OnlineIndexProxy implements IndexProxy
 {
     private final long indexId;
-    private final IndexDescriptor descriptor;
+    private final IndexMeta indexMeta;
     final IndexAccessor accessor;
     private final IndexStoreView storeView;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final IndexCapability indexCapability;
     private final IndexCountsRemover indexCountsRemover;
     private boolean started;
 
@@ -78,19 +76,15 @@ public class OnlineIndexProxy implements IndexProxy
     private final boolean forcedIdempotentMode;
 
     OnlineIndexProxy( long indexId,
-            IndexDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor,
-            IndexCapability indexCapability,
+            IndexMeta indexMeta,
             IndexAccessor accessor,
             IndexStoreView storeView,
             boolean forcedIdempotentMode )
     {
         this.indexId = indexId;
-        this.descriptor = descriptor;
+        this.indexMeta = indexMeta;
         this.accessor = accessor;
         this.storeView = storeView;
-        this.providerDescriptor = providerDescriptor;
-        this.indexCapability = indexCapability;
         this.forcedIdempotentMode = forcedIdempotentMode;
         this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
     }
@@ -124,19 +118,19 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return descriptor;
+        return indexMeta.indexDescriptor();
     }
 
     @Override
     public LabelSchemaDescriptor schema()
     {
-        return descriptor.schema();
+        return indexMeta.indexDescriptor().schema();
     }
 
     @Override
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
-        return providerDescriptor;
+        return indexMeta.providerDescriptor();
     }
 
     @Override
@@ -148,7 +142,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexCapability getIndexCapability()
     {
-        return indexCapability;
+        return indexMeta.indexCapability();
     }
 
     @Override
@@ -209,7 +203,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexMeta.indexDescriptor() + "]";
     }
 
     @Override

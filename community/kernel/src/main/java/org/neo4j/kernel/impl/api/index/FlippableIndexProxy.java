@@ -382,7 +382,7 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
-    public void setFlipTarget( IndexProxyFactory flipTarget )
+    void setFlipTarget( IndexProxyFactory flipTarget )
     {
         lock.writeLock().lock();
         try
@@ -395,7 +395,7 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
-    public void flipTo( IndexProxy targetDelegate )
+    void flipTo( IndexProxy targetDelegate )
     {
         lock.writeLock().lock();
         try

@@ -34,19 +34,12 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
-    private final IndexDescriptor descriptor;
-    private final IndexCapability indexCapability;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final IndexMeta indexMeta;
     private final IndexPopulationFailure populationFailure;
 
-    AbstractSwallowingIndexProxy( IndexDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor,
-            IndexCapability indexCapability,
-            IndexPopulationFailure populationFailure )
+    AbstractSwallowingIndexProxy( IndexMeta indexMeta, IndexPopulationFailure populationFailure )
     {
-        this.descriptor = descriptor;
-        this.providerDescriptor = providerDescriptor;
-        this.indexCapability = indexCapability;
+        this.indexMeta = indexMeta;
         this.populationFailure = populationFailure;
     }
 
@@ -83,25 +76,25 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public IndexCapability getIndexCapability()
     {
-        return indexCapability;
+        return indexMeta.indexCapability();
     }
 
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return descriptor;
+        return indexMeta.indexDescriptor();
     }
 
     @Override
     public LabelSchemaDescriptor schema()
     {
-        return descriptor.schema();
+        return indexMeta.indexDescriptor().schema();
     }
 
     @Override
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
-        return providerDescriptor;
+        return indexMeta.providerDescriptor();
     }
 
     @Override

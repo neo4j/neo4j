@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -39,7 +40,6 @@ public class FailedIndexProxyTest
 {
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
     private final IndexCapability indexCapability = mock( IndexCapability.class );
-    private final String userDescription = "description";
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
     private final IndexPopulationFailure indexPopulationFailure = mock( IndexPopulationFailure.class );
     private final IndexCountsRemover indexCountsRemover = mock( IndexCountsRemover.class );
@@ -48,8 +48,8 @@ public class FailedIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        FailedIndexProxy index = new FailedIndexProxy(
-                IndexDescriptorFactory.forLabel( 1, 2 ), providerDescriptor, indexCapability,
+        String userDescription = "description";
+        FailedIndexProxy index = new FailedIndexProxy( indexMeta( IndexDescriptorFactory.forLabel( 1, 2 ) ),
                 userDescription, indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
 
         // when
@@ -68,7 +68,7 @@ public class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( IndexDescriptorFactory.forLabel( 0, 0 ), new SchemaIndexProvider.Descriptor( "foo", "bar" ), indexCapability,
+        new FailedIndexProxy( indexMeta( IndexDescriptorFactory.forLabel( 0, 0 ) ),
                 "foo", mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ),
                 indexCountsRemover, logProvider ).drop();
 
@@ -76,5 +76,10 @@ public class FailedIndexProxyTest
         logProvider.assertAtLeastOnce(
                 inLog( FailedIndexProxy.class ).info( "FailedIndexProxy#drop index on foo dropped due to:\nit broke" )
         );
+    }
+
+    private IndexMeta indexMeta( IndexDescriptor descriptor )
+    {
+        return new IndexMeta( descriptor, providerDescriptor, indexCapability );
     }
 }

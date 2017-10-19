@@ -148,14 +148,15 @@ class AllStoreHolder extends Read implements Token
         {
             return CapableIndexReference.NO_INDEX;
         }
+        boolean unique = indexDescriptor.type() == IndexDescriptor.Type.UNIQUE;
         try
         {
             IndexCapability indexCapability = read.indexGetCapability( indexDescriptor );
-            return new IndexReference( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE, indexCapability, label, properties );
+            return new IndexReference( unique, indexCapability, label, properties );
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new IllegalStateException( e );
+            throw new IllegalStateException( "Could not find capability for index " + indexDescriptor, e );
         }
     }
 
