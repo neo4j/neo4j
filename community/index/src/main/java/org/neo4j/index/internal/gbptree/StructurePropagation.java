@@ -21,17 +21,29 @@ package org.neo4j.index.internal.gbptree;
 
 /**
  * Means of communicating information about splits, caused by insertion, from lower levels of the tree up to parent
- * and potentially all the way up to the root.
+ * and potentially all the way up to the root. The content of StructurePropagation is acted upon when we are traversing
+ * back up along the "traversal path" (see {@link org.neo4j.index.internal.gbptree}). Level where StructurePropagation
+ * is evaluated is called "current level". Point of reference is mid child in current level and this is the parts
+ * of interest:
+ * <pre>
+ *        ┌─────────┬──────────┐
+ *        │ leftKey │ rightKey │
+ *        └─────────┴──────────┘
+ *       ╱          │           ╲
+ * [leftChild]  [midChild]  [rightChild]
+ *     ╱            │             ╲
+ *    v             v              v
+ * </pre>
  * <ul>
- *  <li> {@link #midChild} - new version of the child that was traversed to/through while traversing down the tree.
- *  <li> {@link #leftChild} - new version of left sibling to {@link #midChild}.
- *  <li> {@link #rightChild} - new right sibling to {@link #midChild} (not new version, completely new right sibling).
- *  <li> {@link #leftKey} - if position of {@link #midChild} pointer in node is {@code n} then {@link #leftKey} should
- *  replace key at position {@code n-1}. If {@code n==0} then {@link #leftKey} does not fit here and must be passed
- *  along one level further up the tree.
- *  <li> {@link #rightKey} - new key to be inserted at position {@code n} (if position of {@link #midChild} is
- *  {@code n}) together with {@link #rightChild}.
+ *  <li> midChild - the child that was traversed to/through while traversing down the tree.
+ *  <li> leftChild - left sibling to midChild.
+ *  <li> rightChild - right sibling to midChild.
+ *  <li> leftKey - if position of midChild in current level is {@code n} then leftKey is key at position {@code n-1}.
+ *  If {@code n==0} then leftKey refer to leftKey in parent in a recursive manor.
+ *  <li> rightKey - if position of midChild in current level is {@code n} then rightKey is the key at position {@code n}.
+ *  If {@code n==keyCount} then rightKey to rightKey in parent in a recursive manor.
  * </ul>
+ *
  * If position of {@link #midChild} {@code n > 0}.
  * <pre>
  * Current level-> [...,leftKey,rightKey,...]
@@ -41,6 +53,7 @@ package org.neo4j.index.internal.gbptree;
  *                 v           v            v
  * Child nodes-> [...] <───> [...] <────> [...]
  * </pre>
+ *
  * If position of {@link #midChild} {@code n == 0}.
  * <pre>
  *
@@ -53,26 +66,91 @@ package org.neo4j.index.internal.gbptree;
  *                     │               │          ╲
  *                     v               v           v
  * Child nodes->     [...] <───────> [...] <───> [...]
+ * </pre>
  *
+ * * If position of {@link #midChild} {@code n == keyCount}.
+ * <pre>
+ *
+ * Parent node->                  [...,rightKey,...]
+ *                           ┌────────┘       └───────┐
+ *                           v                        v
+ * Current level->    [...,leftKey] <─────────────> [...]
+ *                       /        │                 |
+ *                 leftChild  midChild          rightChild
+ *                     /          │                 |
+ *                    v           v                 v
+ * Child nodes->   [...] <────> [...] <─────────> [...]
  * </pre>
  * @param <KEY> type of key.
  */
 class StructurePropagation<KEY>
 {
-    // First level of updates, used when bubbling up the tree
+    /* <CONTENT> */
+    // Below are the "content" of structure propagation
+    /**
+     * See {@link #keyReplaceStrategy}.
+     */
+    final KEY leftKey;
+
+    /**
+     * See {@link #keyReplaceStrategy}.
+     */
+    final KEY rightKey;
+
+    /**
+     * See {@link #keyReplaceStrategy}.
+     */
+    final KEY bubbleKey;
+
+    /**
+     * New version of left sibling to mid child.
+     */
+    long leftChild;
+
+    /**
+     * New version of the child that was traversed to/through while traversing down the tree.
+     */
+    long midChild;
+
+    /**
+     * New right sibling to {@link #midChild}, depending on {@link #hasRightKeyInsert} this can be simple replace of an insert.
+     */
+    long rightChild;
+    /* </CONTENT> */
+
+    /* <ACTIONS> */
+    // Below are the actions, deciding what the content of structure propagation should be used for.
+    /**
+     * Left child pointer needs to be replaced by {@link #leftChild}.
+     */
     boolean hasLeftChildUpdate;
+
+    /**
+     * Right child pointer needs to be replaced by {@link #rightChild} OR, if {@link #hasRightKeyInsert} is true
+     * {@link #rightChild} should be inserted as a completely new additional child, moving old right child to the right.
+     */
     boolean hasRightChildUpdate;
+
+    /**
+     * Mid child pointer needs to be replaced by {@link #midChild}.
+     */
     boolean hasMidChildUpdate;
+
+    /**
+     * {@link #rightKey} should be inserted at right keys position (not replacing old right key).
+     */
     boolean hasRightKeyInsert;
+    /* </ACTIONS> */
+
+    /**
+     * Depending on keyReplaceStrategy either {@link KeyReplaceStrategy#REPLACE replace} left / right key with
+     * {@link #leftKey} / {@link #rightKey} or replace left / right key by {@link #bubbleKey} (with strategy
+     * {@link KeyReplaceStrategy#BUBBLE bubble} rightmost from subtree). In the case of bubble, {@link #leftKey} / {@link #rightKey}
+     * is used to find "common ancestor" of leaves involved in merge. See {@link org.neo4j.index.internal.gbptree}.
+     */
+    KeyReplaceStrategy keyReplaceStrategy;
     boolean hasLeftKeyReplace;
     boolean hasRightKeyReplace;
-    final KEY leftKey;
-    final KEY rightKey;
-    final KEY bubbleKey;
-    long leftChild;
-    long midChild;
-    long rightChild;
-    KeyReplaceStrategy keyReplaceStrategy;
 
     StructurePropagation( KEY leftKey, KEY rightKey, KEY bubbleKey )
     {
