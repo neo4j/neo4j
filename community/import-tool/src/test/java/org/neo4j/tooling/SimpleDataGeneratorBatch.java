@@ -93,10 +93,7 @@ class SimpleDataGeneratorBatch<T>
                 break;
             case START_ID: case END_ID:
                 Object id = idValueForRelationship( entry, abs( random.nextLong() ) % nodeCount );
-                if ( id != null )
-                {
-                    deserialization.handle( entry, id );
-                }
+                deserialization.handle( entry, id );
                 break;
             case TYPE:
                 deserialization.handle( entry, randomRelationshipType( random ) );
