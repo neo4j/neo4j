@@ -174,7 +174,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
 
     val allNodes = AllNodesScan(aId, Set.empty)(solved)
-    val argument = Argument(Set(aId))(solved)()
+    val argument = SingleRow(Set(aId))(solved)()
     val originalExpand = VarExpand(argument, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val optional1 = Optional(originalExpand, Set(aId))(solved)
     val apply1 = Apply(allNodes, optional1)(solved)
@@ -261,7 +261,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should handle insanely long logical plans without running out of stack") {
-    val leafPlan: LogicalPlan = Argument(Set(IdName("x")))(solved)()
+    val leafPlan: LogicalPlan = SingleRow(Set(IdName("x")))(solved)()
     var plan = leafPlan
     (1 until 10000) foreach { i =>
       plan = Selection(Seq(True()(pos)), plan)(solved)

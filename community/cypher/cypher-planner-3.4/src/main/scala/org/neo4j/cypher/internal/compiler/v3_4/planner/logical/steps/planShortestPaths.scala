@@ -81,13 +81,13 @@ case object planShortestPaths {
 
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
-    val lhsArgument = lpp.planArgumentRowFrom(inner)
+    val lhsArgument = lpp.planSingleRowFrom(inner)
     val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
                                      disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime)
     val lhsOption = lpp.planOptional(lhsSp, Set.empty)
     val lhs = lpp.planApply(inner, lhsOption)
 
-    val rhsArgument = lpp.planArgumentRowFrom(lhs)
+    val rhsArgument = lpp.planSingleRowFrom(lhs)
 
     val rhs = if (context.errorIfShortestPathFallbackUsedAtRuntime) {
       lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException)

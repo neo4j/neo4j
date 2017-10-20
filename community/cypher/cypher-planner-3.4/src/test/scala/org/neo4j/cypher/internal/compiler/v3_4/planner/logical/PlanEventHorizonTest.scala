@@ -40,7 +40,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     // Given
     val literal = SignedDecimalIntegerLiteral("42")(pos)
     val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
-    val inputPlan = SingleRow()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))
+    val inputPlan = SingleRow()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))()
 
     // When
     val producedPlan = PlanEventHorizon(pq, inputPlan)
@@ -54,7 +54,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     val literal = SignedDecimalIntegerLiteral("42")(pos)
     val call = mock[ResolvedCall]
     val pq = RegularPlannerQuery(horizon = ProcedureCallProjection(call))
-    val inputPlan = SingleRow()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))
+    val inputPlan = SingleRow()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))()
 
     // When
     val producedPlan = PlanEventHorizon(pq, inputPlan)

@@ -57,11 +57,8 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   def build(plan: LogicalPlan): Pipe = {
     val id = plan.assignedId
     plan match {
-      case SingleRow() =>
+      case SingleRow(_) =>
         SingleRowPipe()(id)
-
-      case Argument(_) =>
-        ArgumentPipe()(id = id)
 
       case AllNodesScan(IdName(ident), _) =>
         AllNodesScanPipe(ident)(id = id)

@@ -48,7 +48,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
               Selection(
                 Seq(HasLabels(varFor("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
                 Expand(
-                  Argument(Set("f"))(solved)(),
+                  SingleRow(Set("f"))(solved)(),
                   "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", ExpandAll
                 )(solved)
               )(solved)

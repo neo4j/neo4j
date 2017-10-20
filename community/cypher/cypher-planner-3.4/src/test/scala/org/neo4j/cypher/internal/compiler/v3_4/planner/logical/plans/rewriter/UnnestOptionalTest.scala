@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {
-    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
+    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
     val rhs:LogicalPlan =
       Optional(
         Expand(singleRow, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r")
@@ -40,7 +40,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
-    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
+    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
     val expand = VarExpand(singleRow, IdName("a"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val predicate: Equals = Equals(Property(varFor("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
     val selection = Selection(Seq(predicate), expand)(solved)
@@ -52,14 +52,14 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should not rewrite plans containing merges") {
-    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
+    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
     val rhs:LogicalPlan =
       Optional(
         Expand(singleRow, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r")
         )(solved))(solved)
     val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)(solved)
-    val mergeRel = MergeCreateRelationship(SingleRow()(solved), IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"),
+    val mergeRel = MergeCreateRelationship(SingleRow()(solved)(), IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"),
                                            None)(solved)
 
     val input = AntiConditionalApply(apply, mergeRel, Seq.empty)(solved)

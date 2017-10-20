@@ -78,13 +78,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         NodeIndexSeekSlottedPipe(column, label, propertyKeys,
                                   valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
 
-      case _: Argument =>
-        ArgumentSlottedPipe(pipelineInformation)(id)
-
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanSlottedPipe(column, LazyLabel(label), pipelineInformation)(id)
 
-      case SingleRow() =>
+      case _:SingleRow =>
         SingleRowSlottedPipe(pipelineInformation)(id)
 
       case _ =>

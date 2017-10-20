@@ -64,7 +64,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   test("projection only query") {
     val logicalPlan = Projection(
-      SingleRow()(solvedWithEstimation(1.0)), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))_
+      SingleRow()(solvedWithEstimation(1.0))(), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating

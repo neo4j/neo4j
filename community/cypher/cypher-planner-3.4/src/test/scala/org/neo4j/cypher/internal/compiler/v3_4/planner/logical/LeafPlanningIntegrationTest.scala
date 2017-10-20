@@ -642,7 +642,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Aggregation(
         Apply(
-          Projection(SingleRow()(solved),Map("arr" -> ListLiteral(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
+          Projection(SingleRow()(solved)(),Map("arr" -> ListLiteral(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
           NodeByIdSeek(IdName("n"), ManySeekableArgs(Variable("arr")_),Set(IdName("arr")))(solved)
         )(solved),
         Map(), Map("count(*)" -> CountStar()_)

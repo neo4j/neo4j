@@ -72,6 +72,6 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     val plan = result.executionPlanDescription().toString
     result.close()
 
-    plan.toString should include("NestedPlanExpression(VarExpand-Argument)")
+    plan.toString should include("NestedPlanExpression(VarExpand-SingleRow)")
   }
 }

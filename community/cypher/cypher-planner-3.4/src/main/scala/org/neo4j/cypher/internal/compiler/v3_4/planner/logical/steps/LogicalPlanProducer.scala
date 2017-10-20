@@ -355,20 +355,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     SemiApply(left, right)(solved)
   }
 
-  def planQueryArgumentRow(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planQuerySingleRow(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
     val otherIds = queryGraph.argumentIds -- patternNodes
-    planArgumentRow(patternNodes, patternRels, otherIds)
+    planSingleRow(patternNodes, patternRels, otherIds)
   }
 
-  def planArgumentRowFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    Argument(plan.availableSymbols)(plan.solved)(Map.empty)
+  def planSingleRowFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
+    SingleRow(plan.availableSymbols)(plan.solved)(Map.empty)
 
-  def planArgumentRow(patternNodes: Set[IdName],
-                      patternRels: Set[PatternRelationship] = Set.empty,
-                      other: Set[IdName] = Set.empty)
-                     (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSingleRow(patternNodes: Set[IdName],
+                    patternRels: Set[PatternRelationship] = Set.empty,
+                    other: Set[IdName] = Set.empty)
+                   (implicit context: LogicalPlanningContext): LogicalPlan = {
     val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
     val typeInfoSeq = patternNodes.toIndexedSeq.map((x: IdName) => x.name -> CTNode) ++
@@ -383,11 +383,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
         patternRelationships = Set.empty
       ))
 
-    if (coveredIds.isEmpty) SingleRow()(solved) else Argument(coveredIds)(solved)(typeInfo)
+    SingleRow(coveredIds)(solved)(typeInfo)
   }
 
   def planSingleRow()(implicit context: LogicalPlanningContext): LogicalPlan =
-    SingleRow()(PlannerQuery.empty)
+    SingleRow(Set.empty)(PlannerQuery.empty)(Map.empty)
 
   def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     EmptyResult(inner)(inner.solved)

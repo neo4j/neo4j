@@ -337,8 +337,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     executeWith(Configs.Interpreted, "MATCH (n:A) RETURN (n)-[:HAS]->() as p",
       planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
-        planDescription.find("Argument") shouldNot be(empty)
-        planDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
+        planDescription.find("SingleRow") shouldNot be(empty)
+        planDescription.cd("SingleRow").arguments should equal(List(EstimatedRows(1)))
         planDescription.find("Expand(All)") shouldNot be(empty)
         planDescription.cd("Expand(All)").arguments.toSet should equal(Set(
           ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),

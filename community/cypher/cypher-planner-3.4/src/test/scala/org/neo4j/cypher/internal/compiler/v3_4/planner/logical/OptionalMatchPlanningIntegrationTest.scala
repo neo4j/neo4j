@@ -79,7 +79,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
         Optional(
         ProjectEndpoints(
-        Argument(args), IdName("r"), IdName("b2"), false, IdName("a1"), true, None, true, SimplePatternLength
+        SingleRow(args), IdName("r"), IdName("b2"), false, IdName("a1"), true, None, true, SimplePatternLength
         ), _
         )
         ) =>
@@ -95,7 +95,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Selection(
       predicates,
       ProjectEndpoints(
-      Argument(args),
+      SingleRow(args),
       IdName("r"), IdName("b2"), false, IdName("a2"), false, None, true, SimplePatternLength
       )
       ), _
@@ -113,7 +113,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
       Optional(
       ProjectEndpoints(
-      Argument(args),
+      SingleRow(args),
       IdName("r"), IdName("a2"), false, IdName("b2"), false, None, true, SimplePatternLength
       ), _
       )
