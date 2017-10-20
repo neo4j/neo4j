@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
   private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
-  private val DEDUP_PATTERN =   """  (.+)@\d+""".r
+  private val DEDUP_PATTERN =   """  ([^\s]+)@\d+""".r
   private val stringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
   private def asPrettyString(e: expressions.Expression): String =
     if (e == null)

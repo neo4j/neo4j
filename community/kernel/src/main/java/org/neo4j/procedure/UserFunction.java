@@ -50,7 +50,7 @@ import java.lang.annotation.Target;
  *     <li>{@link org.neo4j.graphdb.Path}</li>
  *     <li>{@link java.util.Map} with key {@link String} and value of any type in this list, including {@link java.util.Map}</li>
  *     <li>{@link java.util.List} with element type of any type in this list, including {@link java.util.List}</li>
- *     <li>{@link Object}, meaning any valid input types</li>
+ *     <li>{@link Object}, meaning any valid input types above</li>
  * </ul>
  *
  * <h2>Output declaration</h2>
@@ -69,7 +69,7 @@ import java.lang.annotation.Target;
  *     <li>{@link org.neo4j.graphdb.Path}</li>
  *     <li>{@link java.util.Map} with key {@link String} and value of any type in this list, including {@link java.util.Map}</li>
  *     <li>{@link java.util.List} of elements of any valid field type, including {@link java.util.List}</li>
- *     <li>{@link Object}, meaning any of the valid field types</li>
+ *     <li>{@link Object}, meaning any of the valid field types above</li>
  * </ul>
  *
  * <h2>Resource declarations</h2>
