@@ -22,14 +22,17 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
-
+import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.concurrent.AsyncEvent;
+import org.neo4j.concurrent.AsyncEvents;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 
 import static java.lang.String.format;
 import static java.util.Arrays.copyOf;
 import static java.util.Arrays.sort;
+
 import static org.neo4j.helpers.Exceptions.withMessage;
 
 public class BadCollector implements Collector
@@ -38,17 +41,30 @@ public class BadCollector implements Collector
      * Introduced to avoid creating an exception for every reported bad thing, since it can be
      * quite the performance hogger for scenarios where there are many many bad things to collect.
      */
-    private interface ProblemReporter
+    abstract static class ProblemReporter extends AsyncEvent
     {
-        String message();
+        private final int type;
 
-        InputException exception();
+        ProblemReporter( int type )
+        {
+            this.type = type;
+        }
+
+        int type()
+        {
+            return type;
+        }
+
+        abstract String message();
+
+        abstract InputException exception();
     }
 
     public static final int BAD_RELATIONSHIPS = 0x1;
     public static final int DUPLICATE_NODES = 0x2;
     public static final int EXTRA_COLUMNS = 0x4;
     public static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES | EXTRA_COLUMNS;
+    public static final long UNLIMITED_TOLERANCE = -1;
 
     private final PrintStream out;
     private final long tolerance;
@@ -59,8 +75,9 @@ public class BadCollector implements Collector
 
     // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
     // thread calls badEntries() to get a count.
-    private volatile long badEntries;
-    public static final long UNLIMITED_TOLERANCE = -1;
+    private final AtomicLong badEntries = new AtomicLong();
+    private final AsyncEvents<ProblemReporter> logger;
+    private final Thread eventProcessor;
 
     public BadCollector( OutputStream out, long tolerance, int collect )
     {
@@ -73,31 +90,40 @@ public class BadCollector implements Collector
         this.tolerance = tolerance;
         this.collect = collect;
         this.logBadEntries = !skipBadEntriesLogging;
+        this.logger = new AsyncEvents<>( this::processEvent, AsyncEvents.Monitor.NONE );
+        this.eventProcessor = new Thread( logger );
+        this.eventProcessor.start();
+    }
+
+    private void processEvent( ProblemReporter report )
+    {
+        out.println( report.message() );
     }
 
     @Override
-    public synchronized void collectBadRelationship( final InputRelationship relationship, final Object specificValue )
+    public void collectBadRelationship( final InputRelationship relationship, final Object specificValue )
     {
-        checkTolerance( BAD_RELATIONSHIPS, new RelationshipsProblemReporter( relationship, specificValue ) );
+        collect( new RelationshipsProblemReporter( relationship, specificValue ) );
+    }
+
+    @Override
+    public void collectExtraColumns( final String source, final long row, final String value )
+    {
+        collect( new ExtraColumnsProblemReporter( row, source, value ) );
     }
 
     @Override
     public void collectDuplicateNode( final Object id, long actualId, final String group,
             final String firstSource, final String otherSource )
     {
-        checkTolerance( DUPLICATE_NODES, new NodesProblemReporter( id, group, firstSource, otherSource ) );
+        collect( new NodesProblemReporter( id, group, firstSource, otherSource ) );
 
+        // We can do this right in here because as it turns out this is never called by multiple concurrent threads.
         if ( leftOverDuplicateNodeIdsCursor == leftOverDuplicateNodeIds.length )
         {
             leftOverDuplicateNodeIds = Arrays.copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIds.length * 2 );
         }
         leftOverDuplicateNodeIds[leftOverDuplicateNodeIdsCursor++] = actualId;
-    }
-
-    @Override
-    public void collectExtraColumns( final String source, final long row, final String value )
-    {
-        checkTolerance( EXTRA_COLUMNS, new ExtraColumnsProblemReporter( row, source, value ) );
     }
 
     @Override
@@ -108,16 +134,52 @@ public class BadCollector implements Collector
         return PrimitiveLongCollections.iterator( leftOverDuplicateNodeIds );
     }
 
+    private void collect( ProblemReporter report )
+    {
+        boolean collect = collects( report.type() );
+        if ( collect )
+        {
+            // This type of problem is collected and we're within the max threshold, so it's OK
+            long count = badEntries.incrementAndGet();
+            if ( tolerance == UNLIMITED_TOLERANCE || count <= tolerance )
+            {
+                // We're within the threshold
+                if ( logBadEntries )
+                {
+                    // Send this to the logger
+                    logger.send( report );
+                }
+                return; // i.e. don't treat this as an exception
+            }
+        }
+
+        InputException exception = report.exception();
+        throw collect ? withMessage( exception, format( "Too many bad entries %d, where last one was: %s",
+                badEntries.longValue(), exception.getMessage() ) ) : exception;
+    }
+
     @Override
     public void close()
     {
-        out.flush();
+        logger.shutdown();
+        try
+        {
+            logger.awaitTermination();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+        }
+        finally
+        {
+            out.flush();
+        }
     }
 
     @Override
     public long badEntries()
     {
-        return badEntries;
+        return badEntries.get();
     }
 
     private boolean collects( int bit )
@@ -125,27 +187,7 @@ public class BadCollector implements Collector
         return (collect & bit) != 0;
     }
 
-    private void checkTolerance( int bit, ProblemReporter report )
-    {
-        boolean collect = collects( bit );
-        if ( collect )
-        {
-            if ( logBadEntries )
-            {
-                out.println( report.message() );
-            }
-            badEntries++;
-        }
-
-        if ( !collect || (tolerance != BadCollector.UNLIMITED_TOLERANCE && badEntries > tolerance) )
-        {
-            InputException exception = report.exception();
-            throw collect ? withMessage( exception, format( "Too many bad entries %d, where last one was: %s",
-                    badEntries, exception.getMessage() ) ) : exception;
-        }
-    }
-
-    private static class RelationshipsProblemReporter implements ProblemReporter
+    private static class RelationshipsProblemReporter extends ProblemReporter
     {
         private String message;
         private final InputRelationship relationship;
@@ -153,6 +195,7 @@ public class BadCollector implements Collector
 
         RelationshipsProblemReporter( InputRelationship relationship, Object specificValue )
         {
+            super( BAD_RELATIONSHIPS );
             this.relationship = relationship;
             this.specificValue = specificValue;
         }
@@ -186,7 +229,7 @@ public class BadCollector implements Collector
         }
     }
 
-    private static class NodesProblemReporter implements ProblemReporter
+    private static class NodesProblemReporter extends ProblemReporter
     {
         private final Object id;
         private final String group;
@@ -195,6 +238,7 @@ public class BadCollector implements Collector
 
         NodesProblemReporter( Object id, String group, String firstSource, String otherSource )
         {
+            super( DUPLICATE_NODES );
             this.id = id;
             this.group = group;
             this.firstSource = firstSource;
@@ -214,7 +258,7 @@ public class BadCollector implements Collector
         }
     }
 
-    private static class ExtraColumnsProblemReporter implements ProblemReporter
+    private static class ExtraColumnsProblemReporter extends ProblemReporter
     {
         private String message;
         private final long row;
@@ -223,6 +267,7 @@ public class BadCollector implements Collector
 
         ExtraColumnsProblemReporter( long row, String source, String value )
         {
+            super( EXTRA_COLUMNS );
             this.row = row;
             this.source = source;
             this.value = value;
