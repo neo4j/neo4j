@@ -45,7 +45,7 @@ import java.lang.annotation.Target;
  *     <li>{@link org.neo4j.graphdb.Path}</li>
  *     <li>{@link java.util.Map} with key {@link String} and value of any type in this list, including {@link java.util.Map}</li>
  *     <li>{@link java.util.List} of elements of any valid field type, including {@link java.util.List}</li>
- *     <li>{@link Object}, meaning any of the valid field types</li>
+ *     <li>{@link Object}, meaning any of the valid return types above</li>
  * </ul>
  */
 @Target( ElementType.METHOD )
