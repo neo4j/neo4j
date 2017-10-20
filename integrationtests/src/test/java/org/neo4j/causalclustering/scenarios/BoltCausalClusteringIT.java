@@ -21,11 +21,9 @@ package org.neo4j.causalclustering.scenarios;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -62,7 +60,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -87,13 +84,6 @@ public class BoltCausalClusteringIT
     public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
 
     private Cluster cluster;
-
-    @Before
-    public void setup() throws Exception
-    {
-        File knownHosts = new File( System.getProperty( "user.home" ) + "/.neo4j/known_hosts" );
-        FileUtils.deleteFile( knownHosts );
-    }
 
     @Test
     public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception

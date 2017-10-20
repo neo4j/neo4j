@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -38,7 +37,6 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
-import org.neo4j.io.fs.FileUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -54,8 +52,6 @@ public class DeleteUserStressIT
     @Before
     public void setup() throws Exception
     {
-        File knownHosts = new File( System.getProperty( "user.home" ) + "/.neo4j/known_hosts" );
-        FileUtils.deleteFile( knownHosts );
         adminDriver = GraphDatabase.driver( db.boltURI(), basic( "neo4j", "neo4j" ) );
         try ( Session session = adminDriver.session();
               Transaction tx = session.beginTransaction() )
