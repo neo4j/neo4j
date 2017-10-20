@@ -606,7 +606,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             while ( cursor.next() )
             {
                 scratch.add( cursor.propertyKeyId() ); // add key as int here as to have the importer use the token id
-                scratch.add( cursor.value().asObject() );
+                scratch.add( cursor.value().getInnerObject() );
             }
             entity.setProperties( scratch.isEmpty() ? InputEntity.NO_PROPERTIES : scratch.toArray() );
             cursor.close();

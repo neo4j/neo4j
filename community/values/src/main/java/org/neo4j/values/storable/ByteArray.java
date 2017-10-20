@@ -118,8 +118,7 @@ public abstract class ByteArray extends IntegralArray
     }
 
     @Override
-    @Deprecated
-    public Object asObject()
+    public Object getInnerObject()
     {
         return value();
     }

@@ -84,7 +84,7 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
     private static Object encode( Value value )
     {
-        Object asObject = value.asObject();
+        Object asObject = value.getInnerObject();
         if ( asObject instanceof Number )
         {
             asObject = ((Number) asObject).doubleValue();

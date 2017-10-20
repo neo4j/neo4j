@@ -217,6 +217,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public Object getArrayFor( Iterable<DynamicRecord> records )
     {
-        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) ).getInnerObject();
     }
 }

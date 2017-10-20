@@ -81,7 +81,7 @@ public class DynamicNodeLabels implements NodeLabels
             return null;
         }
         return stripNodeId( (long[]) getRightArray( readFullByteArrayFromHeavyRecords(
-                node.getUsedDynamicLabelRecords(), ARRAY ) ).asObject() );
+                node.getUsedDynamicLabelRecords(), ARRAY ) ).getInnerObject() );
     }
 
     @Override
@@ -226,14 +226,14 @@ public class DynamicNodeLabels implements NodeLabels
             AbstractDynamicStore dynamicLabelStore )
     {
         long[] storedLongs = (long[])
-            DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+            DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).getInnerObject();
         return LabelIdArray.stripNodeId( storedLongs );
     }
 
     public static long[] getDynamicLabelsArrayFromHeavyRecords( Iterable<DynamicRecord> records )
     {
         long[] storedLongs = (long[])
-            DynamicArrayStore.getRightArray( readFullByteArrayFromHeavyRecords( records, PropertyType.ARRAY ) ).asObject();
+            DynamicArrayStore.getRightArray( readFullByteArrayFromHeavyRecords( records, PropertyType.ARRAY ) ).getInnerObject();
         return LabelIdArray.stripNodeId( storedLongs );
     }
 
@@ -241,7 +241,7 @@ public class DynamicNodeLabels implements NodeLabels
             AbstractDynamicStore dynamicLabelStore )
     {
         long[] storedLongs = (long[])
-                DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+                DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).getInnerObject();
         return Pair.of(storedLongs[0], LabelIdArray.stripNodeId( storedLongs ));
     }
 }

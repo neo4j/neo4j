@@ -541,7 +541,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 case ADDED:
                                     node.addLabel(
                                             Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
-                                    node.setProperty( NAME_PROPERTY, indexUpdate.values()[0].asObject() );
+                                    node.setProperty( NAME_PROPERTY, indexUpdate.values()[0].getInnerObject() );
                                     break;
                                 case REMOVED:
                                     node.addLabel(
