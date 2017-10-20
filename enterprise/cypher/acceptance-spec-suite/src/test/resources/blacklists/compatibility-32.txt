@@ -9,3 +9,4 @@ max() over list values
 min() over list values
 Match on multiple labels with OR
 
+Shorthand case with filter should work as expected

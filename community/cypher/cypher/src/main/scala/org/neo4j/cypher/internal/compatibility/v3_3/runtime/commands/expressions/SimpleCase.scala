@@ -43,7 +43,7 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
 
   private def alternativeExpressions = alternatives.map(_._2)
 
-  def arguments = (expression +: (alternativeComparison ++ alternativeExpressions)).distinct
+  def arguments = (expression +: (alternativeComparison ++ alternativeExpressions ++ default.map(Seq(_)).getOrElse(Seq()))).distinct
 
   def rewrite(f: (Expression) => Expression): Expression = {
     val newAlternatives = alternatives map {
