@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
   private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
-  private val DEDUP_PATTERN =   """  (.+)@\d+""".r
+  private val DEDUP_PATTERN =   """  ([^\s]+)@\d+""".r
   def serialize(arg: Argument): AnyRef = {
 
     arg match {
