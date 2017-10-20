@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -242,17 +243,17 @@ public abstract class IndexQuery implements Predicate<Value>
 
     public static final class NumberRangePredicate extends IndexQuery
     {
-        private final Value from;
+        private final NumberValue from;
         private final boolean fromInclusive;
-        private final Value to;
+        private final NumberValue to;
         private final boolean toInclusive;
 
         NumberRangePredicate( int propertyKeyId, Number from, boolean fromInclusive, Number to, boolean toInclusive )
         {
             super( propertyKeyId );
-            this.from = Values.numberValue( from );
+            this.from = from == null ? Values.MIN_NUMBER : Values.numberValue( from );
             this.fromInclusive = fromInclusive;
-            this.to = Values.numberValue( to );
+            this.to = to == null ? Values.MAX_NUMBER : Values.numberValue( to );
             this.toInclusive = toInclusive;
         }
 
@@ -294,20 +295,20 @@ public abstract class IndexQuery implements Predicate<Value>
 
         public Number from()
         {
-            return (Number)from.asObject();
+            return from == Values.MIN_NUMBER ? null : (Number)from.getInnerObject();
         }
 
         public Number to()
         {
-            return (Number)to.asObject();
+            return to == Values.MAX_NUMBER ? null : (Number)to.getInnerObject();
         }
 
-        public Value fromAsValue()
+        public NumberValue fromAsValue()
         {
             return from;
         }
 
-        public Value toAsValue()
+        public NumberValue toAsValue()
         {
             return to;
         }
@@ -377,7 +378,7 @@ public abstract class IndexQuery implements Predicate<Value>
 
         public String from()
         {
-            return (String)from.asObject();
+            return (String)from.getInnerObject();
         }
 
         public boolean fromInclusive()
@@ -387,7 +388,7 @@ public abstract class IndexQuery implements Predicate<Value>
 
         public String to()
         {
-            return (String)to.asObject();
+            return (String)to.getInnerObject();
         }
 
         public boolean toInclusive()
@@ -444,7 +445,7 @@ public abstract class IndexQuery implements Predicate<Value>
         @Override
         public boolean test( Value value )
         {
-            return value != null && Values.isTextValue( value ) && ((String)value.asObject()).contains( contains );
+            return value != null && Values.isTextValue( value ) && ((String)value.getInnerObject()).contains( contains );
         }
 
         public String contains()
@@ -472,7 +473,7 @@ public abstract class IndexQuery implements Predicate<Value>
         @Override
         public boolean test( Value value )
         {
-            return value != null && Values.isTextValue( value ) && ((String)value.asObject()).endsWith( suffix );
+            return value != null && Values.isTextValue( value ) && ((String)value.getInnerObject()).endsWith( suffix );
         }
 
         public String suffix()

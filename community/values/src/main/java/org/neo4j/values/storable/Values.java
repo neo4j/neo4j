@@ -42,10 +42,10 @@ import static java.lang.String.format;
 @SuppressWarnings( "WeakerAccess" )
 public final class Values
 {
-    public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
-    public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
-    public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
-    public static final Value ZERO_INT = Values.longValue( 0 );
+    public static final NumberValue MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
+    public static final NumberValue MAX_NUMBER = Values.doubleValue( Double.NaN );
+    public static final NumberValue ZERO_FLOAT = Values.doubleValue( 0.0 );
+    public static final IntegralValue ZERO_INT = Values.longValue( 0 );
     public static final Value MIN_STRING = Values.stringValue( "" );
     public static final Value MAX_STRING = Values.booleanValue( false );
     public static final BooleanValue TRUE = Values.booleanValue( true );
@@ -136,7 +136,7 @@ public final class Values
         }
     }
 
-    public static Value numberValue( Number number )
+    public static NumberValue numberValue( Number number )
     {
         if ( number instanceof Long )
         {
@@ -161,10 +161,6 @@ public final class Values
         if ( number instanceof Short )
         {
             return shortValue( number.shortValue() );
-        }
-        if ( number == null )
-        {
-            return NO_VALUE;
         }
 
         throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
@@ -362,7 +358,7 @@ public final class Values
     @Deprecated
     public static Object asObject( Value value )
     {
-        return value == null ? null : value.asObject();
+        return value == null ? null : value.getInnerObject();
     }
 
     public static Object[] asObjects( Value[] propertyValues )

@@ -74,10 +74,10 @@ object indexQuery extends GraphElementPropertyFunctions {
     case RangeQueryExpression(rangeWrapper) =>
       val range = rangeWrapper match {
         case s: PrefixSeekRangeExpression =>
-          s.range.map(expression => makeValueNeoSafe(expression(m, state)).asObject())
+          s.range.map(expression => makeValueNeoSafe(expression(m, state)).getInnerObject)
 
         case InequalitySeekRangeExpression(innerRange) =>
-          innerRange.mapBounds(expression => makeValueNeoSafe(expression(m, state)).asObject())
+          innerRange.mapBounds(expression => makeValueNeoSafe(expression(m, state)).getInnerObject)
       }
       index(Seq(range)).toIterator
   }
@@ -88,7 +88,7 @@ object indexQuery extends GraphElementPropertyFunctions {
     if (values.contains(Values.NO_VALUE))
       Iterator.empty
     else {
-      val neoValues = values.map(makeValueNeoSafe).map(_.asObject())
+      val neoValues = values.map(makeValueNeoSafe).map(_.getInnerObject())
       index(neoValues).toIterator
     }
   }

@@ -118,7 +118,7 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
 
     val keyValStrings = if (deleted) Iterator("deleted")
     else ops.propertyKeyIds(id).
-      map(pkId => qtx.getPropertyKeyName(pkId) + ":" + serialize(ops.getProperty(id, pkId).asObject(), qtx))
+      map(pkId => qtx.getPropertyKeyName(pkId) + ":" + serialize(ops.getProperty(id, pkId).getInnerObject(), qtx))
 
     keyValStrings.mkString("{", ",", "}")
   }

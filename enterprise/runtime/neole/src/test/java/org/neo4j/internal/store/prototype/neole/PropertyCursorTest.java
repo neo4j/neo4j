@@ -164,7 +164,7 @@ public class PropertyCursorTest
             Set<Object> values = new HashSet<>();
             while ( props.next() )
             {
-                values.add( props.propertyValue().asObject() );
+                values.add( props.propertyValue().getInnerObject() );
             }
 
             assertTrue( "byteProp", values.contains( (byte)13 ) );
