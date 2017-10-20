@@ -191,12 +191,52 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
+        boolean lhsIsSeq = lhs instanceof  List<?>;
+        boolean rhsIsSeq = rhs instanceof List<?>;
+
+        // Can't compare a literal to a list
+        if ( (lhsIsSeq && !rhsIsSeq) || (!lhsIsSeq && rhsIsSeq) )
+        {
+            return null;
+        }
+
+        if ( lhsIsSeq && rhsIsSeq )
+        {
+            List<?> lhsList = (List<?>) lhs;
+            List<?> rhsList = (List<?>) rhs;
+            boolean foundNull = false;
+
+            // Different length lists can't be equal
+            if (lhsList.size() != rhsList.size())
+            {
+                return false;
+            }
+
+            for ( int i = 0; i < lhsList.size(); i++ )
+            {
+                Object obj1 = lhsList.get( i );
+                Object obj2 = rhsList.get( i );
+
+                Boolean objEquality = equals( obj1, obj2 );
+                if( objEquality == null )
+                {
+                    foundNull = true;
+                } else if ( !objEquality ) {
+                    return false;
+
+                }
+            }
+            if (foundNull) {
+                return null;
+            }
+            return true;
+        }
+
         if ( (lhs instanceof NodeIdWrapper && !(rhs instanceof NodeIdWrapper)) ||
              (rhs instanceof NodeIdWrapper && !(lhs instanceof NodeIdWrapper)) ||
              (lhs instanceof RelationshipIdWrapper && !(rhs instanceof RelationshipIdWrapper)) ||
              (rhs instanceof RelationshipIdWrapper && !(lhs instanceof RelationshipIdWrapper)) )
         {
-
             throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
         }
 
