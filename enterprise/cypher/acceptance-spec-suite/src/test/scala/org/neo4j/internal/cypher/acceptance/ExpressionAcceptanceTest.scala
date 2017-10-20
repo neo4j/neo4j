@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
