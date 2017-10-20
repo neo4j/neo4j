@@ -279,7 +279,9 @@ object SlotAllocation {
 
       case _: CartesianProduct =>
         val newPipeline = lhsPipeline.breakPipelineAndClone()
-        rhsPipeline.foreachSlot {
+        // For the implementation of the slotted pipe to use array copy
+        // it is very important that we add the slots in the same order
+        rhsPipeline.foreachSlotOrdered {
           case (k, slot) =>
             newPipeline.add(k, slot)
         }

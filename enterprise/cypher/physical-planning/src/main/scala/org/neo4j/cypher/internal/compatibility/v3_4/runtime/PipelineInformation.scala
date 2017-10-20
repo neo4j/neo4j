@@ -207,9 +207,15 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
     case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
 
+  // NOTE: This will give duplicate slots when we have aliases
   def foreachSlot[U](f: ((String,Slot)) => U): Unit =
     slots.foreach(f)
 
+  // NOTE: This will give duplicate slots when we have aliases
+  def foreachSlotOrdered[U](f: ((String,Slot)) => U): Unit =
+    slots.toSeq.sortBy(_._2)(SlotOrdering).foreach(f)
+
+  // NOTE: This will give duplicate slots when we have aliases
   def mapSlot[U](f: ((String,Slot)) => U): Iterable[U] = slots.map(f)
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
@@ -258,6 +264,17 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
         1
       case _ =>
         x.slot.offset - y.slot.offset
+    }
+  }
+
+  object SlotOrdering extends Ordering[Slot] {
+    def compare(x: Slot, y: Slot): Int = (x, y) match {
+      case (_: LongSlot, _: RefSlot) =>
+        -1
+      case (_: RefSlot, _: LongSlot) =>
+        1
+      case _ =>
+        x.offset - y.offset
     }
   }
 }
