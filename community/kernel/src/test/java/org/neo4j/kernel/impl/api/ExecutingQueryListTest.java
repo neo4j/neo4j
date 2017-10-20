@@ -119,7 +119,8 @@ public class ExecutingQueryListTest
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, "me", query,
-                EMPTY_MAP, Collections.emptyMap(), () -> 0, PageCursorTracer.NULL, Thread.currentThread(),
+                EMPTY_MAP, Collections.emptyMap(), () -> 0, PageCursorTracer.NULL,
+                Thread.currentThread().getId(), Thread.currentThread().getName(),
                 Clocks.nanoClock(), CpuClock.CPU_CLOCK, HeapAllocation.HEAP_ALLOCATION );
     }
 }

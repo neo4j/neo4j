@@ -101,7 +101,9 @@ public class ExecutingQueryStatusTest
                                 null,
                                 null,
                                 null,
-                                PageCursorTracer.NULL, Thread.currentThread(),
+                                PageCursorTracer.NULL,
+                                Thread.currentThread().getId(),
+                                Thread.currentThread().getName(),
                                 clock,
                                 FakeCpuClock.NOT_AVAILABLE,
                                 HeapAllocation.NOT_AVAILABLE ), clock.nanos() );

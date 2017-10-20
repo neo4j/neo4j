@@ -512,6 +512,7 @@ public class QueryLoggerTest
             Map<String,Object> params,
             Map<String,Object> metaData )
     {
+        Thread thread = Thread.currentThread();
         return new ExecutingQuery( queryId++,
                 sessionInfo.withUsername( username ),
                 username,
@@ -580,7 +581,9 @@ public class QueryLoggerTest
                     {
                         return 0d;
                     }
-                }, Thread.currentThread(),
+                },
+                thread.getId(),
+                thread.getName(),
                 clock,
                 cpuClock,
                 heapAllocation );
