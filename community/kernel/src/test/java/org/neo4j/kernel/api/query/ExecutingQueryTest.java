@@ -53,6 +53,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+import static org.junit.Assert.assertTrue;
 
 public class ExecutingQueryTest
 {
@@ -63,28 +64,8 @@ public class ExecutingQueryTest
     public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation().add( randomLong( 0x1_0000_0000L ) );
     private final PageCursorCountersStub page = new PageCursorCountersStub();
     private long lockCount;
-    private ExecutingQuery query = new ExecutingQuery(
-            1,
-            ClientConnectionInfo.EMBEDDED_CONNECTION,
-            "neo4j",
-            "hello world",
-            EMPTY_MAP,
-            Collections.emptyMap(),
-            () -> lockCount, page, Thread.currentThread(),
-            clock,
-            cpuClock,
-            heapAllocation );
-    private ExecutingQuery subQuery = new ExecutingQuery(
-            2,
-            ClientConnectionInfo.EMBEDDED_CONNECTION,
-            "neo4j",
-            "goodbye world",
-            EMPTY_MAP,
-            Collections.emptyMap(),
-            () -> lockCount, page, Thread.currentThread(),
-            clock,
-            cpuClock,
-            heapAllocation );
+    private ExecutingQuery query = createExecutingquery( 1, "hello world", page, clock, cpuClock, heapAllocation );
+    private ExecutingQuery subQuery = createExecutingquery( 2, "goodbye world", page, clock, cpuClock, heapAllocation );
 
     @Test
     public void shouldReportElapsedTime() throws Exception
@@ -256,7 +237,9 @@ public class ExecutingQueryTest
                 "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
-                () -> lockCount, PageCursorTracer.NULL, Thread.currentThread(),
+                () -> lockCount, PageCursorTracer.NULL,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
                 clock,
                 FakeCpuClock.NOT_AVAILABLE,
                 HeapAllocation.NOT_AVAILABLE );
@@ -299,7 +282,10 @@ public class ExecutingQueryTest
                 "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
-                () -> lockCount, PageCursorTracer.NULL, Thread.currentThread(),
+                () -> lockCount,
+                PageCursorTracer.NULL,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
                 clock,
                 FakeCpuClock.NOT_AVAILABLE,
                 HeapAllocation.NOT_AVAILABLE );
@@ -349,6 +335,13 @@ public class ExecutingQueryTest
         // then
         assertEquals( 9, snapshot.pageHits() );
         assertEquals( 8, snapshot.pageFaults() );
+    }
+
+    @Test
+    public void includeQueryExecutorThreadName()
+    {
+        String queryDescription = query.toString();
+        assertTrue( queryDescription.contains( "threadExecutingTheQueryName=" + Thread.currentThread().getName() ) );
     }
 
     private LockWaitEvent lock( String resourceType, long resourceId )
@@ -408,6 +401,14 @@ public class ExecutingQueryTest
     private static long randomLong( long bound )
     {
         return ThreadLocalRandom.current().nextLong( bound );
+    }
+
+    private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
+            FakeClock clock, FakeCpuClock cpuClock, FakeHeapAllocation heapAllocation )
+    {
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, "neo4j", hello_world,
+                EMPTY_MAP, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
+                Thread.currentThread().getName(), clock, cpuClock, heapAllocation );
     }
 
     private static class PageCursorCountersStub implements PageCursorCounters
