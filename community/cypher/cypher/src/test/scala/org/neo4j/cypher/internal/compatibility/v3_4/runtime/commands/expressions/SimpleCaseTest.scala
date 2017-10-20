@@ -95,6 +95,11 @@ class SimpleCaseTest extends CypherFunSuite {
     assert(result == stringValue("default"))
   }
 
+  test("arguments should contain all children") {
+    val caseExpr = SimpleCase(Literal(1), Seq((Literal(2), Literal(3))), Some(Literal(4)))
+    caseExpr.arguments should contain allOf(Literal(1), Literal(2), Literal(3), Literal(4))
+  }
+
   private def case_(in: Any, alternatives: (Any, Any)*): SimpleCase = {
     val mappedAlt: Seq[(Expression, Expression)] = alternatives.map {
       case (a, b) => (Literal(a), Literal(b))
