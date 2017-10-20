@@ -19,11 +19,9 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -57,7 +55,6 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -84,13 +81,6 @@ public class BoltCausalClusteringIT
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private Cluster cluster;
-
-    @Before
-    public void setup() throws Exception
-    {
-        File knownHosts = new File( System.getProperty( "user.home" ) + "/.neo4j/known_hosts" );
-        FileUtils.deleteFile( knownHosts );
-    }
 
     @Test
     public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception
