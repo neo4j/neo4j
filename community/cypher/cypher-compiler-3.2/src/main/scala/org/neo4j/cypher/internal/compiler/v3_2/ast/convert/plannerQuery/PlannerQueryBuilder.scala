@@ -74,12 +74,10 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   def build(): PlannerQuery = {
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: PlannerQuery): PlannerQuery = {
-      val optionalMatches = plannerQuery.queryGraph.optionalMatches
-      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.coveredIds) { case (args, qg) =>
-        (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
-      }
+      val graph = plannerQuery.queryGraph
+      val updatedQG: QueryGraph = PlannerQueryBuilder.setArgumentIdsOnOptionalMatches(graph)
       plannerQuery
-        .amendQueryGraph(_.withOptionalMatches(newOptionalMatches.toIndexedSeq))
+        .withQueryGraph(updatedQG)
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
@@ -136,8 +134,17 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
     fixQueriesWithOnlyRelationshipIndex(groupedInequalities)
   }
+
 }
 
-object PlannerQueryBuilder {
+object PlannerQueryBuilder extends ListSupport {
+  def setArgumentIdsOnOptionalMatches(graph: QueryGraph): QueryGraph = {
+    val optionalMatches = graph.optionalMatches
+    val (_, newOptionalMatches) = optionalMatches.foldMap(graph.coveredIds) { case (args, qg) =>
+      val acc = args ++ qg.allCoveredIds
+      (acc, qg.withArgumentIds(args intersect qg.allCoveredIds))
+    }
+    graph.withOptionalMatches(newOptionalMatches.toIndexedSeq)
+  }
   def apply(semanticTable: SemanticTable) = new PlannerQueryBuilder(PlannerQuery.empty, semanticTable)
 }

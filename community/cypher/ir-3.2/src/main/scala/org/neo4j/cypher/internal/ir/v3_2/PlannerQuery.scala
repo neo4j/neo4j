@@ -47,6 +47,8 @@ sealed trait PlannerQuery {
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
+  def replaceTail(newTail: PlannerQuery): PlannerQuery = copy(tail = Some(newTail))
+
   def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)

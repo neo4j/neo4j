@@ -113,7 +113,8 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
   val irConstruction: Transformer[CompilerContext, BaseState, CompilationState] =
     ResolveTokens andThen
       CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
-      OptionalMatchRemover
+      OptionalMatchRemover andThen
+      OptionalMatchReorganizer
 
   val costBasedPlanning =
     QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
