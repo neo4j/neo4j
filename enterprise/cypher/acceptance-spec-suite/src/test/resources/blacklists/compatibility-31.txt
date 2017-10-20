@@ -5,3 +5,5 @@ Ordering is well defined across all types, ascending
 Ordering is well defined across all types, descending
 Ordering for lists, ascending
 Ordering for lists, descending
+
+Shorthand case with filter should work as expected
