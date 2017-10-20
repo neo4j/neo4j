@@ -28,10 +28,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.VirtualValueTestUtil;
 
 import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.pointCartesian;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
@@ -117,7 +118,7 @@ public class AnyValueComparatorTest
             path( nodes( 5L, 4L ), edges( 2L ) ),
 
             // SCALARS
-            pointCartesian( 1.0, 1.0 ),
+            pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 ),
             "hello",
             true,
             1L,

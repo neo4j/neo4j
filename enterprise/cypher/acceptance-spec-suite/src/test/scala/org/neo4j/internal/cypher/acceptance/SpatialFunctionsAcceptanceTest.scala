@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.{CRS, CartesianPoint, GeographicPoint}
+import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
@@ -320,7 +321,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   test("point function should be readable from node property") {
     // Given
     createLabeledNode("Place")
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point")
+    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // When
     val config = Configs.All - Configs.Cost2_3 - Configs.Cost3_1 - Configs.AllRulePlanners
@@ -329,6 +330,9 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result.toList should equal(List(Map("point" -> GeographicPoint(12.78, 56.7, CRS.WGS84))))
+    val point = result.columnAs("point").toList.head.asInstanceOf[Point]
+    point should equal(GeographicPoint(12.78, 56.7, CRS.WGS84))
+    // And CRS names should equal
+    point.getCRS.getType should equal("WGS-84")
   }
 }

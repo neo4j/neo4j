@@ -274,7 +274,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     public void testPointType()
     {
-        Point point = Values.pointCartesian( 1, 1 );
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
         String key = "location";
         node1.setProperty( key, point );
         newTransaction();
@@ -286,7 +286,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     public void testPointTypeWithOneOtherProperty()
     {
-        Point point = Values.pointCartesian( 1, 1 );
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
         String key = "location";
         node1.setProperty( "prop1", 1 );
         node1.setProperty( key, point );
@@ -299,7 +299,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     public void testPointTypeWithTwoOtherProperties()
     {
-        Point point = Values.pointCartesian( 1, 1 );
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
         String key = "location";
         node1.setProperty( "prop1", 1 );
         node1.setProperty( "prop2", 2 );
