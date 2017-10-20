@@ -24,6 +24,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -56,13 +57,16 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
                 FeatureToggles.getInteger( DirectoryFactory.class, "max_merge_size_mb", 5 );
         private final int MAX_CACHED_MB =
                 FeatureToggles.getInteger( DirectoryFactory.class, "max_cached_mb", 50 );
+        private final boolean USE_DEFAULT_DIRECTORY_FACTORY =
+                FeatureToggles.flag( DirectoryFactory.class, "default_directory_factory", true );
 
         @SuppressWarnings( "ResultOfMethodCallIgnored" )
         @Override
         public Directory open( File dir ) throws IOException
         {
             dir.mkdirs();
-            return new NRTCachingDirectory( FSDirectory.open( dir.toPath() ), MAX_MERGE_SIZE_MB, MAX_CACHED_MB );
+            FSDirectory directory = USE_DEFAULT_DIRECTORY_FACTORY ? FSDirectory.open( dir.toPath() ) : new NIOFSDirectory( dir.toPath() );
+            return new NRTCachingDirectory( directory, MAX_MERGE_SIZE_MB, MAX_CACHED_MB );
         }
 
         @Override
