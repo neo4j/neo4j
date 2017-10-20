@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -130,7 +130,7 @@ public class RecoveryCorruptedTransactionLogIT
                 lastClosedTrandactionBeforeStart;
         database.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
-        addRandomLongsToLastLogFile();
+        addRandomBytesToLastLogFile( this::randomBytes );
 
         database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
         database.shutdown();
@@ -148,7 +148,7 @@ public class RecoveryCorruptedTransactionLogIT
         }
         database.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
-        addRandomLongsToLastLogFile();
+        addRandomBytesToLastLogFile( this::randomPositiveBytes );
 
         FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", true );
         expectedException.expectCause( new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
@@ -170,7 +170,7 @@ public class RecoveryCorruptedTransactionLogIT
         database.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
-        addRandomLongsToLastLogFile();
+        addRandomBytesToLastLogFile( this::randomBytes );
 
         database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
         database.shutdown();
@@ -454,7 +454,7 @@ public class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private void addRandomLongsToLastLogFile() throws IOException
+    private void addRandomBytesToLastLogFile( Supplier<Byte> byteSource ) throws IOException
     {
         PositiveLogFilesBasedLogVersionRepository versionRepository =
                 new PositiveLogFilesBasedLogVersionRepository( logFiles );
@@ -466,12 +466,21 @@ public class RecoveryCorruptedTransactionLogIT
             lifespan.add( physicalLogFile );
 
             FlushablePositionAwareChannel logFileWriter = physicalLogFile.getWriter();
-            ThreadLocalRandom current = ThreadLocalRandom.current();
             for ( int i = 0; i < 10; i++ )
             {
-                logFileWriter.putLong( current.nextLong() );
+                logFileWriter.put( byteSource.get() );
             }
         }
+    }
+
+    private byte randomPositiveBytes()
+    {
+        return (byte) random.nextInt( 0, Byte.MAX_VALUE );
+    }
+
+    private byte randomBytes()
+    {
+        return (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE );
     }
 
     private PositiveLogFilesBasedLogVersionRepository addCorruptedCommandsToLastLogFile()
