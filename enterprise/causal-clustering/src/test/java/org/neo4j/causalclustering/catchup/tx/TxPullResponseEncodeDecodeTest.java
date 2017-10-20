@@ -29,8 +29,8 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -67,7 +67,7 @@ public class TxPullResponseEncodeDecodeTest
         physicalTransactionRepresentation.setHeader( new byte[]{}, 0, 0, 0, 0, 0, 0 );
 
         LogEntryStart startEntry = new LogEntryStart( 0, 0, 0L, 0L, new byte[]{}, LogPosition.UNSPECIFIED );
-        OnePhaseCommit commitEntry = new OnePhaseCommit( 42, 0 );
+        LogEntryCommit commitEntry = new LogEntryCommit( 42, 0 );
 
         return new CommittedTransactionRepresentation( startEntry, physicalTransactionRepresentation, commitEntry );
     }

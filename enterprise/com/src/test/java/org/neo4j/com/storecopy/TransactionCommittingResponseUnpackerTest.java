@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -175,7 +175,7 @@ public class TransactionCommittingResponseUnpackerTest
             return new CommittedTransactionRepresentation(
                     new LogEntryStart( 0, 0, 0, 0, new byte[0], UNSPECIFIED ),
                     representation,
-                    new OnePhaseCommit( id, commitTimestamp ) );
+                    new LogEntryCommit( id, commitTimestamp ) );
         }
 
         private long timestamp( int txNbr, int txCount, long batchLength )

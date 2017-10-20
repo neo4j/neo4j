@@ -38,16 +38,14 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 public class TransactionAppenderStressTest
@@ -126,9 +124,9 @@ public class TransactionAppenderStressTest
                 LogEntry logEntry = reader.readLogEntry( channel );
                 for ( ; logEntry != null; logEntry = reader.readLogEntry( channel ) )
                 {
-                    if ( logEntry.getType() == LogEntryByteCodes.TX_1P_COMMIT )
+                    if ( logEntry.getType() == LogEntryByteCodes.TX_COMMIT )
                     {
-                        txId = logEntry.<OnePhaseCommit>as().getTxId();
+                        txId = logEntry.<LogEntryCommit>as().getTxId();
                     }
                 }
             }

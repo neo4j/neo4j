@@ -71,7 +71,7 @@ public class LogEntryParserDispatcherV6Test
     public void shouldParserOnePhaseCommitEntry() throws IOException
     {
         // given
-        final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
+        final LogEntryCommit commit = new LogEntryCommit( version, 42, 21 );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( commit.getTxId() );
@@ -80,7 +80,7 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_1P_COMMIT );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_COMMIT );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then

@@ -25,7 +25,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -33,8 +32,8 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class MadeUpServerImplementation implements MadeUpCommunicationInterface
@@ -106,7 +105,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
         return new CommittedTransactionRepresentation(
                 new LogEntryStart( 0, 0, 0, 0, new byte[0], null ),
                 transaction( txId ),
-                new OnePhaseCommit( txId, 0 ) );
+                new LogEntryCommit( txId, 0 ) );
     }
 
     private TransactionRepresentation transaction( long txId )

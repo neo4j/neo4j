@@ -35,8 +35,8 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -163,7 +163,7 @@ public class TxPullRequestHandlerTest
     {
         return new CommittedTransactionRepresentation(
                 new LogEntryStart( id, id, id, id - 1, new byte[]{}, LogPosition.UNSPECIFIED ),
-                Commands.transactionRepresentation( createNode( 0 ) ), new OnePhaseCommit( id, id ) );
+                Commands.transactionRepresentation( createNode( 0 ) ), new LogEntryCommit( id, id ) );
     }
 
     private static TransactionCursor txCursor( Cursor<CommittedTransactionRepresentation> cursor )

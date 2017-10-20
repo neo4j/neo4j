@@ -41,9 +41,9 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.IOCursorAsResourceIterable;
 
@@ -153,10 +153,10 @@ public class LogMatchers
 
     public static Matcher<? extends LogEntry> commitEntry( final long txId )
     {
-        return new TypeSafeMatcher<OnePhaseCommit>()
+        return new TypeSafeMatcher<LogEntryCommit>()
         {
             @Override
-            public boolean matchesSafely( OnePhaseCommit onePC )
+            public boolean matchesSafely( LogEntryCommit onePC )
             {
                 return onePC != null && onePC.getTxId() == txId;
             }

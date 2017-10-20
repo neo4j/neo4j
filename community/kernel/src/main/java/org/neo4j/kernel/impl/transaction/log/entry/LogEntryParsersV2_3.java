@@ -84,7 +84,7 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 }
             },
 
-    TX_1P_COMMIT
+    TX_COMMIT
             {
                 @Override
                 public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
@@ -92,13 +92,13 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 {
                     long txId = channel.getLong();
                     long timeWritten = channel.getLong();
-                    return new OnePhaseCommit( version, txId, timeWritten );
+                    return new LogEntryCommit( version, txId, timeWritten );
                 }
 
                 @Override
                 public byte byteCode()
                 {
-                    return LogEntryByteCodes.TX_1P_COMMIT;
+                    return LogEntryByteCodes.TX_COMMIT;
                 }
 
                 @Override
