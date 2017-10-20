@@ -75,7 +75,7 @@ public class ConfigurableIOLimiter implements IOLimiter
             do
             {
                 oldState = stateUpdater.get( this );
-                int disabledCounter = getDisabledCounter( state );
+                int disabledCounter = getDisabledCounter( oldState );
                 disabledCounter |= 1; // Raise the "permanently disabled" bit.
                 newState = composeState( disabledCounter, NO_LIMIT );
             }
@@ -86,7 +86,7 @@ public class ConfigurableIOLimiter implements IOLimiter
             do
             {
                 oldState = stateUpdater.get( this );
-                int disabledCounter = getDisabledCounter( state );
+                int disabledCounter = getDisabledCounter( oldState );
                 disabledCounter &= 0xFFFFFFFE; // Mask off "permanently disabled" bit.
                 int iopq = iops / QUANTUMS_PER_SECOND;
                 newState = composeState( disabledCounter, iopq );
@@ -164,8 +164,8 @@ public class ConfigurableIOLimiter implements IOLimiter
         {
             currentState = stateUpdater.get( this );
             // Increment by two to leave "permanently disabled bit" alone.
-            int disabledCounter = getDisabledCounter( state ) + 2;
-            newState = composeState( disabledCounter, getIOPQ( state ) );
+            int disabledCounter = getDisabledCounter( currentState ) + 2;
+            newState = composeState( disabledCounter, getIOPQ( currentState ) );
         }
         while ( !stateUpdater.compareAndSet( this, currentState, newState ) );
     }
@@ -179,8 +179,8 @@ public class ConfigurableIOLimiter implements IOLimiter
         {
             currentState = stateUpdater.get( this );
             // Decrement by two to leave "permanently disabled bit" alone.
-            int disabledCounter = getDisabledCounter( state ) - 2;
-            newState = composeState( disabledCounter, getIOPQ( state ) );
+            int disabledCounter = getDisabledCounter( currentState ) - 2;
+            newState = composeState( disabledCounter, getIOPQ( currentState ) );
         }
         while ( !stateUpdater.compareAndSet( this, currentState, newState ) );
     }
