@@ -585,37 +585,37 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         verifyValidDynamicSetting( setting );
 
-        String oldValue;
-        String newValue;
-
-        if ( update == null || update.isEmpty() )
+        synchronized ( params )
         {
-            // Empty means we want to delete the configured value and fallback to the default value
-            boolean hasDefault = overriddenDefaults.containsKey( setting );
-            oldValue = hasDefault ? params.put( setting, overriddenDefaults.get( setting ) ) : params.remove( setting );
-            newValue = getDefaultValueOf( setting );
-        }
-        else
-        {
-            // Change setting, make sure it's valid
-            Map<String,String> newEntry = stringMap( setting, update );
-            List<SettingValidator> settingValidators = configOptions.stream()
-                    .map( ConfigOptions::settingGroup )
-                    .collect( Collectors.toList() );
-            for ( SettingValidator validator : settingValidators )
+            String oldValue;
+            String newValue;
+            if ( update == null || update.isEmpty() )
             {
-                validator.validate( newEntry, ignore -> {} ); // Throws if invalid
+                // Empty means we want to delete the configured value and fallback to the default value
+                String overriddenDefault = overriddenDefaults.get( setting );
+                boolean hasDefault = overriddenDefault != null;
+                oldValue = hasDefault ? params.put( setting, overriddenDefault ) : params.remove( setting );
+                newValue = getDefaultValueOf( setting );
             }
-
-            synchronized ( params )
+            else
             {
+                // Change setting, make sure it's valid
+                Map<String,String> newEntry = stringMap( setting, update );
+                List<SettingValidator> settingValidators = configOptions.stream()
+                                                                        .map( ConfigOptions::settingGroup )
+                                                                        .collect( Collectors.toList() );
+                for ( SettingValidator validator : settingValidators )
+                {
+                    validator.validate( newEntry, ignore -> {} ); // Throws if invalid
+                }
+
                 oldValue = getDefaultValueOf( setting );
                 params.put( setting, update );
+                newValue = update;
             }
-            newValue = update;
+            log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
+            updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
-        log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
-        updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
     }
 
     private void verifyValidDynamicSetting( String setting )
