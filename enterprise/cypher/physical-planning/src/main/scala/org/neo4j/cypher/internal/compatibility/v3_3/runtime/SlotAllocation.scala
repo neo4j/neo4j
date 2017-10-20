@@ -113,15 +113,12 @@ object SlotAllocation {
 
   private def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[PipelineInformation]): PipelineInformation =
     lp match {
-      case _: Argument =>
-        argument.getOrElse(throw new InternalException("Found argument without Apply"))
-
       case leaf: NodeLogicalLeafPlan =>
         val pipeline = argument.getOrElse(PipelineInformation.empty)
         pipeline.newLong(leaf.idName.name, nullable, CTNode)
         pipeline
 
-      case SingleRow() =>
+      case _:SingleRow =>
         argument.getOrElse(PipelineInformation.empty)
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")

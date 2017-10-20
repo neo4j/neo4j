@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.IdName
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Argument, Selection}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{Selection, SingleRow}
 
 class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   test("merges two selections into one") {
     val p1 = propEquality("a", "foo", 12)
     val p2 = propEquality("a", "bar", 33)
-    val lhs = Argument(Set(IdName("a")))(solved)()
+    val lhs = SingleRow(Set(IdName("a")))(solved)()
 
     Selection(Seq(p1),
       Selection(Seq(p2), lhs)(solved))(solved).
@@ -42,7 +42,7 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val p1 = propEquality("a", "foo", 12)
     val p2 = propEquality("a", "bar", 33)
     val p3 = propEquality("a", "baz", 42)
-    val lhs = Argument(Set(IdName("a")))(solved)()
+    val lhs = SingleRow(Set(IdName("a")))(solved)()
 
     Selection(Seq(p1),
       Selection(Seq(p2),

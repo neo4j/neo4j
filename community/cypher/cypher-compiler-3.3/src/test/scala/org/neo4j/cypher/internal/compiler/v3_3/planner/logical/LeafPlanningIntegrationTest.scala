@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{ExclusiveBound, InclusiveBound, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_3.{ExclusiveBound, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.ir.v3_3.{Cost, IdName}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Union, _}
 
@@ -636,7 +636,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Aggregation(
         Apply(
-          Projection(SingleRow()(solved),Map("arr" -> ListLiteral(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
+          Projection(SingleRow()(solved)(),Map("arr" -> ListLiteral(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
           NodeByIdSeek(IdName("n"), ManySeekableArgs(Variable("arr")_),Set(IdName("arr")))(solved)
         )(solved),
         Map(), Map("count(*)" -> CountStar()_)

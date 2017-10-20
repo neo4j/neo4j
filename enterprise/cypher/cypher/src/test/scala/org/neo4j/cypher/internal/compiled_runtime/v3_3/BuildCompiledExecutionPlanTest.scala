@@ -44,7 +44,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
     monitors.addMonitorListener(monitor)
 
     // When
-    process(monitors, ProduceResult(Seq.empty, SingleRow()(solved)))
+    process(monitors, ProduceResult(Seq.empty, SingleRow()(solved)()))
 
     // Then
     monitor.successfullyPlanned should equal(true)
@@ -56,7 +56,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
     val monitor = new SpyingMonitor
     monitors.addMonitorListener(monitor)
 
-    process(monitors, SingleRow()(solved))
+    process(monitors, SingleRow()(solved)())
 
     // Then
     monitor.failedToPlan should equal(true)

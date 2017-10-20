@@ -85,7 +85,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     val plan = if (queryGraph.argumentIds.isEmpty)
       context.logicalPlanProducer.planSingleRow()
     else
-      context.logicalPlanProducer.planQueryArgumentRow(queryGraph)
+      context.logicalPlanProducer.planQuerySingleRow(queryGraph)
     val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
     Seq(PlannedComponent(queryGraph, result))
