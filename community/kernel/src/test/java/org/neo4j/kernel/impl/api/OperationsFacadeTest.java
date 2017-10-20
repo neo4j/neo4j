@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -45,7 +43,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-@RunWith( MockitoJUnitRunner.class )
 public class OperationsFacadeTest
 {
     @Rule
