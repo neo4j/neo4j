@@ -22,7 +22,7 @@ package org.neo4j.ha;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.InvalidTransactionTypeException;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -55,7 +55,7 @@ public class ConstraintsInHAIT
             constraintCreator.create();
             fail( "should have thrown exception" );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( ConstraintViolationException e )
         {
             assertThat(e.getMessage(), equalTo("Modifying the database schema can only be done on the master server, " +
                     "this server is a slave. Please issue schema modification commands directly to the master."));
