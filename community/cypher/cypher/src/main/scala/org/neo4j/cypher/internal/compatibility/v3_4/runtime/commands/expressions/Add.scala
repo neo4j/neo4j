@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{IsList, TypeSafeMathSupport}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.values._
+import org.neo4j.values.storable.StringValue.UTF8StringValue
 import org.neo4j.values.storable._
+import org.neo4j.values.utils.UTF8Utils
 import org.neo4j.values.virtual.VirtualValues
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
@@ -37,6 +39,7 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (x: IntegralValue, y: IntegralValue) => Values.longValue(StrictMath.addExact(x.longValue(),y.longValue()))
       case (x: NumberValue, y: NumberValue) => Values.doubleValue(x.doubleValue() + y.doubleValue())
+      case (x: UTF8StringValue, y: UTF8StringValue) => UTF8Utils.add(x, y)
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
       case (IsList(x), IsList(y)) => VirtualValues.concat(x, y)
       case (IsList(x), y)         => VirtualValues.appendToList(x, y)

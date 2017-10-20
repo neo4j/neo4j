@@ -36,6 +36,7 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -47,6 +48,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
@@ -252,6 +254,7 @@ public class Neo4jPackTest
 
         // When
         AnyValue unpacked = unpacked( output.bytes() );
+        assertThat( unpacked, is( instanceOf( StringValue.UTF8StringValue.class ) ));
 
         // Then
         assertThat( unpacked, equalTo( textValue ) );
