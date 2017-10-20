@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.HashMap;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -284,7 +285,7 @@ public class PrettyPrinterTest
     public void shouldHandlePoints()
     {
         // Given
-        PointValue pointValue = Values.pointCartesian( 11d, 12d );
+        PointValue pointValue = Values.pointValue( CoordinateReferenceSystem.Cartesian, 11d, 12d );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When

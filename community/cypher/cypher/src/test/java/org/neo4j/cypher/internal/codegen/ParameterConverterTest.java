@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.EdgeValue;
@@ -59,7 +60,6 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.storable.Values.pointGeographic;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
@@ -184,7 +184,7 @@ public class ParameterConverterTest
     public void shouldHandlePoints()
     {
         // Given
-        PointValue pointValue = pointGeographic( 1.0, 2.0 );
+        PointValue pointValue = Values.pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 );
 
         // When
         pointValue.writeTo( converter );

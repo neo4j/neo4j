@@ -36,22 +36,20 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.stream.StreamSupport.stream;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
 public final class ValueUtils
@@ -143,7 +141,7 @@ public final class ValueUtils
                 }
                 else
                 {
-                    return asPointValue( (Geometry) object );
+                    return asGeometryValue( (Geometry) object );
                 }
             }
             else
@@ -159,7 +157,7 @@ public final class ValueUtils
         return toPoint( point );
     }
 
-    public static PointValue asPointValue( Geometry geometry )
+    public static PointValue asGeometryValue( Geometry geometry )
     {
         if ( !geometry.getGeometryType().equals( "Point" ) )
         {
@@ -171,13 +169,23 @@ public final class ValueUtils
     private static PointValue toPoint( Geometry geometry )
     {
         List<Double> coordinate = geometry.getCoordinates().get( 0 ).getCoordinate();
+        double[] primitiveCoordinate = new double[coordinate.size()];
+        for ( int i = 0; i < coordinate.size(); i++ )
+        {
+            primitiveCoordinate[i] = coordinate.get( i );
+        }
+
+        // TODO:
+        // From a (public class) CRS we can not get the name of the CRSTable.
+        // I do not know how to a sensible mapping here.
+        // Maybe we have to deprecate the public types after all and rewrite them
         if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.code )
         {
-            return Values.pointCartesian( coordinate.get( 0 ), coordinate.get( 1 ) );
+            return Values.pointValue( CoordinateReferenceSystem.Cartesian, primitiveCoordinate );
         }
         else if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.WGS84.code )
         {
-            return Values.pointGeographic( coordinate.get( 0 ), coordinate.get( 1 ) );
+            return Values.pointValue( CoordinateReferenceSystem.WGS84, primitiveCoordinate );
         }
         else
         {
@@ -261,17 +269,17 @@ public final class ValueUtils
             double y = ((NumberValue) map.get( "y" )).doubleValue();
             if ( !map.containsKey( "crs" ) )
             {
-                return Values.pointCartesian( x, y );
+                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
             if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.name ) )
             {
-                return Values.pointCartesian( x, y );
+                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
             }
             else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name ) )
             {
-                return Values.pointGeographic( x, y );
+                return Values.pointValue( CoordinateReferenceSystem.WGS84, x, y );
             }
             else
             {
@@ -284,13 +292,13 @@ public final class ValueUtils
             double longitude = ((NumberValue) map.get( "longitude" )).doubleValue();
             if ( !map.containsKey( "crs" ) )
             {
-                return Values.pointGeographic( longitude, latitude );
+                return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
             if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name ) )
             {
-                return Values.pointGeographic( longitude, latitude );
+                return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
             }
             else
             {

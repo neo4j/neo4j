@@ -272,17 +272,6 @@ public final class Values
         return new ShortArray.Direct( value );
     }
 
-    // TODO either remove or move to a test class
-    public static PointValue pointCartesian( double x, double y )
-    {
-        return new PointValue( CoordinateReferenceSystem.Cartesian, x, y );
-    }
-
-    public static PointValue pointGeographic( double longitude, double latitude )
-    {
-        return new PointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
-    }
-
     public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
     {
         return new PointValue( crs, coordinate );
@@ -290,6 +279,8 @@ public final class Values
 
     public static PointValue point( Point point )
     {
+        // An optimization could be to do an instanceof PointValue check here
+        // and in that case just return the casted argument.
         List<Double> coordinate = point.getCoordinate().getCoordinate();
         double[] coords = new double[coordinate.size()];
         for ( int i = 0; i < coords.length; i++ )
@@ -321,8 +312,8 @@ public final class Values
      * Generic value factory method.
      * <p>
      * Beware, this method is intended for converting externally supplied values to the internal Value type, and to
-     * make testing convenient. Passing a Value as in parameter should never be needed. It will return the
-     * passed value.
+     * make testing convenient. Passing a Value as in parameter should never be needed, and will throw an
+     * UnsupportedOperationException.
      * <p>
      * This method does defensive copying of arrays, while the explicit *Array() factory methods do not.
      *
@@ -416,7 +407,8 @@ public final class Values
         }
         if ( value instanceof Value )
         {
-            return (Value) value;
+            throw new UnsupportedOperationException(
+                    "Converting a Value to a Value using Values.of() is not supported." );
         }
 
         // otherwise fail

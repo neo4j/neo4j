@@ -29,7 +29,21 @@ public class CoordinateReferenceSystem implements CRS
     public static CoordinateReferenceSystem get( int tableId, int code )
     {
         CRSTable table = CRSTable.find( tableId );
+        // TODO this might break, since we are changing the name. Use the function below?
         return new CoordinateReferenceSystem( table.name + "-" + code, table, code );
+    }
+
+    private static CoordinateReferenceSystem get( String name )
+    {
+        switch ( name )
+        {
+        case "cartesian":
+            return Cartesian;
+        case "WGS-84":
+            return WGS84;
+        default:
+            throw new IllegalArgumentException( "Unknown crs: " + name );
+        }
     }
 
     public final String name;
