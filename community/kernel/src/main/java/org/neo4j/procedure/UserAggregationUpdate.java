@@ -50,7 +50,7 @@ import java.lang.annotation.Target;
  * <li>{@link java.util.Map} with key {@link String} and value of any type in this list, including {@link
  * java.util.Map}</li>
  * <li>{@link java.util.List} with element type of any type in this list, including {@link java.util.List}</li>
- * <li>{@link Object}, meaning any valid input types</li>
+ * <li>{@link Object}, meaning any of the valid input types above</li>
  * </ul>
  *
  * The update method cannot return any value and must be a void method.
