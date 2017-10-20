@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -55,7 +55,9 @@ public class ExecutingQuery
     private final long startTimeNanos, startTimestampMillis;
     /** Uses write barrier of {@link #status}. */
     private long planningDoneNanos;
-    private final Thread threadExecutingTheQuery;
+    private final long threadExecutingTheQueryId;
+    @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
+    private final String threadExecutingTheQueryName;
     private final LongSupplier activeLockCount;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
@@ -79,13 +81,14 @@ public class ExecutingQuery
             Map<String,Object> transactionAnnotationData,
             LongSupplier activeLockCount,
             PageCursorCounters pageCursorCounters,
-            Thread threadExecutingTheQuery,
+            long threadExecutingTheQueryId,
+            String threadExecutingTheQueryName,
             SystemNanoClock clock,
             CpuClock cpuClock,
             HeapAllocation heapAllocation )
     {
         // Capture timestamps first
-        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
+        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
         this.startTimeNanos = clock.nanos();
         this.startTimestampMillis = clock.millis();
         // then continue with assigning fields
@@ -97,11 +100,12 @@ public class ExecutingQuery
         this.queryParameters = queryParameters;
         this.transactionAnnotationData = transactionAnnotationData;
         this.activeLockCount = activeLockCount;
-        this.threadExecutingTheQuery = threadExecutingTheQuery;
+        this.threadExecutingTheQueryId = threadExecutingTheQueryId;
+        this.threadExecutingTheQueryName = threadExecutingTheQueryName;
         this.cpuClock = cpuClock;
         this.heapAllocation = heapAllocation;
         this.clock = clock;
-        this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes( threadExecutingTheQuery );
+        this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes( this.threadExecutingTheQueryId );
     }
 
     // update state
@@ -142,7 +146,7 @@ public class ExecutingQuery
         {
             status = this.status; // read barrier, must be first
             waitTimeNanos = this.waitTimeNanos; // the reason for the retry loop: don't count the wait time twice
-            cpuTimeNanos = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
+            cpuTimeNanos = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
             currentTimeNanos = clock.nanos(); // capture the time as close to the snapshot as possible
         }
         while ( this.status != status );
@@ -152,7 +156,7 @@ public class ExecutingQuery
         PlannerInfo planner = status.isPlanning() ? null : this.plannerInfo;
         // just needs to be captured at some point...
         long activeLockCount = this.activeLockCount.getAsLong();
-        long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQuery );
+        long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQueryId );
         PageCounterValues pageCounters = new PageCounterValues( pageCursorCounters );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
