@@ -171,7 +171,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
      */
     public void shutdown()
     {
-        assert backgroundThread != null : "Already shut down";
+        assert !shutdown : "Already shut down";
         shutdown = true;
         LockSupport.unpark( backgroundThread );
     }
