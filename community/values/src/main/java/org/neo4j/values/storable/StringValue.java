@@ -52,7 +52,21 @@ public abstract class StringValue extends TextValue
     @Override
     public int computeHash()
     {
-        return value().hashCode();
+        //NOTE that we are basing the hash code on code points instead of char[] values.
+        String value = value();
+        if ( value.isEmpty() )
+        {
+            return 0;
+        }
+        int h = 1;
+        for ( int codePointOffset = 0; codePointOffset < value.codePointCount( 0, value.length() ); codePointOffset++ )
+        {
+            int pos = value.offsetByCodePoints( 0, codePointOffset );
+            h = 31 * h + value.codePointAt( pos );
+
+        }
+
+        return h;
     }
 
     @Override
