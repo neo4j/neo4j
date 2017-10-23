@@ -19,26 +19,36 @@
  */
 package org.neo4j.consistency;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Properties;
-
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.time.ZoneOffset;
+import java.util.Properties;
+import java.util.TimeZone;
 
 import org.neo4j.consistency.ConsistencyCheckTool.ToolFailureException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -80,6 +90,38 @@ public class ConsistencyCheckToolTest
         verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                 anyBoolean(), any( ConsistencyFlags.class ) );
+    }
+
+    @Test
+    public void consistencyCheckerLogUseSystemTimezoneIfConfigurable() throws Exception
+    {
+        TimeZone defaultTimeZone = TimeZone.getDefault();
+        try
+        {
+            ConsistencyCheckService service = mock( ConsistencyCheckService.class );
+            Mockito.when( service.runFullConsistencyCheck( any( File.class ), any( Config.class ),
+                    any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
+                    eq( false ), any( CheckConsistencyConfig.class ) ) )
+                    .then( invocationOnMock ->
+                    {
+                        LogProvider provider = invocationOnMock.getArgumentAt( 3, LogProvider.class );
+                        provider.getLog( "test" ).info( "testMessage" );
+                        return ConsistencyCheckService.Result.success( new File( StringUtils.EMPTY ) );
+                    } );
+            File storeDir = storeDirectory.directory();
+            File configFile = storeDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
+            Properties properties = new Properties();
+            properties.setProperty( GraphDatabaseSettings.log_timezone.name(), LogTimeZone.SYSTEM.name() );
+            properties.store( new FileWriter( configFile ), null );
+            String[] args = {storeDir.getPath(), "-config", configFile.getPath()};
+
+            checkLogRecordTimeZone( service, args, 5, "+0500" );
+            checkLogRecordTimeZone( service, args, -5, "-0500" );
+        }
+        finally
+        {
+            TimeZone.setDefault( defaultTimeZone );
+        }
     }
 
     @Test
@@ -177,6 +219,24 @@ public class ConsistencyCheckToolTest
         runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
     }
 
+    private void checkLogRecordTimeZone( ConsistencyCheckService service, String[] args, int hoursShift,
+            String timeZoneSuffix ) throws ToolFailureException, IOException
+    {
+        TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream( outputStream );
+        runConsistencyCheckToolWith( service, printStream, args );
+        String logLine = readLogLine( outputStream );
+        assertTrue( logLine, logLine.contains( timeZoneSuffix ) );
+    }
+
+    private String readLogLine( ByteArrayOutputStream outputStream ) throws IOException
+    {
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputStream.toByteArray() );
+        BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( byteArrayInputStream ) );
+        return bufferedReader.readLine();
+    }
+
     private void createGraphDbAndKillIt() throws Exception
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
@@ -204,10 +264,16 @@ public class ConsistencyCheckToolTest
     private void runConsistencyCheckToolWith( ConsistencyCheckService
             consistencyCheckService, String... args ) throws ToolFailureException, IOException
     {
+        runConsistencyCheckToolWith( consistencyCheckService, mock( PrintStream.class ), args );
+    }
+
+    private void runConsistencyCheckToolWith( ConsistencyCheckService
+            consistencyCheckService, PrintStream printStream, String... args ) throws ToolFailureException, IOException
+    {
         try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction() )
         {
-            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, mock( PrintStream.class ),
-                    mock( PrintStream.class ) ).run( args );
+            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, printStream, printStream )
+                    .run( args );
         }
     }
 }

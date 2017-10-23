@@ -21,18 +21,20 @@ package org.neo4j.server.security.enterprise.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.neo4j.helpers.Strings.escape;
@@ -44,8 +46,10 @@ public class SecurityLog extends LifecycleAdapter implements Log
 
     public SecurityLog( Config config, FileSystemAbstraction fileSystem, Executor executor ) throws IOException
     {
-        FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
+        ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
         File logFile = config.get( SecuritySettings.security_log_filename );
+
+        FormattedLog.Builder builder = FormattedLog.withZoneId( logTimeZoneId );
 
         rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile,
                 config.get( SecuritySettings.store_security_log_rotation_threshold ),

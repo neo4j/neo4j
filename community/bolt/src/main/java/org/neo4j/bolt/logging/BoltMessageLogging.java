@@ -19,10 +19,11 @@
  */
 package org.neo4j.bolt.logging;
 
-import java.io.File;
-import java.util.concurrent.Executor;
-
 import io.netty.channel.Channel;
+
+import java.io.File;
+import java.time.ZoneId;
+import java.util.concurrent.Executor;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -64,7 +65,8 @@ public class BoltMessageLogging
             {
                 File boltLogFile = config.get( GraphDatabaseSettings.bolt_log_filename );
                 Executor executor = scheduler.executor( JobScheduler.Groups.boltLogRotation );
-                return new BoltMessageLog( fs, boltLogFile, executor );
+                ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+                return new BoltMessageLog( fs, logTimeZoneId, boltLogFile, executor );
             }
             catch ( Throwable t )
             {

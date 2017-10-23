@@ -22,6 +22,7 @@ package org.neo4j.consistency;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +37,7 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -181,7 +183,7 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             File storeDir = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
             checkDbState( storeDir, config );
-
+            ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
             // Only output progress indicator if a console receives the output
             ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
             if ( System.console() != null )
@@ -191,10 +193,9 @@ public class CheckConsistencyCommand implements AdminCommand
 
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                     .runFullConsistencyCheck( storeDir, config, progressMonitorFactory,
-                            FormattedLogProvider.toOutputStream( System.out ), fileSystem, verbose,
-                            reportDir.toFile(),
-                            new ConsistencyFlags(
-                                    checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners ) );
+                            FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out ), fileSystem,
+                            verbose, reportDir.toFile(),
+                            new ConsistencyFlags( checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners ) );
 
             if ( !consistencyCheckResult.isSuccessful() )
             {
