@@ -16,14 +16,17 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ExpressionSignature, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Function, FunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-case object Reverse extends Function with SimpleTypedFunction {
+case object Reverse extends Function  {
   def name = "reverse"
 
-  override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString),
-    ExpressionSignature(argumentTypes = Vector(CTList(CTAny)), outputType = CTList(CTAny))
-  )
+  override protected def semanticCheck(ctx: Expression.SemanticContext, invocation: FunctionInvocation): SemanticCheck = {
+    checkArgs(invocation, 1) ifOkChain {
+      invocation.arguments(0).expectType(CTList(CTAny).covariant | CTString) chain
+        invocation.specifyType(invocation.arguments(0).types(_))
+    }
+  }
 }

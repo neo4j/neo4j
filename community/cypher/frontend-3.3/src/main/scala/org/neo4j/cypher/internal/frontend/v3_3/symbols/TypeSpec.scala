@@ -91,6 +91,16 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
       coercions intersect that
   }
 
+  def coerceOrLeastUpperBound(that: TypeSpec): TypeSpec = {
+    val coerced = coercions intersect that
+    if (coerced.nonEmpty)
+      coerced
+    else
+      this leastUpperBounds that
+  }
+
+  def without(aType: CypherType): TypeSpec = TypeSpec(ranges.flatMap(_ without aType))
+
   def constrain(that: CypherType): TypeSpec = TypeSpec(ranges.flatMap(_ constrain that))
 
   def constrainOrCoerce(that: CypherType): TypeSpec = {
@@ -110,6 +120,8 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   def wrapInCovariantList: TypeSpec = TypeSpec(ranges.map { r =>
     r.covariant.reparent(CTList)
   })
+
+  def covariant: TypeSpec = TypeSpec(ranges.map(_.covariant))
 
   def unwrapLists: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
 
