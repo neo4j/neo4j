@@ -22,11 +22,13 @@ package org.neo4j.consistency;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -111,7 +113,8 @@ public class ConsistencyCheckTool
 
         checkDbState( storeDir, tuningConfiguration );
 
-        LogProvider logProvider = FormattedLogProvider.toOutputStream( systemOut );
+        ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        LogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( systemOut );
         try
         {
             return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,

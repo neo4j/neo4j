@@ -29,6 +29,20 @@ import org.neo4j.io.ByteUnit;
 
 public class Format
 {
+    private static final String[] BYTE_SIZES = { "B", "kB", "MB", "GB" };
+
+    public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
+    public static final String TIME_FORMAT = "HH:mm:ss.SSS";
+
+    /**
+     * Default time zone is UTC (+00:00) so that comparing timestamped logs from different
+     * sources is an easier task.
+     */
+    public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
+
+    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT );
+    private static final ThreadLocalFormat TIME = new ThreadLocalFormat( TIME_FORMAT );
+
     public static String date()
     {
         return date( DEFAULT_TIME_ZONE );
@@ -180,20 +194,6 @@ public class Format
     {
         // No instances
     }
-
-    private static final String[] BYTE_SIZES = { "B", "kB", "MB", "GB" };
-
-    public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
-    public static final String TIME_FORMAT = "HH:mm:ss.SSS";
-
-    /**
-     * Default time zone is UTC (+00:00) so that comparing timestamped logs from different
-     * sources is an easier task.
-     */
-    public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
-
-    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT );
-    private static final ThreadLocalFormat TIME = new ThreadLocalFormat( TIME_FORMAT );
 
     private static class ThreadLocalFormat extends ThreadLocal<DateFormat>
     {

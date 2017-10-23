@@ -45,6 +45,7 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
+import org.neo4j.logging.LogTimeZone;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -299,6 +300,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Debug log level threshold." )
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
+
+    @Description( "Database logs timezone." )
+    public static final Setting<LogTimeZone> log_timezone =
+            setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal

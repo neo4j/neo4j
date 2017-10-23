@@ -24,11 +24,15 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZoneOffset;
 import java.util.Scanner;
+import java.util.TimeZone;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Level;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -67,6 +71,35 @@ public class SecurityLogTest
 
         String[] archiveLines = readLogFile( fs, archive( 1 ) );
         assertThat( archiveLines, array( containsString( "line 1" ) ) );
+    }
+
+    @Test
+    public void logUseSystemTimeZoneIfConfigured() throws Exception
+    {
+        TimeZone defaultTimeZone = TimeZone.getDefault();
+        try
+        {
+            checkLogTimeZone( 4, "+0400" );
+            checkLogTimeZone( -8, "-0800" );
+        }
+        finally
+        {
+            TimeZone.setDefault( defaultTimeZone );
+        }
+    }
+
+    private void checkLogTimeZone( int hoursShift, String timeZoneSuffix ) throws Exception
+    {
+        TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
+        Config timeZoneConfig = Config.defaults( GraphDatabaseSettings.log_timezone, LogTimeZone.SYSTEM.name() );
+        SecurityLog securityLog = new SecurityLog( timeZoneConfig, fileSystemRule.get(), Runnable::run );
+        securityLog.info( "line 1" );
+
+        FileSystemAbstraction fs = fileSystemRule.get();
+        File activeLogFile = timeZoneConfig.get( SecuritySettings.security_log_filename );
+        String[] activeLines = readLogFile( fs, activeLogFile );
+        assertThat( activeLines, array( containsString( timeZoneSuffix ) ) );
+        fileSystemRule.clear();
     }
 
     @Test

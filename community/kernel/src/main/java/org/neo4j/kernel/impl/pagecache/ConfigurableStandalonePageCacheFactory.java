@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import java.time.ZoneId;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -65,7 +67,8 @@ public final class ConfigurableStandalonePageCacheFactory
             PageCursorTracerSupplier pageCursorTracerSupplier, Config config )
     {
         config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
-        FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
+        ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, pageCacheTracer, pageCursorTracerSupplier,
                 logProvider.getLog( PageCache.class ) );

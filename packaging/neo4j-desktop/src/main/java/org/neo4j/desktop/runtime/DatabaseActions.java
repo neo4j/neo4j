@@ -20,12 +20,14 @@
 package org.neo4j.desktop.runtime;
 
 import java.net.BindException;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.desktop.model.exceptions.UnableToStartServerException;
 import org.neo4j.desktop.ui.MainWindow;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -61,7 +63,8 @@ public class DatabaseActions
         Config config = model.getConfig();
         Monitors monitors = new Monitors();
 
-        LogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
+        ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        LogProvider userLogProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out );
         GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies()
                 .userLogProvider( userLogProvider ).monitors( monitors );
 

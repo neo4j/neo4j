@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -53,6 +55,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         };
         private Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
+        private ZoneId timeZoneId = ZoneOffset.UTC;
         private File debugLog;
 
         private Builder()
@@ -94,6 +97,12 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
+        public Builder withTimeZone( ZoneId timeZoneId )
+        {
+            this.timeZoneId = timeZoneId;
+            return this;
+        }
+
         public Builder withDefaultLevel( Level defaultLevel )
         {
             this.defaultLevel = defaultLevel;
@@ -112,7 +121,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             {
                 throw new IllegalArgumentException( "Debug log can't be null; set its value using `withInternalLog`" );
             }
-            return new StoreLogService( userLogProvider, fileSystem, debugLog, logLevels, defaultLevel,
+            return new StoreLogService( userLogProvider, fileSystem, debugLog, logLevels, defaultLevel, timeZoneId,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor,
                     rotationListener );
         }
@@ -143,6 +152,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             File internalLog,
             Map<String, Level> logLevels,
             Level defaultLevel,
+            ZoneId logTimeZone,
             long internalLogRotationThreshold,
             long internalLogRotationDelay,
             int maxInternalLogArchives,
@@ -154,7 +164,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             fileSystem.mkdirs( internalLog.getParentFile() );
         }
 
-        final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withUTCTimeZone()
+        final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withZoneId( logTimeZone )
                 .withDefaultLogLevel( defaultLevel ).withLogLevels( logLevels );
 
         FormattedLogProvider internalLogProvider;
