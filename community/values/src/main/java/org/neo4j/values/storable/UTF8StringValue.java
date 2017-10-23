@@ -22,14 +22,14 @@ package org.neo4j.values.storable;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
- /*
- * Just as a normal StringValue but is backed by a byte array and does string
- * serialization lazily.
-  *
-  * TODO in this implementation most operations will actually load the string
-  * such as hashCode, length. These could be implemented using
-  * the byte array directly in later optimizations
- */
+/*
+* Just as a normal StringValue but is backed by a byte array and does string
+* serialization lazily.
+ *
+ * TODO in this implementation most operations will actually load the string
+ * such as hashCode. These could be implemented using
+ * the byte array directly in later optimizations
+*/
 public final class UTF8StringValue extends StringValue
 {
     private volatile String value;
@@ -108,6 +108,66 @@ public final class UTF8StringValue extends StringValue
             count++;
         }
         return count;
+    }
+
+    private static final int HIGH_BIT_MASK = 127;
+
+    @Override
+    public int computeHash()
+    {
+        if ( bytes.length == 0 )
+        {
+            return 0;
+        }
+
+        int hash = 1, i = offset, len = offset + length;
+        while ( i < len )
+        {
+            byte b = bytes[i];
+            //If high bit is zero (equivalent to the byte being positive in two's complement)
+            //we are dealing with an ascii value and use a single byte for storing the value.
+            if ( b >= 0 )
+            {
+                hash = 31 * hash + b;
+                i++;
+                continue;
+            }
+
+            //We can now have one of three situations.
+            //Byte1    Byte2    Byte3    Byte4
+            //110xxxxx 10xxxxxx
+            //1110xxxx 10xxxxxx 10xxxxxx
+            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            //Figure out how many bytes we need by reading the number of leading bytes
+            int bytesNeeded = 0;
+            while ( b < 0 )
+            {
+                bytesNeeded++;
+                b = (byte) (b << 1);
+            }
+            int codePoint;
+            switch ( bytesNeeded )
+            {
+            case 2:
+                codePoint = (b << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
+                i += 2;
+                break;
+            case 3:
+                codePoint = (b << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
+                i += 3;
+                break;
+            case 4:
+                codePoint = (b << 14) | ((bytes[i + 1] & HIGH_BIT_MASK) << 12) | ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
+                            | (bytes[i + 3] & HIGH_BIT_MASK);
+                i += 4;
+                break;
+            default:
+                throw new IllegalArgumentException( "Malformed UTF8 value" );
+            }
+            hash = 31 * hash + codePoint;
+        }
+
+        return hash;
     }
 
     public byte[] bytes()
