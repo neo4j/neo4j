@@ -63,10 +63,24 @@ public abstract class StringValue extends TextValue
         {
             int pos = value.offsetByCodePoints( 0, codePointOffset );
             h = 31 * h + value.codePointAt( pos );
-
         }
 
         return h;
+    }
+
+    @Override
+    public TextValue substring( int start, int end )
+    {
+        assert (start >= 0);
+        assert (end < length());
+        int subLen = end - start;
+        assert (subLen >= 0);
+        String value = value();
+
+        int codePointStart = value.offsetByCodePoints( 0, start );
+        int codePointEnd = value.offsetByCodePoints( 0, end );
+
+        return Values.stringValue( value.substring( codePointStart, codePointEnd ) );
     }
 
     @Override

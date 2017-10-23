@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, ParameterWrongTypeException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, ParameterWrongTypeException}
 import org.neo4j.values._
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
 
@@ -38,14 +39,18 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
   override def symbolTableDependencies = arg.symbolTableDependencies
 }
 
+object StringFunction {
+  def notAString(a: Any) = throw new CypherTypeException(
+    "Expected a string value for %s, but got: %s; consider converting it to a string with toString()."
+      .format(toString, a.toString))
+}
+
 case object asString extends (AnyValue => String) {
 
   override def apply(a: AnyValue): String = a match {
-    case x if x == Values.NO_VALUE => null
+    case x if x == NO_VALUE => null
     case x: TextValue => x.stringValue()
-    case _ => throw new CypherTypeException(
-      "Expected a string value for %s, but got: %s; consider converting it to a string with toString()."
-        .format(toString(), a.toString))
+    case _ => StringFunction.notAString(a)
   }
 }
 
@@ -107,25 +112,22 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
   extends NullInNullOutExpression(orig) with NumericHelper {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val origVal = asString(orig(m, state))
+    val a = orig(m, state)
+    a match {
+      case NO_VALUE => NO_VALUE
+      case text: TextValue =>
+        // if start goes off the end of the string, let's be nice and handle that.
+        val incomingLength = text.length
+        val startVal = Math.min(incomingLength, asInt(start(m, state)).value())
 
-    def noMoreThanMax(maxLength: Int, length: Int): Int =
-      if (length > maxLength) {
-        maxLength
-      } else {
-        length
-      }
-
-    // if start goes off the end of the string, let's be nice and handle that.
-    val startVal = noMoreThanMax(origVal.length, asInt(start(m, state)).value())
-
-    // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = length match {
-      case None => origVal.length - startVal
-      case Some(func) => noMoreThanMax(origVal.length - startVal, asInt(func(m, state)).value())
+        // if length goes off the end of the string, let's be nice and handle that.
+        val lengthVal = length match {
+          case None => incomingLength - startVal
+          case Some(func) => Math.min(incomingLength - startVal, asInt(func(m, state)).value())
+        }
+        text.substring(startVal, startVal + lengthVal)
+      case _ => StringFunction.notAString(a)
     }
-
-    Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
   }
 
 
@@ -153,7 +155,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
     val replaceWithVal = asString(replaceWith(m, state))
 
     if (searchVal == null || replaceWithVal == null) {
-      Values.NO_VALUE
+      NO_VALUE
     } else {
       Values.stringValue(origVal.replace(searchVal, replaceWithVal))
     }
@@ -177,7 +179,7 @@ case class SplitFunction(orig: Expression, separator: Expression)
     val separatorVal = asString(separator(m, state))
 
     if (origVal == null || separatorVal == null) {
-      Values.NO_VALUE
+      NO_VALUE
     } else {
       if (separatorVal.length > 0) {
         VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray:_*))

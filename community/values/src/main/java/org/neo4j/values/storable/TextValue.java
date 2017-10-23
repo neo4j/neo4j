@@ -33,6 +33,8 @@ public abstract class TextValue extends ScalarValue
      */
     public abstract int length();
 
+    public abstract TextValue substring(int start, int end);
+
     abstract int compareTo( TextValue other );
 
     @Override

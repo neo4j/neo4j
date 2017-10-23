@@ -96,6 +96,14 @@ public final class CharValue extends TextValue
         return 1;
     }
 
+    @Override
+    public TextValue substring( int start, int end )
+    {
+        assert start == 0;
+        assert end == 1;
+        return this;
+    }
+
     public char value()
     {
         return value;

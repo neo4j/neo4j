@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{EMPTY_STRING, stringValue}
@@ -87,8 +87,10 @@ class StringFunctionsTest extends CypherFunSuite {
     substringFrom("0123456789", 5) should equal(stringValue("56789"))
     substringFrom("0123456789", 15) should equal(EMPTY_STRING)
     substring(null, 8, 5) should equal(expectedNull)
+    substring( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 1) should equal(stringValue("\uD83D\uDE21"))
+    substring( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 2) should equal(stringValue("\uD83D\uDE21\uD83D\uDE21"))
     intercept[CypherTypeException](substring(1024, 1, 2) should equal(expectedNull))
-    intercept[StringIndexOutOfBoundsException](substring("hello", -4, 2) should equal(expectedNull))
+    intercept[IndexOutOfBoundsException](substring("hello", -4, 2) should equal(expectedNull))
   }
 
   test("lowerTests") {
