@@ -101,10 +101,10 @@ public class ConsistencyCheckToolTest
             ConsistencyCheckService service = mock( ConsistencyCheckService.class );
             Mockito.when( service.runFullConsistencyCheck( any( File.class ), any( Config.class ),
                     any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
-                    eq( false ), any( CheckConsistencyConfig.class ) ) )
+                    eq( false ), any( ConsistencyFlags.class ) ) )
                     .then( invocationOnMock ->
                     {
-                        LogProvider provider = invocationOnMock.getArgumentAt( 3, LogProvider.class );
+                        LogProvider provider = invocationOnMock.getArgument( 3 );
                         provider.getLog( "test" ).info( "testMessage" );
                         return ConsistencyCheckService.Result.success( new File( StringUtils.EMPTY ) );
                     } );

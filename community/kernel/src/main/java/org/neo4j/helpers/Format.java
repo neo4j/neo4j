@@ -43,7 +43,6 @@ public class Format
     private static final ThreadLocalFormat TIME = new ThreadLocalFormat( TIME_FORMAT );
     private static int KB = (int) ByteUnit.kibiBytes( 1 );
 
-
     public static String date()
     {
         return date( DEFAULT_TIME_ZONE );
