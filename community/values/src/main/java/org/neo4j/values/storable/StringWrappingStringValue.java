@@ -17,36 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.utils;
-
-import org.neo4j.values.storable.UTF8StringValue;
-
-import static org.neo4j.values.storable.Values.utf8Value;
+package org.neo4j.values.storable;
 
 /**
- * Utility class for operations on utf-8 values.
+ * Implementation of StringValue that wraps a `java.lang.String` and
+ * delegates methods to that instance.
  */
-public final class UTF8Utils
+final class StringWrappingStringValue extends StringValue
 {
-    private UTF8Utils()
+    final String value;
+
+    StringWrappingStringValue( String value )
     {
-        throw new UnsupportedOperationException( "Do not instantiate" );
+        assert value != null;
+        this.value = value;
     }
 
-    /**
-     * Add two values.
-     * @param a value to add
-     * @param b value to add
-     * @return the value a + b
-     */
-    public static UTF8StringValue add( UTF8StringValue a, UTF8StringValue b )
+    @Override
+    String value()
     {
-        byte[] bytesA = a.bytes();
-        byte[] bytesB = b.bytes();
+        return value;
+    }
 
-        byte[] bytes = new byte[bytesA.length + bytesB.length];
-        System.arraycopy( bytesA, 0, bytes, 0, bytesA.length );
-        System.arraycopy( bytesB, 0, bytes, bytesA.length, bytesB.length );
-        return utf8Value(bytes);
+    @Override
+    public int length()
+    {
+        return value.codePointCount( 0, value.length() );
     }
 }

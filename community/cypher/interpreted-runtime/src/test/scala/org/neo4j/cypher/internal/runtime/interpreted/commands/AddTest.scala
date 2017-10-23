@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.StringValue.UTF8StringValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{longValue, stringValue, utf8Value}
+import org.neo4j.values.storable.{UTF8StringValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
 class AddTest extends CypherFunSuite {
