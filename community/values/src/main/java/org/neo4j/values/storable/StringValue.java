@@ -113,7 +113,7 @@ public abstract class StringValue extends TextValue
         @Override
         public int length()
         {
-            return value.length();
+            return value.codePointCount( 0, value.length() );
         }
     }
 
@@ -181,7 +181,28 @@ public abstract class StringValue extends TextValue
         @Override
         public int length()
         {
-            return value().length();
+            int count = 0, i = offset, len = offset + length;
+            while ( i < len )
+            {
+                byte b = bytes[i];
+                //If high bit is zero (equivalent to the byte being positive in two's complement)
+                //we are dealing with an ascii value and use a single byte for storing the value.
+                if ( b >= 0 )
+                {
+                    i++;
+                }
+
+                //The number of high bits tells us how many bytes we use to store the value
+                //e.g. 110xxxx -> need two bytes, 1110xxxx -> need three bytes, 11110xxx -> needs
+                //four bytes
+                while ( b < 0 )
+                {
+                    i++;
+                    b = (byte) (b << 1);
+                }
+                count++;
+            }
+            return count;
         }
 
         public byte[] bytes()

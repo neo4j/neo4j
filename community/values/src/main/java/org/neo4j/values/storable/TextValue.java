@@ -27,6 +27,10 @@ public abstract class TextValue extends ScalarValue
 
     public abstract String stringValue();
 
+    /**
+     * The length of a TextValue is the number of Unicode code points in the text.
+     * @return The number of Unicode code points.
+     */
     public abstract int length();
 
     abstract int compareTo( TextValue other );
