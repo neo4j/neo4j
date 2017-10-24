@@ -31,6 +31,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.ThreadTestUtils;
@@ -92,7 +93,7 @@ public class PooledConcurrentMergeSchedulerTest
         assertEquals( 2, mergeScheduler.getWriterTaskCount() );
     }
 
-    @Test( timeout = 5000 )
+    @Test( timeout = 10_000 )
     public void writerCloseWaitForMergesInMergeQueue() throws IOException, InterruptedException
     {
         indexWriter = mock( IndexWriter.class );
@@ -106,7 +107,7 @@ public class PooledConcurrentMergeSchedulerTest
         assertEquals( 1, mergeScheduler.getWriterTaskCount() );
 
         Thread closeSchedulerThread = ThreadTestUtils.fork( () -> mergeScheduler.close() );
-        ThreadTestUtils.awaitThreadState( closeSchedulerThread, 500, Thread.State.TIMED_WAITING );
+        ThreadTestUtils.awaitThreadState( closeSchedulerThread, TimeUnit.SECONDS.toMillis( 5 ), Thread.State.TIMED_WAITING );
         mergeScheduler.getExecutionLatch().countDown();
         closeSchedulerThread.join();
 
