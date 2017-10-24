@@ -26,7 +26,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.unsafe.impl.batchimport.CountGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.IdMapperPreparationStage;
 import org.neo4j.unsafe.impl.batchimport.NodeDegreeCountStage;
-import org.neo4j.unsafe.impl.batchimport.NodeFirstGroupStage;
 import org.neo4j.unsafe.impl.batchimport.NodeStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipGroupStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipStage;
@@ -38,6 +37,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.lang.Integer.min;
@@ -230,17 +230,24 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void initializeLinking()
     {
         printStageHeader( "(3/4) Relationship linking" );
-        initializeProgress( actualRelationshipCount * 3 ); // node degrees + forwards and backwards, ignore the other stages
+        initializeProgress(
+                actualRelationshipCount +     // node degrees
+                actualRelationshipCount * 2 + // start/end forwards, see RelationshipLinkingProgress
+                actualRelationshipCount * 2   // start/end backwards, see RelationshipLinkingProgress
+                );
     }
 
     private void initializeMisc( BatchingNeoStores stores )
     {
         printStageHeader( "(4/4) Post processing" );
         // written groups + node counts + relationship counts
+        long groupCount = stores.getTemporaryRelationshipGroupStore().getHighId();
         initializeProgress(
-                stores.getRelationshipGroupStore().getHighId() +
-                actualNodeCount +
-                actualRelationshipCount );
+                groupCount +               // Count groups
+                groupCount +               // Write groups
+                groupCount +               // Node --> Group
+                actualNodeCount +          // Node counts
+                actualRelationshipCount ); // Relationship counts
     }
 
     private static long defensivelyPadMemoryEstimate( long bytes )
@@ -381,11 +388,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private static boolean includeStage( StageExecution execution )
     {
-        return !execution.getStageName().equals( RelationshipGroupStage.NAME ) &&
-               !execution.getStageName().equals( SparseNodeFirstRelationshipStage.NAME ) &&
-               !execution.getStageName().equals( CountGroupsStage.NAME ) &&
-               !execution.getStageName().equals( ScanAndCacheGroupsStage.NAME ) &&
-               !execution.getStageName().equals( NodeFirstGroupStage.NAME );
+        String name = execution.getStageName();
+        return !name.equals( RelationshipGroupStage.NAME ) &&
+               !name.equals( SparseNodeFirstRelationshipStage.NAME ) &&
+               !name.equals( ScanAndCacheGroupsStage.NAME );
     }
 
     private static double weightOf( String stageName )
@@ -404,10 +410,30 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private static long progressOf( StageExecution execution )
     {
-        Step<?> last = last( execution.steps() );
-        long doneBatches = last.stats().stat( Keys.done_batches ).asLong();
+        // First see if there's a "progress" stat
+        Stat progressStat = findProgressStat( execution.steps() );
+        if ( progressStat != null )
+        {
+            return weighted( execution.getStageName(), progressStat.asLong() );
+        }
+
+        // No, then do the generic progress calculation by looking at "done_batches"
+        long doneBatches = last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
         int batchSize = execution.getConfig().batchSize();
         long progress = weighted( execution.getStageName(), doneBatches * batchSize );
         return progress;
+    }
+
+    private static Stat findProgressStat( Iterable<Step<?>> steps )
+    {
+        for ( Step<?> step : steps )
+        {
+            Stat stat = step.stats().stat( Keys.progress );
+            if ( stat != null )
+            {
+                return stat;
+            }
+        }
+        return null;
     }
 }
