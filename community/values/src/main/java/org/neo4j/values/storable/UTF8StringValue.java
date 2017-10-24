@@ -170,6 +170,49 @@ public final class UTF8StringValue extends StringValue
         return hash;
     }
 
+    @Override
+    public TextValue substring( int start, int end )
+    {
+        assert start > 0;
+        assert end > start && end < length();
+
+        int count = 0, byteStart = -1, byteEnd = -1, i = offset, len = offset + length;
+        while ( i < len )
+        {
+            if ( count == start )
+            {
+                byteStart = i;
+            }
+            if ( count == end )
+            {
+                byteEnd = i;
+                break;
+            }
+            byte b = bytes[i];
+            //If high bit is zero (equivalent to the byte being positive in two's complement)
+            //we are dealing with an ascii value and use a single byte for storing the value.
+            if ( b >= 0 )
+            {
+                i++;
+            }
+
+            while ( b < 0 )
+            {
+                i++;
+                b = (byte) (b << 1);
+            }
+            count++;
+        }
+        if ( byteEnd < 0 )
+        {
+            byteEnd = len;
+        }
+
+        assert byteStart >= 0;
+        assert byteEnd >= byteStart;
+        return Values.utf8Value( bytes, byteStart, byteEnd - byteStart );
+    }
+
     public byte[] bytes()
     {
         return bytes;

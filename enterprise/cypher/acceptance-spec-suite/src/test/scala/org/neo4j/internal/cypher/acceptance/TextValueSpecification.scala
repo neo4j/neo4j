@@ -28,6 +28,13 @@ object TextValueSpecification extends Properties("TextValue") {
 
   import Prop.forAll
 
+  private val substringGen = for {
+    string <- Arbitrary.arbitrary[String]
+    max = string.codePointCount(0, string.length)
+    start <- Gen.chooseNum[Int](0, max)
+    end <-  Gen.chooseNum[Int](start + 1, max)
+  } yield (string, start, end)
+
   property("equals") = forAll { (x: String) =>
     stringValue(x).equals(utf8Value(x.getBytes(StandardCharsets.UTF_8)))
   }
@@ -38,5 +45,14 @@ object TextValueSpecification extends Properties("TextValue") {
 
   property("hashCode") = forAll { (x: String) =>
     stringValue(x).hashCode() == utf8Value(x.getBytes(StandardCharsets.UTF_8)).hashCode()
+  }
+
+  property("substring") = forAll(substringGen) {
+    case (string, start, end) =>
+      val stringSubstring = stringValue(string).substring(start, end)
+      val utf8SubString = utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, end)
+      stringSubstring == utf8SubString &&
+        stringSubstring.length() == utf8SubString.length() &&
+        stringSubstring.hashCode() == utf8SubString.hashCode()
   }
 }
