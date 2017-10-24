@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -30,7 +31,8 @@ import static org.neo4j.values.storable.Values.utf8Value;
 
 public class UTF8StringValueTest
 {
-    private String[] strings = {"", "1337", " ", "普通话/普通話", "\uD83D\uDE21"};
+    private String[] strings = {"", "1337", " ", "普通话/普通話", "\uD83D\uDE21", " a b c ", "䤹᳽", "熨", "ۼ",
+            "ⲹ楡톜ഷۢ⼈늉₭샺ጚ砧攡跿家䯶鲏⬖돛犽ۼ"};
 
     @Test
     public void shouldHandleDifferentTypesOfStrings()
@@ -42,6 +44,29 @@ public class UTF8StringValueTest
             TextValue utf8 = utf8Value( bytes );
             assertSame( stringValue, utf8 );
         }
+    }
+
+    @Test
+    public void shouldTrimDifferentTypesOfStrings()
+    {
+        for ( String string : strings )
+        {
+            TextValue stringValue = stringValue( string );
+            byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
+            TextValue utf8 = utf8Value( bytes );
+            assertSame( stringValue.trim(), utf8.trim() );
+        }
+    }
+
+    @Test
+    public void shouldFoo()
+    {
+        String string = "熨"; // "ۼ";
+
+        TextValue stringValue = stringValue( string );
+        byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
+        TextValue utf8 = utf8Value( bytes );
+        assertSame( stringValue.trim(), utf8.trim() );
     }
 
     @Test
@@ -59,9 +84,10 @@ public class UTF8StringValueTest
 
     private void assertSame( TextValue lhs, TextValue rhs )
     {
-        assertThat( lhs.length(), equalTo( rhs.length() ) );
-        assertThat( lhs, equalTo( rhs ) );
-        assertThat( rhs, equalTo( lhs ) );
-        assertThat( lhs.hashCode(), equalTo( rhs.hashCode() ) );
+        assertThat( format( "%s.length != %s.length", lhs, rhs ), lhs.length(),
+                equalTo( rhs.length() ) );
+        assertThat( format( "%s != %s", lhs, rhs ), lhs, equalTo( rhs ) );
+        assertThat( format( "%s != %s", rhs, lhs ), rhs, equalTo( lhs ) );
+        assertThat( format( "%s.hashCode != %s.hashCode", rhs, lhs ), lhs.hashCode(), equalTo( rhs.hashCode() ) );
     }
 }

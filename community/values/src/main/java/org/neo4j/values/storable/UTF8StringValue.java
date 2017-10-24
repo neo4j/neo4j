@@ -23,15 +23,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /*
-* Just as a normal StringValue but is backed by a byte array and does string
-* serialization lazily.
+ * Just as a normal StringValue but is backed by a byte array and does string
+ * serialization lazily.
  *
- * TODO in this implementation most operations will actually load the string
- * such as hashCode. These could be implemented using
- * the byte array directly in later optimizations
-*/
+ */
 public final class UTF8StringValue extends StringValue
 {
+    //0111 1111, used for removing HIGH BIT from byte
+    private static final int HIGH_BIT_MASK = 127;
+    //0100 000, used for detecting non-continuation bytes 10xx xxxx
+    private static final int NON_CONTINUATION_BIT_MASK = 64;
+
     private volatile String value;
     private final byte[] bytes;
     private final int offset;
@@ -110,12 +112,12 @@ public final class UTF8StringValue extends StringValue
         return count;
     }
 
-    private static final int HIGH_BIT_MASK = 127;
-
     @Override
     public int computeHash()
     {
-        if ( bytes.length == 0 )
+        byte[] values = bytes;
+
+        if ( values.length == 0 || length == 0 )
         {
             return 0;
         }
@@ -123,7 +125,7 @@ public final class UTF8StringValue extends StringValue
         int hash = 1, i = offset, len = offset + length;
         while ( i < len )
         {
-            byte b = bytes[i];
+            byte b = values[i];
             //If high bit is zero (equivalent to the byte being positive in two's complement)
             //we are dealing with an ascii value and use a single byte for storing the value.
             if ( b >= 0 )
@@ -145,25 +147,9 @@ public final class UTF8StringValue extends StringValue
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            int codePoint;
-            switch ( bytesNeeded )
-            {
-            case 2:
-                codePoint = (b << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
-                i += 2;
-                break;
-            case 3:
-                codePoint = (b << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
-                i += 3;
-                break;
-            case 4:
-                codePoint = (b << 14) | ((bytes[i + 1] & HIGH_BIT_MASK) << 12) | ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
-                            | (bytes[i + 3] & HIGH_BIT_MASK);
-                i += 4;
-                break;
-            default:
-                throw new IllegalArgumentException( "Malformed UTF8 value" );
-            }
+            int codePoint = codePoint( b, i, bytesNeeded );
+            i += bytesNeeded;
+
             hash = 31 * hash + codePoint;
         }
 
@@ -175,6 +161,7 @@ public final class UTF8StringValue extends StringValue
     {
         assert start > 0;
         assert end > start && end < length();
+        byte[] values = bytes;
 
         int count = 0, byteStart = -1, byteEnd = -1, i = offset, len = offset + length;
         while ( i < len )
@@ -188,7 +175,7 @@ public final class UTF8StringValue extends StringValue
                 byteEnd = i;
                 break;
             }
-            byte b = bytes[i];
+            byte b = values[i];
             //If high bit is zero (equivalent to the byte being positive in two's complement)
             //we are dealing with an ascii value and use a single byte for storing the value.
             if ( b >= 0 )
@@ -210,11 +197,135 @@ public final class UTF8StringValue extends StringValue
 
         assert byteStart >= 0;
         assert byteEnd >= byteStart;
-        return Values.utf8Value( bytes, byteStart, byteEnd - byteStart );
+        return new UTF8StringValue( values, byteStart, byteEnd - byteStart );
     }
+
+    @Override
+    public TextValue trim()
+    {
+        byte[] values = bytes;
+
+        if ( values.length == 0 || length == 0 )
+        {
+            return this;
+        }
+
+        int startIndex = trimLeftIndex();
+        int endIndex = trimRightIndex();
+        return new UTF8StringValue( values, startIndex, Math.max( endIndex + 1 - startIndex, 0 ) );
+    }
+
+    /**
+     * Returns the left-most index into the underlying byte array that does not belong to a whitespace code point
+     */
+    private int trimLeftIndex()
+    {
+        int i = offset, len = offset + length;
+        while ( i < len )
+        {
+            byte b = bytes[i];
+            //If high bit is zero (equivalent to the byte being positive in two's complement)
+            //we are dealing with an ascii value and use a single byte for storing the value.
+            if ( b >= 0 )
+            {
+                if ( b > 32 )
+                {
+                    return i;
+                }
+                i++;
+                continue;
+            }
+
+            //We can now have one of three situations.
+            //Byte1    Byte2    Byte3    Byte4
+            //110xxxxx 10xxxxxx
+            //1110xxxx 10xxxxxx 10xxxxxx
+            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            //Figure out how many bytes we need by reading the number of leading bytes
+            int bytesNeeded = 0;
+            while ( b < 0 )
+            {
+                bytesNeeded++;
+                b = (byte) (b << 1);
+            }
+            int codePoint = codePoint( b, i, bytesNeeded );
+            if ( !Character.isWhitespace( codePoint ) )
+            {
+                return i;
+            }
+            i += bytesNeeded;
+        }
+        return i;
+    }
+
+    /**
+     * Returns the right-most index into the underlying byte array that does not belong to a whitespace code point
+     */
+    private int trimRightIndex()
+    {
+        int index = offset + length - 1;
+        while ( index >= 0 )
+        {
+            byte b = bytes[index];
+            //If high bit is zero (equivalent to the byte being positive in two's complement)
+            //we are dealing with an ascii value and use a single byte for storing the value.
+            if ( b >= 0 )
+            {
+                if ( b > 32 )
+                {
+                    return index;
+                }
+                index--;
+                continue;
+            }
+
+            //We can now have one of three situations.
+            //Byte1    Byte2    Byte3    Byte4
+            //110xxxxx 10xxxxxx
+            //1110xxxx 10xxxxxx 10xxxxxx
+            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            int bytesNeeded = 1;
+            while ( (b & NON_CONTINUATION_BIT_MASK) == 0 )
+            {
+                bytesNeeded++;
+                b = bytes[--index];
+            }
+
+            int codePoint = codePoint( (byte) (b << bytesNeeded), index, bytesNeeded );
+            if ( !Character.isWhitespace( codePoint ) )
+            {
+                return Math.min( index + bytesNeeded, length - 1 );
+            }
+        }
+        return index;
+    }
+
 
     public byte[] bytes()
     {
         return bytes;
+    }
+
+    private int codePoint( byte currentByte, int i, int bytesNeeded )
+    {
+        int codePoint;
+        byte[] values = bytes;
+        switch ( bytesNeeded )
+        {
+        case 2:
+            codePoint = (currentByte << 4) | (values[i + 1] & HIGH_BIT_MASK);
+            break;
+        case 3:
+            codePoint = (currentByte << 9) | ((values[i + 1] & HIGH_BIT_MASK) << 6) | (values[i + 2] & HIGH_BIT_MASK);
+            break;
+        case 4:
+            codePoint = (currentByte << 14) | ((values[i + 1] & HIGH_BIT_MASK) << 12) |
+                        ((values[i + 2] & HIGH_BIT_MASK) << 6)
+                        | (values[i + 3] & HIGH_BIT_MASK);
+            break;
+        default:
+            throw new IllegalArgumentException( "Malformed UTF8 value" );
+        }
+        return codePoint;
     }
 }
