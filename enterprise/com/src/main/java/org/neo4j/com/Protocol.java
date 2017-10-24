@@ -90,7 +90,7 @@ public abstract class Protocol
             List<StorageCommand> commands = new LinkedList<>();
             while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
             {
-                commands.add( entryRead.getXaCommand() );
+                commands.add( entryRead.getCommand() );
             }
 
             PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );

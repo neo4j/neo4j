@@ -201,7 +201,7 @@ public class LogMatchers
                     return false;
                 }
 
-                Command command = (Command) commandEntry.getXaCommand();
+                Command command = (Command) commandEntry.getCommand();
                 return command.getKey() == key &&
                         command.getClass().equals( commandClass );
             }

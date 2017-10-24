@@ -156,7 +156,7 @@ public class IndexCreationTest
 
                 if ( startFound && entry instanceof LogEntryCommand )
                 {
-                    commandsInFirstEntry.add( entry.<LogEntryCommand>as().getXaCommand() );
+                    commandsInFirstEntry.add( entry.<LogEntryCommand>as().getCommand() );
                 }
 
                 if ( entry instanceof LogEntryCommit )

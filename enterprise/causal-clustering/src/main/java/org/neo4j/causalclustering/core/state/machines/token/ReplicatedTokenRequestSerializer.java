@@ -130,7 +130,7 @@ public class ReplicatedTokenRequestSerializer
         {
             while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
             {
-                commands.add( entryRead.getXaCommand() );
+                commands.add( entryRead.getCommand() );
             }
         }
         catch ( IOException e )

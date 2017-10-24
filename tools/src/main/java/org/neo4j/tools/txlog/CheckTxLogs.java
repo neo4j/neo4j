@@ -207,7 +207,7 @@ public class CheckTxLogs
                 LogEntry entry = logEntryCursor.get();
                 if ( entry instanceof LogEntryCommand )
                 {
-                    StorageCommand command = ((LogEntryCommand) entry).getXaCommand();
+                    StorageCommand command = ((LogEntryCommand) entry).getCommand();
                     if ( check.commandClass().isInstance( command ) )
                     {
                         long logVersion = logEntryCursor.getCurrentLogVersion();

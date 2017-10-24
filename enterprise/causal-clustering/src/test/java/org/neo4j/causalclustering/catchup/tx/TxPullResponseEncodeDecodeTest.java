@@ -63,7 +63,7 @@ public class TxPullResponseEncodeDecodeTest
                 new Command.NodeCommand( new NodeRecord( arbitraryRecordId ), new NodeRecord( arbitraryRecordId ) );
 
         PhysicalTransactionRepresentation physicalTransactionRepresentation =
-                new PhysicalTransactionRepresentation( singletonList( new LogEntryCommand( command ).getXaCommand() ) );
+                new PhysicalTransactionRepresentation( singletonList( new LogEntryCommand( command ).getCommand() ) );
         physicalTransactionRepresentation.setHeader( new byte[]{}, 0, 0, 0, 0, 0, 0 );
 
         LogEntryStart startEntry = new LogEntryStart( 0, 0, 0L, 0L, new byte[]{}, LogPosition.UNSPECIFIED );

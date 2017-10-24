@@ -39,7 +39,7 @@ public class LogEntryCommand extends AbstractLogEntry
         this.command = command;
     }
 
-    public StorageCommand getXaCommand()
+    public StorageCommand getCommand()
     {
         return command;
     }
