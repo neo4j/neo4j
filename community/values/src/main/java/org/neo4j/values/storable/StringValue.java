@@ -84,6 +84,12 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
+    public TextValue trim()
+    {
+        return Values.stringValue( value().trim() );
+    }
+
+    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeString( value() );
@@ -119,5 +125,25 @@ public abstract class StringValue extends TextValue
         return format( "'%s'", value() );
     }
 
+    static TextValue EMTPY = new StringValue()
+    {
+        @Override
+        public int length()
+        {
+            return 0;
+        }
+
+        @Override
+        public TextValue trim()
+        {
+            return this;
+        }
+
+        @Override
+        String value()
+        {
+            return "";
+        }
+    };
 }
 

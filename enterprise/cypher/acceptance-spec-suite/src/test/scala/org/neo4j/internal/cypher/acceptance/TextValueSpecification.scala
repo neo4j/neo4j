@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.nio.charset.StandardCharsets
 
+import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values.{stringValue, utf8Value}
 import org.scalacheck.{Properties, _}
 
@@ -47,12 +48,16 @@ object TextValueSpecification extends Properties("TextValue") {
     stringValue(x).hashCode() == utf8Value(x.getBytes(StandardCharsets.UTF_8)).hashCode()
   }
 
+  property("trim") = forAll { (x: String) =>
+    equivalent(stringValue(x).trim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).trim())
+  }
+
   property("substring") = forAll(substringGen) {
     case (string, start, end) =>
-      val stringSubstring = stringValue(string).substring(start, end)
-      val utf8SubString = utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, end)
-      stringSubstring == utf8SubString &&
-        stringSubstring.length() == utf8SubString.length() &&
-        stringSubstring.hashCode() == utf8SubString.hashCode()
+      equivalent(stringValue(string).substring(start, end),
+                utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, end))
   }
+
+  private def equivalent(t1: TextValue, t2: TextValue) =
+    t1.length() == t2.length() && t1 == t2 && t1.hashCode() == t2.hashCode()
 }

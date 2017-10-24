@@ -104,6 +104,19 @@ public final class CharValue extends TextValue
         return this;
     }
 
+    @Override
+    public TextValue trim()
+    {
+        if (Character.isWhitespace( value ))
+        {
+            return StringValue.EMTPY;
+        }
+        else
+        {
+            return this;
+        }
+    }
+
     public char value()
     {
         return value;
