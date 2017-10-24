@@ -29,7 +29,6 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
@@ -44,6 +43,7 @@ import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.StreamFilesRecursive;
@@ -76,10 +76,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return new AdversarialFileWatcher( delegate.fileWatcher(), adversary );
     }
 
-    public StoreChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, mode ), adversary );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, openMode ), adversary );
     }
 
     public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException

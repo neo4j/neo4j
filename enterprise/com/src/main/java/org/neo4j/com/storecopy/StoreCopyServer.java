@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -192,7 +193,7 @@ public class StoreCopyServer
                     }
                     else
                     {
-                        try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
+                        try ( ReadableByteChannel fileChannel = fileSystem.open( file, OpenMode.READ ) )
                         {
                             long fileSize = fileSystem.getFileSize( file );
                             doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );

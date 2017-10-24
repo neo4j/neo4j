@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
@@ -173,7 +174,7 @@ class RecoveryProtocol
             FileSystemAbstraction fileSystem,
             File file ) throws IOException, EndOfStreamException
     {
-        try ( StoreChannel channel = fileSystem.open( file, "r" ) )
+        try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ ) )
         {
             return headerMarshal.unmarshal( new ReadAheadChannel<>( channel, SegmentHeader.SIZE ) );
         }
@@ -184,7 +185,7 @@ class RecoveryProtocol
             File file,
             SegmentHeader header ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
+        try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE ) )
         {
             channel.position( 0 );
             PhysicalFlushableChannel writer = new PhysicalFlushableChannel( channel, SegmentHeader.SIZE );

@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.causalclustering.core.state.storage.StateMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 
@@ -99,7 +100,7 @@ public class StateRecoveryManager<STATE>
 
     private STATE readLastEntryFrom( File file ) throws IOException
     {
-        try ( ReadableClosableChannel channel = new ReadAheadChannel<>( fileSystem.open( file, "r" ) ) )
+        try ( ReadableClosableChannel channel = new ReadAheadChannel<>( fileSystem.open( file, OpenMode.READ ) ) )
         {
             STATE result = null;
             STATE lastRead;

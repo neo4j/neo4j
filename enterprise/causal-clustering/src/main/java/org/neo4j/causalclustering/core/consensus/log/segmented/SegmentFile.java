@@ -26,10 +26,11 @@ import org.neo4j.causalclustering.core.consensus.log.EntryRecord;
 import org.neo4j.causalclustering.core.consensus.log.LogPosition;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
+import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.logging.Log;
@@ -137,7 +138,7 @@ class SegmentFile implements AutoCloseable
                 throw new IOException( "Writer has been closed" );
             }
 
-            StoreChannel channel = fileSystem.open( file, "rw" );
+            StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
             channel.position( channel.size() );
             bufferedWriter = new PhysicalFlushableChannel( channel );
         }

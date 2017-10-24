@@ -30,6 +30,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -143,7 +144,7 @@ public class CorruptedLogsTruncator
         }
         ZipEntry zipEntry = new ZipEntry( logFile.getName() );
         destination.putNextEntry( zipEntry );
-        try ( StoreChannel transactionLogChannel = fs.open( logFile, "r" ) )
+        try ( StoreChannel transactionLogChannel = fs.open( logFile, OpenMode.READ ) )
         {
             transactionLogChannel.position( logOffset );
             while ( transactionLogChannel.read( byteBuffer ) >= 0 )

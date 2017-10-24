@@ -108,7 +108,7 @@ public class FileSystemAbstractionInterruptionTest
     private StoreChannel chan( boolean channelShouldBeClosed ) throws IOException
     {
         this.channelShouldBeClosed = channelShouldBeClosed;
-        channel = fs.open( file, "rw" );
+        channel = fs.open( file, OpenMode.READ_WRITE );
         return channel;
     }
 

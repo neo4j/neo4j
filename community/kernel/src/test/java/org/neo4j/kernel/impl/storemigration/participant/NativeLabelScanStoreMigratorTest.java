@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -257,7 +258,7 @@ public class NativeLabelScanStoreMigratorTest
 
     private ByteBuffer readFileContent( File nativeLabelIndex, int length ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystem.open( nativeLabelIndex, "r" ) )
+        try ( StoreChannel storeChannel = fileSystem.open( nativeLabelIndex, OpenMode.READ ) )
         {
             ByteBuffer readBuffer = ByteBuffer.allocate( length );
             //noinspection StatementWithEmptyBody

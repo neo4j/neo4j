@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
@@ -434,7 +435,7 @@ public class RecoveryTest
     {
 
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                fileSystemRule.get().open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
+                fileSystemRule.get().open( file, OpenMode.READ_WRITE ), logVersion, CURRENT_LOG_VERSION );
                 PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel(
                         versionedStoreChannel ) )
         {

@@ -32,6 +32,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -61,7 +62,7 @@ public class FileSenderTest
         // given
         File emptyFile = testDirectory.file( "emptyFile" );
         fs.create( emptyFile ).close();
-        FileSender fileSender = new FileSender( fs.open( emptyFile, "r" ) );
+        FileSender fileSender = new FileSender( fs.open( emptyFile, OpenMode.READ ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -83,7 +84,7 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( fs.open( smallFile, OpenMode.READ ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -106,7 +107,7 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( fs.open( smallFile, OpenMode.READ ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -130,7 +131,7 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( fs.open( smallFile, OpenMode.READ ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -149,7 +150,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
+        StoreChannel reader = fs.open( file, OpenMode.READ );
         FileSender fileSender = new FileSender( reader );
 
         // when
@@ -168,7 +169,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
+        StoreChannel reader = fs.open( file, OpenMode.READ );
         FileSender fileSender = new FileSender( reader );
 
         // when
@@ -194,7 +195,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
+        StoreChannel reader = fs.open( file, OpenMode.READ );
         FileSender fileSender = new FileSender( reader );
 
         // when
@@ -219,7 +220,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
+        StoreChannel reader = fs.open( file, OpenMode.READ );
         FileSender fileSender = new FileSender( reader );
 
         // when
@@ -263,7 +264,7 @@ public class FileSenderTest
 
         Adversary adversary = new RandomAdversary( 0.9, 0.0, 0.0 );
         AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
-        FileSender fileSender = new FileSender( afs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( afs.open( smallFile, OpenMode.READ ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );

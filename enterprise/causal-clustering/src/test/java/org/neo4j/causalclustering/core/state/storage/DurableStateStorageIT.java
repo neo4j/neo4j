@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
@@ -191,7 +192,7 @@ public class DurableStateStorageIT
             new LongState( new AdversarialFileSystemAbstraction(
                     new MethodGuardedAdversary(
                             new CountingAdversary( 1, true ),
-                            FileSystemAbstraction.class.getMethod( "open", File.class, String.class ) ),
+                            FileSystemAbstraction.class.getMethod( "open", File.class, OpenMode.class ) ),
                     normalFSA ), testDir.directory(), 14 );
             fail( "Should have failed recovery" );
         }

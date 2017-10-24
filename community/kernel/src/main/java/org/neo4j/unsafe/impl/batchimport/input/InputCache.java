@@ -29,12 +29,16 @@ import org.neo4j.concurrent.Runnables;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+
+import static org.neo4j.io.fs.OpenMode.READ;
+import static org.neo4j.io.fs.OpenMode.READ_WRITE;
 
 /**
  * Cache of streams of {@link InputNode} or {@link InputRelationship} from an {@link Input} instance.
@@ -156,20 +160,20 @@ public class InputCache implements Closeable
 
     public Receiver<InputNode[],IOException> cacheNodes( String subType ) throws IOException
     {
-        return new InputNodeCacher( channel( NODES, subType, "rw" ), channel( NODES_HEADER, subType, "rw" ),
+        return new InputNodeCacher( channel( NODES, subType, READ_WRITE ), channel( NODES_HEADER, subType, READ_WRITE ),
                 recordFormats, bufferSize, batchSize );
     }
 
     public Receiver<InputRelationship[],IOException> cacheRelationships( String subType ) throws
             IOException
     {
-        return new InputRelationshipCacher( channel( RELATIONSHIPS, subType, "rw" ),
-                channel( RELATIONSHIPS_HEADER, subType, "rw" ), recordFormats, bufferSize, batchSize );
+        return new InputRelationshipCacher( channel( RELATIONSHIPS, subType, READ_WRITE ),
+                channel( RELATIONSHIPS_HEADER, subType, READ_WRITE ), recordFormats, bufferSize, batchSize );
     }
 
-    private StoreChannel channel( String type, String subType, String mode ) throws IOException
+    private StoreChannel channel( String type, String subType, OpenMode openMode ) throws IOException
     {
-        return fs.open( file( type, subType ), mode );
+        return fs.open( file( type, subType ), openMode );
     }
 
     private File file( String type, String subType )
@@ -180,15 +184,16 @@ public class InputCache implements Closeable
 
     public InputIterable<InputNode> nodes( String subType, boolean deleteAfterUse )
     {
-        return entities( () -> new InputNodeReader( channel( NODES, subType, "r" ), channel( NODES_HEADER, subType, "r" ),
+        return entities( () -> new InputNodeReader( channel( NODES, subType, READ ),
+                channel( NODES_HEADER, subType, READ ),
                 bufferSize, deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ),
                 config.maxNumberOfProcessors() ) );
     }
 
     public InputIterable<InputRelationship> relationships( String subType, boolean deleteAfterUse )
     {
-        return entities( () -> new InputRelationshipReader( channel( RELATIONSHIPS, subType, "r" ),
-                channel( RELATIONSHIPS_HEADER, subType, "r" ), bufferSize,
+        return entities( () -> new InputRelationshipReader( channel( RELATIONSHIPS, subType, READ ),
+                channel( RELATIONSHIPS_HEADER, subType, READ ), bufferSize,
                 deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ),
                 config.maxNumberOfProcessors() ) );
     }

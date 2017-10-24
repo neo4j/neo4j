@@ -33,6 +33,7 @@ import java.util.function.Function;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -975,7 +976,7 @@ public class CheckTxLogsTest
     {
         FileSystemAbstraction fs = ensureLogExists( log );
 
-        try ( StoreChannel channel = fs.open( log, "rw" );
+        try ( StoreChannel channel = fs.open( log, OpenMode.READ_WRITE );
               LogVersionedStoreChannel versionedChannel = new PhysicalLogVersionedStoreChannel( channel, 0, (byte) 0 );
               PhysicalFlushableChannel writableLogChannel = new PhysicalFlushableChannel( versionedChannel ) )
         {

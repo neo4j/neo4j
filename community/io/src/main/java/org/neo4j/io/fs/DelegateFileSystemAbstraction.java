@@ -70,9 +70,9 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
     {
-        return new StoreFileChannel( FileUtils.open( path( fileName ), mode ) );
+        return new StoreFileChannel( FileUtils.open( path( fileName ), openMode ) );
     }
 
     private Path path( File fileName )
@@ -112,7 +112,7 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public StoreChannel create( File fileName ) throws IOException
     {
-        return open( fileName, "rw" );
+        return open( fileName, OpenMode.READ_WRITE );
     }
 
     @Override

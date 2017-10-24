@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -65,7 +66,7 @@ public class ReaderLogVersionBridgeTest
         when( channel.getLogFormatVersion() ).thenReturn( CURRENT_LOG_VERSION );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
         when( fs.fileExists( file ) ).thenReturn( true );
-        when( fs.open( file, "r" ) ).thenReturn( newStoreChannel );
+        when( fs.open( file, OpenMode.READ ) ).thenReturn( newStoreChannel );
         when( newStoreChannel.read( ArgumentMatchers.<ByteBuffer>any() ) ).then( invocationOnMock ->
         {
             ByteBuffer buffer = invocationOnMock.getArgument( 0 );
@@ -92,7 +93,7 @@ public class ReaderLogVersionBridgeTest
 
         when( channel.getVersion() ).thenReturn( version );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
-        when( fs.open( file, "r" ) ).thenThrow( new FileNotFoundException() );
+        when( fs.open( file, OpenMode.READ ) ).thenThrow( new FileNotFoundException() );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );
@@ -113,7 +114,7 @@ public class ReaderLogVersionBridgeTest
         when( channel.getVersion() ).thenReturn( version );
         when( fs.fileExists( file ) ).thenReturn( true );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
-        when( fs.open( file, "r" ) ).thenReturn( nextVersionWithIncompleteHeader );
+        when( fs.open( file, OpenMode.READ ) ).thenReturn( nextVersionWithIncompleteHeader );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );

@@ -31,6 +31,7 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -64,7 +65,7 @@ public class LogMatchers
     public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
         File logFile = new File( logPath );
-        StoreChannel fileChannel = fileSystem.open( logFile, "r" );
+        StoreChannel fileChannel = fileSystem.open( logFile, OpenMode.READ );
 
         // Always a header
         LogHeader header = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, true, logFile );

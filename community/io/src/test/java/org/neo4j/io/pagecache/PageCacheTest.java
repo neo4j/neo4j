@@ -59,6 +59,7 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Record;
@@ -543,9 +544,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         return new DelegatingFileSystemAbstraction( fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -758,9 +759,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     private int writeCount;
 
@@ -1765,7 +1766,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         ByteBuffer buf = ByteBuffer.allocate( 20 );
-        try ( StoreChannel channel = fs.open( file( "a" ), "r" ) )
+        try ( StoreChannel channel = fs.open( file( "a" ), OpenMode.READ ) )
         {
             channel.read( buf );
         }
@@ -1985,9 +1986,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                StoreChannel channel = super.open( fileName, mode );
+                StoreChannel channel = super.open( fileName, openMode );
                 return new DelegatingStoreChannel( channel )
                 {
                     @Override
@@ -2120,7 +2121,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertThat( inputStream.read(), is( -1 ) );
         }
 
-        try ( StoreChannel channel = fs.open( file( "a" ), "r" ) )
+        try ( StoreChannel channel = fs.open( file( "a" ), OpenMode.READ ) )
         {
             ByteBuffer bufB = ByteBuffer.allocate( recordSize );
             for ( int i = 0; i < recordCount; i++ )
@@ -3256,9 +3257,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3304,9 +3305,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3362,9 +3363,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3420,9 +3421,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3790,7 +3791,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         for ( int fileId = 0; fileId < files.length; fileId++ )
         {
             File file = files[fileId];
-            StoreChannel channel = fs.open( file, "rw" );
+            StoreChannel channel = fs.open( file, OpenMode.READ_WRITE );
             for ( int recordId = 0; recordId < fileId + 1; recordId++ )
             {
                 Record record = recordFormat.createRecord( file, recordId );

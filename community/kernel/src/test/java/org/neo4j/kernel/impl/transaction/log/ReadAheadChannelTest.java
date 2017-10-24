@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -45,7 +46,7 @@ public class ReadAheadChannelTest
     {
         // Given
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        StoreChannel storeChannel = fileSystem.open( new File( "foo.txt" ), "rw" );
+        StoreChannel storeChannel = fileSystem.open( new File( "foo.txt" ), OpenMode.READ_WRITE );
         ByteBuffer buffer = ByteBuffer.allocate( 1 );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -53,7 +54,7 @@ public class ReadAheadChannelTest
         storeChannel.force( false );
         storeChannel.close();
 
-        storeChannel = fileSystem.open( new File( "foo.txt" ), "r" );
+        storeChannel = fileSystem.open( new File( "foo.txt" ), OpenMode.READ );
 
         ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel );
         assertEquals( (byte) 1, channel.get() );
@@ -84,7 +85,7 @@ public class ReadAheadChannelTest
     {
         // Given
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        StoreChannel storeChannel = fileSystem.open( new File( "foo.txt" ), "rw" );
+        StoreChannel storeChannel = fileSystem.open( new File( "foo.txt" ), OpenMode.READ_WRITE );
         ByteBuffer buffer = ByteBuffer.allocate( 1 );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -92,7 +93,7 @@ public class ReadAheadChannelTest
         storeChannel.force( false );
         storeChannel.close();
 
-        storeChannel = fileSystem.open( new File( "foo.txt" ), "r" );
+        storeChannel = fileSystem.open( new File( "foo.txt" ), OpenMode.READ );
         ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel );
 
         try
@@ -123,7 +124,7 @@ public class ReadAheadChannelTest
     {
         // Given
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        StoreChannel storeChannel1 = fileSystem.open( new File( "foo.1" ), "rw" );
+        StoreChannel storeChannel1 = fileSystem.open( new File( "foo.1" ), OpenMode.READ_WRITE );
         ByteBuffer buffer = ByteBuffer.allocate( 2 );
         buffer.put( (byte) 0 );
         buffer.put( (byte) 0 );
@@ -134,7 +135,7 @@ public class ReadAheadChannelTest
 
         buffer.flip();
 
-        StoreChannel storeChannel2 = fileSystem.open( new File( "foo.2" ), "r" );
+        StoreChannel storeChannel2 = fileSystem.open( new File( "foo.2" ), OpenMode.READ );
         buffer.put( (byte) 0 );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -142,8 +143,8 @@ public class ReadAheadChannelTest
         storeChannel2.force( false );
         storeChannel2.close();
 
-        storeChannel1 = fileSystem.open( new File( "foo.1" ), "r" );
-        final StoreChannel storeChannel2Copy = fileSystem.open( new File( "foo.2" ), "r" );
+        storeChannel1 = fileSystem.open( new File( "foo.1" ), OpenMode.READ );
+        final StoreChannel storeChannel2Copy = fileSystem.open( new File( "foo.2" ), OpenMode.READ );
 
         ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<StoreChannel>( storeChannel1 )
         {
@@ -188,7 +189,7 @@ public class ReadAheadChannelTest
         int fileSize = readAheadSize * 8;
 
         createFile( fsa, file, fileSize );
-        ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( fsa.open( file, "r" ), readAheadSize );
+        ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( fsa.open( file, OpenMode.READ ), readAheadSize );
 
         // when
         for ( int i = 0; i < fileSize / Long.BYTES; i++ )
@@ -214,7 +215,7 @@ public class ReadAheadChannelTest
 
     private void createFile( EphemeralFileSystemAbstraction fsa, File name, int bufferSize ) throws IOException
     {
-        StoreChannel storeChannel = fsa.open( name, "w" );
+        StoreChannel storeChannel = fsa.open( name, OpenMode.READ_WRITE );
         ByteBuffer buffer = ByteBuffer.allocate( bufferSize );
         for ( int i = 0; i < bufferSize; i++ )
         {

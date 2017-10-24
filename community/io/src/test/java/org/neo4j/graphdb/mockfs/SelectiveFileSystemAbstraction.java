@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StreamFilesRecursive;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -65,9 +66,9 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
     {
-        return chooseFileSystem( fileName ).open( fileName, mode );
+        return chooseFileSystem( fileName ).open( fileName, openMode );
     }
 
     @Override

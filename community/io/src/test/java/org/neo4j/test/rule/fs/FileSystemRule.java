@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
@@ -83,9 +84,9 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public StoreChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
     {
-        return fs.open( fileName, mode );
+        return fs.open( fileName, openMode );
     }
 
     @Override

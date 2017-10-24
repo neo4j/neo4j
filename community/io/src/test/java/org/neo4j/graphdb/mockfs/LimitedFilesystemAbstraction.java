@@ -31,6 +31,7 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
@@ -45,21 +46,21 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public StoreChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
     {
-        return new LimitedFileChannel( super.open( fileName, mode ), this );
+        return new LimitedFileChannel( super.open( fileName, openMode ), this );
     }
 
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new ChannelOutputStream( open( fileName, "rw" ), append );
+        return new ChannelOutputStream( open( fileName, OpenMode.READ_WRITE ), append );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new ChannelInputStream( open( fileName, "r" ) );
+        return new ChannelInputStream( open( fileName, OpenMode.READ ) );
     }
 
     @Override

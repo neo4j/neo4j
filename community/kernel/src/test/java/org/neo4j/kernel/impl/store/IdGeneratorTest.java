@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -136,7 +137,7 @@ public class IdGeneratorTest
         {
             closeIdGenerator( idGenerator );
             // verify that id generator is ok
-            StoreChannel fileChannel = fs.open( idGeneratorFile(), "rw" );
+            StoreChannel fileChannel = fs.open( idGeneratorFile(), OpenMode.READ_WRITE );
             ByteBuffer buffer = ByteBuffer.allocate( 9 );
             assertEquals( 9, fileChannel.read( buffer ) );
             buffer.flip();

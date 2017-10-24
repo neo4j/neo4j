@@ -638,21 +638,21 @@ public class FileUtils
         }
     }
 
-    public static OpenOption[] convertOpenMode( String mode )
+    public static OpenOption[] convertOpenMode( OpenMode mode )
     {
         OpenOption[] options;
         switch ( mode )
         {
-        case "r":
+        case READ:
             options = new OpenOption[]{READ};
             break;
-        case "rw":
+        case READ_WRITE:
             options = new OpenOption[]{CREATE, READ, WRITE};
             break;
-        case "rws":
+        case SYNC:
             options = new OpenOption[]{CREATE, READ, WRITE, SYNC};
             break;
-        case "rwd":
+        case DSYNC:
             options = new OpenOption[]{CREATE, READ, WRITE, DSYNC};
             break;
         default:
@@ -661,9 +661,9 @@ public class FileUtils
         return options;
     }
 
-    public static FileChannel open( Path path, String mode ) throws IOException
+    public static FileChannel open( Path path, OpenMode openMode ) throws IOException
     {
-        return FileChannel.open( path, convertOpenMode( mode ) );
+        return FileChannel.open( path, convertOpenMode( openMode ) );
     }
 
     public static InputStream openAsInputStream( Path path ) throws IOException

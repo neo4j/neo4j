@@ -48,7 +48,7 @@ public interface FileSystemAbstraction extends Closeable
      */
     FileWatcher fileWatcher() throws IOException;
 
-    StoreChannel open( File fileName, String mode ) throws IOException;
+    StoreChannel open( File fileName, OpenMode openMode ) throws IOException;
 
     OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException;
 

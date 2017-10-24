@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 
 public class Reader implements Closeable
@@ -34,7 +35,7 @@ public class Reader implements Closeable
 
     Reader( FileSystemAbstraction fsa, File file, long version ) throws IOException
     {
-        this.storeChannel = fsa.open( file, "r" );
+        this.storeChannel = fsa.open( file, OpenMode.READ );
         this.version = version;
     }
 
