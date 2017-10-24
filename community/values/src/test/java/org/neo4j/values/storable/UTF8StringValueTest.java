@@ -59,17 +59,6 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldFoo()
-    {
-        String string = "熨"; // "ۼ";
-
-        TextValue stringValue = stringValue( string );
-        byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
-        TextValue utf8 = utf8Value( bytes );
-        assertSame( stringValue.trim(), utf8.trim() );
-    }
-
-    @Test
     public void shouldHandleOffset()
     {
         // Given

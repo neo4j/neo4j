@@ -37,7 +37,7 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue trim();
 
-    abstract int compareTo( TextValue other );
+    public abstract int compareTo( TextValue other );
 
     @Override
     public boolean equals( boolean x )

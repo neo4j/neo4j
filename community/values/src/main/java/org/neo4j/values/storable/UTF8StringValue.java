@@ -215,6 +215,29 @@ public final class UTF8StringValue extends StringValue
         return new UTF8StringValue( values, startIndex, Math.max( endIndex + 1 - startIndex, 0 ) );
     }
 
+    @Override
+    public int compareTo( TextValue other )
+    {
+        if (!(other instanceof UTF8StringValue))
+        {
+            return super.compareTo( other );
+        }
+        UTF8StringValue otherUTF8 = (UTF8StringValue) other;
+        int len1 = bytes.length;
+        int len2 = otherUTF8.bytes.length;
+        int lim = Math.min(len1, len2);
+        int k = 0;
+        while (k < lim) {
+            byte c1 = bytes[k];
+            byte c2 = otherUTF8.bytes[k];
+            if (c1 != c2) {
+                return c1 - c2;
+            }
+            k++;
+        }
+        return len1 - len2;
+    }
+
     /**
      * Returns the left-most index into the underlying byte array that does not belong to a whitespace code point
      */

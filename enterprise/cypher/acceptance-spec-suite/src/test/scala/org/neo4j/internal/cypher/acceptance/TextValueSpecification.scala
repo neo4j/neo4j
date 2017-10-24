@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.lang.Integer.signum
 import java.nio.charset.StandardCharsets
 
 import org.neo4j.values.storable.TextValue
@@ -50,6 +51,30 @@ object TextValueSpecification extends Properties("TextValue") {
 
   property("trim") = forAll { (x: String) =>
     equivalent(stringValue(x).trim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).trim())
+  }
+
+  property("trim") = forAll { (x: String) =>
+    equivalent(stringValue(x), utf8Value(x.getBytes(StandardCharsets.UTF_8)).trim())
+  }
+
+  property("compareTo") = forAll { (x: String, y: String) =>
+    val stringX = stringValue(x)
+    val stringY = stringValue(y)
+    val utf8X = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    val utf8Y = utf8Value(y.getBytes(StandardCharsets.UTF_8))
+    val compare = signum(stringX.compareTo(stringY))
+    compare == signum(stringX.compareTo(utf8Y)) &&
+      compare == signum(utf8X.compareTo(stringY)) &&
+      compare == signum(utf8X.compareTo(utf8Y))
+  }
+
+  property("compareTo") = forAll { (x: String) =>
+    val stringX = stringValue(x)
+    val utf8X = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    stringX.compareTo(stringX) == 0 &&
+    stringX.compareTo(utf8X) == 0 &&
+    utf8X.compareTo(stringX) == 0 &&
+    utf8X.compareTo(utf8X) == 0
   }
 
   property("substring") = forAll(substringGen) {
