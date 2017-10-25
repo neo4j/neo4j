@@ -35,9 +35,10 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -67,13 +68,10 @@ public class NeoStoreDataSourceTest
 {
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-
     @Rule
     public TestDirectory dir = TestDirectory.testDirectory( fs.get() );
-
     @Rule
     public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
-
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -276,25 +274,25 @@ public class NeoStoreDataSourceTest
         }
     }
 
-    private NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( PhysicalLogFiles files )
+    private NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( LogFiles files )
     {
         DependencyResolver resolver = mock( DependencyResolver.class );
-        when( resolver.resolveDependency( PhysicalLogFiles.class ) ).thenReturn( files );
+        when( resolver.resolveDependency( LogFiles.class ) ).thenReturn( files );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when( dataSource.getDependencyResolver() ).thenReturn( resolver );
         return dataSource;
     }
 
-    private PhysicalLogFiles noLogs()
+    private LogFiles noLogs()
     {
-        PhysicalLogFiles files = mock( PhysicalLogFiles.class );
+        LogFiles files = mock( TransactionLogFiles.class );
         when( files.getLowestLogVersion() ).thenReturn( -1L );
         return files;
     }
 
-    private PhysicalLogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
+    private LogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
     {
-        PhysicalLogFiles files = mock( PhysicalLogFiles.class );
+        LogFiles files = mock( TransactionLogFiles.class );
         when( files.getLowestLogVersion() ).thenReturn( logVersion );
         when( files.hasAnyEntries( logVersion ) ).thenReturn( true );
         when( files.versionExists( logVersion ) ).thenReturn( true );
@@ -303,10 +301,10 @@ public class NeoStoreDataSourceTest
         return files;
     }
 
-    private PhysicalLogFiles logWithTransactionsInNextToOldestLog( long logVersion, long prevLogLastTxId )
+    private LogFiles logWithTransactionsInNextToOldestLog( long logVersion, long prevLogLastTxId )
             throws IOException
     {
-        PhysicalLogFiles files = logWithTransactions( logVersion + 1, prevLogLastTxId );
+        LogFiles files = logWithTransactions( logVersion + 1, prevLogLastTxId );
         when( files.getLowestLogVersion() ).thenReturn( logVersion );
         when( files.hasAnyEntries( logVersion ) ).thenReturn( false );
         when( files.versionExists( logVersion ) ).thenReturn( true );

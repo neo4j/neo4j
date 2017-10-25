@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
  * Duplicates the {@link TransactionIdStore} parts of {@link NeoStores}, which is somewhat bad to have to keep
  * in sync.
  */
-public class DeadSimpleTransactionIdStore implements TransactionIdStore
+public class SimpleTransactionIdStore implements TransactionIdStore
 {
     private final AtomicLong committingTransactionId = new AtomicLong();
     private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100, new long[1] );
@@ -43,12 +43,12 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     private final long initialTransactionChecksum;
     private final long previouslyCommittedTxCommitTimestamp;
 
-    public DeadSimpleTransactionIdStore()
+    public SimpleTransactionIdStore()
     {
         this( BASE_TX_ID, 0, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
     }
 
-    public DeadSimpleTransactionIdStore( long previouslyCommittedTxId, long checksum,
+    public SimpleTransactionIdStore( long previouslyCommittedTxId, long checksum,
             long previouslyCommittedTxCommitTimestamp, long previouslyCommittedTxLogVersion,
             long previouslyCommittedTxLogByteOffset )
     {

@@ -36,6 +36,7 @@ import java.util.Collections;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -43,8 +44,10 @@ import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -98,8 +101,9 @@ public class UpgradableDatabaseTest
             fileSystem = fileSystemRule.get();
             workingDirectory = testDirectory.graphDbDir();
             MigrationTestUtils.findFormatStoreDirectoryForVersion( version, workingDirectory );
-            PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
-            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(), new Monitors() );
+            VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fileSystem ).build();
+            tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         }
 
         boolean storeFilesUpgradeable( File storeDirectory, UpgradableDatabase upgradableDatabase )
@@ -199,11 +203,11 @@ public class UpgradableDatabaseTest
             MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_3.STORE_VERSION, workingDirectory );
             changeVersionNumber( fileSystem, new File( workingDirectory, neostoreFilename ), version );
             File metadataStore = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-            MetaDataStore.setRecord( pageCacheRule.getPageCache( fileSystem ), metadataStore, STORE_VERSION,
-                    MetaDataStore.versionStringToLong( version ) );
-            PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
-            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(),
-                    new Monitors() );
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+            MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );
+            VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fileSystem ).build();
+            tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         }
 
         @Test

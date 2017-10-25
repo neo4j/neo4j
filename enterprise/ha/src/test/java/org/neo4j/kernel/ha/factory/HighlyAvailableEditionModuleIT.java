@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -67,7 +67,7 @@ public class HighlyAvailableEditionModuleIT
         Predicate<String> filter = HighlyAvailableEditionModule.fileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
         assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
-        assertTrue( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
+        assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
         assertTrue( filter.test( StoreUtil.BRANCH_SUBDIRECTORY ) );
         assertTrue( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );

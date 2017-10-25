@@ -33,7 +33,7 @@ public final class EntryTimespanThreshold implements Threshold
 
     private long lowerLimit;
 
-    public EntryTimespanThreshold( Clock clock, TimeUnit timeUnit, long timeToKeep )
+    EntryTimespanThreshold( Clock clock, TimeUnit timeUnit, long timeToKeep )
     {
         this.clock = clock;
         this.timeToKeepInMillis = timeUnit.toMillis( timeToKeep );

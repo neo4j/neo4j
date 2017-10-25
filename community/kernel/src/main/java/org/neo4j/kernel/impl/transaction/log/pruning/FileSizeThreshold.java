@@ -31,7 +31,7 @@ public final class FileSizeThreshold implements Threshold
 
     private long currentSize;
 
-    public FileSizeThreshold( FileSystemAbstraction fileSystem, long maxSize )
+    FileSizeThreshold( FileSystemAbstraction fileSystem, long maxSize )
     {
         this.fileSystem = fileSystem;
         this.maxSize = maxSize;

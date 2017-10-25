@@ -21,6 +21,7 @@ package org.neo4j.tools.dump;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -28,7 +29,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
@@ -40,9 +40,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.tools.dump.log.TransactionLogEntryCursor;
+
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.getLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.tools.util.TransactionLogUtils.openVersionedChannel;
 
@@ -112,11 +114,14 @@ public class TransactionLogAnalyzer
     {
         File firstFile;
         LogVersionBridge bridge;
+        ReadAheadLogChannel channel;
+        LogEntryReader<ReadableClosablePositionAwareChannel> entryReader;
+        LogPositionMarker positionMarker;
         if ( storeDirOrLogFile.isDirectory() )
         {
             // Use natural log version bridging if a directory is supplied
-            final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirOrLogFile, fileSystem );
-            bridge = new ReaderLogVersionBridge( fileSystem, logFiles )
+            final LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirOrLogFile, fileSystem ).build();
+            bridge = new ReaderLogVersionBridge( logFiles )
             {
                 @Override
                 public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
@@ -137,14 +142,15 @@ public class TransactionLogAnalyzer
         {
             // Use no bridging, simply reading this single log file if a file is supplied
             firstFile = storeDirOrLogFile;
-            monitor.logFile( firstFile, getLogVersion( firstFile ) );
+            final LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirOrLogFile, fileSystem ).build();
+            monitor.logFile( firstFile, logFiles.getLogVersion( firstFile ) );
             bridge = NO_MORE_CHANNELS;
         }
 
-        ReadAheadLogChannel channel = new ReadAheadLogChannel( openVersionedChannel( fileSystem, firstFile ), bridge );
-        LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
-        LogPositionMarker positionMarker = new LogPositionMarker();
+        channel = new ReadAheadLogChannel( openVersionedChannel( fileSystem, firstFile ), bridge );
+        entryReader =
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
+        positionMarker = new LogPositionMarker();
         try ( TransactionLogEntryCursor cursor = new TransactionLogEntryCursor( new LogEntryCursor( entryReader, channel ) ) )
         {
             channel.getCurrentPosition( positionMarker );

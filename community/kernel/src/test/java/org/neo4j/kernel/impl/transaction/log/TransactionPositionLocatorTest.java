@@ -63,7 +63,7 @@ public class TransactionPositionLocatorTest
         when( logEntryReader.readLogEntry( channel ) ).thenReturn( start, command, commit, null );
 
         // when
-        final boolean result = locator.visit( startPosition, channel );
+        final boolean result = locator.visit( channel );
         final LogPosition position = locator.getAndCacheFoundLogPosition( metadataCache );
 
         // then
@@ -89,7 +89,7 @@ public class TransactionPositionLocatorTest
         when( logEntryReader.readLogEntry( channel ) ).thenReturn( start, command, null );
 
         // when
-        final boolean result = locator.visit( startPosition, channel );
+        final boolean result = locator.visit( channel );
 
         // then
         assertTrue( result );

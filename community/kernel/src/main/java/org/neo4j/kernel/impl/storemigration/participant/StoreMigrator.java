@@ -78,8 +78,9 @@ import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
@@ -325,7 +326,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
 
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystem );
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir,fileSystem, pageCache ).build();
         long logVersion = logFiles.getHighestLogVersion();
         if ( logVersion == -1 )
         {

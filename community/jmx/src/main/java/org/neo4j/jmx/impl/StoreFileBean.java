@@ -29,7 +29,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.jmx.StoreFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
@@ -62,7 +62,7 @@ public final class StoreFileBean extends ManagementBeanProvider
         private static final String STRING_STORE = MetaDataStore.DEFAULT_NAME + PROPERTY_STRINGS_STORE_NAME;
 
         private File storePath;
-        private LogFile logFile;
+        private LogFiles logFiles;
         private FileSystemAbstraction fs;
 
         StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
@@ -77,7 +77,7 @@ public final class StoreFileBean extends ManagementBeanProvider
                 @Override
                 public void registered( NeoStoreDataSource ds )
                 {
-                    logFile = resolveDependency( ds, LogFile.class );
+                    logFiles = resolveDependency( ds, LogFiles.class );
                     storePath = resolvePath( ds );
                 }
 
@@ -89,7 +89,7 @@ public final class StoreFileBean extends ManagementBeanProvider
                 @Override
                 public void unregistered( NeoStoreDataSource ds )
                 {
-                    logFile = null;
+                    logFiles = null;
                     storePath = null;
                 }
 
@@ -116,7 +116,7 @@ public final class StoreFileBean extends ManagementBeanProvider
         @Override
         public long getLogicalLogSize()
         {
-            return logFile == null ? 0 : FileUtils.size( fs, logFile.currentLogFile() );
+            return logFiles == null ? 0 : FileUtils.size( fs, logFiles.getHighestLogFile() );
         }
 
         @Override

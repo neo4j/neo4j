@@ -37,49 +37,12 @@ package org.neo4j.kernel.lifecycle;
  */
 public interface Lifecycle
 {
-    void init()
-        throws Throwable;
+    void init() throws Throwable;
 
-    void start()
-        throws Throwable;
+    void start() throws Throwable;
 
-    void stop()
-        throws Throwable;
+    void stop() throws Throwable;
 
-    void shutdown()
-        throws Throwable;
+    void shutdown() throws Throwable;
 
-    class Delegate implements Lifecycle
-    {
-        private final Lifecycle delegate;
-
-        public Delegate( Lifecycle delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-            delegate.init();
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-            delegate.start();
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-            delegate.stop();
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-            delegate.shutdown();
-        }
-    }
 }

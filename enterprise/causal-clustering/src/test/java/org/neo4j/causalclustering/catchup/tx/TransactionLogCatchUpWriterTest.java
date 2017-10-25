@@ -36,8 +36,6 @@ import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -47,6 +45,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -119,8 +119,8 @@ public class TransactionLogCatchUpWriterTest
     {
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, fs, logEntryReader, new Monitors() );
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withLogEntryReader( logEntryReader ).build();
+        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
 
         LogTailInformation tailInformation = logTailScanner.getTailInformation();
         assertNotNull( tailInformation.lastCheckPoint );
@@ -130,9 +130,8 @@ public class TransactionLogCatchUpWriterTest
     private void verifyTransactionsInLog( long fromTxId, long endTxId ) throws IOException
     {
         long expectedTxId = fromTxId;
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        LogVersionedStoreChannel versionedStoreChannel =
-                PhysicalLogFile.openForVersion( logFiles, fs, 0, false );
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).build();
+        LogVersionedStoreChannel versionedStoreChannel = logFiles.openForVersion( 0 );
         try ( ReadableLogChannel channel =
                       new ReadAheadLogChannel( versionedStoreChannel, LogVersionBridge.NO_MORE_CHANNELS, 1024 ) )
         {
@@ -163,7 +162,7 @@ public class TransactionLogCatchUpWriterTest
         }
 
         // we don't have log files after a store copy
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fsRule.get() );
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fsRule.get() ).build();
         logFiles.accept( ( file, version ) -> file.delete() );
 
         return storeId;

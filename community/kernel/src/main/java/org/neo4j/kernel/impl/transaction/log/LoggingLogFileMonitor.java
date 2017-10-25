@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
@@ -29,8 +30,7 @@ import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
-public class LoggingLogFileMonitor implements
-        PhysicalLogFile.Monitor,
+public class LoggingLogFileMonitor implements LogFileCreationMonitor,
         LogRotation.Monitor, RecoveryMonitor,
         RecoveryStartInformationProvider.Monitor
 {

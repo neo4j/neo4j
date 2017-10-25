@@ -30,7 +30,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.test.rule.TestDirectory;
@@ -40,8 +44,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.io.ByteUnit.kibiBytes;
 
 /**
  * Tests an issue where writer would append data and sometimes rotate the log to new file. When rotating the log
@@ -54,7 +56,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
  * This test tries to reproduce this race. It will not produce false negatives, but sometimes false positives
  * since it's non-deterministic.
  */
-public class PhysicalLogFileRotateAndReadRaceIT
+public class TransactionLogFileRotateAndReadRaceIT
 {
     private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final LifeRule life = new LifeRule( true );
@@ -72,12 +74,13 @@ public class PhysicalLogFileRotateAndReadRaceIT
     public void shouldNotSeeEmptyLogFileWhenReadingTransactionStream() throws Exception
     {
         // GIVEN
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), fileSystemRule.get() );
-        LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
-        PhysicalLogFile.Monitor monitor = mock( PhysicalLogFile.Monitor.class );
-        LogHeaderCache headerCache = new LogHeaderCache( 10 );
-        PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, kibiBytes( 1 ),
-                () -> 2L, logVersionRepository, monitor, headerCache ) );
+        LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fileSystemRule.get() )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .build();
+        life.add( logFiles );
+        LogFile logFile = logFiles.getLogFile();
         FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker startPosition = new LogPositionMarker();
         writer.getCurrentPosition( startPosition );

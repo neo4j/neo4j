@@ -17,13 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction;
 
-public interface LogHeaderVisitor
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+
+public class SimpleLogVersionRepository implements LogVersionRepository
 {
-    /***
-     * Used for visiting log headers in reverse order of age, meaning latest first.
-     * Stops visiting when false is returned.
-     */
-    boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog );
+    private volatile long logVersion;
+
+    public SimpleLogVersionRepository()
+    {
+        this( INITIAL_LOG_VERSION );
+    }
+    public SimpleLogVersionRepository( long initialLogVersion )
+    {
+        this.logVersion = initialLogVersion;
+    }
+
+    @Override
+    public long incrementAndGetVersion()
+    {
+        logVersion++;
+        return logVersion;
+    }
+
+    @Override
+    public long getCurrentLogVersion()
+    {
+        return logVersion;
+    }
+
+    @Override
+    public void setCurrentLogVersion( long version )
+    {
+        this.logVersion = version;
+    }
 }

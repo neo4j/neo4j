@@ -39,8 +39,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.storemigration.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -95,10 +94,9 @@ public class NeoStoreFileListingTest
             "neostore.relationshiptypestore.db.names.id",
             "neostore.schemastore.db",
             "neostore.schemastore.db.id",
-            PhysicalLogFile.DEFAULT_NAME + ".active",
-            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0",
-            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "1",
-            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2",
+            "neostore.transaction.db.0",
+            "neostore.transaction.db.1",
+            "neostore.transaction.db.2",
             "store_lock"};
 
     private static final String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
@@ -175,7 +173,7 @@ public class NeoStoreFileListingTest
     {
         assertTrue( neoStoreDataSource.listStoreFiles( true ).stream()
                 .map( metaData -> metaData.file().getName() )
-                .anyMatch( fileName -> LogFiles.FILENAME_FILTER.accept( null, fileName ) ) );
+                .anyMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
 
     @Test
@@ -183,7 +181,7 @@ public class NeoStoreFileListingTest
     {
         assertTrue( neoStoreDataSource.listStoreFiles( false ).stream()
                 .map( metaData -> metaData.file().getName() )
-                .noneMatch( fileName -> LogFiles.FILENAME_FILTER.accept( null, fileName ) ) );
+                .noneMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
 
     @Test

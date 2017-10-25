@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -32,6 +31,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -69,10 +70,10 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
      * and including transaction starting at {@link LogPosition}.
      * @throws IOException on I/O error.
      */
-    public static TransactionCursor fromLogFile( LogFile logFile, LogPosition backToPosition,
+    public static TransactionCursor fromLogFile( LogFiles logFiles, LogFile logFile, LogPosition backToPosition,
             boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor ) throws IOException
     {
-        long highestVersion = logFile.currentLogVersion();
+        long highestVersion = logFiles.getHighestLogVersion();
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         ThrowingFunction<LogPosition,TransactionCursor,IOException> factory = position ->
         {

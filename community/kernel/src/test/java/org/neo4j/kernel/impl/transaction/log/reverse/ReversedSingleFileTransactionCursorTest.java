@@ -31,15 +31,13 @@ import java.util.Collection;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -47,6 +45,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -59,12 +60,10 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
 public class ReversedSingleFileTransactionCursorTest
@@ -83,14 +82,19 @@ public class ReversedSingleFileTransactionCursorTest
     private LogProvider logProvider = new AssertableLogProvider( true );
     private ReverseTransactionCursorLoggingMonitor monitor = new ReverseTransactionCursorLoggingMonitor(
             logProvider.getLog( ReversedSingleFileTransactionCursor.class ) );
-    private PhysicalLogFile logFile;
+    private LogFile logFile;
 
     @Before
-    public void setUp()
+    public void setUp() throws IOException
     {
-        LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
-        logFile = life.add( new PhysicalLogFile( fs, new PhysicalLogFiles( directory.absolutePath(), fs ), mebiBytes( 1 ),
-                () -> txId, logVersionRepository, NO_MONITOR, new LogHeaderCache( 10 ) ) );
+        LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
+                                           .withLogVersionRepository( logVersionRepository )
+                                           .withTransactionIdStore( transactionIdStore )
+                                           .build();
+        life.add( logFiles );
+        logFile = logFiles.getLogFile();
     }
 
     @Test

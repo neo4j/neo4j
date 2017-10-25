@@ -49,9 +49,13 @@ import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
@@ -69,7 +73,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
@@ -78,13 +81,6 @@ public class BatchingTransactionAppenderConcurrencyTest
 {
 
     private static final long MILLISECONDS_TO_WAIT = TimeUnit.SECONDS.toMillis( 10 );
-
-    private enum ChannelCommand
-    {
-        emptyBufferIntoChannelAndClearIt,
-        force,
-        dummy
-    }
 
     private static ExecutorService executor;
 
@@ -108,11 +104,12 @@ public class BatchingTransactionAppenderConcurrencyTest
     public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( life );
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
+    private final LogFiles logFiles = mock( TransactionLogFiles.class );
     private final LogFile logFile = mock( LogFile.class );
     private final LogRotation logRotation = LogRotation.NO_ROTATION;
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10 );
-    private final LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
+    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+    private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final IdOrderingQueue explicitIndexTransactionOrdering = IdOrderingQueue.BYPASS;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final Semaphore forceSemaphore = new Semaphore( 0 );
@@ -122,53 +119,8 @@ public class BatchingTransactionAppenderConcurrencyTest
     @Before
     public void setUp()
     {
-        class Channel extends InMemoryClosableChannel implements Flushable
-        {
-            @Override
-            public Flushable prepareForFlush()
-            {
-                try
-                {
-                    channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                return this;
-            }
-
-            @Override
-            public void flush() throws IOException
-            {
-                try
-                {
-                    forceSemaphore.release();
-                    channelCommandQueue.put( ChannelCommand.force );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new IOException( e );
-                }
-            }
-        }
-
-        when( logFile.getWriter() ).thenReturn( new Channel() );
-    }
-
-    private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )
-    {
-        return () ->
-        {
-            try
-            {
-                appender.forceAfterAppend( logAppendEvent );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        };
+        when( logFiles.getLogFile() ).thenReturn( logFile );
+        when( logFile.getWriter() ).thenReturn( new CommandQueueChannel() );
     }
 
     @Test
@@ -270,11 +222,13 @@ public class BatchingTransactionAppenderConcurrencyTest
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
         life.add( new FileSystemLifecycleAdapter( fs ) );
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, kibiBytes( 10 ), transactionIdStore::getLastCommittedTransactionId,
-                new DeadSimpleLogVersionRepository( 0 ), new PhysicalLogFile.Monitor.Adapter(), logHeaderCache ) );
+        LogFiles logFiles = LogFilesBuilder.builder( directory, fs )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .build();
+        life.add( logFiles );
         final BatchingTransactionAppender appender = life.add(
-                new BatchingTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
+                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore,
                         explicitIndexTransactionOrdering, databaseHealth ) );
         life.start();
 
@@ -329,6 +283,21 @@ public class BatchingTransactionAppenderConcurrencyTest
         return new TransactionToApply( tx );
     }
 
+    private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )
+    {
+        return () ->
+        {
+            try
+            {
+                appender.forceAfterAppend( logAppendEvent );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+    }
+
     private Predicate<StackTraceElement> failMethod( final Class<?> klass, final String methodName )
     {
         return element -> element.getClassName().equals( klass.getName() ) &&
@@ -337,7 +306,45 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     private BatchingTransactionAppender createTransactionAppender()
     {
-        return new BatchingTransactionAppender( logFile, logRotation,
+        return new BatchingTransactionAppender( logFiles, logRotation,
                 transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering, databaseHealth );
+    }
+
+    private enum ChannelCommand
+    {
+        emptyBufferIntoChannelAndClearIt,
+        force,
+        dummy
+    }
+
+    class CommandQueueChannel extends InMemoryClosableChannel implements Flushable
+    {
+        @Override
+        public Flushable prepareForFlush()
+        {
+            try
+            {
+                channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+            return this;
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            try
+            {
+                forceSemaphore.release();
+                channelCommandQueue.put( ChannelCommand.force );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new IOException( e );
+            }
+        }
     }
 }

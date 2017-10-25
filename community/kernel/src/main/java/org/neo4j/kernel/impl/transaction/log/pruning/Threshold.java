@@ -26,5 +26,6 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 public interface Threshold
 {
     void init();
+
     boolean reached( File file, long version, LogFileInformation source );
 }

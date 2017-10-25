@@ -26,7 +26,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -35,6 +34,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -128,23 +129,16 @@ public class LogVersionUpgradeCheckerIT
 
     private void appendCheckpoint( LogEntryVersion logVersion ) throws IOException
     {
-        AtomicLong lastId = new AtomicLong();
         File storeDir = storeDirectory.graphDbDir();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
-        PhysicalLogFile logFile = new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE ,
-                lastId::get, logVersionRepository,
-                PhysicalLogFile.NO_MONITOR,
-                new LogHeaderCache( 10 ) );
-
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(),
-                new Monitors() );
+        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withLogEntryReader( logEntryReader ).build();
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         LogTailScanner.LogTailInformation tailInformation = tailScanner.getTailInformation();
 
-        try ( Lifespan lifespan = new Lifespan( logFile ) )
+        try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            FlushablePositionAwareChannel channel = logFile.getWriter();
+            FlushablePositionAwareChannel channel = logFiles.getLogFile().getWriter();
 
             LogPosition logPosition = tailInformation.lastCheckPoint.getLogPosition();
 

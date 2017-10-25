@@ -47,14 +47,11 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -132,8 +129,8 @@ public class StoreMigration
                     kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                     deps, ignore() ) );
 
-            final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, PhysicalLogFile.DEFAULT_NAME, fs );
-            LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(), monitors );
+            final LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDirectory, fs, pageCache ).build();
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );
 
             // Add the kernel store migrator
             life.start();
@@ -151,7 +148,7 @@ public class StoreMigration
             migrator.migrate( storeDirectory );
 
             // Append checkpoint so the last log entry will have the latest version
-            appendCheckpoint( fs, storeDirectory, pageCache, logFiles, tailScanner );
+            appendCheckpoint( logFiles, tailScanner );
 
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
@@ -166,20 +163,11 @@ public class StoreMigration
         }
     }
 
-    private void appendCheckpoint( FileSystemAbstraction fs, File storeDirectory, PageCache pageCache,
-            PhysicalLogFiles logFiles, LogTailScanner tailScanner ) throws IOException
+    private void appendCheckpoint( LogFiles logFiles, LogTailScanner tailScanner ) throws IOException
     {
-        ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDirectory );
-        ReadOnlyTransactionIdStore
-                readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDirectory );
-        PhysicalLogFile logFile = new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                () -> readOnlyTransactionIdStore.getLastClosedTransactionId() - 1, logVersionRepository,
-                PhysicalLogFile.NO_MONITOR,
-                new LogHeaderCache( 10 ) );
-
-        try ( Lifespan lifespan = new Lifespan( logFile ) )
+        try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            FlushablePositionAwareChannel writer = logFile.getWriter();
+            FlushablePositionAwareChannel writer = logFiles.getLogFile().getWriter();
             TransactionLogWriter transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
             transactionLogWriter.checkPoint( tailScanner.getTailInformation().lastCheckPoint.getLogPosition() );
             writer.prepareForFlush().flush();

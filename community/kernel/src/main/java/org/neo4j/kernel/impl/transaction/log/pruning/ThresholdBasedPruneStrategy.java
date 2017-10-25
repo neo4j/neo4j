@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFileInformation;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -31,16 +31,15 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy
 {
     private final FileSystemAbstraction fileSystem;
-    private final LogFileInformation logFileInformation;
-    private final PhysicalLogFiles files;
+    private final LogFiles files;
     private final Threshold threshold;
+    private final TransactionLogFileInformation logFileInformation;
 
-    public ThresholdBasedPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation,
-                                        PhysicalLogFiles files, Threshold threshold )
+    ThresholdBasedPruneStrategy( FileSystemAbstraction fileSystem, LogFiles logFiles, Threshold threshold )
     {
         this.fileSystem = fileSystem;
-        this.logFileInformation = logFileInformation;
-        this.files = files;
+        this.files = logFiles;
+        this.logFileInformation = files.getLogFileInformation();
         this.threshold = threshold;
     }
 

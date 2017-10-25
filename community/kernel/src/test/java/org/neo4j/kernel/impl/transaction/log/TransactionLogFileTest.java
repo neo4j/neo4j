@@ -31,11 +31,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -53,7 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
-public class PhysicalLogFileTest
+public class TransactionLogFileTest
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -62,30 +64,27 @@ public class PhysicalLogFileTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( life );
 
-    private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
+    private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore =
-            new DeadSimpleTransactionIdStore( 5L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
+            new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
 
     @Test
     public void skipLogFileWithoutHeader() throws IOException
     {
         FileSystemAbstraction fs = fileSystemRule.get();
-        PhysicalLogFiles physicalLogFiles = new PhysicalLogFiles( directory.directory(), "logs", fs );
-        PhysicalLogFile physicalLogFile =
-                new PhysicalLogFile( fs, physicalLogFiles, 1000, () -> 1L, logVersionRepository, mock( Monitor.class ),
-                        new LogHeaderCache( 10 ) );
-        life.add( physicalLogFile );
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
+                                           .withTransactionIdStore( transactionIdStore )
+                                           .withLogVersionRepository( logVersionRepository ).build();
+        life.add( logFiles );
         life.start();
 
         // simulate new file without header presence
-        PhysicalLogFile logFileToSearchFrom =
-                new PhysicalLogFile( fs, physicalLogFiles, 1000, () -> 10L, logVersionRepository, mock( Monitor.class ),
-                        new LogHeaderCache( 10 ) );
         logVersionRepository.incrementAndGetVersion();
-        fs.create( physicalLogFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
+        fs.create( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
+        transactionIdStore.transactionCommitted( 5L, 5L, 5L );
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
-        logFileToSearchFrom.accept( versionLocator );
+        logFiles.accept( versionLocator );
 
         LogPosition logPosition = versionLocator.getLogPosition();
         assertEquals( 1, logPosition.getLogVersion() );
@@ -97,19 +96,20 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         FileSystemAbstraction fs = fileSystemRule.get();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore::getLastCommittedTransactionId,
-                logVersionRepository, mock( Monitor.class ), new LogHeaderCache( 10 ) ) );
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository ).build();
 
         // WHEN
         life.start();
+        life.add( logFiles );
         life.shutdown();
 
         // THEN
-        File file = new PhysicalLogFiles( directory.directory(), name, fs ).getLogFileForVersion( 1L );
+        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( directory.directory(), fs ).build().getLogFileForVersion( 1L );
         LogHeader header = readLogHeader( fs, file );
         assertEquals( 1L, header.logVersion );
-        assertEquals( 5L, header.lastCommittedTxId );
+        assertEquals( 2L, header.lastCommittedTxId );
     }
 
     @Test
@@ -118,14 +118,14 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         FileSystemAbstraction fs = fileSystemRule.get();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        Monitor monitor = mock( Monitor.class );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, monitor,
-                new LogHeaderCache( 10 ) ) );
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository ).build();
+        life.start();
+        life.add( logFiles );
 
         // WHEN
-        FlushablePositionAwareChannel writer = logFile.getWriter();
+        FlushablePositionAwareChannel writer = logFiles.getLogFile().getWriter();
         LogPositionMarker positionMarker = new LogPositionMarker();
         writer.getCurrentPosition( positionMarker );
         int intValue = 45;
@@ -135,7 +135,7 @@ public class PhysicalLogFileTest
         writer.prepareForFlush().flush();
 
         // THEN
-        try ( ReadableClosableChannel reader = logFile.getReader( positionMarker.newPosition() ) )
+        try ( ReadableClosableChannel reader = logFiles.getLogFile().getReader( positionMarker.newPosition() ) )
         {
             assertEquals( intValue, reader.getInt() );
             assertEquals( longValue, reader.getLong() );
@@ -146,14 +146,15 @@ public class PhysicalLogFileTest
     public void shouldReadOlderLogs() throws Exception
     {
         // GIVEN
-        String name = "log";
         FileSystemAbstraction fs = fileSystemRule.get();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
-                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, mock( Monitor.class ),
-                new LogHeaderCache( 10 ) ) );
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository ).build();
+        life.start();
+        life.add( logFiles );
 
         // WHEN
+        LogFile logFile = logFiles.getLogFile();
         FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker positionMarker = new LogPositionMarker();
         writer.getCurrentPosition( positionMarker );
@@ -192,10 +193,13 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         FileSystemAbstraction fs = fileSystemRule.get();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
-                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, mock( Monitor.class ),
-                new LogHeaderCache( 10 ) ) );
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository ).build();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
         FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker mark = new LogPositionMarker();
         writer.getCurrentPosition( mark );
@@ -207,7 +211,7 @@ public class PhysicalLogFileTest
 
         // WHEN/THEN
         final AtomicBoolean called = new AtomicBoolean();
-        logFile.accept( ( position, channel ) ->
+        logFile.accept( channel ->
         {
             for ( int i = 0; i < 5; i++ )
             {
@@ -225,7 +229,9 @@ public class PhysicalLogFileTest
         // GIVEN a file which returns 1/2 log header size worth of bytes
         File directory = new File( "/dir" );
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
+        LogFiles logFiles = LogFilesBuilder.builder( directory, fs )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository ).build();
         int logVersion = 0;
         File logFile = logFiles.getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
@@ -236,7 +242,7 @@ public class PhysicalLogFileTest
         // WHEN
         try
         {
-            PhysicalLogFile.openForVersion( logFiles, fs, logVersion, false );
+            logFiles.openForVersion( logVersion );
             fail( "Should have failed" );
         }
         catch ( IncompleteLogHeaderException e )
@@ -252,7 +258,9 @@ public class PhysicalLogFileTest
         // GIVEN a file which returns 1/2 log header size worth of bytes
         File directory = new File( "/dir" );
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
+        LogFiles logFiles = LogFilesBuilder.builder( directory, fs )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository ).build();
         int logVersion = 0;
         File logFile = logFiles.getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
@@ -264,7 +272,7 @@ public class PhysicalLogFileTest
         // WHEN
         try
         {
-            PhysicalLogFile.openForVersion( logFiles, fs, logVersion, false );
+            logFiles.openForVersion( logVersion );
             fail( "Should have failed" );
         }
         catch ( IncompleteLogHeaderException e )

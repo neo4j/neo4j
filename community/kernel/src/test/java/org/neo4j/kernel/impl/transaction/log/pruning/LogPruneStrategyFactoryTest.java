@@ -22,8 +22,11 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.time.Clock;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
+import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -32,15 +35,22 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFact
 public class LogPruneStrategyFactoryTest
 {
     @Test
-    public void testLogPruneThresholdsByType() throws Exception
+    public void testLogPruneThresholdsByType()
     {
         FileSystemAbstraction fsa = Mockito.mock( FileSystemAbstraction.class );
+        Clock clock = Clocks.systemClock();
 
-        assertThat( getThresholdByType( fsa, new ThresholdConfigValue( "files", 25 ), "" ), instanceOf( FileCountThreshold.class ) );
-        assertThat( getThresholdByType( fsa, new ThresholdConfigValue( "size", 16000 ), "" ), instanceOf( FileSizeThreshold.class ) );
-        assertThat( getThresholdByType( fsa, new ThresholdConfigValue( "txs", 4000 ), "" ), instanceOf( EntryCountThreshold.class ) );
-        assertThat( getThresholdByType( fsa, new ThresholdConfigValue( "entries", 4000 ), "" ), instanceOf( EntryCountThreshold.class ) );
-        assertThat( getThresholdByType( fsa, new ThresholdConfigValue( "hours", 100 ), "" ), instanceOf( EntryTimespanThreshold.class ) );
-        assertThat( getThresholdByType( fsa, new ThresholdConfigValue( "days", 100_000 ), "" ), instanceOf( EntryTimespanThreshold.class) );
+        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "files", 25 ), "" ),
+                instanceOf( FileCountThreshold.class ) );
+        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "size", 16000 ), "" ),
+                instanceOf( FileSizeThreshold.class ) );
+        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "txs", 4000 ), "" ),
+                instanceOf( EntryCountThreshold.class ) );
+        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "entries", 4000 ), "" ),
+                instanceOf( EntryCountThreshold.class ) );
+        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "hours", 100 ), "" ),
+                instanceOf( EntryTimespanThreshold.class ) );
+        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "days", 100_000 ), "" ),
+                instanceOf( EntryTimespanThreshold.class) );
     }
 }

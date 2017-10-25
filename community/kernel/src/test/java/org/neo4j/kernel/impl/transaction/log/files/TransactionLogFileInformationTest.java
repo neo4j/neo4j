@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.junit.Assert.assertEquals;
@@ -33,20 +30,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class PhysicalLogFileInformationTest
+public class TransactionLogFileInformationTest
 {
-
-    private PhysicalLogFiles logFiles = mock( PhysicalLogFiles.class );
+    private LogFiles logFiles = mock( TransactionLogFiles.class );
     private LogHeaderCache logHeaderCache = mock( LogHeaderCache.class );
-    private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-    private PhysicalLogFileInformation.LogVersionToTimestamp
-            logVersionToTimestamp = mock( PhysicalLogFileInformation.LogVersionToTimestamp.class );
+    private TransactionLogFilesContext context = mock( TransactionLogFilesContext.class );
 
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
-                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
+        TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
 
         long version = 10L;
@@ -64,8 +57,7 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
-                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
+        TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
 
         long version = 10L;
@@ -78,8 +70,7 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
-                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
+        TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
 
         long version = 10L;
@@ -99,8 +90,7 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
-                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
+        TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
 
         long version = 10L;
@@ -116,8 +106,7 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReturnNothingWhenThereAreNoTransactions() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache,
-                transactionIdStore::getLastCommittedTransactionId, logVersionToTimestamp );
+        TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
 
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );

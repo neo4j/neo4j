@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -33,17 +34,13 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
@@ -57,6 +54,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -91,8 +90,8 @@ public class RecoveryTest
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
-    private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0,
+    private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 5L, 0,
             BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
     private final int logVersion = 0;
 
@@ -102,14 +101,23 @@ public class RecoveryTest
     private LogEntry expectedCommitEntry;
     private LogEntry expectedCheckPointEntry;
     private Monitors monitors = new Monitors();
-    private final DeadSimpleLogVersionRepository versionRepository =
-            new DeadSimpleLogVersionRepository( LogVersionRepository.INITIAL_LOG_VERSION );
+    private final SimpleLogVersionRepository versionRepository = new SimpleLogVersionRepository();
+    private LogFiles logFiles;
+    private File storeDir;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        storeDir = this.directory.directory();
+        logFiles = LogFilesBuilder.builder( storeDir, fileSystemRule.get() )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .build();
+    }
 
     @Test
     public void shouldRecoverExistingData() throws Exception
     {
-        File storeDir = this.directory.directory();
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, pair ->
@@ -150,12 +158,8 @@ public class RecoveryTest
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
-            LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
-            LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
-                    mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader,
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
@@ -225,8 +229,6 @@ public class RecoveryTest
     @Test
     public void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
     {
-        File storeDir = this.directory.directory();
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, pair ->
@@ -256,12 +258,8 @@ public class RecoveryTest
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
-            LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-            LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
-                    mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors,
-                    false );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
+                    monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, NO_MONITOR )
@@ -287,8 +285,6 @@ public class RecoveryTest
     public void shouldTruncateLogAfterSinglePartialTransaction() throws Exception
     {
         // GIVEN
-        File storeDir = this.directory.directory();
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -316,8 +312,6 @@ public class RecoveryTest
     public void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfullRecovery() throws Exception
     {
         // GIVEN
-        File storeDir = this.directory.directory();
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -349,8 +343,6 @@ public class RecoveryTest
     public void shouldTellTransactionIdStoreAfterSuccessfullRecovery() throws Exception
     {
         // GIVEN
-        File storeDir = this.directory.directory();
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -386,7 +378,7 @@ public class RecoveryTest
         assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
     }
 
-    private boolean recover( File storeDir, PhysicalLogFiles logFiles )
+    private boolean recover( File storeDir, LogFiles logFiles )
     {
         LifeSupport life = new LifeSupport();
         RecoveryMonitor monitor = mock( RecoveryMonitor.class );
@@ -398,12 +390,7 @@ public class RecoveryTest
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
-            LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-            LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
-                    mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors,
-                    false );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, NO_MONITOR )
@@ -424,10 +411,10 @@ public class RecoveryTest
         return recoveryRequired.get();
     }
 
-    private LogTailScanner getTailScanner( PhysicalLogFiles logFiles,
+    private LogTailScanner getTailScanner( LogFiles logFiles,
             LogEntryReader<ReadableClosablePositionAwareChannel> reader )
     {
-        return new LogTailScanner( logFiles, fileSystemRule.get(), reader, monitors, false );
+        return new LogTailScanner( logFiles, reader, monitors, false );
     }
 
     private void writeSomeData( File file,

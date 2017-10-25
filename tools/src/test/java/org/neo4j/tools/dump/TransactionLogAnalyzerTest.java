@@ -36,16 +36,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -54,6 +52,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.rule.RandomRule;
@@ -65,8 +66,6 @@ import org.neo4j.tools.dump.TransactionLogAnalyzer.Monitor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler.STRICT;
@@ -81,22 +80,25 @@ public class TransactionLogAnalyzerTest
     @Rule
     public final RuleChain rules = RuleChain.outerRule( random ).around( fs ).around( directory ).around( life );
 
-    private PhysicalLogFile logFile;
+    private LogFile logFile;
     private FlushablePositionAwareChannel writer;
     private TransactionLogWriter transactionLogWriter;
     private AtomicLong lastCommittedTxId;
     private VerifyingMonitor monitor;
     private LogVersionRepository logVersionRepository;
-    private PhysicalLogFiles logFiles;
+    private LogFiles logFiles;
 
     @Before
-    public void before()
+    public void before() throws IOException
     {
         lastCommittedTxId = new AtomicLong( BASE_TX_ID );
-        logVersionRepository = new DeadSimpleLogVersionRepository( BASE_TX_LOG_VERSION );
-        logFiles = new PhysicalLogFiles( directory.absolutePath(), fs );
-        logFile = life.add( new PhysicalLogFile( fs, logFiles, mebiBytes( 1 ),
-                lastCommittedTxId::get, logVersionRepository, NO_MONITOR, new LogHeaderCache( 10 ) ) );
+        logVersionRepository = new SimpleLogVersionRepository();
+        logFiles = LogFilesBuilder.builder( directory.absolutePath(), fs )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .build();
+        life.add( logFiles );
+        logFile = logFiles.getLogFile();
         writer = logFile.getWriter();
         transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
         monitor = new VerifyingMonitor();

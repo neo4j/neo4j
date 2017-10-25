@@ -32,8 +32,6 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -41,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -60,7 +59,7 @@ public class TestLogPruning
 
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
-    private PhysicalLogFiles files;
+    private LogFiles files;
     private int rotateEveryNTransactions;
     private int performedTransactions;
 
@@ -172,7 +171,7 @@ public class TestLogPruning
         assertThat( transactionCount(), greaterThanOrEqualTo( 1 ) );
     }
 
-    private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
+    private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions ) throws IOException
     {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
@@ -181,7 +180,7 @@ public class TestLogPruning
         GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
         builder.setConfig( keep_logical_logs, logPruning );
         this.db = (GraphDatabaseAPI) builder.newGraphDatabase();
-        files = new PhysicalLogFiles( db.getStoreDir(), PhysicalLogFile.DEFAULT_NAME, fs );
+        files = db.getDependencyResolver().resolveDependency( LogFiles.class );
         return db;
     }
 
@@ -249,10 +248,8 @@ public class TestLogPruning
         {
             int counter = 0;
             LogVersionBridge bridge = channel -> channel;
-            LogVersionedStoreChannel versionedStoreChannel =
-                    PhysicalLogFile.openForVersion( files, fs, version, false );
-            try ( ReadableLogChannel channel =
-                          new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
+            LogVersionedStoreChannel versionedStoreChannel = files.openForVersion( version );
+            try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
             {
                 try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
                         new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )

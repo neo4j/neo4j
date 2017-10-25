@@ -22,14 +22,11 @@ package org.neo4j.test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -37,10 +34,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -90,38 +87,25 @@ public class LogTestUtils
         }
     }
 
-    private static void replace( File tempFile, File file )
+    public static File[] filterNeostoreLogicalLog( LogFiles logFiles, FileSystemAbstraction fileSystem,
+            LogHook<LogEntry> filter ) throws IOException
     {
-        file.renameTo( new File( file.getAbsolutePath() + "." + System.currentTimeMillis() ) );
-        tempFile.renameTo( file );
-    }
-
-    public static File[] filterNeostoreLogicalLog( FileSystemAbstraction fileSystem,
-            String storeDir, LogHook<LogEntry> filter ) throws IOException
-    {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( new File( storeDir ), fileSystem );
-        final List<File> files = new ArrayList<>();
-        logFiles.accept( ( file, logVersion ) -> files.add( file ) );
+        File[] files = logFiles.logFiles();
         for ( File file : files )
         {
-            File filteredLog = filterNeostoreLogicalLog( fileSystem, file, filter );
-            replace( filteredLog, file );
+            filterTransactionLogFile( fileSystem, file, filter );
         }
 
-        return files.toArray( new File[files.size()] );
+        return files;
     }
 
-    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file,
-            final LogHook<LogEntry> filter )
+    static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );
-        File tempFile = new File( file.getAbsolutePath() + ".tmp" );
-        fileSystem.deleteFile( tempFile );
-        try ( StoreChannel in = fileSystem.open( file, OpenMode.READ );
-                StoreChannel out = fileSystem.open( tempFile, OpenMode.READ_WRITE ) )
+        try ( StoreChannel in = fileSystem.open( file, OpenMode.READ ) )
         {
-            LogHeader logHeader = transferLogicalLogHeader( in, out, ByteBuffer.allocate( LOG_HEADER_SIZE ) );
+            LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), in, true, file );
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );
@@ -130,23 +114,8 @@ public class LogTestUtils
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
             {
-                if ( filter.test( entry ) )
-                {   // TODO allright, write to outBuffer
-                }
+                filter.test( entry );
             }
         }
-
-        return tempFile;
     }
-
-    private static LogHeader transferLogicalLogHeader( StoreChannel in, StoreChannel out, ByteBuffer buffer )
-            throws IOException
-    {
-        LogHeader header = readLogHeader( buffer, in, true, null );
-        writeLogHeader( buffer, header.logVersion, header.lastCommittedTxId );
-        buffer.flip();
-        out.write( buffer );
-        return header;
-    }
-
 }

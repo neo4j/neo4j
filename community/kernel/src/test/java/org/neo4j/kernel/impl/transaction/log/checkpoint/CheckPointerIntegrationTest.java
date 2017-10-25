@@ -35,11 +35,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -47,12 +44,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
-import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -62,19 +62,20 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 
 public class CheckPointerIntegrationTest
 {
-    private static final File storeDir = new File( getProperty( "java.io.tmpdir" ), "graph.db" );
-
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private GraphDatabaseBuilder builder;
     private FileSystemAbstraction fs;
+    private File storeDir;
 
     @Before
     public void setup() throws IOException
     {
         fs = fsRule.get();
-        fs.deleteRecursively( storeDir );
+        storeDir = testDirectory.graphDbDir();
         builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( storeDir );
     }
@@ -135,7 +136,8 @@ public class CheckPointerIntegrationTest
 
     private boolean checkPointInTxLog( GraphDatabaseService db ) throws IOException
     {
-        LogFile logFile = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( LogFile.class );
+        LogFiles logFiles = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( LogFiles.class );
+        LogFile logFile = logFiles.getLogFile();
         try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( 0, LOG_HEADER_SIZE ) ) )
         {
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
@@ -235,29 +237,22 @@ public class CheckPointerIntegrationTest
 
     private static class CheckPointCollector
     {
-        private final PhysicalLogFiles logFiles;
-        private final FileSystemAbstraction fileSystem;
+        private final LogFiles logFiles;
         private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
 
-        CheckPointCollector( File directory, FileSystemAbstraction fileSystem )
+        CheckPointCollector( File directory, FileSystemAbstraction fileSystem ) throws IOException
         {
-            this.fileSystem = fileSystem;
-            this.logFiles = new PhysicalLogFiles( directory, fileSystem );
             this.logEntryReader = new VersionAwareLogEntryReader<>();
+            this.logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
+                    .withLogEntryReader( logEntryReader ).build();
         }
 
         public List<CheckPoint> find( long version ) throws IOException
         {
             List<CheckPoint> checkPoints = new ArrayList<>();
-            for (; version >= INITIAL_LOG_VERSION; version-- )
+            for (; version >= INITIAL_LOG_VERSION && logFiles.versionExists( version ); version-- )
             {
-                LogVersionedStoreChannel channel =
-                        PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem, version, false );
-                if ( channel == null )
-                {
-                    break;
-                }
-
+                LogVersionedStoreChannel channel = logFiles.openForVersion( version );
                 ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
 
                 try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )

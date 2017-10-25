@@ -30,7 +30,7 @@ import org.neo4j.com.StoreIdTestFactory;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -57,7 +57,7 @@ public class ResponsePackerTest
         TransactionCursor endlessCursor = new EndlessCursor( lastAppliedTransactionId + 1 );
         when( transactionStore.getTransactions( anyLong() ) ).thenReturn( endlessCursor );
         final long targetTransactionId = 8L;
-        final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0,
+        final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( targetTransactionId, 0,
                 BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
         ResponsePacker packer = new ResponsePacker( transactionStore, transactionIdStore,
                 Suppliers.singleton( StoreIdTestFactory.newStoreIdForCurrentVersion() ) );
