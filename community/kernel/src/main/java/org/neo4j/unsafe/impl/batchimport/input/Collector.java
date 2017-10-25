@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 /**
@@ -47,4 +48,39 @@ public interface Collector extends AutoCloseable
      */
     @Override
     void close();
+
+    Collector EMPTY = new Collector()
+    {
+        @Override
+        public PrimitiveLongIterator leftOverDuplicateNodesIds()
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public void collectExtraColumns( String source, long row, String value )
+        {
+        }
+
+        @Override
+        public void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource )
+        {
+        }
+
+        @Override
+        public void collectBadRelationship( InputRelationship relationship, Object specificValue )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public long badEntries()
+        {
+            return 0;
+        }
+    };
 }
