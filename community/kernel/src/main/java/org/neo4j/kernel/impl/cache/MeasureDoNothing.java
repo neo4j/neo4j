@@ -23,20 +23,69 @@ import org.neo4j.logging.Log;
 
 public class MeasureDoNothing extends Thread
 {
+    public interface Monitor
+    {
+        default void started()
+        {
+        }
+
+        void blocked( long millis );
+
+        default void stopped()
+        {
+        }
+    }
+
+    public static Monitor loggingMonitor( Log log )
+    {
+        return new Monitor()
+        {
+            @Override
+            public void started()
+            {
+                log.debug( "GC Monitor started. " );
+            }
+
+            @Override
+            public void stopped()
+            {
+                log.debug( "GC Monitor stopped. " );
+            }
+
+            @Override
+            public void blocked( long millis )
+            {
+                log.warn( String.format( "GC Monitor: Application threads blocked for %dms.", millis ) );
+            }
+        };
+    }
+
+    public static class CollectingMonitor implements Monitor
+    {
+        private long gcBlockTime;
+
+        @Override
+        public void blocked( long millis )
+        {
+            gcBlockTime += millis;
+        }
+
+        public long getGcBlockTime()
+        {
+            return gcBlockTime;
+        }
+    }
+
     private volatile boolean measure = true;
 
+    private final Monitor monitor;
     private final long TIME_TO_WAIT;
     private final long NOTIFICATION_THRESHOLD;
-    private final Log log;
 
-    public MeasureDoNothing( String threadName, Log log, long timeToWait, long pauseNotificationThreshold )
+    public MeasureDoNothing( String threadName, Monitor monitor, long timeToWait, long pauseNotificationThreshold )
     {
         super( threadName );
-        if ( log == null )
-        {
-            throw new IllegalArgumentException( "Null message log" );
-        }
-        this.log = log;
+        this.monitor = monitor;
         this.TIME_TO_WAIT = timeToWait;
         this.NOTIFICATION_THRESHOLD = pauseNotificationThreshold + timeToWait;
         setDaemon( true );
@@ -45,7 +94,7 @@ public class MeasureDoNothing extends Thread
     @Override
     public synchronized void run()
     {
-        log.debug( "GC Monitor started. " );
+        monitor.started();
         while ( measure )
         {
             long start = System.nanoTime();
@@ -61,10 +110,10 @@ public class MeasureDoNothing extends Thread
             if ( time > NOTIFICATION_THRESHOLD )
             {
                 long blockTime = time - TIME_TO_WAIT;
-                log.warn( String.format( "GC Monitor: Application threads blocked for %dms.", blockTime ) );
+                monitor.blocked( blockTime );
             }
         }
-        log.debug( "GC Monitor stopped. " );
+        monitor.stopped();
     }
 
     public synchronized void stopMeasuring()

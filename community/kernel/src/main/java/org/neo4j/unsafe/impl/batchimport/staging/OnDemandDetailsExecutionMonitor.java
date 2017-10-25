@@ -27,9 +27,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongFunction;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.impl.cache.MeasureDoNothing;
+import org.neo4j.kernel.impl.cache.MeasureDoNothing.CollectingMonitor;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
@@ -40,6 +45,7 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.helpers.Format.duration;
 
 /**
  * Sits in the background and collect stats about stages that are executing.
@@ -62,6 +68,9 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     private final List<StageDetails> details = new ArrayList<>();
     private final PrintStream out;
     private final Map<String,Pair<String,Runnable>> actions = new HashMap<>();
+    private final CollectingMonitor gcBlockTime = new CollectingMonitor();
+    private final MeasureDoNothing gcMonitor;
+
     private StageDetails current;
     private boolean printDetailsOnDone;
 
@@ -69,6 +78,8 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     {
         this.out = out;
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
+        this.actions.put( "gc", Pair.of( "Trigger GC", this::triggerGC ) );
+        this.gcMonitor = new MeasureDoNothing( "Importer GC monitor", gcBlockTime, 100, 200 );
     }
 
     @Override
@@ -77,12 +88,13 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         out.println( "Interactive command list (end with ENTER):" );
         actions.forEach( ( key, action ) -> out.println( "  " + key + ": " + action.first() ) );
         out.println();
+        gcMonitor.start();
     }
 
     @Override
     public void start( StageExecution execution )
     {
-        details.add( current = new StageDetails( execution ) );
+        details.add( current = new StageDetails( execution, gcBlockTime ) );
     }
 
     @Override
@@ -98,12 +110,13 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         {
             printDetails();
         }
+        gcMonitor.stopMeasuring();
     }
 
     @Override
     public long nextCheckTime()
     {
-        return currentTimeMillis() + 200;
+        return currentTimeMillis() + 500;
     }
 
     @Override
@@ -121,8 +134,19 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
             stageDetails.print( out );
         }
 
+        out.println( "Environment information:");
+        out.println( "  Free physical memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
+        out.println( "  Max VM memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
+        out.println( "  Free VM memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
+        out.println( "  GC block time: " + duration( gcBlockTime.getGcBlockTime() ) );
+
         // Make sure that if user is interested in details then also print the entire details set when import is done
         printDetailsOnDone = true;
+    }
+
+    private void triggerGC()
+    {
+        System.gc();
     }
 
     private void reactToUserInput()
@@ -150,12 +174,22 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     private static class StageDetails
     {
         private final StageExecution execution;
+        private final long startTime;
+        private final CollectingMonitor gcBlockTime;
+        private final long baseGcBlockTime;
+
         private long memoryUsage;
         private long ioThroughput;
+        private long totalTimeMillis;
+        private long stageGcBlockTime;
+        private long doneBatches;
 
-        StageDetails( StageExecution execution )
+        StageDetails( StageExecution execution, CollectingMonitor gcBlockTime )
         {
             this.execution = execution;
+            this.gcBlockTime = gcBlockTime;
+            this.startTime = currentTimeMillis();
+            this.baseGcBlockTime = gcBlockTime.getGcBlockTime();
         }
 
         void print( PrintStream out )
@@ -164,20 +198,28 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
             StringBuilder builder = new StringBuilder();
             SpectrumExecutionMonitor.printSpectrum( builder, execution, SpectrumExecutionMonitor.DEFAULT_WIDTH, DetailLevel.NO );
             out.println( builder.toString() );
-            if ( memoryUsage > 0 )
-            {
-                out.println( "Memory usage: " + bytes( memoryUsage ) );
-            }
-            if ( ioThroughput > 0 )
-            {
-                out.println( "I/O throughput: " + bytes( ioThroughput ) + "/s" );
-            }
+            printValue( out, memoryUsage, "Memory usage", Format::bytes );
+            printValue( out, ioThroughput, "I/O throughput", value -> bytes( value ) + "/s" );
+            printValue( out, stageGcBlockTime, "GC block time", Format::duration );
+            printValue( out, totalTimeMillis, "Duration", Format::duration );
+            printValue( out, doneBatches, "Done batches", String::valueOf );
 
             out.println();
         }
 
+        private static void printValue( PrintStream out, long value, String description, LongFunction<String> toStringConverter )
+        {
+            if ( value > 0 )
+            {
+                out.println( description + ": " + toStringConverter.apply( value ) );
+            }
+        }
+
         void collect()
         {
+            totalTimeMillis = currentTimeMillis() - startTime;
+            stageGcBlockTime = gcBlockTime.getGcBlockTime() - baseGcBlockTime;
+            long lastDoneBatches = doneBatches;
             for ( Step<?> step : execution.steps() )
             {
                 StepStats stats = step.stats();
@@ -191,7 +233,9 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
                 {
                     ioThroughput = ioStat.asLong();
                 }
+                lastDoneBatches = stats.stat( Keys.done_batches ).asLong();
             }
+            doneBatches = lastDoneBatches;
         }
     }
 }
