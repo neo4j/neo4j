@@ -87,7 +87,7 @@ case class ToUpperFunction(argument: Expression) extends StringFunction(argument
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case NO_VALUE => NO_VALUE
     case t: TextValue => t.ltrim()
     case _ => StringFunction.notAString(value)
@@ -221,15 +221,20 @@ case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val origVal = asString(orig(m, state))
-    val startVal = 0
-    val expectedLength = asInt(length(m, state)).value()
-    // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < expectedLength + startVal)
-      origVal.length
-    else
-      expectedLength
-    Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
+    val value = orig(m, state)
+    value match {
+      case NO_VALUE => NO_VALUE
+      case origVal: TextValue =>
+        val startVal = 0
+        val expectedLength = asInt(length(m, state)).value()
+        // if length goes off the end of the string, let's be nice and handle that.
+        val lengthVal = if (origVal.length < expectedLength + startVal)
+          origVal.length
+        else
+          expectedLength
+        origVal.substring(startVal, startVal + lengthVal)
+      case _ => StringFunction.notAString(value)
+    }
   }
 
   override def arguments = Seq(orig, length)
@@ -244,12 +249,17 @@ case class RightFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val origVal = asString(orig(m, state))
-    // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < asInt(length(m, state)).value()) origVal.length
-    else asInt(length(m, state)).value()
-    val startVal = origVal.length - lengthVal
-    Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
+    val value = orig(m, state)
+    value match {
+      case NO_VALUE => NO_VALUE
+      case origVal: TextValue =>
+        // if length goes off the end of the string, let's be nice and handle that.
+        val lengthVal = if (origVal.length < asInt(length(m, state)).value()) origVal.length
+        else asInt(length(m, state)).value()
+        val startVal = origVal.length - lengthVal
+        origVal.substring(startVal, startVal + lengthVal)
+      case _ => StringFunction.notAString(value)
+    }
   }
 
   override def arguments = Seq(orig, length)

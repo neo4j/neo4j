@@ -54,7 +54,7 @@ class StringFunctionsTest extends CypherFunSuite {
     left("hello", 8) should equal(stringValue("hello"))
     left(null, 8) should equal(expectedNull)
     intercept[CypherTypeException](left(1042, 2))
-    intercept[StringIndexOutOfBoundsException](left("hello", -4))
+    intercept[IndexOutOfBoundsException](left("hello", -4))
   }
 
   test("rightTests") {
@@ -66,7 +66,7 @@ class StringFunctionsTest extends CypherFunSuite {
     right("hello", 8) should equal(stringValue("hello"))
     right(null, 8) should equal(expectedNull)
     intercept[CypherTypeException](right(1024, 2))
-    intercept[StringIndexOutOfBoundsException](right("hello", -4))
+    intercept[IndexOutOfBoundsException](right("hello", -4))
   }
 
   test("substringTests") {
