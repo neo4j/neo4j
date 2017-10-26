@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.lang.Integer.signum
 import java.nio.charset.StandardCharsets
 
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values.{stringValue, utf8Value}
 import org.scalacheck.{Properties, _}
+import org.scalatest.prop.Configuration
 
-object TextValueSpecification extends Properties("TextValue") {
+object TextValueSpecification extends Properties("TextValue") with Configuration {
 
   import Prop.forAll
 
@@ -53,19 +53,18 @@ object TextValueSpecification extends Properties("TextValue") {
     equivalent(stringValue(x).trim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).trim())
   }
 
-  property("trim") = forAll { (x: String) =>
-    equivalent(stringValue(x), utf8Value(x.getBytes(StandardCharsets.UTF_8)).trim())
-  }
-
   property("compareTo") = forAll { (x: String, y: String) =>
     val stringX = stringValue(x)
     val stringY = stringValue(y)
     val utf8X = utf8Value(x.getBytes(StandardCharsets.UTF_8))
     val utf8Y = utf8Value(y.getBytes(StandardCharsets.UTF_8))
-    val compare = signum(stringX.compareTo(stringY))
-    compare == signum(stringX.compareTo(utf8Y)) &&
-      compare == signum(utf8X.compareTo(stringY)) &&
-      compare == signum(utf8X.compareTo(utf8Y))
+    val compare = stringX.compareTo(stringY)
+    compare == stringX.compareTo(utf8Y) &&
+      compare == utf8X.compareTo(stringY) &&
+      compare == utf8X.compareTo(utf8Y) &&
+      compare == -stringY.compareTo(utf8X) &&
+      compare == -utf8Y.compareTo(stringX) &&
+      compare == -utf8Y.compareTo(utf8X)
   }
 
   property("compareTo") = forAll { (x: String) =>
@@ -82,6 +81,9 @@ object TextValueSpecification extends Properties("TextValue") {
       equivalent(stringValue(string).substring(start, end),
                 utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, end))
   }
+
+  implicit override val generatorDrivenConfig =
+    PropertyCheckConfig(minSuccessful = 1000)
 
   private def equivalent(t1: TextValue, t2: TextValue) =
     t1.length() == t2.length() && t1 == t2 && t1.hashCode() == t2.hashCode()

@@ -121,6 +121,7 @@ class StringFunctionsTest extends CypherFunSuite {
     ltrim("  hello") should equal(stringValue("hello"))
     ltrim("  hello  ") should equal(stringValue("hello  "))
     ltrim(null) should equal(expectedNull)
+    ltrim(" 㺂࿝鋦毠") should equal(stringValue(" 㺂࿝鋦毠"))
     intercept[CypherTypeException](ltrim(1024))
   }
 

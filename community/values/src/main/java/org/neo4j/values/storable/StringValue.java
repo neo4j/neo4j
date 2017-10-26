@@ -59,12 +59,12 @@ public abstract class StringValue extends TextValue
             return 0;
         }
         int h = 1;
-        for ( int codePointOffset = 0; codePointOffset < value.codePointCount( 0, value.length() ); codePointOffset++ )
-        {
-            int pos = value.offsetByCodePoints( 0, codePointOffset );
-            h = 31 * h + value.codePointAt( pos );
+        final int length = value.length();
+        for (int offset = 0; offset < length; ) {
+            final int codePoint = value.codePointAt(offset);
+            h = 31 * h + codePoint;
+            offset += Character.charCount(codePoint);
         }
-
         return h;
     }
 
@@ -86,7 +86,27 @@ public abstract class StringValue extends TextValue
     @Override
     public TextValue trim()
     {
-        return Values.stringValue( value().trim() );
+        String value = value();
+        int start = 0, length = value.length(), end = length;
+        while ( start < length ) {
+            int codePoint = value.codePointAt(start);
+            if ( !Character.isWhitespace( codePoint ) )
+            {
+                break;
+            }
+            start += Character.charCount(codePoint);
+        }
+
+        while ( end > 0 )
+        {
+            int codePoint = value.codePointBefore( end );
+            if ( !Character.isWhitespace( codePoint ) )
+            {
+                break;
+            }
+            end--;
+        }
+        return Values.stringValue( value.substring( start, Math.max( end, start ) ) );
     }
 
     @Override
@@ -110,7 +130,22 @@ public abstract class StringValue extends TextValue
     @Override
     public int compareTo( TextValue other )
     {
-        return value().compareTo( other.stringValue() );
+        String thisString = value();
+        String thatString = other.stringValue();
+        int len1 = thisString.length();
+        int len2 = thatString.length();
+        int lim = Math.min(len1, len2);
+
+        int k = 0;
+        while (k < lim) {
+            int c1 = thisString.codePointAt( k );
+            int c2 = thatString.codePointAt( k );
+            if (c1 != c2) {
+                return c1 - c2;
+            }
+            k += Character.charCount( c1 );
+        }
+        return length() - other.length();
     }
 
     @Override

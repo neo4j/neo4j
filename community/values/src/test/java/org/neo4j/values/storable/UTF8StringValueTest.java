@@ -32,7 +32,10 @@ import static org.neo4j.values.storable.Values.utf8Value;
 public class UTF8StringValueTest
 {
     private String[] strings = {"", "1337", " ", "普通话/普通話", "\uD83D\uDE21", " a b c ", "䤹᳽", "熨", "ۼ",
-            "ⲹ楡톜ഷۢ⼈늉₭샺ጚ砧攡跿家䯶鲏⬖돛犽ۼ"};
+            "ⲹ楡톜ഷۢ⼈늉₭샺ጚ砧攡跿家䯶鲏⬖돛犽ۼ",
+            " 㺂࿝鋦毠",//first character is a thin space,
+            "\u0018", ";먵熍裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩萌 "
+    };
 
     @Test
     public void shouldHandleDifferentTypesOfStrings()
@@ -56,6 +59,27 @@ public class UTF8StringValueTest
             TextValue utf8 = utf8Value( bytes );
             assertSame( stringValue.trim(), utf8.trim() );
         }
+    }
+
+    @Test
+    public void shouldCompareTo()
+    {
+        // Given
+        String string1 = "⦹";
+        String string2 = "";
+        //String string1 = "Y";
+        //String string2 = "끷";
+
+        int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
+        int y = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ).compareTo( stringValue( string2 ) );
+        int z = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ).compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
+
+        int xx = stringValue( string2 ).compareTo( utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ) );
+        int yy = utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ).compareTo( stringValue( string1 ) );
+        int zz = utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ).compareTo( utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ) );
+
+        assertThat(x, equalTo( y ));
+        assertThat(x, equalTo( z ));
     }
 
     @Test
