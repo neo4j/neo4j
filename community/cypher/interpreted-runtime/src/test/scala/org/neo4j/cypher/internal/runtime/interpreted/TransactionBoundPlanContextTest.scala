@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, RelTypeId}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
 import org.neo4j.kernel.api.KernelTransaction.Type._
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -74,7 +74,15 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
   test("statistics should default to single cardinality for unknown counts on nonempty db") {
     val graph = new GraphDatabaseCypherService(database)
-    graph.getGraphDatabaseService.execute("UNWIND range(1, 100) AS i CREATE (:L1)-[:T]->()")
+
+    val tx = graph.beginTransaction(explicit, AUTH_DISABLED)
+    for ( i <- 0 until 100 ) {
+      val n1 = graph.createNode(Label.label("L1"))
+      val n2 = graph.createNode()
+      n1.createRelationshipTo(n2, RelationshipType.withName("T"))
+    }
+    tx.success()
+    tx.close()
 
     val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
