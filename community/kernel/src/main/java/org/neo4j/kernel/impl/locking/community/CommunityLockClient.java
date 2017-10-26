@@ -316,11 +316,25 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
+    public void prepare()
+    {
+        stateHolder.prepare( this );
+    }
+
+    @Override
     public void stop()
     {
         // closing client to prevent any new client to come
-        stateHolder.stopClient();
-        // wake up and terminate waiters
+        if ( stateHolder.stopClient() )
+        {
+            // wake up and terminate waiters
+            terminateAllWaitersAndWaitForClientsToLeave();
+            releaseLocks();
+        }
+    }
+
+    private void terminateAllWaitersAndWaitForClientsToLeave()
+    {
         terminateAllWaiters();
         // wait for all active clients to go and terminate latecomers
         while ( stateHolder.hasActiveClients() )
@@ -333,9 +347,8 @@ public class CommunityLockClient implements Locks.Client
     @Override
     public void close()
     {
-        stop();
-        // now we are only one who operate on this client
-        // safe to release all the locks
+        stateHolder.closeClient();
+        terminateAllWaitersAndWaitForClientsToLeave();
         releaseLocks();
     }
 

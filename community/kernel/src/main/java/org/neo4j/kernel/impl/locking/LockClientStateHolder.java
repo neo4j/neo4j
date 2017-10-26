@@ -23,21 +23,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * State control class for Locks.Clients.
- * Client state represent current Locks.Client state: <b>ACTIVE/STOPPED </b> and number of active clients.
+ * Client state represent current Locks.Client state: <b>ACTIVE/PREPARE/STOPPED</b> and number of active clients.
  * <p/>
  * Client states are:
  * <ul>
- * <li><b>ACTIVE</b> state of fully functional locks client without any restriction or operations limitations</li>
- * <li><b>STOPPED</b> all current lock acquisitions will be interrupted/terminated without obtaining
- * corresponding lock, new acquisitions will not be possible anymore, all locks that client holds are preserved.</li>
+ * <li><b>ACTIVE</b> state of fully functional locks client without any restriction or operations limitations.</li>
+ * <li><b>PREPARE</b> state prevents transition into STOPPED state, unless forced as part of closing the lock
+ * client.</li>
+ * <li><b>STOPPED</b> all current lock acquisitions will be interrupted/terminated without obtaining corresponding
+ * lock, new acquisitions will not be possible anymore, all locks that client holds are preserved.</li>
  * </ul>
  */
 public final class LockClientStateHolder
 {
-    private static final int FLAG_BITS = 1;
+    private static final int FLAG_BITS = 2;
     private static final int CLIENT_BITS = Integer.SIZE - FLAG_BITS;
-    private static final int STATE_BIT_MASK = 1 << CLIENT_BITS;
     private static final int STOPPED = 1 << CLIENT_BITS;
+    private static final int PREPARE = 1 << CLIENT_BITS - 1;
+    private static final int STATE_BIT_MASK = STOPPED | PREPARE;
     private static final int INITIAL_STATE = 0;
     private AtomicInteger clientState = new AtomicInteger( INITIAL_STATE );
 
@@ -52,16 +55,57 @@ public final class LockClientStateHolder
     }
 
     /**
-     * Closing current client
+     * Move the client to the PREPARE state, unless it is already STOPPED.
      */
-    public void stopClient()
+    public void prepare( Locks.Client client )
     {
         int currentValue;
+        int newValue;
         do
         {
             currentValue = clientState.get();
+            if ( isStopped( currentValue ) )
+            {
+                throw new LockClientStoppedException( client );
+            }
+            newValue = stateWithNewStatus( currentValue, PREPARE );
         }
-        while ( !clientState.compareAndSet( currentValue, stateWithNewStatus( currentValue, STOPPED ) ) );
+        while ( !clientState.compareAndSet( currentValue, newValue ) );
+    }
+
+    /**
+     * Move the client to STOPPED, unless it is already in PREPARE.
+     */
+    public boolean stopClient()
+    {
+        int currentValue;
+        int newValue;
+        do
+        {
+            currentValue = clientState.get();
+            if ( isPrepare( currentValue ) )
+            {
+                return false; // Can't stop clients that are in PREPARE
+            }
+            newValue = stateWithNewStatus( currentValue, STOPPED );
+        }
+        while ( !clientState.compareAndSet( currentValue, newValue ) );
+        return true;
+    }
+
+    /**
+     * Move the client to STOPPED as part of closing the current client, regardless of what state it is currently in.
+     */
+    public void closeClient()
+    {
+        int currentValue;
+        int newValue;
+        do
+        {
+            currentValue = clientState.get();
+            newValue = stateWithNewStatus( currentValue, STOPPED );
+        }
+        while ( !clientState.compareAndSet( currentValue, newValue ) );
     }
 
     /**
@@ -114,6 +158,11 @@ public final class LockClientStateHolder
     public void reset()
     {
         clientState.set( INITIAL_STATE );
+    }
+
+    private boolean isPrepare( int clientState )
+    {
+        return getStatus( clientState ) == PREPARE;
     }
 
     private boolean isStopped( int clientState )

@@ -187,6 +187,12 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
+    public void prepare()
+    {
+        client.prepare();
+    }
+
+    @Override
     public void stop()
     {
         client.stop();

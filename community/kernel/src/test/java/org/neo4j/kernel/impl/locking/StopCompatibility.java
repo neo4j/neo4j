@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -54,9 +53,9 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
-    private static final ResourceType RESOURCE_TYPE = ResourceTypes.NODE;
-    private static final long RESOURCE_ID = 42;
-    private static final long OTHER_RESOURCE_ID = 4242;
+    private static final long FIRST_NODE_ID = 42;
+    private static final long SECOND_NODE_ID = 4242;
+    private static final LockTracer TRACER = LockTracer.NONE;
 
     private Locks.Client client;
 
@@ -78,77 +77,136 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void releaseWriteLockWaitersOnStop()
+    public void mustReleaseWriteLockWaitersOnStop()
     {
-        // given
-        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
-        clientB.acquireShared( LockTracer.NONE, NODE, 2L );
-        clientC.acquireShared( LockTracer.NONE, NODE, 3L );
-        acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
-        acquireExclusive( clientC, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        // Given
+        clientA.acquireShared( TRACER, NODE, 1L );
+        clientB.acquireShared( TRACER, NODE, 2L );
+        clientC.acquireShared( TRACER, NODE, 3L );
+        acquireExclusive( clientB, TRACER, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientC, TRACER, NODE, 1L ).callAndAssertWaiting();
 
-        // when
+        // When
         clientC.stop();
         clientB.stop();
         clientA.stop();
 
-        // all locks clients should be stopped at this point and all clients should still hold their shared locks
+        // All locks clients should be stopped at this point, and all all locks should be released because none of the
+        // clients entered the prepare phase
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept( lockCountVisitor );
-        Assert.assertEquals( 3, lockCountVisitor.getLockCount() );
+        assertEquals( 0, lockCountVisitor.getLockCount() );
     }
 
     @Test
-    public void releaseReadLockWaitersOnStop()
-    {  // given
-        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
-        clientB.acquireExclusive( LockTracer.NONE, NODE, 2L );
-        acquireShared( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
+    public void mustNotReleaseLocksAfterPrepareOnStop() throws Exception
+    {
+        // Given
+        clientA.acquireShared( TRACER, NODE, 1L );
+        clientA.acquireExclusive( TRACER, NODE, 2L );
+        clientA.prepare();
 
-        // when
+        // When
+        clientA.stop();
+
+        // The client entered the prepare phase, so it gets to keep its locks
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        assertEquals( 2, lockCountVisitor.getLockCount() );
+    }
+
+    @Test
+    public void mustReleaseUnpreparedLocksOnStop() throws Exception
+    {
+        // Given
+        clientA.acquireShared( TRACER, NODE, 1L );
+        clientA.acquireExclusive( TRACER, NODE, 2L );
+
+        // When
+        clientA.stop();
+
+        // The client was stopped before it could enter the prepare phase, so all of its locks are released
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        assertEquals( 0, lockCountVisitor.getLockCount() );
+    }
+
+    @Test
+    public void mustReleaseReadLockWaitersOnStop()
+    {
+        // Given
+        clientA.acquireExclusive( TRACER, NODE, 1L );
+        clientB.acquireExclusive( TRACER, NODE, 2L );
+        acquireShared( clientB, TRACER, NODE, 1L ).callAndAssertWaiting();
+
+        // When
         clientB.stop();
         clientA.stop();
 
-        // all locks clients should be stopped at this point and all clients should still hold their exclusive locks
+        // All locks clients should be stopped at this point, and all all locks should be released because none of the
+        // clients entered the prepare phase
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept( lockCountVisitor );
-        Assert.assertEquals( 2, lockCountVisitor.getLockCount() );
+        assertEquals( 0, lockCountVisitor.getLockCount() );
+    }
+
+    @Test
+    public void prepareMustAllowAcquiringNewLocksAfterStop() throws Exception
+    {
+        // Given
+        clientA.prepare();
+        clientA.stop();
+
+        // When
+        clientA.acquireShared( TRACER, NODE, 1 );
+        clientA.acquireExclusive( TRACER, NODE, 2 );
+
+        // Stopped essentially has no effect when it comes after the client has entered the prepare phase
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        assertEquals( 2, lockCountVisitor.getLockCount() );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void prepareMustThrowWhenClientStopped() throws Exception
+    {
+        stoppedClient().prepare();
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void acquireSharedThrowsWhenClientStopped()
     {
-        stoppedClient().acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        stoppedClient().acquireShared( TRACER, NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void acquireExclusiveThrowsWhenClientStopped()
     {
-        stoppedClient().acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        stoppedClient().acquireExclusive( TRACER, NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void trySharedLockThrowsWhenClientStopped()
     {
-        stoppedClient().trySharedLock( ResourceTypes.NODE, 1 );
+        stoppedClient().trySharedLock( NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void tryExclusiveLockThrowsWhenClientStopped()
     {
-        stoppedClient().tryExclusiveLock( ResourceTypes.NODE, 1 );
+        stoppedClient().tryExclusiveLock( NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void releaseSharedThrowsWhenClientStopped()
     {
-        stoppedClient().releaseShared( ResourceTypes.NODE, 1 );
+        stoppedClient().releaseShared( NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void releaseExclusiveThrowsWhenClientStopped()
     {
-        stoppedClient().releaseExclusive( ResourceTypes.NODE, 1 );
+        stoppedClient().releaseExclusive( NODE, 1 );
     }
 
     @Test
@@ -323,11 +381,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
         await( firstLockAcquired );
         assertThreadIsWaitingForLock( acquisition );
-        assertLocksHeld( RESOURCE_ID, OTHER_RESOURCE_ID );
+        assertLocksHeld( FIRST_NODE_ID, SECOND_NODE_ID );
 
         acquisition.stop();
         assertLockAcquisitionFailed( acquisition );
-        assertLocksHeld( RESOURCE_ID );
+        assertLocksHeld( FIRST_NODE_ID );
 
         thisThreadsExclusiveLock.release();
         assertNoLocksHeld();
@@ -356,16 +414,16 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private AcquiredLock acquireSharedLockInThisThread()
     {
-        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
-        assertLocksHeld( RESOURCE_ID );
-        return AcquiredLock.shared( client, RESOURCE_TYPE, RESOURCE_ID );
+        client.acquireShared( TRACER, NODE, FIRST_NODE_ID );
+        assertLocksHeld( FIRST_NODE_ID );
+        return AcquiredLock.shared( client, NODE, FIRST_NODE_ID );
     }
 
     private AcquiredLock acquireExclusiveLockInThisThread()
     {
-        client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
-        assertLocksHeld( RESOURCE_ID );
-        return AcquiredLock.exclusive( client, RESOURCE_TYPE, RESOURCE_ID );
+        client.acquireExclusive( TRACER, NODE, FIRST_NODE_ID );
+        assertLocksHeld( FIRST_NODE_ID );
+        return AcquiredLock.exclusive( client, NODE, FIRST_NODE_ID );
     }
 
     private LockAcquisition acquireSharedLockInAnotherThread()
@@ -387,11 +445,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             Locks.Client client = newLockClient( lockAcquisition );
             if ( shared )
             {
-                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireShared( TRACER, NODE, FIRST_NODE_ID );
             }
             else
             {
-                client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireExclusive( TRACER, NODE, FIRST_NODE_ID );
             }
             return null;
         } );
@@ -413,11 +471,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
                 {
                     if ( firstShared )
                     {
-                        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                        client.acquireShared( TRACER, NODE, FIRST_NODE_ID );
                     }
                     else
                     {
-                        client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                        client.acquireExclusive( TRACER, NODE, FIRST_NODE_ID );
                     }
                     fail( "Transaction termination expected" );
                 }
@@ -435,11 +493,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
                 if ( secondShared )
                 {
-                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireShared( TRACER, NODE, FIRST_NODE_ID );
                 }
                 else
                 {
-                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireExclusive( TRACER, NODE, FIRST_NODE_ID );
                 }
             }
             return null;
@@ -458,12 +516,12 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         {
             try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
-                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireShared( TRACER, NODE, FIRST_NODE_ID );
 
                 sharedLockAcquired.countDown();
                 await( startExclusiveLock );
 
-                client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireExclusive( TRACER, NODE, FIRST_NODE_ID );
             }
             return null;
         } );
@@ -483,22 +541,22 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
                 if ( shared )
                 {
-                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
+                    client.acquireShared( TRACER, NODE, SECOND_NODE_ID );
                 }
                 else
                 {
-                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
+                    client.acquireExclusive( TRACER, NODE, SECOND_NODE_ID );
                 }
 
                 firstLockAcquired.countDown();
 
                 if ( shared )
                 {
-                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireShared( TRACER, NODE, FIRST_NODE_ID );
                 }
                 else
                 {
-                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireExclusive( TRACER, NODE, FIRST_NODE_ID );
                 }
             }
             return null;
