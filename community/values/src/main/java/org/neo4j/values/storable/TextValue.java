@@ -37,6 +37,10 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue trim();
 
+    public abstract TextValue ltrim();
+
+    public abstract TextValue rtrim();
+
     public abstract int compareTo( TextValue other );
 
     @Override

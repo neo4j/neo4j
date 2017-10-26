@@ -40,6 +40,7 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
 }
 
 object StringFunction {
+
   def notAString(a: Any) = throw new CypherTypeException(
     "Expected a string value for %s, but got: %s; consider converting it to a string with toString()."
       .format(toString, a.toString))
@@ -86,16 +87,22 @@ case class ToUpperFunction(argument: Expression) extends StringFunction(argument
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m, state)).replaceAll("^\\s+", ""))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =value match {
+    case NO_VALUE => NO_VALUE
+    case t: TextValue => t.ltrim()
+    case _ => StringFunction.notAString(value)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
 }
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m, state)).replaceAll("\\s+$", ""))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+    case NO_VALUE => NO_VALUE
+    case t: TextValue => t.rtrim()
+    case _ => StringFunction.notAString(value)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
 }
@@ -185,11 +192,11 @@ case class SplitFunction(orig: Expression, separator: Expression)
       NO_VALUE
     } else {
       if (separatorVal.length > 0) {
-        VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray:_*))
+        VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray: _*))
       } else if (origVal.isEmpty) {
         VirtualValues.list(Values.EMPTY_STRING)
       } else {
-        VirtualValues.fromArray(Values.stringArray(origVal.sliding(1).toArray:_*))
+        VirtualValues.fromArray(Values.stringArray(origVal.sliding(1).toArray: _*))
       }
     }
   }

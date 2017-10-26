@@ -34,7 +34,7 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
     string <- Arbitrary.arbitrary[String]
     max = string.codePointCount(0, string.length)
     start <- Gen.chooseNum[Int](0, max)
-    end <-  Gen.chooseNum[Int](start + 1, max)
+    end <- Gen.chooseNum[Int](start + 1, max)
   } yield (string, start, end)
 
   property("equals") = forAll { (x: String) =>
@@ -51,6 +51,21 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
 
   property("trim") = forAll { (x: String) =>
     equivalent(stringValue(x).trim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).trim())
+  }
+
+  property("trim") = forAll { (x: String) => {
+    val sValue = stringValue(x)
+    val uTF8StringValue = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(sValue.trim(), uTF8StringValue.ltrim().rtrim()) &&
+      equivalent(uTF8StringValue.trim(), sValue.ltrim().rtrim())}
+  }
+
+  property("ltrim") = forAll { (x: String) =>
+    equivalent(stringValue(x).ltrim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).ltrim())
+  }
+
+  property("rtrim") = forAll { (x: String) =>
+    equivalent(stringValue(x).rtrim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).rtrim())
   }
 
   property("compareTo") = forAll { (x: String, y: String) =>
@@ -71,15 +86,15 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
     val stringX = stringValue(x)
     val utf8X = utf8Value(x.getBytes(StandardCharsets.UTF_8))
     stringX.compareTo(stringX) == 0 &&
-    stringX.compareTo(utf8X) == 0 &&
-    utf8X.compareTo(stringX) == 0 &&
-    utf8X.compareTo(utf8X) == 0
+      stringX.compareTo(utf8X) == 0 &&
+      utf8X.compareTo(stringX) == 0 &&
+      utf8X.compareTo(utf8X) == 0
   }
 
   property("substring") = forAll(substringGen) {
     case (string, start, end) =>
       equivalent(stringValue(string).substring(start, end),
-                utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, end))
+                 utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, end))
   }
 
   implicit override val generatorDrivenConfig =

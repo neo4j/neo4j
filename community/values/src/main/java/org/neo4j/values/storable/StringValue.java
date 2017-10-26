@@ -60,10 +60,11 @@ public abstract class StringValue extends TextValue
         }
         int h = 1;
         final int length = value.length();
-        for (int offset = 0; offset < length; ) {
-            final int codePoint = value.codePointAt(offset);
+        for ( int offset = 0; offset < length; )
+        {
+            final int codePoint = value.codePointAt( offset );
             h = 31 * h + codePoint;
-            offset += Character.charCount(codePoint);
+            offset += Character.charCount( codePoint );
         }
         return h;
     }
@@ -87,26 +88,25 @@ public abstract class StringValue extends TextValue
     public TextValue trim()
     {
         String value = value();
-        int start = 0, length = value.length(), end = length;
-        while ( start < length ) {
-            int codePoint = value.codePointAt(start);
-            if ( !Character.isWhitespace( codePoint ) )
-            {
-                break;
-            }
-            start += Character.charCount(codePoint);
-        }
-
-        while ( end > 0 )
-        {
-            int codePoint = value.codePointBefore( end );
-            if ( !Character.isWhitespace( codePoint ) )
-            {
-                break;
-            }
-            end--;
-        }
+        int start = ltrimIndex( value );
+        int end = rtrimIndex( value );
         return Values.stringValue( value.substring( start, Math.max( end, start ) ) );
+    }
+
+    @Override
+    public TextValue ltrim()
+    {
+        String value = value();
+        int start = ltrimIndex( value );
+        return Values.stringValue( value.substring( start, value.length() ) );
+    }
+
+    @Override
+    public TextValue rtrim()
+    {
+        String value = value();
+        int end = rtrimIndex( value );
+        return Values.stringValue( value.substring( 0, end ) );
     }
 
     @Override
@@ -134,13 +134,15 @@ public abstract class StringValue extends TextValue
         String thatString = other.stringValue();
         int len1 = thisString.length();
         int len2 = thatString.length();
-        int lim = Math.min(len1, len2);
+        int lim = Math.min( len1, len2 );
 
         int k = 0;
-        while (k < lim) {
+        while ( k < lim )
+        {
             int c1 = thisString.codePointAt( k );
             int c2 = thatString.codePointAt( k );
-            if (c1 != c2) {
+            if ( c1 != c2 )
+            {
                 return c1 - c2;
             }
             k += Character.charCount( c1 );
@@ -160,6 +162,37 @@ public abstract class StringValue extends TextValue
         return format( "'%s'", value() );
     }
 
+    private int ltrimIndex( String value )
+    {
+        int start = 0, length = value.length();
+        while ( start < length )
+        {
+            int codePoint = value.codePointAt( start );
+            if ( !Character.isWhitespace( codePoint ) )
+            {
+                break;
+            }
+            start += Character.charCount( codePoint );
+        }
+
+        return start;
+    }
+
+    private int rtrimIndex( String value )
+    {
+        int end = value.length();
+        while ( end > 0 )
+        {
+            int codePoint = value.codePointBefore( end );
+            if ( !Character.isWhitespace( codePoint ) )
+            {
+                break;
+            }
+            end--;
+        }
+        return end;
+    }
+
     static TextValue EMTPY = new StringValue()
     {
         @Override
@@ -170,6 +203,18 @@ public abstract class StringValue extends TextValue
 
         @Override
         public TextValue trim()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue ltrim()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue rtrim()
         {
             return this;
         }

@@ -121,7 +121,7 @@ class StringFunctionsTest extends CypherFunSuite {
     ltrim("  hello") should equal(stringValue("hello"))
     ltrim("  hello  ") should equal(stringValue("hello  "))
     ltrim(null) should equal(expectedNull)
-    ltrim(" 㺂࿝鋦毠") should equal(stringValue(" 㺂࿝鋦毠"))
+    ltrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠\u2009"))//Contains `thin space`
     intercept[CypherTypeException](ltrim(1024))
   }
 
@@ -132,6 +132,7 @@ class StringFunctionsTest extends CypherFunSuite {
     rtrim("Hello   ") should equal(stringValue("Hello"))
     rtrim("  hello   ") should equal(stringValue("  hello"))
     rtrim(null) should equal(expectedNull)
+    rtrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("\u2009㺂࿝鋦毠"))//Contains `thin space`
     intercept[CypherTypeException](rtrim(1024))
   }
 
@@ -143,6 +144,7 @@ class StringFunctionsTest extends CypherFunSuite {
     trim("hello  ") should equal(stringValue("hello"))
     trim("  hello  ") should equal(stringValue("hello"))
     trim("  hello") should equal(stringValue("hello"))
+    trim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠"))//Contains `thin space`
     trim(null) should equal(expectedNull)
     intercept[CypherTypeException](trim(1042))
   }
