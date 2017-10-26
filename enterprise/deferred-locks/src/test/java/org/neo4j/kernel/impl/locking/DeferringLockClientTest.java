@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -134,6 +134,20 @@ public class DeferringLockClientTest
 
         // THEN
         verify( actualClient ).stop();
+    }
+
+    @Test
+    public void shouldPrepareUnderlyingClient() throws Exception
+    {
+        // GIVEN
+        Locks.Client actualClient = mock( Locks.Client.class );
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        // WHEN
+        client.prepare();
+
+        // THEN
+        verify( actualClient ).prepare();
     }
 
     @Test
@@ -463,6 +477,11 @@ public class DeferringLockClientTest
 
         @Override
         public void releaseExclusive( ResourceType resourceType, long resourceId )
+        {
+        }
+
+        @Override
+        public void prepare()
         {
         }
 

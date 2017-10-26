@@ -260,6 +260,12 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
+        public void prepare()
+        {
+            localClient.prepare();
+        }
+
+        @Override
         public void stop()
         {
             localClient.stop();

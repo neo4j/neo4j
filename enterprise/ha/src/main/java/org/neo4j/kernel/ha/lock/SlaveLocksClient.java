@@ -59,9 +59,6 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  */
 class SlaveLocksClient implements Locks.Client
 {
-    private static final Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>>
-            EXCLUSIVE_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.EXCLUSIVE_LOCK ),
-            SHARED_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.SHARED_LOCK );
     private final Master master;
     private final Locks.Client client;
     private final Locks localLockManager;
@@ -185,6 +182,12 @@ class SlaveLocksClient implements Locks.Client
         assertNotStopped();
 
         client.releaseExclusive( resourceType, resourceId );
+    }
+
+    @Override
+    public void prepare()
+    {
+        client.prepare();
     }
 
     @Override

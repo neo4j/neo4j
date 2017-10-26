@@ -659,11 +659,25 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
+    public void prepare()
+    {
+        stateHolder.prepare( this );
+    }
+
+    @Override
     public void stop()
     {
         // marking client as closed
-        stateHolder.stopClient();
-        // waiting for all operations to be completed
+        if ( stateHolder.stopClient() )
+        {
+            // waiting for all operations to be completed
+            waitForAllClientsToLeave();
+            releaseAllLocks();
+        }
+    }
+
+    private void waitForAllClientsToLeave()
+    {
         while ( stateHolder.hasActiveClients() )
         {
             try
@@ -680,14 +694,19 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void close()
     {
-        stop();
+        stateHolder.closeClient();
+        waitForAllClientsToLeave();
+        releaseAllLocks();
+    }
+
+    private void releaseAllLocks()
+    {
         if ( hasLocks )
         {
             releaseAllClientLocks();
             clearWaitList();
             hasLocks = false;
         }
-        clientPool.release( this );
     }
 
     @Override

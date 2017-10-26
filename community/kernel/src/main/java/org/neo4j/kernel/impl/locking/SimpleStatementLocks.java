@@ -50,6 +50,7 @@ public class SimpleStatementLocks implements StatementLocks
     public void prepareForCommit()
     {
         // Locks where grabbed eagerly by client so no need to prepare
+        client.prepare();
     }
 
     @Override
