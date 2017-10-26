@@ -49,7 +49,7 @@ object StringFunction {
 case object asString extends (AnyValue => String) {
 
   override def apply(a: AnyValue): String = a match {
-    case x if x == NO_VALUE => null
+    case NO_VALUE => null
     case x: TextValue => x.stringValue()
     case _ => StringFunction.notAString(a)
   }
@@ -139,7 +139,6 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
       case _ => StringFunction.notAString(a)
     }
   }
-
 
   override def arguments = Seq(orig, start) ++ length
 

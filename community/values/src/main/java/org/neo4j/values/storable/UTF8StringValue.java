@@ -24,14 +24,14 @@ import java.util.Arrays;
 
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
- * serialization lazily.
+ * serialization lazily when necessary.
  *
  */
 public final class UTF8StringValue extends StringValue
 {
     //0111 1111, used for removing HIGH BIT from byte
     private static final int HIGH_BIT_MASK = 127;
-    //0100 000, used for detecting non-continuation bytes 10xx xxxx
+    //0100 000, used for detecting non-continuation bytes, e.g. 10xx xxxx
     private static final int NON_CONTINUATION_BIT_MASK = 64;
 
     private volatile String value;
@@ -215,7 +215,6 @@ public final class UTF8StringValue extends StringValue
         return new UTF8StringValue( values, startIndex, Math.max( endIndex + 1 - startIndex, 0 ) );
     }
 
-
     @Override
     public int compareTo( TextValue other )
     {
@@ -373,7 +372,6 @@ public final class UTF8StringValue extends StringValue
         }
         return index;
     }
-
 
     public byte[] bytes()
     {

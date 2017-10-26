@@ -33,7 +33,7 @@ public abstract class TextValue extends ScalarValue
      */
     public abstract int length();
 
-    public abstract TextValue substring(int start, int end);
+    public abstract TextValue substring( int start, int end );
 
     public abstract TextValue trim();
 
