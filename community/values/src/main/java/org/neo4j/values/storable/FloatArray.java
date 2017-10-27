@@ -118,7 +118,8 @@ public abstract class FloatArray extends FloatingPointArray
     }
 
     @Override
-    public Object getInnerObject()
+    @Deprecated
+    public Object asObject()
     {
         return value();
     }

@@ -190,8 +190,8 @@ public class RawBitsTest
         assertEquals( actual.size(), values.size() );
         for ( int i = 0; i < actual.size(); i++ )
         {
-            Number actualAsNumber = (Number) actual.get( i ).getInnerObject();
-            Number valueAsNumber = (Number) values.get( i ).getInnerObject();
+            Number actualAsNumber = (Number) actual.get( i ).asObject();
+            Number valueAsNumber = (Number) values.get( i ).asObject();
             //noinspection StatementWithEmptyBody
             if ( Double.isNaN( actualAsNumber.doubleValue() ) && Double.isNaN( valueAsNumber.doubleValue() ) )
             {

@@ -68,7 +68,7 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
         Number[] result = new Number[updates.length];
         for ( int i = 0; i < updates.length; i++ )
         {
-            result[i] = (Number) updates[i].values()[0].getInnerObject();
+            result[i] = (Number) updates[i].values()[0].asObject();
         }
         return result;
     }

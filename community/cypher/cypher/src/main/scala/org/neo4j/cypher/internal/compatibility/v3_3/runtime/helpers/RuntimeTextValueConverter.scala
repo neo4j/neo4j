@@ -53,14 +53,14 @@ class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implici
   private def props(n: Node): String = {
     val ops = context.nodeOps
     val properties = if (isVirtualEntityHack(n)) Iterator.empty else ops.propertyKeyIds(n.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(n.getId, pkId).getInnerObject)}")
+    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(n.getId, pkId).asObject())}")
     keyValStrings.mkString("{", ",", "}")
   }
 
   private def props(r: Relationship): String = {
     val ops = context.relationshipOps
     val properties = if (isVirtualEntityHack(r)) Iterator.empty else ops.propertyKeyIds(r.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(r.getId, pkId).getInnerObject)}")
+    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(r.getId, pkId).asObject())}")
     keyValStrings.mkString("{", ",", "}")
   }
 

@@ -308,7 +308,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
 
     def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).getInnerObject()
+      tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
     }
@@ -378,7 +378,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId).getInnerObject()
+      tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
     } catch {
       case _: exceptions.EntityNotFoundException => null
     }
