@@ -36,7 +36,9 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TransactionLogFilesTest
@@ -172,6 +174,15 @@ public class TransactionLogFilesTest
 
         // when
         logFiles.getLogVersion( file );
+    }
+
+    @Test
+    public void isLogFile() throws IOException
+    {
+        LogFiles logFiles = createLogFiles();
+        assertFalse( logFiles.isLogFile( new File( "aaa.tx.log" ) ) );
+        assertTrue( logFiles.isLogFile( new File( "filename.0" ) ) );
+        assertTrue( logFiles.isLogFile( new File( "filename.17" ) ) );
     }
 
     private LogFiles createLogFiles() throws IOException

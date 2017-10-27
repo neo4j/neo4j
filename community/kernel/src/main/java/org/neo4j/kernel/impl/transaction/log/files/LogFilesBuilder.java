@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -55,6 +56,7 @@ public class LogFilesBuilder
     private boolean readOnly;
     private PageCache pageCache;
     private File storeDirectory;
+    private File logsDirectory;
     private Config config;
     private Long rotationThreshold;
     private LogEntryReader logEntryReader;
@@ -100,13 +102,15 @@ public class LogFilesBuilder
     /**
      * Build log files that will be able to perform only operations on a lgo files directly.
      * Any operation that will require access to a store or other parts of runtime will fail.
-     * Should be mainly used only for testing purposes.
-     * @param storeDirectory store directory
+     * Should be mainly used only for testing purposes or when only file based operations will be performed
+     * @param logsDirectory log files directory
      * @param fileSystem file system
      */
-    public static LogFilesBuilder logFilesBasedOnlyBuilder( File storeDirectory, FileSystemAbstraction fileSystem )
+    public static LogFilesBuilder logFilesBasedOnlyBuilder( File logsDirectory, FileSystemAbstraction fileSystem )
     {
-        LogFilesBuilder builder = builder( storeDirectory, fileSystem );
+        LogFilesBuilder builder = new LogFilesBuilder();
+        builder.logsDirectory = logsDirectory;
+        builder.fileSystem = fileSystem;
         builder.fileBasedOperationsOnly = true;
         return builder;
     }
@@ -168,7 +172,23 @@ public class LogFilesBuilder
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
-        return new TransactionLogFiles( storeDirectory, logFileName, filesContext );
+        File logsDirectory = getLogsDirectory();
+        filesContext.getFileSystem().mkdirs( logsDirectory );
+        return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
+    }
+
+    private File getLogsDirectory()
+    {
+        if ( logsDirectory != null )
+        {
+            return logsDirectory;
+        }
+        if ( config != null )
+        {
+            File directory = config.get( GraphDatabaseSettings.logical_logs_location );
+            return !directory.isAbsolute() ? new File( storeDirectory, directory.getName() ) : directory;
+        }
+        return storeDirectory;
     }
 
     TransactionLogFilesContext buildContext() throws IOException

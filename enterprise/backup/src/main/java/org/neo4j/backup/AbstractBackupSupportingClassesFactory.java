@@ -29,13 +29,10 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -94,8 +91,8 @@ public abstract class AbstractBackupSupportingClassesFactory
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
         StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider );
 
-        RemoteStore remoteStore =
-                new RemoteStore( logProvider, fileSystemAbstraction, pageCache, storeCopyClient, txPullClient, transactionLogCatchUpFactory, monitors );
+        RemoteStore remoteStore = new RemoteStore( logProvider, fileSystemAbstraction, pageCache, storeCopyClient,
+                txPullClient, transactionLogCatchUpFactory, config, monitors );
 
         return backupDelegator( remoteStore, catchUpClient, storeCopyClient );
     }

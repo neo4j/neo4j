@@ -60,6 +60,7 @@ import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
+import static org.neo4j.kernel.configuration.Settings.relativePathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class SettingsTest
@@ -104,6 +105,22 @@ public class SettingsTest
     public void shouldHaveAUsefulToStringWhichIsUsedAsTheValidValuesInDocumentation()
     {
         assertThat( pathSetting( "", NO_DEFAULT ).toString(), containsString( "A filesystem path" ) );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void relativePathSettingsDoesNotAllowAbsolutePath()
+    {
+        Setting<File> setting = relativePathSetting( "some.settings", new File( "." ).getAbsolutePath() );
+        Config.defaults().get( setting );
+    }
+
+    @Test
+    public void relativePathResolvePathAgainstNeo4jHome()
+    {
+        Setting<File> setting = relativePathSetting( "some.setting", "test" );
+        Config config = Config.defaults();
+        config.augmentDefaults( GraphDatabaseSettings.neo4j_home, "/root" );
+        assertEquals( "/root/test", config.get( setting ).getAbsolutePath() );
     }
 
     @Test

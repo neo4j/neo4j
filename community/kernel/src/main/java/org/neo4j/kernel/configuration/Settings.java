@@ -55,6 +55,7 @@ import static java.lang.Double.parseDouble;
 import static java.lang.Float.parseFloat;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
+import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
@@ -330,60 +331,14 @@ public class Settings
         };
     }
 
+    public static Setting<File> relativePathSetting( String name, String defaultValue )
+    {
+        return new FileSetting( name, defaultValue, false );
+    }
+
     public static Setting<File> pathSetting( String name, String defaultValue )
     {
-        return new ScopeAwareSetting<File>()
-        {
-            @Override
-            protected String provideName()
-            {
-                return name;
-            }
-
-            @Override
-            public String getDefaultValue()
-            {
-                return defaultValue;
-            }
-
-            @Override
-            public File from( Configuration config )
-            {
-                return config.get( this );
-            }
-
-            @Override
-            public File apply( Function<String, String> config )
-            {
-                String value = config.apply( name() );
-                if ( value == null )
-                {
-                    value = defaultValue;
-                }
-                if ( value == null )
-                {
-                    return null;
-                }
-
-                String setting = fixSeparatorsInPath( value );
-                File settingFile = new File( setting );
-
-                if ( settingFile.isAbsolute() )
-                {
-                    return settingFile;
-                }
-                else
-                {
-                    return new File( GraphDatabaseSettings.neo4j_home.apply( config ), setting );
-                }
-            }
-
-            @Override
-            public String valueDescription()
-            {
-                return "A filesystem path; relative paths are resolved against the installation root, _<neo4j-home>_";
-            }
-        };
+        return new FileSetting( name, defaultValue, true );
     }
 
     private static <T> BiFunction<String,Function<String, String>, String> inheritedValue(
@@ -734,7 +689,7 @@ public class Settings
             }
             catch ( NumberFormatException e )
             {
-                throw new IllegalArgumentException( String.format( "%s is not a valid size, must be e.g. 10, 5K, 1M, " +
+                throw new IllegalArgumentException( format( "%s is not a valid size, must be e.g. 10, 5K, 1M, " +
                         "11G", value ) );
             }
         }
@@ -935,7 +890,7 @@ public class Settings
             @Override
             public String toString()
             {
-                return String.format( MATCHES_PATTERN_MESSAGE, regex );
+                return format( MATCHES_PATTERN_MESSAGE, regex );
             }
         };
     }
@@ -983,7 +938,7 @@ public class Settings
             @Override
             public String toString()
             {
-                return String.format( MATCHES_PATTERN_MESSAGE, regex );
+                return format( MATCHES_PATTERN_MESSAGE, regex );
             }
         };
     }
@@ -997,7 +952,7 @@ public class Settings
             {
                 if ( value != null && value.compareTo( min ) < 0 )
                 {
-                    throw new IllegalArgumentException( String.format( "minimum allowed value is: %s", min ) );
+                    throw new IllegalArgumentException( format( "minimum allowed value is: %s", min ) );
                 }
                 return value;
             }
@@ -1019,7 +974,7 @@ public class Settings
             {
                 if ( value != null && value.compareTo( max ) > 0 )
                 {
-                    throw new IllegalArgumentException( String.format( "maximum allowed value is: %s", max ) );
+                    throw new IllegalArgumentException( format( "maximum allowed value is: %s", max ) );
                 }
                 return value;
             }
@@ -1045,7 +1000,7 @@ public class Settings
             @Override
             public String toString()
             {
-                return String.format( "is in the range `%s` to `%s`", min, max );
+                return format( "is in the range `%s` to `%s`", min, max );
             }
         };
     }
@@ -1076,7 +1031,7 @@ public class Settings
             {
                 String description = message;
                 if ( valueFunction != null
-                     && !String.format( MATCHES_PATTERN_MESSAGE, ANY ).equals(
+                     && !format( MATCHES_PATTERN_MESSAGE, ANY ).equals(
                              valueFunction.toString() ) )
                 {
                     description += " (" + valueFunction.toString() + ")";
@@ -1311,7 +1266,7 @@ public class Settings
                 }
                 catch ( Exception e )
                 {
-                    throw new IllegalArgumentException( String.format( "Missing mandatory setting '%s'", name() ) );
+                    throw new IllegalArgumentException( format( "Missing mandatory setting '%s'", name() ) );
                 }
             }
 
@@ -1365,6 +1320,78 @@ public class Settings
             }
 
             return builder.toString();
+        }
+    }
+
+    private static class FileSetting extends ScopeAwareSetting<File>
+    {
+        private final String name;
+        private final String defaultValue;
+        private final boolean absolutePathAllowed;
+
+        FileSetting( String name, String defaultValue, boolean absolutePathAllowed )
+        {
+            this.name = name;
+            this.defaultValue = defaultValue;
+            this.absolutePathAllowed = absolutePathAllowed;
+        }
+
+        @Override
+        protected String provideName()
+        {
+            return name;
+        }
+
+        @Override
+        public String getDefaultValue()
+        {
+            return defaultValue;
+        }
+
+        @Override
+        public File from( Configuration config )
+        {
+            return config.get( this );
+        }
+
+        @Override
+        public File apply( Function<String, String> config )
+        {
+            String value = config.apply( name() );
+            if ( value == null )
+            {
+                value = defaultValue;
+            }
+            if ( value == null )
+            {
+                return null;
+            }
+
+            String setting = fixSeparatorsInPath( value );
+            File settingFile = new File( setting );
+
+            if ( settingFile.isAbsolute() )
+            {
+                if ( absolutePathAllowed )
+                {
+                    return settingFile;
+                }
+                else
+                {
+                    throw new IllegalArgumentException(
+                            format( "Absolute path is not allowed for setting %s.", name() ) );
+                }
+            }
+            else
+            {
+                return new File( GraphDatabaseSettings.neo4j_home.apply( config ), setting );
+            }
+        }
+
+        @Override
+        public String valueDescription()
+        {
+            return "A filesystem path; relative paths are resolved against the installation root, _<neo4j-home>_";
         }
     }
 }

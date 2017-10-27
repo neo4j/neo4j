@@ -43,6 +43,7 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -214,9 +215,22 @@ public class ConsistencyCheckToolTest
     @Test( expected = ToolFailureException.class )
     public void failWhenStoreWasNonCleanlyShutdown() throws Exception
     {
-        createGraphDbAndKillIt();
+        createGraphDbAndKillIt( Config.defaults() );
 
         runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
+    }
+
+    @Test( expected = ToolFailureException.class )
+    public void failOnNotCleanlyShutdownStoreWithLogsInCustomLocation() throws Exception
+    {
+        File customConfigFile = storeDirectory.file( "customConfig" );
+        File otherLocation = storeDirectory.directory( "otherLocation" );
+        Config customConfig = Config.defaults( GraphDatabaseSettings.logical_logs_location, otherLocation.getName() );
+        createGraphDbAndKillIt( customConfig );
+        MapUtil.store( customConfig.getRaw(), customConfigFile );
+        String[] args = {storeDirectory.graphDbDir().getPath(), "-config", customConfigFile.getPath()};
+
+        runConsistencyCheckToolWith( fs.get(), args );
     }
 
     private void checkLogRecordTimeZone( ConsistencyCheckService service, String[] args, int hoursShift,
@@ -237,11 +251,12 @@ public class ConsistencyCheckToolTest
         return bufferedReader.readLine();
     }
 
-    private void createGraphDbAndKillIt() throws Exception
+    private void createGraphDbAndKillIt( Config config ) throws Exception
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
                 .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
+                .setConfig( config.getRaw()  )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )

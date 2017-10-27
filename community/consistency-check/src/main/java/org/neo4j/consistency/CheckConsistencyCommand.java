@@ -234,7 +234,7 @@ public class CheckConsistencyCommand implements AdminCommand
                       .createPageCache( fileSystem, additionalConfiguration ) )
         {
             RecoveryRequiredChecker requiredChecker =
-                    new RecoveryRequiredChecker( fileSystem, pageCache, new Monitors() );
+                    new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
             if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
             {
                 throw new CommandFailed(

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.com.Response;
@@ -203,13 +204,18 @@ public class StoreCopyClient
             graphDatabaseService.shutdown();
             monitor.finishRecoveringStore();
 
+            LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
+                    .withConfig( config )
+                    .build();
             // All is well, move the streamed files to the real store directory.
             // Start with the files written through the page cache. Should only be record store files.
             // Note that the stream is lazy, so the file system traversal won't happen until *after* the store files
             // have been moved. Thus we ensure that we only attempt to move them once.
             Stream<FileMoveAction> moveActionStream = Stream.concat(
                     storeFileMoveActions.stream(), traverseGenerateMoveActions( tempStore, tempStore ) );
-            moveAfterCopy.move( moveActionStream, tempStore, storeDir );
+            Function<File,File> destinationMapper =
+                    file  -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : storeDir;
+            moveAfterCopy.move( moveActionStream, tempStore, destinationMapper );
         }
         finally
         {
@@ -333,6 +339,8 @@ public class StoreCopyClient
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logical_logs_location,
+                        config.get( GraphDatabaseSettings.logical_logs_location ).toString() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade,
                         config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
                 .newGraphDatabase();

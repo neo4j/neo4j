@@ -60,11 +60,13 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     private final LogFileCreationMonitor monitor;
     private final TransactionLogFilesHelper fileHelper;
     private final TransactionLogFile logFile;
+    private final File logsDirectory;
 
-    TransactionLogFiles( File directory, String name, TransactionLogFilesContext context )
+    TransactionLogFiles( File logsDirectory, String name, TransactionLogFilesContext context )
     {
         this.logFilesContext = context;
-        this.fileHelper = new TransactionLogFilesHelper( directory, name );
+        this.logsDirectory = logsDirectory;
+        this.fileHelper = new TransactionLogFilesHelper( logsDirectory, name );
         this.fileSystem = context.getFileSystem();
         this.monitor = context.getLogFileCreationMonitor();
         this.logHeaderCache = new LogHeaderCache( 1000 );
@@ -106,6 +108,18 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     public File[] logFiles()
     {
         return fileSystem.listFiles( fileHelper.getParentDirectory(), fileHelper.getLogFilenameFilter() );
+    }
+
+    @Override
+    public boolean isLogFile( File file )
+    {
+        return fileHelper.getLogFilenameFilter().accept( null, file.getName() );
+    }
+
+    @Override
+    public File logFilesDirectory()
+    {
+        return logsDirectory;
     }
 
     @Override

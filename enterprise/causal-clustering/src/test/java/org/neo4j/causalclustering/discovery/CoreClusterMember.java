@@ -124,12 +124,14 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         this.neo4jHome = new File( parentDir, "server-core-" + serverId );
         config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
+        config.put( GraphDatabaseSettings.logical_logs_location.name(), "core-tx-logs-" + serverId );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
         File dataDir = new File( neo4jHome, "data" );
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
+
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
     }

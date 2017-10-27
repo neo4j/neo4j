@@ -27,9 +27,11 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
@@ -67,7 +69,7 @@ import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 public class TransactionLogCatchUpWriterTest
 {
     @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory( getClass() );
+    public final TestDirectory dir = TestDirectory.testDirectory();
 
     @Rule
     public final DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
@@ -93,7 +95,17 @@ public class TransactionLogCatchUpWriterTest
     @Test
     public void shouldCreateTransactionLogWithCheckpoint() throws Exception
     {
-        // given
+        createTransactionLogWithCheckpoint( Config.defaults() );
+    }
+
+    @Test
+    public void createTransactionLogWithCheckpointInCustomLocation() throws IOException
+    {
+        createTransactionLogWithCheckpoint( Config.defaults( GraphDatabaseSettings.logical_logs_location, "custom-tx-logs") );
+    }
+
+    private void createTransactionLogWithCheckpoint( Config config ) throws IOException
+    {
         org.neo4j.kernel.impl.store.StoreId storeId = simulateStoreCopy();
 
         int fromTxId = 37;
@@ -111,15 +123,17 @@ public class TransactionLogCatchUpWriterTest
         catchUpWriter.close();
 
         // then
-        verifyTransactionsInLog( fromTxId, endTxId );
-        verifyCheckpointInLog(); // necessary for recovery
+        verifyTransactionsInLog( fromTxId, endTxId, config );
+        verifyCheckpointInLog( config ); // necessary for recovery
     }
 
-    private void verifyCheckpointInLog() throws IOException
+    private void verifyCheckpointInLog( Config config ) throws IOException
     {
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withLogEntryReader( logEntryReader ).build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
+                .withConfig( config )
+                .withLogEntryReader( logEntryReader ).build();
         final LogTailScanner logTailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
 
         LogTailInformation tailInformation = logTailScanner.getTailInformation();
@@ -127,10 +141,10 @@ public class TransactionLogCatchUpWriterTest
         assertTrue( tailInformation.commitsAfterLastCheckpoint() );
     }
 
-    private void verifyTransactionsInLog( long fromTxId, long endTxId ) throws IOException
+    private void verifyTransactionsInLog( long fromTxId, long endTxId, Config config ) throws IOException
     {
         long expectedTxId = fromTxId;
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withConfig( config ).build();
         LogVersionedStoreChannel versionedStoreChannel = logFiles.openForVersion( 0 );
         try ( ReadableLogChannel channel =
                       new ReadAheadLogChannel( versionedStoreChannel, LogVersionBridge.NO_MORE_CHANNELS, 1024 ) )

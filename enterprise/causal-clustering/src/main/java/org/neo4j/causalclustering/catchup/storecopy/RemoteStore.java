@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
@@ -53,6 +54,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class RemoteStore
 {
     private final Log log;
+    private final Config config;
     private final Monitors monitors;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -62,7 +64,7 @@ public class RemoteStore
     private final TransactionLogCatchUpFactory transactionLogFactory;
 
     public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-            TransactionLogCatchUpFactory transactionLogFactory, Monitors monitors )
+            TransactionLogCatchUpFactory transactionLogFactory, Config config, Monitors monitors )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -70,6 +72,7 @@ public class RemoteStore
         this.fs = fs;
         this.pageCache = pageCache;
         this.transactionLogFactory = transactionLogFactory;
+        this.config = config;
         this.monitors = monitors;
         this.log = logProvider.getLog( getClass() );
     }
@@ -97,7 +100,8 @@ public class RemoteStore
         log.info( "Last Clean Tx Id: %d", lastCleanTxId );
 
         /* these are the transaction logs */
-        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
+        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, config,
+                new Monitors() );
 
         long lastTxId = BASE_TX_ID;
         try ( Lifespan ignored = new Lifespan( txStore ); TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )
@@ -158,7 +162,8 @@ public class RemoteStore
     private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy )
             throws IOException, StoreCopyFailedException
     {
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider,
+                fromTxId, asPartOfStoreCopy ) )
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 

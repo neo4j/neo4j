@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -67,6 +66,8 @@ import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationExce
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -80,7 +81,6 @@ import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
@@ -166,6 +166,7 @@ class BackupProtocolService
             bumpDebugDotLogFileVersion( debugLogFile, timestamp );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, tuningConfiguration, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
+            clearTransactionLogFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( Exception e )
@@ -220,6 +221,7 @@ class BackupProtocolService
             bumpDebugDotLogFileVersion( debugLogFile, backupStartTime );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, config, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
+            clearTransactionLogFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( IOException e )
@@ -414,6 +416,17 @@ class BackupProtocolService
             kernelExtensions.add( factory );
         }
         return kernelExtensions;
+    }
+
+    private void clearTransactionLogFiles( FileSystemAbstraction fileSystem, File targetDirectory ) throws IOException
+    {
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( targetDirectory, fileSystem ).build();
+        File[] files = logFiles.logFiles();
+        for ( File file : files )
+        {
+            fileSystem.deleteFile( file );
+        }
+
     }
 
     private void clearIdFiles( FileSystemAbstraction fileSystem, File targetDirectory ) throws IOException
