@@ -142,7 +142,7 @@ public enum ResourceTypes implements ResourceType
     {
         if ( value != null && value != Values.NO_VALUE )
         {
-            return Strings.prettyPrint( value.getInnerObject() );
+            return Strings.prettyPrint( value.asObject() );
         }
         return "";
     }
@@ -179,7 +179,7 @@ public enum ResourceTypes implements ResourceType
         {
             int propertyKeyId = predicate.propertyKeyId();
             Value v = predicate.value();
-            Object value = v.getInnerObject();
+            Object value = v.asObject();
             Class<?> type = value.getClass();
 
             hash = indexEntryHash_4_x.update( hash, propertyKeyId );

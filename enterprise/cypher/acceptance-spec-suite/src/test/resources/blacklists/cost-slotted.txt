@@ -5,6 +5,7 @@ Using a CASE expression in a WITH, positive case
 Using a CASE expression in a WITH, negative case
 Using a CASE expression with label predicates in a WITH
 Using a CASE expression in a WHERE, with label predicate
+Shorthand case with filter should work as expected
 Add labels inside FOREACH
 Returning a CASE expression with a pattern expression alternative
 Merge using unique constraint should update existing node

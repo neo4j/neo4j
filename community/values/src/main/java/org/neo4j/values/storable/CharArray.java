@@ -101,7 +101,8 @@ public abstract class CharArray extends TextArray
     }
 
     @Override
-    public Object getInnerObject()
+    @Deprecated
+    public Object asObject()
     {
         return value();
     }

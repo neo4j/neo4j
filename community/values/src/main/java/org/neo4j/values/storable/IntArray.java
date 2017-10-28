@@ -118,7 +118,8 @@ public abstract class IntArray extends IntegralArray
     }
 
     @Override
-    public Object getInnerObject()
+    @Deprecated
+    public Object asObject()
     {
         return value();
     }
