@@ -59,6 +59,23 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
 
   def constrain(aType: CypherType): Option[TypeRange] = this & TypeRange(aType, None)
 
+  def without(aType: CypherType): Option[TypeRange] = {
+    if (aType.isAssignableFrom(lower)) {
+      None
+    } else if (lower.isAssignableFrom(aType)) {
+      upper match {
+        case None => Some(TypeRange(lower, aType.parentType))
+        case Some(up) =>
+          if (aType.isAssignableFrom(up))
+            Some(TypeRange(lower, aType.parentType))
+          else
+            Some(this)
+      }
+    } else {
+      Some(this)
+    }
+  }
+
   /**
    * @param other the other range to determine LUBs in combination with
    * @return a set of TypeRanges that cover the LUBs for all combinations of individual types between both TypeRanges

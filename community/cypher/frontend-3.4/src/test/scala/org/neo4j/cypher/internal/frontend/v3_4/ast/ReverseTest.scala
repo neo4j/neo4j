@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_3.ast
+package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Reverse
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.FunctionName
+import org.neo4j.cypher.internal.v3_4.functions.Reverse
 
 class ReverseTest extends FunctionTestBase(FunctionName(Reverse.name)(null)) {
 

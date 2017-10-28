@@ -118,6 +118,12 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         checkTypeSignatures(ctx, Point, invocation) ifOkChain
           checkPointMap(invocation.args(0))
 
+      case Reverse =>
+        checkArgs(invocation, 1) ifOkChain {
+          expectType(CTList(CTAny).covariant | CTString, invocation.arguments.head) chain
+          specifyType(types(invocation.arguments.head), invocation)
+        }
+
       case Tail =>
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTList(CTAny).covariant, invocation.arguments(0)) chain

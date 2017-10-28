@@ -14,30 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_3.ast
+package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.util.v3_4.symbols.TypeSpec
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation, FunctionName}
 
-abstract class FunctionTestBase(functionName: FunctionName) extends CypherFunSuite {
+abstract class FunctionTestBase(functionName: FunctionName) extends SemanticFunSuite {
+
 
   protected val context: SemanticContext = SemanticContext.Simple
 
   protected def evaluateWithTypes(lhsTypes: TypeSpec): (SemanticCheckResult, Expression) = {
     val lhs = DummyExpression(lhsTypes)
-
     val expression = FunctionInvocation(lhs, functionName)
-
-    val state = lhs.semanticCheck(context)(SemanticState.clean).state
-    (expression.semanticCheck(context)(state), expression)
+    (SemanticExpressionCheck.check(context,expression)(SemanticState.clean), expression)
   }
 
   protected def testValidTypes(lhsTypes: TypeSpec)(expected: TypeSpec) {
     val (result, expression) = evaluateWithTypes(lhsTypes)
     result.errors shouldBe empty
-    expression.types(result.state) should equal(expected)
+
+    types(expression)(result.state) should equal(expected)
   }
 
   protected def testInvalidApplication(lhsTypes: TypeSpec)(message: String) {
