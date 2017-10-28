@@ -158,20 +158,20 @@ enum ValueEncoding
                 @Override
                 Field encodeField( String name, Value value )
                 {
-                    return stringField( name, value.getInnerObject().toString() );
+                    return stringField( name, value.asObject().toString() );
                 }
 
                 @Override
                 void setFieldValue( Value value, Field field )
                 {
-                    field.setStringValue( value.getInnerObject().toString() );
+                    field.setStringValue( value.asObject().toString() );
                 }
 
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
                     return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), value.getInnerObject().toString() ) ) );
+                            new TermQuery( new Term( key( propertyNumber ), value.asObject().toString() ) ) );
                 }
             };
 

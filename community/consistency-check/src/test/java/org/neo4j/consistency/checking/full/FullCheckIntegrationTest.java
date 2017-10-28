@@ -743,7 +743,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ).getInnerObject())[0];
+                long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ).asObject())[0];
                 NodeRecord before = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
                 NodeRecord after = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
                 DynamicRecord record1 = chain.get( 0 ).clone();

@@ -94,7 +94,8 @@ public abstract class StringArray extends TextArray
     }
 
     @Override
-    public Object getInnerObject()
+    @Deprecated
+    public Object asObject()
     {
         return value();
     }

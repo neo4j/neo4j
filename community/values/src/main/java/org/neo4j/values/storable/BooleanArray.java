@@ -120,7 +120,8 @@ public abstract class BooleanArray extends ArrayValue
     }
 
     @Override
-    public Object getInnerObject()
+    @Deprecated
+    public Object asObject()
     {
         return value();
     }
