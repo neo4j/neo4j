@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.util.v3_4.{Eagerly, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.DropResultPipe
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_4.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
@@ -118,6 +119,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
+
+      case DropResult(_) =>
+        DropResultPipe(source)(id = id)
 
       case Selection(predicates, _) =>
         FilterPipe(source, predicates.map(buildPredicate).reduce(_ andWith _))(id = id)

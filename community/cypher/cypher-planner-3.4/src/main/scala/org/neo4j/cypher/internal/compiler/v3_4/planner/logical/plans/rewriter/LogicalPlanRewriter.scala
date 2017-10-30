@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.util.v3_4.Rewriter
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Condition, Phase}
+import org.neo4j.cypher.internal.util.v3_4.Rewriter
 
 /*
  * Rewriters that live here are required to adhere to the contract of
@@ -46,7 +46,8 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
     predicateRemovalThroughJoins,
     removeIdenticalPlans,
     pruningVarExpander,
-    useTop
+    useTop,
+    simplifySelections
   ).rewriter)
 }
 

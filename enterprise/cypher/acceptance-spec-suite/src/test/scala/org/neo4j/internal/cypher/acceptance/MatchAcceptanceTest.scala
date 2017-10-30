@@ -840,4 +840,15 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // Then
     result.toList should equal(List(Map("a" -> n)))
   }
+
+  test("should not touch the database when for impossible predicates") {
+    // Given
+    for (_ <- 1 to 50) createNode()
+
+    // When
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n) WHERE 1 = 0 AND 1 > 5 RETURN n")
+
+    // Then
+    result.executionPlanDescription().totalDbHits should equal(Some(0))
+  }
 }

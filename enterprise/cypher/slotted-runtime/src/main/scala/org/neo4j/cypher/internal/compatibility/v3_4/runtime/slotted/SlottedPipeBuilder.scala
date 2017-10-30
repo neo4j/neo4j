@@ -180,6 +180,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id)
 
+      case DropResult(_) =>
+        DropResultPipe(source)(id)
+
       case UnwindCollection(_, IdName(name), expression) =>
         val offset = pipeline.getReferenceOffsetFor(name)
         UnwindSlottedPipe(source, expressionConverters.toCommandExpression(expression), offset, pipeline)(id)
