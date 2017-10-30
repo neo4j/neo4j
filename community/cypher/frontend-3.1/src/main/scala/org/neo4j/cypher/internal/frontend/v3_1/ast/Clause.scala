@@ -216,7 +216,11 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
   private def checkRelTypes: SemanticCheck  =
     pattern.patternParts.foldSemanticCheck {
       case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
+      if (rel.types.size > 1) {
         SemanticError("A single relationship type must be specified for MERGE", rel.position)
+      } else {
+        SemanticError("Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?", rel.position)
+      }
       case _ => SemanticCheckResult.success
     }
 }
@@ -230,7 +234,11 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
   private def checkRelTypes: SemanticCheck  =
     pattern.patternParts.foldSemanticCheck {
       case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
+      if (rel.types.size > 1) {
         SemanticError("A single relationship type must be specified for CREATE", rel.position)
+      } else {
+        SemanticError("Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?", rel.position)
+      }
       case _ => SemanticCheckResult.success
     }
 }
