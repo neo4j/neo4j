@@ -283,7 +283,7 @@ object CypherComparisonSupport {
   }
 
   object Versions {
-    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, v3_4)
+    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_2, V3_3, v3_4)
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
@@ -294,6 +294,10 @@ object CypherComparisonSupport {
     object V2_3 extends Version("2.3")
 
     object V3_1 extends Version("3.1")
+
+    object V3_2 extends Version("3.2")
+
+    object V3_3 extends Version("3.3")
 
     object v3_4 extends Version("3.4")
 
@@ -535,6 +539,9 @@ object CypherComparisonSupport {
     def Version2_3: TestConfiguration = TestConfiguration(Versions.V2_3, Planners.all, Runtimes.Default)
 
     def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
+
+    def Version3_2: TestConfiguration = TestConfiguration(Versions.V3_2, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+      TestConfiguration(Versions.V3_2, Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Slotted))
 
     def Version3_4: TestConfiguration =
       TestConfiguration(Versions.v3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
