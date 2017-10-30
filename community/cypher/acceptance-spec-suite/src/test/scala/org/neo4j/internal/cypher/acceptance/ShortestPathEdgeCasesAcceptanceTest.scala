@@ -29,11 +29,8 @@ class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with N
   test("GH #5803 query should work with shortest path") {
     def createTestGraph() = {
       // First create some background graph to get the stats right
-      var prev: Node = null
-      0 to 16 foreach { row =>
-        val node = createNode()
-        if(prev!=null) relate(prev, node)
-        prev=node
+      (0 to 16).map(_ => createNode()).sliding(2).foreach {
+        case Seq(n1, n2) => relate(n1, n2)
       }
       // Now create the specific subgraph used for the test
       graph.createIndex("WP", "id")
@@ -92,7 +89,7 @@ class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with N
                     |create (_31818)-[:`SE`]->(_31817)
                     |create (_31819)-[:`SE`]->(_31818)
                     |create (_31820)-[:`SE`]->(_31813)""".stripMargin
-      eengine.execute(query, Map.empty[String, Any])
+      graph.execute(query)
     }
 
     createTestGraph()
