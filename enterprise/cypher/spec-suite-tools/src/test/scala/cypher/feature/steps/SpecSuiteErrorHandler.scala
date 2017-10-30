@@ -145,7 +145,9 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(NON_CONSTANT_EXPRESSION)
     else if (msg.matches("Can't use non-deterministic \\(random\\) functions inside of aggregate functions\\."))
       detail should equal(NON_CONSTANT_EXPRESSION)
-    else if (msg.matches(semanticError("A single relationship type must be specified for ((CREATE)|(MERGE))")))
+    else if (msg.matches(semanticError("A single relationship type must be specified for ((CREATE)|(MERGE))\\")) ||
+      msg.matches(semanticError("Exactly one relationship type must be specified for ((CREATE)|(MERGE))\\. " +
+        "Did you forget to prefix your relationship type with a \\'\\:\\'\\?")))
       detail should equal(NO_SINGLE_RELATIONSHIP_TYPE)
     else if (msg.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
       detail should equal(INVALID_RELATIONSHIP_PATTERN)
