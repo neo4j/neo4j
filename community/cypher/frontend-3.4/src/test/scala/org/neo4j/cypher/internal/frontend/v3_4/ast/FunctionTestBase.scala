@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.neo4j.cypher.internal.util.v3_4.symbols.TypeSpec
 import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation, FunctionName}
+import org.neo4j.cypher.internal.v3_4.expressions.{DummyExpression, Expression, FunctionInvocation, FunctionName}
 
 abstract class FunctionTestBase(functionName: FunctionName) extends SemanticFunSuite {
 
