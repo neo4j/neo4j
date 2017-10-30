@@ -239,7 +239,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(input)
   }
 
-  test("do not use pruning for pathExpressions when path is needed"){
+  test("do not use pruning for pathExpressions when path is needed") {
     // Simplest query:
     // match p=(from)-[r*0..1]->(to) with nodes(p) as d return distinct d
 
@@ -260,6 +260,21 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(distinct)
   }
 
+  test("do not use pruning-varexpand when both sides of the var-length-relationship are already known") {
+    val fromId = IdName("from")
+    val toId = IdName("to")
+    val fromPlan = AllNodesScan(fromId, Set.empty)(solved)
+    val toPlan = AllNodesScan(toId, Set.empty)(solved)
+    val xJoin = CartesianProduct(fromPlan, toPlan)(solved)
+    val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(1, Some(3))
+    val relId = IdName("r")
+    val originalExpand = VarExpand(xJoin, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandInto)(solved)
+    val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+
+    assertNotRewritten(input)
+  }
+
   test("should handle insanely long logical plans without running out of stack") {
     val leafPlan: LogicalPlan = Argument(Set(IdName("x")))(solved)()
     var plan = leafPlan
@@ -273,6 +288,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   private def assertNotRewritten(p: LogicalPlan): Unit = {
     rewrite(p) should equal(p)
   }
+
   private def rewrite(p: LogicalPlan): LogicalPlan =
     p.endoRewrite(pruningVarExpander)
 }
