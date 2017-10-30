@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.helpers.LiteralTypeSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 
 object ExpressionConverter {
 
@@ -67,6 +67,9 @@ object ExpressionConverter {
     case ast.Equals(lhs, rhs) => Equals(createExpression(lhs), createExpression(rhs)).asPredicate
 
     case ast.Or(lhs, rhs) => Or(createExpression(lhs), createExpression(rhs)).asPredicate
+
+    case _:ast.False => False
+    case _:ast.True => True
 
     case other =>
       throw new CantCompileQueryException(s"Predicate of $other not yet supported")
