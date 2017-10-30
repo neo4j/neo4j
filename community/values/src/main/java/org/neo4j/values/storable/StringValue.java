@@ -72,12 +72,7 @@ public abstract class StringValue extends TextValue
     @Override
     public TextValue substring( int start, int end )
     {
-        assert start >= 0;
-        assert end < length();
-        int subLen = end - start;
-        assert subLen >= 0;
         String value = value();
-
         int codePointStart = value.offsetByCodePoints( 0, start );
         int codePointEnd = value.offsetByCodePoints( 0, end );
 

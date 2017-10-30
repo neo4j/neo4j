@@ -63,7 +63,8 @@ public final class CharValue extends TextValue
     @Override
     public int computeHash()
     {
-        return value;
+        //The 31 is there to give it the same hash as the string equivalent
+        return 31 + value;
     }
 
     @Override
