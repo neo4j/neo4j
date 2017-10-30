@@ -851,4 +851,14 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // Then
     result.executionPlanDescription().totalDbHits should equal(Some(0))
   }
+
+  test("should remove predicates") {
+    // Given an empty database
+
+    // When
+    val result = executeWith(Configs.All, "PROFILE MATCH (n) WHERE 1 = 1 AND 5 > 1 RETURN n")
+
+    // Then
+    result.executionPlanDescription().find("Selection") shouldBe empty
+  }
 }
