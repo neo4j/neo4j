@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 object PrimitiveExecutionContext {
-  def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0, 0))
+  def empty = new PrimitiveExecutionContext(PipelineInformation.empty)
 }
 
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
@@ -33,7 +33,17 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   override val longs = new Array[Long](pipeline.numberOfLongs)
   override val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
-  override def toString(): String = s"pipeLine: $pipeline, longs[${longs.length}]: $longs, refs[${refs.length}]: $refs"
+  override def toString(): String = {
+    val iter = this.iterator
+    val s: StringBuilder = StringBuilder.newBuilder
+    s ++= s"\nPrimitiveExecutionContext {\n    $pipeline"
+    while(iter.hasNext) {
+      val slotValue = iter.next
+      s ++= f"\n    ${slotValue._1}%-40s = ${slotValue._2}"
+    }
+    s ++= "\n}\n"
+    s.result
+  }
 
   override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
@@ -77,10 +87,17 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   override def get(key: String): Nothing = fail()
 
-  override def iterator =
+  override def iterator: Iterator[(String, AnyValue)] = {
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).
     // Please do not use in production code.
-    (longs.map(i => ("LongSlot", ValueUtils.of(i))) ++ refs.map(i => ("RefSlot", i))).iterator
+    val longSlots = pipeline.getLongSlots
+    val refSlots = pipeline.getRefSlots
+    val longSlotValues = for { i <- 0 until longs.length }
+      yield (longSlots(i).toString, ValueUtils.of(longs(i)))
+    val refSlotValues = for { i <- 0 until refs.length }
+      yield (refSlots(i).toString, refs(i))
+    (longSlotValues ++ refSlotValues).iterator
+  }
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 

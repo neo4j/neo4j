@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeTestSupport, QueryState, QueryStateHelper}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.{NodeFromSlot, ReferenceFromSlot}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.spi.v3_4.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_4.{Operations, QueryContext}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
@@ -160,14 +160,14 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
 
   private def createRhs(data: Any*) = {
     val rhsData = data.map { case v => Map("y" -> v) }
-    val rhsPipeline = pipeline.seedClone()
+    val rhsPipeline = pipeline.breakPipelineAndClone()
       .newReference("y", nullable = false, CTNumber)
     new FakeSlottedPipe(rhsData.iterator, rhsPipeline)
   }
 
   private def createRhsWithNumberOfNodes(numberOfNodes: Int) = {
     val rhsData = for (i <- 0 until numberOfNodes) yield Map("y" -> i)
-    val rhsPipeline = pipeline.seedClone()
+    val rhsPipeline = pipeline.breakPipelineAndClone()
       .newLong("y", nullable = false, CTNode)
     new FakeSlottedPipe(rhsData.iterator, rhsPipeline)
   }

@@ -89,7 +89,7 @@ object SlotAllocation {
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
           val argumentPipeline = outputStack.top
-          argumentStack.push(argumentPipeline.seedClone())
+          argumentStack.push(argumentPipeline.breakPipelineAndClone())
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
@@ -147,13 +147,13 @@ object SlotAllocation {
         outgoing
 
       case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline.newLong(to, nullable, CTNode)
         newPipeline
 
       case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline
 
@@ -173,19 +173,25 @@ object SlotAllocation {
         expressions foreach {
           case (key, parserAst.Variable(ident)) if key == ident =>
           // it's already there. no need to add a new slot for it
+
+          case (key, parserAst.Variable(ident)) if key != ident =>
+            val slot = incomingPipeline.get(ident).getOrElse(
+              throw new SlotAllocationFailed(s"Tried to lookup key $key that should be in pipeline but wasn't"))
+            incomingPipeline.addAliasFor(slot, key)
+
           case (key, _) =>
             incomingPipeline.newReference(key, nullable = true, CTAny)
         }
         incomingPipeline
 
       case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline.newLong(to, nullable = true, CTNode)
         newPipeline
 
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline
 
@@ -203,7 +209,7 @@ object SlotAllocation {
                        _,
                        _,
                        _) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
 
         // We allocate these on the incoming pipeline after cloning it, since we don't need these slots in
         // the produced rows
@@ -234,12 +240,12 @@ object SlotAllocation {
         incomingPipeline
 
       case UnwindCollection(_, IdName(variable), expression) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
 
       case Eager(_) =>
-        val newPipeline = incomingPipeline.seedClone()
+        val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
@@ -272,8 +278,10 @@ object SlotAllocation {
         rhsPipeline
 
       case _: CartesianProduct =>
-        val newPipeline = lhsPipeline.seedClone()
-        rhsPipeline.foreachSlot {
+        val newPipeline = lhsPipeline.breakPipelineAndClone()
+        // For the implementation of the slotted pipe to use array copy
+        // it is very important that we add the slots in the same order
+        rhsPipeline.foreachSlotOrdered {
           case (k, slot) =>
             newPipeline.add(k, slot)
         }
@@ -292,7 +300,7 @@ object SlotAllocation {
           case (key, lhsSlot: LongSlot) =>
             //find all shared variables and look for other long slots with same type
             rhsPipeline.get(key).foreach {
-            case LongSlot(_, rhsNullable, typ, _) if typ == lhsSlot.typ =>
+            case LongSlot(_, rhsNullable, typ) if typ == lhsSlot.typ =>
               outgoing.newLong(key, lhsSlot.nullable || rhsNullable, typ)
             case rhsSlot =>
               val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny

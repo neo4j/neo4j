@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringValue
 
 class PrimitiveExecutionContextTest extends CypherFunSuite {
 
-  private def pipeline(longs: Int, refs: Int) = new PipelineInformation(Map.empty, longs, refs)
+  private def pipeline(longs: Int, refs: Int) = PipelineInformation(Map.empty, longs, refs)
 
   test("copy fills upp the first few elements") {
     val input = PrimitiveExecutionContext(pipeline(2, 1))
