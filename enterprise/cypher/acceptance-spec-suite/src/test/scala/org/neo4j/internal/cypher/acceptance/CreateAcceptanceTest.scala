@@ -25,6 +25,43 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport
   with CreateTempFileTestSupport {
 
+  test("handle null value in property map from parameter for create node") {
+    val query = "CREATE (a {props}) RETURN a.foo, a.bar"
+
+    val result = updateWithBothPlanners(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
+
+    result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
+  }
+
+  test("handle null value in property map from parameter for create node with SET") {
+    createNode(("foo", 42), ("bar", "fu"))
+    val query = "MATCH (a) SET a = {props} RETURN a.foo, a.bar"
+
+    val result = updateWithBothPlanners(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
+
+    result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
+    assertStats(result, propertiesWritten = 2)
+  }
+
+  test("handle null value in property map from parameter for create relationship") {
+    val query = "CREATE (a)-[r:REL {props}]->() RETURN r.foo, r.bar"
+
+    val result = updateWithBothPlanners(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
+
+    result.toSet should equal(Set(Map("r.foo" -> null, "r.bar" -> "baz")))
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
+  }
+
+  test("handle null value in property map from parameter") {
+    val query = "CREATE (a {props})-[r:REL {props}]->() RETURN a.foo, a.bar, r.foo, r.bar"
+
+    val result = updateWithBothPlanners(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
+
+    result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz", "r.foo" -> null, "r.bar" -> "baz")))
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
+  }
+
   //Not TCK material
   test("should have bound node recognized after projection with WITH + LOAD CSV") {
     val url = createCSVTempFileURL( writer => writer.println("Foo") )
