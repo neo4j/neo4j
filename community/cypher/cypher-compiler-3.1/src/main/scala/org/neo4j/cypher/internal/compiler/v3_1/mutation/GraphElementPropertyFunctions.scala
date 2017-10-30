@@ -66,11 +66,13 @@ trait GraphElementPropertyFunctions extends ListSupport {
 
     pc match {
       case n: Node => map.foreach {
+        case (_, null) =>
         case (key, value) =>
           state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
       }
 
       case r: Relationship => map.foreach {
+        case (_, null) =>
         case (key, value) =>
           state.query.relationshipOps.setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
       }
