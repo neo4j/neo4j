@@ -117,7 +117,8 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = Config.fromFile( configFile ).withServerDefaults().build();
+        Config config = Config.fromFile( configFile ).withHome( configFile.getParentFile() )
+                .withServerDefaults().build();
         config.setLogger( log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );

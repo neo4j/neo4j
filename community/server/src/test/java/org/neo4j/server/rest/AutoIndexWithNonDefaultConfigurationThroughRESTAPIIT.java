@@ -29,6 +29,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -56,6 +57,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIIT extends Exclus
         server = CommunityServerBuilder.serverOnRandomPorts()
                 .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withAutoIndexingEnabledForNodes( "foo", "bar" )
+                .withProperty( GraphDatabaseSettings.neo4j_home.name(), staticFolder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
