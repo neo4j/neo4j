@@ -19,29 +19,36 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should provide sensible error message when omitting colon before relationship type on create") {
-    val exception = intercept[SyntaxException](executeScalarWithAllPlannersAndRuntimes("CREATE (a)-[ASSOCIATED_WITH]->(b)"))
-    val exceptionMsg = "Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?"
-    exception.getMessage should include(exceptionMsg)
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners -
+      Configs.Version3_2 - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (a)-[ASSOCIATED_WITH]->(b)",
+      Seq("Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?"))
   }
 
   test("should provide sensible error message when trying to add multiple relationship types on create") {
-    val exception = intercept[SyntaxException](executeScalarWithAllPlannersAndRuntimes("CREATE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)"))
-    exception.getMessage should include("A single relationship type must be specified for CREATE")
+    failWithError(Configs.AbsolutelyAll,
+      "CREATE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)",
+      Seq("A single relationship type must be specified for CREATE",
+          "The given query is not currently supported in the selected cost-based planner" ))
   }
 
   test("should provide sensible error message when omitting colon before relationship type on merge") {
-    val exception = intercept[SyntaxException](executeScalarWithAllPlannersAndRuntimes("MERGE (a)-[ASSOCIATED_WITH]->(b)"))
-    val exceptionMsg = "Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?"
-    exception.getMessage should include(exceptionMsg)
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners -
+      Configs.Version3_2 - Configs.Version3_1 - Configs.Version2_3,
+      "MERGE (a)-[ASSOCIATED_WITH]->(b)",
+      Seq("Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?"))
   }
 
   test("should provide sensible error message when trying to add multiple relationship types on merge") {
-    val exception = intercept[SyntaxException](executeScalarWithAllPlannersAndRuntimes("MERGE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)"))
-    exception.getMessage should include("A single relationship type must be specified for MERGE")
+    failWithError(Configs.AbsolutelyAll - Configs.Rule2_3,
+      "MERGE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)",
+      Seq("A single relationship type must be specified for MERGE",
+      "The given query is not currently supported in the selected cost-based planner"))
   }
 }
