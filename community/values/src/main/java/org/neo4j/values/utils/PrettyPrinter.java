@@ -160,7 +160,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
             append( Double.toString( coordinate[i] ) );
             if ( i != coordinate.length - 1 )
             {
-                append( "," );
+                append( ", " );
             }
         }
         append( "], crs: {type: link, properties: {href: \"" );
