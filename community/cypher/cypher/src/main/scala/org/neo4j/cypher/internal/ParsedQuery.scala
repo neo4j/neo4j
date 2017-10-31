@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 
 import scala.util.Try
 

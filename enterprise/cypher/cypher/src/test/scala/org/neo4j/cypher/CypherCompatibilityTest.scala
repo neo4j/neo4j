@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status

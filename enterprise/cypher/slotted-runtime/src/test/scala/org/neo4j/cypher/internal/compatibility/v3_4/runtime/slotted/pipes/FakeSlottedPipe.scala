@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.ValueConversion.asValue
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion.asValue
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.scalatest.mock.MockitoSugar
 

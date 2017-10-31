@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_1
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
 import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}

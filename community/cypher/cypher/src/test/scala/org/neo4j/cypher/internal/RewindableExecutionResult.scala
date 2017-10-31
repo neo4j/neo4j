@@ -21,22 +21,22 @@ package org.neo4j.cypher.internal
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
+import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
-import org.neo4j.cypher.internal.compatibility.v3_4.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, notification => notification_3_1, symbols => symbols3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.runtime.planDescription.{PlanDescriptionImpl, SingleChild, TwoChildren, _}
+import org.neo4j.cypher.internal.runtime.{DBMS, QueryStatistics, SCHEMA_WRITE, _}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}

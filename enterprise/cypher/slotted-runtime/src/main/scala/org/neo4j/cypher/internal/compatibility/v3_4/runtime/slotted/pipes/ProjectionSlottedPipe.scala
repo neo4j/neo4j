@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, LongSlot, RefSlot, Slot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, Slot}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 /*

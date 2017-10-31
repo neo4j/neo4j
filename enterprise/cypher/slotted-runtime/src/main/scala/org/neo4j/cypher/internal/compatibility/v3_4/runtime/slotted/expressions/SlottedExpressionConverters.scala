@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{ExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => commands}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commands}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedProjectedPath._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => runtimeExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ast => runtimeAst}

@@ -31,8 +31,11 @@ import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, devNullLogger}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext}
+import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -135,5 +138,13 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       updateStrategy = None,
       contextCreator = CommunityRuntimeContextCreator
     )
+  }
+
+  private def planContext(statement: Statement): PlanContext = {
+    val tc = mock[TransactionalContextWrapper]
+    when(tc.statement).thenReturn(statement)
+    when(tc.readOperations).thenReturn(statement.readOperations())
+    when(tc.graph).thenReturn(graph)
+    new TransactionBoundPlanContext(tc, devNullLogger)
   }
 }

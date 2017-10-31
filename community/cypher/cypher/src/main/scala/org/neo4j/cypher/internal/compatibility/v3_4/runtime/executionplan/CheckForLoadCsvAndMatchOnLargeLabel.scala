@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.LabelId
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
-import org.neo4j.cypher.internal.ir.v3_4.Cardinality
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LoadCSVPipe, NodeByLabelScanPipe, Pipe}
+import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
 
 case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long) extends (Pipe => Option[InternalNotification]) {
 

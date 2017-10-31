@@ -22,20 +22,19 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.{CompiledExecutionResult, CompiledPlan}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Provider
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
-import org.neo4j.cypher.internal.compiler.v3_4.spi._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, NormalMode, QueryContext}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.util.v3_4.TaskCloser
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}

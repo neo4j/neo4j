@@ -59,6 +59,12 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphdb-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-frontend-3.4</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -72,6 +78,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-util-3.4</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

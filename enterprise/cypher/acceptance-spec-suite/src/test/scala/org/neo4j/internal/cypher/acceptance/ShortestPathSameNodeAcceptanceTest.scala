@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, InternalExecutionResult, RewindableExecutionResult}
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.InternalExecutionResult
+import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, RunWithConfigTestSupport, ShortestPathCommonEndNodesForbiddenException}
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

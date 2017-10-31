@@ -258,41 +258,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.4</artifactId>
-      <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-kernel</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-lucene-index</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-algo</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-	      <exclusion>
-          <artifactId>scala-reflect</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.10</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.opencsv</groupId>
-          <artifactId>opencsv</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -300,11 +265,35 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-planner-3.4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-planner-spi-3.4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-runtime-util</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- neo4j-cypher test -->
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.4</artifactId>
+      <artifactId>neo4j-cypher-planner-3.4</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -321,6 +310,22 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-util-3.4</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-runtime-util</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

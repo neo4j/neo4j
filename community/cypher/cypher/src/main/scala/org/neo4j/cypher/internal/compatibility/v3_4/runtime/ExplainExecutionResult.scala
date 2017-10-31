@@ -23,9 +23,9 @@ import java.io.PrintWriter
 import java.util
 import java.util.Collections
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.InternalQueryType
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalExecutionResult, InternalQueryType}
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}

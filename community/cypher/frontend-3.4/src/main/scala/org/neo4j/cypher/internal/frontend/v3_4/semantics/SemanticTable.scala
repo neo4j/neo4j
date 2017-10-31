@@ -17,9 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.{ASTNode, InternalException}
+import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.collection.mutable

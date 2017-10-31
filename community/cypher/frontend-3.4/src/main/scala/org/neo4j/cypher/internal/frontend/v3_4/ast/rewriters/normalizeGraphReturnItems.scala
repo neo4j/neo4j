@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.v3_4.{FreshIdNameGenerator, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
 case object normalizeGraphReturnItems extends Rewriter {

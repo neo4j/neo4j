@@ -23,11 +23,11 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.computeUnionMapping
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation}
-import org.neo4j.cypher.internal.spi.v3_4.{Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}

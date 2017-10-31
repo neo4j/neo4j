@@ -21,22 +21,22 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.util.v3_4.CypherException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Monitors, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext, interpreted}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan, LogicalPlanId}
 import org.neo4j.values.virtual.MapValue
 

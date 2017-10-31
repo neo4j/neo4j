@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
+import org.neo4j.cypher.CypherExecutionMode
+import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.values.virtual.MapValue

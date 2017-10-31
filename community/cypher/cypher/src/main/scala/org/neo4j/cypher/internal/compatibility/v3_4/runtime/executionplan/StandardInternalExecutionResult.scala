@@ -23,17 +23,15 @@ import java.io.{PrintWriter, StringWriter}
 import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{MapBasedRow, RuntimeScalaValueConverter, RuntimeTextValueConverter}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{Planner, PlannerImpl, Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{MapBasedRow, RuntimeTextValueConverter}
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.util.v3_4.{Eagerly, TaskCloser}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb._
 
 import scala.collection.{Map, mutable}
 

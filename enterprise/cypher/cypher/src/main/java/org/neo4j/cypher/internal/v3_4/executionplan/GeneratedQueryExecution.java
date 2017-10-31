@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.v3_4.executionplan;
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionMode;
+import org.neo4j.cypher.internal.runtime.ExecutionMode;
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Completable;
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription;
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.result.QueryResult;
 
 public interface GeneratedQueryExecution

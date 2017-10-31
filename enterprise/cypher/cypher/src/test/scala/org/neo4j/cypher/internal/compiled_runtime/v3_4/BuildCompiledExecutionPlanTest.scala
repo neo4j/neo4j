@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.BuildCompiledExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v3_4.{CostBasedPlannerName, HardcodedGraphStatistics, NotImplementedPlanContext}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.{CantCompileQueryException, HardcodedGraphStatistics}
+import org.neo4j.cypher.internal.compiler.v3_4.NotImplementedPlanContext
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, QueryGraph, RegularPlannerQuery}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
 import org.neo4j.kernel.monitoring.Monitors

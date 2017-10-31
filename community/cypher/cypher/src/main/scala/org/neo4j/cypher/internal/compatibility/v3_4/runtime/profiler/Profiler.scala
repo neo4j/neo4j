@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.profiler
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.spi.v3_4.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext, ExecutionContext}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.MathUtil

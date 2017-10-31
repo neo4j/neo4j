@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_4
 
-import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite}
 
 class TypeConversionTest extends ExecutionEngineFunSuite {

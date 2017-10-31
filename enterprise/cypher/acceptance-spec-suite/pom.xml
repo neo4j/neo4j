@@ -174,50 +174,27 @@
       <type>test-jar</type>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-runtime-util</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
     <!-- neo4j-cypher -->
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.4</artifactId>
+      <artifactId>neo4j-cypher-planner-3.4</artifactId>
       <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-kernel</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-lucene-index</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-algo</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-        <exclusion>
-          <artifactId>scala-reflect</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.11</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.opencsv</groupId>
-          <artifactId>opencsv</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- neo4j-cypher test -->
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.4</artifactId>
+      <artifactId>neo4j-cypher-planner-3.4</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

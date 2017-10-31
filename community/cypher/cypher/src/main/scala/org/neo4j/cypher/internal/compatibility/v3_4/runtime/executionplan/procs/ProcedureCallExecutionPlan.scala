@@ -20,23 +20,21 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan, ProcedureCallMode}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.Counter
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ExternalCSVResource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_4.ProcedurePlannerName
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext, ProcedurePlannerName}
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.util.v3_4.TaskCloser
 import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
@@ -66,7 +64,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     (r._1, r._2, resultSymbols(i)._2)
   })
 
-  private val argExprCommands: Seq[expressions.Expression] = argExprs.map(converter.toCommandExpression) ++
+  private val argExprCommands: Seq[CommandExpression] = argExprs.map(converter.toCommandExpression) ++
     signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
   override def run(ctx: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {

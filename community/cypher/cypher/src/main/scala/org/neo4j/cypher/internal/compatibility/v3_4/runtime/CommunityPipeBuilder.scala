@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{AggregationExpression, Literal}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Predicate, True}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
+import org.neo4j.cypher.internal.util.v3_4.{Eagerly, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, Equals => ASTEquals, _}
+import org.neo4j.cypher.internal.v3_4.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.runtime.ProcedureCallMode
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue
@@ -412,8 +412,8 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
-  private def translateColumnOrder(s: ColumnOrder): pipes.ColumnOrder = s match {
-    case plans.Ascending(IdName(name)) => pipes.Ascending(name)
-    case plans.Descending(IdName(name)) => pipes.Descending(name)
+  private def translateColumnOrder(s: ColumnOrder): org.neo4j.cypher.internal.runtime.interpreted.pipes.ColumnOrder = s match {
+    case plans.Ascending(IdName(name)) => org.neo4j.cypher.internal.runtime.interpreted.pipes.Ascending(name)
+    case plans.Descending(IdName(name)) => org.neo4j.cypher.internal.runtime.interpreted.pipes.Descending(name)
   }
 }
