@@ -53,7 +53,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("shouldFilterOnGreaterThan") {
     val n = createNode()
-    val result = executeWithAllPlannersAndCompatibilityMode("match(node) where 0<1 return node")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match(node) where 0<1 return node")
 
     result.columnAs[Node]("node").toList should equal(List(n))
   }
