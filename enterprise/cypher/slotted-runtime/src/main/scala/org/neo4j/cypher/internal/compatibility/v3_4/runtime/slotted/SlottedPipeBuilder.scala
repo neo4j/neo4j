@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{AggregationExpression, Expression}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Predicate, True}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => commandExpressions}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ColumnOrder => _, _}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.computeUnionMapping
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => slottedExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
@@ -357,7 +357,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Union(_, _) =>
         val lhsInfo = pipelines(lhs.id)
         val rhsInfo = pipelines(rhs.id)
-        UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsInfo, pipeline), computeUnionMapping(rhsInfo, pipeline))(id = id)
+        UnionSlottedPipe(lhs, rhs,
+          SlottedPipeBuilder.computeUnionMapping(lhsInfo, pipeline),
+          SlottedPipeBuilder.computeUnionMapping(rhsInfo, pipeline))(id = id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
@@ -365,7 +367,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 }
 
 object SlottedPipeBuilder {
-  private def createProjectionsForResult(columns: Seq[String], pipelineInformation1: PipelineInformation): Seq[(String, Expression)] = {
+  private def createProjectionsForResult(columns: Seq[String],
+                                         pipelineInformation1: PipelineInformation
+                                        ): Seq[(String, commandExpressions.Expression)] = {
     val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
       k =>
         pipelineInformation1(k) match {
@@ -418,7 +422,7 @@ object SlottedPipeBuilder {
     }.flatten.toIndexedSeq
 
       //projections contains methods for turning longslots to refslots
-      val projections: Seq[Expression] = createProjectionsForResult(slots.map(_.name), in).map(_._2)
+      val projections: Seq[commandExpressions.Expression] = createProjectionsForResult(slots.map(_.name), in).map(_._2)
 
       //ZIP [slot1, slot2,...] with [e1, e2, ...] to get a mapping from slot to expression
       val expressions = slots.zip(projections).toMap

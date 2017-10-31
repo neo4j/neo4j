@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
-import org.neo4j.cypher.internal.spi.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -232,8 +232,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def asObject(value: AnyValue) =
     translateException(inner.asObject(value))
 
-  override def variableLengthPathExpand(node: PatternNode, realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
-    translateException(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
+  override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
+    translateException(inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
 
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
     translateException(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))

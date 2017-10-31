@@ -22,9 +22,9 @@ package org.neo4j.internal.cypher.acceptance
 import java.io.PrintWriter
 
 import org.neo4j.csv.reader.MissingEndQuoteException
-import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
-import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineHelper, RunWithConfigTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 

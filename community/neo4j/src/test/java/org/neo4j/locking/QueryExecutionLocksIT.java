@@ -38,7 +38,7 @@ import java.util.function.Function;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+//import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -202,7 +203,7 @@ public class QueryExecutionLocksIT
             throws QueryExecutionKernelException
     {
         GraphDatabaseQueryService graph = databaseRule.resolveDependency( GraphDatabaseQueryService.class );
-        ExecutionEngine executionEngine = databaseRule.resolveDependency( ExecutionEngine.class );
+        QueryExecutionEngine executionEngine = databaseRule.resolveDependency( QueryExecutionEngine.class );
         try ( InternalTransaction tx = graph
                 .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED ) )
         {

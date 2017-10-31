@@ -23,10 +23,9 @@ import java.io.{File, FileOutputStream}
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory

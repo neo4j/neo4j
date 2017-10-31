@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.{internal, _}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription => InternalPlanDescription3_4}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, _}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
@@ -36,6 +35,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalR
 import org.neo4j.cypher.internal.compiler.v3_1.{PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.planDescription.LegacyPlanDescription
 import org.neo4j.cypher.internal.v3_4.expressions
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
@@ -51,7 +53,7 @@ import scala.collection.JavaConverters._
 class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
                              preParsingNotification: Set[org.neo4j.graphdb.Notification],
                              offset : Option[frontend.v3_1.InputPosition])
-  extends org.neo4j.cypher.internal.InternalExecutionResult  {
+  extends internal.runtime.InternalExecutionResult  {
 
   override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
@@ -80,7 +82,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-  override def executionPlanDescription(): InternalPlanDescription3_3 =
+  override def executionPlanDescription(): internal.runtime.planDescription.InternalPlanDescription =
     convert(
       inner.executionPlanDescription().
         addArgument(Version("CYPHER 3.1")).
@@ -90,45 +92,45 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
         addArgument(RuntimeImpl(runtime.name))
       )
 
-  private def convert(i: InternalPlanDescription): InternalPlanDescription3_3 = exceptionHandler.runSafely {
+  private def convert(i: InternalPlanDescription): internal.runtime.planDescription.InternalPlanDescription = exceptionHandler.runSafely {
     LegacyPlanDescription(i.name, convert(i.arguments), Set.empty, i.toString)
   }
 
-  private def convert(args: Seq[Argument]): Seq[Argument3_3] = args.collect {
-    case Arguments.LabelName(label) => InternalPlanDescription3_3.Arguments.LabelName(label)
-    case Arguments.ColumnsLeft(value) => InternalPlanDescription3_3.Arguments.ColumnsLeft(value)
-    case Arguments.DbHits(value) => InternalPlanDescription3_3.Arguments.DbHits(value)
-    case Arguments.EstimatedRows(value) => InternalPlanDescription3_3.Arguments.EstimatedRows(value)
+  private def convert(args: Seq[Argument]): Seq[internal.runtime.planDescription.Argument] = args.collect {
+    case Arguments.LabelName(label) => InternalPlanDescription3_4.Arguments.LabelName(label)
+    case Arguments.ColumnsLeft(value) => InternalPlanDescription3_4.Arguments.ColumnsLeft(value)
+    case Arguments.DbHits(value) => InternalPlanDescription3_4.Arguments.DbHits(value)
+    case Arguments.EstimatedRows(value) => InternalPlanDescription3_4.Arguments.EstimatedRows(value)
     case Arguments.ExpandExpression(from, relName, relTypes, to, direction, min, max) =>
       val dir3_3 = direction match {
         case INCOMING => expressions.SemanticDirection.INCOMING
         case OUTGOING => expressions.SemanticDirection.OUTGOING
         case BOTH => expressions.SemanticDirection.BOTH
       }
-      InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName,relTypes,to, dir3_3, min, max)
+      InternalPlanDescription3_4.Arguments.ExpandExpression(from, relName,relTypes,to, dir3_3, min, max)
 
-    case Arguments.Index(label, propertyKey) => InternalPlanDescription3_3.Arguments.Index(label, Seq(propertyKey))
-    case Arguments.LegacyIndex(value) => InternalPlanDescription3_3.Arguments.ExplicitIndex(value)
-    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_3.Arguments.InequalityIndex(label, propertyKey, bounds)
-    case Arguments.Planner(value) => InternalPlanDescription3_3.Arguments.Planner(value)
-    case Arguments.PlannerImpl(value) => InternalPlanDescription3_3.Arguments.PlannerImpl(value)
-    case Arguments.Runtime(value) => InternalPlanDescription3_3.Arguments.Runtime(value)
-    case Arguments.RuntimeImpl(value) => InternalPlanDescription3_3.Arguments.RuntimeImpl(value)
-    case Arguments.KeyNames(keys) => InternalPlanDescription3_3.Arguments.KeyNames(keys)
-    case Arguments.MergePattern(start) => InternalPlanDescription3_3.Arguments.MergePattern(start)
-    case Arguments.Version(value) => InternalPlanDescription3_3.Arguments.Version(value)
+    case Arguments.Index(label, propertyKey) => InternalPlanDescription3_4.Arguments.Index(label, Seq(propertyKey))
+    case Arguments.LegacyIndex(value) => InternalPlanDescription3_4.Arguments.ExplicitIndex(value)
+    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_4.Arguments.InequalityIndex(label, propertyKey, bounds)
+    case Arguments.Planner(value) => InternalPlanDescription3_4.Arguments.Planner(value)
+    case Arguments.PlannerImpl(value) => InternalPlanDescription3_4.Arguments.PlannerImpl(value)
+    case Arguments.Runtime(value) => InternalPlanDescription3_4.Arguments.Runtime(value)
+    case Arguments.RuntimeImpl(value) => InternalPlanDescription3_4.Arguments.RuntimeImpl(value)
+    case Arguments.KeyNames(keys) => InternalPlanDescription3_4.Arguments.KeyNames(keys)
+    case Arguments.MergePattern(start) => InternalPlanDescription3_4.Arguments.MergePattern(start)
+    case Arguments.Version(value) => InternalPlanDescription3_4.Arguments.Version(value)
   }
 
   override def hasNext: Boolean = inner.hasNext
   override def next(): Map[String, Any] = inner.next()
   override def close(): Unit = inner.close()
 
-  override def queryType: compatibility.v3_4.runtime.executionplan.InternalQueryType = inner.executionType match {
-      case READ_ONLY => compatibility.v3_4.runtime.executionplan.READ_ONLY
-      case READ_WRITE => compatibility.v3_4.runtime.executionplan.READ_WRITE
-      case WRITE => compatibility.v3_4.runtime.executionplan.WRITE
-      case SCHEMA_WRITE => compatibility.v3_4.runtime.executionplan.SCHEMA_WRITE
-      case DBMS => compatibility.v3_4.runtime.executionplan.DBMS
+  override def queryType: internal.runtime.InternalQueryType = inner.executionType match {
+      case READ_ONLY => internal.runtime.READ_ONLY
+      case READ_WRITE => internal.runtime.READ_WRITE
+      case WRITE => internal.runtime.WRITE
+      case SCHEMA_WRITE => internal.runtime.SCHEMA_WRITE
+      case DBMS => internal.runtime.DBMS
   }
 
   override def notifications: Iterable[Notification] = inner.notifications.map(asKernelNotification(offset)) ++ preParsingNotification
@@ -149,13 +151,13 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     override def getString(key: String): String = row.getString(key)
   }
 
-  override def executionMode: ExecutionMode = inner.executionMode match {
+  override def executionMode: internal.runtime.ExecutionMode = inner.executionMode match {
     case ExplainModev3_1 => ExplainMode
     case ProfileModev3_1 => ProfileMode
     case NormalModev3_1 => NormalMode
   }
 
-  override def withNotifications(notification: Notification*): internal.InternalExecutionResult =
+  override def withNotifications(notification: Notification*): internal.runtime.InternalExecutionResult =
     new ExecutionResultWrapper(inner, planner, runtime, preParsingNotification ++ notification, offset)
 
   override def fieldNames(): Array[String] = inner.columns.toArray

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
+import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 
 object KeyTokenResolver {
   /*this is what you should use!*/

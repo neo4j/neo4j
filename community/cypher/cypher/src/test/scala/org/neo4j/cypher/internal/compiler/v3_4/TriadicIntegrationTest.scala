@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 
 class TriadicIntegrationTest extends ExecutionEngineFunSuite {
   private val QUERY: String = """MATCH (p1:Person)-[:FRIEND]-()-[:FRIEND]-(p2:Person)

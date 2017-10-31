@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_4.helpers
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.util.v3_4.{FreshIdNameGenerator, InternalException}
 import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, ShortestPathPattern}
 import org.neo4j.cypher.internal.v3_4.expressions._

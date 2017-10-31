@@ -23,10 +23,10 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_4._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, ValueConversion}
 import org.neo4j.cypher.internal.compiler.v3_4.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
+import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper, ValueConversion}
+import org.neo4j.cypher.internal.runtime.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, isGraphKernelResultValue}
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
@@ -206,7 +206,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           tc.close(success = true)
         } else {
           tc.cleanForReuse()
-          tc.notifyPlanningCompleted(plan)
+          tc.notifyPlanningCompleted(plan.plannerInfo)
           return (PreparedPlanExecution(plan, executionMode, extractedParameters), tc)
         }
 

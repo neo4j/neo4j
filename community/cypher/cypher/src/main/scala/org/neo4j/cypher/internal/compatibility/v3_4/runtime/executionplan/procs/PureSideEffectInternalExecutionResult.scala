@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{InternalQueryType, StandardInternalExecutionResult}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, ProcedureRuntimeName}
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ProcedureRuntimeName
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Notification
 

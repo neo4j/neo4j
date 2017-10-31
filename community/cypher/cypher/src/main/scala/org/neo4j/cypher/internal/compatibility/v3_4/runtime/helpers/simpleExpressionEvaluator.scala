@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
 import org.neo4j.cypher.internal.util.v3_4.{CypherException => InternalCypherException}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{NullPipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NullPipeDecorator, QueryState}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.values.virtual.VirtualValues
 

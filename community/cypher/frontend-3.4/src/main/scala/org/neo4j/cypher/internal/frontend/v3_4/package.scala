@@ -16,14 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend
 
-import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.neo4j.cypher.internal.util.v3_4.symbols.TypeSpec
 
 import scala.language.implicitConversions
 
 package object v3_4 {
-  type Bounds[+V] = NonEmptyList[Bound[V]]
 
   type SemanticCheck = SemanticState => SemanticCheckResult
   type TypeGenerator = SemanticState => TypeSpec

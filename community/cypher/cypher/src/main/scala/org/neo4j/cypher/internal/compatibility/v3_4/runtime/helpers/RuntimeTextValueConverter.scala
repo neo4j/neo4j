@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.graphdb.{Entity, Node, Path, Relationship}
 
 import scala.collection.Map

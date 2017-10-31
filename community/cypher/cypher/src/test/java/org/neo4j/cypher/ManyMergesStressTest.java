@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
