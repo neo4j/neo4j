@@ -471,8 +471,6 @@ public class HostnamePortTest
         // When & Then
 
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234" ) ) );
-        // no scheme means no ports and no host, so both null therefore comparison fails
-        assertFalse( hostnamePortSinglePort.matches( URI.create( unknownHost + ":1234" ) ) );
     }
 
     @Test
@@ -491,8 +489,6 @@ public class HostnamePortTest
         String host1 = InetAddress.getLocalHost().getHostName();
 
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
-        // no scheme means no ports and no host, so both null therefore comparison fails
-        assertFalse( hostnamePortSinglePort.matches( URI.create( host1 + ":1234" ) ) );
     }
 
     @Test
