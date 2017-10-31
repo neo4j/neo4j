@@ -166,7 +166,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 } ),
                 equalTo( new Object[]{"db.index.explicit.searchNodes",
                         "db.index.explicit.searchNodes(indexName :: STRING?, query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
-                        "Search nodes from explicit index. Replaces `START n=node:nodes('key:foo*')`"
+                        "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`"
                 } ),
                 equalTo( new Object[]{"db.index.explicit.seekNodes",
                         "db.index.explicit.seekNodes(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: " +

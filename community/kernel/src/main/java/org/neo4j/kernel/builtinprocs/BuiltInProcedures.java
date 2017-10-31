@@ -259,7 +259,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search nodes from explicit index. Replaces `START n=node:nodes('key:foo*')`" )
+    @Description( "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`" )
     @Procedure( name = "db.index.explicit.searchNodes", mode = READ )
     public Stream<WeightedNodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
@@ -400,7 +400,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search nodes from explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
+    @Description( "Search nodes in explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchNodes", mode = READ )
     public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query ) throws ProcedureException
     {
