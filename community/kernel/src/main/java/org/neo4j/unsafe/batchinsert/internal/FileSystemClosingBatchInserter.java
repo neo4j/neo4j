@@ -31,7 +31,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
-import org.neo4j.values.storable.Value;
 
 public class FileSystemClosingBatchInserter implements BatchInserter, IndexConfigStoreProvider
 {
@@ -114,7 +113,7 @@ public class FileSystemClosingBatchInserter implements BatchInserter, IndexConfi
     }
 
     @Override
-    public Map<String,Value> getNodeProperties( long nodeId )
+    public Map<String,Object> getNodeProperties( long nodeId )
     {
         return delegate.getNodeProperties( nodeId );
     }
@@ -150,7 +149,7 @@ public class FileSystemClosingBatchInserter implements BatchInserter, IndexConfi
     }
 
     @Override
-    public Map<String,Value> getRelationshipProperties( long relId )
+    public Map<String,Object> getRelationshipProperties( long relId )
     {
         return delegate.getRelationshipProperties( relId );
     }
