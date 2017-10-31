@@ -36,8 +36,14 @@ case object planShortestPaths {
            (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
+    def predicateAppliesToShortestPath(p: Predicate) =
+      // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
+      p.hasDependenciesMet(variables ++ inner.availableSymbols) &&
+        // And filter with predicates that explicitly depend on shortestPath variables
+        (p.dependencies intersect variables).nonEmpty
+
     val predicates = queryGraph.selections.predicates.collect {
-      case Predicate(dependencies, expr: Expression) if (dependencies intersect variables).nonEmpty => expr
+      case p@Predicate(_, expr) if predicateAppliesToShortestPath(p) => expr
     }.toIndexedSeq
 
     def doesNotDependOnFullPath(predicate: Expression): Boolean = {
