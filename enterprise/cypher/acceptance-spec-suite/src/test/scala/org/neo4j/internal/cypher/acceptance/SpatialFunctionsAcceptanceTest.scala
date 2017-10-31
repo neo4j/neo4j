@@ -324,8 +324,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // When
-    val config = Configs.All - Configs.Cost2_3 - Configs.Cost3_1 - Configs.AllRulePlanners
-    val result = executeWith(config, "MATCH (p:Place) RETURN p.location as point",
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
