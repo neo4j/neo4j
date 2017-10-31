@@ -418,18 +418,20 @@ public class RecoveryCorruptedTransactionLogIT
                             versionRepository, PhysicalLogFile.NO_MONITOR, new LogHeaderCache( 100 ) );
             lifespan.add( physicalLogFile );
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
-            ReadableLogChannel reader =
-                    physicalLogFile.getReader( LogPosition.start( logFiles.getHighestLogVersion() ) );
-            LogEntry logEntry;
-            do
+            try ( ReadableLogChannel reader = physicalLogFile
+                    .getReader( LogPosition.start( logFiles.getHighestLogVersion() ) ) )
             {
-                logEntry = entryReader.readLogEntry( reader );
-                if ( logEntry instanceof CheckPoint )
+                LogEntry logEntry;
+                do
                 {
-                    checkpointPosition = ((CheckPoint) logEntry).getLogPosition();
+                    logEntry = entryReader.readLogEntry( reader );
+                    if ( logEntry instanceof CheckPoint )
+                    {
+                        checkpointPosition = ((CheckPoint) logEntry).getLogPosition();
+                    }
                 }
+                while ( logEntry != null );
             }
-            while ( logEntry != null );
         }
         if ( checkpointPosition != null )
         {
@@ -521,12 +523,14 @@ public class RecoveryCorruptedTransactionLogIT
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
 
             MultiSet<Class> multiset = new MultiSet<>();
-            ReadableLogChannel fileReader = physicalLogFile.getReader( fileStartPosition );
-            LogEntry logEntry = entryReader.readLogEntry( fileReader );
-            while ( logEntry != null )
+            try ( ReadableLogChannel fileReader = physicalLogFile.getReader( fileStartPosition ) )
             {
-                multiset.add( logEntry.getClass() );
-                logEntry = entryReader.readLogEntry( fileReader );
+                LogEntry logEntry = entryReader.readLogEntry( fileReader );
+                while ( logEntry != null )
+                {
+                    multiset.add( logEntry.getClass() );
+                    logEntry = entryReader.readLogEntry( fileReader );
+                }
             }
             return multiset;
         }
