@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.values.storable.Value;
 
 /**
  * The batch inserter drops support for transactions and concurrency in favor
@@ -162,7 +161,7 @@ public interface BatchInserter
      *
      * @return map containing this node's properties.
      */
-    Map<String,Value> getNodeProperties( long nodeId );
+    Map<String,Object> getNodeProperties( long nodeId );
 
     /**
      * Returns an iterable over all the relationship ids connected to node with
@@ -226,7 +225,7 @@ public interface BatchInserter
      * @param relId the id of the relationship.
      * @return map containing the relationship's properties.
      */
-    Map<String,Value> getRelationshipProperties( long relId );
+    Map<String,Object> getRelationshipProperties( long relId );
 
     /**
      * Removes the property named {@code property} from the node with id

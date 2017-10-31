@@ -921,7 +921,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     }
 
     @Override
-    public Map<String,Value> getNodeProperties( long nodeId )
+    public Map<String,Object> getNodeProperties( long nodeId )
     {
         NodeRecord record = getNodeRecord( nodeId ).forReadingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
@@ -969,7 +969,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     }
 
     @Override
-    public Map<String,Value> getRelationshipProperties( long relId )
+    public Map<String,Object> getRelationshipProperties( long relId )
     {
         RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( relId, null ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
@@ -1026,14 +1026,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return "EmbeddedBatchInserter[" + storeDir + "]";
     }
 
-    private Map<String, Value> getPropertyChain( long nextProp )
+    private Map<String, Object> getPropertyChain( long nextProp )
     {
-        final Map<String, Value> map = new HashMap<>();
+        final Map<String, Object> map = new HashMap<>();
         propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyRecords(), propBlock ->
         {
             String key = propertyKeyTokens.byId( propBlock.getKeyIndexId() ).name();
             Value propertyValue = propBlock.newPropertyValue( propertyStore );
-            map.put( key, propertyValue );
+            map.put( key, propertyValue.asObject() );
         } );
         return map;
     }
