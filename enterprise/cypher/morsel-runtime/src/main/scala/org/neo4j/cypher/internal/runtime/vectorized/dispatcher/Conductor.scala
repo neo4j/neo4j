@@ -36,6 +36,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
   // Used to know when an iteration has finished all tasks
   private val loopRefCounting = mutable.HashMap[Iteration, Int]()
   private val eagerAccumulation = mutable.HashMap[Iteration, ArrayBuffer[Morsel]]()
+  private var currentlyRunningQueries: Set[Query] = Set.empty
 
   type TaskQueue = mutable.Queue[(Minion, Task)]
 
@@ -46,6 +47,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
         minion.input.add(Task(null, null, ShutdownWorkers, null))
     }
     _alive.set(false)
+    currentlyRunningQueries.foreach(_.finished())
   }
 
   override def run(): Unit = {
@@ -81,6 +83,11 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
   private def emptyOutputBuffersAndProduceFollowUpWork(minions: Array[Minion], workQueue: TaskQueue): Unit = {
     minions foreach {
       minion =>
+        if(minion.crashed != null) {
+          println("found dead minion. let's shut everything down.")
+          shutdown()
+        }
+
         while (!minion.output.isEmpty) {
           val resultObject: ResultObject = minion.output.poll()
           createContinuationTask(minion, resultObject, workQueue)
@@ -115,6 +122,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
   private def enqueueWaitingQueries(workQueue: TaskQueue): Unit = {
     while (!queryQueue.isEmpty) {
       val query = queryQueue.poll()
+      currentlyRunningQueries = currentlyRunningQueries + query
       var current = query.pipeline
 
       while (current.dependency != NoDependencies) {
@@ -156,6 +164,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
             case None =>
               loopRefCounting.remove(iteration)
               result.query.finished()
+              currentlyRunningQueries = currentlyRunningQueries - result.query
             case _ =>
           }
         }

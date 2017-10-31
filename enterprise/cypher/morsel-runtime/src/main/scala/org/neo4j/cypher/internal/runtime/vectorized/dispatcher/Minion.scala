@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
 import java.util.concurrent.ArrayBlockingQueue
 
-import org.neo4j.cypher.internal.runtime.vectorized.ShutdownWorkers
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized.ShutdownWorkers
 import org.neo4j.cypher.internal.util.v3_4.CypherException
 
 class Minion() extends Runnable {
   val input = new ArrayBlockingQueue[Task](100)
   val output = new ArrayBlockingQueue[ResultObject](100)
   private var myQueryContext: QueryContext = _
+  var crashed: Exception = null
 
   override def run(): Unit = {
     // Take a morsel, work a morsel, return a morsel. 'Tis the life of a Worker, no more, no less.
@@ -62,6 +63,8 @@ class Minion() extends Runnable {
 
         // Uh-oh... An uncaught exception is not good. Let's kill everything.
         case e: Exception =>
+          println("Minion is shutting down")
+          crashed = e
           e.printStackTrace()
           throw e
       }
