@@ -29,10 +29,10 @@ import java.util.Arrays;
  */
 public final class UTF8StringValue extends StringValue
 {
-    //0111 1111, used for removing HIGH BIT from byte
-    private static final int HIGH_BIT_MASK = 127;
-    //0100 000, used for detecting non-continuation bytes, e.g. 10xx xxxx
-    private static final int NON_CONTINUATION_BIT_MASK = 64;
+    /** Used for removing the high order bit from byte. */
+    private static final int HIGH_BIT_MASK = 0b0111_1111;
+    /** Used for detecting non-continuation bytes. For example {@code 0b10xx_xxxx}. */
+    private static final int NON_CONTINUATION_BIT_MASK = 0b0100_0000;
 
     private volatile String value;
     private final byte[] bytes;
@@ -56,7 +56,7 @@ public final class UTF8StringValue extends StringValue
     @Override
     public boolean equals( Value value )
     {
-        if ( value instanceof org.neo4j.values.storable.UTF8StringValue )
+        if ( value instanceof UTF8StringValue )
         {
             return Arrays.equals( bytes, ((org.neo4j.values.storable.UTF8StringValue) value).bytes );
         }
@@ -77,8 +77,7 @@ public final class UTF8StringValue extends StringValue
                 s = value;
                 if ( s == null )
                 {
-                    s = value = new String( bytes, offset, length, StandardCharsets.UTF_8 );
-
+                    value = s = new String( bytes, offset, length, StandardCharsets.UTF_8 );
                 }
             }
         }
@@ -212,7 +211,46 @@ public final class UTF8StringValue extends StringValue
 
         int startIndex = trimLeftIndex();
         int endIndex = trimRightIndex();
+        if (startIndex > endIndex)
+        {
+            return StringValue.EMTPY;
+        }
+
         return new UTF8StringValue( values, startIndex, Math.max( endIndex + 1 - startIndex, 0 ) );
+    }
+
+    @Override
+    public TextValue ltrim()
+    {
+        byte[] values = bytes;
+        if ( values.length == 0 || length == 0 )
+        {
+            return this;
+        }
+
+        int startIndex = trimLeftIndex();
+        if (startIndex >= values.length)
+        {
+            return StringValue.EMTPY;
+        }
+        return new UTF8StringValue( values, startIndex, values.length - startIndex );
+    }
+
+    @Override
+    public TextValue rtrim()
+    {
+        byte[] values = bytes;
+        if ( values.length == 0 || length == 0 )
+        {
+            return this;
+        }
+
+        int endIndex = trimRightIndex();
+        if (endIndex < 0)
+        {
+            return StringValue.EMTPY;
+        }
+        return new UTF8StringValue( values, offset, endIndex + 1 - offset);
     }
 
     @Override
@@ -220,7 +258,7 @@ public final class UTF8StringValue extends StringValue
     {
         if ( !(other instanceof UTF8StringValue) )
         {
-            return super.compareTo( other );
+            return -other.compareTo( this );
         }
         UTF8StringValue otherUTF8 = (UTF8StringValue) other;
         int len1 = bytes.length;
@@ -365,7 +403,7 @@ public final class UTF8StringValue extends StringValue
             int codePoint = codePoint( (byte) (b << bytesNeeded), index, bytesNeeded );
             if ( !Character.isWhitespace( codePoint ) )
             {
-                return Math.min( index + bytesNeeded - 1, length - 1 );
+                return Math.min( index + bytesNeeded - 1, bytes.length - 1 );
             }
             index--;
 

@@ -55,9 +55,9 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
 
   property("trim") = forAll { (x: String) => {
     val sValue = stringValue(x)
-    val uTF8StringValue = utf8Value(x.getBytes(StandardCharsets.UTF_8))
-    equivalent(sValue.trim(), uTF8StringValue.ltrim().rtrim()) &&
-      equivalent(uTF8StringValue.trim(), sValue.ltrim().rtrim())}
+    val utf8StringValue = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(sValue.trim(), utf8StringValue.ltrim().rtrim()) &&
+      equivalent(utf8StringValue.trim(), sValue.ltrim().rtrim())}
   }
 
   property("ltrim") = forAll { (x: String) =>

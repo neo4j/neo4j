@@ -34,7 +34,7 @@ public class UTF8StringValueTest
     private String[] strings = {"", "1337", " ", "普通话/普通話", "\uD83D\uDE21", " a b c ", "䤹᳽", "熨", "ۼ",
             "ⲹ楡톜ഷۢ⼈늉₭샺ጚ砧攡跿家䯶鲏⬖돛犽ۼ",
             " 㺂࿝鋦毠",//first character is a thin space,
-            "\u0018", ";먵熍裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩萌 "
+            "\u0018", ";먵熍裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩萌 ", "\u001cӳ"
     };
 
     @Test
@@ -62,24 +62,58 @@ public class UTF8StringValueTest
     }
 
     @Test
+    public void shouldLTrimDifferentTypesOfStrings()
+    {
+        for ( String string : strings )
+        {
+            TextValue stringValue = stringValue( string );
+            byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
+            TextValue utf8 = utf8Value( bytes );
+            assertSame( stringValue.ltrim(), utf8.ltrim() );
+        }
+    }
+
+    @Test
+    public void trimShouldBeSameAsLtrimAndRtrim()
+    {
+        for ( String string : strings )
+        {
+            TextValue utf8 = utf8Value( string.getBytes( StandardCharsets.UTF_8 ) );
+            assertSame( utf8.trim(), utf8.ltrim().rtrim() );
+        }
+    }
+
+    @Test
+    public void shouldRTrimDifferentTypesOfStrings()
+    {
+        for ( String string : strings )
+        {
+            TextValue stringValue = stringValue( string );
+            byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
+            TextValue utf8 = utf8Value( bytes );
+            assertSame( stringValue.rtrim(), utf8.rtrim() );
+        }
+    }
+
+    @Test
     public void shouldCompareTo()
     {
-        // Given
-        String string1 = "⦹";
-        String string2 = "";
-        //String string1 = "Y";
-        //String string2 = "끷";
+         for (String string1 : strings)
+         {
+             for ( String string2 : strings )
+             {
 
-        int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
-        int y = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ).compareTo( stringValue( string2 ) );
-        int z = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ).compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
+                 int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
+                 int y = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ).compareTo( stringValue( string2 ) );
+                 int z = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) )
+                         .compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
 
-        int xx = stringValue( string2 ).compareTo( utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ) );
-        int yy = utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ).compareTo( stringValue( string1 ) );
-        int zz = utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ).compareTo( utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ) );
 
-        assertThat(x, equalTo( y ));
-        assertThat(x, equalTo( z ));
+                 assertThat( x, equalTo( y ) );
+                 assertThat( x, equalTo( z ) );
+             }
+         }
+
     }
 
     @Test
@@ -102,5 +136,6 @@ public class UTF8StringValueTest
         assertThat( format( "%s != %s", lhs, rhs ), lhs, equalTo( rhs ) );
         assertThat( format( "%s != %s", rhs, lhs ), rhs, equalTo( lhs ) );
         assertThat( format( "%s.hashCode != %s.hashCode", rhs, lhs ), lhs.hashCode(), equalTo( rhs.hashCode() ) );
+        assertThat( lhs, equalTo( rhs ) );
     }
 }
