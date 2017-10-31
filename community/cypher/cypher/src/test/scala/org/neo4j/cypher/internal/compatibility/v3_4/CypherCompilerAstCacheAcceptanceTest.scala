@@ -127,7 +127,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
 
-  test("should not care about value in cache") {
+  test("Constant values in query should use same plan") {
     runQuery("return 42 AS a")
     runQuery("return 53 AS a")
     runQuery("return 76 AS a")
@@ -135,7 +135,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 2, misses = 1, flushes = 1))
   }
 
-  test("should fold constants") {
+  test("should fold to constants and use the same plan") {
     runQuery("return 42 AS a")
     runQuery("return 5 + 3 AS a")
     runQuery("return 5 - 3 AS a")
