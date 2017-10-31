@@ -28,7 +28,6 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalE
   import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStep._
 
   def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any], Set[RewriterCondition]) = {
-    val (extractParameters, extractedParameters) = literalReplacement(statement, literalExtraction)
 
     val contract = rewriterSequencer("ASTRewriter")(
       recordScopes(semanticState),
@@ -42,7 +41,6 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalE
       expandStar(semanticState),
       enableCondition(containsNoReturnAll),
       foldConstants,
-      ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
       enableCondition(noUnnamedPatternElementsInMatch),
       nameGraphOfPatternElements,
@@ -63,7 +61,8 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalE
     )
 
     val rewrittenStatement = statement.endoRewrite(contract.rewriter)
+    val (extractParameters, extractedParameters) = literalReplacement(rewrittenStatement, literalExtraction)
 
-    (rewrittenStatement, extractedParameters, contract.postConditions)
+    (rewrittenStatement.endoRewrite(extractParameters), extractedParameters, contract.postConditions)
   }
 }
