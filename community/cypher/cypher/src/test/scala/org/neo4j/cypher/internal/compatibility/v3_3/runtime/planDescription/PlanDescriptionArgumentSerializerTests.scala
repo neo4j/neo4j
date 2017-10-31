@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTBoolean, CTList, CTNod
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, Argument => LPArgument}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, SingleRow}
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
@@ -53,12 +53,12 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("serialize nested plan expression") {
-    val argument: LogicalPlan = LPArgument(Set.empty)(solved)(Map.empty)
+    val argument: LogicalPlan = SingleRow(Set.empty)(solved)(Map.empty)
     val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
     val nested = NestedPlanExpression(argument, expression)(pos)
 
-    serialize(Expression(nested)) should equal("NestedPlanExpression(Argument)")
+    serialize(Expression(nested)) should equal("NestedPlanExpression(SingleRow)")
   }
 
   test("projection should show multiple expressions") {

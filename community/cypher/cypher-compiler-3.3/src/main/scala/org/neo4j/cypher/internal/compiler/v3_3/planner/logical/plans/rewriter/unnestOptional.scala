@@ -45,13 +45,13 @@ case object unnestOptional extends Rewriter {
 
     case apply@Apply(lhs,
       Optional(
-      e@Expand(_: Argument, _, _, _, _, _, _), _)) =>
+      e@Expand(_: SingleRow, _, _, _, _, _, _), _)) =>
         optionalExpand(e, lhs)(Seq.empty)(apply.solved)
 
     case apply@Apply(lhs,
       Optional(
       Selection(predicates,
-      e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
+      e@Expand(_: SingleRow, _, _, _, _, _, _)), _)) =>
         optionalExpand(e, lhs)(predicates)(apply.solved)
   })
 

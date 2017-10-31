@@ -64,7 +64,7 @@ case object PlanUpdates
       //FOREACH
       case foreach: ForeachPattern =>
         val innerLeaf = context.logicalPlanProducer
-          .planArgumentRow(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
+          .planSingleRow(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
         val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
         context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach)
 
@@ -176,7 +176,7 @@ case object PlanUpdates
     //          apply  onMatch
     val condApply = if (onMatchPatterns.nonEmpty) {
       val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
-      val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgumentRow(qgWithAllNeededArguments)) {
+      val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQuerySingleRow(qgWithAllNeededArguments)) {
         case (src, current) => planUpdate(src, current, first)
       }
       producer.planConditionalApply(mergeMatch, onMatch, ids)(innerContext)
@@ -188,7 +188,7 @@ case object PlanUpdates
     //       /         \
     //      /     mergeCreatePart
     // condApply
-    val createNodes = createNodePatterns.foldLeft(producer.planQueryArgumentRow(matchGraph): LogicalPlan) {
+    val createNodes = createNodePatterns.foldLeft(producer.planQuerySingleRow(matchGraph): LogicalPlan) {
       case (acc, current) => producer.planMergeCreateNode(acc, current)
     }
     val mergeCreatePart = createRelationshipPatterns.foldLeft(createNodes) {

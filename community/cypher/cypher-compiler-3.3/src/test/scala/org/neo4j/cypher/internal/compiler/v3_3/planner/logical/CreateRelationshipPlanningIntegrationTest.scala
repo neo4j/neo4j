@@ -32,7 +32,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CreateNode(
-            CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+            CreateNode(SingleRow()(solved)(), IdName("a"), Seq.empty, None)(solved),
             IdName("b"), Seq.empty, None)(solved),
           IdName("r"), IdName("a"), relType("R"), IdName("b"), None)(solved)
       )(solved)
@@ -48,7 +48,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
               CreateNode(
                 CreateNode(
                   CreateNode(
-                    CreateNode(SingleRow()(solved),IdName("a"),Seq.empty,None)(solved),
+                    CreateNode(SingleRow()(solved)(),IdName("a"),Seq.empty,None)(solved),
                     IdName("b"),Seq.empty,None)(solved),
                   IdName("c"),Seq.empty,None)(solved),
                 IdName("d"),Seq.empty,None)(solved),
@@ -66,7 +66,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateRelationship(
             CreateNode(
               CreateNode(
-                CreateNode(SingleRow()(solved),IdName("a"),Seq.empty,None)(solved),
+                CreateNode(SingleRow()(solved)(),IdName("a"),Seq.empty,None)(solved),
                 IdName("b"),Seq.empty,None)(solved),
               IdName("c"),Seq.empty,None)(solved),
             IdName("r1"),IdName("b"),relType("R1"),IdName("a"),None)(solved),
