@@ -31,12 +31,12 @@ import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, notification => notification_3_1, symbols => symbols3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.runtime.planDescription.{PlanDescriptionImpl, SingleChild, TwoChildren, _}
-import org.neo4j.cypher.internal.runtime.{DBMS, QueryStatistics, SCHEMA_WRITE, _}
+import org.neo4j.cypher.internal.runtime.planDescription._
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
@@ -70,8 +70,15 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 2.3"))
           }
         }
+      case other: v2_3.ExplainExecutionResult =>
+        val executionPlanDescription = other.executionPlanDescription
+          .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
+          .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+          .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 2.3"))
+        v2_3.ExplainExecutionResult(other.columns, executionPlanDescription, other.executionType.queryType(), other.notifications)
       case _ =>
         inner
     }
@@ -89,8 +96,15 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
           }
         }
+      case other: v3_1.ExplainExecutionResult =>
+        val executionPlanDescription = other.executionPlanDescription
+          .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
+          .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+          .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
+        v3_1.ExplainExecutionResult(other.columns, executionPlanDescription, other.executionType, other.notifications)
       case _ =>
         inner
     }
@@ -268,7 +282,13 @@ object RewindableExecutionResult {
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-    override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription())
+    override def executionPlanDescription(): InternalPlanDescription = {
+      var description = lift(inner.executionPlanDescription())
+      if (!description.arguments.exists(_.isInstanceOf[Arguments.Version])) {
+        description = description.addArgument(planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
+      }
+      description
+    }
 
     private def lift(planDescription: v3_1.planDescription.InternalPlanDescription): InternalPlanDescription = {
 

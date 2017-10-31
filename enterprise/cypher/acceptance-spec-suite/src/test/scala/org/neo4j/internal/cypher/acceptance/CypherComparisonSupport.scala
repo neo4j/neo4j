@@ -428,39 +428,23 @@ object CypherComparisonSupport {
     def prepare(): Unit = newRuntimeMonitor.clear()
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
-      internalExecutionResult.executionPlanDescription().arguments.collect {
-        case IPDRuntime(reportedRuntime) if (!runtime.acceptedRuntimeNames.contains(reportedRuntime)) =>
-          fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
-        case IPDPlanner(reportedPlanner) if (!planner.acceptedPlannerNames.contains(reportedPlanner)) =>
+      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String) = extractConfiguration(internalExecutionResult)
+      // Rule planner only exists in 3.1 and earlier
+      val rulePlannerFallback = Planners.Rule.acceptedPlannerNames.contains(reportedPlanner) && Versions.V3_1.acceptedVersionNames.contains(reportedVersion)
+
+      if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
+        fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
+      if (!planner.acceptedPlannerNames.contains(reportedPlanner))
           fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
-        case IPDVersion(reportedVersion) if(!version.acceptedVersionNames.contains(reportedVersion)) =>
+      if(!(version.acceptedVersionNames.contains(reportedVersion) || rulePlannerFallback))
           fail(s"did not use ${version.acceptedVersionNames} version - instead $reportedVersion was used. Scenario $name")
-      }
     }
 
     def checkResultForFailure(query: String, internalExecutionResult: Try[InternalExecutionResult]): Unit = {
       internalExecutionResult match {
         case Failure(_) => // not unexpected
         case Success(result) =>
-          val arguments = result.executionPlanDescription().arguments
-          val reportedRuntime = arguments.collectFirst {
-            case IPDRuntime(reportedRuntime) => reportedRuntime
-          }
-          val reportedPlanner = arguments.collectFirst {
-            case IPDPlanner(reportedPlanner) => reportedPlanner
-          }
-          val reportedVersion = arguments.collectFirst {
-            case IPDVersion(reportedVersion) => reportedVersion
-          }
-
-          // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
-          // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
-          val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_1) + Versions.Default
-          val (reportedRuntimeName, reportedPlannerName, reportedVersionName) =
-            if (versionsWithUnreportedProcedureUsage.versions.contains(version))
-              (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"))
-            else
-              (reportedRuntime.get, reportedPlanner.get, reportedVersion.get)
+          val (reportedRuntimeName: String, reportedPlannerName: String, reportedVersionName: String) = extractConfiguration(result)
 
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
             && planner.acceptedPlannerNames.contains(reportedPlannerName)
@@ -468,6 +452,29 @@ object CypherComparisonSupport {
             fail(s"Unexpectedly succeeded using $name for query $query, with $reportedVersionName and $reportedRuntimeName runtime and $reportedPlannerName planner.")
           }
       }
+    }
+
+    private def extractConfiguration(result: InternalExecutionResult): (String, String, String) = {
+      val arguments = result.executionPlanDescription().arguments
+      val reportedRuntime = arguments.collectFirst {
+        case IPDRuntime(reportedRuntime) => reportedRuntime
+      }
+      val reportedPlanner = arguments.collectFirst {
+        case IPDPlanner(reportedPlanner) => reportedPlanner
+      }
+      val reportedVersion = arguments.collectFirst {
+        case IPDVersion(reportedVersion) => reportedVersion
+      }
+
+      // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
+      // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
+      val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_2) + Versions.Default
+      val (reportedRuntimeName, reportedPlannerName, reportedVersionName) =
+        if (versionsWithUnreportedProcedureUsage.versions.contains(version))
+          (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"))
+        else
+          (reportedRuntime.get, reportedPlanner.get, reportedVersion.get)
+      (reportedRuntimeName, reportedPlannerName, reportedVersionName)
     }
 
     def +(other: TestConfiguration): TestConfiguration = other + this

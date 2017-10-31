@@ -123,7 +123,8 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
         |M, N
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3, query)
+    val result = executeWith(Configs.Interpreted + Configs.Rule3_1 - Configs.Cost3_1 +
+                              Configs.Rule2_3 - Configs.Cost2_3, query)
     val expected = List(Map("M" -> b, "N" -> a), Map("M" -> a, "N" -> b))
 
     result.toList should equal(expected)
