@@ -37,20 +37,20 @@ public final class UTF8StringValue extends StringValue
     private volatile String value;
     private final byte[] bytes;
     private final int offset;
-    private final int length;
+    private final int byteLength;
 
     UTF8StringValue( byte[] bytes, int offset, int length )
     {
         assert bytes != null;
         this.bytes = bytes;
         this.offset = offset;
-        this.length = length;
+        this.byteLength = length;
     }
 
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeUTF8( bytes, offset, length );
+        writer.writeUTF8( bytes, offset, byteLength );
     }
 
     @Override
@@ -77,7 +77,7 @@ public final class UTF8StringValue extends StringValue
                 s = value;
                 if ( s == null )
                 {
-                    value = s = new String( bytes, offset, length, StandardCharsets.UTF_8 );
+                    value = s = new String( bytes, offset, byteLength, StandardCharsets.UTF_8 );
                 }
             }
         }
@@ -87,7 +87,7 @@ public final class UTF8StringValue extends StringValue
     @Override
     public int length()
     {
-        int count = 0, i = offset, len = offset + length;
+        int count = 0, i = offset, len = offset + byteLength;
         while ( i < len )
         {
             byte b = bytes[i];
@@ -116,12 +116,12 @@ public final class UTF8StringValue extends StringValue
     {
         byte[] values = bytes;
 
-        if ( values.length == 0 || length == 0 )
+        if ( values.length == 0 || byteLength == 0 )
         {
             return 0;
         }
 
-        int hash = 1, i = offset, len = offset + length;
+        int hash = 1, i = offset, len = offset + byteLength;
         while ( i < len )
         {
             byte b = values[i];
@@ -156,13 +156,16 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    public TextValue substring( int start, int end )
+    public TextValue substring( int start, int length )
     {
         int s = Math.min( start, length() );
-        int e = Math.min( end, length() );
+        int e = Math.min( s + length, length() );
         byte[] values = bytes;
-
-        int count = 0, byteStart = -1, byteEnd = -1, i = offset, len = offset + length;
+        if ( s >= e )
+        {
+            return StringValue.EMTPY;
+        }
+        int count = 0, byteStart = -1, byteEnd = -1, i = offset, len = offset + byteLength;
         while ( i < len )
         {
             if ( count == s )
@@ -204,14 +207,14 @@ public final class UTF8StringValue extends StringValue
     {
         byte[] values = bytes;
 
-        if ( values.length == 0 || length == 0 )
+        if ( values.length == 0 || byteLength == 0 )
         {
             return this;
         }
 
         int startIndex = trimLeftIndex();
         int endIndex = trimRightIndex();
-        if (startIndex > endIndex)
+        if ( startIndex > endIndex )
         {
             return StringValue.EMTPY;
         }
@@ -223,13 +226,13 @@ public final class UTF8StringValue extends StringValue
     public TextValue ltrim()
     {
         byte[] values = bytes;
-        if ( values.length == 0 || length == 0 )
+        if ( values.length == 0 || byteLength == 0 )
         {
             return this;
         }
 
         int startIndex = trimLeftIndex();
-        if (startIndex >= values.length)
+        if ( startIndex >= values.length )
         {
             return StringValue.EMTPY;
         }
@@ -240,17 +243,17 @@ public final class UTF8StringValue extends StringValue
     public TextValue rtrim()
     {
         byte[] values = bytes;
-        if ( values.length == 0 || length == 0 )
+        if ( values.length == 0 || byteLength == 0 )
         {
             return this;
         }
 
         int endIndex = trimRightIndex();
-        if (endIndex < 0)
+        if ( endIndex < 0 )
         {
             return StringValue.EMTPY;
         }
-        return new UTF8StringValue( values, offset, endIndex + 1 - offset);
+        return new UTF8StringValue( values, offset, endIndex + 1 - offset );
     }
 
     @Override
@@ -317,8 +320,8 @@ public final class UTF8StringValue extends StringValue
             return (b << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
         case 4:
             return (b << 14) | ((bytes[i + 1] & HIGH_BIT_MASK) << 12) |
-                        ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
-                        | (bytes[i + 3] & HIGH_BIT_MASK);
+                   ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
+                   | (bytes[i + 3] & HIGH_BIT_MASK);
         default:
             throw new IllegalArgumentException( "Malformed UTF8 value" );
         }
@@ -329,7 +332,7 @@ public final class UTF8StringValue extends StringValue
      */
     private int trimLeftIndex()
     {
-        int i = offset, len = offset + length;
+        int i = offset, len = offset + byteLength;
         while ( i < len )
         {
             byte b = bytes[i];
@@ -372,7 +375,7 @@ public final class UTF8StringValue extends StringValue
      */
     private int trimRightIndex()
     {
-        int index = offset + length - 1;
+        int index = offset + byteLength - 1;
         while ( index >= 0 )
         {
             byte b = bytes[index];

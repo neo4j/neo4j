@@ -34,8 +34,8 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
     string <- Arbitrary.arbitrary[String]
     max = string.codePointCount(0, string.length)
     start <- Gen.chooseNum[Int](0, max)
-    end <- Gen.chooseNum[Int](start + 1, max)
-  } yield (string, start, end)
+    length <- Gen.chooseNum[Int](0, max)
+  } yield (string, start, length)
 
   property("equals") = forAll { (x: String) =>
     stringValue(x).equals(utf8Value(x.getBytes(StandardCharsets.UTF_8)))
@@ -92,9 +92,9 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
   }
 
   property("substring") = forAll(substringGen) {
-    case (string, start, end) =>
-      equivalent(stringValue(string).substring(start, end),
-                 utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, end))
+    case (string, start, length) =>
+      equivalent(stringValue(string).substring(start, length),
+                 utf8Value(string.getBytes(StandardCharsets.UTF_8)).substring(start, length))
   }
 
   implicit override val generatorDrivenConfig =

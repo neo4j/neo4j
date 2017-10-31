@@ -98,10 +98,13 @@ public final class CharValue extends TextValue
     }
 
     @Override
-    public TextValue substring( int start, int end )
+    public TextValue substring( int start, int length )
     {
-        assert start == 0;
-        assert end == 1;
+        if ( length != 1 && start != 0 )
+        {
+            return StringValue.EMTPY;
+        }
+
         return this;
     }
 

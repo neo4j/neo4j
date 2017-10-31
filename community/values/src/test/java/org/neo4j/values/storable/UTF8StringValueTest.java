@@ -84,6 +84,14 @@ public class UTF8StringValueTest
     }
 
     @Test
+    public void shouldSubstring()
+    {
+        String string = "ü";
+        TextValue utf8 = utf8Value( string.getBytes( StandardCharsets.UTF_8 ) );
+        assertThat( utf8.substring( 0, 1 ).stringValue(), equalTo( "ü" ) );
+    }
+
+    @Test
     public void shouldRTrimDifferentTypesOfStrings()
     {
         for ( String string : strings )
@@ -98,22 +106,20 @@ public class UTF8StringValueTest
     @Test
     public void shouldCompareTo()
     {
-         for (String string1 : strings)
-         {
-             for ( String string2 : strings )
-             {
+        for ( String string1 : strings )
+        {
+            for ( String string2 : strings )
+            {
 
-                 int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
-                 int y = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ).compareTo( stringValue( string2 ) );
-                 int z = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) )
-                         .compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
+                int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
+                int y = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) ).compareTo( stringValue( string2 ) );
+                int z = utf8Value( string1.getBytes( StandardCharsets.UTF_8 ) )
+                        .compareTo( utf8Value( string2.getBytes( StandardCharsets.UTF_8 ) ) );
 
-
-                 assertThat( x, equalTo( y ) );
-                 assertThat( x, equalTo( z ) );
-             }
-         }
-
+                assertThat( x, equalTo( y ) );
+                assertThat( x, equalTo( z ) );
+            }
+        }
     }
 
     @Test

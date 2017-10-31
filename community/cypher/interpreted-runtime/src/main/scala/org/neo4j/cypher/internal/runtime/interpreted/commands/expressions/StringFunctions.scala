@@ -123,7 +123,7 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
         val startVal = asInt(start(m, state)).value()
         length match {
           case None => text.substring(startVal)
-          case Some(func) => text.substring(startVal, startVal + asInt(func(m, state)).value())
+          case Some(func) => text.substring(startVal, asInt(func(m, state)).value())
         }
       case _ => StringFunction.notAString(value)
     }

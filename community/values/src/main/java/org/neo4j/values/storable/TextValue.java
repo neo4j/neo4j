@@ -29,15 +29,16 @@ public abstract class TextValue extends ScalarValue
 
     /**
      * The length of a TextValue is the number of Unicode code points in the text.
+     *
      * @return The number of Unicode code points.
      */
     public abstract int length();
 
-    public abstract TextValue substring( int start, int end );
+    public abstract TextValue substring( int start, int length );
 
-    public TextValue substring( int start)
+    public TextValue substring( int start )
     {
-        return substring( start, length() );
+        return substring( start, Math.max( length() - start, start ) );
     }
 
     public abstract TextValue trim();

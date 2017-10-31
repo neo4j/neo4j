@@ -67,7 +67,6 @@ public abstract class StringValue extends TextValue
         return format( "String(\"%s\")", value() );
     }
 
-
     @Override
     public String stringValue()
     {

@@ -86,10 +86,10 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
-    public TextValue substring( int start, int end )
+    public TextValue substring( int start, int length )
     {
         int s = Math.min( start, length() );
-        int e = Math.min( end, length() );
+        int e = Math.min( s + length, length() );
         int codePointStart = value.offsetByCodePoints( 0, s );
         int codePointEnd = value.offsetByCodePoints( 0, e );
 
