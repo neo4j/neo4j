@@ -22,7 +22,6 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.Node
 
 class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -104,7 +103,7 @@ class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with N
                   |WHERE ALL(id IN wps WHERE id IN EXTRACT(n IN nodes(p) | n.id))
                   |WITH p, size(nodes(p)) as length order by length limit 1
                   |RETURN EXTRACT(n IN nodes(p) | n.id) as nodes""".stripMargin
-    val results = executeWithCostPlannerOnly(query)
+    val results = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     results.toList should equal(List(Map("nodes" -> List(1,2,3,4,14,13,26))))
   }
 
@@ -133,8 +132,8 @@ class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with N
     shortestPathWithoutPredicate.size should be(1)
     val withPredicateOther = shortestPathWithPredicate.head.arguments.map(_.toString).mkString(", ")
     val withoutPredicateOther = shortestPathWithoutPredicate.head.arguments.map(_.toString).mkString(", ")
-    withPredicateOther should include("RelationshipFunction")
-    withoutPredicateOther should not include "RelationshipFunction"
+    withPredicateOther should include("relationships")
+    withoutPredicateOther should not include "relationships"
   }
 
   def executeUsingCostPlannerOnly(query: String) =
