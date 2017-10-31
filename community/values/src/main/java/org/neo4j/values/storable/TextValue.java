@@ -35,6 +35,11 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue substring( int start, int end );
 
+    public TextValue substring( int start)
+    {
+        return substring( start, length() );
+    }
+
     public abstract TextValue trim();
 
     public abstract TextValue ltrim();

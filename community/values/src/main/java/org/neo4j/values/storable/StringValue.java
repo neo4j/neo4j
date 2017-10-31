@@ -72,9 +72,11 @@ public abstract class StringValue extends TextValue
     @Override
     public TextValue substring( int start, int end )
     {
+        int s = Math.min( start, length() );
+        int e = Math.min( end, length() );
         String value = value();
-        int codePointStart = value.offsetByCodePoints( 0, start );
-        int codePointEnd = value.offsetByCodePoints( 0, end );
+        int codePointStart = value.offsetByCodePoints( 0, s );
+        int codePointEnd = value.offsetByCodePoints( 0, e );
 
         return Values.stringValue( value.substring( codePointStart, codePointEnd ) );
     }

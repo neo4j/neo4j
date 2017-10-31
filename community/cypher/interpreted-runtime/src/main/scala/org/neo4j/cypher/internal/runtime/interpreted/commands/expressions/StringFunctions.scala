@@ -88,7 +88,6 @@ case class ToUpperFunction(argument: Expression) extends StringFunction(argument
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case NO_VALUE => NO_VALUE
     case t: TextValue => t.ltrim()
     case _ => StringFunction.notAString(value)
   }
@@ -99,7 +98,6 @@ case class LTrimFunction(argument: Expression) extends StringFunction(argument) 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case NO_VALUE => NO_VALUE
     case t: TextValue => t.rtrim()
     case _ => StringFunction.notAString(value)
   }
@@ -110,7 +108,6 @@ case class RTrimFunction(argument: Expression) extends StringFunction(argument) 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case NO_VALUE => NO_VALUE
     case t: TextValue => t.trim()
     case _ => StringFunction.notAString(value)
   }
@@ -121,24 +118,15 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val a = orig(m, state)
-    a match {
-      case NO_VALUE => NO_VALUE
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
       case text: TextValue =>
-        // if start goes off the end of the string, let's be nice and handle that.
-        val incomingLength = text.length
-        val startVal = Math.min(incomingLength, asInt(start(m, state)).value())
-
-        // if length goes off the end of the string, let's be nice and handle that.
-        val lengthVal = length match {
-          case None => incomingLength - startVal
-          case Some(func) => Math.min(incomingLength - startVal, asInt(func(m, state)).value())
+        val startVal = asInt(start(m, state)).value()
+        length match {
+          case None => text.substring(startVal)
+          case Some(func) => text.substring(startVal, startVal + asInt(func(m, state)).value())
         }
-        text.substring(startVal, startVal + lengthVal)
-      case _ => StringFunction.notAString(a)
+      case _ => StringFunction.notAString(value)
     }
-  }
 
   override def arguments = Seq(orig, start) ++ length
 
@@ -219,21 +207,9 @@ case class SplitFunction(orig: Expression, separator: Expression)
 case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val value = orig(m, state)
-    value match {
-      case NO_VALUE => NO_VALUE
-      case origVal: TextValue =>
-        val startVal = 0
-        val expectedLength = asInt(length(m, state)).value()
-        // if length goes off the end of the string, let's be nice and handle that.
-        val lengthVal = if (origVal.length < expectedLength + startVal)
-          origVal.length
-        else
-          expectedLength
-        origVal.substring(startVal, startVal + lengthVal)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+      case origVal: TextValue => origVal.substring(0, asInt(length(m, state)).value())
       case _ => StringFunction.notAString(value)
-    }
   }
 
   override def arguments = Seq(orig, length)
@@ -247,19 +223,15 @@ case class LeftFunction(orig: Expression, length: Expression)
 case class RightFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val value = orig(m, state)
-    value match {
-      case NO_VALUE => NO_VALUE
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
       case origVal: TextValue =>
         // if length goes off the end of the string, let's be nice and handle that.
-        val lengthVal = if (origVal.length < asInt(length(m, state)).value()) origVal.length
-        else asInt(length(m, state)).value()
+        val lengthVal = asInt(length(m, state)).value()
+        if (lengthVal < 0) throw new IndexOutOfBoundsException(s"negative length")
         val startVal = origVal.length - lengthVal
-        origVal.substring(startVal, startVal + lengthVal)
+        origVal.substring(Math.max(0,startVal))
       case _ => StringFunction.notAString(value)
     }
-  }
 
   override def arguments = Seq(orig, length)
 

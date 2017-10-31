@@ -159,18 +159,18 @@ public final class UTF8StringValue extends StringValue
     @Override
     public TextValue substring( int start, int end )
     {
-        assert start > 0;
-        assert end > start && end < length();
+        int s = Math.min( start, length() );
+        int e = Math.min( end, length() );
         byte[] values = bytes;
 
         int count = 0, byteStart = -1, byteEnd = -1, i = offset, len = offset + length;
         while ( i < len )
         {
-            if ( count == start )
+            if ( count == s )
             {
                 byteStart = i;
             }
-            if ( count == end )
+            if ( count == e )
             {
                 byteEnd = i;
                 break;
