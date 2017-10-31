@@ -24,7 +24,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.CommunityInterpreted
+  val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost3_2
   val expectedToSucceedNoCost = Configs.CommunityInterpreted - Configs.Cost - Configs.Cost3_2
 
   test("START n=node:index(key = \"value\") RETURN n") {

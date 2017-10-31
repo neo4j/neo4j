@@ -33,9 +33,9 @@ import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.procedure.Mode
+import org.neo4j.values.storable.Values
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 
 class EagerizationAcceptanceTest
@@ -190,6 +190,8 @@ class EagerizationAcceptanceTest
 
   test("should not introduce extra eagerness after CALL of writing procedure") {
     // Given
+    var counter = Counter()
+
     registerProcedure("user.mkRel") { builder =>
       builder.in("x", Neo4jTypes.NTNode)
       builder.in("y", Neo4jTypes.NTNode)
@@ -204,6 +206,9 @@ class EagerizationAcceptanceTest
             val nodeX = input(0).asInstanceOf[Node]
             val nodeY = input(1).asInstanceOf[Node]
             val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
+            val prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" )
+            statement.dataWriteOperations().relationshipSetProperty(rel, prop, Values.of(counter.counted))
+            counter += 1
             RawIterator.of(Array(new java.lang.Long(rel)))
           } finally {
             statement.close()
@@ -214,12 +219,14 @@ class EagerizationAcceptanceTest
 
     createNode()
     createNode()
-    val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel"
+    val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel.foo"
 
     // Correct! Eagerization happens as part of query context operation
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query, expectedDifferentResults = Configs.AbsolutelyAll,
+    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query,
+      executeBefore = () => counter.reset(),
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
-    result.size should equal(4)
+
+    result.toSet should equal(Set(Map("rel.foo" -> 0), Map("rel.foo" -> 1), Map("rel.foo" -> 2), Map("rel.foo" -> 3)))
   }
 
   test("should not introduce extra eagerness after CALL of writing void procedure") {
@@ -239,7 +246,9 @@ class EagerizationAcceptanceTest
             val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
             val nodeX = input(0).asInstanceOf[Node]
             val nodeY = input(1).asInstanceOf[Node]
-            statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
+            val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
+            val prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" )
+            statement.dataWriteOperations().relationshipSetProperty(rel, prop, Values.of(counter.counted))
             counter += 1
             RawIterator.empty()
           } finally {
@@ -251,17 +260,15 @@ class EagerizationAcceptanceTest
 
     createNode()
     createNode()
-    val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel"
+    val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel.foo"
 
-    // only run against one scenario, otherwise count increments unpredictably due to fallback
     // Correct! Eagerization happens as part of query context operation
     val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query,
       executeBefore = () => counter.reset(),
-      expectedDifferentResults = Configs.AbsolutelyAll,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
-    result.size should equal(4)
     counter.counted should equal(4)
+    result.toSet should equal(Set(Map("rel.foo" -> 0), Map("rel.foo" -> 1), Map("rel.foo" -> 2), Map("rel.foo" -> 3)))
   }
 
   test("should not introduce extra eagerness after CALL of reading procedure") {

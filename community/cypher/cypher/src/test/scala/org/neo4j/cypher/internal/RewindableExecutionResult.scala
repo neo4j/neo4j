@@ -31,11 +31,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1, v3_2}
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, notification => notification_3_1, symbols => symbols3_1}
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection => SemanticDirection3_2, notification => notification_3_2, symbols => symbols3_2}
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDirection2_3}
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, symbols => symbols3_1}
+import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection => SemanticDirection3_2, symbols => symbols3_2}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
@@ -73,8 +72,15 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 2.3"))
           }
         }
+      case other: v2_3.ExplainExecutionResult =>
+        val executionPlanDescription = other.executionPlanDescription
+          .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
+          .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+          .addArgument(v2_3.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 2.3"))
+        v2_3.ExplainExecutionResult(other.columns, executionPlanDescription, other.executionType.queryType(), other.notifications)
       case _ =>
         inner
     }
@@ -92,8 +98,15 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
           }
         }
+      case other: v3_1.ExplainExecutionResult =>
+        val executionPlanDescription = other.executionPlanDescription
+          .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
+          .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+          .addArgument(v3_1.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
+        v3_1.ExplainExecutionResult(other.columns, executionPlanDescription, other.executionType, other.notifications)
       case _ =>
         inner
     }
@@ -111,8 +124,15 @@ object RewindableExecutionResult {
               .executionPlanDescription()
               .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
               .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+              .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.2"))
           }
         }
+      case other: v3_2.ExplainExecutionResult =>
+        val executionPlanDescription = other.executionPlanDescription
+          .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Planner(planner.name))
+          .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Runtime(runtime.name))
+          .addArgument(v3_2.planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.2"))
+        v3_2.ExplainExecutionResult(other.columns, executionPlanDescription, other.executionType, other.notifications)
       case _ =>
         inner
     }
@@ -292,7 +312,13 @@ object RewindableExecutionResult {
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-    override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription())
+    override def executionPlanDescription(): InternalPlanDescription = {
+      var description = lift(inner.executionPlanDescription())
+      if (!description.arguments.exists(_.isInstanceOf[Arguments.Version])) {
+        description = description.addArgument(planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
+      }
+      description
+    }
 
     private def lift(planDescription: v3_1.planDescription.InternalPlanDescription): InternalPlanDescription = {
 
@@ -431,7 +457,13 @@ object RewindableExecutionResult {
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-    override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription())
+    override def executionPlanDescription(): InternalPlanDescription = {
+      var description = lift(inner.executionPlanDescription())
+      if (!description.arguments.exists(_.isInstanceOf[Arguments.Version])) {
+        description = description.addArgument(planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.2"))
+      }
+      description
+    }
 
     private def lift(planDescription: v3_2.planDescription.InternalPlanDescription): InternalPlanDescription = {
 
