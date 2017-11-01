@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.Ascending
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.intValue
 
 import scala.collection.mutable
 
@@ -42,6 +43,37 @@ class PreSortOperatorTest extends CypherFunSuite {
     sortOperator.operate(new Iteration(None), data, null, null)
 
     data.longs should equal(Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9))
+  }
+
+  test("sort a morsel with a one long slot and one ref slot, order by ref") {
+    val slot1 = LongSlot(0, nullable = false, CTNode)
+    val slot2 = RefSlot(0, nullable = false, CTNumber)
+    val columnOrdering = Seq(Ascending(slot2))
+    val info = new PipelineInformation(mutable.Map("apa1" -> slot1, "apa2" -> slot2), 1, 1)
+    val sortOperator = new PreSortOperator(columnOrdering, info)
+
+    val longs = Array[Long](
+      6, 5, 4,
+      9, 8, 7,
+      3, 2, 1)
+    val refs = Array[AnyValue](
+      intValue(6), intValue(5), intValue(4),
+      intValue(9), intValue(8), intValue(7),
+      intValue(3), intValue(2), intValue(1))
+    val data = new Morsel(longs, refs, longs.length)
+
+    sortOperator.operate(new Iteration(None), data, null, null)
+
+    data.longs should equal(Array[Long](
+      1, 2, 3,
+      4, 5, 6,
+      7, 8, 9))
+    data.refs should equal(Array[AnyValue](
+      intValue(1), intValue(2), intValue(3),
+      intValue(4), intValue(5), intValue(6),
+      intValue(7), intValue(8), intValue(9))
+    )
+
   }
 
   test("sort a morsel with a two long columns by one") {

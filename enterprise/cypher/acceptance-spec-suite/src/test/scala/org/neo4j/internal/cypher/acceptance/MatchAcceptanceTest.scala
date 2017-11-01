@@ -53,8 +53,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
           }
         }
 
-        val NODES = 100
-        val EDGES = 100
+        val NODES = 1000
+        val EDGES = 10000
 
         val nodes = (0 to NODES).map { x =>
           ping()
@@ -79,7 +79,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val res = db.execute(q)
     val visitor = new ResultVisitor[RuntimeException] {
       override def visit(row: Result.ResultRow): Boolean = {
-        println(s"${Thread.currentThread().getId} -=> ${row.getNode("b")}")
+        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
         true
       }
     }

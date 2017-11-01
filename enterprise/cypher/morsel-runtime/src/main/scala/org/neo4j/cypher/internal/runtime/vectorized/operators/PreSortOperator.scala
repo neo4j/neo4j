@@ -62,8 +62,14 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineIn
     var idx = 0
     while (idx < data.validRows) {
       val to = arrayToSort(idx).asInstanceOf[Int]
-      System.arraycopy(data.longs, idx * longCount, newLongs, to * longCount, longCount)
-      System.arraycopy(data.refs, idx * refCount, newRefs, refCount * to, refCount)
+
+      val fromLong = to * longCount
+      val fromRef = to * refCount
+      val toLong = idx * longCount
+      val toRef = idx * refCount
+
+      System.arraycopy(data.longs, fromLong, newLongs, toLong, longCount)
+      System.arraycopy(data.refs, fromRef, newRefs, toRef, refCount)
 
       idx += 1
     }

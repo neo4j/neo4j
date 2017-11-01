@@ -67,9 +67,9 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
       System.arraycopy(next.m.longs, fromLongIdx, output.longs, toLongIdx, longCount)
       System.arraycopy(next.m.refs, fromRefIdx, output.refs, toRefIdx, refCount)
       writePos += 1
+      next.pos += 1
 
       // If there is more data in this Morsel, we'll re-insert it into the sortedInputs
-      next.pos += 1
       if (next.pos < next.m.validRows) {
         sortedInputs.add(next)
       }
