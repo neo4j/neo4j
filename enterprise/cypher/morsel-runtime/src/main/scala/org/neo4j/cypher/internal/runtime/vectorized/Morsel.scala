@@ -33,7 +33,7 @@ class Morsel(val longs: Array[Long], val refs: Array[AnyValue], var validRows: I
 object Morsel {
   def create(slotInformation: PipelineInformation, size: Int): Morsel = {
     val longs = new Array[Long](slotInformation.numberOfLongs * size)
-    val refs = new Array[AnyValue](slotInformation.numberOfLongs * size)
+    val refs = new Array[AnyValue](slotInformation.numberOfReferences * size)
     new Morsel(longs, refs, size)
   }
 }

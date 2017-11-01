@@ -54,14 +54,14 @@ class ExpandAllOperator(toPipeline: PipelineInformation,
     var iterationState: Iteration = null
 
     source match {
-      case WorkWithLazyData(data, is) =>
+      case StartLoopWithSingleMorsel(data, is) =>
         input = data
         iterationState = is
-      case ContinueWith(ContinueWithData(data, index, is)) =>
+      case ContinueLoopWith(ContinueWithData(data, index, is)) =>
         input = data
         readPos = index
         iterationState = is
-      case ContinueWith(ContinueWithDataAndSource(data, index, rels, is)) =>
+      case ContinueLoopWith(ContinueWithDataAndSource(data, index, rels, is)) =>
         input = data
         readPos = index
         iterationState = is

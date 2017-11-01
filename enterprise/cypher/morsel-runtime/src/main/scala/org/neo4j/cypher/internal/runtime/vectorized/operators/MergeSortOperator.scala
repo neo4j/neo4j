@@ -45,13 +45,13 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
     var writePos = 0
 
     message match {
-      case WorkWithEagerData(inputs, is) =>
+      case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
         sortedInputs = new PriorityQueue[MorselWithReadPos](inputs.size, comparator)
         inputs.foreach { morsel =>
-          sortedInputs.add(new MorselWithReadPos(morsel, 0))
+          if (morsel.validRows > 0) sortedInputs.add(new MorselWithReadPos(morsel, 0))
         }
-      case ContinueWith(ContinueWithSource(inputs: PriorityQueue[MorselWithReadPos], is, _)) =>
+      case ContinueLoopWith(ContinueWithSource(inputs: PriorityQueue[MorselWithReadPos], is, _)) =>
         sortedInputs = inputs
         iterationState = is
     }
@@ -69,8 +69,8 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
       writePos += 1
 
       // If there is more data in this Morsel, we'll re-insert it into the sortedInputs
-      if(next.pos < next.m.validRows){
-        next.pos += 1
+      next.pos += 1
+      if (next.pos < next.m.validRows) {
         sortedInputs.add(next)
       }
     }

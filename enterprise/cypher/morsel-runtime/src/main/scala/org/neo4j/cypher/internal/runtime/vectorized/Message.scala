@@ -30,10 +30,10 @@ sealed trait Message {
 * Once per query, the InitIteration message will come with the initQuery flag set. Until this first run has finished,
 * not other runs will be scheduled, giving the pipeline a chance to initialise global state.
 * */
-case class InitIteration(iterationState: Iteration) extends Message
-case class WorkWithLazyData(data: Morsel, iterationState: Iteration) extends Message
-case class WorkWithEagerData(data: Seq[Morsel], iterationState: Iteration) extends Message
-case class ContinueWith(continuation: Continuation) extends Message {
+case class StartLeafLoop(iterationState: Iteration) extends Message
+case class StartLoopWithSingleMorsel(data: Morsel, iterationState: Iteration) extends Message
+case class StartLoopWithEagerData(data: Seq[Morsel], iterationState: Iteration) extends Message
+case class ContinueLoopWith(continuation: Continuation) extends Message {
   override def iterationState: Iteration = continuation.iteration
 }
 

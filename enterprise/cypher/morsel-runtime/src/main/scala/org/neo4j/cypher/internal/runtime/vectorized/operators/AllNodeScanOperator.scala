@@ -33,10 +33,10 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
     var iterationState: Iteration = null
 
     message match {
-      case InitIteration(is) =>
+      case StartLeafLoop(is) =>
         nodeIterator = context.nodeOps.allPrimitive
         iterationState = is
-      case ContinueWith(ContinueWithSource(it, is, _)) =>
+      case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
         nodeIterator = it.asInstanceOf[PrimitiveLongIterator]
         iterationState = is
     }

@@ -132,7 +132,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
       val morsel = Morsel.create(current.slotInformation, MORSEL_SIZE)
       val iteration = new Iteration(None)
       startLoop(iteration)
-      workQueue.enqueue((null, Task(current, query, InitIteration(iteration), morsel)))
+      workQueue.enqueue((null, Task(current, query, StartLeafLoop(iteration), morsel)))
     }
   }
 
@@ -142,7 +142,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
         val morsel = Morsel.create(result.pipeline.slotInformation, MORSEL_SIZE)
         val task = result.createFollowContinuationTask(morsel)
         val runOn = task.message match {
-          case ContinueWith(x: Continue) if x.needsSameThread => minion
+          case ContinueLoopWith(x: Continue) if x.needsSameThread => minion
           case _ => null
         }
         workQueue.enqueue((runOn, task))
@@ -159,7 +159,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
               val data = Morsel.create(parentPipe.slotInformation, MORSEL_SIZE)
               startLoop(result.next.iteration)
               val eagerData: Seq[Morsel] = eagerAccumulation.remove(iteration).get
-              val message = WorkWithEagerData(eagerData, iteration)
+              val message = StartLoopWithEagerData(eagerData, iteration)
               workQueue.enqueue((null, Task(parentPipe, result.query, message, data)))
             case None =>
               loopRefCounting.remove(iteration)
@@ -177,7 +177,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
       case Some(daddy: Pipeline) if daddy.dependency.isInstanceOf[Lazy] =>
         // If we are feeding a lazy pipeline, we can just schedule this morsel for the next stage
         val data = Morsel.create(daddy.slotInformation, MORSEL_SIZE)
-        val message = WorkWithLazyData(result.morsel, iteration)
+        val message = StartLoopWithSingleMorsel(result.morsel, iteration)
         startLoop(iteration)
         workQueue.enqueue((null, Task(daddy, result.query, message, data)))
 

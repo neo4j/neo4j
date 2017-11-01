@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 
 class PreSortOperatorTest extends CypherFunSuite {
+
   test("sort a morsel with a single long column") {
     val slot = LongSlot(0, nullable = false, CTNode, "apa")
     val columnOrdering = Seq(Ascending(slot))
@@ -74,5 +75,32 @@ class PreSortOperatorTest extends CypherFunSuite {
       8, 1,
       9, 0)
     )
+  }
+
+  test("sort a morsel with no valid data") {
+    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val columnOrdering = Seq(Ascending(slot))
+    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val sortOperator = new PreSortOperator(columnOrdering, info)
+
+    val longs = new Array[Long](10)
+    val data = new Morsel(longs, Array[AnyValue](), 0)
+
+    sortOperator.operate(new Iteration(None), data, null, null)
+
+    data.longs should equal(Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+  }
+
+  test("sort a morsel with empty array") {
+    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val columnOrdering = Seq(Ascending(slot))
+    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val sortOperator = new PreSortOperator(columnOrdering, info)
+
+    val data = new Morsel(Array.empty, Array[AnyValue](), 0)
+
+    sortOperator.operate(new Iteration(None), data, null, null)
+
+    data.longs shouldBe empty
   }
 }

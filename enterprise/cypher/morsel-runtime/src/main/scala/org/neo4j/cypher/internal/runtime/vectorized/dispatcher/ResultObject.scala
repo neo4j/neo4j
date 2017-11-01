@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
-import org.neo4j.cypher.internal.runtime.vectorized.{Continuation, ContinueWith, Morsel, Pipeline}
+import org.neo4j.cypher.internal.runtime.vectorized.{Continuation, ContinueLoopWith, Morsel, Pipeline}
 
 case class ResultObject(pipeline: Pipeline,
                         query: Query,
                         next: Continuation,
                         morsel: Morsel) {
-  def createFollowContinuationTask(morsel: Morsel) = Task(pipeline, query, ContinueWith(next), morsel)
+  def createFollowContinuationTask(morsel: Morsel) = Task(pipeline, query, ContinueLoopWith(next), morsel)
 }

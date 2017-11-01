@@ -69,8 +69,8 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
           val predicate = converters.toCommandPredicate(predicates.head)
           new FilterOperator(pipeline, predicate)
 
-        case plans.Expand(lhs, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
-          val fromOffset = pipeline.getLongOffsetFor(from)
+        case plans.Expand(lhs, IdName(fromName), dir, types, IdName(to), IdName(relName), ExpandAll) =>
+          val fromOffset = pipeline.getLongOffsetFor(fromName)
           val relOffset = pipeline.getLongOffsetFor(relName)
           val toOffset = pipeline.getLongOffsetFor(to)
           val fromPipe = pipelines(lhs.assignedId)
