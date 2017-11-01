@@ -157,6 +157,7 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
       propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.id, _)))
     case IsMap(map) => Some(map(state.query).get(propertyKey.name) != Values.NO_VALUE)
     case null => None
+    case v: Value if v.asObject() == null => None
     case _ => throw new CypherTypeException("Expected " + variable + " to be a property container.")
   }
 

@@ -244,3 +244,37 @@ Feature: MatchAcceptance
       | (:A:B) |
       | (:A:C) |
     And no side effects
+
+  Scenario: Should handle EXISTS on node property when node is null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:TestNode)
+      """
+    When executing query:
+      """
+      MATCH (t:TestNode)
+      OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
+      RETURN t, a.Status as s, exists(a.Status) as e
+      """
+    Then the result should be:
+      | t           | s    | e    |
+      | (:TestNode) | null | null |
+    And no side effects
+
+  Scenario: Should handle NOT EXISTS on node property when node is null
+    Given an empty graph
+    And having executed:
+        """
+        CREATE (:TestNode)
+        """
+    When executing query:
+        """
+        MATCH (t:TestNode)
+        OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
+        RETURN t, SUM(CASE WHEN NOT EXISTS(a.Status) OR COALESCE(a.Status, 'Complete') <> 'Complete' THEN 1 ELSE 0 END) AS PendingCount
+        """
+    Then the result should be:
+      | t           | PendingCount |
+      | (:TestNode) | 0            |
+    And no side effects
