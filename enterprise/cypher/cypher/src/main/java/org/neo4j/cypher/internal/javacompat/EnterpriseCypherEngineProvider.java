@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
 import org.neo4j.cypher.internal.EnterpriseCompatibilityFactory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -63,6 +65,14 @@ public class EnterpriseCypherEngineProvider extends QueryEngineProvider
         EnterpriseCompatibilityFactory compatibilityFactory =
                 new EnterpriseCompatibilityFactory( inner, queryService, kernelAPI, monitors, logProvider );
         deps.satisfyDependency( compatibilityFactory );
+        try
+        {
+            deps.resolveDependency( Procedures.class ).registerProcedure( QueryEngineProcedures.class );
+        }
+        catch ( KernelException e )
+        {
+            throw new IllegalStateException( "Failed to register QueryEngineProcedures", e );
+        }
         return new ExecutionEngine( queryService, logProvider, compatibilityFactory );
     }
 }
