@@ -495,15 +495,13 @@ public class Neo4jPack
             if ( size == UNKNOWN_SIZE )
             {
                 list = new ArrayList<>();
-                boolean more = true;
-                while ( more )
+                while ( true )
                 {
                     PackType keyType = peekNextType();
                     switch ( keyType )
                     {
                     case END_OF_STREAM:
                         unpack();
-                        more = false;
                         break;
                     default:
                         list.add( unpack() );
@@ -532,8 +530,7 @@ public class Neo4jPack
             if ( size == UNKNOWN_SIZE )
             {
                 map = new HashMap<>();
-                boolean more = true;
-                while ( more )
+                while ( true )
                 {
                     PackType keyType = peekNextType();
                     String key;
@@ -542,7 +539,6 @@ public class Neo4jPack
                     {
                     case END_OF_STREAM:
                         unpack();
-                        more = false;
                         break;
                     case STRING:
                         key = unpackString();
