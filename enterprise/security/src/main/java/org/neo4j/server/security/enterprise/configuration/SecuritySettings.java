@@ -271,6 +271,12 @@ public class SecuritySettings implements LoadableConfig
     public static final Setting<Duration> auth_cache_ttl =
             setting( "dbms.security.auth_cache_ttl", DURATION, "10m" );
 
+    @Description( "Enable time-based eviction of the authentication and authorization info cache for " +
+                  "external auth providers (LDAP or plugin). Disabling this setting will make the cache " +
+                  "live forever and only be evicted when `dbms.security.auth_cache_max_capacity` is exceeded." )
+    public static final Setting<Boolean> auth_cache_use_ttl =
+            setting( "dbms.security.auth_cache_use_ttl", BOOLEAN, "true" );
+
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
     public static final Setting<Integer> auth_cache_max_capacity =
             setting( "dbms.security.auth_cache_max_capacity", INTEGER, "10000" );
