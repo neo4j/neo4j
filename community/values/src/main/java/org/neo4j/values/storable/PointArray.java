@@ -22,14 +22,15 @@ package org.neo4j.values.storable;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
-public abstract class BooleanArray extends ArrayValue
+public abstract class PointArray extends ArrayValue
 {
-    abstract boolean[] value();
+    abstract Point[] value();
 
     @Override
     public int length()
@@ -37,15 +38,16 @@ public abstract class BooleanArray extends ArrayValue
         return value().length;
     }
 
-    public boolean booleanValue( int offset )
+    @Override
+    public boolean equals( Geometry[] x )
     {
-        return value()[offset];
+        return Arrays.equals( value(), x );
     }
 
     @Override
     public boolean equals( Value other )
     {
-        return other.equals( this.value() );
+        return false;
     }
 
     @Override
@@ -87,7 +89,7 @@ public abstract class BooleanArray extends ArrayValue
     @Override
     public boolean equals( boolean[] x )
     {
-        return Arrays.equals( value(), x );
+        return false;
     }
 
     @Override
@@ -103,15 +105,36 @@ public abstract class BooleanArray extends ArrayValue
     }
 
     @Override
-    public boolean equals( Geometry[] x )
+    public ValueGroup valueGroup()
     {
-        return false;
+        return ValueGroup.GEOMETRY_ARRAY;
+    }
+
+    @Override
+    public NumberType numberType()
+    {
+        return NumberType.NO_NUMBER;
+    }
+
+    @Override
+    public final boolean eq( Object other )
+    {
+        if ( other == null )
+        {
+            return false;
+        }
+
+        if ( other instanceof SequenceValue )
+        {
+            return this.equals( (SequenceValue) other );
+        }
+        return other instanceof Value && equals( (Value) other );
     }
 
     @Override
     public int computeHash()
     {
-        return NumberValues.hash( value() );
+        return Arrays.hashCode( value() );
     }
 
     @Override
@@ -133,62 +156,24 @@ public abstract class BooleanArray extends ArrayValue
         return value();
     }
 
-    public int compareTo( BooleanArray other )
-    {
-        return NumberValues.compareBooleanArrays( this, other );
-    }
-
-    @Override
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.BOOLEAN_ARRAY;
-    }
-
-    @Override
-    public NumberType numberType()
-    {
-        return NumberType.NO_NUMBER;
-    }
-
     @Override
     public String prettyPrint()
     {
         return Arrays.toString( value() );
     }
 
-    @Override
-    public final boolean eq( Object other )
+    static final class Direct extends PointArray
     {
-        if ( other == null )
-        {
-            return false;
-        }
+        final Point[] value;
 
-        if ( other instanceof SequenceValue )
-        {
-            return this.equals( (SequenceValue) other );
-        }
-        return other instanceof Value && equals( (Value) other );
-    }
-
-    @Override
-    public AnyValue value( int position )
-    {
-        return Values.booleanValue( booleanValue( position ) );
-    }
-
-    static final class Direct extends BooleanArray
-    {
-        private final boolean[] value;
-
-        Direct( boolean[] value )
+        Direct( Point[] value )
         {
             assert value != null;
             this.value = value;
         }
 
         @Override
-        boolean[] value()
+        Point[] value()
         {
             return value;
         }
@@ -196,7 +181,13 @@ public abstract class BooleanArray extends ArrayValue
         @Override
         public String toString()
         {
-            return format( "BooleanArray%s", Arrays.toString( value() ) );
+            return format( "PointArray%s", Arrays.toString( value() ) );
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return Values.point( value[offset] );
         }
     }
 }

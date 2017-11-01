@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.neo4j.cypher.internal.runtime.Points;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 public class ValueToObjectSerializer extends BaseToObjectValueWriter<RuntimeException>
 {
@@ -51,6 +51,6 @@ public class ValueToObjectSerializer extends BaseToObjectValueWriter<RuntimeExce
     @Override
     protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
-        return Points.fromValue( crs, coordinate );
+        return Values.pointValue( crs, coordinate );
     }
 }

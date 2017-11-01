@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.graphdb.spatial.Geometry;
+
 abstract class NumberArray extends ArrayValue
 {
     abstract int compareTo( IntegralArray other );
@@ -39,6 +41,12 @@ abstract class NumberArray extends ArrayValue
 
     @Override
     public boolean equals( String[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( Geometry[] x )
     {
         return false;
     }

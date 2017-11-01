@@ -332,6 +332,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(GeographicPoint(12.78, 56.7, CRS.WGS84))
     // And CRS names should equal
-    point.getCRS.getType should equal("WGS-84")
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
 }

@@ -133,15 +133,21 @@ public final class ArrayEncoder
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
         {
-            throw new UnsupportedOperationException( "Arrays of points are not yet supported." );
-            // Possible implementation:
-//            builder.append( (double) crs.code() );
-//            for ( double c : coordinate )
-//            {
-//                builder.append( "," );
-//                builder.append( c );
-//            }
-//            builder.append( '|' );
+            builder.append( crs.table.tableId );
+            builder.append( ':' );
+            builder.append( crs.code );
+            builder.append( ':' );
+            int index = 0;
+            for ( double c : coordinate )
+            {
+                if ( index > 0 )
+                {
+                    builder.append( ';' );
+                }
+                builder.append( c );
+                index++;
+            }
+            builder.append( '|' );
         }
 
         @Override
@@ -182,6 +188,7 @@ public final class ArrayEncoder
             case DOUBLE: return 'D';
             case CHAR: return 'L';
             case STRING: return 'L';
+            case POINT: return 'P';
             default: throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
             }
         }

@@ -52,7 +52,7 @@ public enum GeometryType
                 }
             };
 
-    public final int gtype;
+    private final int gtype;
 
     GeometryType( int gtype )
     {

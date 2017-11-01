@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.graphdb.spatial.Geometry;
+
 /**
  * Not a value.
  *
@@ -120,6 +122,12 @@ final class NoValue extends Value
 
     @Override
     public boolean equals( String[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( Geometry[] x )
     {
         return false;
     }
