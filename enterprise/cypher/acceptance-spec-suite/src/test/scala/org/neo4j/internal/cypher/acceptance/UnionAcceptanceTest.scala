@@ -109,7 +109,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
     result2.toList should equal(expected2)
   }
 
-  test("Should work when doing union of nodes in permutated order") {
+  test("Should work when doing union of nodes in permuted order") {
     val a = createLabeledNode("A")
     val b = createLabeledNode("B")
 
@@ -130,7 +130,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
     result.toList should equal(expected)
   }
 
-  test("Should work when doing union with permutated return varibles") {
+  test("Should work when doing union with permutated return variables") {
     createLabeledNode(Map("a" -> "a", "b" -> "b"), "A")
     createLabeledNode(Map("a" -> "b", "b" -> "a"), "B")
 

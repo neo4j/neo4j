@@ -37,13 +37,13 @@ case class FakeSlottedPipe(data: Iterator[Map[String, Any]], pipeline: PipelineI
       values foreach {
         case (key, value) =>
           pipeline(key) match {
-            case LongSlot(offset, _, _, _) if value == null =>
+            case LongSlot(offset, _, _) if value == null =>
               result.setLongAt(offset, -1)
 
-            case LongSlot(offset, _, _, _) =>
+            case LongSlot(offset, _, _) =>
               result.setLongAt(offset, value.asInstanceOf[Number].longValue())
 
-            case RefSlot(offset, _, _, _) =>
+            case RefSlot(offset, _, _) =>
               result.setRefAt(offset, asValue(value))
           }
       }

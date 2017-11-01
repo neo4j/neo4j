@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Values.stringValue
 
 class PrimitiveExecutionContextTest extends CypherFunSuite {
 
-  private def pipeline(longs: Int, refs: Int) = new PipelineInformation(Map.empty, longs, refs)
+  private def pipeline(longs: Int, refs: Int) = PipelineInformation(Map.empty, longs, refs)
 
   test("copy fills upp the first few elements") {
     val input = PrimitiveExecutionContext(pipeline(2, 1))

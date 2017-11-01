@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
@@ -41,8 +41,6 @@ import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
-
-import scala.collection.immutable
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
@@ -164,10 +162,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         OptionalSlottedPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
       case Projection(_, expressions) =>
-        val expressionsWithSlots = expressions map {
-          case (k, e) =>
+        val expressionsWithSlots: Map[Int, Expression] = expressions collect {
+          case (k, e) if refSlotAndNotAlias(pipeline, k) =>
             val slot = pipeline.get(k).get
-            slot -> convertExpressions(e)
+            slot.offset -> convertExpressions(e)
         }
         ProjectionSlottedPipe(source, expressionsWithSlots)(id)
 
@@ -266,6 +264,11 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
+  private def refSlotAndNotAlias(pipeline: PipelineInformation, k: String) = {
+    !pipeline.isAlias(k) &&
+      pipeline.get(k).forall(_.isInstanceOf[RefSlot])
+  }
+
   private def translateColumnOrder(pipeline: PipelineInformation, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
     case plans.Ascending(IdName(name)) => {
       pipeline.get(name) match {
@@ -288,20 +291,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   }
 
   private def createProjectionForIdentifier(pipelineInformation1: PipelineInformation)(identifier: String) = {
-    pipelineInformation1(identifier) match {
-      case LongSlot(offset, false, CTNode, _) =>
-        identifier -> slottedExpressions.NodeFromSlot(offset)
-      case LongSlot(offset, true, CTNode, _) =>
-        identifier -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
-      case LongSlot(offset, false, CTRelationship, _) =>
-        identifier -> slottedExpressions.RelationshipFromSlot(offset)
-      case LongSlot(offset, true, CTRelationship, _) =>
-        identifier -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
-      case RefSlot(offset, _, _, _) =>
-        identifier -> slottedExpressions.ReferenceFromSlot(offset)
-      case _ =>
-        throw new InternalException(s"Did not find `$identifier` in the pipeline information")
-    }
+    val slot = pipelineInformation1.get(identifier).getOrElse(
+      throw new InternalException(s"Did not find `$identifier` in the pipeline information")
+    )
+    identifier -> SlottedPipeBuilder.projectSlotExpression(slot)
   }
 
   private def buildPredicate(expr: frontEndAst.Expression)
@@ -371,29 +364,21 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 }
 
 object SlottedPipeBuilder {
-  private def createProjectionsForResult(columns: Seq[String],
-                                         pipelineInformation1: PipelineInformation
-                                        ): Seq[(String, commandExpressions.Expression)] = {
-    val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
-      k =>
-        pipelineInformation1(k) match {
-          case LongSlot(offset, false, CTNode, _) =>
-            k -> slottedExpressions.NodeFromSlot(offset)
-          case LongSlot(offset, true, CTNode, _) =>
-            k -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
-          case LongSlot(offset, false, CTRelationship, _) =>
-            k -> slottedExpressions.RelationshipFromSlot(offset)
-          case LongSlot(offset, true, CTRelationship, _) =>
-            k -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
+  private def projectSlotExpression(slot: Slot): Expression = slot match {
+    case LongSlot(offset, false, CTNode) =>
+      slottedExpressions.NodeFromSlot(offset)
+    case LongSlot(offset, true, CTNode) =>
+      slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
+    case LongSlot(offset, false, CTRelationship) =>
+      slottedExpressions.RelationshipFromSlot(offset)
+    case LongSlot(offset, true, CTRelationship) =>
+      slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
 
-          case RefSlot(offset, _, _, _) =>
-            k -> slottedExpressions.ReferenceFromSlot(offset)
+    case RefSlot(offset, _, _) =>
+      slottedExpressions.ReferenceFromSlot(offset)
 
-          case _ =>
-            throw new InternalException(s"Did not find `$k` in the pipeline information")
-        }
-    }
-    runtimeColumns
+    case _ =>
+      throw new InternalException(s"Do not know how to project $slot")
   }
 
   type RowMapping = (ExecutionContext, QueryState) => ExecutionContext
@@ -407,30 +392,23 @@ object SlottedPipeBuilder {
       //For long slots we need to make sure both offset and types match
       //e.g we cannot allow mixing a node long slot with a relationship
       //longslot
-      case (k, s: LongSlot) => s == in.get(k).get
-      //For refslot is is ok that types etc differs, just make sure
-      //they have the same offset
-      case (k, s: RefSlot) => s.offset == in.get(k).get.offset
+      case (k, s: LongSlot) =>
+        s == in.get(k).get
+      //If both incoming and outgoing slots are refslot is is ok that types etc differs,
+      // just make sure they have the same offset
+      case (k, s: RefSlot) =>
+        val inSlot = in.get(k).get
+        inSlot.isInstanceOf[RefSlot] && s.offset == inSlot.offset
+
     }.forall(_ == true)
 
-    //If we overlap we can just pass the result right throug
-    if (overlaps) (incoming: ExecutionContext, _: QueryState) => incoming
+    //If we overlap we can just pass the result right through
+    if (overlaps) {
+      (incoming: ExecutionContext, _: QueryState) =>
+        incoming
+    }
     else {
-    //find columns where output is a reference slot but where the input is a long slot
-    val slots: immutable.Seq[LongSlot] = out.mapSlot {
-      case (k, _: RefSlot) => in.get(k).get match {
-        case ls: LongSlot => Some(ls)
-        case _ => None
-      }
-      case _ => None
-    }.flatten.toIndexedSeq
-
-      //projections contains methods for turning longslots to refslots
-      val projections: Seq[commandExpressions.Expression] = createProjectionsForResult(slots.map(_.name), in).map(_._2)
-
-      //ZIP [slot1, slot2,...] with [e1, e2, ...] to get a mapping from slot to expression
-      val expressions = slots.zip(projections).toMap
-
+      //find columns where output is a reference slot but where the input is a long slot
       val mapSlots: Iterable[(ExecutionContext, ExecutionContext, QueryState) => Unit] = out.mapSlot {
         case (k, v: LongSlot) =>
           val sourceOffset = in.getLongOffsetFor(k)
@@ -439,8 +417,9 @@ object SlottedPipeBuilder {
         case (k, v: RefSlot) =>
           in.get(k).get match {
             case l: LongSlot => //here we must map the long slot to a reference slot
+              val projectionExpression = projectSlotExpression(l) // Pre-compute projection expression
               (in, out, state) =>
-                out.setRefAt(v.offset, expressions(l)(in, state))
+                out.setRefAt(v.offset, projectionExpression(in, state))
             case _ =>
               val sourceOffset = in.getReferenceOffsetFor(k)
               (in, out, _) =>

@@ -44,8 +44,8 @@ case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe,
     nullableIdentifiers.toSeq.map { elem =>
       val elemSlot = pipelineInformation.get(elem)
       elemSlot match {
-        case Some(LongSlot(offset, true, _, _)) => { (ctx: ExecutionContext) => ctx.getLongAt(offset) == -1 }
-        case Some(RefSlot(offset, true, _, _)) => { (ctx: ExecutionContext) => ctx.getRefAt(offset) == NO_VALUE }
+        case Some(LongSlot(offset, true, _)) => { (ctx: ExecutionContext) => ctx.getLongAt(offset) == -1 }
+        case Some(RefSlot(offset, true, _)) => { (ctx: ExecutionContext) => ctx.getRefAt(offset) == NO_VALUE }
         case _ => { (ctx: ExecutionContext) => false }
       }
     }

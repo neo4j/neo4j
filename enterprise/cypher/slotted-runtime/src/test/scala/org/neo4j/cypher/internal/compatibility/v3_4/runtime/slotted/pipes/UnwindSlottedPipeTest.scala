@@ -38,7 +38,7 @@ class UnwindSlottedPipeTest extends CypherFunSuite {
       .newReference("x", nullable = false, CTAny)
 
     val outputPipeline = inputPipeline
-      .seedClone()
+      .breakPipelineAndClone()
       .newReference("y", nullable = true, CTAny)
 
     val x = inputPipeline.getReferenceOffsetFor("x")
