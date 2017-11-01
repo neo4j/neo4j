@@ -96,10 +96,35 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
         return false;
     }
 
+    public boolean equals( Point other )
+    {
+        if ( !other.getCRS().getHref().equals( this.crs.href ) )
+        {
+            return false;
+        }
+        List<Double> otherCoordinate = other.getCoordinate().getCoordinate();
+        if ( otherCoordinate.size() != this.coordinate.length )
+        {
+            return false;
+        }
+        for ( int i = 0; i < this.coordinate.length; i++ )
+        {
+            if ( otherCoordinate.get( i ) != this.coordinate[i] )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     protected boolean eq( Object other )
     {
-        return other != null && other instanceof Value && equals( (Value) other );
+        return other != null &&
+               (
+                       (other instanceof Value && equals( (Value) other )) ||
+                       (other instanceof Point && equals( (Point) other ))
+               );
     }
 
     public int compareTo( PointValue other )

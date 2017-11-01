@@ -290,6 +290,11 @@ public final class Values
         return new PointValue( crs( point.getCRS() ), coords );
     }
 
+    public static PointArray pointArray( Point[] points )
+    {
+        return new PointArray.Direct( points );
+    }
+
     public static CoordinateReferenceSystem crs( CRS crs )
     {
         if ( crs.getHref().equals( CoordinateReferenceSystem.WGS84.href ) )
@@ -483,8 +488,13 @@ public final class Values
         {
             return shortArray( copy( value, new short[value.length] ) );
         }
-
-        return null;
+        if ( value instanceof Point[] )
+        {
+            return pointArray( copy( value, new Point[value.length] ) );
+        }
+        throw new IllegalArgumentException(
+                format( "%s[] is not a supported property value type",
+                        value.getClass().getComponentType().getName() ) );
     }
 
     private static <T> T copy( Object[] value, T target )
