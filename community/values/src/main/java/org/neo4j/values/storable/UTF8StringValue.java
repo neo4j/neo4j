@@ -158,21 +158,21 @@ public final class UTF8StringValue extends StringValue
     @Override
     public TextValue substring( int start, int length )
     {
-        int s = Math.min( start, length() );
-        int e = Math.min( s + length, length() );
-        byte[] values = bytes;
-        if ( s >= e )
+        if ( start < 0 || length < 0 )
         {
-            return StringValue.EMTPY;
+            throw new IndexOutOfBoundsException( "Cannot handle negative start index nor negative length" );
         }
+
+        int end = start + length;
+        byte[] values = bytes;
         int count = 0, byteStart = -1, byteEnd = -1, i = offset, len = offset + byteLength;
         while ( i < len )
         {
-            if ( count == s )
+            if ( count == start )
             {
                 byteStart = i;
             }
-            if ( count == e )
+            if ( count == end )
             {
                 byteEnd = i;
                 break;
@@ -196,9 +196,10 @@ public final class UTF8StringValue extends StringValue
         {
             byteEnd = len;
         }
-
-        assert byteStart >= 0;
-        assert byteEnd >= byteStart;
+        if ( byteStart < 0 )
+        {
+            return StringValue.EMTPY;
+        }
         return new UTF8StringValue( values, byteStart, byteEnd - byteStart );
     }
 
