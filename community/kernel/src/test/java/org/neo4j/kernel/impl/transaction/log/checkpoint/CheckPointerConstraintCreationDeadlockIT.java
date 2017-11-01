@@ -44,6 +44,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -84,13 +85,15 @@ public class CheckPointerConstraintCreationDeadlockIT
     private static final String KEY = "key";
 
     @Rule
+    public final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 30, SECONDS ).build();
+    @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
     @Rule
     public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
 
-    @Test( timeout = 30_000 )
+    @Test
     public void shouldNotDeadlock() throws Exception
     {
         List<TransactionRepresentation> transactions = createConstraintCreatingTransactions();
