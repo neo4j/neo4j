@@ -63,29 +63,6 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
-    public int compareTo( TextValue other )
-    {
-        String thisString = value;
-        String thatString = other.stringValue();
-        int len1 = thisString.length();
-        int len2 = thatString.length();
-        int lim = Math.min( len1, len2 );
-
-        int k = 0;
-        while ( k < lim )
-        {
-            int c1 = thisString.codePointAt( k );
-            int c2 = thatString.codePointAt( k );
-            if ( c1 != c2 )
-            {
-                return c1 - c2;
-            }
-            k += Character.charCount( c1 );
-        }
-        return length() - other.length();
-    }
-
-    @Override
     public TextValue substring( int start, int length )
     {
         int s = Math.min( start, length() );

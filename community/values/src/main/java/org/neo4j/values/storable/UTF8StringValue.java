@@ -261,7 +261,7 @@ public final class UTF8StringValue extends StringValue
     {
         if ( !(other instanceof UTF8StringValue) )
         {
-            return -other.compareTo( this );
+            return super.compareTo( other );
         }
         UTF8StringValue otherUTF8 = (UTF8StringValue) other;
         int len1 = bytes.length;
