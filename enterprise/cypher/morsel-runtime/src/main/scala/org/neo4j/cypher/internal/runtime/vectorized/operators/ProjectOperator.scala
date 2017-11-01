@@ -26,18 +26,18 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 
-class ProjectOperator(slot: Slot, expression: Expression, pipeline: PipelineInformation) extends MiddleOperator {
+class ProjectOperator(val projectionOps: Map[Slot, Expression], pipeline: PipelineInformation) extends MiddleOperator {
 
-  private val project = slot match {
-    case LongSlot(offset, _, _, _) =>
+  private val project = projectionOps.map {
+    case (LongSlot(offset, _, _, _),_) =>
       // We just pass along Long slot expressions without evaluation
       (ctx: ExecutionContext, state: OldQueryState) =>
 
-    case RefSlot(offset, _, _, _) =>
+    case (RefSlot(offset, _, _, _), expression) =>
       (ctx: ExecutionContext, state: OldQueryState) =>
         val result = expression(ctx, state)
         ctx.setRefAt(offset, result)
-  }
+  }.toArray
 
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
     var currentRow = 0
@@ -48,7 +48,7 @@ class ProjectOperator(slot: Slot, expression: Expression, pipeline: PipelineInfo
 
     while(currentRow < data.validRows) {
       executionContext.currentRow = currentRow
-      project(executionContext, queryState)
+      project.foreach(p => p(executionContext, queryState))
       currentRow += 1
     }
   }

@@ -32,52 +32,54 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
   test("apa") {
 
-    val db = new GraphDatabaseFactory().newEmbeddedDatabase(new File("/home/systay/dev/temp"))
-    //
-    //    println("creating graph")
-    //
-    //    var tx = db.beginTx()
-    //    var i = 0
-    //
-    //    def ping() = {
-    //      i += 1
-    //      if (i % 5000 == 0) {
-    //        tx.success()
-    //        tx.close()
-    //        tx = db.beginTx()
-    //      }
-    //    }
-    //
-    //    val NODES = 10000
-    //    val EDGES = 1000000
-    //
-    //    val nodes = (0 to NODES).map { x =>
-    //      ping()
-    //      db.createNode()
-    //    }.toArray
-    //
-    //    val r = new Random()
-    //
-    //    (0 to EDGES).foreach(_ => {
-    //      val lhs = nodes(r.nextInt(NODES))
-    //      val rhs = nodes(r.nextInt(NODES))
-    //      ping()
-    //      lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
-    //    })
-    //
-    //
-    //    db.shutdown()
+    val db = graph
+
+        println("creating graph")
+
+        var tx = db.getGraphDatabaseService.beginTx()
+        var i = 0
+
+        def ping() = {
+          i += 1
+          if (i % 5000 == 0) {
+            tx.success()
+            tx.close()
+            tx = db.getGraphDatabaseService.beginTx()
+          }
+        }
+
+        val NODES = 100
+        val EDGES = 100
+
+        val nodes = (0 to NODES).map { x =>
+          ping()
+          db.createNode()
+        }.toArray
+
+        val r = new Random()
+
+        (0 to EDGES).foreach(_ => {
+          val lhs = nodes(r.nextInt(NODES))
+          val rhs = nodes(r.nextInt(NODES))
+          ping()
+          lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
+        })
+
+         tx.success()
+    tx.close()
+ //       db.shutdown()
 
     println("running query")
-    val q = "cypher runtime=morsel match (a) return a order by id(a)"
+    val q = "cypher runtime=morsel match (a)-->(b) return a, b order by id(b)"
     val res = db.execute(q)
     val visitor = new ResultVisitor[RuntimeException] {
       override def visit(row: Result.ResultRow): Boolean = {
-        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")}")
+        println(s"${Thread.currentThread().getId} -=> ${row.getNode("b")}")
         true
       }
     }

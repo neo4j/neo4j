@@ -32,7 +32,14 @@ sealed trait Message {
 * */
 case class StartLeafLoop(iterationState: Iteration) extends Message
 case class StartLoopWithSingleMorsel(data: Morsel, iterationState: Iteration) extends Message
-case class StartLoopWithEagerData(data: Seq[Morsel], iterationState: Iteration) extends Message
+case class StartLoopWithEagerData(data: Seq[Morsel], iterationState: Iteration) extends Message {
+  if(X.isTrue) ??? else X.isTrue = true
+}
+
+object X {
+  var isTrue = false
+}
+
 case class ContinueLoopWith(continuation: Continuation) extends Message {
   override def iterationState: Iteration = continuation.iteration
 }

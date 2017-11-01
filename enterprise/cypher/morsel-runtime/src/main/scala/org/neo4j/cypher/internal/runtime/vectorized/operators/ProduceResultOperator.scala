@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import java.lang
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.graphdb.{Node, Path, Relationship, Result}
+import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue
 
 class ProduceResultOperator(pipelineInformation: PipelineInformation) extends MiddleOperator {
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
@@ -41,9 +42,16 @@ class MorselResultRow(var morsel: Morsel,
                       pipelineInformation: PipelineInformation,
                       queryContext: QueryContext) extends Result.ResultRow {
   override def getNode(key: String): Node = {
-    val nodeOffset = pipelineInformation.getLongOffsetFor(key)
-    val nodeId = morsel.longs(currentPos * pipelineInformation.numberOfLongs + nodeOffset)
-    queryContext.nodeOps.getById(nodeId)
+    pipelineInformation.get(key) match {
+      case None => throw new IllegalStateException()
+      case Some(RefSlot(offset, _, _typ, name)) =>
+        val nodeId = morsel.refs(currentPos * pipelineInformation.numberOfReferences + offset)
+        nodeId.asInstanceOf[NodeProxyWrappingNodeValue].nodeProxy()
+      case Some(LongSlot(offset, _, _typ, name)) =>
+        val nodeId = morsel.longs(currentPos * pipelineInformation.numberOfLongs + offset)
+        queryContext.nodeOps.getById(nodeId)
+    }
+
   }
 
   override def getRelationship(key: String): Relationship = ???

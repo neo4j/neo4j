@@ -78,9 +78,10 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
           new ExpandAllOperator(pipeline, fromPipe, fromOffset, relOffset, toOffset, dir, lazyTypes)
 
         case plans.Projection(_, expressions) =>
-          val (key, e) = expressions.head
-          val slot = pipeline(key)
-          new ProjectOperator(slot, converters.toCommandExpression(e), pipeline)
+          val projectionOps = expressions.map {
+            case (key, e) => pipeline(key) -> converters.toCommandExpression(e)
+          }
+          new ProjectOperator(projectionOps, pipeline)
 
         case plans.Sort(_, sortItems) =>
           val ordering = sortItems.map(translateColumnOrder(pipeline, _))

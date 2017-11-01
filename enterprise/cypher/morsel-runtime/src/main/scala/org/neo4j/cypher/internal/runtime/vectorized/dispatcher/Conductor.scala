@@ -90,8 +90,9 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
 
         while (!minion.output.isEmpty) {
           val resultObject: ResultObject = minion.output.poll()
-          createContinuationTask(minion, resultObject, workQueue)
+          println(s"${resultObject.pipeline} finished running on ${minion.toString}")
           scheduleMoreWorkOnMorsel(resultObject, workQueue)
+          createContinuationTask(minion, resultObject, workQueue)
         }
     }
   }
@@ -101,11 +102,13 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
   private def startLoop(iteration: Iteration): Unit = {
     val current = loopRefCounting.getOrElse(iteration, 0)
     loopRefCounting.put(iteration, current + 1)
+    println(s"loop started $current")
   }
 
   private def endLoop(iteration: Iteration): Int = {
     val current = loopRefCounting(iteration) - 1
     loopRefCounting.put(iteration, current)
+    println(s"loop finished $current")
     current
   }
 
@@ -128,7 +131,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
       while (current.dependency != NoDependencies) {
         current = current.dependency.pipeline
       }
-
+      println(s"$current is ready to run")
       val morsel = Morsel.create(current.slotInformation, MORSEL_SIZE)
       val iteration = new Iteration(None)
       startLoop(iteration)
@@ -139,6 +142,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
   private def createContinuationTask(minion: Minion, result: ResultObject, workQueue: TaskQueue): Unit = {
     result.next match {
       case _: Continue =>
+        println(s"not done with loop - continue")
         val morsel = Morsel.create(result.pipeline.slotInformation, MORSEL_SIZE)
         val task = result.createFollowContinuationTask(morsel)
         val runOn = task.message match {
@@ -148,24 +152,28 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
         workQueue.enqueue((runOn, task))
 
       case _: EndOfLoop =>
+        println(s"endOfLoop ${result.pipeline}")
         val iteration = result.next.iteration
         val current = endLoop(iteration)
 
-        if (current > 1) {
-          loopRefCounting(iteration) = current - 1
+        if (current > 0) {
+          println("more work todo")
         } else { // This was the last work item, and we can now schedule the eager work, if we are on an eager pipeline
+          println("done with task")
           result.pipeline.parent match {
             case Some(parentPipe: Pipeline) if parentPipe.dependency.isInstanceOf[Eager] =>
+              println("finished all loops, scheduling eager pipeline")
               val data = Morsel.create(parentPipe.slotInformation, MORSEL_SIZE)
               startLoop(result.next.iteration)
               val eagerData: Seq[Morsel] = eagerAccumulation.remove(iteration).get
               val message = StartLoopWithEagerData(eagerData, iteration)
               workQueue.enqueue((null, Task(parentPipe, result.query, message, data)))
             case None =>
+              println("found nothing, remove")
               loopRefCounting.remove(iteration)
               result.query.finished()
               currentlyRunningQueries = currentlyRunningQueries - result.query
-            case _ =>
+            case _ => println("do nothing")
           }
         }
     }
@@ -175,6 +183,7 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
     val iteration = result.next.iteration
     result.pipeline.parent match {
       case Some(daddy: Pipeline) if daddy.dependency.isInstanceOf[Lazy] =>
+        println("next pipeline is lazy, scheduling immediately")
         // If we are feeding a lazy pipeline, we can just schedule this morsel for the next stage
         val data = Morsel.create(daddy.slotInformation, MORSEL_SIZE)
         val message = StartLoopWithSingleMorsel(result.morsel, iteration)
@@ -182,12 +191,14 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
         workQueue.enqueue((null, Task(daddy, result.query, message, data)))
 
       case Some(daddy: Pipeline) if daddy.dependency.isInstanceOf[Eager] =>
+        println("next pipeline is eager, accumulating")
         // When we are feeding an eager pipeline, we'll just accumulate here, and schedule work when we finish
         // the last work item on this pipeline
         val acc = eagerAccumulation.getOrElseUpdate(iteration, new ArrayBuffer[Morsel]())
         acc += result.morsel
 
       case None =>
+        println("no more work to be scheduled for this morsel")
       // no more work here
     }
   }

@@ -20,12 +20,16 @@
 package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized.ShutdownWorkers
 import org.neo4j.cypher.internal.util.v3_4.CypherException
 
 class Minion() extends Runnable {
+
+  private val id = Minion.atomicInteger.getAndIncrement()
+
   val input = new ArrayBlockingQueue[Task](100)
   val output = new ArrayBlockingQueue[ResultObject](100)
   private var myQueryContext: QueryContext = _
@@ -70,4 +74,10 @@ class Minion() extends Runnable {
       }
     }
   }
+
+  override def toString = s"Minion(#$id)"
+}
+
+object Minion {
+  val atomicInteger = new AtomicInteger(0)
 }

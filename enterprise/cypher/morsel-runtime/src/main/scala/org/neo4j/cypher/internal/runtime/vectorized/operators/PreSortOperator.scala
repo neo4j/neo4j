@@ -32,14 +32,12 @@ Responsible for sorting the Morsel in place, which will then be merged together 
  */
 class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation) extends MiddleOperator {
 
-  // We have this here so the comparators can have access the morsel without having to be rebuilt for every Morsel
-  private var data: Morsel = _
-  private val comparator: Comparator[Object] = orderBy
-    .map(createComparator)
-    .reduce((a, b) => a.thenComparing(b))
-
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-    this.data = data
+
+    val comparator: Comparator[Object] = orderBy
+      .map(createComparator(data))
+      .reduce((a, b) => a.thenComparing(b))
+
     // First we create an array of the same size as the rows in the morsel that we'll sort.
     // This array contains only the pointers to the morsel rows
     val arrayToSort: Array[Object] = createArray(data)
@@ -84,7 +82,7 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineIn
     list
   }
 
-  private def createComparator(order: ColumnOrder): Comparator[Object] = order.slot match {
+  private def createComparator(data: Morsel)(order: ColumnOrder): Comparator[Object] = order.slot match {
     case LongSlot(offset, _, _, _) =>
       new Comparator[Object] {
         override def compare(idx1: Object, idx2: Object) = {

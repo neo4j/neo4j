@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 import java.util.concurrent.ConcurrentLinkedQueue
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
-import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.graphdb.Result
 import org.neo4j.values.virtual.MapValue
@@ -31,8 +31,8 @@ import org.neo4j.values.virtual.MapValue
 
 class Dispatcher {
 
-  private val MORSEL_SIZE = 10
-  private val WORKER_THREADS = 10
+  private val MORSEL_SIZE = 10000
+  private val WORKER_THREADS = 0
 
   def run[E <: Exception](pipeline: Pipeline,
                           visitor: Result.ResultVisitor[E],
