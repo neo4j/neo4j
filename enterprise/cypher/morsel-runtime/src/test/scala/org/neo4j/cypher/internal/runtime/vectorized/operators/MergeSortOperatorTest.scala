@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.Ascending
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation}
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.symbols.CTNode
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 
+import scala.collection.mutable
+
 class MergeSortOperatorTest extends CypherFunSuite {
 
   test("sort a single morsel") {
-    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val info = new PipelineInformation(mutable.Map("apa" -> slot), 1, 0)
 
     val longs = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val in = new Morsel(longs, Array[AnyValue](), longs.length)
@@ -45,9 +47,9 @@ class MergeSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort two morsels") {
-    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val info = new PipelineInformation(mutable.Map("apa" -> slot), 1, 0)
 
     val long1 = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val long2 = Array[Long](5, 7, 9, 14, 86, 92)
@@ -71,9 +73,9 @@ class MergeSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort two morsels with one empty array") {
-    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val info = new PipelineInformation(mutable.Map("apa" -> slot), 1, 0)
 
     val long1 = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val long2 = Array.empty[Long]
@@ -89,9 +91,9 @@ class MergeSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort with too many output slots") {
-    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val info = new PipelineInformation(mutable.Map("apa" -> slot), 1, 0)
 
     val longs = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val in = new Morsel(longs, Array[AnyValue](), longs.length)

@@ -25,17 +25,17 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
-import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.Dispatcher
-import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Condition, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.runtime.{QueryStatistics => _, _}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.Dispatcher
+import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
+import org.neo4j.cypher.internal.runtime.{QueryStatistics => _, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.graphdb._
@@ -121,7 +121,7 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
 
   override def withNotifications(notification: Notification*): InternalExecutionResult = this
 
-  override def fieldNames(): Array[String] = pipelineInformation(logicalPlan.assignedId).slots.keys.toArray
+  override def fieldNames(): Array[String] = logicalPlan.availableSymbols.map(_.name).toArray
 
   override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit = ???
 

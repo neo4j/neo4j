@@ -20,18 +20,20 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.Ascending
-import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation}
+import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 
+import scala.collection.mutable
+
 class PreSortOperatorTest extends CypherFunSuite {
 
   test("sort a morsel with a single long column") {
-    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val info = new PipelineInformation(mutable.Map("apa" -> slot), 1, 0)
     val sortOperator = new PreSortOperator(columnOrdering, info)
 
     val longs = Array[Long](9, 8, 7, 6, 5, 4, 3, 2, 1)
@@ -43,10 +45,10 @@ class PreSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort a morsel with a two long columns by one") {
-    val slot1 = LongSlot(0, nullable = false, CTNode, "apa1")
-    val slot2 = LongSlot(1, nullable = false, CTNode, "apa2")
+    val slot1 = LongSlot(0, nullable = false, CTNode)
+    val slot2 = LongSlot(1, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot1))
-    val info = new PipelineInformation(Map("apa1" -> slot1, "apa2" -> slot2), 2, 0)
+    val info = new PipelineInformation(mutable.Map("apa1" -> slot1, "apa2" -> slot2), 2, 0)
     val sortOperator = new PreSortOperator(columnOrdering, info)
 
     val longs = Array[Long](
@@ -78,9 +80,9 @@ class PreSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort a morsel with no valid data") {
-    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val info = new PipelineInformation(mutable.Map("apa" -> slot), 1, 0)
     val sortOperator = new PreSortOperator(columnOrdering, info)
 
     val longs = new Array[Long](10)
@@ -92,9 +94,9 @@ class PreSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort a morsel with empty array") {
-    val slot = LongSlot(0, nullable = false, CTNode, "apa")
+    val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new PipelineInformation(Map("apa" -> slot), 1, 0)
+    val info = new PipelineInformation(mutable.Map("apa" -> slot), 1, 0)
     val sortOperator = new PreSortOperator(columnOrdering, info)
 
     val data = new Morsel(Array.empty, Array[AnyValue](), 0)

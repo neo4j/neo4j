@@ -20,20 +20,20 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
+import org.neo4j.cypher.internal.runtime.vectorized._
 
 class ProjectOperator(val projectionOps: Map[Slot, Expression], pipeline: PipelineInformation) extends MiddleOperator {
 
   private val project = projectionOps.map {
-    case (LongSlot(offset, _, _, _),_) =>
+    case (LongSlot(_, _, _),_) =>
       // We just pass along Long slot expressions without evaluation
-      (ctx: ExecutionContext, state: OldQueryState) =>
+      (_: ExecutionContext, _: OldQueryState) =>
 
-    case (RefSlot(offset, _, _, _), expression) =>
+    case (RefSlot(offset, _, _), expression) =>
       (ctx: ExecutionContext, state: OldQueryState) =>
         val result = expression(ctx, state)
         ctx.setRefAt(offset, result)

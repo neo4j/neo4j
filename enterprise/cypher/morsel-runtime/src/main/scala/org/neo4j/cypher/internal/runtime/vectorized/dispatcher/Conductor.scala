@@ -90,6 +90,8 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
 
         while (!minion.output.isEmpty) {
           val resultObject: ResultObject = minion.output.poll()
+          println(java.util.Arrays.toString(resultObject.morsel.longs))
+          println(java.util.Arrays.toString(resultObject.morsel.refs.asInstanceOf[Array[Object]]))
           println(s"${resultObject.pipeline} finished running on ${minion.toString}")
           scheduleMoreWorkOnMorsel(resultObject, workQueue)
           createContinuationTask(minion, resultObject, workQueue)

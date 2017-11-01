@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import java.lang
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
-import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.graphdb.{Node, Path, Relationship, Result}
 import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue
 
@@ -44,10 +44,10 @@ class MorselResultRow(var morsel: Morsel,
   override def getNode(key: String): Node = {
     pipelineInformation.get(key) match {
       case None => throw new IllegalStateException()
-      case Some(RefSlot(offset, _, _typ, name)) =>
+      case Some(RefSlot(offset, _, _typ)) =>
         val nodeId = morsel.refs(currentPos * pipelineInformation.numberOfReferences + offset)
         nodeId.asInstanceOf[NodeProxyWrappingNodeValue].nodeProxy()
-      case Some(LongSlot(offset, _, _typ, name)) =>
+      case Some(LongSlot(offset, _, _typ)) =>
         val nodeId = morsel.longs(currentPos * pipelineInformation.numberOfLongs + offset)
         queryContext.nodeOps.getById(nodeId)
     }

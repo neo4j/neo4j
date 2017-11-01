@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import java.util.{Comparator, PriorityQueue}
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.ColumnOrder
-import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized._
 
 // This operator takes pre-sorted inputs, and merges them together, producing a stream of Morsels with the sorted data
 class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation) extends Operator {
@@ -87,7 +87,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
   override def addDependency(pipeline: Pipeline) = Eager(pipeline)
 
   private def createComparator(order: ColumnOrder): Comparator[MorselWithReadPos] = order.slot match {
-    case LongSlot(offset, _, _, _) =>
+    case LongSlot(offset, _, _) =>
       new Comparator[MorselWithReadPos] {
         override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos) = {
           val longs = pipelineInformation.numberOfLongs
@@ -98,7 +98,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
           order.compareLongs(aVal, bVal)
         }
       }
-    case RefSlot(offset, _, _, _) =>
+    case RefSlot(offset, _, _) =>
       new Comparator[MorselWithReadPos] {
         override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos) = {
           val refs = pipelineInformation.numberOfReferences

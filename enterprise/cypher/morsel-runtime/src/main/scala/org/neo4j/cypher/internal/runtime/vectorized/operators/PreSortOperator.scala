@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.ColumnOrder
-import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, MiddleOperator, Morsel, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, MiddleOperator, Morsel, QueryState}
 import org.neo4j.values.AnyValue
 
 /*
@@ -83,7 +83,7 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineIn
   }
 
   private def createComparator(data: Morsel)(order: ColumnOrder): Comparator[Object] = order.slot match {
-    case LongSlot(offset, _, _, _) =>
+    case LongSlot(offset, _, _) =>
       new Comparator[Object] {
         override def compare(idx1: Object, idx2: Object) = {
           val longs = pipelineInformation.numberOfLongs
@@ -95,7 +95,7 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineIn
         }
       }
 
-    case RefSlot(offset, _, _, _) =>
+    case RefSlot(offset, _, _) =>
       new Comparator[Object] {
         override def compare(idx1: Object, idx2: Object) = {
           val refs = pipelineInformation.numberOfReferences
