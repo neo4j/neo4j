@@ -233,6 +233,9 @@ object SlotAllocation {
       case EmptyResult(_) =>
         incomingPipeline
 
+      case DropResult(_) =>
+        incomingPipeline
+
       case UnwindCollection(_, IdName(variable), expression) =>
         val newPipeline = incomingPipeline.seedClone()
         newPipeline.newReference(variable, nullable = true, CTAny)

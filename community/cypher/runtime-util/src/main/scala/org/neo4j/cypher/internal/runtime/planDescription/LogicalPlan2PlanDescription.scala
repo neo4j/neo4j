@@ -151,6 +151,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
 
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
+
+      case _: DropResult =>
+        PlanDescriptionImpl(id, "DropResult", children, Seq.empty, variables)
+
       case NodeCountFromCountStore(IdName(id), labelName, arguments) =>
         PlanDescriptionImpl(id = plan.assignedId, "NodeCountFromCountStore", NoChildren,
                             Seq(CountNodesExpression(id, labelName.map(l => l.map(_.name)))), variables)

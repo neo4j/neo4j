@@ -21,11 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.DropResultPipe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
@@ -34,6 +30,11 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
@@ -179,6 +180,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id)
+
+      case DropResult(_) =>
+        DropResultPipe(source)(id)
 
       case UnwindCollection(_, IdName(name), expression) =>
         val offset = pipeline.getReferenceOffsetFor(name)

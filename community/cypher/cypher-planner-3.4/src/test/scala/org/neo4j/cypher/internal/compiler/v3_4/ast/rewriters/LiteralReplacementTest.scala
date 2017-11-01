@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 
+import org.neo4j.cypher.internal.frontend.v3_4.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
 import org.neo4j.cypher.internal.v3_4.expressions.Parameter
 
 class LiteralReplacementTest extends CypherFunSuite  {
@@ -45,21 +45,27 @@ class LiteralReplacementTest extends CypherFunSuite  {
   test("should extract literals in return clause") {
     assertRewrite(s"RETURN 1 as result", s"RETURN {`  AUTOINT0`} as result", Map("  AUTOINT0" -> 1))
     assertRewrite(s"RETURN 1.1 as result", s"RETURN {`  AUTODOUBLE0`} as result", Map("  AUTODOUBLE0" -> 1.1))
-    assertRewrite(s"RETURN true as result", s"RETURN {`  AUTOBOOL0`} as result", Map("  AUTOBOOL0" -> true))
-    assertRewrite(s"RETURN false as result", s"RETURN {`  AUTOBOOL0`} as result", Map("  AUTOBOOL0" -> false))
     assertRewrite("RETURN 'apa' as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("RETURN \"apa\" as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("RETURN [1, 2, 3] as result", "RETURN {`  AUTOLIST0`} as result", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
+  test("should not extract boolean literals in return clause") {
+    assertDoesNotRewrite(s"RETURN true as result")
+    assertDoesNotRewrite(s"RETURN false as result")
+  }
+
   test("should extract literals in match clause") {
     assertRewrite(s"MATCH ({a:1})", s"MATCH ({a:{`  AUTOINT0`}})", Map("  AUTOINT0" -> 1))
     assertRewrite(s"MATCH ({a:1.1})", s"MATCH ({a:{`  AUTODOUBLE0`}})", Map("  AUTODOUBLE0" -> 1.1))
-    assertRewrite(s"MATCH ({a:true})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0" -> true))
-    assertRewrite(s"MATCH ({a:false})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0" -> false))
     assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]", "MATCH (n) WHERE ID(n) IN {`  AUTOLIST0`}", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
+  }
+
+  test("should not extract boolean literals in match clause") {
+    assertDoesNotRewrite(s"MATCH ({a:true})")
+    assertDoesNotRewrite(s"MATCH ({a:false})")
   }
 
   test("should extract literals in skip clause") {
@@ -137,7 +143,6 @@ class LiteralReplacementTest extends CypherFunSuite  {
   private def fixParameterTypeExpectations = bottomUp(Rewriter.lift {
     case p@Parameter(name, _) if name.startsWith("  AUTOSTRING") => p.copy(parameterType = CTString)(p.position)
     case p@Parameter(name, _) if name.startsWith("  AUTOINT") => p.copy(parameterType = CTInteger)(p.position)
-    case p@Parameter(name, _) if name.startsWith("  AUTOBOOL") => p.copy(parameterType = CTBoolean)(p.position)
     case p@Parameter(name, _) if name.startsWith("  AUTODOUBLE") => p.copy(parameterType = CTFloat)(p.position)
     case p@Parameter(name, _) if name.startsWith("  AUTOLIST") => p.copy(parameterType = CTList(CTAny))(p.position)
   })
