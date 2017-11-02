@@ -135,9 +135,8 @@ public class RemoteStoreTest
     private TransactionLogCatchUpFactory factory( TransactionLogCatchUpWriter writer ) throws IOException
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
-        when( factory.create( isNull(), any( FileSystemAbstraction.class ),
-                isNull(), any( LogProvider.class ), anyLong(), anyBoolean() ) )
-                .thenReturn( writer );
+        when( factory.create( isNull(), any( FileSystemAbstraction.class ), isNull(), any( Config.class ),
+                any( LogProvider.class ), anyLong(), anyBoolean() ) ).thenReturn( writer );
         return factory;
     }
 }

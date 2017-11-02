@@ -162,8 +162,8 @@ public class RemoteStore
     private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy )
             throws IOException, StoreCopyFailedException
     {
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider,
-                fromTxId, asPartOfStoreCopy ) )
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
+                logProvider, fromTxId, asPartOfStoreCopy ) )
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 
