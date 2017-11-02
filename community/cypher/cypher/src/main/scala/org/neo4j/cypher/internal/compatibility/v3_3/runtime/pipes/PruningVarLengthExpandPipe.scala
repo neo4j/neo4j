@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
@@ -271,7 +271,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
               row = row,
               expandMap = Primitive.longObjectMap[FullExpandDepths]())
             nextState.next()
-          case Some(x: Value) if x.asObject() == null =>
+          case Some(x: Value) if x == Values.NO_VALUE =>
             (Empty, null)
           case _ =>
             throw new InternalException(s"Expected a node on `$fromName`")
