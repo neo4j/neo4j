@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -30,10 +29,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
@@ -103,30 +99,6 @@ class BackupFlow
         if ( requiredArgs.isDoConsistencyCheck() )
         {
             performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, consistencyFlags, destination );
-        }
-        cleanupTransactionLogFiles( destination );
-    }
-
-    /**
-     * As result of backup database should be fully restored and it should be safe to delete any transaction log
-     * files that available since they also can be configured to live in a separate place on the instance where db
-     * will be restored.
-     * @param backupFolder backup folder
-     */
-    private void cleanupTransactionLogFiles( File backupFolder ) throws CommandFailed
-    {
-        try
-        {
-            FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( backupFolder, fileSystem ).build();
-            for ( File file : logFiles.logFiles() )
-            {
-                fileSystem.deleteFile( file );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new CommandFailed( format( "Fail to cleanup transaction logs." ), e );
         }
     }
 

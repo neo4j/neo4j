@@ -66,8 +66,6 @@ import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationExce
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -166,7 +164,6 @@ class BackupProtocolService
             bumpDebugDotLogFileVersion( debugLogFile, timestamp );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, tuningConfiguration, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
-            clearTransactionLogFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( Exception e )
@@ -221,7 +218,6 @@ class BackupProtocolService
             bumpDebugDotLogFileVersion( debugLogFile, backupStartTime );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, config, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
-            clearTransactionLogFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( IOException e )
@@ -416,17 +412,6 @@ class BackupProtocolService
             kernelExtensions.add( factory );
         }
         return kernelExtensions;
-    }
-
-    private void clearTransactionLogFiles( FileSystemAbstraction fileSystem, File targetDirectory ) throws IOException
-    {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( targetDirectory, fileSystem ).build();
-        File[] files = logFiles.logFiles();
-        for ( File file : files )
-        {
-            fileSystem.deleteFile( file );
-        }
-
     }
 
     private void clearIdFiles( FileSystemAbstraction fileSystem, File targetDirectory ) throws IOException

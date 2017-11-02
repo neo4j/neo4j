@@ -95,7 +95,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
         out.println( "Applied transactions up to and including " + lastApplied );
     }
 
-    private long applyTransactions( File fromPath, GraphDatabaseAPI toDb, Config config,
+    private long applyTransactions( File fromPath, GraphDatabaseAPI toDb, Config toConfig,
             long fromTxExclusive, long toTxInclusive, PrintStream out )
             throws IOException, TransactionFailureException
     {
@@ -109,7 +109,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
             LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath,
-                    config, new Monitors() ) );
+                    Config.defaults(), new Monitors() ) );
             life.start();
             long lastAppliedTx = fromTxExclusive;
             // Some progress if there are more than a couple of transactions to apply

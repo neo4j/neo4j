@@ -510,11 +510,11 @@ public class BackupIT
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( backupStore ), fileSystemRule.get() ).build();
 
             backup.full( backupStore );
-            assertThat( logFiles.logFiles(), Matchers.emptyArray() );
+            assertThat( logFiles.logFiles(), Matchers.arrayWithSize( 1 ) );
 
             DbRepresentation representation = addLotsOfData( db );
             backup.incremental( backupStore );
-            assertThat( logFiles.logFiles(), Matchers.emptyArray() );
+            assertThat( logFiles.logFiles(), Matchers.arrayWithSize( 1 ) );
 
             assertEquals( representation, getDbRepresentation() );
         }
