@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
-import java.util.Iterator
 
 import org.hamcrest.Matchers.greaterThan
 import org.junit.Assert.assertThat

@@ -23,8 +23,8 @@ import java.util.{ArrayList => JavaList, HashMap => JavaMap}
 
 import org.neo4j.cypher.internal.runtime.{Counter, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
@@ -38,7 +38,7 @@ class CoerceToTest extends CypherFunSuite {
 
   implicit var openCases: Counter = Counter()
   implicit val qtx = mock[QueryContext]
-  implicit val state = QueryStateHelper.emptyWith(qtx)
+  implicit val state = QueryStateHelper.emptyWith(query = qtx)
 
   val basicTypes = Set(CTAny, CTBoolean, CTString, CTNumber, CTInteger, CTFloat, CTPoint)
   val graphTypes = Set(CTNode, CTRelationship, CTPath)

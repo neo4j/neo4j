@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{PlanDescriptionImpl, _}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -243,7 +243,7 @@ class ProfilerTest extends CypherFunSuite {
 
       val pipe1 = SingleRowPipe()()
       val ctx1: QueryContext = prepareQueryContext()
-      val state1 = QueryStateHelper.emptyWith(ctx1, mock[ExternalCSVResource])
+      val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
       val profiled_1 = profiler.decorate(pipe1, state1)
       val iter1 = Iterator(ExecutionContext.empty, ExecutionContext.empty, ExecutionContext.empty)
@@ -254,7 +254,7 @@ class ProfilerTest extends CypherFunSuite {
 
       val pipe2 = SingleRowPipe()()
       val ctx2: QueryContext = prepareQueryContext()
-      val state2 = QueryStateHelper.emptyWith(ctx2, mock[ExternalCSVResource])
+      val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
       val iter2 = Iterator(ExecutionContext.empty, ExecutionContext.empty)
 
       val profiled_2 = profiler.decorate(pipe2, state2)
@@ -268,7 +268,7 @@ class ProfilerTest extends CypherFunSuite {
 
       val pipe1 = SingleRowPipe()()
       val ctx1: QueryContext = prepareQueryContext()
-      val state1 = QueryStateHelper.emptyWith(ctx1, mock[ExternalCSVResource])
+      val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
       val profiled1 = profiler.decorate(pipe1, state1)
       profiled1.query.createNode()
@@ -276,7 +276,7 @@ class ProfilerTest extends CypherFunSuite {
 
       val pipe2 = SingleRowPipe()()
       val ctx2: QueryContext = prepareQueryContext()
-      val state2 = QueryStateHelper.emptyWith(ctx2, mock[ExternalCSVResource])
+      val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
 
 
       val profiled2 = profiler.decorate(pipe2, state2)

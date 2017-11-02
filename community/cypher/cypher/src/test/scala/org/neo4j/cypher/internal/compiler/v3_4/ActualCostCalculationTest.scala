@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Liter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken, SemanticDirection}
@@ -243,7 +243,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val tc = transactionContext(graph, tx)
       val tcWrapper = TransactionalContextWrapper(tc)
       val queryContext = new TransactionBoundQueryContext(tcWrapper)(mock[IndexSearchMonitor])
-      val state = QueryStateHelper.emptyWith(queryContext)
+      val state = QueryStateHelper.emptyWith(query = queryContext)
       for (x <- 0 to 25) {
         for (pipe <- pipes) {
           val start = System.nanoTime()

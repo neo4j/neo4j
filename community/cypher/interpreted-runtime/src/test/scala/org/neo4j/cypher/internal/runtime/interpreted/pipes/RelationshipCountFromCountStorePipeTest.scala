@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.NameId._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
+import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, RelTypeName}
 import org.neo4j.values.storable.Values.longValue

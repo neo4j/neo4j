@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ListLiteral, Literal, Variable}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values._
+import org.neo4j.values.virtual.VirtualValues
 
 class ConstantCachedInTest extends CachedInTest {
   override def createPredicate(lhs: Variable, rhs: Expression): Predicate = ConstantCachedIn(lhs, rhs)
@@ -109,7 +110,7 @@ abstract class CachedInTest extends CypherFunSuite {
 
     val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith1("x", toListValue(Seq(1,2)))
+    val v1 = ExecutionContext.empty.newWith1("x", VirtualValues.list(intValue(1),intValue(2)))
     val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
     val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 

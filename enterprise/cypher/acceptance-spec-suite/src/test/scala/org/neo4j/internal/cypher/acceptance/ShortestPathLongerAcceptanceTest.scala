@@ -708,7 +708,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
   }
 
   private def debugResults(nodes: Seq[Node]): Unit = {
-    dprintln
+    dprintln()
     val nodeMap: Map[String, Map[Node, Int]] = nodes.foldLeft(Map[String,Map[Node,Int]]()) { (acc, node) =>
       val row = node.getId / dim
       val col = node.getId - dim * row
@@ -722,9 +722,9 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
         val toPrint = "  " + text
         dprint(toPrint.substring(toPrint.length - 3))
       }
-      dprintln
+      dprintln()
     }
-    dprintln
+    dprintln()
   }
 
   private def evaluateShortestPathResults(results: InternalExecutionResult, startMs: Long, pathLength: Int, expectedNodes: Set[Node]): Unit = {
@@ -748,7 +748,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
   }
 
   private def dprintln(s: Any) = if (VERBOSE) println(s)
-  private def dprintln = if (VERBOSE) println
+  private def dprintln() = if (VERBOSE) println
   private def dprint(s: Any) = if (VERBOSE) print(s)
 
   private def evaluateAllShortestPathResults(results: InternalExecutionResult, identifier: String, startMs: Long, expectedPathCount: Int, expectedNodes: Set[Set[Node]]): Unit = {
@@ -808,7 +808,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
       debug(dim, theseVisitedNodes, theseNextNodes, connectingNode)
       dprintln("From end:")
       debug(dim, thoseVisitedNodes, thoseNextNodes, connectingNode)
-      dprintln
+      dprintln()
     }
 
     private def debugNode(dim: Int, matrix: mutable.Map[String, String], cellSize: Int, node: Node,
@@ -843,9 +843,9 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
           val text = matrix.getOrElse(key, "- ")
           printf(s"%${4 + cellSize}s", text)
         }
-        dprintln
+        dprintln()
       }
-      dprintln
+      dprintln()
     }
   }
 }
