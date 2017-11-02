@@ -56,6 +56,15 @@ public class TransactionLogsInSeparateLocationIT
         verifyTransactionLogs( txDirectory, storeDir );
     }
 
+    @Test
+    public void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
+    {
+        File storeDir = testDirectory.graphDbDir();
+        File txDirectory = testDirectory.directory( "transaction-logs" );
+        performTransactions( txDirectory.getAbsolutePath(), storeDir );
+        verifyTransactionLogs( txDirectory, storeDir );
+    }
+
     private void performTransactions( String txPath, File storeDir ) throws IOException
     {
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )

@@ -74,7 +74,6 @@ import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
-import static org.neo4j.kernel.configuration.Settings.relativePathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -435,7 +434,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
-    public static final Setting<File> logical_logs_location = relativePathSetting( "dbms.tx_log.location", "" );
+    public static final Setting<File> logical_logs_location = pathSetting( "dbms.tx_log.location", "" );
 
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +

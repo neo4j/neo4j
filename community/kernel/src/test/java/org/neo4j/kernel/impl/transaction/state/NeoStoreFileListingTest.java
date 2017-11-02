@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -170,17 +171,15 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldListTransactionLogsFromCustomLocationWhenConfigured() throws IOException
     {
-        String customFolderName = "customTxFolder";
-        GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory( "customDb" ) )
-                .setConfig( GraphDatabaseSettings.logical_logs_location, customFolderName )
-                .newGraphDatabase();
-        NeoStoreDataSource dataSource = graphDatabase.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-        LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
-        assertTrue( dataSource.listStoreFiles( true ).stream()
-                .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.file() ) ) );
-        assertEquals( customFolderName, logFiles.logFilesDirectory().getName() );
-        graphDatabase.shutdown();
+        String logFilesPath = "customTxFolder";
+        verifyLogFilesWithCustomPathListing( logFilesPath );
+    }
+
+    @Test
+    public void shouldListTransactionLogsFromCustomAbsoluteLocationWhenConfigured() throws IOException
+    {
+        File customLogLocation = testDirectory.directory( "customLogLocation" );
+        verifyLogFilesWithCustomPathListing( customLogLocation.getAbsolutePath() );
     }
 
     @Test
@@ -211,6 +210,20 @@ public class NeoStoreFileListingTest
                 .map( Optional::get )
                 .collect( Collectors.toList() );
         assertEquals( Arrays.asList(values), listedStoreFiles );
+    }
+
+    private void verifyLogFilesWithCustomPathListing( String path ) throws IOException
+    {
+        GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( testDirectory.directory( "customDb" ) )
+                .setConfig( GraphDatabaseSettings.logical_logs_location, path )
+                .newGraphDatabase();
+        NeoStoreDataSource dataSource = graphDatabase.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
+        LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
+        assertTrue( dataSource.listStoreFiles( true ).stream()
+                .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.file() ) ) );
+        assertEquals( Paths.get( path ).getFileName().toString(), logFiles.logFilesDirectory().getName() );
+        graphDatabase.shutdown();
     }
 
     private void filesInStoreDirAre( File storeDir, String[] filenames, String[] dirs )

@@ -134,6 +134,20 @@ public class LogFilesBuilderTest
         assertEquals( new File( storeDirectory, customLogLocation ), logFiles.getHighestLogFile().getParentFile() );
     }
 
+    @Test
+    public void buildContextWithCustomAbsoluteLogFilesLocations() throws Throwable
+    {
+        File customLogDirectory = testDirectory.directory( "absoluteCustomLogDirectory" );
+        Config customLogLocationConfig = Config.defaults( logical_logs_location, customLogDirectory.getAbsolutePath() );
+        LogFiles logFiles = builder( storeDirectory, fileSystem ).withConfig( customLogLocationConfig )
+                .withLogVersionRepository( new SimpleLogVersionRepository() )
+                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+        logFiles.init();
+        logFiles.start();
+
+        assertEquals( customLogDirectory, logFiles.getHighestLogFile().getParentFile() );
+    }
+
     @Test( expected = NullPointerException.class )
     public void failToBuildFullContextWithoutLogVersionRepo() throws IOException
     {

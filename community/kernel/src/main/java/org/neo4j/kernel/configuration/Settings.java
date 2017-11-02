@@ -331,14 +331,9 @@ public class Settings
         };
     }
 
-    public static Setting<File> relativePathSetting( String name, String defaultValue )
-    {
-        return new FileSetting( name, defaultValue, false );
-    }
-
     public static Setting<File> pathSetting( String name, String defaultValue )
     {
-        return new FileSetting( name, defaultValue, true );
+        return new FileSetting( name, defaultValue );
     }
 
     private static <T> BiFunction<String,Function<String, String>, String> inheritedValue(
@@ -1327,13 +1322,11 @@ public class Settings
     {
         private final String name;
         private final String defaultValue;
-        private final boolean absolutePathAllowed;
 
-        FileSetting( String name, String defaultValue, boolean absolutePathAllowed )
+        FileSetting( String name, String defaultValue )
         {
             this.name = name;
             this.defaultValue = defaultValue;
-            this.absolutePathAllowed = absolutePathAllowed;
         }
 
         @Override
@@ -1372,15 +1365,7 @@ public class Settings
 
             if ( settingFile.isAbsolute() )
             {
-                if ( absolutePathAllowed )
-                {
-                    return settingFile;
-                }
-                else
-                {
-                    throw new IllegalArgumentException(
-                            format( "Absolute path is not allowed for setting %s.", name() ) );
-                }
+                return settingFile;
             }
             else
             {

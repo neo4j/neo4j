@@ -145,10 +145,17 @@ public class StoreMigratorTest
     @Test
     public void extractTransactionInformationFromLogsInCustomRelativeLocation() throws Exception
     {
-        // given
         File storeDir = directory.graphDbDir();
         File customLogLocation = new File( storeDir, "customLogLocation" );
         extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, storeDir );
+    }
+
+    @Test
+    public void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
+    {
+        File storeDir = directory.graphDbDir();
+        File customLogLocation = directory.directory( "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, storeDir );
     }
 
     private void extractTransactionalInformationFromLogs( String path, File customLogLocation, File storeDir ) throws IOException

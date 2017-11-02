@@ -29,7 +29,6 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -42,6 +41,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
 public class RecoveryRequiredCheckerTest
 {
@@ -55,13 +55,11 @@ public class RecoveryRequiredCheckerTest
     private final Monitors monitors = new Monitors();
     private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;
-    private File customtransactionLogsLocation;
 
     @Before
     public void setup()
     {
         storeDir = testDirectory.graphDbDir();
-        customtransactionLogsLocation = new File( storeDir, "tx-logs" );
         fileSystem = fileSystemRule.get();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
     }
@@ -108,8 +106,16 @@ public class RecoveryRequiredCheckerTest
     @Test
     public void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateRelativeLocation() throws Exception
     {
-        Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location,
-                customtransactionLogsLocation.getName() );
+        File customTransactionLogsLocation = new File( storeDir, "tx-logs" );
+        Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getName() );
+        recoverBrokenStoreWithConfig( config );
+    }
+
+    @Test
+    public void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
+    {
+        File customTransactionLogsLocation = testDirectory.directory( "tx-logs" );
+        Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getAbsolutePath() );
         recoverBrokenStoreWithConfig( config );
     }
 
