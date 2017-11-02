@@ -40,6 +40,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -162,8 +164,11 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ),
-                            operations.indexGetState( index ).toString(), type ) );
+                    String label = tokens.labelGetName( index.schema().getLabelId() );
+                    List<String> propertyNames = propertyNames( tokens, index );
+                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), label, propertyNames,
+                            operations.indexGetState( index ).toString(), type,
+                            indexProviderDescriptorMap( operations.indexGetProviderDescriptor( index ) ) ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
@@ -586,6 +591,24 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( true ) );
     }
 
+    private Map<String,String> indexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
+    {
+        return MapUtil.stringMap(
+                "key", providerDescriptor.getKey(),
+                "version", providerDescriptor.getVersion() );
+    }
+
+    private List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
+    {
+        int[] propertyIds = index.schema().getPropertyIds();
+        List<String> propertyNames = new ArrayList<>();
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            propertyNames.add( tokens.propertyKeyGetName( propertyIds[i] ) );
+        }
+        return propertyNames;
+    }
+
     private <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, Function<Long,T> mapper )
     {
         Iterator<T> it = new Iterator<T>()
@@ -699,14 +722,20 @@ public class BuiltInProcedures
     public class IndexResult
     {
         public final String description;
+        public final String label;
+        public final List<String> properties;
         public final String state;
         public final String type;
+        public final Map<String,String> provider;
 
-        private IndexResult( String description, String state, String type )
+        private IndexResult( String description, String label, List<String> properties, String state, String type, Map<String,String> provider )
         {
             this.description = description;
+            this.label = label;
+            this.properties = properties;
             this.state = state;
             this.type = type;
+            this.provider = provider;
         }
     }
 

@@ -36,11 +36,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
@@ -49,6 +51,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers;
@@ -99,7 +102,13 @@ public class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ),
-                contains( record( "INDEX ON :User(name)", "ONLINE", "node_label_property" ) ) );
+                contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_label_property",
+                        getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
+    }
+
+    private Map<String,String> getIndexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
+    {
+        return MapUtil.stringMap( "key", providerDescriptor.getKey(), "version", providerDescriptor.getVersion() );
     }
 
     @Test
@@ -110,7 +119,8 @@ public class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ),
-                contains( record( "INDEX ON :User(name)", "ONLINE", "node_unique_property" ) ) );
+                contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_unique_property",
+                        getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
     }
 
     @Test
@@ -197,7 +207,8 @@ public class BuiltInProceduresTest
                         "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." ),
                 record( "db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database." ),
-                record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)",
+                record( "db.indexes", "db.indexes() :: (description :: STRING?, label :: STRING?, properties :: LIST? OF STRING?, " +
+                                "state :: STRING?, type :: STRING?, provider :: MAP?)",
                         "List all indexes in the database." ),
                 record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database." ),
                 record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)",
@@ -492,6 +503,8 @@ public class BuiltInProceduresTest
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
         when( read.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
+        when( read.indexGetProviderDescriptor( any( IndexDescriptor.class ) ) )
+                .thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 
     private Answer<Iterator<Token>> asTokens( Map<Integer,String> tokens )
