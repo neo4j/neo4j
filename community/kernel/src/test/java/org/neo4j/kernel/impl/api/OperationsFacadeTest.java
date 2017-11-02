@@ -19,68 +19,116 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-@RunWith( MockitoJUnitRunner.class )
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 public class OperationsFacadeTest
 {
-    private final String LABEL1 = "Label1";
-    private final String PROP1 = "Prop1";
-    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 2 );
-
-    @Mock
-    private KernelStatement kernelStatement;
-    @Mock
-    private StatementOperationParts statementOperationParts;
-    @Mock
-    private SchemaReadOperations schemaReadOperations;
-    @InjectMocks
-    private OperationsFacade operationsFacade;
-
     @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    public DatabaseRule db = new ImpermanentDatabaseRule();
+
+    private final Label LABEL1 = Label.label( "Label1" );
+    private final String PROP1 = "Prop1";
+    private int labelId;
+    private int propertyId;
+
+    @Before
+    public void setup()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( LABEL1 ).setProperty( PROP1, 1 );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx();
+              Statement statement = db.statement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            labelId = readOperations.labelGetForName( LABEL1.name() );
+            propertyId = readOperations.propertyKeyGetForName( PROP1 );
+            tx.success();
+        }
+    }
 
     @Test
     public void testThrowExceptionWhenIndexNotFound() throws SchemaRuleNotFoundException
     {
-        setupSchemaReadOperations();
-
-        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
-
-        expectedException.expect( SchemaRuleNotFoundException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "No index was found for :Label1(Prop1)." ) );
-
-        operationsFacade.indexGetForSchema( descriptor );
+        try ( Transaction ignored = db.beginTx();
+              Statement statement = db.statement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            try
+            {
+                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 2 );
+                readOperations.indexGetForSchema( descriptor );
+                fail( "Should have failed" );
+            }
+            catch ( SchemaRuleNotFoundException e )
+            {
+                assertThat( e.getMessage(), containsString( "No index was found for :label[1](property[2])" ) );
+            }
+        }
     }
 
-    private SchemaReadOperations setupSchemaReadOperations()
+    @Test
+    public void indexGetProviderDescriptorMustReturnUndecidedIfIndexCreatedInTransaction() throws Exception
     {
-        SchemaReadOperations readOperations = Mockito.mock(SchemaReadOperations.class);
-        Mockito.when( statementOperationParts.schemaReadOperations() ).thenReturn( readOperations );
-        return readOperations;
+        try ( Transaction tx = db.beginTx();
+              Statement statement = db.statement() )
+        {
+            db.schema().indexFor( LABEL1 ).on( PROP1 ).create();
+            ReadOperations readOperations = statement.readOperations();
+            IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( labelId, propertyId );
+            SchemaIndexProvider.Descriptor providerDescriptor = readOperations.indexGetProviderDescriptor( indexDescriptor );
+            assertThat( providerDescriptor, is( SchemaIndexProvider.UNDECIDED ) );
+            tx.success();
+        }
     }
 
-    private TokenNameLookup getDefaultTokenNameLookup()
+    @Test
+    public void indexGetProviderDescriptorMustThrowIfIndexDoesNotExist() throws Exception
     {
-        TokenNameLookup tokenNameLookup = Mockito.mock( TokenNameLookup.class );
-        Mockito.when( tokenNameLookup.labelGetName( descriptor.getLabelId() ) ).thenReturn( LABEL1 );
-        Mockito.when( tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) ).thenReturn( PROP1 );
-        return tokenNameLookup;
-    }
+        try ( Transaction tx = db.beginTx();
+              Statement statement = db.statement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( labelId, propertyId );
 
+            try
+            {
+                readOperations.indexGetProviderDescriptor( indexDescriptor );
+                fail( "Should have failed" );
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                // good
+                assertThat( e.getMessage(), allOf(
+                        containsString( "No index" ),
+                        containsString( ":label[" + labelId + "](property[" + propertyId + "])" ) ) );
+            }
+            tx.success();
+        }
+    }
 }

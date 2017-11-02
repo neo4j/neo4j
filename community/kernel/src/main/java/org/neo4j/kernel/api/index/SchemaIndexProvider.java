@@ -155,6 +155,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
             };
 
+    /**
+     * Indicate that {@link Descriptor} has not yet been decided.
+     * Specifically before transaction that create a new index has committed.
+     */
+    public static final Descriptor UNDECIDED = new Descriptor( "Undecided", "0" );
+
     protected final int priority;
     private final Descriptor providerDescriptor;
     private final IndexDirectoryStructure.Factory directoryStructureFactory;

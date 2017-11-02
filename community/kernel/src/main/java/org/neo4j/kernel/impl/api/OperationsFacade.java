@@ -66,6 +66,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.Context;
@@ -589,6 +590,13 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return schemaRead().indexGetState( statement, descriptor );
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return schemaRead().indexGetProviderDescriptor( statement, descriptor );
     }
 
     @Override

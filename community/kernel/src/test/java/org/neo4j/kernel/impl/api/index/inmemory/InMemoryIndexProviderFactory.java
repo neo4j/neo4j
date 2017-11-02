@@ -31,9 +31,10 @@ import static java.util.Objects.requireNonNull;
 public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "in-memory-index";
+    public static final String VERSION = "1.0";
 
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( KEY, "1.0" );
+            new SchemaIndexProvider.Descriptor( KEY, VERSION );
 
     private final SchemaIndexProvider singleProvider;
 

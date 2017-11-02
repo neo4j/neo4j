@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
@@ -146,6 +147,15 @@ public interface StoreReadLayer
      * @throws IndexNotFoundKernelException if index not found.
      */
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    /**
+     * Return index provider descriptor of a stored index.
+     *
+     * @param descriptor {@link LabelSchemaDescriptor} to get provider descriptor for.
+     * @return {@link SchemaIndexProvider.Descriptor} for index.
+     * @throws IndexNotFoundKernelException if index not found.
+     */
+    SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link LabelSchemaDescriptor} to get population progress for.

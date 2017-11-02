@@ -23,17 +23,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
@@ -121,7 +124,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database."} ),
                 equalTo( new Object[]{"db.indexes",
-                        "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)",
+                        "db.indexes() :: (description :: STRING?, label :: STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
+                                "type :: STRING?, provider :: MAP?)",
                         "List all indexes in the database."} ),
                 equalTo( new Object[]{"db.awaitIndex",
                         "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
@@ -291,10 +295,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
         int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "Age" );
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );
+        int propertyKeyId1 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );
+        int propertyKeyId2 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "bar" );
         //TODO: Add test support for composite indexes
-        statement.schemaWriteOperations().indexCreate( SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId ) );
-        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId ) );
+        statement.schemaWriteOperations().indexCreate( forLabel( labelId1, propertyKeyId1 ) );
+        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId1 ) );
+        statement.schemaWriteOperations().indexCreate( forLabel( labelId1, propertyKeyId1, propertyKeyId2 ) );
         commit();
 
         //let indexes come online
@@ -315,9 +321,13 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         // Then
+        Map<String,String> providerDescriptionMap = MapUtil.stringMap(
+                "key", InMemoryIndexProviderFactory.KEY,
+                "version", InMemoryIndexProviderFactory.VERSION );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", "ONLINE", "node_unique_property"},
-                new Object[]{"INDEX ON :Person(foo)", "ONLINE", "node_label_property"}
+                new Object[]{"INDEX ON :Age(foo)", "Age", singletonList("foo" ), "ONLINE", "node_unique_property", providerDescriptionMap},
+                new Object[]{"INDEX ON :Person(foo)", "Person", singletonList( "foo" ), "ONLINE", "node_label_property", providerDescriptionMap},
+                new Object[]{"INDEX ON :Person(foo, bar)", "Person", Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", providerDescriptionMap}
         ) );
         commit();
     }
