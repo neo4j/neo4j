@@ -283,6 +283,64 @@ public class ExplicitIndexTest
         }
     }
 
+    @Test
+    public void relationshipIndexShouldBeAbleToReindexInSameTransaction() throws Exception
+    {
+        // Create relationship and index
+        Node startNode;
+        Node endNode;
+        Relationship relationship;
+        RelationshipIndex index;
+        try ( Transaction tx = db.beginTx() )
+        {
+            startNode = db.createNode();
+            endNode = db.createNode();
+            relationship = startNode.createRelationshipTo( endNode, TYPE );
+
+            index = db.index().forRelationships( TYPE.name() );
+            index.add( relationship, "key", new ValueContext( 1 ).indexNumeric() );
+
+            tx.success();
+        }
+
+        // Verify
+        assertTrue( "Find relationship by property", relationshipExistsByQuery( index, startNode, endNode, false ) );
+        assertTrue( "Find relationship by property and start node", relationshipExistsByQuery( index, startNode, endNode, true ) );
+
+        // Reindex
+        try ( Transaction tx = db.beginTx() )
+        {
+            index.remove( relationship );
+            index.add( relationship, "key", new ValueContext( 2 ).indexNumeric() );
+            tx.success();
+        }
+
+        // Verify again
+        assertTrue( "Find relationship by property", relationshipExistsByQuery( index, startNode, endNode, false ) );
+        assertTrue( "Find relationship by property and start node", relationshipExistsByQuery( index, startNode, endNode, true ) );
+    }
+
+    private boolean relationshipExistsByQuery( RelationshipIndex index, Node startNode, Node endNode, boolean specifyStartNode )
+    {
+        boolean found = false;
+
+        try ( Transaction tx = db.beginTx(); IndexHits<Relationship> query = index
+                .query( "key", QueryContext.numericRange( "key", 0, 3 ), specifyStartNode ? startNode : null, null ) )
+        {
+            for ( Relationship relationship : query )
+            {
+                if ( relationship.getStartNodeId() == startNode.getId() && relationship.getEndNodeId() == endNode.getId() )
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            tx.success();
+        }
+        return found;
+    }
+
     private static void createNodeExplicitIndexWithSingleNode( GraphDatabaseService db, String indexName )
     {
         try ( Transaction tx = db.beginTx() )
