@@ -67,20 +67,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
 public class ConsistencyCheckToolTest
 {
-    private final TestDirectory storeDirectory = TestDirectory.testDirectory();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( storeDirectory ).around( fs );
+    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fs );
 
     @Test
     public void runsConsistencyCheck() throws Exception
     {
         // given
-        File storeDir = storeDirectory.directory();
+        File storeDir = testDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
 
@@ -109,8 +110,8 @@ public class ConsistencyCheckToolTest
                         provider.getLog( "test" ).info( "testMessage" );
                         return ConsistencyCheckService.Result.success( new File( StringUtils.EMPTY ) );
                     } );
-            File storeDir = storeDirectory.directory();
-            File configFile = storeDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
+            File storeDir = testDirectory.directory();
+            File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
             Properties properties = new Properties();
             properties.setProperty( GraphDatabaseSettings.log_timezone.name(), LogTimeZone.SYSTEM.name() );
             properties.store( new FileWriter( configFile ), null );
@@ -129,7 +130,7 @@ public class ConsistencyCheckToolTest
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        File storeDir = storeDirectory.directory();
+        File storeDir = testDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
 
@@ -148,8 +149,8 @@ public class ConsistencyCheckToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        File storeDir = storeDirectory.directory();
-        File configFile = storeDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
+        File storeDir = testDirectory.directory();
+        File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( configFile ), null );
@@ -192,8 +193,8 @@ public class ConsistencyCheckToolTest
     public void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist() throws Exception
     {
         // given
-        File configFile = storeDirectory.file( "nonexistent_file" );
-        String[] args = {storeDirectory.directory().getPath(), "-config", configFile.getPath()};
+        File configFile = testDirectory.file( "nonexistent_file" );
+        String[] args = {testDirectory.directory().getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
 
         try
@@ -217,18 +218,30 @@ public class ConsistencyCheckToolTest
     {
         createGraphDbAndKillIt( Config.defaults() );
 
-        runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
+        runConsistencyCheckToolWith( fs.get(), testDirectory.graphDbDir().getAbsolutePath() );
     }
 
     @Test( expected = ToolFailureException.class )
-    public void failOnNotCleanlyShutdownStoreWithLogsInCustomLocation() throws Exception
+    public void failOnNotCleanlyShutdownStoreWithLogsInCustomRelativeLocation() throws Exception
     {
-        File customConfigFile = storeDirectory.file( "customConfig" );
-        File otherLocation = storeDirectory.directory( "otherLocation" );
-        Config customConfig = Config.defaults( GraphDatabaseSettings.logical_logs_location, otherLocation.getName() );
+        File customConfigFile = testDirectory.file( "customConfig" );
+        Config customConfig = Config.defaults( logical_logs_location, "otherLocation" );
         createGraphDbAndKillIt( customConfig );
         MapUtil.store( customConfig.getRaw(), customConfigFile );
-        String[] args = {storeDirectory.graphDbDir().getPath(), "-config", customConfigFile.getPath()};
+        String[] args = {testDirectory.graphDbDir().getPath(), "-config", customConfigFile.getPath()};
+
+        runConsistencyCheckToolWith( fs.get(), args );
+    }
+
+    @Test( expected = ToolFailureException.class )
+    public void failOnNotCleanlyShutdownStoreWithLogsInCustomAbsoluteLocation() throws Exception
+    {
+        File customConfigFile = testDirectory.file( "customConfig" );
+        File otherLocation = testDirectory.directory( "otherLocation" );
+        Config customConfig = Config.defaults( logical_logs_location, otherLocation.getAbsolutePath() );
+        createGraphDbAndKillIt( customConfig );
+        MapUtil.store( customConfig.getRaw(), customConfigFile );
+        String[] args = {testDirectory.graphDbDir().getPath(), "-config", customConfigFile.getPath()};
 
         runConsistencyCheckToolWith( fs.get(), args );
     }
@@ -255,7 +268,7 @@ public class ConsistencyCheckToolTest
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( config.getRaw()  )
                 .newGraphDatabase();
 

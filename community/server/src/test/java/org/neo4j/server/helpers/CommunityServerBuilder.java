@@ -117,8 +117,7 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = Config.fromFile( configFile ).withHome( configFile.getParentFile() )
-                .withServerDefaults().build();
+        Config config = Config.fromFile( configFile ).withServerDefaults().build();
         config.setLogger( log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
@@ -207,6 +206,8 @@ public class CommunityServerBuilder
                 new File( temporaryFolder, "certificates" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.logs_directory.name(),
                 new File( temporaryFolder, "logs" ).getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.logical_logs_location.name(),
+                new File( temporaryFolder, "transaction-logs" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
         for ( Object key : arbitraryProperties.keySet() )
