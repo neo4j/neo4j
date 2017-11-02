@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.Supplier;
 
+import org.neo4j.function.Suppliers;
+import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
@@ -80,7 +82,7 @@ class Store extends Read implements Token
         this.relationshipStore = stores.getRelationshipStore();
         this.groupStore = stores.getRelationshipGroupStore();
         this.propertyStore = stores.getPropertyStore();
-        this.explicitIndexes = new Lazy<>( explicitIndexes );
+        this.explicitIndexes = Suppliers.lazySingleton( explicitIndexes );
     }
 
     @Override

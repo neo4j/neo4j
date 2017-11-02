@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.values.storable.Value;
 
-public interface IndexCursorProgressor
+public interface IndexCursorProgressor extends AutoCloseable
 {
     boolean next();
 
