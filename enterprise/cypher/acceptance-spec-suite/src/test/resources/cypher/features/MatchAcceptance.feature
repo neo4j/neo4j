@@ -244,3 +244,78 @@ Feature: MatchAcceptance
       | (:A:B) |
       | (:A:C) |
     And no side effects
+
+  Scenario: Should handle EXISTS on node property when node is null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:TestNode)
+      """
+    When executing query:
+      """
+      MATCH (t:TestNode)
+      OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
+      RETURN t, a.Status as s, exists(a.Status) as e
+      """
+    Then the result should be:
+      | t           | s    | e    |
+      | (:TestNode) | null | null |
+    And no side effects
+
+  Scenario: Should handle NOT EXISTS on node property when node is null
+    Given an empty graph
+    And having executed:
+        """
+        CREATE (:TestNode)
+        """
+    When executing query:
+        """
+        MATCH (t:TestNode)
+        OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
+        RETURN t, SUM(CASE WHEN NOT EXISTS(a.Status) OR COALESCE(a.Status, 'Complete') <> 'Complete' THEN 1 ELSE 0 END) AS PendingCount
+        """
+    Then the result should be:
+      | t           | PendingCount |
+      | (:TestNode) | 0            |
+    And no side effects
+
+  Scenario: Should handle simple IS NOT NULL on node property when node is null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:LBL1)
+      """
+    When executing query:
+      """
+      OPTIONAL MATCH (o:LBL1)-[]->(p)
+      WITH p
+      OPTIONAL MATCH (p)
+      WHERE p.prop2 IS NOT NULL
+      RETURN p
+      """
+    Then the result should be:
+      | p    |
+      | null |
+    And no side effects
+
+  Scenario: Should handle complex IS NOT NULL on node property when node is null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:LBL1 {prop0:'foo'})-[:rel]->(:LBL1 {prop1:'bar'})
+      """
+    When executing query:
+      """
+      MATCH (n:LBL1 {prop0:'foo'})-[]->(o:LBL1) WHERE EXISTS(o.prop1)
+      WITH o
+      OPTIONAL MATCH (o)-[:rel1]->(p:LBL2)
+      WITH p
+      OPTIONAL MATCH (p)-[:rel2]->(e:LBL3)
+      WHERE p.prop2 IS NOT NULL
+      RETURN p
+      """
+    Then the result should be:
+      | p    |
+      | null |
+    And no side effects
+
