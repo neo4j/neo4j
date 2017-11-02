@@ -36,6 +36,24 @@ abstract class ScalaPoint extends Point {
 
   @BeanProperty
   val geometryType: String = "Point"
+
+  // Different versions of Neo4j return different implementations of Point, so we need
+  // This to ensure compatibility tests pass when comparing between versions.
+  override def equals(other: Any): Boolean = {
+    if (other == null) {
+      return false
+    }
+    other match {
+      case otherPoint: Point =>
+        if (!otherPoint.getGeometryType.equals(this.getGeometryType)) return false
+        if (!otherPoint.getCRS.getHref.equals(this.getCRS.getHref)) return false
+        val otherCoord = otherPoint.getCoordinate.getCoordinate
+        val thisCoord = this.getCoordinate.getCoordinate
+        otherCoord == thisCoord
+      case _ =>
+        false
+    }
+  }
 }
 
 case class CartesianPoint(@BeanProperty x: Double,

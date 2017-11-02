@@ -30,7 +30,7 @@ import static java.lang.String.format;
 
 public abstract class PointArray extends ArrayValue
 {
-    abstract Point[] value();
+    abstract PointValue[] value();
 
     @Override
     public int length()
@@ -164,16 +164,16 @@ public abstract class PointArray extends ArrayValue
 
     static final class Direct extends PointArray
     {
-        final Point[] value;
+        final PointValue[] value;
 
-        Direct( Point[] value )
+        Direct( PointValue[] value )
         {
             assert value != null;
             this.value = value;
         }
 
         @Override
-        Point[] value()
+        PointValue[] value()
         {
             return value;
         }

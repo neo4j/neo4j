@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -46,6 +47,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
 {
     public static final int NUMBER_HEADER_SIZE = 3;
     public static final int STRING_HEADER_SIZE = 5;
+    public static final int GEOMETRY_HEADER_SIZE = 6;   // This should match contents of GeometryType.GeometryHeader
 
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
@@ -73,8 +75,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         processor.processArray( this, record );
     }
 
-    public static void allocateFromNumbers( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator )
+    public static byte[] encodeFromNumbers( Object array, int offsetBytes )
     {
         Class<?> componentType = array.getClass().getComponentType();
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
@@ -95,20 +96,20 @@ public class DynamicArrayStore extends AbstractDynamicStore
         byte[] bytes;
         if ( isByteArray )
         {
-            bytes = new byte[NUMBER_HEADER_SIZE + arrayLength];
-            bytes[0] = (byte) type.intValue();
-            bytes[1] = (byte) bitsUsedInLastByte;
-            bytes[2] = (byte) requiredBits;
+            bytes = new byte[NUMBER_HEADER_SIZE + arrayLength + offsetBytes];
+            bytes[offsetBytes + 0] = (byte) type.intValue();
+            bytes[offsetBytes + 1] = (byte) bitsUsedInLastByte;
+            bytes[offsetBytes + 2] = (byte) requiredBits;
             if ( isPrimitiveByteArray )
             {
-                arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, arrayLength );
+                arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE + offsetBytes, arrayLength );
             }
             else
             {
                 Byte[] source = (Byte[]) array;
                 for ( int i = 0; i < source.length; i++ )
                 {
-                    bytes[NUMBER_HEADER_SIZE + i] = source[i];
+                    bytes[NUMBER_HEADER_SIZE + offsetBytes + i] = source[i];
                 }
             }
         }
@@ -119,8 +120,22 @@ public class DynamicArrayStore extends AbstractDynamicStore
             bits.put( (byte) bitsUsedInLastByte );
             bits.put( (byte) requiredBits );
             type.writeAll( array, arrayLength, requiredBits, bits );
-            bytes = bits.asBytes();
+            bytes = bits.asBytes( offsetBytes );
         }
+        return bytes;
+    }
+
+    public static void allocateFromNumbers( Collection<DynamicRecord> target, Object array,
+            DynamicRecordAllocator recordAllocator )
+    {
+        byte[] bytes = encodeFromNumbers( array, 0 );
+        allocateRecordsFromBytes( target, bytes, recordAllocator );
+    }
+
+    public static void allocateFromPoints( Collection<DynamicRecord> target, PointValue[] array,
+            DynamicRecordAllocator recordAllocator )
+    {
+        byte[] bytes = GeometryType.encodePointArray( array );
         allocateRecordsFromBytes( target, bytes, recordAllocator );
     }
 
@@ -166,6 +181,10 @@ public class DynamicArrayStore extends AbstractDynamicStore
         {
             allocateFromString( target, (String[]) array, recordAllocator );
         }
+        else if ( type.equals( PointValue.class ) )
+        {
+            allocateFromPoints( target, (PointValue[]) array, recordAllocator );
+        }
         else
         {
             allocateFromNumbers( target, array, recordAllocator );
@@ -192,6 +211,19 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 result[i] = PropertyStore.decodeString( stringByteArray );
             }
             return Values.stringArray( result );
+        }
+        else if ( typeId == PropertyType.GEOMETRY.intValue() )
+        {
+            GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes(header);
+            if ( geometryHeader.geometryType == GeometryType.GEOMETRY_POINT.gtype )
+            {
+                return GeometryType.decodePointArray( geometryHeader, bArray );
+            }
+            else
+            {
+                //TODO: Perhaps should throw an exception
+                return Values.NO_VALUE;
+            }
         }
         else
         {
