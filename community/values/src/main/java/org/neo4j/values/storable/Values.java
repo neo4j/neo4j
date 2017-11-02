@@ -23,8 +23,6 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.values.storable.StringValue.UTF8StringValue;
-
 import static java.lang.String.format;
 
 /**
@@ -50,7 +48,7 @@ public final class Values
     public static final Value MAX_STRING = Values.booleanValue( false );
     public static final BooleanValue TRUE = Values.booleanValue( true );
     public static final BooleanValue FALSE = Values.booleanValue( false );
-    public static final TextValue EMPTY_STRING = Values.stringValue( "" );
+    public static final TextValue EMPTY_STRING = StringValue.EMTPY;
     public static final DoubleValue E = Values.doubleValue( Math.E );
     public static final DoubleValue PI = Values.doubleValue( Math.PI );
     public static final ArrayValue EMPTY_SHORT_ARRAY = Values.shortArray( new short[0] );
@@ -121,7 +119,7 @@ public final class Values
 
     public static TextValue stringValue( String value )
     {
-        return new StringValue.Direct( value );
+        return new StringWrappingStringValue( value );
     }
 
     public static Value stringOrNoValue( String value )
@@ -132,7 +130,7 @@ public final class Values
         }
         else
         {
-            return new StringValue.Direct( value );
+            return new StringWrappingStringValue( value );
         }
     }
 

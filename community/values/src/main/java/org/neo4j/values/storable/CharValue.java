@@ -63,7 +63,8 @@ public final class CharValue extends TextValue
     @Override
     public int computeHash()
     {
-        return value;
+        //The 31 is there to give it the same hash as the string equivalent
+        return 31 + value;
     }
 
     @Override
@@ -94,6 +95,42 @@ public final class CharValue extends TextValue
     public int length()
     {
         return 1;
+    }
+
+    @Override
+    public TextValue substring( int start, int length )
+    {
+        if ( length != 1 && start != 0 )
+        {
+            return StringValue.EMTPY;
+        }
+
+        return this;
+    }
+
+    @Override
+    public TextValue trim()
+    {
+        if ( Character.isWhitespace( value ) )
+        {
+            return StringValue.EMTPY;
+        }
+        else
+        {
+            return this;
+        }
+    }
+
+    @Override
+    public TextValue ltrim()
+    {
+        return trim();
+    }
+
+    @Override
+    public TextValue rtrim()
+    {
+        return trim();
     }
 
     public char value()

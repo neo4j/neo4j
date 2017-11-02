@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, ParameterWrongTypeException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, ParameterWrongTypeException}
 import org.neo4j.values._
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
 
@@ -38,14 +39,19 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
   override def symbolTableDependencies = arg.symbolTableDependencies
 }
 
+object StringFunction {
+
+  def notAString(a: Any) = throw new CypherTypeException(
+    "Expected a string value for %s, but got: %s; consider converting it to a string with toString()."
+      .format(toString, a.toString))
+}
+
 case object asString extends (AnyValue => String) {
 
   override def apply(a: AnyValue): String = a match {
-    case x if x == Values.NO_VALUE => null
+    case NO_VALUE => null
     case x: TextValue => x.stringValue()
-    case _ => throw new CypherTypeException(
-      "Expected a string value for %s, but got: %s; consider converting it to a string with toString()."
-        .format(toString(), a.toString))
+    case _ => StringFunction.notAString(a)
   }
 }
 
@@ -81,24 +87,30 @@ case class ToUpperFunction(argument: Expression) extends StringFunction(argument
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m, state)).replaceAll("^\\s+", ""))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+    case t: TextValue => t.ltrim()
+    case _ => StringFunction.notAString(value)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
 }
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m, state)).replaceAll("\\s+$", ""))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+    case t: TextValue => t.rtrim()
+    case _ => StringFunction.notAString(value)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
 }
 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m, state)).trim)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+    case t: TextValue => t.trim()
+    case _ => StringFunction.notAString(value)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
@@ -106,28 +118,15 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val origVal = asString(orig(m, state))
-
-    def noMoreThanMax(maxLength: Int, length: Int): Int =
-      if (length > maxLength) {
-        maxLength
-      } else {
-        length
-      }
-
-    // if start goes off the end of the string, let's be nice and handle that.
-    val startVal = noMoreThanMax(origVal.length, asInt(start(m, state)).value())
-
-    // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = length match {
-      case None => origVal.length - startVal
-      case Some(func) => noMoreThanMax(origVal.length - startVal, asInt(func(m, state)).value())
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+      case text: TextValue =>
+        val startVal = asInt(start(m, state)).value()
+        length match {
+          case None => text.substring(startVal)
+          case Some(func) => text.substring(startVal, asInt(func(m, state)).value())
+        }
+      case _ => StringFunction.notAString(value)
     }
-
-    Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
-  }
-
 
   override def arguments = Seq(orig, start) ++ length
 
@@ -153,7 +152,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
     val replaceWithVal = asString(replaceWith(m, state))
 
     if (searchVal == null || replaceWithVal == null) {
-      Values.NO_VALUE
+      NO_VALUE
     } else {
       Values.stringValue(origVal.replace(searchVal, replaceWithVal))
     }
@@ -177,14 +176,14 @@ case class SplitFunction(orig: Expression, separator: Expression)
     val separatorVal = asString(separator(m, state))
 
     if (origVal == null || separatorVal == null) {
-      Values.NO_VALUE
+      NO_VALUE
     } else {
       if (separatorVal.length > 0) {
-        VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray:_*))
+        VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray: _*))
       } else if (origVal.isEmpty) {
         VirtualValues.list(Values.EMPTY_STRING)
       } else {
-        VirtualValues.fromArray(Values.stringArray(origVal.sliding(1).toArray:_*))
+        VirtualValues.fromArray(Values.stringArray(origVal.sliding(1).toArray: _*))
       }
     }
   }
@@ -208,16 +207,9 @@ case class SplitFunction(orig: Expression, separator: Expression)
 case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val origVal = asString(orig(m, state))
-    val startVal = 0
-    val expectedLength = asInt(length(m, state)).value()
-    // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < expectedLength + startVal)
-      origVal.length
-    else
-      expectedLength
-    Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+      case origVal: TextValue => origVal.substring(0, asInt(length(m, state)).value())
+      case _ => StringFunction.notAString(value)
   }
 
   override def arguments = Seq(orig, length)
@@ -231,14 +223,15 @@ case class LeftFunction(orig: Expression, length: Expression)
 case class RightFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val origVal = asString(orig(m, state))
-    // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < asInt(length(m, state)).value()) origVal.length
-    else asInt(length(m, state)).value()
-    val startVal = origVal.length - lengthVal
-    Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+      case origVal: TextValue =>
+        // if length goes off the end of the string, let's be nice and handle that.
+        val lengthVal = asInt(length(m, state)).value()
+        if (lengthVal < 0) throw new IndexOutOfBoundsException(s"negative length")
+        val startVal = origVal.length - lengthVal
+        origVal.substring(Math.max(0,startVal))
+      case _ => StringFunction.notAString(value)
+    }
 
   override def arguments = Seq(orig, length)
 

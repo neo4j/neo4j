@@ -36,9 +36,9 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.UTF8StringValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -254,7 +254,7 @@ public class Neo4jPackTest
 
         // When
         AnyValue unpacked = unpacked( output.bytes() );
-        assertThat( unpacked, is( instanceOf( StringValue.UTF8StringValue.class ) ));
+        assertThat( unpacked, is( instanceOf( UTF8StringValue.class ) ));
 
         // Then
         assertThat( unpacked, equalTo( textValue ) );

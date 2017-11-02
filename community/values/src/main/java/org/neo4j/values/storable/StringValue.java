@@ -19,9 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
 import static java.lang.String.format;
 
 public abstract class StringValue extends TextValue
@@ -53,12 +50,6 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
-    public int computeHash()
-    {
-        return value().hashCode();
-    }
-
-    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeString( value() );
@@ -77,12 +68,6 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
-    public int compareTo( TextValue other )
-    {
-        return value().compareTo( other.stringValue() );
-    }
-
-    @Override
     public String stringValue()
     {
         return value();
@@ -94,100 +79,78 @@ public abstract class StringValue extends TextValue
         return format( "'%s'", value() );
     }
 
-    static final class Direct extends StringValue
+    @Override
+    public int compareTo( TextValue other )
     {
-        final String value;
+        String thisString = value();
+        String thatString = other.stringValue();
+        int len1 = thisString.length();
+        int len2 = thatString.length();
+        int lim = Math.min( len1, len2 );
 
-        Direct( String value )
+        int k = 0;
+        while ( k < lim )
         {
-            assert value != null;
-            this.value = value;
+            int c1 = thisString.codePointAt( k );
+            int c2 = thatString.codePointAt( k );
+            if ( c1 != c2 )
+            {
+                return c1 - c2;
+            }
+            k += Character.charCount( c1 );
         }
+        return length() - other.length();
+    }
 
+    static TextValue EMTPY = new StringValue()
+    {
         @Override
-        String value()
+        protected int computeHash()
         {
-            return value;
+            return 0;
         }
 
         @Override
         public int length()
         {
-            return value.length();
-        }
-    }
-
-    /*
-     * Just as a normal StringValue but is backed by a byte array and does string
-     * serialization lazily.
-      *
-      * TODO in this implementation most operations will actually load the string
-      * such as hashCode, length. These could be implemented using
-      * the byte array directly in later optimizations
-     */
-    public static final class UTF8StringValue extends StringValue
-    {
-        private volatile String value;
-        private final byte[] bytes;
-        private final int offset;
-        private final int length;
-
-        UTF8StringValue( byte[] bytes, int offset, int length )
-        {
-            assert bytes != null;
-            this.bytes = bytes;
-            this.offset = offset;
-            this.length = length;
+            return 0;
         }
 
         @Override
-        public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
+        public TextValue substring( int start, int end )
         {
-            writer.writeUTF8( bytes, offset, length );
+            return this;
         }
 
         @Override
-        public boolean equals( Value value )
+        public TextValue trim()
         {
-            if ( value instanceof UTF8StringValue )
-            {
-                return Arrays.equals( bytes, ((UTF8StringValue) value).bytes );
-            }
-            else
-            {
-                return super.equals( value );
-            }
+            return this;
+        }
+
+        @Override
+        public TextValue ltrim()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue rtrim()
+        {
+            return this;
+        }
+
+        @Override
+        public int compareTo( TextValue other )
+        {
+            return Integer.compare( 0, other.length() );
         }
 
         @Override
         String value()
         {
-            String s = value;
-            if ( s == null )
-            {
-                synchronized ( this )
-                {
-                    s = value;
-                    if ( s == null )
-                    {
-                        s = value = new String( bytes, offset, length, StandardCharsets.UTF_8 );
-
-                    }
-                }
-            }
-            return s;
+            return "";
         }
-
-        @Override
-        public int length()
-        {
-            return value().length();
-        }
-
-        public byte[] bytes()
-        {
-            return bytes;
-        }
-    }
+    };
 }
 

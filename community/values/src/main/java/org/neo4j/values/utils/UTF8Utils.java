@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.utils;
 
-import org.neo4j.values.storable.StringValue.UTF8StringValue;
+import org.neo4j.values.storable.UTF8StringValue;
 
 import static org.neo4j.values.storable.Values.utf8Value;
 

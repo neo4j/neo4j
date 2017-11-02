@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{EMPTY_STRING, stringValue}
@@ -54,7 +54,7 @@ class StringFunctionsTest extends CypherFunSuite {
     left("hello", 8) should equal(stringValue("hello"))
     left(null, 8) should equal(expectedNull)
     intercept[CypherTypeException](left(1042, 2))
-    intercept[StringIndexOutOfBoundsException](left("hello", -4))
+    intercept[IndexOutOfBoundsException](left("hello", -4))
   }
 
   test("rightTests") {
@@ -66,7 +66,7 @@ class StringFunctionsTest extends CypherFunSuite {
     right("hello", 8) should equal(stringValue("hello"))
     right(null, 8) should equal(expectedNull)
     intercept[CypherTypeException](right(1024, 2))
-    intercept[StringIndexOutOfBoundsException](right("hello", -4))
+    intercept[IndexOutOfBoundsException](right("hello", -4))
   }
 
   test("substringTests") {
@@ -87,8 +87,10 @@ class StringFunctionsTest extends CypherFunSuite {
     substringFrom("0123456789", 5) should equal(stringValue("56789"))
     substringFrom("0123456789", 15) should equal(EMPTY_STRING)
     substring(null, 8, 5) should equal(expectedNull)
+    substring( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 1) should equal(stringValue("\uD83D\uDE21"))
+    substring( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 2) should equal(stringValue("\uD83D\uDE21\uD83D\uDE21"))
     intercept[CypherTypeException](substring(1024, 1, 2) should equal(expectedNull))
-    intercept[StringIndexOutOfBoundsException](substring("hello", -4, 2) should equal(expectedNull))
+    intercept[IndexOutOfBoundsException](substring("hello", -4, 2) should equal(expectedNull))
   }
 
   test("lowerTests") {
@@ -119,6 +121,7 @@ class StringFunctionsTest extends CypherFunSuite {
     ltrim("  hello") should equal(stringValue("hello"))
     ltrim("  hello  ") should equal(stringValue("hello  "))
     ltrim(null) should equal(expectedNull)
+    ltrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠\u2009"))//Contains `thin space`
     intercept[CypherTypeException](ltrim(1024))
   }
 
@@ -129,6 +132,7 @@ class StringFunctionsTest extends CypherFunSuite {
     rtrim("Hello   ") should equal(stringValue("Hello"))
     rtrim("  hello   ") should equal(stringValue("  hello"))
     rtrim(null) should equal(expectedNull)
+    rtrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("\u2009㺂࿝鋦毠"))//Contains `thin space`
     intercept[CypherTypeException](rtrim(1024))
   }
 
@@ -140,6 +144,7 @@ class StringFunctionsTest extends CypherFunSuite {
     trim("hello  ") should equal(stringValue("hello"))
     trim("  hello  ") should equal(stringValue("hello"))
     trim("  hello") should equal(stringValue("hello"))
+    trim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠"))//Contains `thin space`
     trim(null) should equal(expectedNull)
     intercept[CypherTypeException](trim(1042))
   }
