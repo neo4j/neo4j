@@ -56,7 +56,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
 
     public PropertyCursor( Read read )
     {
-        super( -1 );
+        super( NO_ID );
         this.read = read;
     }
 

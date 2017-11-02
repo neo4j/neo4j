@@ -41,7 +41,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
 
     NodeCursor( Read read )
     {
-        super( -1 );
+        super( NO_ID );
         this.read = read;
         this.labelCursor = read.labelCursor();
     }
@@ -184,6 +184,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
 
     private void reset()
     {
-        setId( next = NO_ID );
+        next = NO_ID;
+        setId( NO_ID );
     }
 }

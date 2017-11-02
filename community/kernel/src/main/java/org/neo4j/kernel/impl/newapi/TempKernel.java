@@ -79,7 +79,7 @@ class TempKernel implements Kernel, Session
     {
     }
 
-    private static class Transaction extends Store implements org.neo4j.internal.kernel.api.Transaction
+    private static class Transaction extends AllStoreHolder implements org.neo4j.internal.kernel.api.Transaction
     {
         Transaction( RecordStorageEngine engine, KernelTransactions ktx )
         {

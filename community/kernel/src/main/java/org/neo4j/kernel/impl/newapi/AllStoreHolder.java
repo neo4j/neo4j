@@ -63,7 +63,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-class Store extends Read implements Token
+class AllStoreHolder extends Read implements Token
 {
     private final RelationshipGroupStore groupStore;
     private final PropertyStore propertyStore;
@@ -73,7 +73,7 @@ class Store extends Read implements Token
     private final StoreReadLayer read;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
-    Store( RecordStorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
+    AllStoreHolder( RecordStorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
     {
         read = engine.storeReadLayer();
         statement = read.newStatement();
