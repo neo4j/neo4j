@@ -49,7 +49,6 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
     val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
     val converters: ExpressionConverters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
-
     val operatorBuilder = new PipelineBuilder(pipelines, converters)
     val operators = operatorBuilder.create(physicalPlan)
     val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan)
@@ -64,7 +63,6 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   }
 
   override def postConditions: Set[Condition] = Set.empty
-
 
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
@@ -116,6 +114,7 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
 
   override def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = {
     Dispatcher.instance.run(operators, visitor, queryContext, pipelineInformation(logicalPlan.assignedId), params)
+//    new SingleThreadedExecutor(operators, queryContext, pipelineInformation(logicalPlan.assignedId), params).accept(visitor)
 //    new Executor(operators, queryContext, params).accept(visitor)
   }
 

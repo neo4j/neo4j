@@ -23,7 +23,6 @@ import java.io.File
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.runtime.PathImpl
-import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.Dispatcher
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -53,8 +52,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
           }
         }
 
-        val NODES = 1000
-        val EDGES = 10000
+        val NODES = 10000
+        val EDGES = 100000
 
         val nodes = (0 to NODES).map { x =>
           ping()
@@ -74,33 +73,39 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     tx.close()
  //       db.shutdown()
 
-    println("running query")
-    val q = "cypher runtime=morsel match (a)-->(b) return a, b order by id(b)"
-    val res = db.execute(q)
     val visitor = new ResultVisitor[RuntimeException] {
       override def visit(row: Result.ResultRow): Boolean = {
-        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
+//        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
         true
       }
     }
-    res.accept(visitor)
-
-    if (false) {
-      val threads =
-        0 to 10 map { _ =>
-          val thread = new Thread(new Runnable {
-            override def run(): Unit = {
-              val result = db.execute(q)
-              result.accept(visitor)
-            }
-          })
-          thread.start()
-          thread
-        }
-      threads.foreach(_.join())
+    Seq("compiled", "morsel") foreach { runtime =>
+      val q = s"cypher runtime=$runtime match (a)-->(b) return a, b"
+      val started = System.currentTimeMillis()
+      (0 to 1000) foreach { _ =>
+        val res = db.execute(q)
+        res.accept(visitor)
+      }
+      println(s"$runtime took " + (System.currentTimeMillis() - started))
     }
+    println("running query")
 
-    Dispatcher.instance.shutdown()
+//    if (false) {
+//      val threads =
+//        0 to 10 map { _ =>
+//          val thread = new Thread(new Runnable {
+//            override def run(): Unit = {
+//              val result = db.execute(q)
+//              result.accept(visitor)
+//            }
+//          })
+//          thread.start()
+//          thread
+//        }
+//      threads.foreach(_.join())
+//    }
+
+//    Dispatcher.instance.shutdown()
     db.shutdown()
   }
 

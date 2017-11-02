@@ -90,13 +90,14 @@ class Conductor(minions: Array[Minion], MORSEL_SIZE: Int, queryQueue: Concurrent
           shutdown()
         }
 
-        while (!minion.output.isEmpty) {
-          val resultObject: ResultObject = minion.output.poll()
+        var resultObject: ResultObject = minion.output.poll()
+        while (resultObject != null) {
           debug(java.util.Arrays.toString(resultObject.morsel.longs))
           debug(java.util.Arrays.toString(resultObject.morsel.refs.asInstanceOf[Array[Object]]))
           debug(s"${resultObject.pipeline} finished running on ${minion.toString}")
           scheduleMoreWorkOnMorsel(resultObject, workQueue)
           createContinuationTask(minion, resultObject, workQueue)
+          resultObject = minion.output.poll()
         }
     }
   }

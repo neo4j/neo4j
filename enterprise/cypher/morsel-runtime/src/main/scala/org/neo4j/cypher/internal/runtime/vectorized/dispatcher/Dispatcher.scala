@@ -31,8 +31,12 @@ import org.neo4j.values.virtual.MapValue
 
 class Dispatcher {
 
-  private val MORSEL_SIZE = 10000
-  private val WORKER_THREADS = 0
+  private val MORSEL_SIZE = 1000
+  private val WORKER_THREADS = {
+    val r = Runtime.getRuntime.availableProcessors() * 2
+    println(s"starting $r minions")
+    r
+  }
 
   def run[E <: Exception](pipeline: Pipeline,
                           visitor: Result.ResultVisitor[E],

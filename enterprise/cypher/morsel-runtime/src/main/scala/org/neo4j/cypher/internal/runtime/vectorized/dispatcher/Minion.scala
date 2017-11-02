@@ -34,6 +34,7 @@ class Minion() extends Runnable {
   val output = new ArrayBlockingQueue[ResultObject](100)
   private var myQueryContext: QueryContext = _
   var crashed: Exception = null
+  private def debug(s: => String): Unit = if(false) println(s)
 
   override def run(): Unit = {
     // Take a morsel, work a morsel, return a morsel. 'Tis the life of a Worker, no more, no less.
@@ -52,7 +53,10 @@ class Minion() extends Runnable {
 
           val morsel = task.morsel
           val state = task.query.queryState
+
+          debug(s"${System.currentTimeMillis()} $this takes on work for ${task.pipeline}: ${task.message}")
           val next = task.pipeline.operate(task.message, morsel, myQueryContext, state)
+          debug(s"${System.currentTimeMillis()} $this finished on work for ${task.pipeline}: $next")
 
           output.put(ResultObject(task.pipeline, task.query, next, morsel))
         } catch {
