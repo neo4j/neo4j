@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>3.2.7-SNAPSHOT</version>
+    <version>3.2.8-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-compiler-3.2</artifactId>
   <packaging>jar</packaging>
-  <version>3.2.7-SNAPSHOT</version>
+  <version>3.2.8-SNAPSHOT</version>
   <name>Neo4j - Cypher Compiler 3.2</name>
   <description>Compiler for Cypher 3.2</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
