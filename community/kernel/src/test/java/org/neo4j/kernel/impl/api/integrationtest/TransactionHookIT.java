@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -92,8 +93,8 @@ public class TransactionHookIT extends KernelIntegrationTest
         }
         catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
         {
-            assertThat( e.getCause().getMessage(), equalTo( "Transaction handler failed." ) );
-            assertThat( e.getCause().getCause().getMessage(), equalTo( message ) );
+            assertThat( e.status(), equalTo( Status.Transaction.TransactionHookFailed ) );
+            assertThat( e.getCause().getMessage(), equalTo( message ) );
         }
         // Then
         verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),

@@ -28,7 +28,6 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TransactionHook.Outcome;
-import org.neo4j.kernel.api.exceptions.TransactionHookException;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -92,18 +91,18 @@ public class TransactionHooks
     public static class TransactionHooksState
     {
         private final List<Pair<TransactionHook, Outcome>> hooksWithAttachment = new ArrayList<>();
-        private TransactionHookException failure;
+        private Throwable failure;
 
         public void add( TransactionHook hook, Outcome outcome )
         {
             hooksWithAttachment.add( Pair.of( hook, outcome ) );
             if ( outcome != null && !outcome.isSuccessful() )
             {
-                failure = new TransactionHookException( outcome.failure(), "Transaction handler failed." );
+                failure = outcome.failure();
             }
         }
 
-        public Iterable<Pair<TransactionHook, Outcome>> hooksWithOutcome()
+        Iterable<Pair<TransactionHook, Outcome>> hooksWithOutcome()
         {
             return hooksWithAttachment;
         }
@@ -113,7 +112,7 @@ public class TransactionHooks
             return failure != null;
         }
 
-        public TransactionHookException failure()
+        public Throwable failure()
         {
             return failure;
         }
