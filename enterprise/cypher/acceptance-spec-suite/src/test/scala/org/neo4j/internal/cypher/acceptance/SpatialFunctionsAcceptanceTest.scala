@@ -304,7 +304,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     failWithError(config, "RETURN point(1) as dist", List("Type mismatch: expected Map, Node or Relationship but was Integer"))
   }
 
-  test("point function should be assignable to node property") {
+  test("point should be assignable to node property") {
     // Given
     createLabeledNode("Place")
 
@@ -318,7 +318,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> GeographicPoint(12.78, 56.7, CRS.WGS84))))
   }
 
-  test("point function should be readable from node property") {
+  test("point should be readable from node property") {
     // Given
     createLabeledNode("Place")
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
@@ -333,5 +333,57 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     point should equal(GeographicPoint(12.78, 56.7, CRS.WGS84))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
+  }
+
+  test("array of points should be assignable to node property") {
+    // Given
+    createLabeledNode("Place")
+
+    // When
+    val config = expectedToSucceed - Configs.SlottedInterpreted - Configs.Cost3_1 - Configs.AllRulePlanners
+    val query =
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({x: num, y: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN points
+      """.stripMargin
+    val result = executeWith(config, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    result.toList should equal(List(Map("points" -> List(
+      CartesianPoint(1.0, 1.0, CRS.Cartesian),
+      CartesianPoint(2.0, 2.0, CRS.Cartesian),
+      CartesianPoint(3.0, 3.0, CRS.Cartesian)
+    ))))
+  }
+
+  test("array of points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({x: num, y: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      CartesianPoint(1.0, 1.0, CRS.Cartesian),
+      CartesianPoint(2.0, 2.0, CRS.Cartesian),
+      CartesianPoint(3.0, 3.0, CRS.Cartesian)
+    ))
   }
 }

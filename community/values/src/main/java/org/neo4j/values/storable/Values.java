@@ -63,6 +63,7 @@ public final class Values
     public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray( new long[0] );
     public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray( new float[0] );
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
+    public static final ArrayValue EMPTY_POINT_ARRAY = Values.pointArray( new PointValue[0] );
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
     private Values()
@@ -292,6 +293,16 @@ public final class Values
 
     public static PointArray pointArray( Point[] points )
     {
+        PointValue[] values = new PointValue[points.length];
+        for ( int i = 0; i < points.length; i++ )
+        {
+            values[i] = Values.point( points[i] );
+        }
+        return new PointArray.Direct( values );
+    }
+
+    public static PointArray pointArray( PointValue[] points )
+    {
         return new PointArray.Direct( points );
     }
 
@@ -487,6 +498,10 @@ public final class Values
         if ( value instanceof Short[] )
         {
             return shortArray( copy( value, new short[value.length] ) );
+        }
+        if ( value instanceof PointValue[] )
+        {
+            return pointArray( copy( value, new PointValue[value.length] ) );
         }
         if ( value instanceof Point[] )
         {

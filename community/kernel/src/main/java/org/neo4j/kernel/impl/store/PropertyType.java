@@ -155,6 +155,10 @@ public enum PropertyType
             {
                 return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
             }
+            else if ( itemType <= GEOMETRY.byteValue() )
+            {
+                return headOf( recordBytes, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
+            }
             throw new IllegalArgumentException( "Unknown array type " + itemType );
         }
 

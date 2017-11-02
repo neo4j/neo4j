@@ -19,9 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.nio.ByteBuffer;
+
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -52,7 +58,7 @@ public enum GeometryType
                 }
             };
 
-    private final int gtype;
+    public final int gtype;
 
     GeometryType( int gtype )
     {
@@ -133,13 +139,13 @@ public enum GeometryType
         }
         if ( dimension > 3 )
         {
-            throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported in the PropertyStore" );
+            throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported" );
         }
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( getCRSTable( firstBlock ), getCRSCode( firstBlock ) );
         return find( gtype ).decode( crs, dimension, valueBlocks, offset );
     }
 
-    public static long[] encodePoint( int keyId, CoordinateReferenceSystem crs, double[] coordinate ) throws IllegalArgumentException
+    public static long[] encodePoint( int keyId, CoordinateReferenceSystem crs, double[] coordinate )
     {
         if ( coordinate.length > 3 )
         {
@@ -160,5 +166,99 @@ public enum GeometryType
             data[1 + i] = Double.doubleToLongBits( coordinate[i] );
         }
         return data;
+    }
+
+    public static byte[] encodePointArray( PointValue[] points )
+    {
+        int dimension = points[0].coordinate().length;
+        double[] data = new double[points.length * dimension];
+        for ( int i = 0; i < data.length; i++ )
+        {
+            data[i] = points[i / dimension].coordinate()[i % dimension];
+        }
+        int code = points[0].getCoordinateReferenceSystem().code;
+        GeometryHeader geometryHeader = new GeometryHeader( GeometryType.GEOMETRY_POINT.gtype, dimension,
+                points[0].getCoordinateReferenceSystem() );
+        byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
+        geometryHeader.writeArrayHeaderTo(bytes);
+        return bytes;
+    }
+
+    /**
+     * Handler for header information for Geometry objects and arrays of Geometry objects
+     */
+    public static class GeometryHeader
+    {
+        public final int geometryType;
+        private final int dimension;
+        private final CoordinateReferenceSystem crs;
+
+        private GeometryHeader( int geometryType, int dimension, CoordinateReferenceSystem crs )
+        {
+            this.geometryType = geometryType;
+            this.dimension = dimension;
+            this.crs = crs;
+        }
+
+        private GeometryHeader( int geometryType, int dimension, int crsTableId, int crsCode )
+        {
+            this( geometryType, dimension, CoordinateReferenceSystem.get( crsTableId, crsCode ) );
+        }
+
+        private void writeArrayHeaderTo(byte[] bytes)
+        {
+            bytes[0] = (byte) PropertyType.GEOMETRY.intValue();
+            bytes[1] = (byte) geometryType;
+            bytes[2] = (byte) dimension;
+            bytes[3] = (byte) crs.table.tableId;
+            bytes[4] = (byte) (crs.code & 0xFFL);
+            bytes[5] = (byte) (crs.code >> 8 & 0xFFL);
+        }
+
+        static GeometryHeader fromArrayHeaderBytes( byte[] header )
+        {
+            int geometryType = header[1];
+            int dimension = header[2];
+            int crsTableId = header[3];
+            int crsCode = header[4] + (header[5] << 8);
+            return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
+        }
+
+        public static GeometryHeader fromArrayHeaderByteBuffer( ByteBuffer buffer )
+        {
+            int geometryType = buffer.get();
+            int dimension = buffer.get();
+            int crsTableId = buffer.get();
+            int crsCode = buffer.get() + (buffer.get() << 8);
+            return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
+        }
+    }
+
+    public static ArrayValue decodePointArray( GeometryHeader header, byte[] data )
+    {
+        byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
+        byte[] dataBody = new byte[data.length - dataHeader.length];
+        System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
+        Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
+        if ( dataValue instanceof FloatingPointArray )
+        {
+            FloatingPointArray numbers = (FloatingPointArray) dataValue;
+            PointValue[] points = new PointValue[((int) numbers.length() / header.dimension)];
+            for ( int i = 0; i < points.length; i++ )
+            {
+                double[] coords = new double[header.dimension];
+                for ( int d = 0; d < header.dimension; d++ )
+                {
+                    coords[d] = numbers.doubleValue( i * header.dimension + d );
+                }
+                points[i] = Values.pointValue( header.crs, coords );
+            }
+            return Values.pointArray( points );
+        }
+        else
+        {
+            //TODO: Perhaps throw an exception
+            return Values.EMPTY_POINT_ARRAY;
+        }
     }
 }

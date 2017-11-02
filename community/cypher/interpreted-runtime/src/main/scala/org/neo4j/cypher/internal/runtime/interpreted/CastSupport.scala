@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
@@ -90,6 +91,8 @@ object CastSupport {
       case (_: FloatValue, _: NumberValue) => a
       case (_: DoubleValue, _: NumberValue) => a
 
+      case (_: PointValue, _: PointValue) => a
+
       case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")
 
@@ -123,6 +126,10 @@ object CastSupport {
       transform(new ArrayConverterWriter(classOf[Float], a => Values.floatArray(a.asInstanceOf[Array[Float]]))))
     case _: DoubleValue => Converter(
       transform(new ArrayConverterWriter(classOf[Double], a => Values.doubleArray(a.asInstanceOf[Array[Double]]))))
+    case _: PointValue => Converter(
+      transform(new ArrayConverterWriter(classOf[PointValue], a => Values.pointArray(a.asInstanceOf[Array[PointValue]]))))
+    case _: Point => Converter(
+      transform(new ArrayConverterWriter(classOf[Point], a => Values.pointArray(a.asInstanceOf[Array[Point]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 
@@ -199,9 +206,8 @@ object CastSupport {
       _array = value
     }
 
-    override def writePoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Unit = {
-      throw new UnsupportedOperationException("Arrays of points are not yet supported")
-    }
+    override def writePoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Unit =
+      write(Values.pointValue(crs, coordinate: _*))
   }
 
 }

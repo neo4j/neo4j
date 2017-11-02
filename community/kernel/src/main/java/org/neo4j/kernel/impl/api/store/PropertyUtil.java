@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.util.Bits;
@@ -54,6 +55,14 @@ public class PropertyUtil
                     buffer.position( buffer.position() + byteLength );
                 }
                 return Values.stringArray( result );
+            }
+
+            else if ( typeId == PropertyType.GEOMETRY.intValue() )
+            {
+                GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer( buffer );
+                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                buffer.get( byteArray );
+                return GeometryType.decodePointArray( header, byteArray );
             }
             else
             {
