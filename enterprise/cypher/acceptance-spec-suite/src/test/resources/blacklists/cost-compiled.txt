@@ -196,3 +196,5 @@ difficult to plan query number 3
 Match on multiple labels with OR
 Should handle EXISTS on node property when node is null
 Should handle NOT EXISTS on node property when node is null
+Should handle simple IS NOT NULL on node property when node is null
+Should handle complex IS NOT NULL on node property when node is null
