@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
@@ -46,7 +46,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.tooling.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.tooling.DataGeneratorInput.bareboneRelationshipHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -141,7 +140,7 @@ public class QuickImport
         Input input = new DataGeneratorInput(
                 nodeCount, relationshipCount,
                 generator.nodes(), generator.relationships(),
-                idType, silentBadCollector( BadCollector.UNLIMITED_TOLERANCE ) );
+                idType, Collector.EMPTY );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
