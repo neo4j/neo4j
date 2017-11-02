@@ -40,7 +40,8 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
     private static final int N_TRAVERSALS = 10_000;
     private static int N_NODES = 100;
     private static int N_RELATIONSHIPS = 1000;
-    private static Random random = new Random( 666 );
+    private static long seed = (new Random()).nextInt();
+    private static Random random = new Random( seed );
     private static List<Long> nodeIds = new ArrayList<>();
 
     @Override
@@ -108,6 +109,11 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
                     }
                 }
             }
+        }
+        catch ( Throwable t )
+        {
+            System.err.println( "\nFailed with random seed " + seed );
+            throw t;
         }
     }
 }
