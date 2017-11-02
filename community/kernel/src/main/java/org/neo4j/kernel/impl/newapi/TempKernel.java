@@ -36,6 +36,10 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+/**
+ * This is a temporary implementation of Kernel, used to enable early testing. The plan is to merge this
+ * class with org.neo4j.kernel.impl.api.Kernel.
+ */
 class TempKernel implements Kernel, Session
 {
     private final Transaction tx;
