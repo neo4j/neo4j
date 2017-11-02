@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.id.validation;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -58,13 +59,13 @@ public final class IdValidator
      * @param maxId the max allowed id.
      * @see IdGeneratorImpl#INTEGER_MINUS_ONE
      */
-    public static void assertValidId( long id, long maxId )
+    public static void assertValidId( IdType idType, long id, long maxId )
     {
         if ( isReservedId( id ) )
         {
             throw new ReservedIdException( id );
         }
-        assertIdWithinCapacity( id, maxId );
+        assertIdWithinCapacity( idType, id, maxId );
     }
 
     /**
@@ -74,10 +75,11 @@ public final class IdValidator
      * <li>less than the given max id
      * </ul>
      *
+     * @param idType
      * @param id the id to check.
      * @param maxId the max allowed id.
      */
-    public static void assertIdWithinCapacity( long id, long maxId )
+    public static void assertIdWithinCapacity( IdType idType, long id, long maxId )
     {
         if ( id < 0 )
         {
@@ -85,7 +87,7 @@ public final class IdValidator
         }
         if ( id > maxId )
         {
-            throw new IdCapacityExceededException( id, maxId );
+            throw new IdCapacityExceededException( idType, id, maxId );
         }
     }
 

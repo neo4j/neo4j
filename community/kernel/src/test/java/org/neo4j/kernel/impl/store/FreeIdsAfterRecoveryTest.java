@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
+
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.NullLogProvider;
@@ -64,7 +65,8 @@ public class FreeIdsAfterRecoveryTest
 
         // populating its .id file with a bunch of ids
         File nodeIdFile = new File( directory.directory(), StoreFile.NODE_STORE.fileName( StoreFileType.ID ) );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false, () -> highId );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false,
+                IdType.NODE, () -> highId );
         for ( long id = 0; id < 15; id++ )
         {
             idGenerator.freeId( id );

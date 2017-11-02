@@ -1067,7 +1067,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public void updateRecord( RECORD record )
     {
         long id = record.getId();
-        IdValidator.assertValidId( id, recordFormat.getMaxId() );
+        IdValidator.assertValidId( getIdType(), id, recordFormat.getMaxId() );
 
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
