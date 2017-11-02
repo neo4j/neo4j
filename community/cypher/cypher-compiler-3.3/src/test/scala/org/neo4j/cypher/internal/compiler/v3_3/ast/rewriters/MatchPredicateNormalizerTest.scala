@@ -65,6 +65,30 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
       "MATCH (n)-[r:Foo]->() WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' RETURN n")
   }
 
+  test("remove empty predicate from node") {
+    assertRewrite(
+      "MATCH (n { }) RETURN n",
+      "MATCH (n) RETURN n")
+  }
+
+  test("remove empty predicate from rel") {
+    assertRewrite(
+      "MATCH (n)-[r:Foo { }]->() RETURN n",
+      "MATCH (n)-[r:Foo]->() RETURN n")
+  }
+
+  test("remove empty predicates") {
+    assertRewrite(
+      "MATCH (n { })-[r:Foo { }]->() RETURN n",
+      "MATCH (n)-[r:Foo]->() RETURN n")
+  }
+
+  test("remove empty predicates and keep existing WHERE") {
+    assertRewrite(
+      "MATCH (n { })-[r:Foo { }]->() WHERE n.baz = true OR r.baz = false RETURN n",
+      "MATCH (n)-[r:Foo]->() WHERE n.baz = true OR r.baz = false RETURN n")
+  }
+
   test("prepend predicates to existing WHERE") {
     assertRewrite(
       "MATCH (n {foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() WHERE n.baz = true OR r.baz = false RETURN n",

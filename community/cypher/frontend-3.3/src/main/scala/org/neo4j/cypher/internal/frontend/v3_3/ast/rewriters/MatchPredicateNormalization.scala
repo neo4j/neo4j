@@ -31,31 +31,24 @@ abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer)
         case _                                                          => identity
       }
 
-      if (predicates.isEmpty)
-        m.copy(where = m.where.map(w => {
-          val pos: InputPosition = where.fold(m.position)(_.position)
-          w.copy( expression = w.expression.endoRewrite(whereRewriter))(pos)
-        }))(m.position)
-      else {
-        val rewrittenPredicates: List[Expression] = (predicates ++ where.map(_.expression)).toList
+      val rewrittenPredicates: List[Expression] = (predicates ++ where.map(_.expression)).toList
 
-        val predOpt: Option[Expression] = rewrittenPredicates match {
-          case Nil => None
-          case exp :: Nil => Some(exp)
-          case list => Some(list.reduce(And(_, _)(m.position)))
-        }
-
-        val newWhere: Option[Where] = predOpt.map {
-          exp =>
-            val pos: InputPosition = where.fold(m.position)(_.position)
-            Where(exp.endoRewrite(whereRewriter))(pos)
-        }
-
-        m.copy(
-          pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
-          where = newWhere
-        )(m.position)
+      val predOpt: Option[Expression] = rewrittenPredicates match {
+        case Nil => None
+        case exp :: Nil => Some(exp)
+        case list => Some(list.reduce(And(_, _)(m.position)))
       }
+
+      val newWhere: Option[Where] = predOpt.map {
+        exp =>
+          val pos: InputPosition = where.fold(m.position)(_.position)
+          Where(exp.endoRewrite(whereRewriter))(pos)
+      }
+
+      m.copy(
+        pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
+        where = newWhere
+      )(m.position)
   }
 
   private def whereRewriter: Rewriter = Rewriter.lift {
