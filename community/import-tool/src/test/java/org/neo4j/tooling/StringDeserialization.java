@@ -35,6 +35,7 @@ class StringDeserialization implements Deserialization<String>
 {
     private final StringBuilder builder = new StringBuilder();
     private final Configuration config;
+    private int field;
 
     StringDeserialization( Configuration config )
     {
@@ -49,7 +50,7 @@ class StringDeserialization implements Deserialization<String>
     @Override
     public void handle( Entry entry, Object value )
     {
-        if ( builder.length() > 0 )
+        if ( field > 0 )
         {
             builder.append( config.delimiter() );
         }
@@ -57,6 +58,7 @@ class StringDeserialization implements Deserialization<String>
         {
             stringify( value );
         }
+        field++;
     }
 
     private void stringify( Object value )
@@ -124,6 +126,7 @@ class StringDeserialization implements Deserialization<String>
     public void clear()
     {
         builder.delete( 0, builder.length() );
+        field = 0;
     }
 
     public static Function<SourceTraceability,Deserialization<String>> factory( final Configuration config )
