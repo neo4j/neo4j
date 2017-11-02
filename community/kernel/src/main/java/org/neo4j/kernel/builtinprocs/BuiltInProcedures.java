@@ -264,7 +264,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search nodes from explicit index. Replaces `START n=node:nodes('key:foo*')`" )
+    @Description( "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`" )
     @Procedure( name = "db.index.explicit.searchNodes", mode = READ )
     public Stream<WeightedNodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
@@ -303,7 +303,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search relationship from explicit index. Replaces `START r=relationship:relIndex('key:foo*')`" )
+    @Description( "Search relationship in explicit index. Replaces `START r=relationship:relIndex('key:foo*')`" )
     @Procedure( name = "db.index.explicit.searchRelationships", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearch(
             @Name( "indexName" ) String manualIndexName,
@@ -323,7 +323,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search relationship from explicit index, starting at the node 'in'." )
+    @Description( "Search relationship in explicit index, starting at the node 'in'." )
     @Procedure( name = "db.index.explicit.searchRelationshipsIn", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundStartNode(
             @Name( "indexName" ) String indexName,
@@ -344,7 +344,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search relationship from explicit index, ending at the node 'out'." )
+    @Description( "Search relationship in explicit index, ending at the node 'out'." )
     @Procedure( name = "db.index.explicit.searchRelationshipsOut", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundEndNode(
             @Name( "indexName" ) String indexName,
@@ -365,7 +365,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search relationship from explicit index, starting at the node 'in' and ending at 'out'." )
+    @Description( "Search relationship in explicit index, starting at the node 'in' and ending at 'out'." )
     @Procedure( name = "db.index.explicit.searchRelationshipsBetween", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundNodes(
             @Name( "indexName" ) String indexName,
@@ -405,7 +405,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search nodes from explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
+    @Description( "Search nodes in explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchNodes", mode = READ )
     public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query ) throws ProcedureException
     {
@@ -442,7 +442,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
+    @Description( "Search relationship in explicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
                   "('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchRelationships", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipAutoIndexSearch( @Name( "query" ) Object query )
@@ -513,7 +513,7 @@ public class BuiltInProcedures
         return indexInfos.stream();
     }
 
-    @Description( "Remove a explicit index - YIELD type,name,config" )
+    @Description( "Remove an explicit index - YIELD type,name,config" )
     @Procedure( name = "db.index.explicit.drop", mode = WRITE )
     public Stream<ExplicitIndexInfo> manualIndexDrop( @Name( "indexName" ) String explicitIndexName )
     {
@@ -534,7 +534,7 @@ public class BuiltInProcedures
         return results.stream();
     }
 
-    @Description( "Add a node to a explicit index based on a specified key and value" )
+    @Description( "Add a node to an explicit index based on a specified key and value" )
     @Procedure( name = "db.index.explicit.addNode", mode = WRITE )
     public Stream<BooleanResult> nodeManualIndexAdd( @Name( "indexName" ) String explicitIndexName,
             @Name( "node" ) Node node, @Name( "key" ) String key,
@@ -545,7 +545,7 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( true ) );
     }
 
-    @Description( "Add a relationship to a explicit index based on a specified key and value" )
+    @Description( "Add a relationship to an explicit index based on a specified key and value" )
     @Procedure( name = "db.index.explicit.addRelationship", mode = WRITE )
     public Stream<BooleanResult> relationshipManualIndexAdd( @Name( "indexName" ) String explicitIndexName,
             @Name( "relationship" ) Relationship relationship,
@@ -556,7 +556,7 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( true ) );
     }
 
-    @Description( "Remove a node from a explicit index with an optional key" )
+    @Description( "Remove a node from an explicit index with an optional key" )
     @Procedure( name = "db.index.explicit.removeNode", mode = WRITE )
     public Stream<BooleanResult> nodeManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
             @Name( "node" ) Node node, @Name( "key" ) String key )
@@ -573,7 +573,7 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( true ) );
     }
 
-    @Description( "Remove a relationship from a explicit index with an optional key" )
+    @Description( "Remove a relationship from an explicit index with an optional key" )
     @Procedure( name = "db.index.explicit.removeRelationship", mode = WRITE )
     public Stream<BooleanResult> relationshipManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
             @Name( "relationship" ) Relationship relationship,

@@ -367,7 +367,7 @@ public interface Status
     enum LegacyIndex implements Status
     {
         LegacyIndexNotFound( ClientError,
-                "The request (directly or indirectly) referred to a explicit index that does not exist." )
+                "The request (directly or indirectly) referred to an explicit index that does not exist." )
 
         ;
 

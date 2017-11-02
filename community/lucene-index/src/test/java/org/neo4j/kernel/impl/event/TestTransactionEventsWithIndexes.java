@@ -40,7 +40,7 @@ public class TestTransactionEventsWithIndexes extends TestTransactionEvents
     @Test
     public void nodeCanBeExplicitIndexedInBeforeCommit() throws Exception
     {
-        // Given we have a explicit index...
+        // Given we have an explicit index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Index<Node> index;
         try ( Transaction tx = db.beginTx() )

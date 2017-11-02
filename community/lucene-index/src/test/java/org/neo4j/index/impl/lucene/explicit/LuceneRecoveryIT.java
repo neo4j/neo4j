@@ -98,7 +98,7 @@ public class LuceneRecoveryIT
             {
                 // On some machines and during some circumstances a lucene index may become
                 // corrupted during a crash. This is out of our control and since this test
-                // is about a explicit (a.k.a. legacy/manual) index the db cannot just re-populate the
+                // is about an explicit (a.k.a. legacy/manual) index the db cannot just re-populate the
                 // index automatically. We have to consider this an OK scenario and we cannot
                 // verify the index any further if it happens.
                 System.err.println( "Lucene exception happened during recovery after a real crash. " +
