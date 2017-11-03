@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.SortItem
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation}
+import org.neo4j.cypher.internal.v3_4.{functions => ast_functions}
 import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
@@ -56,8 +57,8 @@ object LogicalPlanConverter {
     case p: plans.Skip => skipAsCodeGenPlan(p)
     case p: plans.ProduceResult => produceResultsAsCodeGenPlan(p)
     case p: plans.Projection => projectionAsCodeGenPlan(p)
-    case p: plans.Aggregation if hasLimit(p) => throw new CantCompileQueryException(
-      "Not able to combine aggregation and limit")
+    case p: plans.Aggregation if aggregationNotSupported(p) => throw new CantCompileQueryException(
+      s"Not able to combine aggregation with $p")
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.Distinct => distinctAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
@@ -78,10 +79,16 @@ object LogicalPlanConverter {
     override val logicalPlan: plans.LogicalPlan = singleRow
   }
 
-  private def hasLimit(p: plans.LogicalPlan) = p.treeExists {
-    case _: plans.Limit => true
-    //top is limit + sort
-    case _: plans.Top => true
+  private def aggregationNotSupported(p: plans.Aggregation) = {
+    val notValid = p.treeExists {
+      case _: plans.Limit => true
+      //top is limit + sort
+      case _: plans.Top => true
+    }
+    notValid || p.aggregationExpression.values.toList.treeCount {
+      case f: FunctionInvocation if f.function == ast_functions.Count => true
+      case _ => false
+    } > 1
   }
 
   private def projectionAsCodeGenPlan(projection: plans.Projection) = new CodeGenPlan {
