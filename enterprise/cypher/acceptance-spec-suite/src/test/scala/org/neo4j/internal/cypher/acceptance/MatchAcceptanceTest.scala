@@ -79,10 +79,10 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         true
       }
     }
-    Seq("compiled", "morsel") foreach { runtime =>
+    Seq("morsel") foreach { runtime =>
       val q = s"cypher runtime=$runtime match (a)-->(b) return a, b"
       val started = System.currentTimeMillis()
-      (0 to 1000) foreach { _ =>
+      (0 to 0) foreach { _ =>
         val res = db.execute(q)
         res.accept(visitor)
       }

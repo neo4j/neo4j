@@ -33,8 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, C
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.Dispatcher
-import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
+import org.neo4j.cypher.internal.runtime.vectorized.{ForkJoinPoolExecutor, Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics => _, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
 import org.neo4j.cypher.result.QueryResult
@@ -113,7 +112,8 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
   override def notifications: Iterable[Notification] = ???
 
   override def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = {
-    Dispatcher.instance.run(operators, visitor, queryContext, pipelineInformation(logicalPlan.assignedId), params)
+//    Dispatcher.instance.run(operators, visitor, queryContext, pipelineInformation(logicalPlan.assignedId), params)
+    ForkJoinPoolExecutor.execute(operators, queryContext, params)(visitor)
 //    new SingleThreadedExecutor(operators, queryContext, pipelineInformation(logicalPlan.assignedId), params).accept(visitor)
 //    new Executor(operators, queryContext, params).accept(visitor)
   }
