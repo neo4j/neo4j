@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -117,8 +118,8 @@ public class LogTestUtils
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
         fileSystem.deleteFile( tempFile );
-        try ( StoreChannel in = fileSystem.open( file, "r" );
-                StoreChannel out = fileSystem.open( tempFile, "rw" ) )
+        try ( StoreChannel in = fileSystem.open( file, OpenMode.READ );
+                StoreChannel out = fileSystem.open( tempFile, OpenMode.READ_WRITE ) )
         {
             LogHeader logHeader = transferLogicalLogHeader( in, out, ByteBuffer.allocate( LOG_HEADER_SIZE ) );
             PhysicalLogVersionedStoreChannel inChannel =

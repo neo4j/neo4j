@@ -36,6 +36,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -225,7 +226,7 @@ public class AbstractKeyValueStoreTest
             file.other().close();
         }
         // Corrupt the last files
-        try ( StoreChannel channel = resourceManager.fileSystem().open( files[9], "rw" ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().open( files[9], OpenMode.READ_WRITE ) )
         {   // ruin the header
             channel.position( 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -233,7 +234,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().open( files[8], "rw" ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().open( files[8], OpenMode.READ_WRITE ) )
         {   // ruin the header
             channel.position( 32 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -241,7 +242,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().open( files[7], "rw" ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().open( files[7], OpenMode.READ_WRITE ) )
         {   // ruin the header
             channel.position( 32 + 32 + 32 + 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -301,7 +302,7 @@ public class AbstractKeyValueStoreTest
         File corrupted = nextNext.first();
         nextNext.other().close();
 
-        try ( StoreChannel channel = resourceManager.fileSystem().open( corrupted, "rw" ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().open( corrupted, OpenMode.READ_WRITE ) )
         {
             channel.truncate( 16 * 4 );
         }

@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -80,12 +81,12 @@ public class IndexConfigStore extends LifecycleAdapter
         StoreChannel channel = null;
         try
         {
-            channel = fileSystem.open( fileToReadFrom, "r" );
+            channel = fileSystem.open( fileToReadFrom, OpenMode.READ );
             Integer version = tryToReadVersion( channel );
             if ( version == null )
             {
                 close( channel );
-                channel = fileSystem.open( fileToReadFrom, "r" );
+                channel = fileSystem.open( fileToReadFrom, OpenMode.READ );
                 // Legacy format, TODO
                 readMap( channel, nodeConfig, version );
                 relConfig.putAll( nodeConfig );
@@ -294,7 +295,7 @@ public class IndexConfigStore extends LifecycleAdapter
         StoreChannel channel = null;
         try
         {
-            channel = fileSystem.open( file, "rw" );
+            channel = fileSystem.open( file, OpenMode.READ_WRITE );
             channel.write( ByteBuffer.wrap( MAGICK ) );
             IoPrimitiveUtils.writeInt( channel, buffer( 4 ), VERSION );
             writeMap( channel, nodeConfig );

@@ -115,7 +115,7 @@ public class PhysicalTransactionCursorTest
 
         // then
         PhysicalTransactionRepresentation txRepresentation =
-                new PhysicalTransactionRepresentation( singletonList( A_COMMAND_ENTRY.getXaCommand() ) );
+                new PhysicalTransactionRepresentation( singletonList( A_COMMAND_ENTRY.getCommand() ) );
         assertEquals(
                 new CommittedTransactionRepresentation( A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY ),
                 cursor.get()
@@ -136,7 +136,7 @@ public class PhysicalTransactionCursorTest
 
         // then
         PhysicalTransactionRepresentation txRepresentation =
-                new PhysicalTransactionRepresentation( singletonList( A_COMMAND_ENTRY.getXaCommand() ) );
+                new PhysicalTransactionRepresentation( singletonList( A_COMMAND_ENTRY.getCommand() ) );
         assertEquals(
                 new CommittedTransactionRepresentation( A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY ),
                 cursor.get()

@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -107,7 +108,7 @@ public class StoreFilesTest
     private void createFile( FileSystemAbstraction fs, File file ) throws IOException
     {
         fs.mkdirs( file.getParentFile() );
-        fs.open( file, "rw" ).close();
+        fs.open( file, OpenMode.READ_WRITE ).close();
     }
 
     protected File getBaseDir()

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
@@ -203,7 +204,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                         }
                     }
                 }
-                try ( StoreChannel channel = fs1.open( file, "r" ) )
+                try ( StoreChannel channel = fs1.open( file, OpenMode.READ ) )
                 {
                     recordFormat.assertRecordsWrittenCorrectly( file, channel );
                 }

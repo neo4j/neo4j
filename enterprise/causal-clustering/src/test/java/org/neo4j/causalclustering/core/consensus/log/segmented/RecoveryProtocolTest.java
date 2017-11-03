@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.consensus.log.DummyRaftableContentSeriali
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.logging.NullLogProvider;
@@ -286,7 +287,7 @@ public class RecoveryProtocolTest
     private void createLogFile( EphemeralFileSystemAbstraction fsa, long prevFileLastIndex, long fileNameVersion,
             long headerVersion, long prevIndex, long prevTerm ) throws IOException
     {
-        StoreChannel channel = fsa.open( fileNames.getForVersion( fileNameVersion ), "w" );
+        StoreChannel channel = fsa.open( fileNames.getForVersion( fileNameVersion ), OpenMode.READ_WRITE );
         PhysicalFlushableChannel writer = new PhysicalFlushableChannel( channel );
         headerMarshal.marshal( new SegmentHeader( prevFileLastIndex, headerVersion, prevIndex, prevTerm ), writer );
         writer.prepareForFlush().flush();
@@ -295,7 +296,7 @@ public class RecoveryProtocolTest
 
     private void createEmptyLogFile( EphemeralFileSystemAbstraction fsa, long fileNameVersion ) throws IOException
     {
-        StoreChannel channel = fsa.open( fileNames.getForVersion( fileNameVersion ), "w" );
+        StoreChannel channel = fsa.open( fileNames.getForVersion( fileNameVersion ), OpenMode.READ_WRITE );
         channel.close();
     }
 }

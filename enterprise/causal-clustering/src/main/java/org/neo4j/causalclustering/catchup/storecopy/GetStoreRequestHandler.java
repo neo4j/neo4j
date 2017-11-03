@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+
 import java.io.File;
 import java.util.Optional;
 import java.util.function.Supplier;
-
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse.St
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -104,7 +105,7 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
                     }
                     else
                     {
-                        ctx.writeAndFlush( new FileSender( fs.open( file, "r" ) ) );
+                        ctx.writeAndFlush( new FileSender( fs.open( file, OpenMode.READ ) ) );
                     }
                 }
             }

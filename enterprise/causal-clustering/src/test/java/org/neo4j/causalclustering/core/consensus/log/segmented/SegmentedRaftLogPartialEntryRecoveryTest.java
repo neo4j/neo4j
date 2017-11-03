@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.core.state.machines.token.TokenType;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.LogProvider;
@@ -171,13 +172,13 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         String logFilename = recoveryState.segments.last().getFilename();
         recoveryState.segments.close();
         File logFile = new File( logDirectory, logFilename );
-        StoreChannel lastFile = fsRule.get().open( logFile, "rw" );
+        StoreChannel lastFile = fsRule.get().open( logFile, OpenMode.READ_WRITE );
         long currentSize = lastFile.size();
         lastFile.close();
 
         // When
         // We induce an incomplete entry at the end of the last file
-        lastFile = fsRule.get().open( logFile, "rw" );
+        lastFile = fsRule.get().open( logFile, OpenMode.READ_WRITE );
         lastFile.truncate( currentSize - 1 );
         lastFile.close();
 
@@ -212,13 +213,13 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
     private void truncateAndRecover( File logFile, long truncateDownToSize )
             throws IOException, DamagedLogStorageException, DisposedException
     {
-        StoreChannel lastFile = fsRule.get().open( logFile, "rw" );
+        StoreChannel lastFile = fsRule.get().open( logFile, OpenMode.READ_WRITE );
         long currentSize = lastFile.size();
         lastFile.close();
         RecoveryProtocol recovery;
         while ( currentSize-- > truncateDownToSize )
         {
-            lastFile = fsRule.get().open( logFile, "rw" );
+            lastFile = fsRule.get().open( logFile, OpenMode.READ_WRITE );
             lastFile.truncate( currentSize );
             lastFile.close();
             recovery = createRecoveryProtocol();

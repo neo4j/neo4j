@@ -33,6 +33,7 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -212,7 +213,7 @@ public class StoreLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
                 throw new IOException( "cannot open lock file" );
             }
@@ -253,9 +254,9 @@ public class StoreLockerTest
             }
 
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
                     public FileLock tryLock() throws IOException
@@ -316,7 +317,7 @@ public class StoreLockerTest
         }
 
         @Override
-        public StoreChannel open( File fileName, String mode ) throws IOException
+        public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
         {
             numberOfCallsToOpen++;
             return channel;

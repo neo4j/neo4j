@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -107,7 +108,7 @@ public class FreeIdKeeperTest
     public void shouldOnlyOverflowWhenThresholdIsReached() throws Exception
     {
         // Given
-        StoreChannel channel = spy( fs.get().open( new File( "id.file" ), "rw" ) );
+        StoreChannel channel = spy( fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE ) );
 
         int batchSize = 10;
         FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, batchSize );
@@ -272,7 +273,7 @@ public class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.get().open( new File( "id.file" ), "rw" );
+        channel = fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
         keeper = getFreeIdKeeperAggressive( channel, batchSize );
 
         // then
@@ -308,7 +309,7 @@ public class FreeIdKeeperTest
     public void shouldNotReturnIdsPersistedDuringThisRunIfAggressiveIsFalse() throws Exception
     {
         // given
-        StoreChannel channel = spy( fs.get().open( new File( "id.file" ), "rw" ) );
+        StoreChannel channel = spy( fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE ) );
 
         int batchSize = 10;
         FreeIdKeeper keeper = getFreeIdKeeper( channel, batchSize );
@@ -344,7 +345,7 @@ public class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.get().open( new File( "id.file" ), "rw" );
+        channel = fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
         keeper = getFreeIdKeeper( channel, batchSize );
 
         // when
@@ -383,7 +384,7 @@ public class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.get().open( new File( "id.file" ), "rw" );
+        channel = fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
         keeper = getFreeIdKeeper( channel, batchSize );
 
         // when - then
@@ -533,6 +534,6 @@ public class FreeIdKeeperTest
 
     private StoreChannel getStoreChannel() throws IOException
     {
-        return fs.get().open( new File( "id.file" ), "rw" );
+        return fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
     }
 }

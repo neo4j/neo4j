@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.tools.dump.TransactionLogAnalyzer.Monitor;
 import org.neo4j.tools.dump.inconsistency.ReportInconsistencies;
+
 import static java.util.TimeZone.getTimeZone;
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 
@@ -153,7 +154,7 @@ public class DumpLogicalLog
         {
             if ( logEntry instanceof LogEntryCommand )
             {
-                if ( matches( ((LogEntryCommand)logEntry).getXaCommand() ) )
+                if ( matches( ((LogEntryCommand)logEntry).getCommand() ) )
                 {
                     return true;
                 }

@@ -156,7 +156,7 @@ public class ReplicatedTransactionFactory
 
         while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
         {
-            commands.add( entryRead.getXaCommand() );
+            commands.add( entryRead.getCommand() );
         }
 
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );

@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -44,7 +45,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -231,7 +231,7 @@ public class PhysicalLogFileTest
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.open( eq( logFile ), anyString() ) ).thenReturn( channel );
+        when( fs.open( eq( logFile ), any( OpenMode.class ) ) ).thenReturn( channel );
 
         // WHEN
         try
@@ -258,7 +258,7 @@ public class PhysicalLogFileTest
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.open( eq( logFile ), anyString() ) ).thenReturn( channel );
+        when( fs.open( eq( logFile ), any( OpenMode.class ) ) ).thenReturn( channel );
         doThrow( IOException.class ).when( channel ).close();
 
         // WHEN

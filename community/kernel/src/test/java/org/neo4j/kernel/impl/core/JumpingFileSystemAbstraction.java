@@ -33,6 +33,7 @@ import java.nio.charset.Charset;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -60,9 +61,9 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public StoreChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
     {
-        StoreFileChannel channel = (StoreFileChannel) super.open( fileName, mode );
+        StoreFileChannel channel = (StoreFileChannel) super.open( fileName, openMode );
         if (
                 fileName.getName().equals( "neostore.nodestore.db" ) ||
                 fileName.getName().equals( "neostore.nodestore.db.labels" ) ||
@@ -80,13 +81,13 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new ChannelOutputStream( open( fileName, "rw" ), append );
+        return new ChannelOutputStream( open( fileName, OpenMode.READ_WRITE ), append );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new ChannelInputStream( open( fileName, "r" ) );
+        return new ChannelInputStream( open( fileName, OpenMode.READ ) );
     }
 
     @Override
@@ -104,7 +105,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     @Override
     public StoreChannel create( File fileName ) throws IOException
     {
-        return open( fileName, "rw" );
+        return open( fileName, OpenMode.READ_WRITE );
     }
 
     public static int getRecordSize( int dataSize )

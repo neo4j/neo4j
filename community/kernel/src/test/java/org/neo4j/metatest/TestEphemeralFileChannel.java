@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -45,14 +46,14 @@ public class TestEphemeralFileChannel
     public void smoke() throws Exception
     {
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        StoreChannel channel = fs.open( new File( "yo" ), "rw" );
+        StoreChannel channel = fs.open( new File( "yo" ), OpenMode.READ_WRITE );
 
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocateDirect( 23 );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );
-        channel = fs.open( new File( "yo" ), "rw" );
+        channel = fs.open( new File( "yo" ), OpenMode.READ_WRITE );
         long longValue = 1234567890L;
 
         // [1].....[2]........[1234567890L]...
@@ -110,13 +111,13 @@ public class TestEphemeralFileChannel
         // GIVEN
         File file = new File( "myfile" );
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        StoreChannel channel = fs.open( file, "rw" );
+        StoreChannel channel = fs.open( file, OpenMode.READ_WRITE );
         byte[] bytes = "test".getBytes();
         channel.write( ByteBuffer.wrap( bytes ) );
         channel.close();
 
         // WHEN
-        channel = fs.open( new File( file.getAbsolutePath() ), "r" );
+        channel = fs.open( new File( file.getAbsolutePath() ), OpenMode.READ );
         byte[] readBytes = new byte[bytes.length];
         int nrOfReadBytes = channel.read( ByteBuffer.wrap( readBytes ) );
 

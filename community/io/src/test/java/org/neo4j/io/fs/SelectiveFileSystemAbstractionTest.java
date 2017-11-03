@@ -48,10 +48,10 @@ public class SelectiveFileSystemAbstractionTest
         try ( SelectiveFileSystemAbstraction systemAbstraction = new SelectiveFileSystemAbstraction( specialFile,
                 special, normal ) )
         {
-            systemAbstraction.open( specialFile, "r" );
+            systemAbstraction.open( specialFile, OpenMode.READ );
 
             // then
-            verify( special ).open( specialFile, "r" );
+            verify( special ).open( specialFile, OpenMode.READ );
             verifyNoMoreInteractions( special );
             verifyNoMoreInteractions( normal );
         }
@@ -71,11 +71,11 @@ public class SelectiveFileSystemAbstractionTest
         try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
         {
             fs.create( otherFile );
-            fs.open( otherFile, "r" );
+            fs.open( otherFile, OpenMode.READ );
 
             // then
             verify( normal ).create( otherFile );
-            verify( normal ).open( otherFile, "r" );
+            verify( normal ).open( otherFile, OpenMode.READ );
             verifyNoMoreInteractions( special );
             verifyNoMoreInteractions( normal );
         }

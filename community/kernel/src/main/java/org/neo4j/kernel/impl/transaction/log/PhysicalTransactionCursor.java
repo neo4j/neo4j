@@ -92,7 +92,7 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
                 }
 
                 LogEntryCommand command = entry.as();
-                entries.add( command.getXaCommand() );
+                entries.add( command.getCommand() );
             }
 
             PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );

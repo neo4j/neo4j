@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
@@ -262,9 +263,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
+            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -357,7 +358,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     private ByteBuffer readIntoBuffer( String fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( 16 );
-        try ( StoreChannel channel = fs.open( file( fileName ), "r" ) )
+        try ( StoreChannel channel = fs.open( file( fileName ), OpenMode.READ ) )
         {
             channel.read( buffer );
         }

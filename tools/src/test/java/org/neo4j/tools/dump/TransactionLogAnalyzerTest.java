@@ -232,7 +232,7 @@ public class TransactionLogAnalyzerTest
         assertTrue( Arrays.toString( transactionEntries ), transactionEntries[0] instanceof LogEntryStart );
         assertTrue( transactionEntries[1] instanceof LogEntryCommand );
         LogEntryCommand command = transactionEntries[1].as();
-        assertEquals( expectedId, ((Command.NodeCommand)command.getXaCommand()).getKey() );
+        assertEquals( expectedId, ((Command.NodeCommand)command.getCommand()).getKey() );
         assertTrue( transactionEntries[2] instanceof LogEntryCommit );
         LogEntryCommit commit = transactionEntries[2].as();
         assertEquals( expectedId, commit.getTxId() );

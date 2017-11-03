@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MultiSet;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -435,7 +436,7 @@ public class RecoveryCorruptedTransactionLogIT
         }
         if ( checkpointPosition != null )
         {
-            try ( StoreChannel storeChannel = fileSystemRule.open( logFiles.getHighestLogFile(), "rw" ) )
+            try ( StoreChannel storeChannel = fileSystemRule.open( logFiles.getHighestLogFile(), OpenMode.READ_WRITE ) )
             {
                 storeChannel.truncate( checkpointPosition.getByteOffset() );
             }

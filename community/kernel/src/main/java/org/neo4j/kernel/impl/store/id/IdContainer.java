@@ -26,6 +26,7 @@ import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OffsetChannel;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -89,7 +90,7 @@ public class IdContainer
                 result = false;
             }
 
-            fileChannel = fs.open( file, "rw" );
+            fileChannel = fs.open( file, OpenMode.READ_WRITE );
             initialHighId = readAndValidateHeader();
             markAsSticky();
 
@@ -155,7 +156,7 @@ public class IdContainer
 
     static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.open( file, "r" ) )
+        try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ ) )
         {
             return readAndValidate( channel, file );
         }

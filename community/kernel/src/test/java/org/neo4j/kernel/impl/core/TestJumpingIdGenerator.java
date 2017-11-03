@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.core.JumpingFileSystemAbstraction.JumpingFileChannel;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -77,7 +78,7 @@ public class TestJumpingIdGenerator
             offsettedFileSystem.mkdirs( fileName.getParentFile() );
             IdGenerator idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
 
-            try ( JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" ) )
+            try ( JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, OpenMode.READ_WRITE ) )
             {
                 for ( int i = 0; i < 16; i++ )
                 {
@@ -85,7 +86,7 @@ public class TestJumpingIdGenerator
                 }
 
             }
-            try ( JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" ) )
+            try ( JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, OpenMode.READ_WRITE ) )
             {
                 idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
 

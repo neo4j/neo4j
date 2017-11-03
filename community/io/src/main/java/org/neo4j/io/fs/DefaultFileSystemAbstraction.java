@@ -63,10 +63,10 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreFileChannel open( File fileName, String mode ) throws IOException
+    public StoreFileChannel open( File fileName, OpenMode openMode ) throws IOException
     {
         // Returning only the channel is ok, because the channel, when close()d will close its parent File.
-        FileChannel channel = new RandomAccessFile( fileName, mode ).getChannel();
+        FileChannel channel = new RandomAccessFile( fileName, openMode.mode() ).getChannel();
         return getStoreFileChannel( channel );
     }
 
@@ -97,7 +97,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public StoreFileChannel create( File fileName ) throws IOException
     {
-        return open( fileName, "rw" );
+        return open( fileName, OpenMode.READ_WRITE );
     }
 
     @Override

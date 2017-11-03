@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 
@@ -55,7 +56,7 @@ public class LogHeaderWriter
     public static void writeLogHeader( FileSystemAbstraction fileSystem, File file, long logVersion,
                                        long previousLastCommittedTxId ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
+        try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE ) )
         {
             writeLogHeader( channel, logVersion, previousLastCommittedTxId );
         }

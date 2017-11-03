@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -235,7 +236,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
     private PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion ) throws IOException
     {
         File toOpen = logFiles.getLogFileForVersion( forVersion );
-        StoreChannel storeChannel = fileSystem.open( toOpen, "rw" );
+        StoreChannel storeChannel = fileSystem.open( toOpen, OpenMode.READ_WRITE );
         LogHeader header = readLogHeader( headerBuffer, storeChannel, false, toOpen );
         if ( header == null )
         {
@@ -286,7 +287,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
         StoreChannel rawChannel = null;
         try
         {
-            rawChannel = fileSystem.open( fileToOpen, write ? "rw" : "r" );
+            rawChannel = fileSystem.open( fileToOpen, write ? OpenMode.READ_WRITE : OpenMode.READ );
 
             ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );

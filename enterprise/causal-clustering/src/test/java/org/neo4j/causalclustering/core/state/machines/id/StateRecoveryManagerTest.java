@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.causalclustering.core.state.StateRecoveryManager;
 import org.neo4j.causalclustering.core.state.storage.SafeStateMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -205,7 +206,7 @@ public class StateRecoveryManagerTest
 
     private void writeSomeGarbage( EphemeralFileSystemAbstraction fsa, File file ) throws IOException
     {
-        final StoreChannel channel = fsa.open( file, "rw" );
+        final StoreChannel channel = fsa.open( file, OpenMode.READ_WRITE );
         ByteBuffer buffer = ByteBuffer.allocate( 4 );
         buffer.putInt( 9876 );
         buffer.flip();
@@ -216,7 +217,7 @@ public class StateRecoveryManagerTest
 
     private void writeSomeLongsIn( EphemeralFileSystemAbstraction fsa, File file, long... longs ) throws IOException
     {
-        final StoreChannel channel = fsa.open( file, "rw" );
+        final StoreChannel channel = fsa.open( file, OpenMode.READ_WRITE );
         ByteBuffer buffer = ByteBuffer.allocate( longs.length * 8 );
 
         for ( long aLong : longs )

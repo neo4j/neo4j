@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.causalclustering.core.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -150,7 +151,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     private PhysicalFlushableChannel resetStoreFile( File nextStore ) throws IOException
     {
         fsa.truncate( nextStore, 0 );
-        return new PhysicalFlushableChannel( fsa.open( nextStore, "rw" ) );
+        return new PhysicalFlushableChannel( fsa.open( nextStore, OpenMode.READ_WRITE ) );
     }
 
     static File stateDir( File baseDir, String name )

@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -151,7 +152,7 @@ public class DurableStateStorageTest
          * should nevertheless be correct
          */
         ByteBuffer forReadingBackIn = ByteBuffer.allocate( 10_000 );
-        StoreChannel lastWrittenTo = fsa.open( stateFileA(), "r" );
+        StoreChannel lastWrittenTo = fsa.open( stateFileA(), OpenMode.READ );
         lastWrittenTo.read( forReadingBackIn );
         forReadingBackIn.flip();
 

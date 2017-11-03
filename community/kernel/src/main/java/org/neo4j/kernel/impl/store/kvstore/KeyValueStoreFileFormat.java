@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -226,7 +227,7 @@ public abstract class KeyValueStoreFileFormat
     private KeyValueStoreFile open( FileSystemAbstraction fs, File path, PageCache pages ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.wrap( new byte[maxSize * 4] );
-        try ( StoreChannel file = fs.open( path, "r" ) )
+        try ( StoreChannel file = fs.open( path, OpenMode.READ ) )
         {
             while ( buffer.hasRemaining() )
             {

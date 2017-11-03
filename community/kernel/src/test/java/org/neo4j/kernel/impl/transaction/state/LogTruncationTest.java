@@ -199,7 +199,7 @@ public class LogTruncationTest
         try
         {
             LogEntry logEntry = logEntryReader.readLogEntry( inMemoryChannel );
-            StorageCommand command = ((LogEntryCommand) logEntry).getXaCommand();
+            StorageCommand command = ((LogEntryCommand) logEntry).getCommand();
             assertEquals( cmd, command );
         }
         catch ( Exception e )

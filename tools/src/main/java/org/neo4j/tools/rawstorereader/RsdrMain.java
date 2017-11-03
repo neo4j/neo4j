@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -209,7 +210,7 @@ public class RsdrMain
             RecordStore store, long fromId, long toId, Pattern pattern ) throws IOException
     {
         toId = Math.min( toId, store.getHighId() );
-        try ( StoreChannel channel = fileSystem.open( store.getStorageFileName(), "r" ) )
+        try ( StoreChannel channel = fileSystem.open( store.getStorageFileName(), OpenMode.READ ) )
         {
             int recordSize = store.getRecordSize();
             ByteBuffer buf = ByteBuffer.allocate( recordSize );

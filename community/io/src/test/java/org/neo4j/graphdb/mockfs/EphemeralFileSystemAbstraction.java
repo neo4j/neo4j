@@ -69,6 +69,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.StreamFilesRecursive;
@@ -261,7 +262,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public synchronized StoreChannel open( File fileName, String mode ) throws IOException
+    public synchronized StoreChannel open( File fileName, OpenMode openMode ) throws IOException
     {
         EphemeralFileData data = files.get( canonicalFile( fileName ) );
         if ( data != null )
@@ -275,13 +276,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new ChannelOutputStream( open( fileName, "rw" ), append );
+        return new ChannelOutputStream( open( fileName, OpenMode.READ_WRITE ), append );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new ChannelInputStream( open( fileName, "r" ) );
+        return new ChannelInputStream( open( fileName, OpenMode.READ ) );
     }
 
     @Override
@@ -622,8 +623,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     private void copyFile( File from, FileSystemAbstraction fromFs, File to, ByteBuffer buffer ) throws IOException
     {
-        try ( StoreChannel source = fromFs.open( from, "r" );
-              StoreChannel sink = this.open( to, "rw" ) )
+        try ( StoreChannel source = fromFs.open( from, OpenMode.READ );
+              StoreChannel sink = this.open( to, OpenMode.READ_WRITE ) )
         {
             for ( int available; (available = (int) (source.size() - source.position())) > 0; )
             {
