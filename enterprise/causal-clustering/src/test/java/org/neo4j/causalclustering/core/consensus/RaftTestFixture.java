@@ -104,7 +104,8 @@ public class RaftTestFixture
         }
     }
 
-    public String messageLog() {
+    public String messageLog()
+    {
         return writer.toString();
     }
 

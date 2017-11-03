@@ -33,7 +33,8 @@ import static java.lang.String.valueOf;
 
 public class BetterMessageLogger<MEMBER> extends LifecycleAdapter implements MessageLogger<MEMBER>
 {
-    private enum Direction {
+    private enum Direction
+    {
         INFO( "---" ),
         OUTBOUND( "-->" ),
         INBOUND( "<--" );
@@ -78,7 +79,7 @@ public class BetterMessageLogger<MEMBER> extends LifecycleAdapter implements Mes
 
     private <M extends RaftMessages.RaftMessage> String nullSafeMessageType( M message )
     {
-        if( Objects.isNull( message ) )
+        if ( Objects.isNull( message ) )
         {
             return "null";
         }
