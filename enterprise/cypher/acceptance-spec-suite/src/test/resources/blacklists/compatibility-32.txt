@@ -1,6 +1,7 @@
 //MatchAcceptance.feature
 difficult to plan query number 1
 difficult to plan query number 2
+Variable length path with both sides already bound
 
 // should be fixed on next 3.2.x
 Handle filtering with empty properties map

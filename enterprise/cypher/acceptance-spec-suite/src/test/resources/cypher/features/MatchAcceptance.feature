@@ -263,6 +263,25 @@ Feature: MatchAcceptance
       | 2     |
     And no side effects
 
+  Scenario: Variable length path with both sides already bound
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A {id: 1})-[:T]->(b:B {id: 2})
+      CREATE (a)-[:S]->(b)
+      CREATE (a)-[:T]->(:B)
+      CREATE (a)-[:T]->()-[:T]->(:B)
+      """
+    When executing query:
+      """
+      MATCH (a:A {id: 1})-[:S]->(b:B {id: 2}), (a)-[:T*1..2]->(b)
+      RETURN DISTINCT a.id, b.id
+      """
+    Then the result should be:
+      | a.id | b.id |
+      | 1    | 2    |
+    And no side effects
+
   Scenario: Should handle EXISTS on node property when node is null
     Given an empty graph
     And having executed:
@@ -336,4 +355,3 @@ Feature: MatchAcceptance
       | p    |
       | null |
     And no side effects
-
