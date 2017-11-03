@@ -41,6 +41,7 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -50,6 +51,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
+import org.neo4j.test.rule.TestDirectory;
 
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that
@@ -69,7 +71,6 @@ public class RandomPageCacheTestHarness implements Closeable
     private int concurrencyLevel;
     private int initialMappedFiles;
     private int cachePageCount;
-    private int cachePageSize;
     private int filePageCount;
     private int filePageSize;
     private PageCacheTracer tracer;
@@ -93,9 +94,7 @@ public class RandomPageCacheTestHarness implements Closeable
         concurrencyLevel = 1;
         initialMappedFiles = 2;
         cachePageCount = 20;
-        cachePageSize = 8192;
         filePageCount = cachePageCount * 10;
-        filePageSize = cachePageSize;
         tracer = PageCacheTracer.NULL;
         cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         commandCount = 1000;
@@ -214,11 +213,6 @@ public class RandomPageCacheTestHarness implements Closeable
         this.cachePageCount = count;
     }
 
-    public void setCachePageSize( int size )
-    {
-        this.cachePageSize = size;
-    }
-
     public void setFilePageCount( int count )
     {
         this.filePageCount = count;
@@ -295,7 +289,6 @@ public class RandomPageCacheTestHarness implements Closeable
         out.println( "concurrencyLevel (number of worker threads) = " + concurrencyLevel );
         out.println( "initialMappedFiles = " + initialMappedFiles );
         out.println( "cachePageCount = " + cachePageCount );
-        out.println( "cachePageSize = " + cachePageSize );
         out.println( "tracer = " + tracer );
         out.println( "useAdversarialIO = " + useAdversarialIO );
         out.println( "mischeifRate = " + mischiefRate );
@@ -385,8 +378,12 @@ public class RandomPageCacheTestHarness implements Closeable
 
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fs, Configuration.EMPTY );
-        MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer,
+        MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, tracer,
                 cursorTracerSupplier );
+        if ( filePageSize == 0 )
+        {
+            filePageSize = cache.pageSize();
+        }
         cache.setPrintExceptionsOnClose( false );
         Map<File,PagedFile> fileMap = new HashMap<>( files.length );
         for ( int i = 0; i < Math.min( files.length, initialMappedFiles ); i++ )
@@ -471,11 +468,15 @@ public class RandomPageCacheTestHarness implements Closeable
     {
         String s = "abcdefghijklmnopqrstuvwxyz";
         File[] files = new File[s.length()];
+        TestDirectory testDirectory = TestDirectory.testDirectory( RandomPageCacheTestHarness.class, fs );
+        File base = testDirectory.prepareDirectoryForTest( "random-pagecache-test-harness" );
         for ( int i = 0; i < s.length(); i++ )
         {
-            files[i] = new File( s.substring( i, i + 1 ) ).getCanonicalFile();
+            files[i] = new File( base, s.substring( i, i + 1 ) ).getCanonicalFile();
             fs.mkdirs( files[i].getParentFile() );
-            fs.open( files[i], OpenMode.READ_WRITE ).close();
+            StoreChannel channel = fs.open( files[i], OpenMode.READ_WRITE );
+            channel.truncate( 0 );
+            channel.close();
         }
         return files;
     }

@@ -21,6 +21,7 @@ package org.neo4j.io.mem;
 
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -39,23 +40,23 @@ public class MemoryAllocatorTest
     @Test
     public void allocatedPointerMustNotBeNull() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 16 * 4096, 8 );
-        long address = mman.allocateAligned( 8192 );
+        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE, 8 );
+        long address = mman.allocateAligned( PageCache.PAGE_SIZE );
         assertThat( address, is( not( 0L ) ) );
     }
 
     @Test
     public void allocatedPointerMustBePageAligned() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 16 * 4096, UnsafeUtil.pageSize() );
-        long address = mman.allocateAligned( 8192 );
+        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE, UnsafeUtil.pageSize() );
+        long address = mman.allocateAligned( PageCache.PAGE_SIZE );
         assertThat( address % UnsafeUtil.pageSize(), is( 0L ) );
     }
 
     @Test
     public void mustBeAbleToAllocatePastMemoryLimit() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 8192, 2 );
+        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE, 2 );
         for ( int i = 0; i < 4100; i++ )
         {
             assertThat( mman.allocateAligned( 1 ) % 2, is( 0L ) );
@@ -66,7 +67,7 @@ public class MemoryAllocatorTest
     @Test( expected = IllegalArgumentException.class )
     public void alignmentCannotBeZero() throws Exception
     {
-        createAllocator( 8192, 0 );
+        createAllocator( PageCache.PAGE_SIZE, 0 );
     }
 
     @Test
@@ -84,19 +85,19 @@ public class MemoryAllocatorTest
     @Test
     public void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 8192, 1 );
+        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE, 1 );
         assertThat( mman.usedMemory(), is( 0L ) );
-        assertThat( mman.availableMemory(), is( 8192L ) );
-        assertThat( mman.usedMemory() + mman.availableMemory(), is( 8192L ) );
+        assertThat( mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
+        assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
 
         mman.allocateAligned( 32 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 32L ) ) );
-        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( 8192L - 32 ) ) );
-        assertThat( mman.usedMemory() + mman.availableMemory(), is( 8192L ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 32L ) ) );
+        assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
 
         mman.allocateAligned( 32 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 64L ) ) );
-        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( 8192L - 32 - 32 ) ) );
-        assertThat( mman.usedMemory() + mman.availableMemory(), is( 8192L ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 32 - 32L ) ) );
+        assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
     }
 }

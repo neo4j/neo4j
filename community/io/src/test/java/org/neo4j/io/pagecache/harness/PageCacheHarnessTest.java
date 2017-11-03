@@ -64,9 +64,8 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setConcurrencyLevel( 8 );
             harness.setFilePageCount( filePageCount );
             harness.setInitialMappedFiles( 1 );
-            harness.setCachePageSize( pageCachePageSize );
-            harness.setFilePageSize( pageCachePageSize );
-            harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
+            harness.setVerification(
+                    filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
             harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
         }
     }
@@ -81,19 +80,17 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setConcurrencyLevel( 11 );
             harness.setUseAdversarialIO( false );
             harness.setCachePageCount( 3 );
-            harness.setCachePageSize( pageCachePageSize );
             harness.setFilePageCount( filePageCount );
-            harness.setFilePageSize( pageCachePageSize );
             harness.setInitialMappedFiles( 1 );
             harness.setCommandCount( 10000 );
             harness.setRecordFormat( recordFormat );
             harness.setFileSystem( fs );
             harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
-            harness.setPreparation( ( pageCache1, fs1, filesTouched ) ->
+            harness.setPreparation( ( cache, fs, filesTouched ) ->
             {
                 File file = filesTouched.iterator().next();
-                try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );
-                        PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+                try ( PagedFile pf = cache.map( file, cache.pageSize() );
+                      PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount; pageId++ )
                     {
@@ -118,8 +115,6 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setUseAdversarialIO( false );
             harness.setCachePageCount( filePageCount / 2 );
             harness.setFilePageCount( filePageCount );
-            harness.setCachePageSize( pageCachePageSize );
-            harness.setFilePageSize( pageCachePageSize );
             harness.setInitialMappedFiles( 3 );
             harness.setCommandCount( 15_000 );
             harness.setFileSystem( fs );
@@ -144,8 +139,6 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setErrorRate( 0.0 );
             harness.setCachePageCount( filePageCount / 2 );
             harness.setFilePageCount( filePageCount );
-            harness.setCachePageSize( pageCachePageSize );
-            harness.setFilePageSize( pageCachePageSize );
             harness.setInitialMappedFiles( 3 );
             harness.setCommandCount( 15_000 );
             harness.setFileSystem( fs );
@@ -170,8 +163,6 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setErrorRate( 0.0 );
             harness.setCachePageCount( filePageCount / 2 );
             harness.setFilePageCount( filePageCount );
-            harness.setCachePageSize( pageCachePageSize );
-            harness.setFilePageSize( pageCachePageSize );
             harness.setInitialMappedFiles( 3 );
             harness.setCommandCount( 150_000 );
             harness.setFileSystem( fs );
@@ -184,11 +175,11 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
     {
-        return ( pageCache1, fs1, filesTouched ) ->
+        return ( cache, fs1, filesTouched ) ->
         {
             for ( File file : filesTouched )
             {
-                try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );
+                try ( PagedFile pf = cache.map( file, cache.pageSize() );
                       PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )

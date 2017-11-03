@@ -35,7 +35,7 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
     public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, int pageSize,
             PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
-        return new MuninnPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier );
+        return new MuninnPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier );
     }
 
     @Override

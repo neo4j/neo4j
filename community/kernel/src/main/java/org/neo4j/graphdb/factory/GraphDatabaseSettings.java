@@ -33,6 +33,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.BoltConnectorValidator;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
@@ -526,7 +527,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "on available system resources." )
     public static final Setting<Long> pagecache_memory =
             buildSetting( "dbms.memory.pagecache.size", BYTES, null)
-                    .constraint( min( 8192 * 30L ) ).build();
+                    .constraint( min( PageCache.PAGE_SIZE * 30L ) ).build();
 
     @Description( "Specify which page swapper to use for doing paged IO. " +
                   "This is only used when integrating with proprietary storage technology." )

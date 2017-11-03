@@ -76,11 +76,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected int recordSize = 9;
     protected int maxPages = 20;
-    protected int pageCachePageSize = 32;
-    protected int recordsPerFilePage = pageCachePageSize / recordSize;
-    protected int recordCount = 25 * maxPages * recordsPerFilePage;
-    protected int filePageSize = recordsPerFilePage * recordSize;
-    protected ByteBuffer bufA = ByteBuffer.allocate( recordSize );
+
+    protected int pageCachePageSize;
+    protected int recordsPerFilePage;
+    protected int recordCount;
+    protected int filePageSize;
+    protected ByteBuffer bufA;
     protected FileSystemAbstraction fs;
     protected T pageCache;
 
@@ -112,7 +113,13 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, int pageSize,
             PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
-        return fixture.createPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier );
+        T pageCache = fixture.createPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier );
+        pageCachePageSize = pageCache.pageSize();
+        recordsPerFilePage = pageCachePageSize / recordSize;
+        recordCount = 25 * maxPages * recordsPerFilePage;
+        filePageSize = recordsPerFilePage * recordSize;
+        bufA = ByteBuffer.allocate( recordSize );
+        return pageCache;
     }
 
     protected T createPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheTracer tracer,

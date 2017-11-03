@@ -194,11 +194,25 @@ public class MuninnPageCache implements PageCache
      * Create page cache
      * @param swapperFactory page cache swapper factory
      * @param maxPages maximum number of pages
-     * @param cachePageSize page cache size
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
      */
+    public MuninnPageCache(
+            PageSwapperFactory swapperFactory,
+            int maxPages,
+            PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier )
+    {
+        this( swapperFactory, maxPages, PAGE_SIZE, pageCacheTracer, pageCursorTracerSupplier );
+    }
+
+    /**
+     * Constructor variant that allows setting a non-standard cache page size.
+     * Only ever use this for testing.
+     */
+    @SuppressWarnings( "DeprecatedIsStillUsed" )
+    @Deprecated
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
             int maxPages,

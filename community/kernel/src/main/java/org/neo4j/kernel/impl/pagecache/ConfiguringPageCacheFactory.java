@@ -36,11 +36,9 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
 
 public class ConfiguringPageCacheFactory
 {
-    private static final int pageSize = getInteger( ConfiguringPageCacheFactory.class, "pageSize", 8192 );
     private PageSwapperFactory swapperFactory;
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -80,15 +78,12 @@ public class ConfiguringPageCacheFactory
 
     protected PageCache createPageCache()
     {
-        int cachePageSize = calculatePageSize( config, swapperFactory );
-        int maxPages = calculateMaxPages( config, cachePageSize );
-        return new MuninnPageCache(
-                swapperFactory,
-                maxPages,
-                cachePageSize, pageCacheTracer, pageCursorTracerSupplier );
+        checkPageSize( config );
+        int maxPages = calculateMaxPages( config );
+        return new MuninnPageCache( swapperFactory, maxPages, pageCacheTracer, pageCursorTracerSupplier );
     }
 
-    public int calculateMaxPages( Config config, int cachePageSize )
+    public int calculateMaxPages( Config config )
     {
         Long pageCacheMemorySetting = config.get( pagecache_memory );
         long pageCacheMemory = interpretMemorySetting( pageCacheMemorySetting );
@@ -99,7 +94,7 @@ public class ConfiguringPageCacheFactory
                       "10 KiB of heap memory, for every 1 MiB of page cache memory. The current configuration is " +
                       "allocating %s bytes for the page cache, and %s bytes for the heap.", pageCacheMemory, maxHeap );
         }
-        long pageCount = pageCacheMemory / cachePageSize;
+        long pageCount = pageCacheMemory / PageCache.PAGE_SIZE;
         return (int) Math.min( Integer.MAX_VALUE - 2000, pageCount );
     }
 
@@ -163,29 +158,24 @@ public class ConfiguringPageCacheFactory
         return ByteUnit.gibiBytes( 2 );
     }
 
-    public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )
+    public void checkPageSize( Config config )
     {
         if ( config.get( mapped_memory_page_size ).intValue() != 0 )
         {
             log.warn( "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
                     "deprecated and will be removed in a future version." );
         }
-        if ( swapperFactory.isCachePageSizeHintStrict() )
-        {
-            return swapperFactory.getCachePageSizeHint();
-        }
-        return pageSize;
     }
 
     public void dumpConfiguration()
     {
-        int cachePageSize = calculatePageSize( config, swapperFactory );
-        long maxPages = calculateMaxPages( config, cachePageSize );
+        checkPageSize( config );
+        long maxPages = calculateMaxPages( config );
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
         String totalPhysicalMemMb = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
                                     ? "?" : "" + ByteUnit.Byte.toMebiBytes( totalPhysicalMemory );
         long maxVmUsageMb = ByteUnit.Byte.toMebiBytes( Runtime.getRuntime().maxMemory() );
-        long pageCacheMb = ByteUnit.Byte.toMebiBytes(maxPages * cachePageSize);
+        long pageCacheMb = ByteUnit.Byte.toMebiBytes( maxPages * PageCache.PAGE_SIZE );
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
                      " Page cache size: " + pageCacheMb + " MiB.";
@@ -217,5 +207,4 @@ public class ConfiguringPageCacheFactory
         }
         return new SingleFilePageSwapperFactory();
     }
-
 }
