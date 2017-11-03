@@ -163,6 +163,7 @@ difficult to plan query number 1
 difficult to plan query number 2
 difficult to plan query number 3
 Match on multiple labels with OR
+Variable length path with both sides already bound
 
 //AggregationAcceptance.feature
 Multiple aggregations should work
