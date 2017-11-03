@@ -19,10 +19,11 @@
  */
 package org.neo4j.causalclustering.messaging;
 
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 
-public class LoggingInbound<M extends Message> implements Inbound<M>
+public class LoggingInbound<M extends RaftMessages.RaftMessage> implements Inbound<M>
 {
     private final Inbound<M> inbound;
     private final MessageLogger<MemberId> messageLogger;
@@ -42,7 +43,7 @@ public class LoggingInbound<M extends Message> implements Inbound<M>
         {
             public synchronized void handle( M message )
             {
-                messageLogger.log( me, message );
+                messageLogger.logInbound( message.from(), message, me );
                 handler.handle( message );
             }
         } );

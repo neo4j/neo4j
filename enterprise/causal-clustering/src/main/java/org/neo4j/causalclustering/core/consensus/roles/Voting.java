@@ -25,11 +25,12 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.logging.Log;
 
 public class Voting
 {
     static  void handleVoteRequest( ReadableRaftState state, Outcome outcome,
-            RaftMessages.Vote.Request voteRequest ) throws IOException
+            RaftMessages.Vote.Request voteRequest, Log log ) throws IOException
     {
         if ( voteRequest.term() > state.term() )
         {
@@ -40,7 +41,7 @@ public class Voting
         boolean willVoteForCandidate = shouldVoteFor( voteRequest.candidate(), outcome.getTerm(), voteRequest.term(),
                 state.entryLog().readEntryTerm( state.entryLog().appendIndex() ), voteRequest.lastLogTerm(),
                 state.entryLog().appendIndex(), voteRequest.lastLogIndex(),
-                outcome.getVotedFor() );
+                outcome.getVotedFor(), log );
 
         if ( willVoteForCandidate )
         {
@@ -56,10 +57,11 @@ public class Voting
     public static boolean shouldVoteFor( MemberId candidate, long contextTerm, long requestTerm,
                                          long contextLastLogTerm, long requestLastLogTerm,
                                          long contextLastAppended, long requestLastLogIndex,
-                                         MemberId votedFor )
+                                         MemberId votedFor, Log log )
     {
         if ( requestTerm < contextTerm )
         {
+            log.debug( "Will not vote for %s as vote request term %s was earlier than my term %s", candidate, requestTerm, contextTerm );
             return false;
         }
 
@@ -72,6 +74,15 @@ public class Voting
         boolean votedForOtherInSameTerm = requestTerm == contextTerm &&
                 votedFor != null && !votedFor.equals( candidate );
 
-        return requesterLogUpToDate && !votedForOtherInSameTerm;
+        boolean shouldVoteFor = requesterLogUpToDate && !votedForOtherInSameTerm;
+
+        log.debug( "Should vote for raft candidate %s: " +
+                        "requester log up to date: %s (request last log term: %s, context last log term: %s, request last log index: %s, context last append: %s) " +
+                        "voted for other in same term: %s (request term: %s, context term: %s, votedFor: %s)",
+                shouldVoteFor,
+                requesterLogUpToDate, requestLastLogTerm, contextLastLogTerm, requestLastLogIndex, contextLastAppended,
+                votedForOtherInSameTerm, requestTerm, contextTerm, votedFor );
+
+        return shouldVoteFor;
     }
 }

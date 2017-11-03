@@ -19,16 +19,18 @@
  */
 package org.neo4j.causalclustering.logging;
 
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
+
 public class NullMessageLogger<MEMBER> implements MessageLogger<MEMBER>
 {
     @Override
-    public void log( MEMBER from, MEMBER to, Object... messages )
+    public <M extends RaftMessages.RaftMessage> void logOutbound( MEMBER me, M message, MEMBER remote )
     {
 
     }
 
     @Override
-    public void log( MEMBER to, Object message )
+    public <M extends RaftMessages.RaftMessage> void logInbound( MEMBER remote, M message, MEMBER me )
     {
     }
 }

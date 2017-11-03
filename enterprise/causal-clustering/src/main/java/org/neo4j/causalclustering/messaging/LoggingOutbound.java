@@ -19,9 +19,10 @@
  */
 package org.neo4j.causalclustering.messaging;
 
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.logging.MessageLogger;
 
-public class LoggingOutbound<MEMBER, MESSAGE extends Message> implements Outbound<MEMBER, MESSAGE>
+public class LoggingOutbound<MEMBER, MESSAGE extends RaftMessages.RaftMessage> implements Outbound<MEMBER, MESSAGE>
 {
     private final Outbound<MEMBER,MESSAGE> outbound;
     private final MEMBER me;
@@ -37,7 +38,7 @@ public class LoggingOutbound<MEMBER, MESSAGE extends Message> implements Outboun
     @Override
     public void send( MEMBER to, MESSAGE message, boolean block )
     {
-        messageLogger.log( me, to, message );
+        messageLogger.logOutbound( me, message, to );
         outbound.send( to, message );
     }
 
