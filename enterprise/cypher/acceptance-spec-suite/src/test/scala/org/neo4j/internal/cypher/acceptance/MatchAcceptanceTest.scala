@@ -38,91 +38,74 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val db = graph
 
-    println("creating graph")
+        println("creating graph")
 
-    var tx = db.getGraphDatabaseService.beginTx()
-    var i = 0
+        var tx = db.getGraphDatabaseService.beginTx()
+        var i = 0
 
-    def ping() = {
-      i += 1
-      if (i % 5000 == 0) {
-        tx.success()
-        tx.close()
-        tx = db.getGraphDatabaseService.beginTx()
-      }
-    }
+        def ping() = {
+          i += 1
+          if (i % 5000 == 0) {
+            tx.success()
+            tx.close()
+            tx = db.getGraphDatabaseService.beginTx()
+          }
+        }
 
-    val NODES = 10
-    val EDGES = 10
+        val NODES = 10000
+        val EDGES = 100000
 
-    val nodes = (0 to NODES).map { x =>
-      ping()
-      db.createNode()
-    }.toArray
+        val nodes = (0 to NODES).map { x =>
+          ping()
+          db.createNode()
+        }.toArray
 
-    val r = new Random()
+        val r = new Random()
 
-//    (0 to EDGES).foreach(_ => {
-//      val lhs = nodes(r.nextInt(NODES))
-//      val rhs = nodes(r.nextInt(NODES))
-//      (0 to r.nextInt(100)) foreach { _ =>
-//        val n = db.createNode()
-//        rhs.createRelationshipTo(n, RelationshipType.withName("apa"))
-//        ping()
-//      }
-//      lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
-//    })
+        (0 to EDGES).foreach(_ => {
+          val lhs = nodes(r.nextInt(NODES))
+          val rhs = nodes(r.nextInt(NODES))
+          ping()
+          lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
+        })
 
-    tx.success()
+         tx.success()
     tx.close()
-    //       db.shutdown()
+ //       db.shutdown()
 
     val visitor = new ResultVisitor[RuntimeException] {
       override def visit(row: Result.ResultRow): Boolean = {
-        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
+     //   println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
         true
       }
     }
-
-    println("running first query")
-//    Seq("compiled") foreach { runtime =>
-      val q = s"cypher runtime=morsel match (a) return a order by id(a)"
+    Seq("morsel") foreach { runtime =>
+      val q = s"cypher runtime=$runtime match (a)-->(b) return a, b"
       val started = System.currentTimeMillis()
-//      (0 to 30) foreach { i =>
+      (0 to 1000) foreach { _ =>
         val res = db.execute(q)
         res.accept(visitor)
-//      }
-      println(s"took " + (System.currentTimeMillis() - started))
-//    }
+      }
+      println(s"$runtime took " + (System.currentTimeMillis() - started))
+    }
     println("running query")
 
-    //    val res = db.execute("match (a)-->(b)-->(c) return a, b")
-    //    res.accept(visitor)
-    //
-    //    Seq("slotted", "compiled", "morsel debug=singleThreaded", "morsel") foreach { runtime =>
-    //            val started = System.currentTimeMillis()
-    //
-    //    val threads =
-    //        0 to 100 map { _ =>
-    //          val thread = new Thread(new Runnable {
-    //            override def run(): Unit = {
-    //              (0 to 3) foreach { i =>
-    //                val q = s"cypher runtime=$runtime match (a)-->(b)-->(c) return a, b"
-    //                val res = db.execute(q)
-    //                res.accept(visitor)
-    //              }
-    //            }
-    //          })
-    //          thread.start()
-    //          thread
-    //        }
-    //      threads.foreach(_.join())
-    //      println(s"$runtime took " + (System.currentTimeMillis() - started))
-    //    }
-    //
-    //
+//    if (false) {
+//      val threads =
+//        0 to 10 map { _ =>
+//          val thread = new Thread(new Runnable {
+//            override def run(): Unit = {
+//              val result = db.execute(q)
+//              result.accept(visitor)
+//            }
+//          })
+//          thread.start()
+//          thread
+//        }
+//      threads.foreach(_.join())
+//    }
 
-    //    Dispatcher.instance.shutdown()
+//    Dispatcher.instance.shutdown()
     db.shutdown()
   }
 

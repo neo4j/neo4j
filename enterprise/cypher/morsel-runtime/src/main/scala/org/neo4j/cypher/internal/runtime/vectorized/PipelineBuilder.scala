@@ -57,8 +57,8 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
     val pipeline = pipelines(plan.assignedId)
 
       val thisOp = plan match {
-        case plans.ProduceResult(_, _) =>
-          new ProduceResultOperator(pipeline)
+        case plans.ProduceResult(_, columns) =>
+          new ProduceResultOperator(pipeline, columns.toArray)
 
         case plans.Optional(inner, symbols) =>
           val nullableKeys = inner.availableSymbols -- symbols

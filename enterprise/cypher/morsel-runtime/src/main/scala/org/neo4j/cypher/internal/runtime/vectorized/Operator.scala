@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.graphdb.Result
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
 trait Operator {
@@ -69,7 +69,7 @@ case object NoDependencies extends Dependency {
   override def pipeline = throw new IllegalArgumentException("No dependencies here!")
 }
 
-case class QueryState(params: MapValue, visitor: Result.ResultVisitor[_])
+case class QueryState(params: MapValue, visitor: QueryResultVisitor[_])
 
 case class Pipeline(start: Operator,
                     operators: Seq[MiddleOperator],

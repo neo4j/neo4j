@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import java.lang
-
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.graphdb.{Node, Path, Relationship, Result}
-import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue
+import org.neo4j.cypher.internal.util.v3_4.symbols
+import org.neo4j.cypher.result.QueryResult
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues._
 
-class ProduceResultOperator(pipelineInformation: PipelineInformation) extends MiddleOperator {
+
+class ProduceResultOperator(pipelineInformation: PipelineInformation, fieldNames: Array[String]) extends MiddleOperator {
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-    val resultRow = new MorselResultRow(data, 0, pipelineInformation, context)
+    val resultRow = new MorselResultRow(data, 0, pipelineInformation, fieldNames, context)
     (0 until data.validRows) foreach { position =>
       resultRow.currentPos = position
       state.visitor.visit(resultRow)
@@ -40,29 +41,27 @@ class ProduceResultOperator(pipelineInformation: PipelineInformation) extends Mi
 class MorselResultRow(var morsel: Morsel,
                       var currentPos: Int,
                       pipelineInformation: PipelineInformation,
-                      queryContext: QueryContext) extends Result.ResultRow {
-  override def getNode(key: String): Node = {
-    pipelineInformation.get(key) match {
-      case None => throw new IllegalStateException()
-      case Some(RefSlot(offset, _, _typ)) =>
-        val nodeId = morsel.refs(currentPos * pipelineInformation.numberOfReferences + offset)
-        nodeId.asInstanceOf[NodeProxyWrappingNodeValue].nodeProxy()
-      case Some(LongSlot(offset, _, _typ)) =>
-        val nodeId = morsel.longs(currentPos * pipelineInformation.numberOfLongs + offset)
-        queryContext.nodeOps.getById(nodeId)
+                      fieldNames: Array[String],
+                      queryContext: QueryContext) extends QueryResult.Record {
+  private val array = new Array[AnyValue](fieldNames.length)
+
+  private val updateArray: Array[() => AnyValue] = fieldNames.map(key => pipelineInformation.get(key) match {
+    case None => throw new IllegalStateException()
+    case Some(RefSlot(offset, _, _)) => () =>
+       morsel.refs(currentPos * pipelineInformation.numberOfReferences + offset)
+    case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
+      node(morsel.longs(currentPos * pipelineInformation.numberOfLongs + offset))
+    case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
+      edge(morsel.longs(currentPos * pipelineInformation.numberOfLongs + offset))
+    case _ => throw new IllegalStateException
+  })
+
+  override def fields(): Array[AnyValue] = {
+    var i = 0
+    while ( i < array.length) {
+      array(i) = updateArray(i)()
+      i += 1
     }
-
+    array
   }
-
-  override def getRelationship(key: String): Relationship = ???
-
-  override def get(key: String): AnyRef = ???
-
-  override def getString(key: String): String = ???
-
-  override def getNumber(key: String): Number = ???
-
-  override def getBoolean(key: String): lang.Boolean = ???
-
-  override def getPath(key: String): Path = ???
 }

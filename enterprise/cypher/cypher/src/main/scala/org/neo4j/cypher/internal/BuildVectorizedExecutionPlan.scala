@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal
 
-import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
@@ -34,9 +35,10 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.vectorized.{ForkJoinPoolExecutor, Pipeline, PipelineBuilder, SingleThreadedExecutor}
-import org.neo4j.cypher.internal.runtime.{QueryStatistics => _, _}
+import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
+import org.neo4j.cypher.internal.util.v3_4.TaskCloser
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
-import org.neo4j.cypher.result.QueryResult
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.MapValue
 
@@ -51,7 +53,8 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     val operatorBuilder = new PipelineBuilder(pipelines, converters)
     val operators = operatorBuilder.create(physicalPlan)
     val singleThreaded = context.debugOptions.contains("singlethreaded")
-    val execPlan = VectorizedExecutionPlan(singleThreaded, from.plannerName, operators, pipelines, physicalPlan)
+    val fieldNames = from.statement().returnColumns.toArray
+    val execPlan = VectorizedExecutionPlan(singleThreaded, from.plannerName, operators, pipelines, physicalPlan, fieldNames)
     new CompilationState(from, Some(execPlan))
   }
 
@@ -68,9 +71,13 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
                                      plannerUsed: PlannerName,
                                      operators: Pipeline,
                                      pipelineInformation: Map[LogicalPlanId, PipelineInformation],
-                                     physicalPlan: LogicalPlan) extends executionplan.ExecutionPlan {
+                                     physicalPlan: LogicalPlan,
+                                     fieldNames: Array[String]) extends executionplan.ExecutionPlan {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
-      new VectorizedOperatorExecutionResult(singleThreaded, operators, pipelineInformation, physicalPlan, queryContext, params)
+      val taskCloser = new TaskCloser
+      taskCloser.addTask(queryContext.transactionalContext.close)
+
+      new VectorizedOperatorExecutionResult(singleThreaded, operators, pipelineInformation, physicalPlan, queryContext, params, fieldNames, taskCloser)
     }
 
     override def isPeriodicCommit: Boolean = false
@@ -89,22 +96,20 @@ class VectorizedOperatorExecutionResult(singleThreaded: Boolean,
                                         pipelineInformation: Map[LogicalPlanId, PipelineInformation],
                                         logicalPlan: LogicalPlan,
                                         queryContext: QueryContext,
-                                        params: MapValue) extends InternalExecutionResult {
+                                        params: MapValue,
+                                        override val fieldNames: Array[String],
+                                        taskCloser: TaskCloser) extends StandardInternalExecutionResult(queryContext, ProcedureRuntimeName, Some(taskCloser)) with IterateByAccepting {
 
 
-  override def columnAs[T](column: String): Iterator[T] = ???
 
-  override def javaColumnAs[T](column: String): ResourceIterator[T] = ???
+  override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
+    if (singleThreaded)
+      new SingleThreadedExecutor(operators, queryContext, pipelineInformation(logicalPlan.assignedId), params).accept(visitor)
+    else
+      ForkJoinPoolExecutor.execute(operators, queryContext, params)(visitor)
+  }
 
-  override def javaIterator: ResourceIterator[java.util.Map[String, Any]] = ???
-
-  override def dumpToString(writer: PrintWriter): Unit = ???
-
-  override def dumpToString(): String = ???
-
-  override def queryStatistics(): org.neo4j.cypher.internal.runtime.QueryStatistics = ???
-
-  override def planDescriptionRequested: Boolean = ???
+  override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
 
   override def executionPlanDescription(): InternalPlanDescription = ???
 
@@ -114,25 +119,6 @@ class VectorizedOperatorExecutionResult(singleThreaded: Boolean,
 
   override def notifications: Iterable[Notification] = ???
 
-  override def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = {
-    //    Dispatcher.instance.run(operators, visitor, queryContext, pipelineInformation(logicalPlan.assignedId), params)
-    if (singleThreaded)
-      new SingleThreadedExecutor(operators, queryContext, pipelineInformation(logicalPlan.assignedId), params).accept(visitor)
-    else
-      ForkJoinPoolExecutor.execute(operators, queryContext, params)(visitor)
-    //    new Executor(operators, queryContext, params).accept(visitor)
-  }
-
   override def withNotifications(notification: Notification*): InternalExecutionResult = this
-
-  override def fieldNames(): Array[String] = logicalPlan.availableSymbols.map(_.name).toArray
-
-  override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit = ???
-
-  override def close(): Unit = ???
-
-  override def hasNext: Boolean = ???
-
-  override def next(): Map[String, Any] = ???
 }
 

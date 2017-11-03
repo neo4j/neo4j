@@ -3,7 +3,7 @@ package org.neo4j.cypher.internal.runtime.vectorized
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.graphdb.Result
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
@@ -13,7 +13,7 @@ class SingleThreadedExecutor(operators: Pipeline, queryContext: QueryContext, pi
 
   private val MORSEL_SIZE = 100000
 
-  def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = {
+  def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
     var leafOp = operators
     while (leafOp.dependency != NoDependencies) {
       leafOp = leafOp.dependency.pipeline

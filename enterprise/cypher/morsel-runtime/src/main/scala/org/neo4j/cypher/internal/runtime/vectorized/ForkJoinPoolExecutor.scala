@@ -7,7 +7,7 @@ import java.util.{concurrent, function}
 import org.neo4j.concurrent.BinaryLatch
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.graphdb.Result
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
@@ -18,7 +18,7 @@ object ForkJoinPoolExecutor {
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
-                              params: MapValue)(visitor: Result.ResultVisitor[E]): Unit = {
+                              params: MapValue)(visitor: QueryResultVisitor[E]): Unit = {
     val leaf = getLeaf(operators)
     val iteration = new Iteration(None)
     val query = new Query()
