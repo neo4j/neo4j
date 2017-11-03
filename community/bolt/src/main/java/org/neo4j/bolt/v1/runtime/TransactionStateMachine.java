@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
@@ -29,6 +30,7 @@ import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -71,6 +73,8 @@ public class TransactionStateMachine implements StatementProcessor
         before();
         try
         {
+            ensureNoPendingTerminationNotice();
+
             state = state.run( ctx, spi, statement, params );
 
             return ctx.currentStatementMetadata;
@@ -87,6 +91,8 @@ public class TransactionStateMachine implements StatementProcessor
         before();
         try
         {
+            ensureNoPendingTerminationNotice();
+
             state.streamResult( ctx, resultConsumer );
         }
         finally
@@ -112,10 +118,7 @@ public class TransactionStateMachine implements StatementProcessor
 
     private void after()
     {
-        if ( ctx.currentTransaction != null )
-        {
-            spi.unbindTransactionFromCurrentThread();
-        }
+        spi.unbindTransactionFromCurrentThread();
     }
 
     public void markCurrentTransactionForTermination()
@@ -124,6 +127,39 @@ public class TransactionStateMachine implements StatementProcessor
         if ( tx != null )
         {
             tx.markForTermination( Status.Transaction.Terminated );
+        }
+    }
+
+    @Override
+    public void validateTransaction() throws KernelException
+    {
+        KernelTransaction tx = ctx.currentTransaction;
+
+        if ( tx != null )
+        {
+            Optional<Status> status = tx.getReasonIfTerminated();
+
+            if ( status.isPresent() )
+            {
+                if ( status.get().code().classification().rollbackTransaction() )
+                {
+                    ctx.pendingTerminationNotice = status;
+
+                    reset();
+                }
+            }
+        }
+    }
+
+    private void ensureNoPendingTerminationNotice()
+    {
+        if ( ctx.pendingTerminationNotice.isPresent() )
+        {
+            Status status = ctx.pendingTerminationNotice.get();
+
+            ctx.pendingTerminationNotice = Optional.empty();
+
+            throw new TransactionTerminatedException( status );
         }
     }
 
@@ -385,6 +421,8 @@ public class TransactionStateMachine implements StatementProcessor
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
+
+        Optional<Status> pendingTerminationNotice = Optional.empty();
 
         /** Last Cypher statement executed */
         String lastStatement = "";
