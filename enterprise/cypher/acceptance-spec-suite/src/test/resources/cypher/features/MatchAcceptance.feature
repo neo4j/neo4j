@@ -243,6 +243,7 @@ Feature: MatchAcceptance
       | a      |
       | (:A:B) |
       | (:A:C) |
+    And no side effects
 
   Scenario: Handle filtering with empty properties map
     Given an empty graph
