@@ -73,7 +73,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         String threadName = thread.getName();
         ExecutingQuery executingQuery =
                 new ExecutingQuery( queryId, clientConnection, statement.username(), queryText, queryParameters,
-                        statement.getTransaction().getMetaData(), statement.locks()::activeLockCount,
+                        statement.getTransaction().getMetaData(), () -> statement.locks().activeLockCount(),
                         statement.getPageCursorTracer(),
                         threadId, threadName, clock, cpuClock, heapAllocation );
         registerExecutingQuery( statement, executingQuery );

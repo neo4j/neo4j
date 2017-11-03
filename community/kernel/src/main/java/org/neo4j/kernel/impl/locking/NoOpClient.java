@@ -71,6 +71,11 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
+    public void prepare()
+    {
+    }
+
+    @Override
     public void stop()
     {
     }

@@ -17,29 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.enterprise.lock.forseti;
+package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
+import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLocksFactory;
+import org.neo4j.test.rule.DatabaseRule;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.lock_manager;
 
-@Service.Implementation( Locks.Factory.class )
-public class ForsetiLocksFactory extends Locks.Factory
+public class KernelTransactionTimeoutMonitorWithForsetiIT extends KernelTransactionTimeoutMonitorIT
 {
-    public static final String KEY = "forseti";
-
-    public ForsetiLocksFactory()
-    {
-        super( KEY );
-    }
-
     @Override
-    public Locks newInstance( Config config, Clock clock, ResourceType[] resourceTypes )
+    protected DatabaseRule createDatabaseRule()
     {
-        return new ForsetiLockManager( config, clock, ResourceTypes.values() );
+        return super.createDatabaseRule().withSetting( lock_manager, ForsetiLocksFactory.KEY );
     }
 }

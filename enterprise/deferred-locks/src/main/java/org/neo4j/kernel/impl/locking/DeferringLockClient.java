@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -149,6 +149,12 @@ public class DeferringLockClient implements Locks.Client
                 clientDelegate.acquireShared( LockTracer.NONE, currentType, resourceIds );
             }
         }
+    }
+
+    @Override
+    public void prepare()
+    {
+        clientDelegate.prepare();
     }
 
     @Override
