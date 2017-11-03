@@ -293,18 +293,7 @@ public final class Values
 
     public static CoordinateReferenceSystem crs( CRS crs )
     {
-        if ( crs.getHref().equals( CoordinateReferenceSystem.WGS84.href ) )
-        {
-            return CoordinateReferenceSystem.WGS84;
-        }
-        else if ( crs.getHref().equals( CoordinateReferenceSystem.Cartesian.href ) )
-        {
-            return CoordinateReferenceSystem.Cartesian;
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Unknown CRS: " + crs );
-        }
+        return CoordinateReferenceSystem.get( crs );
     }
 
     // BOXED FACTORY METHODS
