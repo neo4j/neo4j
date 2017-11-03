@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
@@ -33,7 +35,7 @@ import org.neo4j.values.storable.Values;
 
 public enum GeometryType
 {
-    GEOMETRY_POINT( 0 )
+    GEOMETRY_POINT( 0, "Point" )
             {
                 @Override
                 public Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset )
@@ -59,10 +61,12 @@ public enum GeometryType
             };
 
     public final int gtype;
+    public final String name;
 
-    GeometryType( int gtype )
+    GeometryType( int gtype, String name )
     {
         this.gtype = gtype;
+        this.name = name;
     }
 
     public abstract Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset );
@@ -71,6 +75,17 @@ public enum GeometryType
     // know their length just from the firstBlock. Since we will probably use dynamic property
     // stores, it might be that the answer here is just 1.
     public abstract int calculateNumberOfBlocksUsedForGeometry( long firstBlock );
+
+    private static final GeometryType[] TYPES = GeometryType.values();
+    private static final Map<String, GeometryType> all = new HashMap<>( TYPES.length );
+
+    static
+    {
+        for ( GeometryType geometryType : TYPES )
+        {
+            all.put( geometryType.name, geometryType );
+        }
+    }
 
     private static int getGeometryType( long firstBlock )
     {
@@ -110,16 +125,30 @@ public enum GeometryType
         }
     }
 
-    private static GeometryType find( int gtype )
+    public static GeometryType find( int gtype )
     {
-        for ( GeometryType type : GeometryType.values() )
+        if ( gtype < TYPES.length )
         {
-            if ( type.gtype == gtype )
-            {
-                return type;
-            }
+            return TYPES[gtype];
         }
-        return null;
+        else
+        {
+            // Kernel code requires no exceptions in deeper PropertyChain processing of corrupt/invalid data
+            return null;
+        }
+    }
+
+    public static GeometryType find( String name )
+    {
+        GeometryType table = all.get( name );
+        if ( table != null )
+        {
+            return table;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "No known Geometry Type: " + name );
+        }
     }
 
     public static Value decode( PropertyBlock block )
@@ -180,7 +209,7 @@ public enum GeometryType
         GeometryHeader geometryHeader = new GeometryHeader( GeometryType.GEOMETRY_POINT.gtype, dimension,
                 points[0].getCoordinateReferenceSystem() );
         byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
-        geometryHeader.writeArrayHeaderTo(bytes);
+        geometryHeader.writeArrayHeaderTo( bytes );
         return bytes;
     }
 
@@ -205,7 +234,7 @@ public enum GeometryType
             this( geometryType, dimension, CoordinateReferenceSystem.get( crsTableId, crsCode ) );
         }
 
-        private void writeArrayHeaderTo(byte[] bytes)
+        private void writeArrayHeaderTo( byte[] bytes )
         {
             bytes[0] = (byte) PropertyType.GEOMETRY.intValue();
             bytes[1] = (byte) geometryType;
@@ -243,7 +272,7 @@ public enum GeometryType
         if ( dataValue instanceof FloatingPointArray )
         {
             FloatingPointArray numbers = (FloatingPointArray) dataValue;
-            PointValue[] points = new PointValue[((int) numbers.length() / header.dimension)];
+            PointValue[] points = new PointValue[numbers.length() / header.dimension];
             for ( int i = 0; i < points.length; i++ )
             {
                 double[] coords = new double[header.dimension];

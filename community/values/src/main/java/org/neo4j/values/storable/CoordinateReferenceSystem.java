@@ -33,16 +33,26 @@ public class CoordinateReferenceSystem implements CRS
         return new CoordinateReferenceSystem( table.name + "-" + code, table, code );
     }
 
-    private static CoordinateReferenceSystem get( String name )
+    public static CoordinateReferenceSystem get( CRS crs )
     {
-        switch ( name )
+        if ( crs == null || crs.getHref() == null )
         {
-        case "cartesian":
-            return Cartesian;
-        case "WGS-84":
-            return WGS84;
-        default:
-            throw new IllegalArgumentException( "Unknown crs: " + name );
+            throw new IllegalArgumentException( "Invalid CRS: " + crs );
+        }
+        else
+        {
+            if ( CoordinateReferenceSystem.WGS84.href.equals( crs.getHref() ) )
+            {
+                return CoordinateReferenceSystem.WGS84;
+            }
+            else if ( CoordinateReferenceSystem.Cartesian.href.equals( crs.getHref() ) )
+            {
+                return CoordinateReferenceSystem.Cartesian;
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Unknown CRS: " + crs );
+            }
         }
     }
 
