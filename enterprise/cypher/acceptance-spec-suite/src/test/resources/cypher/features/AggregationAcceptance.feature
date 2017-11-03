@@ -171,3 +171,28 @@ Feature: AggregationAcceptance
       | min(x) |
       | [1]    |
     And no side effects
+
+  Scenario: Multiple aggregations should work
+    And having executed:
+      """
+      CREATE (zadie: AUTHOR {name: "Zadie Smith"})
+      CREATE (zadie)-[:WROTE]->(:BOOK {book: "White teeth"})
+      CREATE (zadie)-[:WROTE]->(:BOOK {book: "The Autograph Man"})
+      CREATE (zadie)-[:WROTE]->(:BOOK {book: "On Beauty"})
+      CREATE (zadie)-[:WROTE]->(:BOOK {book: "NW"})
+      CREATE (zadie)-[:WROTE]->(:BOOK {book: "Swing Time"})
+      """
+    When executing query:
+     """
+     MATCH (a)-[r]->(b)
+     RETURN b.book as book, count(r), count(distinct a)
+     ORDER BY book
+     """
+    Then the result should be:
+      | book                | count(r) | count(distinct a) |
+      | 'NW'                | 1        | 1                 |
+      | 'On Beauty'         | 1        | 1                 |
+      | 'Swing Time'        | 1        | 1                 |
+      | 'The Autograph Man' | 1        | 1                 |
+      | 'White teeth'       | 1        | 1                 |
+    And no side effects
