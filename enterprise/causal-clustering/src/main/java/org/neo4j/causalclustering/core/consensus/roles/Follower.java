@@ -98,7 +98,7 @@ class Follower implements RaftMessageHandler
 
             case VOTE_REQUEST:
             {
-                Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request) message );
+                Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request) message, log );
                 break;
             }
 
