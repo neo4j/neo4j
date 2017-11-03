@@ -65,7 +65,7 @@ public class CatchUpTest
         // then
         for ( MemberId aMember : allMembers )
         {
-            assertThat( integerValues( fixture.members().withId( aMember ).raftLog() ), hasItems( 42 ) );
+            assertThat( fixture.messageLog(), integerValues( fixture.members().withId( aMember ).raftLog() ), hasItems( 42 ) );
         }
     }
 
@@ -130,7 +130,7 @@ public class CatchUpTest
         }
 
         // then
-        assertThat( integerValues( fixture.members().withId( sleepyId ).raftLog() ), hasItems( 10, 20, 30, 40 ) );
+        assertThat( fixture.messageLog(), integerValues( fixture.members().withId( sleepyId ).raftLog() ), hasItems( 10, 20, 30, 40 ) );
     }
 
     private List<Integer> integerValues( ReadableRaftLog log ) throws IOException

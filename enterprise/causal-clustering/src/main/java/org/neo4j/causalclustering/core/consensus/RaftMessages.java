@@ -680,7 +680,7 @@ public interface RaftMessages
         }
     }
 
-    class ClusterIdAwareMessage implements Message
+    class ClusterIdAwareMessage implements RaftMessage
     {
         private final ClusterId clusterId;
         private final RaftMessage message;
@@ -729,6 +729,17 @@ public interface RaftMessages
             return format( "{clusterId: %s, message: %s}", clusterId, message );
         }
 
+        @Override
+        public MemberId from()
+        {
+            return message.from();
+        }
+
+        @Override
+        public Type type()
+        {
+            return message.type();
+        }
     }
 
     class PruneRequest extends BaseRaftMessage

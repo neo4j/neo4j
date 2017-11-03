@@ -102,7 +102,7 @@ public class DirectNetworking
         }
     }
 
-    public class Inbound implements org.neo4j.causalclustering.messaging.Inbound
+    public class Inbound<M extends Message> implements org.neo4j.causalclustering.messaging.Inbound<M>
     {
         private final MemberId id;
 

@@ -20,10 +20,12 @@
 package org.neo4j.causalclustering.logging;
 
 import java.io.PrintWriter;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Clock;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
@@ -31,38 +33,60 @@ import static java.lang.String.valueOf;
 
 public class BetterMessageLogger<MEMBER> extends LifecycleAdapter implements MessageLogger<MEMBER>
 {
-    private final PrintWriter printWriter;
-    private DateFormat dateFormat = new SimpleDateFormat( "HH:mm:ss.SSS" );
-
-    public BetterMessageLogger( MEMBER myself, PrintWriter printWriter )
+    private enum Direction
     {
-        this.printWriter = printWriter;
-        printWriter.println( "I am " + myself );
-        printWriter.flush();
-    }
+        INFO( "---" ),
+        OUTBOUND( "-->" ),
+        INBOUND( "<--" );
 
-    private void log( MEMBER from, MEMBER to, Object message )
-    {
-        printWriter.println( format( "%s -->%s: %s: %s",
-                dateFormat.format( new Date() ), to, message.getClass().getSimpleName(), valueOf( message ) ) );
-        printWriter.flush();
-    }
+        public final String arrow;
 
-    @Override
-    public void log( MEMBER from, MEMBER to, Object... messages )
-    {
-        for ( Object message : messages )
+        Direction( String arrow )
         {
-            log( from, to, message );
+            this.arrow = arrow;
         }
     }
 
-    @Override
-    public void log( MEMBER to, Object message )
+    private final PrintWriter printWriter;
+    private final Clock clock;
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern( "yyyy-MM-ddHH:mm:ss.SSSZ" );
+
+    public BetterMessageLogger( MEMBER myself, PrintWriter printWriter, Clock clock )
     {
-        printWriter.println( format( "%s <--%s: %s",
-                dateFormat.format( new Date() ), message.getClass().getSimpleName(), valueOf( message ) ) );
+        this.printWriter = printWriter;
+        this.clock = clock;
+        log( myself, Direction.INFO, myself, "Info", "I am " + myself );
+    }
+
+    private void log( MEMBER me, Direction direction, MEMBER remote, String type, String message )
+    {
+        printWriter.println( format( "%s %s %s %s %s \"%s\"",
+                ZonedDateTime.now( clock ).format( dateTimeFormatter ), me, direction.arrow, remote, type, message ) );
         printWriter.flush();
+    }
+
+    @Override
+    public <M extends RaftMessages.RaftMessage> void logOutbound( MEMBER me, M message, MEMBER remote )
+    {
+        log( me, Direction.OUTBOUND, remote, nullSafeMessageType( message ), valueOf( message ) );
+    }
+
+    @Override
+    public <M extends RaftMessages.RaftMessage> void logInbound( MEMBER remote, M message, MEMBER me )
+    {
+        log( me, Direction.INBOUND, remote, nullSafeMessageType( message ), valueOf( message ) );
+    }
+
+    private <M extends RaftMessages.RaftMessage> String nullSafeMessageType( M message )
+    {
+        if ( Objects.isNull( message ) )
+        {
+            return "null";
+        }
+        else
+        {
+            return message.type().toString();
+        }
     }
 
     @Override
