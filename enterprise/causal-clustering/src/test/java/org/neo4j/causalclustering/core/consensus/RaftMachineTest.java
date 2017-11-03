@@ -406,7 +406,7 @@ public class RaftMachineTest
         // Given
         DirectNetworking network = new DirectNetworking();
         final MemberId newMember = member( 99 );
-        DirectNetworking.Inbound newMemberInbound = network.new Inbound( newMember );
+        DirectNetworking.Inbound<RaftMessages.RaftMessage> newMemberInbound = network.new Inbound<>( newMember );
         final OutboundMessageCollector messages = new OutboundMessageCollector();
         newMemberInbound.registerHandler(
                 (Inbound.MessageHandler<RaftMessages.RaftMessage>) message -> messages.send( newMember, message ) );

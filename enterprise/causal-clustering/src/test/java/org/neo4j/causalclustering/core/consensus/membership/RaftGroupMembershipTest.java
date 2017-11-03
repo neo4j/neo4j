@@ -71,8 +71,8 @@ public class RaftGroupMembershipTest
 
         // then
         assertThat( fixture.members(), hasCurrentMembers( new RaftTestGroup( new int[0] ) ) );
-        assertEquals( 0, fixture.members().withRole( LEADER ).size() );
-        assertEquals( 3, fixture.members().withRole( FOLLOWER ).size() );
+        assertEquals( fixture.messageLog(), 0, fixture.members().withRole( LEADER ).size() );
+        assertEquals( fixture.messageLog(), 3, fixture.members().withRole( FOLLOWER ).size() );
     }
 
     @Test
@@ -105,8 +105,8 @@ public class RaftGroupMembershipTest
 
         // then
         assertThat( fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
-        assertEquals( 1, fixture.members().withRole( LEADER ).size() );
-        assertEquals( 3, fixture.members().withRole( FOLLOWER ).size() );
+        assertEquals( fixture.messageLog(),1, fixture.members().withRole( LEADER ).size() );
+        assertEquals( fixture.messageLog(),3, fixture.members().withRole( FOLLOWER ).size() );
     }
 
     @Test
@@ -145,9 +145,9 @@ public class RaftGroupMembershipTest
         net.processMessages();
 
         // then
-        assertThat( fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
-        assertEquals( 1, fixture.members().withRole( LEADER ).size() );
-        assertEquals( 5, fixture.members().withRole( FOLLOWER ).size() );
+        assertThat( fixture.messageLog(), fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withRole( LEADER ).size() );
+        assertEquals( fixture.messageLog(), 5, fixture.members().withRole( FOLLOWER ).size() );
     }
 
     @Test
@@ -173,9 +173,9 @@ public class RaftGroupMembershipTest
         net.processMessages();
 
         // then
-        assertThat( fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
-        assertEquals( 1, fixture.members().withIds( finalMembers ).withRole( LEADER ).size() );
-        assertEquals( 1, fixture.members().withIds( finalMembers ).withRole( FOLLOWER ).size() );
+        assertThat( fixture.messageLog(), fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withIds( finalMembers ).withRole( LEADER ).size() );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withIds( finalMembers ).withRole( FOLLOWER ).size() );
     }
 
     @Test
@@ -205,8 +205,8 @@ public class RaftGroupMembershipTest
 
         // then
         assertThat( fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
-        assertEquals( 1, fixture.members().withIds( finalMembers ).withRole( LEADER ).size() );
-        assertEquals( 1, fixture.members().withIds( finalMembers ).withRole( FOLLOWER ).size() );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withIds( finalMembers ).withRole( LEADER ).size() );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withIds( finalMembers ).withRole( FOLLOWER ).size() );
     }
 
     @Test
@@ -247,8 +247,8 @@ public class RaftGroupMembershipTest
 
         // then
         assertThat( fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
-        assertEquals( 1, fixture.members().withIds( finalMembers ).withRole( LEADER ).size() );
-        assertEquals( 3, fixture.members().withIds( finalMembers ).withRole( FOLLOWER ).size() );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withIds( finalMembers ).withRole( LEADER ).size() );
+        assertEquals( fixture.messageLog(), 3, fixture.members().withIds( finalMembers ).withRole( FOLLOWER ).size() );
     }
 
     @Test
@@ -277,8 +277,8 @@ public class RaftGroupMembershipTest
         net.processMessages();
 
         // then
-        assertThat( fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
-        assertTrue( fixture.members().withId( stable1 ).raftInstance().isLeader() ||
+        assertThat( fixture.messageLog(), fixture.members().withIds( finalMembers ), hasCurrentMembers( new RaftTestGroup( finalMembers ) ) );
+        assertTrue( fixture.messageLog(), fixture.members().withId( stable1 ).raftInstance().isLeader() ||
                 fixture.members().withId( stable2 ).raftInstance().isLeader() );
     }
 
@@ -318,8 +318,8 @@ public class RaftGroupMembershipTest
         net.processMessages();
 
         // then
-        assertTrue( fixture.members().withId( leader2 ).raftInstance().isLeader() );
-        assertThat( fixture.members().withIds( allMembers ), hasCurrentMembers( new RaftTestGroup( allMembers ) ) );
+        assertTrue( fixture.messageLog(), fixture.members().withId( leader2 ).raftInstance().isLeader() );
+        assertThat( fixture.messageLog(), fixture.members().withIds( allMembers ), hasCurrentMembers( new RaftTestGroup( allMembers ) ) );
     }
 
     @Test
@@ -356,8 +356,8 @@ public class RaftGroupMembershipTest
         net.processMessages();
 
         // then
-        assertTrue( fixture.members().withId( leader ).raftInstance().isLeader() );
-        assertThat( fixture.members().withIds( allMembers ), hasCurrentMembers( new RaftTestGroup( allMembers ) ) );
+        assertTrue( fixture.messageLog(), fixture.members().withId( leader ).raftInstance().isLeader() );
+        assertThat( fixture.messageLog(), fixture.members().withIds( allMembers ), hasCurrentMembers( new RaftTestGroup( allMembers ) ) );
     }
 
     @Test
@@ -384,10 +384,10 @@ public class RaftGroupMembershipTest
         net.processMessages();
 
         // then
-        assertTrue( fixture.members().withId( leader2 ).raftInstance().isLeader() );
-        assertFalse( fixture.members().withId( stable ).raftInstance().isLeader() );
-        assertEquals( 1, fixture.members().withIds( leader2, stable ).withRole( LEADER ).size() );
-        assertEquals( 1, fixture.members().withIds( leader2, stable ).withRole( FOLLOWER ).size() );
+        assertTrue( fixture.messageLog(), fixture.members().withId( leader2 ).raftInstance().isLeader() );
+        assertFalse( fixture.messageLog(), fixture.members().withId( stable ).raftInstance().isLeader() );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withIds( leader2, stable ).withRole( LEADER ).size() );
+        assertEquals( fixture.messageLog(), 1, fixture.members().withIds( leader2, stable ).withRole( FOLLOWER ).size() );
     }
 
     private Matcher<? super RaftTestFixture.Members> hasCurrentMembers( final RaftTestGroup raftGroup )

@@ -27,6 +27,8 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.roles.Voting;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -41,6 +43,8 @@ public class VotingTest
     long currentTerm = 20;
     long appendIndex = 1000;
 
+    Log log = NullLog.getInstance();
+
     @Test
     public void shouldAcceptRequestWithIdenticalLog()
     {
@@ -52,7 +56,8 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                null
+                null,
+                log
         ) );
     }
 
@@ -67,7 +72,8 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                null
+                null,
+                log
         ) );
     }
 
@@ -82,7 +88,8 @@ public class VotingTest
                 logTerm - 1,
                 appendIndex,
                 appendIndex,
-                null
+                null,
+                log
         ) );
     }
 
@@ -97,7 +104,8 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex - 1,
-                null
+                null,
+                log
         ) );
     }
 
@@ -112,7 +120,8 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                null
+                null,
+                log
         ) );
     }
 
@@ -127,7 +136,8 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex + 1,
-                null
+                null,
+                log
         ) );
     }
 
@@ -142,7 +152,8 @@ public class VotingTest
                 logTerm + 1,
                 appendIndex,
                 appendIndex - 1,
-                null
+                null,
+                log
         ) );
     }
 
@@ -157,7 +168,8 @@ public class VotingTest
                 logTerm + 1,
                 appendIndex,
                 appendIndex,
-                null
+                null,
+                log
         ) );
     }
 
@@ -172,7 +184,8 @@ public class VotingTest
                 logTerm + 1,
                 appendIndex,
                 appendIndex + 1,
-                null
+                null,
+                log
         ) );
     }
 
@@ -187,7 +200,8 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                otherMember
+                otherMember,
+                log
         ) );
     }
 
@@ -202,7 +216,8 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                candidate
+                candidate,
+                log
         ) );
     }
 }

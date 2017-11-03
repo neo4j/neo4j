@@ -102,6 +102,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
@@ -300,7 +302,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         if ( config.get( CausalClusteringSettings.raft_messages_log_enable ) )
         {
             File logFile = config.get( raft_messages_log_path );
-            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logFile ) ) );
+            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logFile ), Clocks.systemClock() ) );
         }
         else
         {
