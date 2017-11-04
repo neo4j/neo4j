@@ -1,70 +1,97 @@
 package org.neo4j.cypher.internal.runtime.vectorized
 
 
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.{concurrent, function}
 
+import org.neo4j.concurrent.BinaryLatch
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.graphdb.Result
 import org.neo4j.values.virtual.MapValue
+
+import scala.collection.JavaConverters._
 
 object ForkJoinPoolExecutor {
   lazy val forkJoinPool = new java.util.concurrent.ForkJoinPool(Runtime.getRuntime.availableProcessors() * 2)
   private val MORSEL_SIZE = 10000
-
-  private val loopCounter = new java.util.concurrent.ConcurrentHashMap[Iteration, AtomicInteger]()
-  private val queryWaitCounter = new java.util.concurrent.ConcurrentHashMap[Iteration, QueryBlocker]()
-
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
                               params: MapValue)(visitor: Result.ResultVisitor[E]): Unit = {
     val leaf = getLeaf(operators)
     val iteration = new Iteration(None)
-    loopCounter.put(iteration, new AtomicInteger(0))
-    forkJoinPool.submit(exec(StartLeafLoop(iteration), leaf, queryContext, QueryState(params, visitor)))
-    val blocker = new QueryBlocker
-    queryWaitCounter.put(iteration, blocker)
-    blocker.block()
+    val query = new Query()
+    val startMessage = StartLeafLoop(iteration)
+    val state = QueryState(params, visitor)
+    forkJoinPool.submit(createRunnable(query, startMessage, leaf, queryContext, state))
+    query.blockUntilQueryFinishes()
   }
 
-  private def exec(incoming: Message,
-                   pipeline: Pipeline,
-                   queryContext: QueryContext,
-                   state: QueryState): Runnable = {
+  private def createRunnable(query: Query,
+                             incoming: Message,
+                             pipeline: Pipeline,
+                             q: QueryContext,
+                             state: QueryState): Runnable = {
     // We remember that the loop has started even before the task has been scheduled
-    loopCounter.get(incoming.iterationState).incrementAndGet()
+    query.startLoop(incoming.iterationState)
     new Runnable {
       override def run(): Unit = {
-        println(s"${Thread.currentThread()} executing $pipeline with $incoming")
+        val queryContext = q.createNewQueryContext()
+//        println(s"${Thread.currentThread()} executing $pipeline with $incoming")
         var message = incoming
         var continuation: Continuation = null
         while (continuation == null || !continuation.isInstanceOf[EndOfLoop]) {
-          val data = Morsel.create(pipeline.slotInformation, MORSEL_SIZE)
-          continuation = pipeline.operate(message, data, queryContext, state)
-
-          pipeline.parent match {
-            case Some(mother) if mother.dependency.isInstanceOf[Eager] =>
-              ???
-
-            case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
-              val nextStep = StartLoopWithSingleMorsel(data, message.iterationState)
-              forkJoinPool.execute(exec(nextStep, mother, queryContext, state))
-
-            case _ =>
-          }
-
+          continuation = execute(query, pipeline, message, queryContext, state)
           message = ContinueLoopWith(continuation)
         }
-        val loopsLeft = loopCounter.get(message.iterationState).decrementAndGet()
-        if (loopsLeft == 0) {
-          // We where the last ones! Cool! Let's signal the query that we are done here.
-          queryWaitCounter.get(incoming.iterationState).unblock()
+
+        // Once we have exhausted this loop, we check if we just closed the last loop.
+        val loopsLeft = query.endLoop(message.iterationState)
+        val weJustClosedTheLastLoop = loopsLeft == 0
+        if (weJustClosedTheLastLoop) {
+          pipeline.parent.map(_.dependency) match {
+            case None =>
+              // We where the last pipeline! Cool! Let's signal the query that we are done here.
+              query.releaseBlockedThreads()
+
+            case Some(_: Eager) =>
+              val startEager = StartLoopWithEagerData(query.eagerData.asScala.toSeq, incoming.iterationState)
+              forkJoinPool.execute(createRunnable(query, startEager, pipeline.parent.get, queryContext, state))
+
+            case Some(_: Lazy) =>
+            // Nothing to do - we have been scheduling work all along
+          }
+
         }
 
-        println(s"${Thread.currentThread()} finished $pipeline")
+//        println(s"${Thread.currentThread()} finished $pipeline")
       }
     }
+  }
+
+  private def execute(query: Query, pipeline: Pipeline, message: Message, queryContext: QueryContext, state: QueryState) = {
+    val data = Morsel.create(pipeline.slotInformation, MORSEL_SIZE)
+    val continuation = pipeline.operate(message, data, queryContext, state)
+
+    pipeline.parent match {
+      case Some(mother) if mother.dependency.isInstanceOf[Eager] && query.eagerReceiver.contains(mother) =>
+        query.eagerData.add(data)
+
+      case Some(mother) if mother.dependency.isInstanceOf[Eager] && query.eagerReceiver.isEmpty =>
+        query.eagerReceiver = Some(mother)
+        query.eagerData.add(data)
+
+      case Some(mother) if mother.dependency.isInstanceOf[Eager] =>
+        throw new InternalException("This is not the same eager receiver as I want to us")
+
+      case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
+        val nextStep = StartLoopWithSingleMorsel(data, message.iterationState)
+        forkJoinPool.execute(createRunnable(query, nextStep, mother, queryContext, state))
+
+      case _ =>
+    }
+    continuation
   }
 
   private def getLeaf(pipeline: Pipeline): Pipeline = {
@@ -77,21 +104,29 @@ object ForkJoinPoolExecutor {
   }
 }
 
-class QueryBlocker {
-  private val queue = new ArrayBlockingQueue[Unit](1)
+class Query() {
+  private val loopCount = new concurrent.ConcurrentHashMap[Iteration, AtomicInteger]()
+  private val latch = new BinaryLatch
+  lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[Morsel]()
+  var eagerReceiver: Option[Pipeline] = None
 
-  /**
-    * Will block this thread until someone does an unblock on this object
-    */
-  def block(): Unit = {
-    queue.clear()
-    queue.take()
+  def startLoop(iteration: Iteration): Unit = {
+    loopCount.computeIfAbsent(iteration, createAtomicInteger).incrementAndGet()
   }
 
-  /**
-    * If another thread is waiting for this object, calling this method will allow the other thread to continue
-    */
-  def unblock(): Unit = {
-    queue.put({})
+  def endLoop(iteration: Iteration): Int = {
+    val i = loopCount.get(iteration).decrementAndGet()
+    if(i==0)
+      loopCount.remove(iteration)
+    i
   }
+
+  def blockUntilQueryFinishes(): Unit = latch.await()
+
+  def releaseBlockedThreads(): Unit = latch.release()
+
+  private val createAtomicInteger = new function.Function[Iteration, AtomicInteger] {
+    override def apply(t: Iteration) = new AtomicInteger(0)
+  }
+
 }

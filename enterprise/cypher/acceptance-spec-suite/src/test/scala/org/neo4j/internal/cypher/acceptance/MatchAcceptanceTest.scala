@@ -38,51 +38,58 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val db = graph
 
-        println("creating graph")
+    println("creating graph")
 
-        var tx = db.getGraphDatabaseService.beginTx()
-        var i = 0
+    var tx = db.getGraphDatabaseService.beginTx()
+    var i = 0
 
-        def ping() = {
-          i += 1
-          if (i % 5000 == 0) {
-            tx.success()
-            tx.close()
-            tx = db.getGraphDatabaseService.beginTx()
-          }
-        }
+    def ping() = {
+      i += 1
+      if (i % 5000 == 0) {
+        tx.success()
+        tx.close()
+        tx = db.getGraphDatabaseService.beginTx()
+      }
+    }
 
-        val NODES = 10000
-        val EDGES = 100000
+    val NODES = 1000
+    val EDGES = 10000
 
-        val nodes = (0 to NODES).map { x =>
-          ping()
-          db.createNode()
-        }.toArray
+    val nodes = (0 to NODES).map { x =>
+      ping()
+      db.createNode()
+    }.toArray
 
-        val r = new Random()
+    val r = new Random()
 
-        (0 to EDGES).foreach(_ => {
-          val lhs = nodes(r.nextInt(NODES))
-          val rhs = nodes(r.nextInt(NODES))
-          ping()
-          lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
-        })
+    (0 to EDGES).foreach(_ => {
+      val lhs = nodes(r.nextInt(NODES))
+      val rhs = nodes(r.nextInt(NODES))
+      (0 to r.nextInt(100)) foreach { _ =>
+        val n = db.createNode()
+        rhs.createRelationshipTo(n, RelationshipType.withName("apa"))
+        ping()
+      }
+      lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
+    })
 
-         tx.success()
+    tx.success()
     tx.close()
- //       db.shutdown()
+    //       db.shutdown()
 
     val visitor = new ResultVisitor[RuntimeException] {
       override def visit(row: Result.ResultRow): Boolean = {
-//        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
+        //        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
         true
       }
     }
-    Seq("morsel") foreach { runtime =>
-      val q = s"cypher runtime=$runtime match (a)-->(b) return a, b"
+
+    println("running first query")
+    Seq("interpreted", "slotted", "compiled", "morsel") foreach { runtime =>
+      val q = s"cypher runtime=$runtime match (a)-->(b)-->(c) return a, b"
       val started = System.currentTimeMillis()
-      (0 to 0) foreach { _ =>
+      (0 to 30) foreach { i =>
+        println(i)
         val res = db.execute(q)
         res.accept(visitor)
       }
@@ -90,22 +97,22 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
     println("running query")
 
-//    if (false) {
-//      val threads =
-//        0 to 10 map { _ =>
-//          val thread = new Thread(new Runnable {
-//            override def run(): Unit = {
-//              val result = db.execute(q)
-//              result.accept(visitor)
-//            }
-//          })
-//          thread.start()
-//          thread
-//        }
-//      threads.foreach(_.join())
-//    }
+    //    if (false) {
+    //      val threads =
+    //        0 to 10 map { _ =>
+    //          val thread = new Thread(new Runnable {
+    //            override def run(): Unit = {
+    //              val result = db.execute(q)
+    //              result.accept(visitor)
+    //            }
+    //          })
+    //          thread.start()
+    //          thread
+    //        }
+    //      threads.foreach(_.join())
+    //    }
 
-//    Dispatcher.instance.shutdown()
+    //    Dispatcher.instance.shutdown()
     db.shutdown()
   }
 
