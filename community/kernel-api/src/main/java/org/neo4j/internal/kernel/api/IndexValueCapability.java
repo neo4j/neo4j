@@ -21,5 +21,27 @@ package org.neo4j.internal.kernel.api;
 
 public enum IndexValueCapability
 {
-    YES, NO, MAYBE
+    YES( 3 ),
+    MAYBE( 2 ),
+    NO( 1 );
+
+    /**
+     * Higher order indicate a higher capability.
+     */
+    int order;
+
+    IndexValueCapability( int order )
+    {
+        this.order = order;
+    }
+
+    /**
+     * Positive result if this capability is higher than other.
+     * Negative result if this capability is lower that other.
+     * Zero if this has same capability as other.
+     */
+    public int compare( IndexValueCapability other )
+    {
+        return order - other.order;
+    }
 }

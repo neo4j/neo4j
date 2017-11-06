@@ -79,6 +79,12 @@ class NodeValueIndexCursor extends IndexCursor
     }
 
     @Override
+    public boolean hasValue()
+    {
+        return values != null;
+    }
+
+    @Override
     public Value propertyValue( int offset )
     {
         return values[offset];

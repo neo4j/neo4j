@@ -81,7 +81,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param values the values of the candidate index entry
          * @return true if the entry is accepted, false otherwise
          */
-        boolean acceptNode( long reference, Value[] values );
+        boolean acceptNode( long reference, Value... values );
 
         /**
          * Called by progressor so signal that there are no more entries.
@@ -141,4 +141,18 @@ public interface IndexProgressor extends AutoCloseable
          */
         void done();
     }
+
+    IndexProgressor EMPTY = new IndexProgressor()
+    {
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
 }

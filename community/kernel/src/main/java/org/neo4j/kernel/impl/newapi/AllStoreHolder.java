@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernel
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -94,11 +95,14 @@ class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    IndexReader indexReader( IndexDescriptor index )
+    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
     {
         try
         {
-            return statement.getIndexReader( index );
+            IndexDescriptor indexDescriptor = index.isUnique() ?
+                                              IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
+                                              IndexDescriptorFactory.forLabel( index.label(), index.properties() );
+            return statement.getIndexReader( indexDescriptor );
         }
         catch ( IndexNotFoundKernelException e )
         {

@@ -59,7 +59,12 @@ public interface IndexReader extends Resource
             IndexProgressor.NodeValueClient client,
             IndexQuery... query ) throws IndexNotApplicableKernelException
     {
-        client.initialize( new NodeValueIndexProgressor( query( query ), client ), null );
+        int[] keys = new int[query.length];
+        for ( int i = 0; i < query.length; i++ )
+        {
+            keys[i] = query[i].propertyKeyId();
+        }
+        client.initialize( new NodeValueIndexProgressor( query( query ), client ), keys );
     }
 
     /**

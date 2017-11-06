@@ -57,7 +57,7 @@ public class FusionIndexReaderTest
     {
         nativeReader = mock( IndexReader.class );
         luceneReader = mock( IndexReader.class );
-        fusionIndexReader = new FusionIndexReader( nativeReader, luceneReader, new NativeSelector() );
+        fusionIndexReader = new FusionIndexReader( nativeReader, luceneReader, new NativeSelector(), new int[]{PROP_KEY} );
     }
 
     /* close */

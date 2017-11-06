@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
@@ -44,15 +45,17 @@ class FusionIndexAccessor implements IndexAccessor
     private final IndexAccessor luceneAccessor;
     private final Selector selector;
     private final long indexId;
+    private final IndexDescriptor descriptor;
     private final DropAction dropAction;
 
     FusionIndexAccessor( IndexAccessor nativeAccessor, IndexAccessor luceneAccessor, Selector selector,
-            long indexId, DropAction dropAction )
+            long indexId, IndexDescriptor descriptor, DropAction dropAction )
     {
         this.nativeAccessor = nativeAccessor;
         this.luceneAccessor = luceneAccessor;
         this.selector = selector;
         this.indexId = indexId;
+        this.descriptor = descriptor;
         this.dropAction = dropAction;
     }
 
@@ -99,7 +102,8 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public IndexReader newReader()
     {
-        return new FusionIndexReader( nativeAccessor.newReader(), luceneAccessor.newReader(), selector );
+        return new FusionIndexReader( nativeAccessor.newReader(), luceneAccessor.newReader(), selector,
+                descriptor.schema().getPropertyIds() );
     }
 
     @Override

@@ -23,47 +23,37 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-/**
- * Wraps number key/value results in a {@link PrimitiveLongIterator}.
- * The {@link RawCursor seeker} which gets passed in will have to be closed somewhere else because
- * the {@link PrimitiveLongIterator} is just a plain iterator, no resource.
- *
- * @param <KEY> type of {@link SchemaNumberKey}.
- * @param <VALUE> type of {@link SchemaNumberValue}.
- */
-public class NumberHitIterator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
-        extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+public class NumberHitIndexCursorProgressor<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> implements IndexProgressor
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
-    private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted;
+    private final NodeValueClient cursor;
+    private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
     private boolean closed;
 
-    NumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted )
+    NumberHitIndexCursorProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient cursor,
+            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
     {
         this.seeker = seeker;
-        this.toRemoveFromWhenExhausted = toRemoveFromWhenExhausted;
+        this.cursor = cursor;
+        this.toRemoveFromOnClose = toRemoveFromOnClose;
     }
 
     @Override
-    protected boolean fetchNext()
+    public boolean next()
     {
         try
         {
-            if ( !closed && seeker.next() )
+            if ( seeker.next() )
             {
-                return next( seeker.get().key().entityId );
+                KEY key = seeker.get().key();
+                cursor.acceptNode( key.entityId, key.asValue() );
+                return true;
             }
-            else
-            {
-                ensureCursorClosed();
-                return false;
-            }
+            return false;
         }
         catch ( IOException e )
         {
@@ -71,13 +61,21 @@ public class NumberHitIterator<KEY extends SchemaNumberKey, VALUE extends Schema
         }
     }
 
-    private void ensureCursorClosed() throws IOException
+    @Override
+    public void close()
     {
         if ( !closed )
         {
-            seeker.close();
-            toRemoveFromWhenExhausted.remove( seeker );
             closed = true;
+            try
+            {
+                seeker.close();
+                toRemoveFromOnClose.remove( seeker );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
     }
 }

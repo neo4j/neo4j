@@ -24,18 +24,18 @@ import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
@@ -48,13 +48,15 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     private final Layout<KEY,VALUE> layout;
     private final IndexSamplingConfig samplingConfig;
     private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
+    private final int[] propertyKeys;
 
-    NativeSchemaNumberIndexReader(
-            GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig,
+            int[] propertyKeys )
     {
         this.tree = tree;
         this.layout = layout;
         this.samplingConfig = samplingConfig;
+        this.propertyKeys = propertyKeys;
         this.openSeekers = new HashSet<>();
     }
 
@@ -107,6 +109,14 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     @Override
     public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
+        NodeValueIterator nodeValueIterator = new NodeValueIterator();
+        query( nodeValueIterator, predicates );
+        return nodeValueIterator;
+    }
+
+    @Override
+    public void query( IndexProgressor.NodeValueClient cursor, IndexQuery... predicates )
+    {
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
 
@@ -121,18 +131,20 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         case exists:
             treeKeyFrom.initAsLowest();
             treeKeyTo.initAsHighest();
-            return startSeekForInitializedRange( treeKeyFrom, treeKeyTo );
+            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
+            break;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            return startSeekForInitializedRange( treeKeyFrom, treeKeyTo );
+            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
+            break;
         case rangeNumeric:
-            // todo: NumberRangePredicate should return NumberValue instead of Number
             NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
-            return startSeekForInitializedRange( treeKeyFrom, treeKeyTo );
+            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
+            break;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
@@ -172,17 +184,19 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         return true;
     }
 
-    private PrimitiveLongIterator startSeekForInitializedRange( KEY treeKeyFrom, KEY treeKeyTo )
+    private void startSeekForInitializedRange( IndexProgressor.NodeValueClient cursor, KEY treeKeyFrom, KEY treeKeyTo )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
-            return PrimitiveLongCollections.emptyIterator();
+            cursor.initialize( IndexProgressor.EMPTY, propertyKeys );
+            return;
         }
         try
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
             openSeekers.add( seeker );
-            return new NumberHitIterator<>( seeker, openSeekers );
+            IndexProgressor hitProgressor = new NumberHitIndexCursorProgressor<>( seeker, cursor, openSeekers );
+            cursor.initialize( hitProgressor, propertyKeys );
         }
         catch ( IOException e )
         {

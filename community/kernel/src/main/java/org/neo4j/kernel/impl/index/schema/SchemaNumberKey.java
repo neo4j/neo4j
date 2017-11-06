@@ -85,7 +85,12 @@ class SchemaNumberKey extends ValueWriter.Adapter<RuntimeException>
 
     String propertiesAsString()
     {
-        return RawBits.asNumberValue( rawValueBits, type ).toString();
+        return asValue().toString();
+    }
+
+    NumberValue asValue()
+    {
+        return RawBits.asNumberValue( rawValueBits, type );
     }
 
     void initAsLowest()
@@ -127,8 +132,7 @@ class SchemaNumberKey extends ValueWriter.Adapter<RuntimeException>
     @Override
     public String toString()
     {
-        return format( "type=%d,rawValue=%d,value=%s,entityId=%d",
-                type, rawValueBits, RawBits.asNumberValue( rawValueBits, type ), entityId );
+        return format( "type=%d,rawValue=%d,value=%s,entityId=%d", type, rawValueBits, asValue(), entityId );
     }
 
     @Override

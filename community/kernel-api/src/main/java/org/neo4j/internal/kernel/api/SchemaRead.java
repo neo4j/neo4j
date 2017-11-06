@@ -29,7 +29,7 @@ public interface SchemaRead
      *
      * @param label the index label
      * @param properties the index properties
-     * @return the IndexReference, or {@link IndexReference#NO_INDEX} if such an index does not exist.
+     * @return the IndexReference, or {@link CapableIndexReference#NO_INDEX} if such an index does not exist.
      */
     CapableIndexReference index( int label, int... properties );
 }

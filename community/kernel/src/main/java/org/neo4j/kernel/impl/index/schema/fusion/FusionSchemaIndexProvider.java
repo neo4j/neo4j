@@ -78,7 +78,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     {
         return new FusionIndexAccessor(
                 nativeProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, dropAction );
+                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, descriptor, dropAction );
     }
 
     @Override

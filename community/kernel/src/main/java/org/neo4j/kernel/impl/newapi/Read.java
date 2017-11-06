@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -48,8 +47,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.newapi.References.clearFlags;
 import static org.neo4j.kernel.impl.newapi.References.hasDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
 import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
+import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 abstract class Read implements
@@ -64,7 +63,7 @@ abstract class Read implements
             IndexQuery... query ) throws KernelException
     {
         IndexProgressor.NodeValueClient target = (NodeValueIndexCursor) cursor;
-        IndexReader reader = indexReader( (IndexDescriptor) index );
+        IndexReader reader = indexReader( index );
         if ( !reader.hasFullNumberPrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
@@ -109,8 +108,7 @@ abstract class Read implements
     {
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
-        indexReader( (IndexDescriptor) index )
-                .query( (NodeValueIndexCursor) cursor, IndexQuery.exists( firstProperty ) );
+        indexReader( index ).query( (NodeValueIndexCursor) cursor, IndexQuery.exists( firstProperty ) );
     }
 
     @Override
@@ -368,7 +366,7 @@ abstract class Read implements
     {
     }
 
-    abstract IndexReader indexReader( IndexDescriptor index );
+    abstract IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index );
 
     abstract LabelScanReader labelScanReader();
 
