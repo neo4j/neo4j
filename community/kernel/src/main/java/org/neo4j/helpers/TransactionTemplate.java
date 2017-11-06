@@ -19,6 +19,7 @@
  */
 package org.neo4j.helpers;
 
+import java.lang.reflect.Proxy;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -100,7 +101,11 @@ public class TransactionTemplate
      */
     public TransactionTemplate()
     {
-        this( null, new Monitor.Adapter(), 0, 0,
+        this( (GraphDatabaseService) Proxy.newProxyInstance( GraphDatabaseService.class.getClassLoader(),
+                new Class<?>[]{GraphDatabaseService.class}, ( proxy, method, args ) ->
+                {
+                    throw new IllegalArgumentException( "You need to call 'with(GraphDatabaseService)' on the template in order to use it" );
+                } ), new Monitor.Adapter(), 0, 0,
                 ex -> !Error.class.isInstance( ex ) && !TransactionTerminatedException.class.isInstance( ex ) );
     }
 
@@ -116,6 +121,18 @@ public class TransactionTemplate
     public TransactionTemplate( GraphDatabaseService gds, Monitor monitor, int retries,
                                 long backoff, Predicate<Throwable> retryPredicate )
     {
+        Objects.requireNonNull( gds );
+        Objects.requireNonNull( monitor );
+        if ( retries < 0 )
+        {
+            throw new IllegalArgumentException( "Number of retries must be greater than or equal to 0" );
+        }
+        if ( backoff < 0 )
+        {
+            throw new IllegalArgumentException( "Backoff time must be a positive number" );
+        }
+        Objects.requireNonNull( retryPredicate );
+
         this.gds = gds;
         this.monitor = monitor;
         this.retries = retries;
@@ -125,37 +142,26 @@ public class TransactionTemplate
 
     public TransactionTemplate with( GraphDatabaseService gds )
     {
-        Objects.requireNonNull( gds );
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 
     public TransactionTemplate retries( int retries )
     {
-        if ( retries < 0 )
-        {
-            throw new IllegalArgumentException( "Number of retries must be greater than or equal to 0" );
-        }
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 
     public TransactionTemplate backoff( long backoff, TimeUnit unit )
     {
-        if ( backoff < 0 )
-        {
-            throw new IllegalArgumentException( "Backoff time must be a positive number" );
-        }
         return new TransactionTemplate( gds, monitor, retries, unit.toMillis( backoff ), retryPredicate );
     }
 
     public TransactionTemplate monitor( Monitor monitor )
     {
-        Objects.requireNonNull( monitor );
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 
     public TransactionTemplate retryOn( Predicate<Throwable> retryPredicate )
     {
-        Objects.requireNonNull( retryPredicate );
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 

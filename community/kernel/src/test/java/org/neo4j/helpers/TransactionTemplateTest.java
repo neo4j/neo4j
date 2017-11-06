@@ -35,9 +35,12 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.junit.Assert.assertThat;
 
 public class TransactionTemplateTest
@@ -60,6 +63,16 @@ public class TransactionTemplateTest
                 .monitor( monitor )
                 .retries( 5 )
                 .backoff( 3, TimeUnit.MILLISECONDS );
+    }
+
+    @Test
+    public void shouldForceUserToCallWith() throws Exception
+    {
+        expected.expectCause( allOf(
+                instanceOf( IllegalArgumentException.class ),
+                hasProperty( "message", is( "You need to call 'with(GraphDatabaseService)' on the template in order to use it" ) ) ) );
+        TransactionTemplate transactionTemplate = new TransactionTemplate();
+        transactionTemplate.execute( transaction -> null );
     }
 
     @Test
