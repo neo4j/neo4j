@@ -308,7 +308,10 @@ public class BuiltInProceduresTest
                 record( "dbms.queryJmx",
                         "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: " +
                         "MAP?)",
-                        "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"" )
+                        "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"" ),
+                record( "dbms.clearQueryCaches",
+                        "dbms.clearQueryCaches() :: (value :: STRING?)",
+                        "Clears all query caches." )
         ) );
     }
 
