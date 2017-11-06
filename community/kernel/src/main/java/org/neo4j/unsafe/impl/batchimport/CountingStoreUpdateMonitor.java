@@ -23,8 +23,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static java.lang.String.format;
-
 /**
  * Simply counts all written entities and properties and can present totals in the end.
  */
@@ -70,11 +68,5 @@ public class CountingStoreUpdateMonitor implements EntityStoreUpdaterStep.Monito
     public long relationshipsWritten()
     {
         return relationships;
-    }
-
-    @Override
-    public String toString()
-    {
-        return format( "Imported:%n  %d nodes%n  %d relationships%n  %d properties", nodes, relationships, properties );
     }
 }

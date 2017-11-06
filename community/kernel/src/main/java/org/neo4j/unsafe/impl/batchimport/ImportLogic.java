@@ -94,7 +94,7 @@ public class ImportLogic implements Closeable
     private final Log log;
     private final ExecutionMonitor executionMonitor;
     private final RecordFormats recordFormats;
-    private final CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
+    protected final CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
     private final long maxMemory;
     private final Dependencies dependencies = new Dependencies();
 
@@ -263,7 +263,7 @@ public class ImportLogic implements Closeable
     {
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
-        nodeRelationshipCache.setNodeCount( getState( RelationshipTypeDistribution.class ).getNodeCount() );
+        nodeRelationshipCache.setNodeCount( getState( DataStatistics.class ).getNodeCount() );
         NodeDegreeCountStage nodeDegreeStage = new NodeDegreeCountStage( relationshipConfig,
                 neoStore.getRelationshipStore(), nodeRelationshipCache, memoryUsageStats );
         executeStage( nodeDegreeStage );
@@ -306,7 +306,7 @@ public class ImportLogic implements Closeable
         assert startingFromType >= 0 : startingFromType;
 
         // Link relationships together with each other, their nodes and their relationship groups
-        RelationshipTypeDistribution relationshipTypeDistribution = getState( RelationshipTypeDistribution.class );
+        DataStatistics relationshipTypeDistribution = getState( DataStatistics.class );
 
         // Figure out which types we can fit in node-->relationship cache memory.
         // Types go from biggest to smallest group and so towards the end there will be
@@ -393,9 +393,9 @@ public class ImportLogic implements Closeable
     }
 
     /**
-     * @return index (into {@link RelationshipTypeDistribution}) of last relationship type that fit in memory this round.
+     * @return index (into {@link DataStatistics}) of last relationship type that fit in memory this round.
      */
-    static int nextSetOfTypesThatFitInMemory( RelationshipTypeDistribution typeDistribution, int startingFromType,
+    static int nextSetOfTypesThatFitInMemory( DataStatistics typeDistribution, int startingFromType,
             long freeMemoryForDenseNodeCache, long numberOfDenseNodes )
     {
         assert startingFromType >= 0 : startingFromType;
@@ -461,8 +461,9 @@ public class ImportLogic implements Closeable
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
-        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", storeUpdateMonitor, bytes( peakMemoryUsage ) ) );
-        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
+        DataStatistics stats = getState( DataStatistics.class );
+        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", stats, bytes( peakMemoryUsage ) ) );
+        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + stats );
 
         if ( nodeRelationshipCache != null )
         {

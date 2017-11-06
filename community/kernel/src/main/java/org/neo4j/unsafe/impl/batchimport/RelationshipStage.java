@@ -76,8 +76,7 @@ public class RelationshipStage extends Stage
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
-        add( typer = new RelationshipTypeCheckerStep( control(), config, neoStore.getRelationshipTypeRepository(),
-                storeUpdateMonitor.nodesWritten() ) );
+        add( typer = new RelationshipTypeCheckerStep( control(), config, neoStore.getRelationshipTypeRepository(), storeUpdateMonitor ) );
         add( new AssignRelationshipIdBatchStep( control(), config, 0 ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new RelationshipRecordPreparationStep( control(), config,
@@ -87,7 +86,7 @@ public class RelationshipStage extends Stage
                 writeMonitor, storeUpdateMonitor ) );
     }
 
-    public RelationshipTypeDistribution getDistribution()
+    public DataStatistics getDistribution()
     {
         return typer.getDistribution();
     }

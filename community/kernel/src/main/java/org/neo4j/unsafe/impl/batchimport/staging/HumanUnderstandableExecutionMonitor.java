@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.NodeDegreeCountStage;
 import org.neo4j.unsafe.impl.batchimport.NodeStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipGroupStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipStage;
-import org.neo4j.unsafe.impl.batchimport.RelationshipTypeDistribution;
+import org.neo4j.unsafe.impl.batchimport.DataStatistics;
 import org.neo4j.unsafe.impl.batchimport.ScanAndCacheGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.SparseNodeFirstRelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
@@ -163,7 +163,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             // - backward linking
             // - node relationship linking
             // - forward linking
-            initializeLinking( dependencyResolver.resolveDependency( RelationshipTypeDistribution.class ) );
+            initializeLinking( dependencyResolver.resolveDependency( DataStatistics.class ) );
         }
         else if ( execution.getStageName().equals( CountGroupsStage.NAME ) )
         {
@@ -174,7 +174,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             // - counts store
             initializeMisc(
                     dependencyResolver.resolveDependency( BatchingNeoStores.class ),
-                    dependencyResolver.resolveDependency( RelationshipTypeDistribution.class ) );
+                    dependencyResolver.resolveDependency( DataStatistics.class ) );
         }
         else if ( includeStage( execution ) )
         {
@@ -228,7 +228,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         initializeProgress( numberOfRelationships );
     }
 
-    private void initializeLinking( RelationshipTypeDistribution distribution )
+    private void initializeLinking( DataStatistics distribution )
     {
         printStageHeader( "(3/4) Relationship linking" );
         long actualRelationshipCount = distribution.getRelationshipCount();
@@ -239,7 +239,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 );
     }
 
-    private void initializeMisc( BatchingNeoStores stores, RelationshipTypeDistribution distribution )
+    private void initializeMisc( BatchingNeoStores stores, DataStatistics distribution )
     {
         printStageHeader( "(4/4) Post processing" );
         // written groups + node counts + relationship counts
