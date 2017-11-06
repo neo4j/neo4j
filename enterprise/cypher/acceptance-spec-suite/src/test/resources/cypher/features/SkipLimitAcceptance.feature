@@ -70,3 +70,103 @@ Feature: SkipLimitAcceptance
       | count |
       |   1   |
     And no side effects
+
+  Scenario: Normal limit in the end should work
+    And having executed:
+      """
+      CREATE (:A {id:0})-[:REL]->(:B {id:1})
+      """
+    When executing query:
+      """
+      MATCH (n:A) WITH n
+      MATCH (n)-[:REL]->(m)
+      RETURN m.id AS id
+      LIMIT 1
+      """
+    Then the result should be, in order:
+      | id |
+      | 1  |
+    And no side effects
+
+  Scenario: Order by followed by limit in the end should work
+    And having executed:
+      """
+      CREATE (:A {id:0})-[:REL]->(:B {id:1})
+      """
+    When executing query:
+      """
+      MATCH (n:A) WITH n
+      MATCH (n)-[:REL]->(m)
+      RETURN m.id AS id
+      ORDER BY id LIMIT 1
+      """
+    Then the result should be, in order:
+      | id |
+      | 1  |
+    And no side effects
+
+  Scenario: Limit in with should work
+      And having executed:
+      """
+      CREATE (:A {id:0})-[:REL]->(:B {id:1})
+      """
+      When executing query:
+      """
+      MATCH (n:A) WITH n LIMIT 1
+      MATCH (n)-[:REL]->(m)
+      RETURN m.id AS id
+      """
+      Then the result should be, in order:
+        | id |
+        | 1  |
+      And no side effects
+
+  Scenario: Limit before sort should work except in compiled
+    And having executed:
+      """
+      CREATE (:A {id:0})-[:REL]->(:B {id:1})
+      """
+    When executing query:
+      """
+      MATCH (n:A) WITH n LIMIT 1
+      MATCH (n)-[:REL]->(m)
+      RETURN m.id AS id
+      ORDER BY id
+      """
+    Then the result should be, in order:
+      | id |
+      | 1  |
+    And no side effects
+
+  Scenario: Limit before top should work except in compiled
+    And having executed:
+      """
+      CREATE (:A {id:0})-[:REL]->(:B {id:1})
+      """
+    When executing query:
+      """
+      MATCH (n:A) WITH n LIMIT 1
+      MATCH (n)-[:REL]->(m)
+      RETURN m.id AS id
+      ORDER BY id LIMIT 1
+      """
+    Then the result should be, in order:
+      | id |
+      | 1  |
+    And no side effects
+
+  Scenario: Limit before distinct should work except in compiled
+    And having executed:
+      """
+      CREATE (:A {id:0})-[:REL]->(:B {id:1})
+      """
+    When executing query:
+      """
+      MATCH (n:A) WITH n LIMIT 1
+      MATCH (n)-[:REL]->(m)
+      RETURN DISTINCT m.id AS id
+      """
+    Then the result should be, in order:
+      | id |
+      | 1  |
+    And no side effects

@@ -157,6 +157,9 @@ Accessing a map with null should return null
 //SkipLimitAcceptance.feature
 Combining LIMIT and aggregation
 Using a optional match after aggregation and before an aggregation
+Limit before sort should work except in compiled
+Limit before top should work except in compiled
+Limit before distinct should work except in compiled
 
 //MatchAcceptance.feature
 difficult to plan query number 1
