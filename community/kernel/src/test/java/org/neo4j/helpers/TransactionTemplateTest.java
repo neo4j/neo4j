@@ -73,13 +73,15 @@ public class TransactionTemplateTest
     public void validateRetires() throws Exception
     {
         expected.expect( IllegalArgumentException.class );
-        template.retries( 0 );
+        expected.expectMessage( "Number of retries must be greater than or equal to 0" );
+        template.retries( -1 );
     }
 
     @Test
     public void validateBackoff() throws Exception
     {
         expected.expect( IllegalArgumentException.class );
+        expected.expectMessage( "Backoff time must be a positive number" );
         template.backoff( -10, TimeUnit.SECONDS );
     }
 
@@ -120,8 +122,8 @@ public class TransactionTemplateTest
         {
         }
 
-        assertThat( monitor.numRetry, is( 4 ) );
-        assertThat( monitor.failures, contains( ex, ex, ex, ex, ex ) );
+        assertThat( monitor.numRetry, is( 5 ) );
+        assertThat( monitor.failures, contains( ex, ex, ex, ex, ex, ex ) ); // 5 retires results in 6 total failures
         assertThat( monitor.fails, contains( ex ) );
     }
 

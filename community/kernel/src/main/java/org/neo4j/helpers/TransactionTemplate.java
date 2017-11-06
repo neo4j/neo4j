@@ -131,9 +131,9 @@ public class TransactionTemplate
 
     public TransactionTemplate retries( int retries )
     {
-        if ( retries < 1 )
+        if ( retries < 0 )
         {
-            throw new IllegalArgumentException( "Number of retries must be greater than or equal to 1" );
+            throw new IllegalArgumentException( "Number of retries must be greater than or equal to 0" );
         }
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
@@ -186,8 +186,9 @@ public class TransactionTemplate
      */
     public <T> T execute( Function<Transaction, T> txFunction ) throws TransactionFailureException
     {
-        Throwable txEx = null;
-        for ( int i = 0; i < retries; i++ )
+        Throwable txEx;
+        int retriesLeft = retries;
+        while ( true )
         {
             try ( Transaction tx = gds.beginTx() )
             {
@@ -206,21 +207,23 @@ public class TransactionTemplate
                 }
             }
 
-            if ( i < retries - 1 )
+            try
             {
-                try
-                {
-                    Thread.sleep( backoff );
-                }
-                catch ( InterruptedException e )
-                {
-                    TransactionFailureException interrupted = new TransactionFailureException( "Interrupted", e );
-                    monitor.failed( interrupted );
-                    throw interrupted;
-                }
-
-                monitor.retrying();
+                Thread.sleep( backoff );
             }
+            catch ( InterruptedException e )
+            {
+                TransactionFailureException interrupted = new TransactionFailureException( "Interrupted", e );
+                monitor.failed( interrupted );
+                throw interrupted;
+            }
+
+            if ( retriesLeft == 0 )
+            {
+                break;
+            }
+            retriesLeft--;
+            monitor.retrying();
         }
 
         monitor.failed( txEx );
