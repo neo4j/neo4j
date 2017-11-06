@@ -139,6 +139,12 @@ public final class CharValue extends TextValue
         return new CharValue( Character.toLowerCase( value ) );
     }
 
+    @Override
+    public TextValue toUpper()
+    {
+        return new CharValue( Character.toUpperCase( value ) );
+    }
+
     public char value()
     {
         return value;
