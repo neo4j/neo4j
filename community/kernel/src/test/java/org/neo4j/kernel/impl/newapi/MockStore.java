@@ -25,7 +25,7 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.*;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
