@@ -76,6 +76,12 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
+    public TextValue replace( String find, String replace )
+    {
+        return Values.stringValue( value().replace( find, replace ) );
+    }
+
+    @Override
     public Object asObjectCopy()
     {
         return value();

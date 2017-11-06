@@ -148,13 +148,26 @@ public final class CharValue extends TextValue
     @Override
     public TextArray split( String separator )
     {
-        if (separator.equals( stringValue() ))
+        if ( separator.equals( stringValue() ) )
         {
             return Values.EMPTY_TEXT_ARRAY;
         }
         else
         {
             return Values.stringArray( stringValue() );
+        }
+    }
+
+    @Override
+    public TextValue replace( String find, String replace )
+    {
+        if ( stringValue().equals( find ) )
+        {
+            return Values.stringValue( replace );
+        }
+        else
+        {
+            return this;
         }
     }
 
