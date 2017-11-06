@@ -66,7 +66,7 @@ public class RelationshipTypeCheckerStepTest
         // GIVEN
         BatchingRelationshipTypeTokenRepository repository = mock( BatchingRelationshipTypeTokenRepository.class );
         RelationshipTypeCheckerStep step =
-                new RelationshipTypeCheckerStep( mock( StageControl.class ), DEFAULT, repository );
+                new RelationshipTypeCheckerStep( mock( StageControl.class ), DEFAULT, repository, 0 );
 
         // WHEN
         Batch<InputRelationship,RelationshipRecord> relationships =
@@ -89,7 +89,7 @@ public class RelationshipTypeCheckerStepTest
         // GIVEN
         BatchingRelationshipTypeTokenRepository repository = mock( BatchingRelationshipTypeTokenRepository.class );
         RelationshipTypeCheckerStep step = new RelationshipTypeCheckerStep( mock( StageControl.class ), DEFAULT,
-                repository );
+                repository, 0 );
         Batch<InputRelationship,RelationshipRecord> relationships =
                 batchOfRelationshipsWithRandomTypes( 10, true/*use the raw ids*/ );
         step.process( relationships, mock( BatchSender.class ) );

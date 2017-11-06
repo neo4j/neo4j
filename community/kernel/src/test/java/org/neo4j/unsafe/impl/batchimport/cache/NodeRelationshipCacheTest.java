@@ -84,7 +84,7 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, 100, base );
-        cache.setHighNodeId( 26 );
+        cache.setNodeCount( 26 );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
         increment( cache, 7, 12 );
@@ -108,7 +108,7 @@ public class NodeRelationshipCacheTest
         // GIVEN
         int nodeCount = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.OFF_HEAP, 20, 100, base );
-        cache.setHighNodeId( nodeCount );
+        cache.setNodeCount( nodeCount );
         incrementRandomCounts( cache, nodeCount, nodeCount * 20 );
 
         // Test sparse node semantics
@@ -135,7 +135,7 @@ public class NodeRelationshipCacheTest
         Direction[] directions = Direction.values();
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
         cache.setForwardScan( true, true );
-        cache.setHighNodeId( nodes + 1 );
+        cache.setNodeCount( nodes + 1 );
         for ( int i = 0; i < nodes; i++ )
         {
             assertEquals( -1L, cache.getFirstRel( nodes, groupVisitor ) );
@@ -169,7 +169,7 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
         long nodeId = 0;
         int typeId = 3;
-        cache.setHighNodeId( 1 );
+        cache.setNodeCount( 1 );
         cache.incrementCount( nodeId );
         cache.incrementCount( nodeId );
         cache.getAndPutRelationship( nodeId, typeId, OUTGOING, 10, true );
@@ -193,7 +193,7 @@ public class NodeRelationshipCacheTest
         // WHEN
         long nodeId = 1_000_000 - 1;
         int typeId = 10;
-        cache.setHighNodeId( nodeId + 1 );
+        cache.setNodeCount( nodeId + 1 );
         Direction direction = Direction.OUTGOING;
         long relId = 10;
         cache.getAndPutRelationship( nodeId, typeId, direction, relId, false );
@@ -212,7 +212,7 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 1000, base );
 
         // mark random nodes as dense (dense node threshold is 1 so enough with one increment
-        cache.setHighNodeId( nodes );
+        cache.setNodeCount( nodes );
         for ( long nodeId = 0; nodeId < nodes; nodeId++ )
         {
             if ( random.nextBoolean() )
@@ -249,7 +249,7 @@ public class NodeRelationshipCacheTest
         long denseNode = 1;
         long relationshipId = (1L << 48) - 2;
         int typeId = 10;
-        cache.setHighNodeId( 2 );
+        cache.setNodeCount( 2 );
         cache.incrementCount( denseNode );
 
         // WHEN
@@ -267,7 +267,7 @@ public class NodeRelationshipCacheTest
         // GIVEN
         int typeId = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
-        cache.setHighNodeId( 1 );
+        cache.setNodeCount( 1 );
 
         // WHEN
         cache.getAndPutRelationship( 0, typeId, OUTGOING, (1L << 48) - 2, false );
@@ -290,7 +290,7 @@ public class NodeRelationshipCacheTest
         int nodes = 10;
         int typeId = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 2, 100, base );
-        cache.setHighNodeId( nodes );
+        cache.setNodeCount( nodes );
         for ( long nodeId = 0; nodeId < nodes; nodeId++ )
         {
             cache.incrementCount( nodeId );
@@ -342,7 +342,7 @@ public class NodeRelationshipCacheTest
         long nodeId = 5;
         long count = NodeRelationshipCache.MAX_COUNT - 1;
         int typeId = 10;
-        cache.setHighNodeId( 10 );
+        cache.setNodeCount( 10 );
         cache.setCount( nodeId, count, typeId, OUTGOING );
 
         // WHEN
@@ -365,7 +365,7 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 0;
         int typeId = 10;
-        cache.setHighNodeId( nodeId + 1 );
+        cache.setNodeCount( nodeId + 1 );
         cache.incrementCount( nodeId );
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
         when( groupVisitor.visit( anyLong(), anyInt(), anyLong(), anyLong(), anyLong() ) ).thenReturn( 1L, 2L, 3L );
@@ -425,7 +425,7 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 1;
         int typeId = 10;
-        cache.setHighNodeId( nodeId + 1 );
+        cache.setNodeCount( nodeId + 1 );
         cache.setCount( nodeId, 2, typeId, OUTGOING ); // surely dense now
         cache.getAndPutRelationship( nodeId, typeId, OUTGOING, 1, true );
         cache.getAndPutRelationship( nodeId, typeId, INCOMING, 2, true );
@@ -448,7 +448,7 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );
-        cache.setHighNodeId( 10 );
+        cache.setNodeCount( 10 );
         long nodeId = 3;
         cache.setCount( nodeId, 10, /*these do not matter ==>*/ 0, OUTGOING );
 
@@ -486,7 +486,7 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 1;
         int typeId = 10;
-        cache.setHighNodeId( nodeId + 1 );
+        cache.setNodeCount( nodeId + 1 );
 
         // WHEN
         long highCount = NodeRelationshipCache.MAX_COUNT - 100;

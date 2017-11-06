@@ -33,9 +33,11 @@ public class RelationshipTypeDistribution implements Iterable<Pair<Object,Long>>
 {
     // keys can be either String or Integer
     private final Pair<Object,Long>[] sortedTypes;
+    private final long nodeCount;
 
-    public RelationshipTypeDistribution( Pair<Object,Long>[] sortedTypes )
+    public RelationshipTypeDistribution( long nodeCount, Pair<Object,Long>[] sortedTypes )
     {
+        this.nodeCount = nodeCount;
         this.sortedTypes = sortedTypes;
     }
 
@@ -63,5 +65,20 @@ public class RelationshipTypeDistribution implements Iterable<Pair<Object,Long>>
             types.add( get( i ).first() );
         }
         return types;
+    }
+
+    public long getNodeCount()
+    {
+        return nodeCount;
+    }
+
+    public long getRelationshipCount()
+    {
+        long sum = 0;
+        for ( Pair<Object,Long> type : sortedTypes )
+        {
+            sum += type.other();
+        }
+        return sum;
     }
 }

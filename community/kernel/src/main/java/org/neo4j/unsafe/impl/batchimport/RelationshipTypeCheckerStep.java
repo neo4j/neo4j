@@ -53,13 +53,15 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
             ( e1, e2 ) -> Integer.compare( (Integer) e2.getKey(), (Integer) e1.getKey() );
     private final Map<Thread,Map<Object,MutableLong>> typeCheckers = new ConcurrentHashMap<>();
     private final BatchingRelationshipTypeTokenRepository typeTokenRepository;
+    private final long nodeCount;
     private RelationshipTypeDistribution distribution;
 
     public RelationshipTypeCheckerStep( StageControl control, Configuration config,
-            BatchingRelationshipTypeTokenRepository typeTokenRepository )
+            BatchingRelationshipTypeTokenRepository typeTokenRepository, long nodeCount )
     {
         super( control, "TYPE", config, 0 );
         this.typeTokenRepository = typeTokenRepository;
+        this.nodeCount = nodeCount;
     }
 
     @Override
@@ -102,7 +104,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
         {
             typeTokenRepository.getOrCreateId( sortedTypes[i].getKey() );
         }
-        distribution = new RelationshipTypeDistribution( convert( sortedTypes ) );
+        distribution = new RelationshipTypeDistribution( nodeCount, convert( sortedTypes ) );
         super.done();
     }
 

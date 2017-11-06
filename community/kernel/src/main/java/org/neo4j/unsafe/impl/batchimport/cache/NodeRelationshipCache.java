@@ -225,7 +225,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      *
      * @param nodeId high node id in the store, e.g. the highest node id + 1
      */
-    public void setHighNodeId( long nodeId )
+    public void setNodeCount( long nodeId )
     {
         this.highNodeId = nodeId;
         this.array = arrayFactory.newByteArray( highNodeId, minusOneBytes( ID_AND_COUNT_SIZE ) );
