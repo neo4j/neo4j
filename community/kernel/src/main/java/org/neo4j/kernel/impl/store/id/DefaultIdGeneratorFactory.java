@@ -58,15 +58,16 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        IdGenerator generator = instantiate( fs, fileName, grabSize, maxId, idTypeConfiguration.allowAggressiveReuse(), highId );
+        IdGenerator generator = instantiate( fs, fileName, grabSize, maxId, idTypeConfiguration.allowAggressiveReuse(),
+                idType, highId );
         generators.put( idType, generator );
         return generator;
     }
 
     protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-            boolean aggressiveReuse, Supplier<Long> highId )
+            boolean aggressiveReuse, IdType idType, Supplier<Long> highId )
     {
-        return new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, highId );
+        return new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId );
     }
 
     @Override

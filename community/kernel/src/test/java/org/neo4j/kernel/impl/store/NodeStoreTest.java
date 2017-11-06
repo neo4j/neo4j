@@ -376,9 +376,9 @@ public class NodeStoreTest
         {
             @Override
             protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-                    boolean aggressiveReuse, Supplier<Long> highId )
+                    boolean aggressiveReuse, IdType idType, Supplier<Long> highId )
             {
-                return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, highId ) );
+                return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId ) );
             }
         } );
         StoreFactory factory = new StoreFactory( storeDir, Config.defaults(), idGeneratorFactory, pageCache, fs,

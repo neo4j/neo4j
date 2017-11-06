@@ -68,6 +68,7 @@ public class IdGeneratorImpl implements IdGenerator
     private final long max;
     private final IdContainer idContainer;
     private long highId;
+    private final IdType idType;
 
     /**
      * Opens the id generator represented by <CODE>fileName</CODE>. The
@@ -96,10 +97,12 @@ public class IdGeneratorImpl implements IdGenerator
      *             If no such file exist or if the id generator is sticky
      */
     public IdGeneratorImpl( FileSystemAbstraction fs, File file, int grabSize, long max, boolean aggressiveReuse,
-            Supplier<Long> highId )
+            IdType idType, Supplier<Long> highId )
     {
         this.max = max;
+        this.idType = idType;
         this.idContainer = new IdContainer( fs, file, grabSize, aggressiveReuse );
+
         /*
          * The highId supplier will be called only if the id container tells us that the information found in the
          * id file is not reliable (typically the file had to be created). Calling the supplier can be a potentially
@@ -140,7 +143,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             highId++;
         }
-        IdValidator.assertValidId( highId, max );
+        IdValidator.assertValidId( idType, highId, max );
         return highId++;
     }
 
@@ -182,7 +185,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized void setHighId( long id )
     {
-        IdValidator.assertIdWithinCapacity( id, max );
+        IdValidator.assertIdWithinCapacity( idType, id, max );
         highId = id;
     }
 

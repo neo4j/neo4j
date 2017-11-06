@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
+
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -60,7 +61,7 @@ public class IdGeneratorImplContractTest extends IdGeneratorContractTest
     @Override
     protected IdGenerator openIdGenerator( int grabSize )
     {
-        return new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, 1000, false, () -> 0L );
+        return new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, 1000, false, IdType.NODE, () -> 0L );
     }
 
     @After

@@ -20,11 +20,15 @@
 package org.neo4j.kernel.impl.store.id.validation;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.id.IdType;
+
+import static java.lang.String.format;
 
 public class IdCapacityExceededException extends UnderlyingStorageException
 {
-    public IdCapacityExceededException( long id, long maxId )
+    IdCapacityExceededException( IdType idType, long id, long maxId )
     {
-        super( "Record id " + id + " is out of range [0, " + maxId + "]" );
+        super( format( "Maximum id limit for %s has been reached. Generated id %d is out of permitted range [0, %d].",
+                idType.name(), id, maxId ) );
     }
 }

@@ -19,22 +19,20 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.File;
 import java.util.function.Supplier;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
 import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -45,7 +43,8 @@ public class IdGeneratorImplTest
     @Rule
     public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
     @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    public ExpectedException expectedException = ExpectedException.none();
+
     private final File file = new File( "ids" );
 
     @Test
@@ -53,18 +52,12 @@ public class IdGeneratorImplTest
     {
         // GIVEN
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, () -> 0L );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, IdType.NODE, () -> 0L );
+
+        expectedException.expect( NegativeIdException.class );
 
         // WHEN
-        try
-        {
-            idGenerator.setHighId( -1 );
-            fail( "Should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NegativeIdException.class ) );
-        }
+        idGenerator.setHighId( -1 );
     }
 
     @Test
@@ -72,22 +65,17 @@ public class IdGeneratorImplTest
     {
         long maxId = 10;
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, () -> 0L );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, IdType.NODE, () -> 0L );
 
         for ( long i = 0; i <= maxId; i++ )
         {
             idGenerator.nextId();
         }
 
-        try
-        {
-            idGenerator.nextId();
-            fail( "Should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IdCapacityExceededException.class ) );
-        }
+        expectedException.expect( IdCapacityExceededException.class );
+        expectedException.expectMessage( "Maximum id limit for NODE has been reached. Generated id 11 is out of " +
+                "permitted range [0, 10]." );
+        idGenerator.nextId();
     }
 
     @Test
@@ -95,17 +83,11 @@ public class IdGeneratorImplTest
     {
         long maxId = 10;
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, () -> 0L );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, IdType.RELATIONSHIP_TYPE_TOKEN, () -> 0L );
 
-        try
-        {
-            idGenerator.setHighId( maxId + 1 );
-            fail( "Should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IdCapacityExceededException.class ) );
-        }
+        expectedException.expect( IdCapacityExceededException.class );
+        expectedException.expectMessage( "Maximum id limit for RELATIONSHIP_TYPE_TOKEN has been reached. Generated id 11 is out of permitted range [0, 10]." );
+        idGenerator.setHighId( maxId + 1 );
     }
 
     /**
@@ -116,7 +98,7 @@ public class IdGeneratorImplTest
     public void highIdCouldBeSetToReservedId()
     {
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, Long.MAX_VALUE, false, () -> 0L );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, Long.MAX_VALUE, false, IdType.NODE, () -> 0L );
 
         idGenerator.setHighId( IdGeneratorImpl.INTEGER_MINUS_ONE );
 
@@ -127,12 +109,12 @@ public class IdGeneratorImplTest
     public void correctDefragCountWhenHaveIdsInFile()
     {
         IdGeneratorImpl.createGenerator( fsr.get(), file, 100, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, () -> 100L );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, IdType.NODE, () -> 100L );
 
         idGenerator.freeId( 5 );
         idGenerator.close();
 
-        IdGenerator reloadedIdGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, () -> 100L );
+        IdGenerator reloadedIdGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, IdType.NODE, () -> 100L );
         assertEquals( 1, reloadedIdGenerator.getDefragCount() );
         assertEquals( 5, reloadedIdGenerator.nextId() );
         assertEquals( 0, reloadedIdGenerator.getDefragCount() );
@@ -157,12 +139,12 @@ public class IdGeneratorImplTest
     {
         // Given
         IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, () -> 42L );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, IdType.NODE, () -> 42L );
 
         idGenerator.close();
 
         // When
-        idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, () -> 0L );
+        idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, IdType.NODE, () -> 0L );
 
         // Then
         assertThat( idGenerator.getHighId(), equalTo( 42L ) );
@@ -179,7 +161,7 @@ public class IdGeneratorImplTest
 
         // Wheb
         // The id generator is started
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, highId );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, IdType.NODE, highId );
 
         // Then
         // The highId supplier must have been called to get the high id
@@ -199,7 +181,7 @@ public class IdGeneratorImplTest
 
         // When
         // An IdGenerator is created over the previous properly closed file
-        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, highId );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, IdType.NODE, highId );
         idGenerator.close();
 
         // Then
