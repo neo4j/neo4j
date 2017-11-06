@@ -56,6 +56,12 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
+    public TextValue toLower()
+    {
+        return new StringWrappingStringValue( value().toLowerCase() );
+    }
+
+    @Override
     public Object asObjectCopy()
     {
         return value();

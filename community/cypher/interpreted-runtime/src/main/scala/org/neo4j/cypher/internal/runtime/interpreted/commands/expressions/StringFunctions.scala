@@ -71,8 +71,10 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
 
 case class ToLowerFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m, state)).toLowerCase)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+    case t: TextValue => t.toLower
+    case _ => StringFunction.notAString(value)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(ToLowerFunction(argument.rewrite(f)))
 }

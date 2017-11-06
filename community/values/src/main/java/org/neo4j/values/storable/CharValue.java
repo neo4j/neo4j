@@ -133,6 +133,12 @@ public final class CharValue extends TextValue
         return trim();
     }
 
+    @Override
+    public TextValue toLower()
+    {
+        return new CharValue( Character.toLowerCase( value ) );
+    }
+
     public char value()
     {
         return value;
