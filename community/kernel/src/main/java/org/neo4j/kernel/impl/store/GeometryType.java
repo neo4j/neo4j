@@ -35,7 +35,21 @@ import org.neo4j.values.storable.Values;
 
 public enum GeometryType
 {
-    GEOMETRY_POINT( 0, "Point" )
+    GEOMETRY_INVALID( 0, "Invalid" )
+            {
+                @Override
+                public Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset )
+                {
+                    throw new UnsupportedOperationException(  );
+                }
+
+                @Override
+                public int calculateNumberOfBlocksUsedForGeometry( long firstBlock )
+                {
+                    return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
+                }
+            },
+    GEOMETRY_POINT( 1, "Point" )
             {
                 @Override
                 public Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset )
@@ -61,7 +75,7 @@ public enum GeometryType
             };
 
     public final int gtype;
-    public final String name;
+    private final String name;
 
     GeometryType( int gtype, String name )
     {
@@ -115,14 +129,7 @@ public enum GeometryType
     public static int calculateNumberOfBlocksUsed( long firstBlock )
     {
         GeometryType geometryType = find( getGeometryType( firstBlock ) );
-        if ( geometryType == null )
-        {
-            return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
-        }
-        else
-        {
-            return geometryType.calculateNumberOfBlocksUsedForGeometry( firstBlock );
-        }
+        return geometryType.calculateNumberOfBlocksUsedForGeometry( firstBlock );
     }
 
     public static GeometryType find( int gtype )
@@ -134,7 +141,7 @@ public enum GeometryType
         else
         {
             // Kernel code requires no exceptions in deeper PropertyChain processing of corrupt/invalid data
-            return null;
+            return GEOMETRY_INVALID;
         }
     }
 
