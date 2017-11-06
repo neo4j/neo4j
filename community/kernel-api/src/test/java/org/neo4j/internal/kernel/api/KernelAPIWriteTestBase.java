@@ -28,8 +28,19 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
+/**
+ * KernelAPIWriteTestBase is the basis of write tests targeting the Kernel API.
+ *
+ * Just as with KernelAPIReadTestBase, write tests cannot provide all the functionality needed to construct the
+ * test kernel, and also do not know how to assert the effects of the writes. These things are abstracted behind the
+ * KernelAPIWriteTestSupport interface, which needs to be implemented to test Kernel write implementations.
+ *
+ * Since write tests modify the graph, the test graph is recreated on every test run.
+ *
+ * @param <WriteSupport> The test support for the current test.
+ */
 @SuppressWarnings( "WeakerAccess" )
-public abstract class KernelAPIWriteTestBase<G extends KernelAPIWriteTestSupport>
+public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWriteTestSupport>
 {
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIWriteTestSupport testSupport;
@@ -38,9 +49,9 @@ public abstract class KernelAPIWriteTestBase<G extends KernelAPIWriteTestSupport
     protected static GraphDatabaseService graphDb;
 
     /**
-     * Creates a new instance of KernelAPITestSupport, which will be used to execute the concrete test
+     * Creates a new instance of WriteSupport, which will be used to execute the concrete test
      */
-    public abstract G newTestSupport();
+    public abstract WriteSupport newTestSupport();
 
     @Before
     public void setupGraph() throws IOException
@@ -52,7 +63,7 @@ public abstract class KernelAPIWriteTestBase<G extends KernelAPIWriteTestSupport
             testSupport.setup( folder.getRoot() );
             graphDb = testSupport.graphBackdoor();
         }
-        testSupport.beforeEachTest();
+        testSupport.clearGraph();
         Kernel kernel = testSupport.kernelToTest();
         session = kernel.beginSession( PermissionsFixture.allPermissions() );
         cursors = kernel.cursors();

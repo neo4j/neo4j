@@ -24,12 +24,28 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
+
+/**
+ * This interface defines the functionality that's needed to run Kernel API Write tests (tests that extends
+ * KernelAPIWriteTestBase) on a Kernel.
+ */
 public interface KernelAPIWriteTestSupport
 {
+    /**
+     * Create the Kernel to test in the provided directory.
+     * @param storeDir The directory to hold the database
+     * @throws IOException Thrown on IO failure during database creation
+     */
     void setup( File storeDir ) throws IOException;
 
-    void beforeEachTest();
+    /**
+     * Clear the graph. Executed before each test.
+     */
+    void clearGraph();
 
+    /**
+     * Return the Kernel to test. Executed before each test.
+     */
     Kernel kernelToTest();
 
     /**
@@ -37,5 +53,8 @@ public interface KernelAPIWriteTestSupport
      */
     GraphDatabaseService graphBackdoor();
 
+    /**
+     * Clean up resources and close the database. Executed after all tests are completed.
+     */
     void tearDown();
 }

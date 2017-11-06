@@ -25,13 +25,30 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
+/**
+ * This interface defines the functionality that's needed to run Kernel API Read tests (tests that extends
+ * KernelAPIReadTestBase) on a Kernel.
+ */
 public interface KernelAPIReadTestSupport
 {
+    /**
+     * Setup the test. Called once. Starts a Kernel in the provided store directory, and populates the graph using
+     * the provided create method.
+     *
+     * @param storeDir The directory in which to create the database.
+     * @param create Method which populates the database.
+     * @throws IOException If database creation failed due to IO problems.
+     */
     void setup( File storeDir, Consumer<GraphDatabaseService> create ) throws IOException;
 
-    void beforeEachTest();
-
+    /**
+     * The Kernel to test. Called before every test.
+     * @return The Kernel.
+     */
     Kernel kernelToTest();
 
+    /**
+     * Teardown the Kernel and any other resources once all tests have completed.
+     */
     void tearDown();
 }

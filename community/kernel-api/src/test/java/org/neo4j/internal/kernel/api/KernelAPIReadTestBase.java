@@ -28,8 +28,19 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
+/**
+ * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
+ *
+ * As tests are packaged together with the API, they cannot provide all the functionality needed to construct the
+ * test graph, or provide the concrete Kernel to test. These things are abstracted behind the
+ * KernelAPIReadTestSupport interface, which needs to be implemented to test reading Kernel implementations.
+ *
+ * As read tests do not modify the graph, the test graph is created lazily on the first test run.
+ *
+ * @param <ReadSupport> The test support for the current test.
+ */
 @SuppressWarnings( "WeakerAccess" )
-public abstract class KernelAPIReadTestBase<G extends KernelAPIReadTestSupport>
+public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIReadTestSupport testSupport;
@@ -42,9 +53,9 @@ public abstract class KernelAPIReadTestBase<G extends KernelAPIReadTestSupport>
     protected Token token;
 
     /**
-     * Creates a new instance of KernelAPITestSupport, which will be used to execute the concrete test
+     * Creates a new instance of KernelAPIReadTestSupport, which will be used to execute the concrete test
      */
-    public abstract G newTestSupport();
+    public abstract ReadSupport newTestSupport();
 
     /**
      * Create the graph which all test in the class will be executed against. The graph is only built once,
@@ -65,7 +76,6 @@ public abstract class KernelAPIReadTestBase<G extends KernelAPIReadTestSupport>
         }
         Kernel kernel = testSupport.kernelToTest();
         session = kernel.beginSession( PermissionsFixture.allPermissions() );
-        testSupport.beforeEachTest();
         cursors = kernel.cursors();
         tx = session.beginTransaction();
         token = session.token();

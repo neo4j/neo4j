@@ -41,11 +41,6 @@ class ReadTestSupport implements KernelAPIReadTestSupport
     }
 
     @Override
-    public void beforeEachTest()
-    {
-    }
-
-    @Override
     public Kernel kernelToTest()
     {
         return new TempKernel( (GraphDatabaseAPI) db );
