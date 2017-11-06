@@ -355,17 +355,9 @@ class StorePropertyPayloadCursor
             else if ( typeId == PropertyType.GEOMETRY.intValue() )
             {
                 GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer(buffer);
-                if ( header.geometryType == GeometryType.GEOMETRY_POINT.gtype )
-                {
-                    byte[] byteArray = new byte[buffer.limit() - buffer.position()];
-                    buffer.get( byteArray );
-                    return GeometryType.decodePointArray( header, byteArray );
-                }
-                else
-                {
-                    //TODO: Perhaps should throw an exception
-                    return Values.EMPTY_POINT_ARRAY;
-                }
+                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                buffer.get( byteArray );
+                return GeometryType.decodeGeometryArray( header, byteArray );
             }
             else
             {
