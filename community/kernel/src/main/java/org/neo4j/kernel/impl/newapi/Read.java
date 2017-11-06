@@ -57,7 +57,7 @@ abstract class Read implements
     public final void nodeIndexSeek(
             org.neo4j.internal.kernel.api.IndexReference index,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
-            IndexQuery... query )
+            IndexQuery... query ) throws KernelException
     {
         IndexCursorProgressor.NodeValueCursor target = (NodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( (IndexReference) index );
@@ -101,9 +101,12 @@ abstract class Read implements
     @Override
     public final void nodeIndexScan(
             org.neo4j.internal.kernel.api.IndexReference index,
-            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor )
+            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor ) throws KernelException
     {
-        indexReader( (IndexReference) index ).scan( (NodeValueIndexCursor) cursor );
+        // for a scan, we simply query for existence of the first property, which covers all entries in an index
+        int firstProperty = index.properties()[0];
+        indexReader( (IndexReference) index )
+                .query( (NodeValueIndexCursor) cursor, IndexQuery.exists( firstProperty ) );
     }
 
     @Override

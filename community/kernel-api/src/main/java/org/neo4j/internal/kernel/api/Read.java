@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+
 /**
  * Defines the graph read operations of the Kernel.
  */
@@ -30,9 +32,9 @@ public interface Read
      *         the cursor to use for consuming the results.
      * @param query
      */
-    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexQuery... query );
+    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexQuery... query ) throws KernelException;
 
-    void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor );
+    void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor ) throws KernelException;
 
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor );
 

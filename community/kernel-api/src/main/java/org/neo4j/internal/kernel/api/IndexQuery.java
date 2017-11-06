@@ -32,12 +32,6 @@ import org.neo4j.values.storable.Values;
 public abstract class IndexQuery
 {
     /**
-     * Scans all entries in the index.
-     */
-    @SuppressWarnings( "StaticInitializerReferencesSubClass" )
-    public static ExistsPredicate SCAN = new ExistsPredicate( -1 );
-
-    /**
      * Searches the index for all entries that has the given property.
      *
      * @param propertyKeyId the property ID to match.

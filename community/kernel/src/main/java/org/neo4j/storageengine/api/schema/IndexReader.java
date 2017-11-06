@@ -27,8 +27,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.newapi.IndexCursorProgressor;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.internal.kernel.api.IndexQuery.SCAN;
-
 /**
  * Reader for an index. Must honor repeatable reads, which means that if a lookup is executed multiple times the
  * same result set must be returned.
@@ -99,41 +97,12 @@ public interface IndexReader extends Resource
         {
             cursor.done();
         }
-
-        @Override
-        public void scan( IndexCursorProgressor.NodeValueCursor cursor )
-        {
-            cursor.done();
-        }
     };
 
-    default void query( IndexCursorProgressor.NodeValueCursor cursor, IndexQuery... query )
+    default void query(
+            IndexCursorProgressor.NodeValueCursor cursor,
+            IndexQuery... query ) throws IndexNotApplicableKernelException
     {
-        try
-        {
-            cursor.initialize( new NodeValueIndexProgressor( query( query ), cursor ), null );
-        }
-        catch ( IndexNotApplicableKernelException e )
-        {
-            throw new RuntimeException( "SOMEONE FORGOT TO DO EXCEPTION HANDLING", e ); // TODO: exception handling
-        }
-    }
-
-    default void scan( IndexCursorProgressor.NodeValueCursor cursor )
-    {
-        try
-        {
-            // the actual property key is ignored in the implementation, so we can pass in whatever...
-            // it is actually ok for the index implementation to ignore the property key under these two assumptions:
-            // 1. That all queries is "well formed" - i.e. we never ask for a key not in the index.
-            // 2. For compound indexes all nodes have all properties assigned.
-            // While we violate 1. here, we are at least "well intended", we don't actually care about what the key is.
-            // 2. holds because compound indexes are only created through node keys.
-            cursor.initialize( new NodeValueIndexProgressor( query( SCAN ), cursor ), null );
-        }
-        catch ( IndexNotApplicableKernelException e )
-        {
-            throw new RuntimeException( "SOMEONE FORGOT TO DO EXCEPTION HANDLING", e ); // TODO: exception handling
-        }
+        cursor.initialize( new NodeValueIndexProgressor( query( query ), cursor ), null );
     }
 }
