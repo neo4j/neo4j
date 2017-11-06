@@ -68,6 +68,14 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
+    public TextArray split( String separator )
+    {
+        String asString = value();
+        String[] split = asString.split( separator );
+        return Values.stringArray( split );
+    }
+
+    @Override
     public Object asObjectCopy()
     {
         return value();

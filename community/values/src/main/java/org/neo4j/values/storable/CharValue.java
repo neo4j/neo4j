@@ -145,6 +145,19 @@ public final class CharValue extends TextValue
         return new CharValue( Character.toUpperCase( value ) );
     }
 
+    @Override
+    public TextArray split( String separator )
+    {
+        if (separator.equals( stringValue() ))
+        {
+            return Values.EMPTY_TEXT_ARRAY;
+        }
+        else
+        {
+            return Values.stringArray( stringValue() );
+        }
+    }
+
     public char value()
     {
         return value;

@@ -51,6 +51,8 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue toUpper();
 
+    public abstract TextArray split(String separator);
+
     public abstract int compareTo( TextValue other );
 
     @Override

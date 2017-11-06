@@ -28,8 +28,6 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.annotation.tailrec
-
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
 
   def innerExpectedType = CTString
@@ -175,30 +173,12 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 case class SplitFunction(orig: Expression, separator: Expression)
   extends NullInNullOutExpression(orig) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
-    val origVal = asString(orig(m, state))
-    val separatorVal = asString(separator(m, state))
-
-    if (origVal == null || separatorVal == null) {
-      NO_VALUE
-    } else {
-      if (separatorVal.length > 0) {
-        VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray: _*))
-      } else if (origVal.isEmpty) {
-        VirtualValues.list(Values.EMPTY_STRING)
-      } else {
-        VirtualValues.fromArray(Values.stringArray(origVal.sliding(1).toArray: _*))
-      }
-    }
-  }
-
-  @tailrec
-  private def split(parts: Vector[String], string: String, from: Int, separator: String): Vector[String] = {
-    val index = string.indexOf(separator, from)
-    if (index < 0)
-      parts :+ string.substring(from)
-    else
-      split(parts :+ string.substring(from, index), string, index + separator.length, separator)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
+    case t: TextValue if t.length() == 0  => VirtualValues.list(Values.EMPTY_STRING)
+    case t: TextValue =>
+      val separatorVal = asString(separator(m, state))
+      if (separatorVal == null) NO_VALUE else t.split(separatorVal)
+    case _ => StringFunction.notAString(value)
   }
 
   override def arguments = Seq(orig, separator)
