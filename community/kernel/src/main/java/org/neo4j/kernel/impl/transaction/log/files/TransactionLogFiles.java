@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -175,7 +176,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         StoreChannel rawChannel = null;
         try
         {
-            rawChannel = openLogFileChannel( fileToOpen, "r" );
+            rawChannel = openLogFileChannel( fileToOpen, OpenMode.READ );
             ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
             if ( (header == null) || (header.logVersion != version) )
@@ -219,7 +220,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
      * @return {@link PhysicalLogVersionedStoreChannel} for newly created/opened log file.
      * @throws IOException if there's any I/O related error.
      */
-    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, String mode ) throws IOException
+    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, OpenMode mode ) throws IOException
     {
         File toOpen = getLogFileForVersion( forVersion );
         StoreChannel storeChannel = fileSystem.open( toOpen, mode );
@@ -284,7 +285,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         return logFileInformation;
     }
 
-    private StoreChannel openLogFileChannel( File file, String mode ) throws IOException
+    private StoreChannel openLogFileChannel( File file, OpenMode mode ) throws IOException
     {
         return fileSystem.open( file, mode );
     }

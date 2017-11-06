@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -64,7 +65,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         logVersionRepository = context.getLogVersionRepository();
         // Make sure at least a bare bones log file is available before recovery
         long lastLogVersionUsed = this.logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, "rw" );
+        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE );
         channel.close();
     }
 
@@ -74,7 +75,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         // Recovery has taken place before this, so the log file has been truncated to last known good tx
         // Just read header and move to the end
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, "rw" );
+        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE );
         // Move to the end
         channel.position( channel.size() );
         writer = new PositionAwarePhysicalFlushableChannel( channel );
@@ -179,7 +180,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * Note that by this point, rotation is done. The next few lines are
          * "simply overhead" for continuing to work with the new file.
          */
-        PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, "rw" );
+        PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, OpenMode.READ_WRITE );
         currentLog.close();
         return newLog;
     }
