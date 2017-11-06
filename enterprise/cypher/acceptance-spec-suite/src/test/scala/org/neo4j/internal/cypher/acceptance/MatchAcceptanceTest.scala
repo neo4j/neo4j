@@ -52,8 +52,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       }
     }
 
-    val NODES = 1000
-    val EDGES = 10000
+    val NODES = 10
+    val EDGES = 10
 
     val nodes = (0 to NODES).map { x =>
       ping()
@@ -62,16 +62,16 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val r = new Random()
 
-    (0 to EDGES).foreach(_ => {
-      val lhs = nodes(r.nextInt(NODES))
-      val rhs = nodes(r.nextInt(NODES))
-      (0 to r.nextInt(100)) foreach { _ =>
-        val n = db.createNode()
-        rhs.createRelationshipTo(n, RelationshipType.withName("apa"))
-        ping()
-      }
-      lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
-    })
+//    (0 to EDGES).foreach(_ => {
+//      val lhs = nodes(r.nextInt(NODES))
+//      val rhs = nodes(r.nextInt(NODES))
+//      (0 to r.nextInt(100)) foreach { _ =>
+//        val n = db.createNode()
+//        rhs.createRelationshipTo(n, RelationshipType.withName("apa"))
+//        ping()
+//      }
+//      lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
+//    })
 
     tx.success()
     tx.close()
@@ -79,38 +79,48 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val visitor = new ResultVisitor[RuntimeException] {
       override def visit(row: Result.ResultRow): Boolean = {
-        //        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
+        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
         true
       }
     }
 
     println("running first query")
-    Seq("interpreted", "slotted", "compiled", "morsel") foreach { runtime =>
-      val q = s"cypher runtime=$runtime match (a)-->(b)-->(c) return a, b"
+//    Seq("compiled") foreach { runtime =>
+      val q = s"cypher runtime=morsel match (a) return a order by id(a)"
       val started = System.currentTimeMillis()
-      (0 to 30) foreach { i =>
-        println(i)
+//      (0 to 30) foreach { i =>
         val res = db.execute(q)
         res.accept(visitor)
-      }
-      println(s"$runtime took " + (System.currentTimeMillis() - started))
-    }
+//      }
+      println(s"took " + (System.currentTimeMillis() - started))
+//    }
     println("running query")
 
-    //    if (false) {
-    //      val threads =
-    //        0 to 10 map { _ =>
+    //    val res = db.execute("match (a)-->(b)-->(c) return a, b")
+    //    res.accept(visitor)
+    //
+    //    Seq("slotted", "compiled", "morsel debug=singleThreaded", "morsel") foreach { runtime =>
+    //            val started = System.currentTimeMillis()
+    //
+    //    val threads =
+    //        0 to 100 map { _ =>
     //          val thread = new Thread(new Runnable {
     //            override def run(): Unit = {
-    //              val result = db.execute(q)
-    //              result.accept(visitor)
+    //              (0 to 3) foreach { i =>
+    //                val q = s"cypher runtime=$runtime match (a)-->(b)-->(c) return a, b"
+    //                val res = db.execute(q)
+    //                res.accept(visitor)
+    //              }
     //            }
     //          })
     //          thread.start()
     //          thread
     //        }
     //      threads.foreach(_.join())
+    //      println(s"$runtime took " + (System.currentTimeMillis() - started))
     //    }
+    //
+    //
 
     //    Dispatcher.instance.shutdown()
     db.shutdown()

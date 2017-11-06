@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
-import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
+import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -85,9 +85,10 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
 
         case plans.Sort(_, sortItems) =>
           val ordering = sortItems.map(translateColumnOrder(pipeline, _))
-          val preSorting = new PreSortOperator(ordering, pipeline)
-          source = source.addOperator(preSorting)
-          new MergeSortOperator(ordering, pipeline)
+//          val preSorting = new PreSortOperator(ordering, pipeline)
+//          source = source.addOperator(preSorting)
+//          new MergeSortOperator(ordering, pipeline)
+          new ParallelSortOperator(ordering, pipeline)
       }
 
     thisOp match {

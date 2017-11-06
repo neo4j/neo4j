@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, C
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.vectorized.{ForkJoinPoolExecutor, Pipeline, PipelineBuilder}
+import org.neo4j.cypher.internal.runtime.vectorized.{ForkJoinPoolExecutor, Pipeline, PipelineBuilder, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics => _, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
 import org.neo4j.cypher.result.QueryResult
@@ -50,7 +50,8 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     val converters: ExpressionConverters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
     val operatorBuilder = new PipelineBuilder(pipelines, converters)
     val operators = operatorBuilder.create(physicalPlan)
-    val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan)
+    val singleThreaded = context.debugOptions.contains("singlethreaded")
+    val execPlan = VectorizedExecutionPlan(singleThreaded, from.plannerName, operators, pipelines, physicalPlan)
     new CompilationState(from, Some(execPlan))
   }
 
@@ -63,12 +64,13 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
   override def postConditions: Set[Condition] = Set.empty
 
-  case class VectorizedExecutionPlan(plannerUsed: PlannerName,
+  case class VectorizedExecutionPlan(singleThreaded: Boolean,
+                                     plannerUsed: PlannerName,
                                      operators: Pipeline,
                                      pipelineInformation: Map[LogicalPlanId, PipelineInformation],
                                      physicalPlan: LogicalPlan) extends executionplan.ExecutionPlan {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
-      new VectorizedOperatorExecutionResult(operators, pipelineInformation, physicalPlan, queryContext, params)
+      new VectorizedOperatorExecutionResult(singleThreaded, operators, pipelineInformation, physicalPlan, queryContext, params)
     }
 
     override def isPeriodicCommit: Boolean = false
@@ -82,7 +84,8 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
 }
 
-class VectorizedOperatorExecutionResult(operators: Pipeline,
+class VectorizedOperatorExecutionResult(singleThreaded: Boolean,
+                                        operators: Pipeline,
                                         pipelineInformation: Map[LogicalPlanId, PipelineInformation],
                                         logicalPlan: LogicalPlan,
                                         queryContext: QueryContext,
@@ -112,10 +115,12 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
   override def notifications: Iterable[Notification] = ???
 
   override def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = {
-//    Dispatcher.instance.run(operators, visitor, queryContext, pipelineInformation(logicalPlan.assignedId), params)
-    ForkJoinPoolExecutor.execute(operators, queryContext, params)(visitor)
-//    new SingleThreadedExecutor(operators, queryContext, pipelineInformation(logicalPlan.assignedId), params).accept(visitor)
-//    new Executor(operators, queryContext, params).accept(visitor)
+    //    Dispatcher.instance.run(operators, visitor, queryContext, pipelineInformation(logicalPlan.assignedId), params)
+    if (singleThreaded)
+      new SingleThreadedExecutor(operators, queryContext, pipelineInformation(logicalPlan.assignedId), params).accept(visitor)
+    else
+      ForkJoinPoolExecutor.execute(operators, queryContext, params)(visitor)
+    //    new Executor(operators, queryContext, params).accept(visitor)
   }
 
   override def withNotifications(notification: Notification*): InternalExecutionResult = this
