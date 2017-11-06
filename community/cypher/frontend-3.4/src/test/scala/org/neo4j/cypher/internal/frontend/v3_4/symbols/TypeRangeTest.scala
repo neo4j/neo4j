@@ -203,4 +203,13 @@ class TypeRangeTest extends CypherFunSuite {
     TypeRange(CTString, None).reparent(CTList) should equal(TypeRange(CTList(CTString), None))
     TypeRange(CTAny, CTNumber).reparent(CTList) should equal(TypeRange(CTList(CTAny), CTList(CTNumber)))
   }
+
+  test("without") {
+    TypeRange(CTAny, CTInteger).without(CTNumber) should equal(Some(TypeRange(CTAny, CTNumber.parentType)))
+    TypeRange(CTAny, CTNumber).without(CTInteger) should equal(Some(TypeRange(CTAny, CTNumber)))
+    TypeRange(CTAny, None).without(CTInteger) should equal(Some(TypeRange(CTAny, CTInteger.parentType)))
+    TypeRange(CTInteger, None).without(CTNumber) should equal(None)
+    TypeRange(CTInteger, None).without(CTString) should equal(Some(TypeRange(CTInteger, None)))
+    TypeRange(CTAny, CTNumber).without(CTString) should equal(Some(TypeRange(CTAny, CTNumber)))
+  }
 }

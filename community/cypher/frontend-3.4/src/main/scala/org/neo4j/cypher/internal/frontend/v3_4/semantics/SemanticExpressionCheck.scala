@@ -523,13 +523,13 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         TypeSpec.none
 
     // [a] + [b] => [a, b]
-    val listTypes = lhsTypes constrain CTList(CTAny)
+    val listTypes = (lhsTypes leastUpperBounds CTList(CTAny) constrain CTList(CTAny)).covariant
 
     // [a] + b => [a, b]
     val lhsListTypes = listTypes | listTypes.unwrapLists
 
     // a + [b] => [a, b]
-    val rhsListTypes = lhsTypes.wrapInList
+    val rhsListTypes = CTList(CTAny).covariant
 
     valueTypes | lhsListTypes | rhsListTypes
   }
@@ -565,13 +565,14 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       val rhsListTypes = rhsTypes constrain CTList(CTAny)
       val lhsListInnerTypes = lhsListTypes.unwrapLists
       val rhsListInnerTypes = rhsListTypes.unwrapLists
+      val lhsScalarTypes = lhsTypes without CTList(CTAny)
+      val rhsScalarTypes = rhsTypes without CTList(CTAny)
 
-      // [a] + [b] => [a, b]
-      (lhsListTypes intersect rhsListTypes) |
-        // [a] + b => [a, b]
-        (rhsTypes intersectOrCoerce lhsListInnerTypes).wrapInList |
-        // a + [b] => [a, b]
-        (lhsTypes intersectOrCoerce rhsListInnerTypes).wrapInList
+      val bothListMergedTypes = (lhsListInnerTypes coerceOrLeastUpperBound rhsListInnerTypes).wrapInList
+      val lhListMergedTypes = (rhsScalarTypes coerceOrLeastUpperBound lhsListInnerTypes).wrapInList
+      val rhListMergedTypes = (lhsScalarTypes coerceOrLeastUpperBound rhsListInnerTypes).wrapInList
+
+      bothListMergedTypes | lhListMergedTypes | rhListMergedTypes
     }
 
     stringTypes | numberTypes | listTypes
