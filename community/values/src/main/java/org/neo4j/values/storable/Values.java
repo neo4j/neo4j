@@ -44,7 +44,7 @@ public final class Values
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
     public static final Value ZERO_INT = Values.longValue( 0 );
-    public static final Value MIN_STRING = Values.stringValue( "" );
+    public static final Value MIN_STRING =  StringValue.EMTPY;
     public static final Value MAX_STRING = Values.booleanValue( false );
     public static final BooleanValue TRUE = Values.booleanValue( true );
     public static final BooleanValue FALSE = Values.booleanValue( false );
@@ -59,7 +59,7 @@ public final class Values
     public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray( new long[0] );
     public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray( new float[0] );
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
-    public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray(  );
+    public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
     private Values()
     {
@@ -108,18 +108,32 @@ public final class Values
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
-    public static UTF8StringValue utf8Value( byte[] bytes )
+    public static TextValue utf8Value( byte[] bytes )
     {
+        if ( bytes.length == 0 )
+        {
+            return EMPTY_STRING;
+        }
+
         return utf8Value( bytes, 0, bytes.length );
     }
 
-    public static UTF8StringValue utf8Value( byte[] bytes, int offset, int length )
+    public static TextValue utf8Value( byte[] bytes, int offset, int length )
     {
+        if ( length == 0 )
+        {
+            return EMPTY_STRING;
+        }
+
         return new UTF8StringValue( bytes, offset, length );
     }
 
     public static TextValue stringValue( String value )
     {
+        if ( value.isEmpty() )
+        {
+            return EMPTY_STRING;
+        }
         return new StringWrappingStringValue( value );
     }
 
@@ -131,7 +145,7 @@ public final class Values
         }
         else
         {
-            return new StringWrappingStringValue( value );
+            return stringValue( value );
         }
     }
 

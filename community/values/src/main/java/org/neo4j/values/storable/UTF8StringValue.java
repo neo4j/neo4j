@@ -39,7 +39,7 @@ public final class UTF8StringValue extends StringValue
     private final int offset;
     private final int byteLength;
 
-    UTF8StringValue( byte[] bytes, int offset, int length )
+    public UTF8StringValue( byte[] bytes, int offset, int length )
     {
         assert bytes != null;
         this.bytes = bytes;
@@ -161,6 +161,10 @@ public final class UTF8StringValue extends StringValue
         if ( start < 0 || length < 0 )
         {
             throw new IndexOutOfBoundsException( "Cannot handle negative start index nor negative length" );
+        }
+        if ( length == 0 )
+        {
+            return StringValue.EMTPY;
         }
 
         int end = start + length;

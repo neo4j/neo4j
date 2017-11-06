@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.utils;
 
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.UTF8StringValue;
 
 import static org.neo4j.values.storable.Values.utf8Value;
@@ -39,7 +40,7 @@ public final class UTF8Utils
      * @param b value to add
      * @return the value a + b
      */
-    public static UTF8StringValue add( UTF8StringValue a, UTF8StringValue b )
+    public static TextValue add( UTF8StringValue a, UTF8StringValue b )
     {
         byte[] bytesA = a.bytes();
         byte[] bytesB = b.bytes();
@@ -47,6 +48,6 @@ public final class UTF8Utils
         byte[] bytes = new byte[bytesA.length + bytesB.length];
         System.arraycopy( bytesA, 0, bytes, 0, bytesA.length );
         System.arraycopy( bytesB, 0, bytes, bytesA.length, bytesB.length );
-        return utf8Value(bytes);
+        return utf8Value( bytes );
     }
 }

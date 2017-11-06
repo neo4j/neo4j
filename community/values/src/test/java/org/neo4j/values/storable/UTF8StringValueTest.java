@@ -153,7 +153,7 @@ public class UTF8StringValueTest
     public void shouldHandleTooLargeStartPointInSubstring()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // When
         TextValue substring = value.substring( 8, 5 );
@@ -166,7 +166,7 @@ public class UTF8StringValueTest
     public void shouldHandleTooLargeLengthInSubstring()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // When
         TextValue substring = value.substring( 3, 76 );
@@ -179,7 +179,7 @@ public class UTF8StringValueTest
     public void shouldThrowOnNegativeStart()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // Expect
         exception.expect( IndexOutOfBoundsException.class );
@@ -192,7 +192,7 @@ public class UTF8StringValueTest
     public void shouldThrowOnNegativeLength()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // Expect
         exception.expect( IndexOutOfBoundsException.class );
