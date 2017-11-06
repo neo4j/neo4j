@@ -60,11 +60,6 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
         case plans.ProduceResult(_, columns) =>
           new ProduceResultOperator(pipeline, columns.toArray)
 
-        case plans.Optional(inner, symbols) =>
-          val nullableKeys = inner.availableSymbols -- symbols
-          val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
-          new OptionalOperator(nullableOffsets)
-
         case plans.Selection(predicates, _) =>
           val predicate = converters.toCommandPredicate(predicates.head)
           new FilterOperator(pipeline, predicate)
@@ -85,10 +80,9 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
 
         case plans.Sort(_, sortItems) =>
           val ordering = sortItems.map(translateColumnOrder(pipeline, _))
-//          val preSorting = new PreSortOperator(ordering, pipeline)
-//          source = source.addOperator(preSorting)
-//          new MergeSortOperator(ordering, pipeline)
-          new ParallelSortOperator(ordering, pipeline)
+          val preSorting = new PreSortOperator(ordering, pipeline)
+          source = source.addOperator(preSorting)
+          new MergeSortOperator(ordering, pipeline)
       }
 
     thisOp match {

@@ -1,7 +1,8 @@
-package org.neo4j.cypher.internal.runtime.vectorized
+package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
