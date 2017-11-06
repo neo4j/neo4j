@@ -215,15 +215,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         else if ( typeId == PropertyType.GEOMETRY.intValue() )
         {
             GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes(header);
-            if ( geometryHeader.geometryType == GeometryType.GEOMETRY_POINT.gtype )
-            {
-                return GeometryType.decodePointArray( geometryHeader, bArray );
-            }
-            else
-            {
-                //TODO: Perhaps should throw an exception
-                return Values.NO_VALUE;
-            }
+            return GeometryType.decodeGeometryArray( geometryHeader, bArray );
         }
         else
         {

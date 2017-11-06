@@ -62,7 +62,7 @@ public class PropertyUtil
                 GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer( buffer );
                 byte[] byteArray = new byte[buffer.limit() - buffer.position()];
                 buffer.get( byteArray );
-                return GeometryType.decodePointArray( header, byteArray );
+                return GeometryType.decodeGeometryArray( header, byteArray );
             }
             else
             {

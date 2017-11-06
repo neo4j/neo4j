@@ -40,13 +40,19 @@ public enum GeometryType
                 @Override
                 public Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset )
                 {
-                    throw new UnsupportedOperationException(  );
+                    throw new UnsupportedOperationException( "Cannot decode invalid geometry" );
                 }
 
                 @Override
                 public int calculateNumberOfBlocksUsedForGeometry( long firstBlock )
                 {
                     return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
+                }
+
+                @Override
+                public ArrayValue decodeArray( GeometryHeader header, byte[] data )
+                {
+                    throw new UnsupportedOperationException( "Cannot decode invalid geometry array" );
                 }
             },
     GEOMETRY_POINT( 1, "Point" )
@@ -72,6 +78,34 @@ public enum GeometryType
                     }
                     return 1 + dimension;
                 }
+
+                @Override
+                public ArrayValue decodeArray( GeometryHeader header, byte[] data )
+                {
+                    byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
+                    byte[] dataBody = new byte[data.length - dataHeader.length];
+                    System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
+                    Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
+                    if ( dataValue instanceof FloatingPointArray )
+                    {
+                        FloatingPointArray numbers = (FloatingPointArray) dataValue;
+                        PointValue[] points = new PointValue[numbers.length() / header.dimension];
+                        for ( int i = 0; i < points.length; i++ )
+                        {
+                            double[] coords = new double[header.dimension];
+                            for ( int d = 0; d < header.dimension; d++ )
+                            {
+                                coords[d] = numbers.doubleValue( i * header.dimension + d );
+                            }
+                            points[i] = Values.pointValue( header.crs, coords );
+                        }
+                        return Values.pointArray( points );
+                    }
+                    else
+                    {
+                        throw new RuntimeException( "Point array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: FloatingPointArray." );
+                    }
+                }
             };
 
     public final int gtype;
@@ -89,6 +123,8 @@ public enum GeometryType
     // know their length just from the firstBlock. Since we will probably use dynamic property
     // stores, it might be that the answer here is just 1.
     public abstract int calculateNumberOfBlocksUsedForGeometry( long firstBlock );
+
+    public abstract ArrayValue decodeArray( GeometryHeader header, byte[] data );
 
     private static final GeometryType[] TYPES = GeometryType.values();
     private static final Map<String, GeometryType> all = new HashMap<>( TYPES.length );
@@ -132,7 +168,7 @@ public enum GeometryType
         return geometryType.calculateNumberOfBlocksUsedForGeometry( firstBlock );
     }
 
-    public static GeometryType find( int gtype )
+    private static GeometryType find( int gtype )
     {
         if ( gtype < TYPES.length )
         {
@@ -212,7 +248,6 @@ public enum GeometryType
         {
             data[i] = points[i / dimension].coordinate()[i % dimension];
         }
-        int code = points[0].getCoordinateReferenceSystem().code;
         GeometryHeader geometryHeader = new GeometryHeader( GeometryType.GEOMETRY_POINT.gtype, dimension,
                 points[0].getCoordinateReferenceSystem() );
         byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
@@ -220,12 +255,17 @@ public enum GeometryType
         return bytes;
     }
 
+    public static ArrayValue decodeGeometryArray( GeometryHeader header, byte[] data )
+    {
+        return find( header.geometryType ).decodeArray( header, data );
+    }
+
     /**
      * Handler for header information for Geometry objects and arrays of Geometry objects
      */
     public static class GeometryHeader
     {
-        public final int geometryType;
+        private final int geometryType;
         private final int dimension;
         private final CoordinateReferenceSystem crs;
 
@@ -267,34 +307,6 @@ public enum GeometryType
             int crsTableId = buffer.get();
             int crsCode = buffer.get() + (buffer.get() << 8);
             return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
-        }
-    }
-
-    public static ArrayValue decodePointArray( GeometryHeader header, byte[] data )
-    {
-        byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
-        byte[] dataBody = new byte[data.length - dataHeader.length];
-        System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
-        Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
-        if ( dataValue instanceof FloatingPointArray )
-        {
-            FloatingPointArray numbers = (FloatingPointArray) dataValue;
-            PointValue[] points = new PointValue[numbers.length() / header.dimension];
-            for ( int i = 0; i < points.length; i++ )
-            {
-                double[] coords = new double[header.dimension];
-                for ( int d = 0; d < header.dimension; d++ )
-                {
-                    coords[d] = numbers.doubleValue( i * header.dimension + d );
-                }
-                points[i] = Values.pointValue( header.crs, coords );
-            }
-            return Values.pointArray( points );
-        }
-        else
-        {
-            //TODO: Perhaps throw an exception
-            return Values.EMPTY_POINT_ARRAY;
         }
     }
 }
