@@ -25,10 +25,10 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.scalatest.mock.MockitoSugar
@@ -87,6 +87,7 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     when(relationship.getEndNodeId).thenReturn(endId)
     when(relationship.getOtherNode(startNode)).thenReturn(endNode)
     when(relationship.getOtherNode(endNode)).thenReturn(startNode)
+    when(relationship.toString).thenReturn(s"($startId)-[$id]->($endId)")
     relationship
   }
 

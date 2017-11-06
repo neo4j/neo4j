@@ -36,6 +36,8 @@ public class NodeProxyWrappingNodeValue extends NodeValue
     private final Node node;
     private volatile TextArray labels;
     private volatile MapValue properties;
+    private final Object labelLock = new Object();
+    private final Object propLock = new Object();
 
     NodeProxyWrappingNodeValue( Node node )
     {
@@ -79,7 +81,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         TextArray l = labels;
         if ( l == null )
         {
-            synchronized ( this )
+            synchronized ( labelLock )
             {
                 l = labels;
                 if ( l == null )
@@ -103,7 +105,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         MapValue m = properties;
         if ( m == null )
         {
-            synchronized ( this )
+            synchronized ( propLock )
             {
                 m = properties;
                 if ( m == null )
