@@ -41,33 +41,25 @@ import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
  */
 public class Predicates
 {
-    private static final Predicate TRUE = item -> true;
-
-    private static final Predicate FALSE = item -> false;
-
-    private static final Predicate NOT_NULL = Objects::nonNull;
     private static final int DEFAULT_POLL_INTERVAL = 20;
 
     private Predicates()
     {
     }
 
-    @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysTrue()
     {
-        return TRUE;
+        return x -> true;
     }
 
-    @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysFalse()
     {
-        return FALSE;
+        return x -> false;
     }
 
-    @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> notNull()
     {
-        return NOT_NULL;
+        return Objects::nonNull;
     }
 
     @SafeVarargs
@@ -112,18 +104,18 @@ public class Predicates
         };
     }
 
-    public static <T> Predicate<T> instanceOf( @Nonnull final Class clazz )
+    public static <T> Predicate<T> instanceOf( @Nonnull final Class<?> clazz )
     {
         return item -> item != null && clazz.isInstance( item );
     }
 
-    public static <T> Predicate<T> instanceOfAny( final Class... classes )
+    public static <T> Predicate<T> instanceOfAny( final Class<?>... classes )
     {
         return item ->
         {
             if ( item != null )
             {
-                for ( Class clazz : classes )
+                for ( Class<?> clazz : classes )
                 {
                     if ( clazz.isInstance( item ) )
                     {

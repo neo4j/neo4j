@@ -19,19 +19,18 @@
  */
 package org.neo4j.helpers;
 
+import java.lang.reflect.Proxy;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
-
-import static org.neo4j.function.Predicates.any;
 
 /**
  * Neo4j transaction template that automates the retry-on-exception logic. It uses the builder
@@ -50,10 +49,24 @@ public class TransactionTemplate
 {
     public interface Monitor
     {
+        /**
+         * Called when an exception occur from the transactions.
+         *
+         * @param ex the exception thrown.
+         */
         void failure( Throwable ex );
 
+        /**
+         * Called when the whole retry logic fails. Can be that all retries have failed or that the executing thread was
+         * interrupted.
+         *
+         * @param ex the last exception thrown when it failed.
+         */
         void failed( Throwable ex );
 
+        /**
+         * Called when a retry is done.
+         */
         void retrying();
 
         class Adapter implements Monitor
@@ -81,16 +94,45 @@ public class TransactionTemplate
     private final long backoff;
     private final Predicate<Throwable> retryPredicate;
 
+    /**
+     * Creates a template for performing transactions with retry logic.
+     * <p>
+     * Default exceptions to retry on is everything except {@link Error} and {@link TransactionTerminatedException}.
+     */
     public TransactionTemplate()
     {
-        this( null, new Monitor.Adapter(), 0, 0, any(
-                Predicates.<Throwable>instanceOf( Error.class ),
-                Predicates.<Throwable>instanceOf( TransactionTerminatedException.class ) ).negate() );
+        this( (GraphDatabaseService) Proxy.newProxyInstance( GraphDatabaseService.class.getClassLoader(),
+                new Class<?>[]{GraphDatabaseService.class}, ( proxy, method, args ) ->
+                {
+                    throw new IllegalArgumentException( "You need to call 'with(GraphDatabaseService)' on the template in order to use it" );
+                } ), new Monitor.Adapter(), 0, 0,
+                ex -> !Error.class.isInstance( ex ) && !TransactionTerminatedException.class.isInstance( ex ) );
     }
 
+    /**
+     * Create a template for performing transaction with retry logic.
+     *
+     * @param gds graph database to execute on.
+     * @param monitor a monitor that can react to events.
+     * @param retries number of retries to try before failing.
+     * @param backoff milliseconds to wait between each retry.
+     * @param retryPredicate what {@link Throwable}'s to retry on.
+     */
     public TransactionTemplate( GraphDatabaseService gds, Monitor monitor, int retries,
                                 long backoff, Predicate<Throwable> retryPredicate )
     {
+        Objects.requireNonNull( gds );
+        Objects.requireNonNull( monitor );
+        if ( retries < 0 )
+        {
+            throw new IllegalArgumentException( "Number of retries must be greater than or equal to 0" );
+        }
+        if ( backoff < 0 )
+        {
+            throw new IllegalArgumentException( "Backoff time must be a positive number" );
+        }
+        Objects.requireNonNull( retryPredicate );
+
         this.gds = gds;
         this.monitor = monitor;
         this.retries = retries;
@@ -123,6 +165,13 @@ public class TransactionTemplate
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 
+    /**
+     * Executes a transaction with retry logic.
+     *
+     * @param txConsumer a consumer that takes transactions.
+     * @throws TransactionFailureException if an error occurs other than those specified in {@link #retryOn(Predicate)}
+     * or if the retry count was exceeded.
+     */
     public void execute( final Consumer<Transaction> txConsumer )
     {
         execute( transaction ->
@@ -132,11 +181,20 @@ public class TransactionTemplate
         } );
     }
 
-    public <T> T execute( Function<Transaction, T> txFunction )
-            throws TransactionFailureException
+    /**
+     * Executes a transaction with retry logic returning a result.
+     *
+     * @param txFunction function taking a transaction and producing a result.
+     * @param <T> type of the result.
+     * @return the result with type {@code T}.
+     * @throws TransactionFailureException if an error occurs other than those specified in {@link #retryOn(Predicate)}
+     * or if the retry count was exceeded.
+     */
+    public <T> T execute( Function<Transaction, T> txFunction ) throws TransactionFailureException
     {
-        Throwable txEx = null;
-        for ( int i = 0; i < retries; i++ )
+        Throwable txEx;
+        int retriesLeft = retries;
+        while ( true )
         {
             try ( Transaction tx = gds.beginTx() )
             {
@@ -155,36 +213,26 @@ public class TransactionTemplate
                 }
             }
 
-            if ( i < retries - 1 )
+            try
             {
-                try
-                {
-                    Thread.sleep( backoff );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new TransactionFailureException( "Interrupted", e );
-                }
-
-                monitor.retrying();
+                Thread.sleep( backoff );
             }
+            catch ( InterruptedException e )
+            {
+                TransactionFailureException interrupted = new TransactionFailureException( "Interrupted", e );
+                monitor.failed( interrupted );
+                throw interrupted;
+            }
+
+            if ( retriesLeft == 0 )
+            {
+                break;
+            }
+            retriesLeft--;
+            monitor.retrying();
         }
 
-        if ( txEx instanceof TransactionFailureException )
-        {
-            throw (TransactionFailureException) txEx;
-        }
-        else if ( txEx instanceof Error )
-        {
-            throw (Error) txEx;
-        }
-        else if ( txEx instanceof RuntimeException )
-        {
-            throw (RuntimeException) txEx;
-        }
-        else
-        {
-            throw new TransactionFailureException( "Failed", txEx );
-        }
+        monitor.failed( txEx );
+        throw new TransactionFailureException( "Failed", txEx );
     }
 }
