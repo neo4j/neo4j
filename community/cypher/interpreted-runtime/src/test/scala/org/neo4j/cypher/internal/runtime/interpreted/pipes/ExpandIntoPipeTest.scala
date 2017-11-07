@@ -69,22 +69,13 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
           case _ =>
             val nodeId = invocationOnMock.getArgument[Long](0)
             val dir = invocationOnMock.getArgument[SemanticDirection](1)
-            if (nodeId == 0) {
-              dir match {
-                case SemanticDirection.INCOMING => Iterator.empty
-                case SemanticDirection.OUTGOING =>
-                  Iterator(relationship1, relationship2, relationship3, selfRelationship)
-
-                case SemanticDirection.BOTH => Iterator(relationship1, relationship2, relationship3, selfRelationship)
-              }
+            (nodeId, dir) match {
+              case (0, SemanticDirection.INCOMING) => Iterator.empty
+              case (0, _) => Iterator(relationship1, relationship2, relationship3, selfRelationship)
+              case (2, SemanticDirection.OUTGOING) => Iterator.empty
+              case (2, _) => Iterator(relationship1)
+              case (id, d)=> throw new AssertionError(s"I am only a mocked hack, not a real database. I have no clue about $id and $d")
             }
-            else if (nodeId == 2) {
-              dir match {
-                case SemanticDirection.INCOMING => Iterator(relationship1)
-                case SemanticDirection.OUTGOING => Iterator.empty
-                case SemanticDirection.BOTH => Iterator(relationship1)
-              }
-            } else ???
         }
       }
     })
