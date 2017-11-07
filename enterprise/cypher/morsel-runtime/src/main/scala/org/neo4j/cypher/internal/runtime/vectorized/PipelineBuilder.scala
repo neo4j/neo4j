@@ -96,7 +96,8 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
     }
   }
 
-  override protected def build(plan: LogicalPlan, lhs: Pipeline, rhs: Pipeline): Pipeline = ???
+  override protected def build(plan: LogicalPlan, lhs: Pipeline, rhs: Pipeline): Pipeline =
+    throw new CantCompileQueryException(s"$plan is not supported in morsel runtime")
 }
 
 object IsPipelineBreaker {
