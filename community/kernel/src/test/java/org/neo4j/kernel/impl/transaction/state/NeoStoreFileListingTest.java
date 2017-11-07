@@ -155,9 +155,7 @@ public class NeoStoreFileListingTest
     {
         assertTrue( neoStoreDataSource.listStoreFiles( false ).stream()
                 .reduce( ( a, b ) -> b )
-                .map( toStoreType )
-                .filter( Optional::isPresent )
-                .map( Optional::get )
+                .flatMap( toStoreType )
                 .filter( StoreType.META_DATA::equals )
                 .isPresent() );
     }
@@ -167,9 +165,7 @@ public class NeoStoreFileListingTest
     {
         assertTrue( neoStoreDataSource.listStoreFiles( true ).stream()
                 .reduce( ( a, b ) -> b )
-                .map( toStoreType )
-                .filter( Optional::isPresent )
-                .map( Optional::get )
+                .flatMap( toStoreType )
                 .filter( StoreType.META_DATA::equals )
                 .isPresent() );
     }
