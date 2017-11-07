@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -36,12 +37,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -52,6 +55,19 @@ public class ChunkedOutputTest
     private final Channel ch = mock( Channel.class );
     private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
     private ChunkedOutput out;
+
+    @Before
+    public void setUp()
+    {
+        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+        this.out = new ChunkedOutput( ch, 16 );
+    }
+
+    @After
+    public void tearDown()
+    {
+        out.close();
+    }
 
     @Test
     public void shouldNotNPE() throws Throwable
@@ -273,6 +289,26 @@ public class ChunkedOutputTest
                          "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
     }
 
+    @Test
+    public void shouldThrowErrorWithRemoteAddressWhenClosed() throws Exception
+    {
+        SocketAddress remoteAddress = mock( SocketAddress.class );
+        String remoteAddressString = "client.server.com:7687";
+        when( remoteAddress.toString() ).thenReturn( remoteAddressString );
+        when( ch.remoteAddress() ).thenReturn( remoteAddress );
+
+        out.close();
+
+        try
+        {
+            out.writeInt( 42 );
+        }
+        catch ( PackOutputClosedException e )
+        {
+            assertThat( e.getMessage(), containsString( remoteAddressString ) );
+        }
+    }
+
     private void setupWriteAndFlush()
     {
         when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation ->
@@ -283,18 +319,4 @@ public class ChunkedOutputTest
             return null;
         } );
     }
-
-    @Before
-    public void setup()
-    {
-        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        this.out = new ChunkedOutput( ch, 16 );
-    }
-
-    @After
-    public void teardown()
-    {
-        out.close();
-    }
-
 }
