@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
-import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
@@ -48,7 +48,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   }
 
   // TODO The next four tests are expected to work with 3.1 and 3.2 and rule planner (not 2.3!) as soon as the dependencies are updated
-  val excludedConfigs = Configs.Version3_2 + Configs.Version3_1 + Configs.AllRulePlanners
+  val excludedConfigs: TestConfiguration = Configs.Version3_1 + Configs.AllRulePlanners
   test("shortest path in a with clause") {
 
     relate(nodeA, nodeB)
