@@ -38,6 +38,7 @@ implements Visitable<DbStructureVisitor>
 {
     INSTANCE;
 
+    @Override
     public void accept( DbStructureVisitor visitor )
     {
         visitor.visitLabel( 1, "Person" );

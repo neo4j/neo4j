@@ -33,6 +33,7 @@ public class LocalVariable extends Expression
         this.index = index;
     }
 
+    @Override
     public TypeReference type()
     {
         return type;

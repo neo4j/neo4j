@@ -34,6 +34,7 @@ public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
 
     private StoreIdMarshal() {}
 
+    @Override
     public void marshal( StoreId storeId, WritableChannel channel ) throws IOException
     {
         if ( storeId == null )
@@ -49,6 +50,7 @@ public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
         channel.putLong( storeId.getUpgradeId() );
     }
 
+    @Override
     protected StoreId unmarshal0( ReadableChannel channel ) throws IOException
     {
         byte exists = channel.get();

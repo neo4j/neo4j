@@ -62,6 +62,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         return IMPORTS;
     }
 
+    @Override
     public void formatArgument( Appendable builder, Object arg ) throws IOException
     {
         if ( arg == null )

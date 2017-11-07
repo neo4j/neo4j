@@ -48,6 +48,7 @@ public interface SequenceValue extends Iterable<AnyValue>
 
     AnyValue value( int offset );
 
+    @Override
     Iterator<AnyValue> iterator();
 
     IterationPreference iterationPreference();

@@ -32,11 +32,13 @@ public class ArrayIterator<T> implements Iterator<T>
         this.array = array;
     }
 
+    @Override
     public boolean hasNext()
     {
         return index < array.length;
     }
 
+    @Override
     public T next()
     {
         if ( !hasNext() )
@@ -46,6 +48,7 @@ public class ArrayIterator<T> implements Iterator<T>
         return array[index++];
     }
 
+    @Override
     public void remove()
     {
         throw new UnsupportedOperationException();

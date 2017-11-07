@@ -43,6 +43,7 @@ abstract class NumberArray extends ArrayValue
         return false;
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.NUMBER_ARRAY;

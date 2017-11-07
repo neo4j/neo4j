@@ -96,6 +96,7 @@ public interface FileSystemAbstraction extends Closeable
 
     interface ThirdPartyFileSystem extends Closeable
     {
+        @Override
         void close();
 
         void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException;

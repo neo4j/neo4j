@@ -41,6 +41,7 @@ import org.neo4j.shell.impl.AbstractApp;
  */
 public class Gsh extends AbstractApp
 {
+    @Override
     public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {

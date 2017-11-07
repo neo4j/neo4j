@@ -80,6 +80,7 @@ public interface IndexProxy extends LabelSchemaSupplier
 
     IndexDescriptor getDescriptor();
 
+    @Override
     LabelSchemaDescriptor schema();
 
     SchemaIndexProvider.Descriptor getProviderDescriptor();

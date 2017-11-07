@@ -34,6 +34,7 @@ public class NodeIndexRepresentation extends IndexRepresentation
         super( name, type );
     }
 
+    @Override
     public String propertyContainerType()
     {
         return "node";

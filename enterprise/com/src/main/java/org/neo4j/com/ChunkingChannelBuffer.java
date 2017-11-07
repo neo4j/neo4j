@@ -107,66 +107,79 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         buffer.setBytes( continuationPosition, header( continuation ) );
     }
 
+    @Override
     public ChannelBufferFactory factory()
     {
         return buffer.factory();
     }
 
+    @Override
     public int capacity()
     {
         return buffer.capacity();
     }
 
+    @Override
     public ByteOrder order()
     {
         return buffer.order();
     }
 
+    @Override
     public boolean isDirect()
     {
         return buffer.isDirect();
     }
 
+    @Override
     public int readerIndex()
     {
         return buffer.readerIndex();
     }
 
+    @Override
     public void readerIndex( int readerIndex )
     {
         buffer.readerIndex( readerIndex );
     }
 
+    @Override
     public int writerIndex()
     {
         return buffer.writerIndex();
     }
 
+    @Override
     public void writerIndex( int writerIndex )
     {
         buffer.writerIndex( writerIndex );
     }
 
+    @Override
     public void setIndex( int readerIndex, int writerIndex )
     {
         buffer.setIndex( readerIndex, writerIndex );
     }
 
+    @Override
     public int readableBytes()
     {
         return buffer.readableBytes();
     }
 
+    @Override
     public int writableBytes()
     {
         return buffer.writableBytes();
     }
 
+    @Override
     public boolean readable()
     {
         return buffer.readable();
     }
 
+    @Override
     public boolean writable()
     {
         return buffer.writable();
@@ -179,351 +192,421 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         addRoomForContinuationHeader();
     }
 
+    @Override
     public void clear()
     {
         clear( false );
     }
 
+    @Override
     public void markReaderIndex()
     {
         buffer.markReaderIndex();
     }
 
+    @Override
     public void resetReaderIndex()
     {
         buffer.resetReaderIndex();
     }
 
+    @Override
     public void markWriterIndex()
     {
         buffer.markWriterIndex();
     }
 
+    @Override
     public void resetWriterIndex()
     {
         buffer.resetWriterIndex();
     }
 
+    @Override
     public void discardReadBytes()
     {
         buffer.discardReadBytes();
     }
 
+    @Override
     public void ensureWritableBytes( int writableBytes )
     {
         buffer.ensureWritableBytes( writableBytes );
     }
 
+    @Override
     public byte getByte( int index )
     {
         return buffer.getByte( index );
     }
 
+    @Override
     public short getUnsignedByte( int index )
     {
         return buffer.getUnsignedByte( index );
     }
 
+    @Override
     public short getShort( int index )
     {
         return buffer.getShort( index );
     }
 
+    @Override
     public int getUnsignedShort( int index )
     {
         return buffer.getUnsignedShort( index );
     }
 
+    @Override
     public int getMedium( int index )
     {
         return buffer.getMedium( index );
     }
 
+    @Override
     public int getUnsignedMedium( int index )
     {
         return buffer.getUnsignedMedium( index );
     }
 
+    @Override
     public int getInt( int index )
     {
         return buffer.getInt( index );
     }
 
+    @Override
     public long getUnsignedInt( int index )
     {
         return buffer.getUnsignedInt( index );
     }
 
+    @Override
     public long getLong( int index )
     {
         return buffer.getLong( index );
     }
 
+    @Override
     public char getChar( int index )
     {
         return buffer.getChar( index );
     }
 
+    @Override
     public float getFloat( int index )
     {
         return buffer.getFloat( index );
     }
 
+    @Override
     public double getDouble( int index )
     {
         return buffer.getDouble( index );
     }
 
+    @Override
     public void getBytes( int index, ChannelBuffer dst )
     {
         buffer.getBytes( index, dst );
     }
 
+    @Override
     public void getBytes( int index, ChannelBuffer dst, int length )
     {
         buffer.getBytes( index, dst, length );
     }
 
+    @Override
     public void getBytes( int index, ChannelBuffer dst, int dstIndex, int length )
     {
         buffer.getBytes( index, dst, dstIndex, length );
     }
 
+    @Override
     public void getBytes( int index, byte[] dst )
     {
         buffer.getBytes( index, dst );
     }
 
+    @Override
     public void getBytes( int index, byte[] dst, int dstIndex, int length )
     {
         buffer.getBytes( index, dst, dstIndex, length );
     }
 
+    @Override
     public void getBytes( int index, ByteBuffer dst )
     {
         buffer.getBytes( index, dst );
     }
 
+    @Override
     public void getBytes( int index, OutputStream out, int length ) throws IOException
     {
         buffer.getBytes( index, out, length );
     }
 
+    @Override
     public int getBytes( int index, GatheringByteChannel out, int length ) throws IOException
     {
         return buffer.getBytes( index, out, length );
     }
 
+    @Override
     public void setByte( int index, int value )
     {
         buffer.setByte( index, value );
     }
 
+    @Override
     public void setShort( int index, int value )
     {
         buffer.setShort( index, value );
     }
 
+    @Override
     public void setMedium( int index, int value )
     {
         buffer.setMedium( index, value );
     }
 
+    @Override
     public void setInt( int index, int value )
     {
         buffer.setInt( index, value );
     }
 
+    @Override
     public void setLong( int index, long value )
     {
         buffer.setLong( index, value );
     }
 
+    @Override
     public void setChar( int index, int value )
     {
         buffer.setChar( index, value );
     }
 
+    @Override
     public void setFloat( int index, float value )
     {
         buffer.setFloat( index, value );
     }
 
+    @Override
     public void setDouble( int index, double value )
     {
         buffer.setDouble( index, value );
     }
 
+    @Override
     public void setBytes( int index, ChannelBuffer src )
     {
         buffer.setBytes( index, src );
     }
 
+    @Override
     public void setBytes( int index, ChannelBuffer src, int length )
     {
         buffer.setBytes( index, src, length );
     }
 
+    @Override
     public void setBytes( int index, ChannelBuffer src, int srcIndex, int length )
     {
         buffer.setBytes( index, src, srcIndex, length );
     }
 
+    @Override
     public void setBytes( int index, byte[] src )
     {
         buffer.setBytes( index, src );
     }
 
+    @Override
     public void setBytes( int index, byte[] src, int srcIndex, int length )
     {
         buffer.setBytes( index, src, srcIndex, length );
     }
 
+    @Override
     public void setBytes( int index, ByteBuffer src )
     {
         buffer.setBytes( index, src );
     }
 
+    @Override
     public int setBytes( int index, InputStream in, int length ) throws IOException
     {
         return buffer.setBytes( index, in, length );
     }
 
+    @Override
     public int setBytes( int index, ScatteringByteChannel in, int length ) throws IOException
     {
         return buffer.setBytes( index, in, length );
     }
 
+    @Override
     public void setZero( int index, int length )
     {
         buffer.setZero( index, length );
     }
 
+    @Override
     public byte readByte()
     {
         return buffer.readByte();
     }
 
+    @Override
     public short readUnsignedByte()
     {
         return buffer.readUnsignedByte();
     }
 
+    @Override
     public short readShort()
     {
         return buffer.readShort();
     }
 
+    @Override
     public int readUnsignedShort()
     {
         return buffer.readUnsignedShort();
     }
 
+    @Override
     public int readMedium()
     {
         return buffer.readMedium();
     }
 
+    @Override
     public int readUnsignedMedium()
     {
         return buffer.readUnsignedMedium();
     }
 
+    @Override
     public int readInt()
     {
         return buffer.readInt();
     }
 
+    @Override
     public long readUnsignedInt()
     {
         return buffer.readUnsignedInt();
     }
 
+    @Override
     public long readLong()
     {
         return buffer.readLong();
     }
 
+    @Override
     public char readChar()
     {
         return buffer.readChar();
     }
 
+    @Override
     public float readFloat()
     {
         return buffer.readFloat();
     }
 
+    @Override
     public double readDouble()
     {
         return buffer.readDouble();
     }
 
+    @Override
     public ChannelBuffer readBytes( int length )
     {
         return buffer.readBytes( length );
     }
 
+    @Override
     public ChannelBuffer readBytes( ChannelBufferIndexFinder indexFinder )
     {
         return buffer.readBytes( indexFinder );
     }
 
+    @Override
     public ChannelBuffer readSlice( int length )
     {
         return buffer.readSlice( length );
     }
 
+    @Override
     public ChannelBuffer readSlice( ChannelBufferIndexFinder indexFinder )
     {
         return buffer.readSlice( indexFinder );
     }
 
+    @Override
     public void readBytes( ChannelBuffer dst )
     {
         buffer.readBytes( dst );
     }
 
+    @Override
     public void readBytes( ChannelBuffer dst, int length )
     {
         buffer.readBytes( dst, length );
     }
 
+    @Override
     public void readBytes( ChannelBuffer dst, int dstIndex, int length )
     {
         buffer.readBytes( dst, dstIndex, length );
     }
 
+    @Override
     public void readBytes( byte[] dst )
     {
         buffer.readBytes( dst );
     }
 
+    @Override
     public void readBytes( byte[] dst, int dstIndex, int length )
     {
         buffer.readBytes( dst, dstIndex, length );
     }
 
+    @Override
     public void readBytes( ByteBuffer dst )
     {
         buffer.readBytes( dst );
     }
 
+    @Override
     public void readBytes( OutputStream out, int length ) throws IOException
     {
         buffer.readBytes( out, length );
     }
 
+    @Override
     public int readBytes( GatheringByteChannel out, int length ) throws IOException
     {
         return buffer.readBytes( out, length );
     }
 
+    @Override
     public void skipBytes( int length )
     {
         buffer.skipBytes( length );
     }
 
+    @Override
     public int skipBytes( ChannelBufferIndexFinder indexFinder )
     {
         return buffer.skipBytes( indexFinder );
@@ -613,239 +696,283 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         }
     }
 
+    @Override
     public void writeByte( int value )
     {
         sendChunkIfNeeded( 1 );
         buffer.writeByte( value );
     }
 
+    @Override
     public void writeShort( int value )
     {
         sendChunkIfNeeded( 2 );
         buffer.writeShort( value );
     }
 
+    @Override
     public void writeMedium( int value )
     {
         sendChunkIfNeeded( 4 );
         buffer.writeMedium( value );
     }
 
+    @Override
     public void writeInt( int value )
     {
         sendChunkIfNeeded( 4 );
         buffer.writeInt( value );
     }
 
+    @Override
     public void writeLong( long value )
     {
         sendChunkIfNeeded( 8 );
         buffer.writeLong( value );
     }
 
+    @Override
     public void writeChar( int value )
     {
         sendChunkIfNeeded( 2 );
         buffer.writeChar( value );
     }
 
+    @Override
     public void writeFloat( float value )
     {
         sendChunkIfNeeded( 8 );
         buffer.writeFloat( value );
     }
 
+    @Override
     public void writeDouble( double value )
     {
         sendChunkIfNeeded( 8 );
         buffer.writeDouble( value );
     }
 
+    @Override
     public void writeBytes( ChannelBuffer src )
     {
         sendChunkIfNeeded( src.capacity() );
         buffer.writeBytes( src );
     }
 
+    @Override
     public void writeBytes( ChannelBuffer src, int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeBytes( src, length );
     }
 
+    @Override
     public void writeBytes( ChannelBuffer src, int srcIndex, int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeBytes( src, srcIndex, length );
     }
 
+    @Override
     public void writeBytes( byte[] src )
     {
         sendChunkIfNeeded( src.length );
         buffer.writeBytes( src );
     }
 
+    @Override
     public void writeBytes( byte[] src, int srcIndex, int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeBytes( src, srcIndex, length );
     }
 
+    @Override
     public void writeBytes( ByteBuffer src )
     {
         sendChunkIfNeeded( src.limit() );
         buffer.writeBytes( src );
     }
 
+    @Override
     public int writeBytes( InputStream in, int length ) throws IOException
     {
         sendChunkIfNeeded( length );
         return buffer.writeBytes( in, length );
     }
 
+    @Override
     public int writeBytes( ScatteringByteChannel in, int length ) throws IOException
     {
         sendChunkIfNeeded( length );
         return buffer.writeBytes( in, length );
     }
 
+    @Override
     public void writeZero( int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeZero( length );
     }
 
+    @Override
     public int indexOf( int fromIndex, int toIndex, byte value )
     {
         return buffer.indexOf( fromIndex, toIndex, value );
     }
 
+    @Override
     public int indexOf( int fromIndex, int toIndex, ChannelBufferIndexFinder indexFinder )
     {
         return buffer.indexOf( fromIndex, toIndex, indexFinder );
     }
 
+    @Override
     public int bytesBefore( byte value )
     {
         return buffer.bytesBefore( value );
     }
 
+    @Override
     public int bytesBefore( ChannelBufferIndexFinder indexFinder )
     {
         return buffer.bytesBefore( indexFinder );
     }
 
+    @Override
     public int bytesBefore( int length, byte value )
     {
         return buffer.bytesBefore( length, value );
     }
 
+    @Override
     public int bytesBefore( int length, ChannelBufferIndexFinder indexFinder )
     {
         return buffer.bytesBefore( length, indexFinder );
     }
 
+    @Override
     public int bytesBefore( int index, int length, byte value )
     {
         return buffer.bytesBefore( index, length, value );
     }
 
+    @Override
     public int bytesBefore( int index, int length, ChannelBufferIndexFinder indexFinder )
     {
         return buffer.bytesBefore( index, length, indexFinder );
     }
 
+    @Override
     public ChannelBuffer copy()
     {
         return buffer.copy();
     }
 
+    @Override
     public ChannelBuffer copy( int index, int length )
     {
         return buffer.copy( index, length );
     }
 
+    @Override
     public ChannelBuffer slice()
     {
         return buffer.slice();
     }
 
+    @Override
     public ChannelBuffer slice( int index, int length )
     {
         return buffer.slice( index, length );
     }
 
+    @Override
     public ChannelBuffer duplicate()
     {
         return buffer.duplicate();
     }
 
+    @Override
     public ByteBuffer toByteBuffer()
     {
         return buffer.toByteBuffer();
     }
 
+    @Override
     public ByteBuffer toByteBuffer( int index, int length )
     {
         return buffer.toByteBuffer( index, length );
     }
 
+    @Override
     public ByteBuffer[] toByteBuffers()
     {
         return buffer.toByteBuffers();
     }
 
+    @Override
     public ByteBuffer[] toByteBuffers( int index, int length )
     {
         return buffer.toByteBuffers( index, length );
     }
 
+    @Override
     public boolean hasArray()
     {
         return buffer.hasArray();
     }
 
+    @Override
     public byte[] array()
     {
         return buffer.array();
     }
 
+    @Override
     public int arrayOffset()
     {
         return buffer.arrayOffset();
     }
 
+    @Override
     public String toString( Charset charset )
     {
         return buffer.toString( charset );
     }
 
+    @Override
     public String toString( int index, int length, Charset charset )
     {
         return buffer.toString( index, length, charset );
     }
 
+    @Override
     public String toString( String charsetName )
     {
         return buffer.toString( charsetName );
     }
 
+    @Override
     public String toString( String charsetName, ChannelBufferIndexFinder terminatorFinder )
     {
         return buffer.toString( charsetName, terminatorFinder );
     }
 
+    @Override
     public String toString( int index, int length, String charsetName )
     {
         return buffer.toString( index, length, charsetName );
     }
 
+    @Override
     public String toString( int index, int length, String charsetName,
             ChannelBufferIndexFinder terminatorFinder )
     {
         return buffer.toString( index, length, charsetName, terminatorFinder );
     }
 
+    @Override
     public int compareTo( ChannelBuffer buffer )
     {
         return this.buffer.compareTo( buffer );

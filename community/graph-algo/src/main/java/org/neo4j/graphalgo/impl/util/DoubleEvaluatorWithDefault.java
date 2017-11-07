@@ -35,6 +35,7 @@ public class DoubleEvaluatorWithDefault implements CostEvaluator<Double>
         this.defaultCost = defaultCost;
     }
 
+    @Override
     public Double getCost( Relationship relationship, Direction direction )
     {
         return ( (Number) relationship.getProperty( costPropertyName, defaultCost ) ).doubleValue();

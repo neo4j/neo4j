@@ -41,12 +41,14 @@ public class GBPTreePageCacheFileUtil implements GBPTreeFileUtil
         this.pageCache = pageCache;
     }
 
+    @Override
     public void deleteFile( File storeFile ) throws IOException
     {
         FileHandle fileHandle = storeFileHandle( pageCache, storeFile );
         fileHandle.delete();
     }
 
+    @Override
     public void deleteFileIfPresent( File storeFile ) throws IOException
     {
         try
@@ -59,6 +61,7 @@ public class GBPTreePageCacheFileUtil implements GBPTreeFileUtil
         }
     }
 
+    @Override
     public boolean storeFileExists( File storeFile )
     {
         try

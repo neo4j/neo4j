@@ -413,6 +413,7 @@ public enum ClusterMessage
             this.version = version;
         }
 
+        @Override
         public void apply( ClusterContext context )
         {
             if ( getJoin() != null )

@@ -38,6 +38,7 @@ public class StandardConsole implements Console
      * @param format the string/format to print.
      * @param args values used in conjunction with {@code format}.
      */
+    @Override
     public void format( String format, Object... args )
     {
         System.out.print( format );
@@ -46,6 +47,7 @@ public class StandardConsole implements Console
     /**
      * @return the next line read from the console (user input).
      */
+    @Override
     public String readLine( String prompt )
     {
         try

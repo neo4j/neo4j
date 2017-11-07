@@ -25,6 +25,7 @@ import org.neo4j.logging.LogProvider;
 
 public class NoOpPipelineHandlerAppenderFactory implements PipelineHandlerAppenderFactory
 {
+    @Override
     public PipelineHandlerAppender create( Config config, Dependencies dependencies, LogProvider logProvider )
     {
         return new NoOpPipelineHandlerAppender( config, logProvider );

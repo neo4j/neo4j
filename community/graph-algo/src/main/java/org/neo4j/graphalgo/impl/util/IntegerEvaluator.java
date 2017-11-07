@@ -33,6 +33,7 @@ public class IntegerEvaluator implements CostEvaluator<Integer>
         this.costPropertyName = costPropertyName;
     }
 
+    @Override
     public Integer getCost( Relationship relationship, Direction direction )
     {
         Object costProp = relationship.getProperty( costPropertyName );

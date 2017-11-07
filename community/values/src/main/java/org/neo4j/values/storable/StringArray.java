@@ -100,6 +100,7 @@ public abstract class StringArray extends TextArray
         return value();
     }
 
+    @Override
     public int compareTo( TextArray other )
     {
         return TextValues.compareTextArrays( this, other );

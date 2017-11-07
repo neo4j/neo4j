@@ -122,6 +122,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     /**
      * @see Dijkstra
      */
+    @Override
     public CostType getCost( Node targetNode )
     {
         if ( targetNode == null )
@@ -132,6 +133,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
         return distances.get( targetNode );
     }
 
+    @Override
     public List<List<PropertyContainer>> getPaths( Node targetNode )
     {
         if ( targetNode == null )
@@ -147,6 +149,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
             .constructAllPathsToNode( targetNode, predecessors1, true, false ) );
     }
 
+    @Override
     public List<List<Node>> getPathsAsNodes( Node targetNode )
     {
         if ( targetNode == null )
@@ -162,6 +165,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
             targetNode, predecessors1, true, false ) );
     }
 
+    @Override
     public List<List<Relationship>> getPathsAsRelationships( Node targetNode )
     {
         if ( targetNode == null )
@@ -178,6 +182,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
                 false ) );
     }
 
+    @Override
     public List<PropertyContainer> getPath( Node targetNode )
     {
         if ( targetNode == null )
@@ -193,6 +198,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
             false );
     }
 
+    @Override
     public List<Node> getPathAsNodes( Node targetNode )
     {
         if ( targetNode == null )
@@ -208,6 +214,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
             predecessors1, true, false );
     }
 
+    @Override
     public List<Relationship> getPathAsRelationships( Node targetNode )
     {
         if ( targetNode == null )
@@ -269,6 +276,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<Node> getPredecessorNodes( Node node )
     {
         List<Node> result = new LinkedList<Node>();
@@ -288,6 +296,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public Map<Node,List<Relationship>> getPredecessors()
     {
         calculateMultiple();
@@ -297,6 +306,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public Direction getDirection()
     {
         return relationDirection;
@@ -305,6 +315,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public RelationshipType[] getRelationshipTypes()
     {
         return costRelationTypes;

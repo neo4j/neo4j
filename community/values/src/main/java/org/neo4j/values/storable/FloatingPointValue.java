@@ -58,11 +58,13 @@ public abstract class FloatingPointValue extends NumberValue
         return NumberType.FLOATING_POINT;
     }
 
+    @Override
     public int compareTo( IntegralValue other )
     {
         return NumberValues.compareDoubleAgainstLong( doubleValue(), other.longValue() );
     }
 
+    @Override
     public int compareTo( FloatingPointValue other )
     {
         return Double.compare( doubleValue(), other.doubleValue() );

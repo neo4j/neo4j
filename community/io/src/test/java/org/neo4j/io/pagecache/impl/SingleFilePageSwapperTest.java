@@ -81,6 +81,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         IOUtils.closeAll( ephemeralFileSystem, fileSystem );
     }
 
+    @Override
     protected PageSwapperFactory swapperFactory()
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
@@ -88,11 +89,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return factory;
     }
 
+    @Override
     protected void mkdirs( File dir ) throws IOException
     {
         getFs().mkdirs( dir );
     }
 
+    @Override
     protected File baseDirectory() throws IOException
     {
         File dir = getFile().getParentFile();

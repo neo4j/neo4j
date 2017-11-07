@@ -53,6 +53,7 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
      * @param position the {@link Path} to evaluate.
      * @see Evaluator
      */
+    @Override
     public Evaluation evaluate( Path position, BranchState<STATE> state )
     {
         boolean includes = true;

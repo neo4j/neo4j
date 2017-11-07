@@ -79,6 +79,7 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         return reader.fuzzyQuery( query, matchAll );
     }
 
+    @Override
     public void close()
     {
         try

@@ -51,6 +51,7 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     private CursorFactory cursors;
     private final Map<Setting<?>,String> config = new HashMap<>();
 
+    @Override
     protected void before( Description description ) throws IOException
     {
         folder.create();
@@ -83,11 +84,13 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
 
     protected abstract void create( GraphDatabaseService graphDb );
 
+    @Override
     protected void afterFailure( Description description, Throwable failure )
     {
         after();
     }
 
+    @Override
     protected void afterSuccess( Description description )
     {
         after();

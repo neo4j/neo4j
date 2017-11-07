@@ -245,6 +245,7 @@ public class Jetty9WebServer implements WebServer
         this.defaultInjectables = defaultInjectables;
     }
 
+    @Override
     public void setJettyCreatedCallback( Consumer<Server> callback )
     {
         this.jettyCreatedCallback = callback;

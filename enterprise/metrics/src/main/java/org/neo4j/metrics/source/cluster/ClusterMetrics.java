@@ -108,6 +108,7 @@ public class ClusterMetrics extends LifecycleAdapter
             this.rolePredicate = rolePredicate;
         }
 
+        @Override
         public Integer getValue()
         {
             ClusterMembers clusterMembers = ClusterMetrics.this.clusterMembers.get();

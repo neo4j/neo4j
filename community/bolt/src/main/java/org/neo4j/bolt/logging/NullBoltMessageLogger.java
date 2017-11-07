@@ -77,6 +77,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     {
     }
 
+    @Override
     public void logRun()
     {
     }

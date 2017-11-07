@@ -104,7 +104,7 @@ class SegmentHeader
 
     static class Marshal extends SafeChannelMarshal<SegmentHeader>
     {
-        //@Override
+        @Override
         public void marshal( SegmentHeader header, WritableChannel channel ) throws IOException
         {
             channel.putLong( header.prevFileLastIndex );
@@ -113,7 +113,7 @@ class SegmentHeader
             channel.putLong( header.prevTerm );
         }
 
-        //@Override
+        @Override
         public SegmentHeader unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
             long prevFileLastIndex = channel.getLong();

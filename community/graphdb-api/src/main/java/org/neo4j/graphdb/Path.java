@@ -129,6 +129,7 @@ public interface Path extends Iterable<PropertyContainer>, Resource
      *
      * @see Iterable#iterator()
      */
+    @Override
     Iterator<PropertyContainer> iterator();
 
     @Override

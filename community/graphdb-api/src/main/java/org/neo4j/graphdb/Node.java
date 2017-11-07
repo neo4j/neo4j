@@ -62,6 +62,7 @@ public interface Node extends Entity
      *
      * @return the id of this node
      */
+    @Override
     long getId();
 
     /**

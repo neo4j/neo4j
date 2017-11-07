@@ -36,6 +36,7 @@ public class AllowAjaxFilter implements ContainerResponseFilter
     private static final String ACCESS_CONTROL_REQUEST_METHOD = "access-control-request-method";
     private static final String ACCESS_CONTROL_REQUEST_HEADERS = "access-control-request-headers";
 
+    @Override
     public ContainerResponse filter( ContainerRequest request, ContainerResponse response )
     {
 

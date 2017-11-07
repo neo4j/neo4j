@@ -28,6 +28,7 @@ class PathUnique extends AbstractUniquenessFilter
         super( type );
     }
 
+    @Override
     public boolean check( TraversalBranch source )
     {
         long idToCompare = type.getId( source );

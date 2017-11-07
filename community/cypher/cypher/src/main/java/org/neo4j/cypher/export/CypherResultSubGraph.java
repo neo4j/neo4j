@@ -189,6 +189,7 @@ public class CypherResultSubGraph implements SubGraph
         return relationships.containsKey( relationship.getId() );
     }
 
+    @Override
     public Iterable<IndexDefinition> getIndexes()
     {
         return indexes;

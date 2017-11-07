@@ -96,6 +96,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     private Map<String,String> config;
     private GraphDatabaseService graphdb;
 
+    @Override
     @Before
     public void setUp() throws Exception
     {

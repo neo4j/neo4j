@@ -51,6 +51,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         this.pageCacheTracer = pageCacheTracer;
     }
 
+    @Override
     public void reportEvents()
     {
         if ( pins > 0 )

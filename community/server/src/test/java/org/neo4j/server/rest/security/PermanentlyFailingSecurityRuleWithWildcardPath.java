@@ -26,16 +26,19 @@ public class PermanentlyFailingSecurityRuleWithWildcardPath implements SecurityR
 
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-)
 
+    @Override
     public boolean isAuthorized( HttpServletRequest request )
     {
         return false;
     }
 
+    @Override
     public String forUriPath()
     {
         return "/protected/*";
     }
 
+    @Override
     public String wwwAuthenticateHeader()
     {
         return SecurityFilter.basicAuthenticationResponse(REALM);

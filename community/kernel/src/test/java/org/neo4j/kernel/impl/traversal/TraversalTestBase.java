@@ -147,6 +147,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
         private final String key;
 
+        @Override
         public String represent( PropertyContainer item )
         {
             return (String) item.getProperty( key );
@@ -171,6 +172,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
             this.rel = rel;
         }
 
+        @Override
         public String represent( Relationship item )
         {
             return nodes.represent( item.getStartNode() ) + " "
@@ -190,6 +192,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
         }
 
+        @Override
         public String represent( Path item )
         {
             StringBuilder builder = new StringBuilder();

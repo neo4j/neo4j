@@ -70,6 +70,7 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
 
     // METHODS
 
+    @Override
     public abstract SchemaDescriptor schema();
 
     public Type type()

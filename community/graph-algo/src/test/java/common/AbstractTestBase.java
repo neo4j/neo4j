@@ -19,12 +19,12 @@
  */
 package common;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -80,6 +80,7 @@ public abstract class AbstractTestBase
             this.rel = rel;
         }
 
+        @Override
         public String represent( Relationship item )
         {
             return nodes.represent( item.getStartNode() ) + " "

@@ -83,6 +83,7 @@ public class LdapExamplePluginAuthenticationIT extends EnterpriseAuthenticationT
         getLdapServer().setConfidentialityRequired( false );
     }
 
+    @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
         return super.getSettingsFunction().andThen( settings -> settings.put( SecuritySettings.auth_provider,

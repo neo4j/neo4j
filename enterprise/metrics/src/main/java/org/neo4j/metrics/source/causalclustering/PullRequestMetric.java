@@ -55,6 +55,7 @@ class PullRequestMetric implements PullRequestMonitor
         return events.longValue();
     }
 
+    @Override
     public long lastReceivedTxId()
     {
         return lastReceivedTxId.get();

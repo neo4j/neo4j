@@ -29,13 +29,16 @@ import org.neo4j.values.SequenceValue;
  */
 public abstract class ArrayValue extends Value implements SequenceValue
 {
+    @Override
     public abstract int length();
 
+    @Override
     public IterationPreference iterationPreference()
     {
         return IterationPreference.RANDOM_ACCESS;
     }
 
+    @Override
     public Iterator<AnyValue> iterator()
     {
         return new Iterator<AnyValue>()

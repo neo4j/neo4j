@@ -39,6 +39,7 @@ public abstract class IterableWrapper<T, U> implements Iterable<T>
 
     protected abstract T underlyingObjectToObject( U object );
 
+    @Override
     public Iterator<T> iterator()
     {
         return new MyIteratorWrapper( source.iterator() );

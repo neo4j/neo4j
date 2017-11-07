@@ -196,6 +196,7 @@ public class TypeMappers
             this.defaultConverter = defaultConverter;
         }
 
+        @Override
         public Optional<Neo4jValue> defaultValue( Name parameter ) throws ProcedureException
         {
             String defaultValue = parameter.defaultValue();

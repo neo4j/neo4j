@@ -21,6 +21,7 @@ package cypher.feature.parser.matchers;
 
 public interface ValueMatcher extends Matcher<Object>
 {
+    @Override
     boolean matches( Object value );
 
     ValueMatcher NULL_MATCHER = new ValueMatcher()

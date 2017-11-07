@@ -19,17 +19,16 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
 public class SingleSourceShortestPathDijkstraTest extends
     SingleSourceShortestPathTest
 {
+    @Override
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode )
     {
@@ -39,6 +38,7 @@ public class SingleSourceShortestPathDijkstraTest extends
             Direction.BOTH, MyRelTypes.R1 );
     }
 
+    @Override
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode, Direction direction, RelationshipType... relTypes )
     {

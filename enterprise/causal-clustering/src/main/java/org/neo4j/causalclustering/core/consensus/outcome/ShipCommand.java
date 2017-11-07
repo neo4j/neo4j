@@ -101,6 +101,7 @@ public abstract class ShipCommand
             this.target = target;
         }
 
+        @Override
         public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws
                 IOException
         {

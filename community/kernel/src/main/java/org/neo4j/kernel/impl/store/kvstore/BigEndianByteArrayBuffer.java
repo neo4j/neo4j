@@ -108,6 +108,7 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
         Arrays.fill( buffer, zero );
     }
 
+    @Override
     public boolean allZeroes()
     {
         for ( byte b : buffer )
@@ -151,22 +152,26 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
         System.arraycopy( buffer, 0, target, targetPos, buffer.length );
     }
 
+    @Override
     public int size()
     {
         return buffer.length;
     }
 
+    @Override
     public byte getByte( int offset )
     {
         offset = checkBounds( offset, 1 );
         return buffer[offset];
     }
 
+    @Override
     public BigEndianByteArrayBuffer putByte( int offset, byte value )
     {
         return putValue( offset, value, 1 );
     }
 
+    @Override
     public short getShort( int offset )
     {
         offset = checkBounds( offset, 2 );
@@ -174,11 +179,13 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
                         (0xFF & buffer[offset + 1]));
     }
 
+    @Override
     public BigEndianByteArrayBuffer putShort( int offset, short value )
     {
         return putValue( offset, value, 2 );
     }
 
+    @Override
     public char getChar( int offset )
     {
         offset = checkBounds( offset, 2 );
@@ -186,11 +193,13 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
                        (0xFF & buffer[offset + 1]));
     }
 
+    @Override
     public BigEndianByteArrayBuffer putChar( int offset, char value )
     {
         return putValue( offset, value, 2 );
     }
 
+    @Override
     public int getInt( int offset )
     {
         offset = checkBounds( offset, 4 );
@@ -200,11 +209,13 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
                 0xFF & buffer[offset + 3];
     }
 
+    @Override
     public BigEndianByteArrayBuffer putInt( int offset, int value )
     {
         return putValue( offset, value, 4 );
     }
 
+    @Override
     public long getLong( int offset )
     {
         offset = checkBounds( offset, 8 );
@@ -231,6 +242,7 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
         return compare( buffer, value, 0 );
     }
 
+    @Override
     public BigEndianByteArrayBuffer putLong( int offset, long value )
     {
         return putValue( offset, value, 8 );

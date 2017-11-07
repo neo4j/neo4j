@@ -110,6 +110,7 @@ public class RelationshipCountsProcessorTest
 
     private class IsNonNegativeLong implements ArgumentMatcher<Long>
     {
+        @Override
         public boolean matches( Long argument )
         {
             return argument != null && argument >= 0;

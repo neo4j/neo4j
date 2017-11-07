@@ -92,6 +92,7 @@ public class StreamingBatchOperations extends BatchOperations
         }
     }
 
+    @Override
     protected void addHeaders( final InternalJettyServletRequest res, final HttpHeaders httpHeaders )
     {
         super.addHeaders( res, httpHeaders );

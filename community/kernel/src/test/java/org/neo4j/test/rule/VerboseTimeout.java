@@ -88,6 +88,7 @@ public class VerboseTimeout extends Timeout
             return value -> value == null ? StringUtils.EMPTY : value.toString();
         }
 
+        @Override
         public VerboseTimeoutBuilder withTimeout( long timeout, TimeUnit unit )
         {
             this.timeout = timeout;
@@ -229,6 +230,7 @@ public class VerboseTimeout extends Timeout
         {
             private final CountDownLatch startLatch = new CountDownLatch( 1 );
 
+            @Override
             public Throwable call() throws Exception
             {
                 try

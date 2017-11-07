@@ -33,11 +33,13 @@ public class ReverseArrayIterator<T> implements Iterator<T>
         this.index = array.length - 1;
     }
 
+    @Override
     public boolean hasNext()
     {
         return index >= 0;
     }
 
+    @Override
     public T next()
     {
         if ( !hasNext() )
@@ -47,6 +49,7 @@ public class ReverseArrayIterator<T> implements Iterator<T>
         return array[index--];
     }
 
+    @Override
     public void remove()
     {
         throw new UnsupportedOperationException();

@@ -96,6 +96,7 @@ public class GraphDescription implements GraphDefinition
         this.description = lines.toArray( new RelationshipDescription[lines.size()] );
     }
 
+    @Override
     public Node create( GraphDatabaseService graphdb )
     {
         Map<String, Node> nodes = new HashMap<String, Node>();

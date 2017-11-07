@@ -23,6 +23,7 @@ import java.net.InetAddress;
 
 public class DomainNameResolverImpl implements DomainNameResolver
 {
+    @Override
     public InetAddress[] resolveDomainName( String hostname ) throws UnknownHostException
     {
         try

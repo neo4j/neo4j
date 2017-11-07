@@ -99,6 +99,7 @@ public abstract class ActiveState<Key> extends ProgressiveState<Key>
 
     protected abstract EntryUpdater<Key> resettingUpdater( Lock lock, Runnable closeAction );
 
+    @Override
     protected abstract boolean hasChanges();
 
     protected abstract PrototypeState<Key> prototype( long version );

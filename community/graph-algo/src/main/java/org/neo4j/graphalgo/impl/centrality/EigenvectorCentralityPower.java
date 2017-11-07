@@ -51,6 +51,7 @@ public class EigenvectorCentralityPower extends EigenvectorCentralityBase
         super( relationDirection, costEvaluator, nodeSet, relationshipSet, precision );
     }
 
+    @Override
     public int runInternalIteration()
     {
 

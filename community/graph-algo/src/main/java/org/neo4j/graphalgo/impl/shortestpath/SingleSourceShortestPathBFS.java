@@ -73,6 +73,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public void setStartNode( Node node )
     {
         startNode = node;
@@ -82,6 +83,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public void reset()
     {
         distances = new HashMap<>();
@@ -95,6 +97,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public Integer getCost( Node targetNode )
     {
         calculate( targetNode );
@@ -104,6 +107,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<PropertyContainer> getPath( Node targetNode )
     {
         if ( targetNode == null )
@@ -122,6 +126,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<Node> getPathAsNodes( Node targetNode )
     {
         if ( targetNode == null )
@@ -140,6 +145,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<Relationship> getPathAsRelationships( Node targetNode )
     {
         if ( targetNode == null )
@@ -158,6 +164,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<List<PropertyContainer>> getPaths( Node targetNode )
     {
         if ( targetNode == null )
@@ -176,6 +183,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<List<Node>> getPathsAsNodes( Node targetNode )
     {
         if ( targetNode == null )
@@ -194,6 +202,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<List<Relationship>> getPathsAsRelationships( Node targetNode )
     {
         if ( targetNode == null )
@@ -292,6 +301,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public List<Node> getPredecessorNodes( Node node )
     {
         List<Node> result = new LinkedList<>();
@@ -311,6 +321,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public Map<Node,List<Relationship>> getPredecessors()
     {
         calculate();
@@ -320,6 +331,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public Direction getDirection()
     {
         return relationShipDirection;
@@ -328,6 +340,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * @see SingleSourceShortestPath
      */
+    @Override
     public RelationshipType[] getRelationshipTypes()
     {
         return relationShipTypes;

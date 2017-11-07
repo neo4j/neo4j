@@ -362,6 +362,7 @@ public class DbStructureCollector implements DbStructureVisitor
             return indexMap.get( descriptor );
         }
 
+        @Override
         public Iterator<Pair<String,String[]>> iterator()
         {
             final Iterator<LabelSchemaDescriptor> iterator = indexMap.keySet().iterator();

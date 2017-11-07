@@ -31,7 +31,6 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.NumberValues;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
@@ -40,6 +39,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 {
     public abstract int size();
 
+    @Override
     public abstract AnyValue value( int offset );
 
     public abstract AnyValue[] asArray();

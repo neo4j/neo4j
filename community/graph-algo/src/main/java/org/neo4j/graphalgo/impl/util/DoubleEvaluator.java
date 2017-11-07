@@ -33,6 +33,7 @@ public class DoubleEvaluator implements CostEvaluator<Double>
         this.costPropertyName = costPropertyName;
     }
 
+    @Override
     public Double getCost( Relationship relationship, Direction direction )
     {
         Object costProp = relationship.getProperty(costPropertyName);

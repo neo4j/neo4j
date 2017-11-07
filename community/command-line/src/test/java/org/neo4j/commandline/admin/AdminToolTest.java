@@ -38,9 +38,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.commandline.Util.neo4jVersion;
 import static org.neo4j.commandline.admin.AdminTool.STATUS_ERROR;
 import static org.neo4j.commandline.admin.AdminTool.STATUS_SUCCESS;
-import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class AdminToolTest
 {
@@ -388,6 +388,7 @@ public class AdminToolTest
             return AdminCommandSection.general();
         }
 
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return args ->
