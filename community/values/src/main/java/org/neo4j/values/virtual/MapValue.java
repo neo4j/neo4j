@@ -118,6 +118,48 @@ public final class MapValue extends VirtualValue
         return compare;
     }
 
+    @Override
+    public Boolean ternaryEquals( Object other )
+    {
+        if ( other == null || !(other instanceof MapValue) )
+        {
+            return null;
+        }
+        Map<String,AnyValue> otherMap = ((MapValue) other).map;
+        int size = map.size();
+        if (size != otherMap.size())
+        {
+            return false;
+        }
+        String[] thisKeys = map.keySet().toArray( new String[size] );
+        Arrays.sort( thisKeys, String::compareTo );
+        String[] thatKeys = otherMap.keySet().toArray( new String[size] );
+        Arrays.sort( thatKeys, String::compareTo );
+        for ( int i = 0; i < size; i++ )
+        {
+            if ( thisKeys[i].compareTo( thatKeys[i] ) != 0 )
+            {
+                return false;
+            }
+        }
+        Boolean equalityResult = true;
+
+        for ( int i = 0; i < size; i++ )
+        {
+            String key = thisKeys[i];
+            Boolean s = map.get( key ).ternaryEquals( otherMap.get( key ) );
+            if (s == null)
+            {
+                equalityResult = null;
+            }
+            else if ( !s )
+            {
+                return false;
+            }
+        }
+        return equalityResult;
+    }
+
     public void foreach( BiConsumer<String,AnyValue> f )
     {
         map.forEach( f );

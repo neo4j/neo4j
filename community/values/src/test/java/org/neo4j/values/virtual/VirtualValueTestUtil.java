@@ -24,11 +24,8 @@ import java.util.Arrays;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
@@ -100,36 +97,6 @@ public class VirtualValueTestUtil
             values[i / 2] = toAnyValue( keyOrVal[i + 1] );
         }
         return VirtualValues.map( keys, values );
-    }
-
-    public static void assertEqual( VirtualValue a, VirtualValue b )
-    {
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
-                a.equals( b ) );
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
-                b.equals( a ) );
-        assertTrue( String.format( "%s should have same hashcode as %s", a.getClass().getSimpleName(),
-                b.getClass().getSimpleName() ), a.hashCode() == b.hashCode() );
-    }
-
-    public static void assertNotEqual( VirtualValue a, VirtualValue b )
-    {
-        assertFalse( a + " should not equal " + b, a.equals( b ) );
-        assertFalse( b + "should not equal " + a, b.equals( a ) );
-    }
-
-    public static void assertEqualValues( VirtualValue a, Value b )
-    {
-        assertTrue( "should be equal values", a.equals( b ) );
-        assertTrue( "should be equal values", b.equals( a ) );
-    }
-
-    public static void assertNotEqualValues( VirtualValue a, Value b )
-    {
-        assertFalse( "should not equal values", a.equals( b ) );
-        assertFalse( "should not equal values", b.equals( a ) );
     }
 
     public static NodeValue[] nodes( long... ids )

@@ -24,8 +24,9 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertIncomparable;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 /**
  * This test was faithfully converted (including personal remarks) from PropertyEqualityTest.
@@ -42,12 +43,12 @@ public class ValueEqualityTest
                 shouldMatch( false, false ),
                 shouldNotMatch( true, false ),
                 shouldNotMatch( false, true ),
-                shouldNotMatch( true, 0 ),
-                shouldNotMatch( false, 0 ),
-                shouldNotMatch( true, 1 ),
-                shouldNotMatch( false, 1 ),
-                shouldNotMatch( false, "false" ),
-                shouldNotMatch( true, "true" ),
+                shouldBeIncomparable( true, 0 ),
+                shouldBeIncomparable( false, 0 ),
+                shouldBeIncomparable( true, 1 ),
+                shouldBeIncomparable( false, 1 ),
+                shouldBeIncomparable( false, "false" ),
+                shouldBeIncomparable( true, "true" ),
 
                 //byte properties
                 shouldMatch( (byte) 42, (byte) 42 ),
@@ -125,8 +126,8 @@ public class ValueEqualityTest
                 shouldNotMatch( "AA", 'A' ),
                 shouldNotMatch( "a", "A" ),
                 shouldNotMatch( "A", "a" ),
-                shouldNotMatch( "0", 0 ),
-                shouldNotMatch( '0', 0 ),
+                shouldBeIncomparable( "0", 0 ),
+                shouldBeIncomparable( '0', 0 ),
 
                 // arrays
                 shouldMatch( new int[]{1, 2, 3}, new int[]{1, 2, 3} ),
@@ -157,112 +158,127 @@ public class ValueEqualityTest
 
     public static Test shouldMatch( boolean propertyValue, Object value )
     {
-        return new Test( Values.booleanValue( propertyValue ), value, true );
+        return new Test( Values.booleanValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( boolean propertyValue, Object value )
     {
-        return new Test( Values.booleanValue( propertyValue ), value, false );
+        return new Test( Values.booleanValue( propertyValue ), value, false, false );
+    }
+
+    private static Test shouldBeIncomparable( boolean propertyValue, Object value )
+    {
+        return new Test(Values.booleanValue( propertyValue ), value, false, true );
     }
 
     public static Test shouldMatch( byte propertyValue, Object value )
     {
-        return new Test( Values.byteValue( propertyValue ), value, true );
+        return new Test( Values.byteValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( byte propertyValue, Object value )
     {
-        return new Test( Values.byteValue( propertyValue ), value, false );
+        return new Test( Values.byteValue( propertyValue ), value, false, false );
     }
 
     public static Test shouldMatch( short propertyValue, Object value )
     {
-        return new Test( Values.shortValue( propertyValue ), value, true );
+        return new Test( Values.shortValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( short propertyValue, Object value )
     {
-        return new Test( Values.shortValue( propertyValue ), value, false );
+        return new Test( Values.shortValue( propertyValue ), value, false, false );
     }
 
     public static Test shouldMatch( float propertyValue, Object value )
     {
-        return new Test( Values.floatValue( propertyValue ), value, true );
+        return new Test( Values.floatValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( float propertyValue, Object value )
     {
-        return new Test( Values.floatValue( propertyValue ), value, false );
+        return new Test( Values.floatValue( propertyValue ), value, false, false );
     }
 
     public static Test shouldMatch( long propertyValue, Object value )
     {
-        return new Test( Values.longValue( propertyValue ), value, true );
+        return new Test( Values.longValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( long propertyValue, Object value )
     {
-        return new Test( Values.longValue( propertyValue ), value, false );
+        return new Test( Values.longValue( propertyValue ), value, false, false );
     }
 
     public static Test shouldMatch( double propertyValue, Object value )
     {
-        return new Test( Values.doubleValue( propertyValue ), value, true );
+        return new Test( Values.doubleValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( double propertyValue, Object value )
     {
-        return new Test( Values.doubleValue( propertyValue ), value, false );
+        return new Test( Values.doubleValue( propertyValue ), value, false, false );
     }
 
     public static Test shouldMatch( String propertyValue, Object value )
     {
-        return new Test( Values.stringValue( propertyValue ), value, true );
+        return new Test( Values.stringValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( String propertyValue, Object value )
     {
-        return new Test( Values.stringValue( propertyValue ), value, false );
+        return new Test( Values.stringValue( propertyValue ), value, false, false );
+    }
+
+    public static Test shouldBeIncomparable( String propertyValue, Object value )
+    {
+        return new Test( Values.stringValue( propertyValue ), value, false, true );
     }
 
     public static Test shouldMatch( char propertyValue, Object value )
     {
-        return new Test( Values.charValue( propertyValue ), value, true );
+        return new Test( Values.charValue( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( char propertyValue, Object value )
     {
-        return new Test( Values.charValue( propertyValue ), value, false );
+        return new Test( Values.charValue( propertyValue ), value, false, false );
+    }
+
+    public static Test shouldBeIncomparable( char propertyValue, Object value )
+    {
+        return new Test( Values.charValue( propertyValue ), value, false, true );
     }
 
     public static Test shouldMatch( int[] propertyValue, Object value )
     {
-        return new Test( Values.intArray( propertyValue ), value, true );
+        return new Test( Values.intArray( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( int[] propertyValue, Object value )
     {
-        return new Test( Values.intArray( propertyValue ), value, false );
+        return new Test( Values.intArray( propertyValue ), value, false, false );
     }
 
     public static Test shouldMatch( char[] propertyValue, Object value )
     {
-        return new Test( Values.charArray( propertyValue ), value, true );
+        return new Test( Values.charArray( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( char[] propertyValue, Object value )
     {
-        return new Test( Values.charArray( propertyValue ), value, false );
+        return new Test( Values.charArray( propertyValue ), value, false, false );
     }
 
     public static Test shouldMatch( String[] propertyValue, Object value )
     {
-        return new Test( Values.stringArray( propertyValue ), value, true );
+        return new Test( Values.stringArray( propertyValue ), value, true, false );
     }
 
     public static Test shouldNotMatch( String[] propertyValue, Object value )
     {
-        return new Test( Values.stringArray( propertyValue ), value, false );
+        return new Test( Values.stringArray( propertyValue ), value, false, false );
     }
 
     private static class Test
@@ -270,12 +286,14 @@ public class ValueEqualityTest
         final Value a;
         final Value b;
         final boolean shouldMatch;
+        final boolean incomparable;
 
-        private Test( Value a, Object b, boolean shouldMatch )
+        private Test( Value a, Object b, boolean shouldMatch, boolean incomparable )
         {
             this.a = a;
             this.b = Values.of( b );
             this.shouldMatch = shouldMatch;
+            this.incomparable = incomparable;
         }
 
         @Override
@@ -288,24 +306,16 @@ public class ValueEqualityTest
         {
             if ( shouldMatch )
             {
-                assertEquality( a, b );
+                assertEqual( a, b );
+            }
+            else if ( incomparable )
+            {
+                assertIncomparable( a, b );
             }
             else
             {
-                assertNonEquality( a, b );
+                assertNotEqual( a, b );
             }
-        }
-
-        void assertEquality( Value a, Value b )
-        {
-            assertTrue( String.format( "Expected %s to be equal to %s but it wasn't.", a, b ), a.equals( b ) );
-            assertTrue( String.format( "Expected %s and %s to share hash, but they didn't.", a, b ),
-                    a.hashCode() == b.hashCode() );
-        }
-
-        void assertNonEquality( Value a, Value b )
-        {
-            assertFalse( String.format( "Expected %s to not be equal to %s but it was.", a, b ), a.equals( b ) );
         }
     }
 }

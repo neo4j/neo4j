@@ -41,6 +41,12 @@ final class NoValue extends Value
     }
 
     @Override
+    public Boolean ternaryEquals( Object other )
+    {
+        return null;
+    }
+
+    @Override
     public int computeHash()
     {
         return System.identityHashCode( this );

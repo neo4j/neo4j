@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.{AnyValue, AnyValues, SequenceValue}
+import org.neo4j.values.AnyValues
 import org.neo4j.values.storable._
-
-import scala.runtime.Tuple2Zipped
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
@@ -73,50 +71,13 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
   }
 
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
-    val a1 = a(m, state)
-    val b1 = b(m, state)
+    val l = a(m, state)
+    val r = b(m, state)
 
-    equality(a1, b1)
-  }
-
-  private def equality(a1: AnyValue, b1: AnyValue): Option[Boolean] = {
-
-    if (a1 == Values.NO_VALUE || b1 == Values.NO_VALUE) {
-      None
-    } else {
-      val a1IsSeq = a1.isInstanceOf[SequenceValue]
-      val b1IsSeq = b1.isInstanceOf[SequenceValue]
-
-      (a1IsSeq, b1IsSeq) match {
-        case (true, false) => None
-        case (false, true) => None
-        case (false, false) => Some(a1.equals(b1))
-        case (true, true) => compareLists(a1.asInstanceOf[SequenceValue], b1.asInstanceOf[SequenceValue])
-      }
-
+    l.ternaryEquals(r) match {
+      case null => None
+      case v => Some(v)
     }
-  }
-  private def differentLength(a: SequenceValue, b: SequenceValue): Boolean = a.length() != b.length()
-
-  private def compareLists(seq1: SequenceValue, seq2: SequenceValue): Option[Boolean] = {
-    var foundNull = false
-
-    // Different length lists can't be equal
-    if (differentLength(seq1, seq2)) return Some(false)
-
-    val itr1 = seq1.iterator()
-    val itr2 = seq2.iterator()
-
-    while (itr1.hasNext) {
-      val (x, y) = (itr1.next(), itr2.next())
-      equality(x.asInstanceOf[AnyValue], y.asInstanceOf[AnyValue]) match {
-        case None => foundNull = true
-        case Some(false) => return Some(false)
-        case Some(true) => // continue
-      }
-    }
-
-    if (foundNull) None else Some(true)
   }
 
   override def toString = s"$a == $b"

@@ -46,6 +46,23 @@ public abstract class VirtualValue extends AnyValue
 
     public abstract boolean equals( VirtualValue other );
 
+    public Boolean ternaryEquals( Object other )
+    {
+        if ( other == null )
+        {
+            return null;
+        }
+        if ( other instanceof SequenceValue && this.isSequenceValue() )
+        {
+            return ((SequenceValue) this).ternaryEquals( (SequenceValue) other );
+        }
+        if ( other instanceof VirtualValue && ((VirtualValue) other).valueGroup() == valueGroup() )
+        {
+            return equals( (VirtualValue) other );
+        }
+        return null;
+    }
+
     public abstract VirtualValueGroup valueGroup();
 
     public abstract int compareTo( VirtualValue other, Comparator<AnyValue> comparator );

@@ -84,6 +84,33 @@ public interface SequenceValue extends Iterable<AnyValue>
         return areEqual;
     }
 
+    static Boolean ternaryEqualsUsingRandomAccess( SequenceValue a, SequenceValue b )
+    {
+        if ( a.length() != b.length() )
+        {
+            return false;
+        }
+
+        int i = 0;
+        Boolean equivalenceResult = true;
+
+        while ( i < a.length() )
+        {
+            Boolean areEqual = a.value( i ).ternaryEquals( b.value( i ) );
+            if ( areEqual == null )
+            {
+                equivalenceResult = null;
+            }
+            else if ( !areEqual )
+            {
+                return false;
+            }
+            i++;
+        }
+
+        return equivalenceResult;
+    }
+
     static boolean equalsUsingIterators( SequenceValue a, SequenceValue b )
     {
         boolean areEqual = true;
@@ -96,6 +123,28 @@ public interface SequenceValue extends Iterable<AnyValue>
         }
 
         return areEqual && aIterator.hasNext() == bIterator.hasNext();
+    }
+
+    static Boolean ternaryEqualsUsingIterators( SequenceValue a, SequenceValue b )
+    {
+        Boolean equivalenceResult = true;
+        Iterator<AnyValue> aIterator = a.iterator();
+        Iterator<AnyValue> bIterator = b.iterator();
+
+        while ( aIterator.hasNext() && bIterator.hasNext() )
+        {
+            Boolean areEqual = aIterator.next().ternaryEquals( bIterator.next() );
+            if ( areEqual == null )
+            {
+                equivalenceResult = null;
+            }
+            else if ( !areEqual )
+            {
+                return false;
+            }
+        }
+
+        return aIterator.hasNext() == bIterator.hasNext() ? equivalenceResult : Boolean.FALSE;
     }
 
     default int compareToSequence( SequenceValue other, Comparator<AnyValue> comparator )
@@ -149,5 +198,19 @@ public interface SequenceValue extends Iterable<AnyValue>
         }
 
         return x;
+    }
+
+    default Boolean ternaryEquals( SequenceValue other )
+    {
+        IterationPreference pref = iterationPreference();
+        IterationPreference otherPref = other.iterationPreference();
+        if ( pref == RANDOM_ACCESS && otherPref == RANDOM_ACCESS )
+        {
+            return ternaryEqualsUsingRandomAccess(this, other );
+        }
+        else
+        {
+            return ternaryEqualsUsingIterators( this, other );
+        }
     }
 }

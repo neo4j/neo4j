@@ -22,8 +22,8 @@ package org.neo4j.values.virtual;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValues.pointCartesian;
 import static org.neo4j.values.virtual.VirtualValues.pointGeographic;
 

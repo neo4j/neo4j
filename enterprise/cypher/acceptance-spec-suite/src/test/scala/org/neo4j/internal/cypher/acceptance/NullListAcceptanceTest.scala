@@ -147,26 +147,19 @@ class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparis
     //result.toList should equal(List(Map("res" -> null)))
   }
 
-  // To be uncomment after PR #xxx (which fixes this) is merged
-
-  //  test("comparing equal length lists with null should return null") {
-  //    val query = "WITH [1, 2] AS l1, [null, 2] AS l2 RETURN l1 < l2 AS res"
-  //
-  //    val result = executeWith(Configs.Interpreted - Configs.AllRulePlanners, query)
-  //
-  //    println(result.executionPlanDescription())
-  //
-  //    result.toList should equal(List(Map("res" -> null)))
-  //  }
-  //
-  //  test("comparing different length lists with null should be ok") {
-  //    val query = "WITH [1] AS l1, [null, 2] AS l2 RETURN l1 < l2 AS res"
-  //
-  //    val result = executeWith(Configs.All, query)
-  //
-  //    println(result.executionPlanDescription())
-  //
-  //    result.toList should equal(List(Map("res" -> "true")))
-  //  }
-
+//  test("comparing equal length lists with null should return null") {
+//    val query = "WITH [1, 2] AS l1, [null, 2] AS l2 RETURN l1 < l2 AS res"
+//
+//    val result = executeWith(Configs.Version3_3 - Configs.AllRulePlanners - Configs.Compiled, query)
+//
+//    result.toList should equal(List(Map("res" -> null)))
+//  }
+//
+//  test("comparing different length lists with null should be ok") {
+//    val query = "WITH [1] AS l1, [null, 2] AS l2 RETURN l1 < l2 AS res"
+//
+//    val result = executeWith(Configs.Version3_3 - Configs.AllRulePlanners - Configs.Compiled, query)
+//
+//    result.toList should equal(List(Map("res" -> true)))
+//  }
 }

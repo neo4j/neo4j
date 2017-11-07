@@ -315,6 +315,16 @@ public final class ValueUtils
         }
 
         @Override
+        public Boolean ternaryEquals( Object other )
+        {
+            if ( other == null )
+            {
+                return null;
+            }
+            return other.equals( object );
+        }
+
+        @Override
         protected int computeHash()
         {
             return object.hashCode();
