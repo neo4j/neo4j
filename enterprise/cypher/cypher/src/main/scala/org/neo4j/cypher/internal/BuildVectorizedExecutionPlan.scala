@@ -33,7 +33,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Condition, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
+import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
@@ -57,6 +58,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
       else context.dispatcher
     val fieldNames = from.statement().returnColumns.toArray
+
     val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames, dispatcher)
     new CompilationState(from, Some(execPlan))
   }
@@ -79,8 +81,12 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
+      val planDescription =
+        () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed)
+          .addArgument(Runtime(MorselRuntimeName.toTextOutput))
+          .addArgument(RuntimeImpl(MorselRuntimeName.name))
 
-      new VectorizedOperatorExecutionResult(operators, pipelineInformation, physicalPlan, queryContext,
+      new VectorizedOperatorExecutionResult(operators, physicalPlan, planDescription, queryContext,
                                             params, fieldNames, taskCloser, dispatcher)
     }
 
@@ -96,8 +102,8 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 }
 
 class VectorizedOperatorExecutionResult(operators: Pipeline,
-                                        pipelineInformation: Map[LogicalPlanId, PipelineInformation],
                                         logicalPlan: LogicalPlan,
+                                        executionPlanBuilder: () => InternalPlanDescription,
                                         queryContext: QueryContext,
                                         params: MapValue,
                                         override val fieldNames: Array[String],
@@ -110,7 +116,7 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
 
   override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
 
-  override def executionPlanDescription(): InternalPlanDescription = ???
+  override def executionPlanDescription(): InternalPlanDescription = executionPlanBuilder()
 
   override def queryType: InternalQueryType = READ_ONLY
 

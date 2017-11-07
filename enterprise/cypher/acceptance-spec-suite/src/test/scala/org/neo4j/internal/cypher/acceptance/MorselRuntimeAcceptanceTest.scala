@@ -17,16 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
+package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.vectorized.Pipeline
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.cypher.ExecutionEngineFunSuite
 
-trait Dispatcher {
-  def execute[E <: Exception](operators: Pipeline,
-                              queryContext: QueryContext,
-                              params: MapValue)(visitor: QueryResultVisitor[E]): Unit
+class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
+
+  test("should not use morsel by default") {
+    //Given
+    val result = graph.execute("MATCH (n) RETURN n")
+
+    // When (exhaust result)
+    result.resultAsString()
+
+    //Then
+    result.getExecutionPlanDescription.getArguments.get("runtime") should not equal "MORSEL"
+  }
+
+  test("should be able to ask for morsel") {
+    //Given
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN n")
+
+    // When (exhaust result)
+    result.resultAsString()
+
+    //Then
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
 }
-
