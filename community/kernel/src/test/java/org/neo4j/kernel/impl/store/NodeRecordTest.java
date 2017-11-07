@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -99,7 +100,7 @@ public class NodeRecordTest
         long labelId = 10_123;
         // A dynamic label record
         Collection<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(), new long[]{labelId},
-                recordAllocator );
+                recordAllocator, RecordFormatSelector.defaultFormat() );
         // and a deleted one as well (simulating some deleted labels)
         DynamicRecord unused = newDeletedDynamicRecord( ids.nextId() );
         unused.setInUse( false );

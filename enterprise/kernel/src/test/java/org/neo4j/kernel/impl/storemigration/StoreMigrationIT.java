@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -196,6 +197,21 @@ public class StoreMigrationIT
         public RecordFormats newInstance()
         {
             return StandardV3_2.RECORD_FORMATS;
+        }
+    }
+
+    @Service.Implementation( RecordFormats.Factory.class )
+    public static class Standard34Factory extends RecordFormats.Factory
+    {
+        public Standard34Factory()
+        {
+            super( StandardV3_4.STORE_VERSION );
+        }
+
+        @Override
+        public RecordFormats newInstance()
+        {
+            return StandardV3_4.RECORD_FORMATS;
         }
     }
 

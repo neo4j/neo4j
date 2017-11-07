@@ -156,6 +156,11 @@ public class NeoStores implements AutoCloseable
         return new File( neoStoreFileName.getPath() + substoreName );
     }
 
+    public RecordFormats getRecordFormats()
+    {
+        return recordFormats;
+    }
+
     /**
      * Closes the node,relationship,property and relationship type stores.
      */
@@ -529,7 +534,7 @@ public class NeoStores implements AutoCloseable
         }
         File storeFile = getStoreFile( storeName );
         return initialize( new DynamicArrayStore( storeFile, config, idType, idGeneratorFactory, pageCache,
-                logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions ) );
+                logProvider, blockSize, recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createNodeStore( String storeName )
@@ -572,9 +577,8 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createDynamicStringStore( String storeName, IdType idType, int blockSize )
     {
         File storeFile = getStoreFile( storeName );
-        return initialize( new DynamicStringStore( storeFile, config, idType, idGeneratorFactory,
-                pageCache, logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion(),
-                openOptions ) );
+        return initialize(
+                new DynamicStringStore( storeFile, config, idType, idGeneratorFactory, pageCache, logProvider, blockSize, recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createRelationshipTypeTokenStore( String storeName )
@@ -648,8 +652,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createMetadataStore()
     {
-        return initialize( new MetaDataStore( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                recordFormats.metaData(), recordFormats.storeVersion(), openOptions ) );
+        return initialize( new MetaDataStore( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider, recordFormats, openOptions ) );
     }
 
     public void registerDiagnostics( DiagnosticsManager diagnosticsManager )

@@ -53,7 +53,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     {
         super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory(), recordFormats.relationshipTypeToken(),
-                recordFormats.storeVersion(), openOptions );
+                recordFormats, openOptions );
     }
 
     @Override

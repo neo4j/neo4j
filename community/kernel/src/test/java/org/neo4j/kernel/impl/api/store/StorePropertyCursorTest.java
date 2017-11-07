@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -825,7 +826,7 @@ public class StorePropertyCursorTest
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();
 
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, keyId, Values.of( value ), stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block, keyId, Values.of( value ), stringAllocator, arrayAllocator, RecordFormatSelector.defaultFormat() );
 
         PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block );
@@ -842,9 +843,9 @@ public class StorePropertyCursorTest
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();
 
         PropertyBlock block1 = new PropertyBlock();
-        PropertyStore.encodeValue( block1, keyId1, Values.of( value1 ), stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block1, keyId1, Values.of( value1 ), stringAllocator, arrayAllocator, RecordFormatSelector.defaultFormat() );
         PropertyBlock block2 = new PropertyBlock();
-        PropertyStore.encodeValue( block2, keyId2, Values.of( value2 ), stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block2, keyId2, Values.of( value2 ), stringAllocator, arrayAllocator, RecordFormatSelector.defaultFormat() );
 
         PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block1 );

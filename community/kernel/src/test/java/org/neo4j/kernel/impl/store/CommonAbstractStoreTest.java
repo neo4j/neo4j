@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -185,7 +186,7 @@ public class CommonAbstractStoreTest
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, config, IdType.NODE_LABELS,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
                 Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ),
-                recordFormats.dynamic(),recordFormats.storeVersion() ) )
+                recordFormats ) )
         {
             dynamicArrayStore.initialise( false );
         }
@@ -368,7 +369,7 @@ public class CommonAbstractStoreTest
                 OpenOption... openOptions )
         {
             super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
-                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
+                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, RecordFormatSelector.defaultFormat(), openOptions );
         }
 
         @Override

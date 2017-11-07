@@ -47,7 +47,7 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
         super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, recordFormats.relationshipGroup(),
                 new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
-                recordFormats.storeVersion(), openOptions );
+                recordFormats, openOptions );
     }
 
     @Override

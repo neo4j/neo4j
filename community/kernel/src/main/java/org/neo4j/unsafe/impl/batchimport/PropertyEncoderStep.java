@@ -74,7 +74,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
         RelativeIdRecordAllocator arrayAllocator = new RelativeIdRecordAllocator( arrayDataSize );
         IdSequence relativePropertyRecordIds = new BatchingIdSequence();
         PropertyCreator propertyCreator = new PropertyCreator( stringAllocator, arrayAllocator,
-                relativePropertyRecordIds, null );
+                relativePropertyRecordIds, null, propertyStore.getRecordFormats() );
         ArrayCollection<PropertyRecord> propertyRecordCollection = new ArrayCollection<>( 4 );
         BatchingPropertyRecordAccess propertyRecords = new BatchingPropertyRecordAccess();
         ReusableIteratorCostume<PropertyBlock> blockIterator = new ReusableIteratorCostume<>();

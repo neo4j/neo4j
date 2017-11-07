@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
@@ -71,6 +72,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
     protected final Log log;
+    protected final RecordFormats recordFormats;
     protected PagedFile storeFile;
     protected final String storeVersion;
     protected final RecordFormat<RECORD> recordFormat;
@@ -110,7 +112,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,
-            String storeVersion,
+            RecordFormats recordFormats,
             OpenOption... openOptions )
     {
         this.storageFileName = fileName;
@@ -121,7 +123,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.typeDescriptor = typeDescriptor;
         this.recordFormat = recordFormat;
         this.storeHeaderFormat = storeHeaderFormat;
-        this.storeVersion = storeVersion;
+        this.storeVersion = recordFormats.storeVersion();
+        this.recordFormats = recordFormats;
         this.openOptions = openOptions;
         this.log = logProvider.getLog( getClass() );
     }
@@ -1208,6 +1211,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public int getStoreHeaderInt()
     {
         return ((IntStoreHeader) storeHeader).value();
+    }
+
+    public RecordFormats getRecordFormats()
+    {
+        return recordFormats;
     }
 
     public abstract static class Configuration

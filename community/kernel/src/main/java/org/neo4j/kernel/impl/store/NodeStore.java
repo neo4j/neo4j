@@ -77,7 +77,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             OpenOption... openOptions )
     {
         super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.node(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
+                recordFormats.node(), NO_STORE_HEADER_FORMAT, recordFormats, openOptions );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

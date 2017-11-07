@@ -50,7 +50,7 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
                 pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion(), openOptions );
+                recordFormats, openOptions );
     }
 
     @Override

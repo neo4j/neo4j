@@ -555,7 +555,7 @@ public class NodeLabelsFieldTest
     private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
     {
         Collection<DynamicRecord> records = DynamicNodeLabels.allocateRecordsForDynamicLabels( nodeId, longs,
-                nodeStore.getDynamicLabelStore() );
+                nodeStore.getDynamicLabelStore(), nodeStore.getRecordFormats() );
         nodeStore.updateDynamicLabelRecords( records );
         return records;
     }

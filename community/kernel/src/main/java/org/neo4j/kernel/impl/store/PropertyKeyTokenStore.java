@@ -50,7 +50,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             OpenOption... openOptions )
     {
         super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                TYPE_DESCRIPTOR, new Token.Factory(), recordFormats.propertyKeyToken(), recordFormats.storeVersion(),
+                TYPE_DESCRIPTOR, new Token.Factory(), recordFormats.propertyKeyToken(), recordFormats,
                 openOptions );
     }
 

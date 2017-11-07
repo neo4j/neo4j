@@ -50,7 +50,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
     {
         super( file, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, TYPE_DESCRIPTOR, new Token.Factory(), recordFormats.labelToken(),
-                recordFormats.storeVersion(), openOptions );
+                recordFormats, openOptions );
     }
 
     @Override

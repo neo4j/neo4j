@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -45,7 +46,7 @@ import static org.mockito.Mockito.mock;
 public class PropertyCreatorTest
 {
     private final IdSequence idGenerator = new BatchingIdSequence();
-    private final PropertyCreator creator = new PropertyCreator( null, null, idGenerator, new PropertyTraverser() );
+    private final PropertyCreator creator = new PropertyCreator( null, null, idGenerator, new PropertyTraverser(), RecordFormatSelector.defaultFormat() );
 
     // The RecordAccess will take on the role of both store and tx state and the PropertyCreator
     // will know no difference
@@ -246,7 +247,7 @@ public class PropertyCreatorTest
         for ( ExpectedProperty initialProperty : initialRecord.properties )
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, initialProperty.key, initialProperty.value, null, null );
+            PropertyStore.encodeValue( block, initialProperty.key, initialProperty.value, null, null, RecordFormatSelector.defaultFormat() );
             record.addPropertyBlock( block );
         }
         assertTrue( record.size() <= PropertyType.getPayloadSize() );

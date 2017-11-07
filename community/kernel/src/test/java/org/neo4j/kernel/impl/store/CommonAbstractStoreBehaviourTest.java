@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -468,7 +469,7 @@ public class CommonAbstractStoreBehaviourTest
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
             super( new File( "store" ), config, IdType.NODE, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                    NullLogProvider.getInstance(), "T", format, format, "XYZ" );
+                    NullLogProvider.getInstance(), "T", format, format, RecordFormatSelector.defaultFormat() );
         }
 
         @Override

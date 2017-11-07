@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -63,11 +64,11 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
             String typeDescriptor,
             TokenFactory<TOKEN> tokenFactory,
             RecordFormat<RECORD> recordFormat,
-            String storeVersion,
+            RecordFormats recordFormats,
             OpenOption... openOptions )
     {
         super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
+                recordFormat, NO_STORE_HEADER_FORMAT, recordFormats, openOptions );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }

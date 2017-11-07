@@ -58,8 +58,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             RecordFormats recordFormats,
             OpenOption... openOptions )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
-                recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE, recordFormats, openOptions );
     }
 
     @Override

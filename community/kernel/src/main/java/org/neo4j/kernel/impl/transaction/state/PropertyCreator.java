@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -40,19 +41,21 @@ public class PropertyCreator
     private final DynamicRecordAllocator arrayRecordAllocator;
     private final IdSequence propertyRecordIdGenerator;
     private final PropertyTraverser traverser;
+    private final RecordFormats recordFormats;
 
     public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser )
     {
-        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser );
+        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.getRecordFormats() );
     }
 
     public PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator,
-            IdSequence propertyRecordIdGenerator, PropertyTraverser traverser )
+            IdSequence propertyRecordIdGenerator, PropertyTraverser traverser, RecordFormats recordFormats )
     {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
         this.propertyRecordIdGenerator = propertyRecordIdGenerator;
         this.traverser = traverser;
+        this.recordFormats = recordFormats;
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
@@ -192,7 +195,7 @@ public class PropertyCreator
 
     public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
-        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator );
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, recordFormats );
         return block;
     }
 

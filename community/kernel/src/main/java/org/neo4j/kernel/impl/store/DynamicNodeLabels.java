@@ -27,6 +27,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -112,7 +113,7 @@ public class DynamicNodeLabels implements NodeLabels
         {
             Iterator<DynamicRecord> recycledRecords = changedDynamicRecords.iterator();
             Collection<DynamicRecord> allocatedRecords = allocateRecordsForDynamicLabels( node.getId(), labelIds,
-                    new ReusableRecordsCompositeAllocator( recycledRecords, allocator ) );
+                    new ReusableRecordsCompositeAllocator( recycledRecords, allocator ), nodeStore.getRecordFormats() );
             // Set the rest of the previously set dynamic records as !inUse
             while ( recycledRecords.hasNext() )
             {
@@ -136,7 +137,7 @@ public class DynamicNodeLabels implements NodeLabels
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         Collection<DynamicRecord> changedDynamicRecords = allocateRecordsForDynamicLabels( node.getId(), newLabelIds,
-                new ReusableRecordsCompositeAllocator( existingRecords, allocator ) );
+                new ReusableRecordsCompositeAllocator( existingRecords, allocator ), nodeStore.getRecordFormats() );
         node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );
         return changedDynamicRecords;
     }
@@ -156,7 +157,7 @@ public class DynamicNodeLabels implements NodeLabels
         else
         {
             Collection<DynamicRecord> newRecords = allocateRecordsForDynamicLabels( node.getId(), newLabelIds,
-                    new ReusableRecordsCompositeAllocator( existingRecords, nodeStore.getDynamicLabelStore() ) );
+                    new ReusableRecordsCompositeAllocator( existingRecords, nodeStore.getDynamicLabelStore() ), nodeStore.getRecordFormats() );
             node.setLabelField( dynamicPointer( newRecords ), existingRecords );
             if ( !newRecords.equals( existingRecords ) )
             {   // One less dynamic record, mark that one as not in use
@@ -208,17 +209,17 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     public static Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
-            AbstractDynamicStore dynamicLabelStore )
+            AbstractDynamicStore dynamicLabelStore, RecordFormats recordFormats  )
     {
-        return allocateRecordsForDynamicLabels( nodeId, labels, (DynamicRecordAllocator)dynamicLabelStore );
+        return allocateRecordsForDynamicLabels( nodeId, labels, (DynamicRecordAllocator)dynamicLabelStore, recordFormats );
     }
 
     public static Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
-            DynamicRecordAllocator allocator )
+            DynamicRecordAllocator allocator, RecordFormats recordFormats )
     {
         long[] storedLongs = LabelIdArray.prependNodeId( nodeId, labels );
         Collection<DynamicRecord> records = new ArrayList<>();
-        DynamicArrayStore.allocateRecords( records, storedLongs, allocator );
+        DynamicArrayStore.allocateRecords( records, storedLongs, allocator, recordFormats );
         return records;
     }
 

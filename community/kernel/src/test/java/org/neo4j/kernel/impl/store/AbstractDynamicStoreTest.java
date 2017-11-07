@@ -144,7 +144,7 @@ public class AbstractDynamicStoreTest
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         AbstractDynamicStore store = new AbstractDynamicStore( fileName, Config.defaults(), IdType.ARRAY_BLOCK,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
-                formats.dynamic(), formats.storeVersion() )
+                formats )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.values.storable.Values;
@@ -174,7 +175,7 @@ public class PropertyRecordTest
     private static void addBlock( PropertyRecord record, int key, int value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, key, Values.of( value ), null, null );
+        PropertyStore.encodeValue( block, key, Values.of( value ), null, null, RecordFormatSelector.defaultFormat() );
         for ( long valueBlock : block.getValueBlocks() )
         {
             record.addLoadedBlock( valueBlock );
