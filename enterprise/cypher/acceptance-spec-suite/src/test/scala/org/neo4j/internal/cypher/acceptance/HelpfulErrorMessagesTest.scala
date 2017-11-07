@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.InvalidSemanticsException
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 
 class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -43,5 +44,15 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTe
   test("should provide sensible error message when trying to add multiple relationship types on merge") {
     val exception = intercept[SyntaxException](executeScalarWithAllPlannersAndRuntimes("MERGE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)"))
     exception.getMessage should include("A single relationship type must be specified for MERGE")
+  }
+
+  test("should provide sensible error message for invalid regex syntax together with index") {
+
+    graph.execute("CREATE (n:Person {text:'abcxxxdefyyyfff'})")
+
+    val exception = intercept[InvalidSemanticsException](
+     executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (x:Person) WHERE x.text =~ '*xxx*yyy*' RETURN x.text"))
+
+    exception.getMessage should include("Invalid Regex:")
   }
 }
