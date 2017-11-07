@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
@@ -39,7 +38,7 @@ public final class UTF8StringValue extends StringValue
     private final int offset;
     private final int byteLength;
 
-    public UTF8StringValue( byte[] bytes, int offset, int length )
+    UTF8StringValue( byte[] bytes, int offset, int length )
     {
         assert bytes != null;
         this.bytes = bytes;
@@ -58,7 +57,19 @@ public final class UTF8StringValue extends StringValue
     {
         if ( value instanceof UTF8StringValue )
         {
-            return Arrays.equals( bytes, ((org.neo4j.values.storable.UTF8StringValue) value).bytes );
+            UTF8StringValue other = (UTF8StringValue) value;
+            if ( byteLength != other.byteLength )
+            {
+                return false;
+            }
+            for ( int i = offset, j = other.offset; i < byteLength; i++, j++ )
+            {
+                if ( bytes[i] != other.bytes[j] )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         else
         {

@@ -70,6 +70,7 @@ public abstract class StringValue extends TextValue
     @Override
     public TextArray split( String separator )
     {
+        assert separator != null;
         String asString = value();
         //Cypher has different semantics for the case where the separator
         //is exactly the value, in cypher we expect two empty arrays
@@ -85,7 +86,17 @@ public abstract class StringValue extends TextValue
     @Override
     public TextValue replace( String find, String replace )
     {
+        assert find != null;
+        assert replace != null;
+
         return Values.stringValue( value().replace( find, replace ) );
+    }
+
+    @Override
+    public TextValue reverse()
+    {
+        StringBuilder stringBuilder = new StringBuilder( value() );
+        return Values.stringValue( stringBuilder.reverse().toString() );
     }
 
     @Override
@@ -132,7 +143,7 @@ public abstract class StringValue extends TextValue
             }
             k += Character.charCount( c1 );
         }
-        return length() - other.length();
+        return len1 - len2;
     }
 
     static TextValue EMTPY = new StringValue()
@@ -176,7 +187,7 @@ public abstract class StringValue extends TextValue
         @Override
         public int compareTo( TextValue other )
         {
-            return Integer.compare( 0, other.length() );
+            return -other.length();
         }
 
         @Override

@@ -161,6 +161,8 @@ public final class CharValue extends TextValue
     @Override
     public TextValue replace( String find, String replace )
     {
+        assert find != null;
+        assert replace != null;
         if ( stringValue().equals( find ) )
         {
             return Values.stringValue( replace );
@@ -169,6 +171,12 @@ public final class CharValue extends TextValue
         {
             return this;
         }
+    }
+
+    @Override
+    public TextValue reverse()
+    {
+        return this;
     }
 
     public char value()

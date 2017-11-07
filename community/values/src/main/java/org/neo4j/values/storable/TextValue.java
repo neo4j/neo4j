@@ -55,6 +55,8 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue replace( String find, String replace );
 
+    public abstract TextValue reverse();
+
     public abstract int compareTo( TextValue other );
 
     @Override

@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.nio.charset.StandardCharsets
 
 import org.neo4j.values.storable.TextValue
-import org.neo4j.values.storable.Values.{stringValue, utf8Value}
+import org.neo4j.values.storable.Values.{stringArray, stringValue, utf8Value}
 import org.scalacheck.{Properties, _}
 import org.scalatest.prop.Configuration
 
@@ -67,6 +67,40 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
   property("rtrim") = forAll { (x: String) =>
     equivalent(stringValue(x).rtrim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).rtrim())
   }
+
+  property("toLower") = forAll { (x: String) => {
+    val value = stringValue(x)
+    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(stringValue(x.toLowerCase), value.toLower) &&
+      equivalent(value.toLower, utf8.toLower)
+  }}
+
+  property("toUpper") = forAll { (x: String) => {
+    val value = stringValue(x)
+    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(stringValue(x.toUpperCase), value.toUpper) &&
+      equivalent(value.toUpper, utf8.toUpper)
+  }}
+
+  property("replace") = forAll { (x: String, find: String, replace: String) => {
+    val value = stringValue(x)
+    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(stringValue(x.replace(find, replace)), value.replace(find, replace)) &&
+      equivalent(value.replace(find, replace), utf8.replace(find, replace))
+  }}
+
+  property("split") = forAll { (x: String, find: String) => {
+    val value = stringValue(x)
+    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    val split = x.split(find)
+    if (x != find) {
+      stringArray(split: _*) == value.split(find) &&
+        value.split(find) == utf8.split(find)
+    } else {
+      value.split(find) == utf8.split(find) && value.split(find) == stringArray("", "")
+    }
+
+  }}
 
   property("compareTo") = forAll { (x: String, y: String) =>
     val stringX = stringValue(x)

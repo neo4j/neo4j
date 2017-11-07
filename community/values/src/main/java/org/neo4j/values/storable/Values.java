@@ -44,7 +44,7 @@ public final class Values
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
     public static final Value ZERO_INT = Values.longValue( 0 );
-    public static final Value MIN_STRING =  StringValue.EMTPY;
+    public static final Value MIN_STRING = StringValue.EMTPY;
     public static final Value MAX_STRING = Values.booleanValue( false );
     public static final BooleanValue TRUE = Values.booleanValue( true );
     public static final BooleanValue FALSE = Values.booleanValue( false );
