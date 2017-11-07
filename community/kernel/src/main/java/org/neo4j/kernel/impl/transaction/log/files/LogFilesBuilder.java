@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Dependencies;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
@@ -185,8 +187,23 @@ public class LogFilesBuilder
         }
         if ( config != null )
         {
-            File directory = config.get( GraphDatabaseSettings.logical_logs_location );
-            return !directory.isAbsolute() ? new File( storeDirectory, directory.getName() ) : directory;
+            File neo4jHome = config.get( GraphDatabaseSettings.neo4j_home );
+            File databasePath = config.get( database_path );
+            File logicalLogsLocation = config.get( GraphDatabaseSettings.logical_logs_location );
+            if ( storeDirectory.equals( neo4jHome ) && databasePath.equals( logicalLogsLocation ) )
+            {
+                return storeDirectory;
+            }
+            if ( logicalLogsLocation.isAbsolute() )
+            {
+                return logicalLogsLocation;
+            }
+            if ( neo4jHome == null || !storeDirectory.equals( databasePath ) )
+            {
+                Path relativeLogicalLogPath = databasePath.toPath().relativize( logicalLogsLocation.toPath() );
+                return new File( storeDirectory, relativeLogicalLogPath.toString() );
+            }
+            return logicalLogsLocation;
         }
         return storeDirectory;
     }

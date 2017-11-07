@@ -336,6 +336,11 @@ public class Settings
         return new FileSetting( name, defaultValue );
     }
 
+    public static Setting<File> pathSetting( String name, String defaultValue, Setting<File> relativeRoot )
+    {
+        return new FileSetting( name, defaultValue, relativeRoot );
+    }
+
     private static <T> BiFunction<String,Function<String, String>, String> inheritedValue(
             final BiFunction<String,Function<String,String>, String> lookup, final Setting<T> inheritedSetting )
     {
@@ -1322,11 +1327,18 @@ public class Settings
     {
         private final String name;
         private final String defaultValue;
+        private final Setting<File> relativeRoot;
 
         FileSetting( String name, String defaultValue )
         {
+            this( name, defaultValue, GraphDatabaseSettings.neo4j_home );
+        }
+
+        FileSetting( String name, String defaultValue, Setting<File> relativeRoot )
+        {
             this.name = name;
             this.defaultValue = defaultValue;
+            this.relativeRoot = relativeRoot;
         }
 
         @Override
@@ -1369,14 +1381,14 @@ public class Settings
             }
             else
             {
-                return new File( GraphDatabaseSettings.neo4j_home.apply( config ), setting );
+                return new File( relativeRoot.apply( config ), setting );
             }
         }
 
         @Override
         public String valueDescription()
         {
-            return "A filesystem path; relative paths are resolved against the installation root, _<neo4j-home>_";
+            return "A filesystem path; relative paths are resolved against the root, _<" + relativeRoot.name() + ">_";
         }
     }
 }

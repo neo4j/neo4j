@@ -64,7 +64,6 @@ import org.neo4j.causalclustering.messaging.RaftChannelInitializer;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
 import org.neo4j.com.storecopy.StoreUtil;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -105,7 +104,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
@@ -175,7 +173,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final LifeSupport life = platformModule.life;
         final Monitors monitors = platformModule.monitors;
 
-        final File dataDir = config.get( DatabaseManagementSystemSettings.data_directory );
+        final File dataDir = config.get( GraphDatabaseSettings.data_directory );
         final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
         try
         {

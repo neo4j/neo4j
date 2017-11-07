@@ -168,6 +168,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void copyToDirectory( File file, File toDirectory ) throws IOException
+    {
+        chooseFileSystem( file ).copyToDirectory( file, toDirectory );
+    }
+
+    @Override
     public void copyFile( File from, File to ) throws IOException
     {
         chooseFileSystem( from ).copyFile( from, to );

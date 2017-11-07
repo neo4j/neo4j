@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,7 +34,6 @@ import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -87,7 +85,7 @@ public class OnlineBackupCommandConfigLoaderTest
 
         // expect
         assertFalse( additionalConf.exists() );
-        subject.loadConfig( Optional.of( additionalConf.toPath() ) );
+        subject.loadConfig( Optional.of( additionalConf.toPath() ), homeDir );
     }
 
     @Test
@@ -103,7 +101,7 @@ public class OnlineBackupCommandConfigLoaderTest
         appendToFile( homeDirConfigFile, "causal_clustering.raft_in_queue_max_batch=21" );
 
         // when
-        Config config  = subject.loadConfig( Optional.empty() );
+        Config config  = subject.loadConfig( Optional.empty(), homeDir );
 
         // then
         assertEquals( Integer.valueOf( 4 ), config.get( CausalClusteringSettings.expected_core_cluster_size ) );
@@ -123,7 +121,7 @@ public class OnlineBackupCommandConfigLoaderTest
         appendToFile( additionalConfigFile, "causal_clustering.expected_core_cluster_size=5" );
 
         // when
-        Config config = subject.loadConfig( Optional.of( additionalConfigFile.toPath() ) );
+        Config config = subject.loadConfig( Optional.of( additionalConfigFile.toPath() ), homeDir );
 
         // then
         assertEquals( Integer.valueOf( 5 ), config.get( CausalClusteringSettings.expected_core_cluster_size ) );

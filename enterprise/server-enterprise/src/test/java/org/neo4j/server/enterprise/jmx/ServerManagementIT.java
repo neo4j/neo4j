@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -70,17 +69,17 @@ public class ServerManagementIT
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );
-        assertEquals( config.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath(),
+        assertEquals( config.get( GraphDatabaseSettings.database_path ).getAbsolutePath(),
                 server.getDatabase().getLocation().getAbsolutePath() );
 
         // Change the database location
-        config.augment( DatabaseManagementSystemSettings.data_directory, dataDirectory2 );
+        config.augment( GraphDatabaseSettings.data_directory, dataDirectory2 );
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 
         // Then
         assertNotNull( server.getDatabase().getGraph() );
-        assertEquals( config.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath(),
+        assertEquals( config.get( GraphDatabaseSettings.database_path ).getAbsolutePath(),
                 server.getDatabase().getLocation().getAbsolutePath() );
     }
 

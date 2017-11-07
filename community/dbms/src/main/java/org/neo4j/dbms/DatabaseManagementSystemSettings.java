@@ -21,35 +21,19 @@ package org.neo4j.dbms;
 
 import java.io.File;
 
-import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.pathSetting;
-import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class DatabaseManagementSystemSettings implements LoadableConfig
 {
-    @Description( "Name of the database to load" )
-    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" );
-
-    @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
-            "same data directory." )
-    public static final Setting<File> data_directory = pathSetting( "dbms.directories.data", "data" );
-
-    @Internal
-    public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
-            data_directory, active_database,
-            ( data, current ) -> new File( new File( data, "databases" ), current ),
-            PATH );
-
     @Internal
     public static final Setting<File> auth_store_directory = derivedSetting( "unsupported.dbms.directories.auth",
-            data_directory,
+            GraphDatabaseSettings.data_directory,
             data -> new File( data, "dbms" ),
             PATH );
 }

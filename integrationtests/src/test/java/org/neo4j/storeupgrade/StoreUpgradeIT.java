@@ -39,7 +39,6 @@ import java.util.Optional;
 import java.util.Properties;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -49,12 +48,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -171,15 +170,15 @@ public class StoreUpgradeIT
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File rootDir = testDir.directory();
-            File storeDir = Config.defaults( DatabaseManagementSystemSettings.data_directory, rootDir.toString() )
-                    .get( DatabaseManagementSystemSettings.database_path );
+            File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, rootDir.toString() )
+                    .get( GraphDatabaseSettings.database_path );
 
             store.prepareDirectory( storeDir );
 
             File configFile = new File( rootDir, Config.DEFAULT_CONFIG_FILE_NAME );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-            props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );
+            props.setProperty( GraphDatabaseSettings.data_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.logs_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );

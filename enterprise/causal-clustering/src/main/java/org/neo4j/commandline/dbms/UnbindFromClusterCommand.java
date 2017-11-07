@@ -31,7 +31,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -61,7 +61,7 @@ public class UnbindFromClusterCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
         return fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .withSetting( GraphDatabaseSettings.active_database, databaseName )
                 .withHome( homeDir ).build();
     }
 
@@ -71,8 +71,8 @@ public class UnbindFromClusterCommand implements AdminCommand
         try
         {
             Config config = loadNeo4jConfig( homeDir, configDir, arguments.parse( args ).get( "database" ) );
-            File dataDirectory = config.get( DatabaseManagementSystemSettings.data_directory );
-            Path pathToSpecificDatabase = config.get( DatabaseManagementSystemSettings.database_path ).toPath();
+            File dataDirectory = config.get( GraphDatabaseSettings.data_directory );
+            Path pathToSpecificDatabase = config.get( GraphDatabaseSettings.database_path ).toPath();
 
             boolean hasDatabase = true;
             try

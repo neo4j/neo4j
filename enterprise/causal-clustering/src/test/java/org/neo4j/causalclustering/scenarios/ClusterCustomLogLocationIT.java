@@ -69,7 +69,7 @@ public class ClusterCustomLogLocationIT
             LogFiles logFiles = dependencyResolver.resolveDependency( LogFiles.class );
             assertEquals( logFiles.logFilesDirectory().getName(), "core-tx-logs-" + coreClusterMember.serverId() );
             assertTrue( logFiles.hasAnyEntries( 0 ) );
-            File[] coreLogDirectories = coreClusterMember.homeDir().listFiles( file -> file.getName().startsWith( "core" ) );
+            File[] coreLogDirectories = coreClusterMember.storeDir().listFiles( file -> file.getName().startsWith( "core" ) );
             assertThat( coreLogDirectories, Matchers.arrayWithSize( 1 ) );
 
             logFileInStoreDirectoryDoesNotExist( coreClusterMember.storeDir(), dependencyResolver );
@@ -83,7 +83,7 @@ public class ClusterCustomLogLocationIT
             LogFiles logFiles = dependencyResolver.resolveDependency( LogFiles.class );
             assertEquals( logFiles.logFilesDirectory().getName(), "replica-tx-logs-" + readReplica.serverId() );
             assertTrue( logFiles.hasAnyEntries( 0 ) );
-            File[] replicaLogDirectories = readReplica.homeDir().listFiles( file -> file.getName().startsWith( "replica" ) );
+            File[] replicaLogDirectories = readReplica.storeDir().listFiles( file -> file.getName().startsWith( "replica" ) );
             assertThat( replicaLogDirectories, Matchers.arrayWithSize( 1 ) );
 
             logFileInStoreDirectoryDoesNotExist( readReplica.storeDir(), dependencyResolver );

@@ -32,9 +32,9 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 
@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.canonicalPath;
 import static org.neo4j.commandline.Util.checkLock;
 import static org.neo4j.commandline.Util.wrapIOException;
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 public class LoadCommand implements AdminCommand
 {
@@ -85,7 +85,7 @@ public class LoadCommand implements AdminCommand
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled()
-                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .withSetting( GraphDatabaseSettings.active_database, databaseName )
                 .build().get( database_path ).toPath();
     }
 

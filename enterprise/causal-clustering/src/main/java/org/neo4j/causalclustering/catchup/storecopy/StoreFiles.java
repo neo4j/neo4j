@@ -106,6 +106,7 @@ public class StoreFiles
 
     public void moveTo( File source, File target, LogFiles logFiles ) throws IOException
     {
+        fs.mkdirs( logFiles.logFilesDirectory() );
         for ( File candidate : fs.listFiles( source, fileFilter ) )
         {
             File destination = logFiles.isLogFile( candidate) ? logFiles.logFilesDirectory() : target;

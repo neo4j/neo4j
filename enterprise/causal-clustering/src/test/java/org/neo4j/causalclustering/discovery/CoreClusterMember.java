@@ -67,6 +67,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
     protected CoreGraphDatabase database;
+    private final Config memberConfig;
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -131,6 +132,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
+        memberConfig = Config.defaults( config );
 
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
@@ -154,7 +156,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     @Override
     public void start()
     {
-        database = new CoreGraphDatabase( storeDir, Config.defaults( config ),
+        database = new CoreGraphDatabase( storeDir, memberConfig,
                 GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
     }
 
@@ -177,6 +179,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public File storeDir()
     {
         return storeDir;
+    }
+
+    public Config getMemberConfig()
+    {
+        return memberConfig;
     }
 
     public RaftLogPruner raftLogPruner()

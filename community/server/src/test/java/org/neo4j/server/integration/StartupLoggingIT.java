@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -47,10 +46,8 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import static java.util.Arrays.asList;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
@@ -62,7 +59,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     @Before
     public void setUp() throws IOException
     {
-        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( DatabaseManagementSystemSettings.data_directory ) );
+        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( GraphDatabaseSettings.data_directory ) );
     }
 
     @Rule
@@ -111,7 +108,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         relativeProperties.put( bolt.enabled.name(), "true" );
         relativeProperties.put( bolt.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
 
-        relativeProperties.put( DatabaseManagementSystemSettings.database_path.name(),
+        relativeProperties.put( GraphDatabaseSettings.database_path.name(),
                 homeDir.absolutePath().getAbsolutePath() );
         return relativeProperties;
     }
