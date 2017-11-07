@@ -33,6 +33,10 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+/**
+ * For the PropertyStore format, check {@link PropertyStore}.
+ * For the array format, check {@link DynamicArrayStore}.
+ */
 public enum GeometryType
 {
     GEOMETRY_INVALID( 0, "Invalid" )
@@ -229,7 +233,7 @@ public enum GeometryType
         if ( coordinate.length > 3 )
         {
             // One property block can only contains at most 4x8 byte parts, one for header and 3 for coordinates
-            throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported in the PropertyStore" );
+            throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported" );
         }
 
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;

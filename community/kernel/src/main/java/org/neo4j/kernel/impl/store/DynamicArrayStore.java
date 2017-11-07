@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.storable.CRSTable;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -41,7 +43,43 @@ import org.neo4j.values.storable.Values;
 import static java.lang.System.arraycopy;
 
 /**
- * Dynamic store that stores strings.
+ * Dynamic store that stores arrays.
+ *
+ * Arrays are uniform collections of the same type. They can contain primitives, strings or Geometries.
+ * <ul>
+ *     <li>
+ *         Primitive arrays are stored using a 3 byte header followed by a byte[] of bit-compacted data. The header defines the format of the byte[]:
+ *         <ul>
+ *             <li>Byte 0: The type of the primitive being stored. See {@link PropertyType}</li>
+ *             <li>Byte 1: The number of bits used in the last byte</li>
+ *             <li>Byte 2: The number of bits required for each element of the data array (after compaction)</li>
+ *         </ul>
+ *         The total number of elements can be calculated by combining the information about the individual element size
+ *         (bits required - 3rd byte) with the length of the data specified in the DynamicRecordFormat.
+ *     </li>
+ *     <li>
+ *         Arrays of strings are stored using a 5 byte header:
+ *         <ul>
+ *             <li>Byte 0: PropertyType.STRING</li>
+ *             <li>Bytes 1 to 4: 32bit Int length of string array</li>
+ *         </ul>
+ *         This is followed by a byte[] composed of a 4 byte header containing the length of the byte[] representstion of the string, and then those bytes.
+ *     </li>
+ *     <li>
+ *         Arrays of Geometries starting with a 6 byte header:
+ *         <ul>
+ *             <li>Byte 0: PropertyType.GEOMETRY</li>
+ *             <li>Byte 1: GeometryType, currently only POINT is supported</li>
+ *             <li>Byte 2: The dimension of the geometry (currently only 2 or 3 dimensions are supported)</li>
+ *             <li>Byte 3: Coordinate Reference System Table id: {@link CRSTable}</li>
+ *             <li>Bytes 4-5: 16bit short Coordinate Reference System code: {@link CoordinateReferenceSystem}</li>
+ *         </ul>
+ *         The format of the body is specific to the type of Geometry being stored:
+ *         <ul>
+ *             <li>Points: Stored as double[] using the same format as primitive arrays above, starting with the 3 byte header (see above)</li>
+ *         </ul>
+ *     </li>
+ * </ul>
  */
 public class DynamicArrayStore extends AbstractDynamicStore
 {
