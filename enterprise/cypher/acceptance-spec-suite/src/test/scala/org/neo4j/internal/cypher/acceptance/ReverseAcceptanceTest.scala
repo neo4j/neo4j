@@ -72,4 +72,18 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // Then
     results should equal ("[487, 521, abc, 4923]")
   }
+
+  test("reverse should be able to concatenate to original list") {
+    // When
+    val query =
+      """
+        | WITH range(1, 2) AS xs
+        | RETURN xs + reverse(xs) AS res
+        | """.stripMargin
+
+    val results = graph.execute(query).columnAs("res").next().toString
+
+    // Then
+    results should equal("[1, 2, 2, 1]")
+  }
 }
