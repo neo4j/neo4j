@@ -135,7 +135,6 @@ LIMIT 0 should stop side effects
 Id on null
 type on null
 Shorthand case with filter should work as expected
-equality with boolean lists
 optional equality with boolean lists
 
 //OrderByAcceptance.feature - Unsupported orderability
