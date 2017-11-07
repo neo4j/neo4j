@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
@@ -30,6 +29,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, Not
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition, InternalException}
 import org.neo4j.cypher.internal.v3_4.executionplan.GeneratedQuery
 import org.scalatest.mock.MockitoSugar
 
@@ -48,7 +49,8 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                clock: Clock = Clock.systemUTC(),
                codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]]): EnterpriseRuntimeContext = {
       new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                                   monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, codeStructure)
+                                   monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, codeStructure,
+                                   new SingleThreadedExecutor())
     }
 
 }

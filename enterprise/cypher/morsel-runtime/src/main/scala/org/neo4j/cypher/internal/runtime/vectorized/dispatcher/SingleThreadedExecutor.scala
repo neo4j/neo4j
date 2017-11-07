@@ -1,6 +1,5 @@
 package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
@@ -9,12 +8,12 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
 
-class SingleThreadedExecutor(operators: Pipeline, queryContext: QueryContext, pipelineInformation: PipelineInformation,
-                             params: MapValue) {
+class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
 
-  private val MORSEL_SIZE = 100000
-
-  def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
+  override def execute[E <: Exception](operators: Pipeline,
+                                       queryContext: QueryContext,
+                                       params: MapValue)
+                                      (visitor: QueryResultVisitor[E]): Unit = {
     var leafOp = operators
     while (leafOp.dependency != NoDependencies) {
       leafOp = leafOp.dependency.pipeline
@@ -35,7 +34,7 @@ class SingleThreadedExecutor(operators: Pipeline, queryContext: QueryContext, pi
 
       while (jobStack.nonEmpty) {
         val (message, pipeline) = jobStack.pop()
-        val data = Morsel.create(pipeline.slotInformation, MORSEL_SIZE)
+        val data = Morsel.create(pipeline.slotInformation, morselSize)
         val continuation = pipeline.operate(message, data, queryContext, state)
         if (continuation != EndOfLoop(iteration)) {
           jobStack.push((ContinueLoopWith(continuation), pipeline))

@@ -24,9 +24,12 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseR
 import org.neo4j.cypher.internal.compatibility.v3_4.{Compatibility, CostCompatibility}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_4._
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{ForkJoinPoolExecutor, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.LogProvider
 
@@ -44,8 +47,15 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
       case (CypherPlanner.rule, _) => inner.create(spec, config)
 
       case _ =>
+        val settings = graph.getDependencyResolver.resolveDependency(classOf[Config])
+        val morselSize = settings.get( GraphDatabaseSettings.cypher_morsel_size)
+        val workers = settings.get( GraphDatabaseSettings.cypher_worker_count)
+        val dispatcher =
+          if (workers == 1) new SingleThreadedExecutor(morselSize)
+          else if (workers == 0) new ForkJoinPoolExecutor(morselSize, Runtime.getRuntime.availableProcessors() * 2)
+          else new ForkJoinPoolExecutor(morselSize, workers)
         CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog(getClass),
                           spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
-                          EnterpriseRuntimeContextCreator(GeneratedQueryStructure))
+                          EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher))
     }
 }

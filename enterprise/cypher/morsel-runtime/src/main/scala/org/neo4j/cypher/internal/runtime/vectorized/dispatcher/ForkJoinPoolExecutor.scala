@@ -12,9 +12,8 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
 
-object ForkJoinPoolExecutor {
-  lazy val forkJoinPool = new java.util.concurrent.ForkJoinPool(Runtime.getRuntime.availableProcessors() * 2)
-  private val MORSEL_SIZE = 10000
+class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
+  lazy val forkJoinPool = new java.util.concurrent.ForkJoinPool(workers)
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
@@ -70,7 +69,7 @@ object ForkJoinPoolExecutor {
   }
 
   private def execute(query: Query, pipeline: Pipeline, message: Message, queryContext: QueryContext, state: QueryState) = {
-    val data = Morsel.create(pipeline.slotInformation, MORSEL_SIZE)
+    val data = Morsel.create(pipeline.slotInformation, morselSize)
     val continuation = pipeline.operate(message, data, queryContext, state)
 
     pipeline.parent match {

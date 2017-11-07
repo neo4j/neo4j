@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, C
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{ForkJoinPoolExecutor, SingleThreadedExecutor}
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
@@ -53,9 +53,11 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     val converters: ExpressionConverters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
     val operatorBuilder = new PipelineBuilder(pipelines, converters)
     val operators = operatorBuilder.create(physicalPlan)
-    val singleThreaded = context.debugOptions.contains("singlethreaded")
+    val dispatcher =
+      if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
+      else context.dispatcher
     val fieldNames = from.statement().returnColumns.toArray
-    val execPlan = VectorizedExecutionPlan(singleThreaded, from.plannerName, operators, pipelines, physicalPlan, fieldNames)
+    val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames, dispatcher)
     new CompilationState(from, Some(execPlan))
   }
 
@@ -68,17 +70,18 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
   override def postConditions: Set[Condition] = Set.empty
 
-  case class VectorizedExecutionPlan(singleThreaded: Boolean,
-                                     plannerUsed: PlannerName,
+  case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
                                      pipelineInformation: Map[LogicalPlanId, PipelineInformation],
                                      physicalPlan: LogicalPlan,
-                                     fieldNames: Array[String]) extends executionplan.ExecutionPlan {
+                                     fieldNames: Array[String],
+                                     dispatcher: Dispatcher) extends executionplan.ExecutionPlan {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
 
-      new VectorizedOperatorExecutionResult(singleThreaded, operators, pipelineInformation, physicalPlan, queryContext, params, fieldNames, taskCloser)
+      new VectorizedOperatorExecutionResult(operators, pipelineInformation, physicalPlan, queryContext,
+                                            params, fieldNames, taskCloser, dispatcher)
     }
 
     override def isPeriodicCommit: Boolean = false
@@ -92,23 +95,18 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
 }
 
-class VectorizedOperatorExecutionResult(singleThreaded: Boolean,
-                                        operators: Pipeline,
+class VectorizedOperatorExecutionResult(operators: Pipeline,
                                         pipelineInformation: Map[LogicalPlanId, PipelineInformation],
                                         logicalPlan: LogicalPlan,
                                         queryContext: QueryContext,
                                         params: MapValue,
                                         override val fieldNames: Array[String],
-                                        taskCloser: TaskCloser) extends StandardInternalExecutionResult(queryContext, ProcedureRuntimeName, Some(taskCloser)) with IterateByAccepting {
+                                        taskCloser: TaskCloser,
+                                        dispatcher: Dispatcher) extends StandardInternalExecutionResult(queryContext, ProcedureRuntimeName, Some(taskCloser)) with IterateByAccepting {
 
 
+  override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = dispatcher.execute(operators, queryContext, params)(visitor)
 
-  override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
-    if (singleThreaded)
-      new SingleThreadedExecutor(operators, queryContext, pipelineInformation(logicalPlan.assignedId), params).accept(visitor)
-    else
-      ForkJoinPoolExecutor.execute(operators, queryContext, params)(visitor)
-  }
 
   override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
 
