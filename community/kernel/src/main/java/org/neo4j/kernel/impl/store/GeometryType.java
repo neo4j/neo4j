@@ -103,7 +103,8 @@ public enum GeometryType
                     }
                     else
                     {
-                        throw new RuntimeException( "Point array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: FloatingPointArray." );
+                        throw new RuntimeException(
+                                "Point array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: FloatingPointArray." );
                     }
                 }
             };
@@ -137,29 +138,35 @@ public enum GeometryType
         }
     }
 
+    private static final long GEOMETRY_TYPE_MASK =  0x00000000F0000000L;
+    private static final long DIMENSION_MASK =      0x0000000F00000000L;
+    private static final long CRS_TABLE_MASK =      0x000000F000000000L;
+    private static final long CRS_CODE_MASK =       0x00FFFF0000000000L;
+    private static final long PRECISION_MASK =      0x0100000000000000L;
+
     private static int getGeometryType( long firstBlock )
     {
-        return (int) ((firstBlock & 0x00000000F0000000L) >> 28);
+        return (int) ((firstBlock & GEOMETRY_TYPE_MASK) >> 28);
     }
 
     private static int getDimension( long firstBlock )
     {
-        return (int) ((firstBlock & 0x0000000F00000000L) >> 32);
+        return (int) ((firstBlock & DIMENSION_MASK) >> 32);
     }
 
     private static int getCRSTable( long firstBlock )
     {
-        return (int) ((firstBlock & 0x000000F000000000L) >> 36);
+        return (int) ((firstBlock & CRS_TABLE_MASK) >> 36);
     }
 
     private static int getCRSCode( long firstBlock )
     {
-        return (int) ((firstBlock & 0x00FFFF0000000000L) >> 40);
+        return (int) ((firstBlock & CRS_CODE_MASK) >> 40);
     }
 
     private static boolean isFloatPrecision( long firstBlock )
     {
-        return ((firstBlock & 0x0100000000000000L) >> 56) == 1;
+        return ((firstBlock & PRECISION_MASK) >> 56) == 1;
     }
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )
@@ -225,11 +232,13 @@ public enum GeometryType
             throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported in the PropertyStore" );
         }
 
-        long keyAndType = keyId | (((long) (PropertyType.GEOMETRY.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS));
-        long gtype_bits = GeometryType.GEOMETRY_POINT.gtype << (StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS + 4);
-        long dimension_bits = ((long) coordinate.length) << (StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS + 8);
-        long crsTableId_bits = ((long) crs.table.tableId) << (StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS + 12);
-        long crsCode_bits = ((long) crs.code) << (StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS + 16);
+        int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
+
+        long keyAndType = keyId | (((long) (PropertyType.GEOMETRY.intValue()) << idBits));
+        long gtype_bits = GeometryType.GEOMETRY_POINT.gtype << (idBits + 4);
+        long dimension_bits = ((long) coordinate.length) << (idBits + 8);
+        long crsTableId_bits = ((long) crs.table.getTableId()) << (idBits + 12);
+        long crsCode_bits = ((long) crs.code) << (idBits + 16);
 
         long[] data = new long[1 + coordinate.length];
         data[0] = keyAndType | gtype_bits | dimension_bits | crsTableId_bits | crsCode_bits;
@@ -286,7 +295,7 @@ public enum GeometryType
             bytes[0] = (byte) PropertyType.GEOMETRY.intValue();
             bytes[1] = (byte) geometryType;
             bytes[2] = (byte) dimension;
-            bytes[3] = (byte) crs.table.tableId;
+            bytes[3] = (byte) crs.table.getTableId();
             bytes[4] = (byte) (crs.code & 0xFFL);
             bytes[5] = (byte) (crs.code >> 8 & 0xFFL);
         }

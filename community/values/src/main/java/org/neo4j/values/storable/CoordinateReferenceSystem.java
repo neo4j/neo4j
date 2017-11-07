@@ -30,7 +30,7 @@ public class CoordinateReferenceSystem implements CRS
     {
         CRSTable table = CRSTable.find( tableId );
         // TODO this might break, since we are changing the name. Use the function below?
-        return new CoordinateReferenceSystem( table.name + "-" + code, table, code );
+        return new CoordinateReferenceSystem( table.getName() + "-" + code, table, code );
     }
 
     public static CoordinateReferenceSystem get( CRS crs )

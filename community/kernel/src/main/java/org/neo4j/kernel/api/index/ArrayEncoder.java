@@ -133,7 +133,7 @@ public final class ArrayEncoder
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
         {
-            builder.append( crs.table.tableId );
+            builder.append( crs.table.getTableId() );
             builder.append( ':' );
             builder.append( crs.code );
             builder.append( ':' );

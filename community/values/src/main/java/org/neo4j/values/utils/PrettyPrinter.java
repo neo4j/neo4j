@@ -20,6 +20,7 @@
 package org.neo4j.values.utils;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 
 import org.neo4j.values.AnyValueWriter;
@@ -154,16 +155,9 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     @Override
     public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
     {
-        append( "{geometry: {type: \"Point\", coordinates: [" );
-        for ( int i = 0; i < coordinate.length; i++ )
-        {
-            append( Double.toString( coordinate[i] ) );
-            if ( i != coordinate.length - 1 )
-            {
-                append( ", " );
-            }
-        }
-        append( "], crs: {type: link, properties: {href: \"" );
+        append( "{geometry: {type: \"Point\", coordinates: " );
+        append( Arrays.toString(coordinate) );
+        append( ", crs: {type: link, properties: {href: \"" );
         append( crs.href );
         append( "\", code: " );
         append( Integer.toString( crs.code ) );
