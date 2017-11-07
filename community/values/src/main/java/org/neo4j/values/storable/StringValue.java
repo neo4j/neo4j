@@ -93,13 +93,6 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
-    public TextValue reverse()
-    {
-        StringBuilder stringBuilder = new StringBuilder( value() );
-        return Values.stringValue( stringBuilder.reverse().toString() );
-    }
-
-    @Override
     public Object asObjectCopy()
     {
         return value();
@@ -182,6 +175,37 @@ public abstract class StringValue extends TextValue
         public TextValue rtrim()
         {
             return this;
+        }
+
+        @Override
+        public TextValue reverse()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue toLower()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue toUpper()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue replace( String find, String replace )
+        {
+            if ( find.isEmpty() )
+            {
+                return Values.stringValue( replace );
+            }
+            else
+            {
+                return this;
+            }
         }
 
         @Override

@@ -56,6 +56,8 @@ public class TextValueTest
         assertThat( value.apply( "hello" ).replace( "l", "w" ), equalTo( value.apply( "hewwo" ) ) );
         assertThat( value.apply( "hello" ).replace( "ell", "ipp" ), equalTo( value.apply( "hippo" ) ) );
         assertThat( value.apply( "hello" ).replace( "a", "x" ), equalTo( value.apply( "hello" ) ) );
+        assertThat( value.apply( "hello" ).replace( "e", "" ), equalTo( value.apply( "hllo" ) ) );
+        assertThat( value.apply( "" ).replace( "", "⁻" ), equalTo( value.apply( "⁻" ) ) );
     }
 
     @Test
@@ -68,10 +70,10 @@ public class TextValueTest
         assertThat( value.apply( "0123456789" ).substring( 1 ), equalTo( value.apply( "123456789" ) ) );
         assertThat( value.apply( "0123456789" ).substring( 5 ), equalTo( value.apply( "56789" ) ) );
         assertThat( value.apply( "0123456789" ).substring( 15 ), equalTo( StringValue.EMTPY ) );
-        assertThat( value.apply( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21" ).substring( 1, 1 ),
-                equalTo( value.apply( "\uD83D\uDE21" ) ) );
-        assertThat( value.apply( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21" ).substring( 1, 2 ),
-                equalTo( value.apply( "\uD83D\uDE21\uD83D\uDE21" ) ) );
+        assertThat( value.apply( "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B" ).substring( 1, 1 ),
+                equalTo( value.apply( "\uD83D\uDCA9" ) ) );
+        assertThat( value.apply( "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B" ).substring( 1, 2 ),
+                equalTo( value.apply( "\uD83D\uDCA9\uD83D\uDC7B" ) ) );
 
         exception.expect( IndexOutOfBoundsException.class );
         value.apply( "hello" ).substring( -4, 2 );
@@ -83,6 +85,7 @@ public class TextValueTest
         assertThat( value.apply( "HELLO" ).toLower(), equalTo( value.apply( "hello" ) ) );
         assertThat( value.apply( "Hello" ).toLower(), equalTo( value.apply( "hello" ) ) );
         assertThat( value.apply( "hello" ).toLower(), equalTo( value.apply( "hello" ) ) );
+        assertThat( value.apply( "" ).toLower(), equalTo( value.apply( "" ) ) );
     }
 
     @Test
@@ -91,6 +94,7 @@ public class TextValueTest
         assertThat( value.apply( "HELLO" ).toUpper(), equalTo( value.apply( "HELLO" ) ) );
         assertThat( value.apply( "Hello" ).toUpper(), equalTo( value.apply( "HELLO" ) ) );
         assertThat( value.apply( "hello" ).toUpper(), equalTo( value.apply( "HELLO" ) ) );
+        assertThat( value.apply( "" ).toUpper(), equalTo( value.apply( "" ) ) );
     }
 
     @Test
@@ -124,11 +128,15 @@ public class TextValueTest
     @Test
     public void reverse()
     {
-//        assertThat( value.apply( "Foo" ).reverse(), equalTo( value.apply( "ooF" ) ) );
-//        assertThat( value.apply( "" ).reverse(), equalTo( StringValue.EMTPY ) );
-//        assertThat( value.apply( " L" ).reverse(), equalTo( value.apply( "L " ) ) );
-//        assertThat( value.apply( "\r\n" ).reverse(), equalTo( value.apply( "\n\r" ) ) );
+        assertThat( value.apply( "Foo" ).reverse(), equalTo( value.apply( "ooF" ) ) );
+        assertThat( value.apply( "" ).reverse(), equalTo( StringValue.EMTPY ) );
+        assertThat( value.apply( " L" ).reverse(), equalTo( value.apply( "L " ) ) );
+        assertThat( value.apply( "\r\n" ).reverse(), equalTo( value.apply( "\n\r" ) ) );
         assertThat( value.apply( "\uD801\uDC37" ).reverse(), equalTo( value.apply( "\uD801\uDC37" ) ) );
+        assertThat( value.apply( "This is literally a pile of crap \uD83D\uDCA9, it is fantastic" ).reverse(),
+                equalTo( value.apply( "citsatnaf si ti ,\uD83D\uDCA9 parc fo elip a yllaretil si sihT" ) ) );
+        assertThat( value.apply( "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B" ).reverse(), equalTo( value.apply(
+                "\uD83D\uDC7B\uD83D\uDCA9\uD83D\uDE21" ) ) );
     }
 
     @Test
@@ -137,5 +145,7 @@ public class TextValueTest
         assertThat( value.apply( "HELLO" ).split( "LL" ), equalTo( stringArray( "HE", "O" ) ) );
         assertThat( value.apply( "Separating,by,comma,is,a,common,use,case" ).split( "," ),
                 equalTo( stringArray( "Separating", "by", "comma", "is", "a", "common", "use", "case" ) ) );
+        assertThat( value.apply( "HELLO" ).split( "HELLO" ), equalTo( stringArray( "", "" ) ) );
+
     }
 }

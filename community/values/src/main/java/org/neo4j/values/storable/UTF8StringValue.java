@@ -284,7 +284,6 @@ public final class UTF8StringValue extends StringValue
 
         int i = offset, len = offset + byteLength;
         byte[] newValues = new byte[byteLength];
-        int newIndex = byteLength -1;
         while ( i < len )
         {
             byte b = values[i];
@@ -292,8 +291,9 @@ public final class UTF8StringValue extends StringValue
             //we are dealing with an ascii value and use a single byte for storing the value.
             if ( b >= 0 )
             {
-                newValues[newIndex] = b;
-                newIndex--;
+                //a single byte is trivial to reverse
+                //just put it at the opposite end of the new array
+                newValues[len - 1 - i] = b;
                 i++;
                 continue;
             }
@@ -310,9 +310,11 @@ public final class UTF8StringValue extends StringValue
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            System.arraycopy( values, i, newValues, newIndex - bytesNeeded + 1, bytesNeeded );
+            //reversing when multiple bytes are needed for the code point we cannot just reverse
+            //since we need to preserve the code point while moving it,
+            //e.g. [A, b1,b2, B] -> [B, b1,b2, A]
+            System.arraycopy( values, i, newValues, len - i - bytesNeeded, bytesNeeded );
             i += bytesNeeded;
-            newIndex -= bytesNeeded;
         }
 
         return new UTF8StringValue( newValues, 0, newValues.length );

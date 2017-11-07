@@ -88,25 +88,33 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
       equivalent(value.toUpper, utf8.toUpper)
   }}
 
-  property("replace") = forAll { (x: String, find: String, replace: String) => {
-    val value = stringValue(x)
-    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
-    equivalent(stringValue(x.replace(find, replace)), value.replace(find, replace)) &&
-      equivalent(value.replace(find, replace), utf8.replace(find, replace))
-  }}
+  private val replaceGen = for {x <- Arbitrary.arbitrary[String]
+                              find <-Gen.alphaStr
+                              replace <- Arbitrary.arbitrary[String]} yield (x,find, replace)
+  property("replace") = forAll(replaceGen) {
+    case (x: String, find: String, replace: String) =>
+      val value = stringValue(x)
+      val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+      equivalent(stringValue(x.replace(find, replace)), value.replace(find, replace)) &&
+        equivalent(value.replace(find, replace), utf8.replace(find, replace))
+  }
 
-  property("split") = forAll { (x: String, find: String) => {
-    val value = stringValue(x)
-    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
-    val split = x.split(find)
-    if (x != find) {
-      stringArray(split: _*) == value.split(find) &&
-        value.split(find) == utf8.split(find)
-    } else {
-      value.split(find) == utf8.split(find) && value.split(find) == stringArray("", "")
-    }
+  private val splitGen = for {x <- Arbitrary.arbitrary[String]
+                              find <-Gen.alphaStr} yield (x,find)
 
-  }}
+  property("split") = forAll(splitGen)  {
+    case (x, find) =>
+      val value = stringValue(x)
+      val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+      val split = x.split(find)
+      if (x != find) {
+        stringArray(split: _*) == value.split(find) &&
+          value.split(find) == utf8.split(find)
+      } else {
+        value.split(find) == utf8.split(find) && value.split(find) == stringArray("", "")
+      }
+
+  }
 
   property("compareTo") = forAll { (x: String, y: String) =>
     val stringX = stringValue(x)

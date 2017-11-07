@@ -95,6 +95,13 @@ final class StringWrappingStringValue extends StringValue
         return Values.stringValue( value.substring( 0, end ) );
     }
 
+    @Override
+    public TextValue reverse()
+    {
+        StringBuilder stringBuilder = new StringBuilder( value() );
+        return Values.stringValue( stringBuilder.reverse().toString() );
+    }
+
     private int ltrimIndex( String value )
     {
         int start = 0, length = value.length();
