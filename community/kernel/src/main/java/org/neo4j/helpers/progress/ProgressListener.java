@@ -39,47 +39,41 @@ public interface ProgressListener
 
     void failed( Throwable e );
 
-    abstract class Adapter implements ProgressListener
+    class Adapter implements ProgressListener
     {
         @Override
         public void started()
         {
             started( null );
         }
-    }
 
-    ProgressListener NONE = new Adapter()
-    {
         @Override
         public void started( String task )
         {
-            // do nothing
         }
 
         @Override
         public void set( long progress )
         {
-            // do nothing
         }
 
         @Override
         public void add( long progress )
         {
-            // do nothing
         }
 
         @Override
         public void done()
         {
-            // do nothing
         }
 
         @Override
         public void failed( Throwable e )
         {
-            // do nothing
         }
-    };
+    }
+
+    ProgressListener NONE = new Adapter();
 
     class SinglePartProgressListener extends Adapter
     {
@@ -134,34 +128,6 @@ public interface ProgressListener
         {
             started();
             int current = totalCount == 0 ? 0 : (int) ((progress * indicator.reportResolution()) / totalCount);
-            if ( current > lastReported )
-            {
-                indicator.progress( lastReported, current );
-                lastReported = current;
-            }
-        }
-    }
-
-    final class OpenEndedProgressListener extends SinglePartProgressListener
-    {
-        private int lastReported;
-
-        OpenEndedProgressListener( Indicator indicator )
-        {
-            super( indicator, 0 );
-        }
-
-        @Override
-        public void done()
-        {
-            indicator.completeProcess();
-        }
-
-        @Override
-        void update( long progress )
-        {
-            started();
-            int current = (int) (progress / indicator.reportResolution());
             if ( current > lastReported )
             {
                 indicator.progress( lastReported, current );

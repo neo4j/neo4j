@@ -21,6 +21,7 @@ package org.neo4j.helpers.progress;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -47,19 +48,25 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class ProgressMonitorTest
 {
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
+    @Rule
+    public final TestName testName = new TestName();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public final SingleIndicator factory = new SingleIndicator();
 
     @Test
     public void shouldReportProgressInTheSpecifiedIntervals() throws Exception
@@ -139,44 +146,26 @@ public class ProgressMonitorTest
     @Test
     public void shouldNotAllowAddingPartsAfterCompletingMultiPartBuilder() throws Exception
     {
-        // given
         ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicatorMock(), 10 )
                                                    .multipleParts( testName.getMethodName() );
         builder.progressForPart( "first", 10 );
         builder.build();
 
-        // when
-        try
-        {
-            builder.progressForPart( "other", 10 );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IllegalStateException expected )
-        {
-            assertEquals( "Builder has been completed.", expected.getMessage() );
-        }
+        expected.expect( IllegalStateException.class );
+        expected.expectMessage( "Builder has been completed." );
+        builder.progressForPart( "other", 10 );
     }
 
     @Test
     public void shouldNotAllowAddingMultiplePartsWithSameIdentifier() throws Exception
     {
-        // given
         ProgressMonitorFactory.MultiPartBuilder builder = Mockito.mock( ProgressMonitorFactory.class )
                                                    .multipleParts( testName.getMethodName() );
         builder.progressForPart( "first", 10 );
 
-        // when
-        try
-        {
-            builder.progressForPart( "first", 10 );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IllegalArgumentException expected )
-        {
-            assertEquals( "Part 'first' has already been defined.", expected.getMessage() );
-        }
+        expected.expect( IllegalArgumentException.class );
+        expected.expectMessage( "Part 'first' has already been defined." );
+        builder.progressForPart( "first", 10 );
     }
 
     @Test
@@ -330,66 +319,6 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldPassThroughAllInvocationsOnDecorator() throws Exception
-    {
-        // given
-        Indicator decorated = mock( Indicator.class );
-        Indicator decorator = new Indicator.Decorator( decorated )
-        {
-        };
-
-        // when
-        decorator.startProcess( 4 );
-        // then
-        verify( decorated ).startProcess( 4 );
-
-        // when
-        decorator.startPart( "part1", 2 );
-        // then
-        verify( decorated ).startPart( "part1", 2 );
-
-        // when
-        decorator.progress( 0, 1 );
-        // then
-        verify( decorated ).progress( 0, 1 );
-
-        // when
-        decorator.startPart( "part2", 2 );
-        // then
-        verify( decorated ).startPart( "part2", 2 );
-
-        // when
-        decorator.progress( 1, 2 );
-        // then
-        verify( decorated ).progress( 1, 2 );
-
-        // when
-        decorator.completePart( "part1" );
-        // then
-        verify( decorated ).completePart( "part1" );
-
-        // when
-        decorator.progress( 2, 3 );
-        // then
-        verify( decorated ).progress( 2, 3 );
-
-        // when
-        decorator.completePart( "part2" );
-        // then
-        verify( decorated ).completePart( "part2" );
-
-        // when
-        decorator.progress( 3, 4 );
-        // then
-        verify( decorated ).progress( 3, 4 );
-
-        // when
-        decorator.completeProcess();
-        // then
-        verify( decorated ).completeProcess();
-    }
-
-    @Test
     public void shouldBeAbleToAwaitCompletionOfMultiPartProgress() throws Exception
     {
         // given
@@ -470,17 +399,9 @@ public class ProgressMonitorTest
         part2.failed( new RuntimeException( "failure in one of the jobs" ) );
 
         // neither job completes
-
-        try
-        {
-            completion.await( 1, TimeUnit.MILLISECONDS );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( ProcessFailureException expected )
-        {
-            assertEquals( "failure in one of the jobs", expected.getCause().getMessage() );
-        }
+        expected.expect( ProcessFailureException.class );
+        expected.expectMessage( "failure in one of the jobs" );
+        completion.await( 1, TimeUnit.MILLISECONDS );
     }
 
     @Test
@@ -489,17 +410,9 @@ public class ProgressMonitorTest
         ProgressMonitorFactory.MultiPartBuilder builder = ProgressMonitorFactory.NONE.multipleParts( testName.getMethodName() );
         Completion completion = builder.build();
 
-        // when
-        try
-        {
-            completion.notify( null );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IllegalArgumentException expected )
-        {
-            assertEquals( "callback may not be null", expected.getMessage() );
-        }
+        expected.expect( IllegalArgumentException.class );
+        expected.expectMessage( "callback may not be null" );
+        completion.notify( null );
     }
 
     @Test
@@ -547,65 +460,6 @@ public class ProgressMonitorTest
         order.verify( indicator ).completeProcess();
     }
 
-    @Test
-    public void shouldAllowOpenEndedProgressListeners() throws Exception
-    {
-        // given
-        Indicator.OpenEnded indicator = mock( Indicator.OpenEnded.class );
-        ProgressListener progress = factory.mock( indicator ).openEnded( testName.getMethodName(), 10 );
-
-        // when
-        for ( int i = 0; i < 20; i++ )
-        {
-            progress.add( 5 );
-        }
-        progress.done();
-
-        // then
-        verify( indicator, atLeast( 1 ) ).reportResolution();
-        InOrder order = inOrder( indicator );
-        order.verify( indicator ).startProcess( 0 );
-        for ( int i = 0; i < 10; i++ )
-        {
-            order.verify( indicator ).progress( i, i + 1 );
-        }
-        order.verify( indicator ).completeProcess();
-        verifyNoMoreInteractions( indicator );
-    }
-
-    @Test
-    public void shouldReportOpenEndedProgressInANiceWay() throws Exception
-    {
-        // given
-        StringWriter buffer = new StringWriter();
-        ProgressListener progress = ProgressMonitorFactory.textual( buffer ).openEnded( testName.getMethodName(), 10 );
-
-        // when
-        for ( int i = 0; i < 25; i++ )
-        {
-            progress.add( 50 );
-        }
-        progress.done();
-
-        // then
-        assertEquals( String.format(
-                testName.getMethodName() + "%n" +
-                "....................     200%n" +
-                "....................     400%n" +
-                "....................     600%n" +
-                "....................     800%n" +
-                "....................    1000%n" +
-                "....................    1200%n" +
-                ".....                   done%n" ), buffer.toString() );
-    }
-
-    @Rule
-    public final TestName testName = new TestName();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public final SingleIndicator factory = new SingleIndicator();
-
     private static class SingleIndicator implements TestRule
     {
         ProgressMonitorFactory mock( Indicator indicatorMock, int indicatorSteps )
@@ -614,18 +468,6 @@ public class ProgressMonitorTest
             ProgressMonitorFactory factory = Mockito.mock( ProgressMonitorFactory.class );
             when( factory.newIndicator( any( String.class ) ) ).thenReturn( indicatorMock );
             factoryMocks.put( factory, false );
-            return factory;
-        }
-
-        ProgressMonitorFactory mock( final Indicator.OpenEnded indicatorMock )
-        {
-            ProgressMonitorFactory factory = Mockito.mock( ProgressMonitorFactory.class );
-            when( factory.newOpenEndedIndicator( any( String.class ), anyInt() ) ).thenAnswer( invocation ->
-            {
-                when( indicatorMock.reportResolution() ).thenReturn( invocation.getArgument(1) );
-                return indicatorMock;
-            } );
-            factoryMocks.put( factory, true );
             return factory;
         }
 
@@ -642,15 +484,7 @@ public class ProgressMonitorTest
                     base.evaluate();
                     for ( Map.Entry<ProgressMonitorFactory,Boolean> factoryMock : factoryMocks.entrySet() )
                     {
-                        if ( factoryMock.getValue() )
-                        {
-                            verify( factoryMock.getKey(), times( 1 ) ).newOpenEndedIndicator( any( String.class ),
-                                                                                              anyInt() );
-                        }
-                        else
-                        {
-                            verify( factoryMock.getKey(), times( 1 ) ).newIndicator( any( String.class ) );
-                        }
+                        verify( factoryMock.getKey(), times( 1 ) ).newIndicator( any( String.class ) );
                     }
                 }
             };
