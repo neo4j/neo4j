@@ -76,7 +76,6 @@ public abstract class ProgressMonitorFactory
     {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<>();
-        private Completion completion;
 
         private MultiPartBuilder( ProgressMonitorFactory factory, String process )
         {
@@ -118,15 +117,14 @@ public abstract class ProgressMonitorFactory
             }
         }
 
-        public Completion build()
+        public void build()
         {
             if ( aggregator != null )
             {
-                completion = aggregator.initialize();
+                aggregator.initialize();
             }
             aggregator = null;
             parts = null;
-            return completion;
         }
     }
 }

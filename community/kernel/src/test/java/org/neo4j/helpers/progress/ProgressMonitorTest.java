@@ -34,27 +34,18 @@ import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.neo4j.helpers.ProcessFailureException;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.lang.System.lineSeparator;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class ProgressMonitorTest
@@ -316,122 +307,6 @@ public class ProgressMonitorTest
         // then
         assertEquals( testName.getMethodName() + lineSeparator() + EXPECTED_TEXTUAL_OUTPUT,
                       writer.toString() );
-    }
-
-    @Test
-    public void shouldBeAbleToAwaitCompletionOfMultiPartProgress() throws Exception
-    {
-        // given
-        ProgressMonitorFactory.MultiPartBuilder builder = ProgressMonitorFactory.NONE.multipleParts( testName.getMethodName() );
-        ProgressListener part1 = builder.progressForPart( "part1", 1 );
-        ProgressListener part2 = builder.progressForPart( "part2", 1 );
-        final Completion completion = builder.build();
-
-        // when
-        final CountDownLatch begin = new CountDownLatch( 1 );
-        final CountDownLatch end = new CountDownLatch( 1 );
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                begin.countDown();
-                try
-                {
-                    completion.await( 10, SECONDS );
-                }
-                catch ( Exception e )
-                {
-                    return; // do not count down the end latch
-                }
-                end.countDown();
-            }
-        }.start();
-        Runnable callback = mock( Runnable.class );
-        completion.notify( callback );
-        assertTrue( begin.await( 10, SECONDS ) );
-
-        // then
-        verifyZeroInteractions( callback );
-
-        // when
-        try
-        {
-            completion.await( 1, TimeUnit.MILLISECONDS );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( TimeoutException expected )
-        {
-            assertEquals( "Process did not complete within 1 MILLISECONDS.", expected.getMessage() );
-        }
-
-        // when
-        part1.done();
-        // then
-        verifyZeroInteractions( callback );
-
-        // when
-        part2.done();
-        // then
-        verify( callback ).run();
-        completion.await( 0, TimeUnit.NANOSECONDS ); // should not have to wait
-        assertTrue( end.await( 10, SECONDS ) ); // should have been completed
-
-        // when
-        callback = mock( Runnable.class );
-        completion.notify( callback );
-        verify( callback ).run();
-    }
-
-    @Test
-    public void shouldReturnToCompletionWaiterWhenFirstJobFails() throws Exception
-    {
-        // given
-        ProgressMonitorFactory.MultiPartBuilder builder = ProgressMonitorFactory.NONE.multipleParts( testName.getMethodName() );
-        ProgressListener part1 = builder.progressForPart( "part1", 1 );
-        ProgressListener part2 = builder.progressForPart( "part2", 1 );
-        final Completion completion = builder.build();
-
-        // when
-        part1.started();
-        part2.started();
-        part2.failed( new RuntimeException( "failure in one of the jobs" ) );
-
-        // neither job completes
-        expected.expect( ProcessFailureException.class );
-        expected.expectMessage( "failure in one of the jobs" );
-        completion.await( 1, TimeUnit.MILLISECONDS );
-    }
-
-    @Test
-    public void shouldNotAllowNullCompletionCallbacks() throws Exception
-    {
-        ProgressMonitorFactory.MultiPartBuilder builder = ProgressMonitorFactory.NONE.multipleParts( testName.getMethodName() );
-        Completion completion = builder.build();
-
-        expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( "callback may not be null" );
-        completion.notify( null );
-    }
-
-    @Test
-    public void shouldInvokeAllCallbacksEvenWhenOneThrowsException() throws Exception
-    {
-        // given
-        ProgressMonitorFactory.MultiPartBuilder builder = ProgressMonitorFactory.NONE.multipleParts( testName.getMethodName() );
-        ProgressListener progressListener = builder.progressForPart( "only part", 1 );
-        Completion completion = builder.build();
-        Runnable callback = mock( Runnable.class );
-        doThrow( new RuntimeException( "on purpose" ) ).doNothing().when( callback ).run();
-        completion.notify( callback );
-        completion.notify( callback );
-
-        // when
-        progressListener.done();
-
-        // then
-        verify( callback, times( 2 ) ).run();
     }
 
     @Test

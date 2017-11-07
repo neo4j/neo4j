@@ -184,7 +184,7 @@ public interface ProgressListener
         @Override
         public void failed( Throwable e )
         {
-            aggregator.signalFailure( part, e );
+            aggregator.signalFailure( e );
         }
 
         private void update( long progress )

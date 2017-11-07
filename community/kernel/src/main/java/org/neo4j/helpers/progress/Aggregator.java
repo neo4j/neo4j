@@ -19,8 +19,8 @@
  */
 package org.neo4j.helpers.progress;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
@@ -28,8 +28,7 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class Aggregator
 {
-    private final Map<ProgressListener, ProgressListener.MultiPartProgressListener.State> states =
-            new ConcurrentHashMap<>();
+    private final Map<ProgressListener, ProgressListener.MultiPartProgressListener.State> states = new HashMap<>();
     private final Indicator indicator;
     @SuppressWarnings( "unused"/*accessed through updater*/ )
     private volatile long progress;
@@ -39,7 +38,6 @@ final class Aggregator
     private static final AtomicIntegerFieldUpdater<Aggregator> LAST =
             AtomicIntegerFieldUpdater.newUpdater( Aggregator.class, "last" );
     private long totalCount;
-    private final Completion completion = new Completion();
 
     Aggregator( Indicator indicator )
     {
@@ -52,7 +50,7 @@ final class Aggregator
         this.totalCount += totalCount;
     }
 
-    synchronized Completion initialize()
+    synchronized void initialize()
     {
         indicator.startProcess( totalCount );
         if ( states.isEmpty() )
@@ -60,7 +58,6 @@ final class Aggregator
             indicator.progress( 0, indicator.reportResolution() );
             indicator.completeProcess();
         }
-        return completion;
     }
 
     void update( long delta )
@@ -79,16 +76,15 @@ final class Aggregator
         }
     }
 
-    void start( ProgressListener.MultiPartProgressListener part )
+    synchronized void start( ProgressListener.MultiPartProgressListener part )
     {
-        if ( states.put( part, ProgressListener.MultiPartProgressListener.State.LIVE ) == ProgressListener
-                .MultiPartProgressListener.State.INIT )
+        if ( states.put( part, ProgressListener.MultiPartProgressListener.State.LIVE ) == ProgressListener.MultiPartProgressListener.State.INIT )
         {
             indicator.startPart( part.part, part.totalCount );
         }
     }
 
-    void complete( ProgressListener.MultiPartProgressListener part )
+    synchronized void complete( ProgressListener.MultiPartProgressListener part )
     {
         if ( states.remove( part ) != null )
         {
@@ -96,13 +92,12 @@ final class Aggregator
             if ( states.isEmpty() )
             {
                 indicator.completeProcess();
-                completion.complete();
             }
         }
     }
 
-    public void signalFailure( String part, Throwable e )
+    synchronized void signalFailure( Throwable e )
     {
-        completion.signalFailure( part, e );
+        indicator.failure( e );
     }
 }
