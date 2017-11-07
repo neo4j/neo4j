@@ -97,7 +97,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN & THEN
-    failWithError(allPossibleConfigs, "start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n", List("Invalid input"))
+    failWithError(allPossibleConfigs + Configs.Morsel, "start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n", List("Invalid input"))
   }
 
   test("fail if using a variable with label not used in match") {
@@ -105,7 +105,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' return n",
+    failWithError(allPossibleConfigs + Configs.Morsel - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' return n",
       List("Unknown variable `n`.", "Parentheses are required to identify nodes in patterns, i.e. (n)"))
   }
 
@@ -113,7 +113,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     // GIVEN: NO INDEX
 
     // WHEN
-    failWithError(allPossibleConfigs, "match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n", List("No such index"))
+    failWithError(allPossibleConfigs + Configs.Morsel, "match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n", List("No such index"))
   }
 
   test("fail if using hints with unusable equality predicate") {
@@ -121,7 +121,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs, "match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n", List("Cannot use index hint in this context"))
+    failWithError(allPossibleConfigs + Configs.Morsel, "match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n", List("Cannot use index hint in this context"))
   }
 
   test("fail if joining index hints in equality predicates") {
@@ -130,7 +130,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Food", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs,
+    failWithError(allPossibleConfigs + Configs.Morsel,
       "match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n",
       List("Failed to fulfil the hints of the query.",
         "Unknown variable",
@@ -147,7 +147,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n",
+    failWithError(allPossibleConfigs + Configs.Morsel - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n",
       List("Parentheses are required to identify nodes in patterns, i.e. (n)"))
   }
 
@@ -161,7 +161,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |RETURN n""".stripMargin
 
     // WHEN
-    failWithError(allPossibleConfigs, query, List("No such index"), params = "foo" -> 42)
+    failWithError(allPossibleConfigs + Configs.Morsel, query, List("No such index"), params = "foo" -> 42)
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
@@ -301,7 +301,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
 
     // WHEN THEN
 
-    failWithError(allPossibleConfigs,
+    failWithError(allPossibleConfigs + Configs.Morsel,
       "MATCH (n:Entity:Person) " +
         "USING INDEX n:Person(first_name) " +
         "USING INDEX n:Entity(source) " +
@@ -311,7 +311,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("does not accept multiple scan hints for the same variable") {
-    failWithError(allPossibleConfigs,
+    failWithError(allPossibleConfigs + Configs.Morsel,
       "MATCH (n:Entity:Person) " +
         "USING SCAN n:Person " +
         "USING SCAN n:Entity " +
@@ -322,7 +322,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("does not accept multiple mixed hints for the same variable") {
-    failWithError(allPossibleConfigs,
+    failWithError(allPossibleConfigs + Configs.Morsel,
       "MATCH (n:Entity:Person) " +
         "USING SCAN n:Person " +
         "USING INDEX n:Entity(first_name) " +
@@ -335,14 +335,14 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     // GIVEN
 
     // WHEN
-    failWithError(allPossibleConfigs, "MATCH (n:Person)-->() USING SCAN x:Person return n", List("Variable `x` not defined", "x not defined"))
+    failWithError(allPossibleConfigs + Configs.Morsel, "MATCH (n:Person)-->() USING SCAN x:Person return n", List("Variable `x` not defined", "x not defined"))
   }
 
   test("scan hint must fail if using label not used in the query") {
     // GIVEN
 
     // WHEN
-   failWithError(allPossibleConfigs, "MATCH n-->() USING SCAN n:Person return n",
+   failWithError(allPossibleConfigs + Configs.Morsel, "MATCH n-->() USING SCAN n:Person return n",
      List("Cannot use label scan hint in this context.", "Parentheses are required to identify nodes in patterns, i.e. (n)"))
   }
 
@@ -411,7 +411,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("should fail when join hint is applied to an undefined node") {
-    failWithError(allPossibleConfigs,
+    failWithError(allPossibleConfigs + Configs.Morsel,
       s"""
          |MATCH (a:A)-->(b:B)<--(c:C)
          |USING JOIN ON d
@@ -420,7 +420,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("should fail when join hint is applied to a single node") {
-    failWithError(allPossibleConfigs,
+    failWithError(allPossibleConfigs + Configs.Morsel,
       s"""
          |MATCH (a:A)
          |USING JOIN ON a
@@ -429,7 +429,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     }
 
   test("should fail when join hint is applied to a relationship") {
-      failWithError(allPossibleConfigs,
+      failWithError(allPossibleConfigs + Configs.Morsel,
         s"""
            |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
            |USING JOIN ON r1
@@ -438,7 +438,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     }
 
   test("should fail when join hint is applied to a path") {
-      failWithError(allPossibleConfigs,
+      failWithError(allPossibleConfigs + Configs.Morsel,
         s"""
            |MATCH p=(a:A)-->(b:B)-->(c:C)
            |USING JOIN ON p

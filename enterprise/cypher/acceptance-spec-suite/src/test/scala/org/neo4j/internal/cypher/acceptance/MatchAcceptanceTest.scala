@@ -19,147 +19,16 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.io.File
-
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.runtime.PathImpl
-import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.collection.Iterators.single
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
-  test("apa") {
-
-    val db = graph
-
-        println("creating graph")
-
-        var tx = db.getGraphDatabaseService.beginTx()
-        var i = 0
-
-        def ping() = {
-          i += 1
-          if (i % 5000 == 0) {
-            tx.success()
-            tx.close()
-            tx = db.getGraphDatabaseService.beginTx()
-          }
-        }
-
-        val NODES = 50000
-        val EDGES = 10000
-
-        val nodes = (0 to NODES).map { x =>
-          ping()
-          db.createNode()
-        }.toArray
-
-        val r = new Random()
-
-        (0 to EDGES).foreach(_ => {
-          val lhs = nodes(r.nextInt(NODES))
-          val rhs = nodes(r.nextInt(NODES))
-          ping()
-          lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
-        })
-
-         tx.success()
-    tx.close()
- //       db.shutdown()
-
-    val visitor = new ResultVisitor[RuntimeException] {
-      override def visit(row: Result.ResultRow): Boolean = {
-     //   println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")} ${row.getNode("b")}")
-        true
-      }
-    }
-
-    println("running query")
-    Seq("compiled", "morsel") foreach { runtime =>
-      val q = s"cypher runtime=$runtime match (a)-->(b)-->(c) return a, b"
-      val started = System.currentTimeMillis()
-      (0 to 1000) foreach { _ =>
-        val res = db.execute(q)
-        res.accept(visitor)
-      }
-      println(s"$runtime took " + (System.currentTimeMillis() - started))
-    }
-    println("running query")
-//    Seq("
-//    if (false) {
-//      val threads =morsel") foreach { runtime =>
-          val q = s"cypher runtime=morsel match (a)-->(b)-->(c) return a, b, c"
-    //      val started = System.currentTimeMillis()
-    //      (0 to 100) foreach { i =>
-    //        println(i)
-    //        val res = db.execute(q)
-    //        res.accept(visitor)
-    //      }
-    //      println(s"$runtime took " + (System.currentTimeMillis() - started))
-    //    }
-
-//    val threads = 0 to 100 map { _ =>
-//      val thread = new Thread(new Runnable {
-//        override def run(): Unit = {
-//          val result = db.execute(q)
-//          result.accept(visitor)
-//        }
-//      })
-//      thread.start()
-//      thread
-//    }
-//    threads.foreach(_.join())
-    //    }
-
-//    Dispatcher.instance.shutdown()
-    db.shutdown()
-  }
-
-  test("apa666") {
-
-    val db = new GraphDatabaseFactory().newEmbeddedDatabase(new File("/home/systay/Downloads/apa/db_sf001_p006_regular_utc_33ee"))
-    try {
-      val res =
-        db.execute(
-
-          """profile MATCH (a:Person {id: 2199023263568})-[:PERSON_IS_LOCATED_IN]->(city:City)<-[:PERSON_IS_LOCATED_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-            |WHERE city.name = "Stockholm" OR city.name = "Berlin"
-            |with distinct a, b
-            |return *""".stripMargin)
-
-      println(res.resultAsString())
-      println(res.getExecutionPlanDescription)
-    } finally db.shutdown()
-
-  }
-
-  test("apa2") {
-    createNode()
-    createNode()
-    createNode()
-    createNode()
-    createNode()
-    createNode()
-    createNode()
-    createNode()
-    createNode()
-    createNode()
-    val res = graph.execute("CYPHER runtime=interpreted MATCH (a) RETURN a ORDER BY id(a)")
-    val visitor = new ResultVisitor[RuntimeException] {
-      override def visit(row: Result.ResultRow): Boolean = {
-        println(s"${row.getNode("a")} ${row.getNode("b")}")
-        true
-      }
-    }
-    res.accept(visitor)
-
-  }
 
   test("Do not count null elements in nodes without labels") {
 
@@ -238,7 +107,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n4 = createNode(Map("x" -> 50d))
     val n5 = createNode(Map("x" -> 50.toByte))
 
-    val result = executeWith(Configs.Interpreted, s"match (n) where n.x < 100 return n")
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, s"match (n) where n.x < 100 return n")
 
     result.columnAs[Node]("n").toList should equal(List(n1, n2, n3, n4, n5))
   }
@@ -463,7 +332,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(node1, node2, "prop" -> 10)
     val r2 = relate(node1, node2, "prop" -> 0)
 
-    val result = executeWith(Configs.All - Configs.Compiled, query)
+    val result = executeWith(Configs.All - Configs.Compiled + Configs.Morsel, query)
 
     result.toList should equal(List(Map("r" -> r1)))
   }
@@ -471,14 +340,14 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
-    val result = executeWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n")
+    val result = executeWith(Configs.All + Configs.Morsel, "MATCH (n) WHERE id(n)=1337 RETURN n")
 
     // then DOESN'T THROW EXCEPTION
     result shouldBe empty
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    executeWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n")
+    executeWith(Configs.Interpreted + Configs.Morsel, "match (n) where id(n) in [0,1] return n")
       .toList
     // should not throw an exception
   }
@@ -720,9 +589,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
-    executeWith(Configs.All, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.All, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.All, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.All + Configs.Morsel, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.All + Configs.Morsel, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.All + Configs.Morsel, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   // Not TCK material -- id()
@@ -936,7 +805,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createLabeledNode("B")
     createLabeledNode("C")
 
-    val result = executeWith(Configs.Interpreted, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
 
     // Then
     result.toList should equal(List(Map("a" -> n1), Map("a" -> n2), Map("a" -> n3)))
@@ -987,7 +856,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // Given an empty database
 
     // When
-    val result = executeWith(Configs.All, "PROFILE MATCH (n) WHERE 1 = 1 AND 5 > 1 RETURN n")
+    val result = executeWith(Configs.All + Configs.Morsel, "PROFILE MATCH (n) WHERE 1 = 1 AND 5 > 1 RETURN n")
 
     // Then
     result.executionPlanDescription().find("Selection") shouldBe empty

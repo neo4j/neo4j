@@ -81,7 +81,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     // given
     val node = createLabeledNode("Person")
 
-    val result = executeWith(Configs.All, "MATCH (b) WHERE b = {param} RETURN b", params = Map("param" -> node))
+    val result = executeWith(Configs.All + Configs.Morsel, "MATCH (b) WHERE b = {param} RETURN b", params = Map("param" -> node))
     result.toList should equal(List(Map("b" -> node)))
   }
 

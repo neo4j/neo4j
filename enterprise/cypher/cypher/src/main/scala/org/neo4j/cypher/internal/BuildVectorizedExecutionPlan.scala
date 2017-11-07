@@ -135,7 +135,6 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
 
   override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = dispatcher.execute(operators, queryContext, params)(visitor)
 
-
   override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
 
   override def executionPlanDescription(): InternalPlanDescription = executionPlanBuilder()

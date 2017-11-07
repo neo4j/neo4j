@@ -359,6 +359,8 @@ object CypherComparisonSupport {
 
     object Default extends Runtime(Set("COMPILED", "SLOTTED" , "INTERPRETED", "PROCEDURE"), "")
 
+    object Morsel extends Runtime(Set("MORSEL"), "runtime=morsel")
+
   }
 
   case class Runtime(acceptedRuntimeNames: Set[String], preparserOption: String)
@@ -516,6 +518,8 @@ object CypherComparisonSupport {
 
     def Compiled: TestConfiguration = TestConfiguration(Versions.v3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
+    def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
+
     def Interpreted: TestConfiguration =
       TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
@@ -582,7 +586,8 @@ object CypherComparisonSupport {
 
     def AbsolutelyAll: TestConfiguration =
       TestConfiguration(Versions.v3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted,
+                                                                       Runtimes.ProcedureOrSchema, Runtimes.Morsel)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 

@@ -38,7 +38,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
     createNode()
-    val result = profileWithExecute(Configs.All, "MATCH (n) RETURN n")
+    val result = profileWithExecute(Configs.All + Configs.Morsel, "MATCH (n) RETURN n")
 
     assertRows(3)(result)("AllNodesScan", "ProduceResults")
     assertDbHits(0)(result)("ProduceResults")
@@ -50,7 +50,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
 
-    val result = profileWithExecute(Configs.All, "MATCH (n) RETURN (n:Foo)")
+    val result = profileWithExecute(Configs.All + Configs.Morsel, "MATCH (n) RETURN (n:Foo)")
 
     assertRows(3)(result)("AllNodesScan", "ProduceResults")
     assertDbHits(0)(result)("ProduceResults")
@@ -102,7 +102,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         relate( createNode(), createNode(), "FOO")
 
         //WHEN
-        val result = profileWithExecute(Configs.Interpreted, "match (n) where (n)-[:FOO]->() return *")
+        val result = profileWithExecute(Configs.Interpreted + Configs.Morsel, "match (n) where (n)-[:FOO]->() return *")
 
         //THEN
         assertRows(1)(result)("Filter")
@@ -145,7 +145,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         relate( createNode(), createNode(), "FOO")
 
         //WHEN
-        val result = profileWithExecute(Configs.Interpreted, "match (n) where not (n)-[:FOO]->() return *")
+        val result = profileWithExecute(Configs.Interpreted + Configs.Morsel, "match (n) where not (n)-[:FOO]->() return *")
 
         //THEN
         assertRows(1)(result)("Filter")
@@ -225,7 +225,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         createNode()
 
         //GIVEN
-        val result = profileWithExecute(Configs.All, "MATCH (n) RETURN n.foo")
+        val result = profileWithExecute(Configs.All + Configs.Morsel, "MATCH (n) RETURN n.foo")
 
         //WHEN THEN
         assertRows(1)(result)("ProduceResults")
@@ -369,7 +369,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       }
 
       test("should not have a problem profiling empty results") {
-        val result = profileWithExecute(Configs.Interpreted, "MATCH (n) WHERE (n)-->() RETURN n")
+        val result = profileWithExecute(Configs.Interpreted + Configs.Morsel, "MATCH (n) WHERE (n)-->() RETURN n")
 
         result shouldBe empty
         result.executionPlanDescription().toString should include("AllNodes")
@@ -424,13 +424,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
        }
 
       test("should show expand without types in a simple form") {
-        val a = profileWithExecute(Configs.All, "match (n)-->() return *")
+        val a = profileWithExecute(Configs.All + Configs.Morsel, "match (n)-->() return *")
 
         a.executionPlanDescription().toString should include("()<--(n)")
       }
 
       test("should show expand with types in a simple form") {
-        val result = profileWithExecute(Configs.All, "match (n)-[r:T]->() return *")
+        val result = profileWithExecute(Configs.All + Configs.Morsel, "match (n)-[r:T]->() return *")
 
         result.executionPlanDescription().toString should include("(n)-[r:T]->()")
       }
@@ -452,7 +452,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         relate(createNode(), createNode())
 
         // when
-        val result = profileWithExecute(Configs.All, "match (n)-->(x) return x")
+        val result = profileWithExecute(Configs.All + Configs.Morsel, "match (n)-->(x) return x")
 
         // then
         assertDbHits(3)(result)("Expand(All)")
@@ -473,7 +473,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         createNode("name" -> "foo")
 
         // when
-        val result = profileWithExecute(Configs.All, "match (n) return n.name + 3")
+        val result = profileWithExecute(Configs.All + Configs.Morsel, "match (n) return n.name + 3")
 
         // then
         assertDbHits(1)(result)("Projection")
@@ -485,7 +485,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         createNode("name" -> 10)
 
         // when
-        val result = profileWithExecute(Configs.All, "match (n) return n.name - 3")
+        val result = profileWithExecute(Configs.All + Configs.Morsel, "match (n) return n.name - 3")
 
         // then
         assertDbHits(1)(result)("Projection")
