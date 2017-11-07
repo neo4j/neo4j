@@ -27,8 +27,9 @@ public enum CRSTable
     CUSTOM( "custom", 0 ),
     EPSG( "epsg", 1 ),
     SR_ORG( "sr-org", 2 );
-    public final String name;
-    public final int tableId;
+
+    private final String name;
+    private final int tableId;
 
     CRSTable( String name, int tableId )
     {
@@ -82,5 +83,15 @@ public enum CRSTable
         {
             return "http://spatialreference.org/ref/" + name + "/" + code + "/";
         }
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public int getTableId()
+    {
+        return tableId;
     }
 }
