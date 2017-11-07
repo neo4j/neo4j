@@ -46,8 +46,18 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
       case Some(InterpretedRuntimeName) =>
         BuildInterpretedExecutionPlan
 
+      case Some(MorselRuntimeName)if useErrorsOverWarnings =>
+        BuildVectorizedExecutionPlan andThen
+          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
+            Do((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
+          )
+
       case Some(MorselRuntimeName) =>
-        BuildVectorizedExecutionPlan
+        BuildVectorizedExecutionPlan andThen
+          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
+            Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
+              pickInterpretedExecutionPlan()
+          )
 
       case Some(SlottedRuntimeName) if useErrorsOverWarnings =>
         BuildSlottedExecutionPlan andThen

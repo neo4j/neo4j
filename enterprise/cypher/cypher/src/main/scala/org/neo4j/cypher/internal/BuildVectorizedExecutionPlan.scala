@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{NewRuntimeSuccessRateMonitor, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
@@ -50,17 +51,27 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   override def description: String = "build pipes"
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
-    val converters: ExpressionConverters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
-    val operatorBuilder = new PipelineBuilder(pipelines, converters)
-    val operators = operatorBuilder.create(physicalPlan)
-    val dispatcher =
-      if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
-      else context.dispatcher
-    val fieldNames = from.statement().returnColumns.toArray
+    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
+    try {
+      val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
+      val converters: ExpressionConverters = new ExpressionConverters(SlottedExpressionConverters,
+                                                                      CommunityExpressionConverter)
+      val operatorBuilder = new PipelineBuilder(pipelines, converters)
+      val operators = operatorBuilder.create(physicalPlan)
+      val dispatcher =
+        if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
+        else context.dispatcher
+      val fieldNames = from.statement().returnColumns.toArray
 
-    val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames, dispatcher)
-    new CompilationState(from, Some(execPlan))
+      val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
+                                             dispatcher)
+      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
+      new CompilationState(from, Some(execPlan))
+    } catch {
+      case e: CantCompileQueryException =>
+        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
+        new CompilationState(from, None)
+    }
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {

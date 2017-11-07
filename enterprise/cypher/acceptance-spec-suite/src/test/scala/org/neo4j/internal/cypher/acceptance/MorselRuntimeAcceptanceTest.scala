@@ -44,4 +44,17 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     //Then
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
   }
+
+  test("should fallback if morsel doesn't support query") {
+    //Given
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n)-[*]->(m) RETURN n")
+
+    // When (exhaust result)
+    result.resultAsString()
+
+    //Then
+    result.getExecutionPlanDescription.getArguments.get("runtime") should not equal "MORSEL"
+  }
+
+
 }

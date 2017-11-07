@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
+import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -83,6 +84,8 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
           val preSorting = new PreSortOperator(ordering, pipeline)
           source = source.addOperator(preSorting)
           new MergeSortOperator(ordering, pipeline)
+
+        case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
       }
 
     thisOp match {
