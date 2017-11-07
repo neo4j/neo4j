@@ -71,6 +71,13 @@ public abstract class StringValue extends TextValue
     public TextArray split( String separator )
     {
         String asString = value();
+        //Cypher has different semantics for the case where the separator
+        //is exactly the value, in cypher we expect two empty arrays
+        //where as java returns an empty array
+        if ( separator.equals( asString ) )
+        {
+            return Values.stringArray( "", "" );
+        }
         String[] split = asString.split( separator );
         return Values.stringArray( split );
     }
