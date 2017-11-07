@@ -163,7 +163,8 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
         if ( closed.get() )
         {
-            throw new PackOutputClosedException( "Unable to write to the closed output channel" );
+            throw new PackOutputClosedException( "Network channel towards " + channel.remoteAddress() + " is closed. " +
+                                                 "Client has probably been stopped." );
         }
         int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
         synchronized ( this )

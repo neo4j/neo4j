@@ -141,8 +141,7 @@ class MessageProcessingHandler implements BoltResponseHandler
         {
             // we tried to write error back to the client and realized that the underlying channel is closed
             // log a warning, client driver might have just been stopped and closed all socket connections
-            log.warn( "Unable to send error back to the client. " +
-                      "Communication channel is closed. Client has probably been stopped.", error.cause() );
+            log.warn( "Unable to send error back to the client. " + e.getMessage(), error.cause() );
         }
         catch ( Throwable t )
         {
