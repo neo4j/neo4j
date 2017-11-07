@@ -39,7 +39,6 @@ import org.neo4j.test.Race;
 import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingIdGeneratorFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
 import static org.junit.Assert.assertTrue;
@@ -68,7 +67,7 @@ public class PropertyEncoderStepTest
                 return batchSize;
             }
         };
-        NeoStores stores = neoStoresRule.builder().with( fs -> new BatchingIdGeneratorFactory( fs ) ).build();
+        NeoStores stores = neoStoresRule.builder().build();
         BatchingPropertyKeyTokenRepository keyRepository =
                 new BatchingPropertyKeyTokenRepository( stores.getPropertyKeyTokenStore() );
         PropertyStore propertyStore = stores.getPropertyStore();

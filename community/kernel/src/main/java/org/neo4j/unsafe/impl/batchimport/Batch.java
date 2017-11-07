@@ -45,7 +45,6 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
 
     // Used by relationship stages to query idMapper and store ids here
     public long[] ids;
-    public long firstRecordId;
     public long[][] labels;
 
     public Batch( INPUT[] input )

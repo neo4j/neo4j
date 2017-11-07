@@ -55,6 +55,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -87,6 +88,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  */
 public class ImportLogic implements Closeable
 {
+    private static final long DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD = 2L << 34;
     private final File storeDir;
     private final FileSystemAbstraction fileSystem;
     private final BatchingNeoStores neoStore;
@@ -120,6 +122,7 @@ public class ImportLogic implements Closeable
     private InputIterable<InputNode> cachedNodes;
     private long peakMemoryUsage;
     private long availableMemoryForLinking;
+    private boolean doubleRelationshipRecordUnits;
 
     /**
      * @param storeDir directory which the db will be created in.
@@ -161,10 +164,30 @@ public class ImportLogic implements Closeable
         nodes = input.nodes();
         relationships = input.relationships();
         cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
-        dependencies.satisfyDependencies( input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() ),
-                idMapper, neoStore, nodeRelationshipCache );
+        Estimates inputEstimates = input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() );
+        sanityCheckEstimatesWithRecordFormat( inputEstimates );
+        dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache );
+
+        doubleRelationshipRecordUnits =
+                // TODO figure out in a good way if this is the high limit format
+                recordFormats.relationship().getMaxId() > 2L << 36 &&
+                inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 
         executionMonitor.initialize( dependencies );
+    }
+
+    private void sanityCheckEstimatesWithRecordFormat( Estimates inputEstimates )
+    {
+        sanityCheckEstimateWithMaxId( inputEstimates.numberOfNodes(), recordFormats.node().getMaxId(), "nodes" );
+        sanityCheckEstimateWithMaxId( inputEstimates.numberOfRelationships(), recordFormats.relationship().getMaxId(), "relationships" );
+    }
+
+    private static void sanityCheckEstimateWithMaxId( long estimate, long max, String formatName )
+    {
+        if ( estimate > max * 0.8 )
+        {
+            System.err.println( "WARNING: estimated number of " + formatName + " may exceed capacity of selected record format" );
+        }
     }
 
     /**
@@ -245,7 +268,7 @@ public class ImportLogic implements Closeable
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         RelationshipStage unlinkedRelationshipStage =
                 new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
-                        badCollector, inputCache, neoStore, storeUpdateMonitor );
+                        badCollector, inputCache, neoStore, storeUpdateMonitor, doubleRelationshipRecordUnits );
         neoStore.startFlushingPageCache();
         executeStage( unlinkedRelationshipStage );
         neoStore.stopFlushingPageCache();

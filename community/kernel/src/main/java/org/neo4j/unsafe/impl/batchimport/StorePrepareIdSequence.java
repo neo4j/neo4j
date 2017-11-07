@@ -19,31 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 
-/**
- * Tracks a highest id when there are potentially multiple concurrent threads calling {@link #offer(long)}.
- */
-public class HighestId
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+
+public class StorePrepareIdSequence<RECORD extends AbstractBaseRecord> implements Function<RecordStore<RECORD>,LongFunction<IdSequence>>
 {
-    private final AtomicLong highestId = new AtomicLong();
-
-    public void offer( long candidate )
+    @Override
+    public LongFunction<IdSequence> apply( RecordStore<RECORD> store )
     {
-        long currentHighest;
-        do
-        {
-            currentHighest = highestId.get();
-            if ( candidate <= currentHighest )
-            {
-                return;
-            }
-        }
-        while ( !highestId.compareAndSet( currentHighest, candidate ) );
-    }
-
-    public long get()
-    {
-        return highestId.get();
+        return id -> store;
     }
 }

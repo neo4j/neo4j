@@ -246,6 +246,15 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     void prepareForCommit( RECORD record );
 
     /**
+     * Called once all changes to a record is ready to be converted into a command.
+     * WARNING this is for advanced use, please consider using {@link #prepareForCommit(AbstractBaseRecord)} instead.
+     *
+     * @param record record to prepare, potentially updating it with more information before converting into a command.
+     * @param idSequence {@link IdSequence} to use for potentially generating additional ids required by this record.
+     */
+    void prepareForCommit( RECORD record, IdSequence idSequence );
+
+    /**
      * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
      *
      * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
@@ -404,6 +413,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public void prepareForCommit( R record )
         {
             actual.prepareForCommit( record );
+        }
+
+        @Override
+        public void prepareForCommit( R record, IdSequence idSequence )
+        {
+            actual.prepareForCommit( record, idSequence );
         }
 
         @Override

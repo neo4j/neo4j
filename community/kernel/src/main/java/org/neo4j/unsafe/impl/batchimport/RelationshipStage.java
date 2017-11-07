@@ -20,9 +20,13 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -64,7 +68,8 @@ public class RelationshipStage extends Stage
     public RelationshipStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputRelationship> relationships, IdMapper idMapper,
             Collector badCollector, InputCache inputCache,
-            BatchingNeoStores neoStore, CountingStoreUpdateMonitor storeUpdateMonitor ) throws IOException
+            BatchingNeoStores neoStore, CountingStoreUpdateMonitor storeUpdateMonitor, boolean doubleRelationshipRecordUnits )
+                    throws IOException
     {
         super( NAME, null, config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(),
@@ -77,13 +82,17 @@ public class RelationshipStage extends Stage
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
         add( typer = new RelationshipTypeCheckerStep( control(), config, neoStore.getRelationshipTypeRepository(), storeUpdateMonitor ) );
-        add( new AssignRelationshipIdBatchStep( control(), config, 0 ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new RelationshipRecordPreparationStep( control(), config,
-                neoStore.getRelationshipTypeRepository(), badCollector ) );
+                neoStore.getRelationshipTypeRepository(), badCollector, relationshipStore, doubleRelationshipRecordUnits ) );
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
+
+        Function<RecordStore<RelationshipRecord>,LongFunction<IdSequence>> prepareIdSequence = doubleRelationshipRecordUnits
+                ? new SecondaryUnitPrepareIdSequence<>()
+                : new StorePrepareIdSequence<>();
+
         add( new EntityStoreUpdaterStep<>( control(), config, relationshipStore, propertyStore,
-                writeMonitor, storeUpdateMonitor ) );
+                writeMonitor, storeUpdateMonitor, prepareIdSequence ) );
     }
 
     public DataStatistics getDistribution()
