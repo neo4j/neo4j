@@ -127,6 +127,18 @@ public class UTF8StringValueTest
     }
 
     @Test
+    public void shouldReverse()
+    {
+        for ( String string : strings )
+        {
+            TextValue stringValue = stringValue( string );
+            byte[] bytes = string.getBytes( UTF_8 );
+            TextValue utf8 = utf8Value( bytes );
+            assertSame( stringValue.reverse(), utf8.reverse() );
+        }
+    }
+
+    @Test
     public void shouldHandleOffset()
     {
         // Given
@@ -137,6 +149,7 @@ public class UTF8StringValueTest
 
         // Then
         assertSame( textValue, stringValue( "de" ) );
+        assertSame( textValue.reverse(), stringValue( "ed" ) );
     }
 
     private void assertSame( TextValue lhs, TextValue rhs )

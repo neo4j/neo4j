@@ -273,6 +273,52 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
+    public TextValue reverse()
+    {
+        byte[] values = bytes;
+
+        if ( values.length == 0 || byteLength == 0 )
+        {
+            return StringValue.EMTPY;
+        }
+
+        int i = offset, len = offset + byteLength;
+        byte[] newValues = new byte[byteLength];
+        int newIndex = byteLength -1;
+        while ( i < len )
+        {
+            byte b = values[i];
+            //If high bit is zero (equivalent to the byte being positive in two's complement)
+            //we are dealing with an ascii value and use a single byte for storing the value.
+            if ( b >= 0 )
+            {
+                newValues[newIndex] = b;
+                newIndex--;
+                i++;
+                continue;
+            }
+
+            //We can now have one of three situations.
+            //Byte1    Byte2    Byte3    Byte4
+            //110xxxxx 10xxxxxx
+            //1110xxxx 10xxxxxx 10xxxxxx
+            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            //Figure out how many bytes we need by reading the number of leading bytes
+            int bytesNeeded = 0;
+            while ( b < 0 )
+            {
+                bytesNeeded++;
+                b = (byte) (b << 1);
+            }
+            System.arraycopy( values, i, newValues, newIndex - bytesNeeded + 1, bytesNeeded );
+            i += bytesNeeded;
+            newIndex -= bytesNeeded;
+        }
+
+        return new UTF8StringValue( newValues, 0, newValues.length );
+    }
+
+    @Override
     public int compareTo( TextValue other )
     {
         if ( !(other instanceof UTF8StringValue) )

@@ -60,6 +60,12 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
       equivalent(utf8StringValue.trim(), sValue.ltrim().rtrim())}
   }
 
+  property("reverse") = forAll { (x: String) =>
+    val sValue = stringValue(x)
+    val utf8StringValue = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(sValue.reverse(), utf8StringValue.reverse())
+  }
+
   property("ltrim") = forAll { (x: String) =>
     equivalent(stringValue(x).ltrim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).ltrim())
   }
