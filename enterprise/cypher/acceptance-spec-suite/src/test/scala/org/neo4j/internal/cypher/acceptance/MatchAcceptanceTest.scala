@@ -755,66 +755,16 @@ return p""")
 
   test("Should handle optional match with null parts and distinct without NullPointerException") {
 
-    graph.execute("CREATE (:X {eid: 1})")
-
     val query =
       """
-        |  MATCH (x:X)
-        |  WITH x
-        |  OPTIONAL MATCH (x)<-[:L]-(req)
-        |  WITH x, req
-        |  OPTIONAL MATCH (req)<-[:Links *2]-(y:X)
-        |  RETURN DISTINCT
-        |    x.eid,
-        |    req.eid,
-        |    y.eid
+        |  OPTIONAL MATCH (req:Y)
+        |  WITH req
+        |  OPTIONAL MATCH (req)<-[*2]-(y)
+        |  RETURN DISTINCT req.eid, y.eid
       """.stripMargin
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    result.toList should equal(List(Map("x.eid" -> 1, "req.eid" -> null, "y.eid" -> null)))
-  }
-
-  test("Should handle complex optional match with null parts and distinct without NullPointerException") {
-
-    graph.execute(
-      """
-        |CREATE (cust :DoorsObject {eid: 1})
-        |  CREATE (cust) <-[:Links]- (req :DoorsObject {eid: 1})
-        |  CREATE (reqM :DoorsFormalModule {eid: 1}) -[:Contains]-> (req)
-      """.stripMargin)
-
-    graph.execute(
-      """
-        |CREATE (cust :DoorsObject {eid: 2})
-        |  CREATE (cust) <-[:Links]- (req :DoorsObject {eid: 2})
-        |  CREATE (reqM :DoorsFormalModule {eid: 2}) -[:Contains]-> (req)
-        |  CREATE (req) <-[:Links]- (:Link) <-[:Links]- (tst :DoorsObject {eid: 2})
-        |  CREATE (tstM :DoorsFormalModule {eid: 2}) -[:Contains]-> (tst)
-      """.stripMargin)
-
-    val query =
-      """
-        |  MATCH (cust :DoorsObject)
-        |  WITH cust
-        |  OPTIONAL MATCH (cust)<-[:Links *1..]-(req :DoorsObject)<-[:Contains]-(reqM :DoorsFormalModule)
-        |  WITH DISTINCT cust, reqM, req
-        |  OPTIONAL MATCH (req)<-[:Links *2]-(tst :DoorsObject)<-[:Contains]-(tstM :DoorsFormalModule)
-        |  WITH cust, reqM, req, tstM, tst
-        |  RETURN DISTINCT
-        |    cust.eid,
-        |    reqM.eid,
-        |    tstM.eid
-      """.stripMargin
-
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
-
-    result.toList should equal(List(
-      Map("cust.eid" -> 1, "reqM.eid" -> 1, "tstM.eid" -> null),
-      Map("cust.eid" -> 1, "reqM.eid" -> null, "tstM.eid" -> null),
-      Map("cust.eid" -> 2, "reqM.eid" -> 2, "tstM.eid" -> 2),
-      Map("cust.eid" -> 2, "reqM.eid" -> 2, "tstM.eid" -> null),
-      Map("cust.eid" -> 2, "reqM.eid" -> null, "tstM.eid" -> null)
-    ))
+    result.toList should equal(List(Map("req.eid" -> null, "y.eid" -> null)))
   }
 }
