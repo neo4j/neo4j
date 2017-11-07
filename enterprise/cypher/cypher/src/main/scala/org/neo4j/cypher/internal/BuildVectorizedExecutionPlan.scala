@@ -133,7 +133,8 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
                                         dispatcher: Dispatcher) extends StandardInternalExecutionResult(queryContext, ProcedureRuntimeName, Some(taskCloser)) with IterateByAccepting {
 
 
-  override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = dispatcher.execute(operators, queryContext, params)(visitor)
+  override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit =
+    dispatcher.execute(operators, queryContext, params, taskCloser)(visitor)
 
   override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
 

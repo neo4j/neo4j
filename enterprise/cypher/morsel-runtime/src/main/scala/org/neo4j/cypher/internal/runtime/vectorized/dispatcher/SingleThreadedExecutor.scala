@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, TaskCloser}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
@@ -31,7 +31,8 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
 
   override def execute[E <: Exception](operators: Pipeline,
                                        queryContext: QueryContext,
-                                       params: MapValue)
+                                       params: MapValue,
+                                       taskCloser: TaskCloser)
                                       (visitor: QueryResultVisitor[E]): Unit = {
     var leafOp = operators
     while (leafOp.dependency != NoDependencies) {
@@ -61,8 +62,10 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
 
         pipeline.parent match {
           case Some(mother) if mother.dependency.isInstanceOf[Eager] =>
-            if(eagerRecipient != null && mother != eagerRecipient)
+            if(eagerRecipient != null && mother != eagerRecipient) {
+              taskCloser.close(success = false)
               throw new InternalException("oh noes")
+            }
             eagerRecipient = mother
             eagerAcc.append(data)
 
@@ -74,5 +77,7 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
       }
     }
     while (eagerAcc.nonEmpty)
+
+    taskCloser.close(success = true)
   }
 }

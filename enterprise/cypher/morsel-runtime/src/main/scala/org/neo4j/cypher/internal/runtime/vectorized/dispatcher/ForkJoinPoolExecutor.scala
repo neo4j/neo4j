@@ -25,7 +25,7 @@ import java.util.{concurrent, function}
 import org.neo4j.concurrent.BinaryLatch
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, TaskCloser}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
@@ -36,7 +36,8 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
-                              params: MapValue)(visitor: QueryResultVisitor[E]): Unit = {
+                              params: MapValue,
+                              taskCloser: TaskCloser)(visitor: QueryResultVisitor[E]): Unit = {
     val leaf = getLeaf(operators)
     val iteration = new Iteration(None)
     val query = new Query()
@@ -44,6 +45,7 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
     val state = QueryState(params, visitor)
     forkJoinPool.submit(createRunnable(query, startMessage, leaf, queryContext, state))
     query.blockUntilQueryFinishes()
+    taskCloser.close(success = true)
   }
 
   private def createRunnable(query: Query,
