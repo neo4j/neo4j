@@ -26,9 +26,7 @@ import java.util.Collections.singletonMap
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.spatial.{Coordinate => JavaCoordinate}
-import org.neo4j.graphdb.spatial.{CRS => JavaCRS}
-import org.neo4j.graphdb.spatial. {Point => JavaPoint}
+import org.neo4j.graphdb.spatial.{CRS => JavaCRS, Coordinate => JavaCoordinate, Point => JavaPoint}
 
 import scala.collection.JavaConverters._
 
@@ -163,6 +161,11 @@ class RuntimeValueEqualityTest extends CypherFunSuite {
   shouldMatch(Array[String]("A", "B", "C"), asList('A', 'B', 'C'))
   shouldMatch(Array[Char]('A', 'B', 'C'), asList("A", "B", "C"))
   shouldMatch(new util.ArrayList[AnyRef](), Array.empty)
+  shouldNotMatch(false, Array(false))
+  shouldNotMatch(Array(false), false)
+  shouldNotMatch(1, Array(1))
+  shouldNotMatch("apa", Array("apa"))
+  shouldNotMatch(Array(1), Array(Array(1)))
 
   // Maps
   shouldMatch(Map("a" -> 42).asJava, Map("a" -> 42).asJava)

@@ -186,3 +186,16 @@ Feature: MatchAcceptance
       | a.id | b.id |
       | 1    | 2    |
     And no side effects
+
+  Scenario: equality with boolean lists
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({prop: [false]})
+      """
+    When executing query:
+      """
+      MATCH (n {prop: false}) RETURN n
+      """
+    Then the result should be empty
+    And no side effects

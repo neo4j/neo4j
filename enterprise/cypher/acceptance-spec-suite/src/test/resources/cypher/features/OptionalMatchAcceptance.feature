@@ -49,3 +49,18 @@ Feature: OptionalMatchAcceptance
       | type(r) |
       | null    |
     And no side effects
+
+  Scenario: optional equality with boolean lists
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({prop: [false]})
+      """
+    When executing query:
+      """
+      OPTIONAL MATCH (n {prop: false}) RETURN n
+      """
+    Then the result should be:
+      | n    |
+      | null |
+    And no side effects
