@@ -24,14 +24,15 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{NewRuntimeSuccessRateMonitor, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_4.notification.{ExperimentalFeatureNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Condition, Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Condition, InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
@@ -63,8 +64,11 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
         else context.dispatcher
       val fieldNames = from.statement().returnColumns.toArray
 
+      context.notificationLogger.log(
+        ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
+                                          "not recommended to be run on production systems"))
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
-                                             dispatcher)
+                                             dispatcher, context.notificationLogger)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Some(execPlan))
     } catch {
@@ -88,7 +92,8 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
                                      pipelineInformation: Map[LogicalPlanId, PipelineInformation],
                                      physicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
-                                     dispatcher: Dispatcher) extends executionplan.ExecutionPlan {
+                                     dispatcher: Dispatcher,
+                                     notificationLogger: InternalNotificationLogger) extends executionplan.ExecutionPlan {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
@@ -97,9 +102,15 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
           .addArgument(Runtime(MorselRuntimeName.toTextOutput))
           .addArgument(RuntimeImpl(MorselRuntimeName.name))
 
-      new VectorizedOperatorExecutionResult(operators, physicalPlan, planDescription, queryContext,
-                                            params, fieldNames, taskCloser, dispatcher)
-    }
+      if (planType == ExplainMode) {
+        //close all statements
+        taskCloser.close(success = true)
+        ExplainExecutionResult(fieldNames, planDescription(), READ_ONLY,
+                               notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
+      } else new VectorizedOperatorExecutionResult(operators, physicalPlan, planDescription, queryContext,
+                                              params, fieldNames, taskCloser, dispatcher)
+      }
+
 
     override def isPeriodicCommit: Boolean = false
 
@@ -133,7 +144,7 @@ class VectorizedOperatorExecutionResult(operators: Pipeline,
 
   override def executionMode: ExecutionMode = NormalMode
 
-  override def notifications: Iterable[Notification] = ???
+  override def notifications: Iterable[Notification] = Iterable.empty[Notification]
 
   override def withNotifications(notification: Notification*): InternalExecutionResult = this
 }

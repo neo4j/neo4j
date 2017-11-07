@@ -56,5 +56,18 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     result.getExecutionPlanDescription.getArguments.get("runtime") should not equal "MORSEL"
   }
 
+  test("should warn that morsels are experimental") {
+    //Given
+    import scala.collection.JavaConverters._
 
+    val result = graph.execute("CYPHER runtime=morsel EXPLAIN MATCH (n) RETURN n")
+
+    // When (exhaust result)
+    val notifications = result.getNotifications.asScala.toSet
+
+    //Then
+    notifications.head.getDescription should equal("You are using an experimental feature (use the morsel runtime at " +
+                                                     "your own peril, not recommended to be run on production systems)")
+
+  }
 }

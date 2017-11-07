@@ -265,6 +265,8 @@ public interface Status
                 "This query is not supported by the chosen runtime." ),
         FeatureDeprecationWarning( ClientNotification,
                 "This feature is deprecated and will be removed in future versions." ),
+        ExperimentalFeature( ClientNotification,
+                "This feature is experimental and should not be used in production systems." ),
         JoinHintUnsupportedWarning( ClientNotification,
                 "Queries with join hints are not supported by the RULE planner." ),
 

@@ -68,3 +68,5 @@ case class DeprecatedVarLengthBindingNotification(position: InputPosition, varia
 case class DeprecatedRelTypeSeparatorNotification(position: InputPosition) extends InternalNotification
 
 case object DeprecatedPlannerNotification extends InternalNotification
+
+case class ExperimentalFeatureNotification(msg: String) extends InternalNotification

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 
@@ -30,7 +30,7 @@ object InternalWrapping {
 
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification) = notification match {
     case DeprecatedStartNotification(pos, message) =>
-      NotificationCode.START_DEPRECATED.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.startDeprecated(message))
+      NotificationCode.START_DEPRECATED.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.message("START", message))
     case CartesianProductNotification(pos, variables) =>
       NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>
@@ -75,6 +75,8 @@ object InternalWrapping {
       NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
+    case ExperimentalFeatureNotification(msg) =>
+      NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("MORSEL", msg))
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {
