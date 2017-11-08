@@ -234,7 +234,7 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Duration> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
 
-    @Description( "The catch up protocol times out if the given duration elapses with not network activity. " +
+    @Description( "The catch up protocol times out if the given duration elapses with no network activity. " +
             "Every message received by the client from the server extends the time out duration." )
     public static final Setting<Duration> catch_up_client_inactivity_timeout =
             setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "20s" );
