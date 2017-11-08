@@ -1,5 +1,3 @@
-Case should handle mixed number types
-Case should handle mixed types
 Returning a CASE expression into pattern expression
 Returning a CASE expression into integer
 Returning a CASE expression with label predicates
@@ -129,24 +127,11 @@ Shorthand case with filter should work as expected
 //OrderByAcceptance.feature - Unsupported orderability
 ORDER BY nodes should return null results last in ascending order
 ORDER BY relationships should return null results last in ascending order
-Ordering is well defined across all types, ascending
-Ordering is well defined across all types, descending
 Ordering for lists, ascending
 Ordering for lists, descending
-ORDER BY with unwind primitive integer
 ORDER BY two node properties
 ORDER BY two node properties with LIMIT
 ORDER BY node problem
-
-// Long chain of comparison operators
-Long chains of integer comparisons
-Long chains of floating point comparisons
-Long chains of string comparisons
-
-Accessing a list with null should return null
-Accessing a list with null as lower bound should return null
-Accessing a list with null as upper bound should return null
-Accessing a map with null should return null
 
 Should allow AND and OR with equality predicates
 Should allow AND and OR with inequality predicates
@@ -209,4 +194,3 @@ Nested type support with mixed list and map literals
 Nested type support with mixed list and map literals with projection
 Primitive node type support in list literal
 Primitive relationship type support in list literal
-Nested primitive lists and UNWIND
