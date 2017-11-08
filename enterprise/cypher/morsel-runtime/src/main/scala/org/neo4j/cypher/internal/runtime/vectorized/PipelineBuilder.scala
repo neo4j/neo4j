@@ -42,7 +42,7 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
     val pipeline = pipelines(plan.assignedId)
 
     val thisOp = plan match {
-      case plans.AllNodesScan(IdName(column), argumentIds) =>
+      case plans.AllNodesScan(IdName(column), _) =>
         new AllNodeScanOperator(
           pipeline.numberOfLongs,
           pipeline.numberOfReferences,
@@ -62,7 +62,7 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
           new ProduceResultOperator(pipeline, columns.toArray)
 
         case plans.Selection(predicates, _) =>
-          val predicate = converters.toCommandPredicate(predicates.head)
+          val predicate = predicates.map(converters.toCommandPredicate).reduce(_ andWith _)
           new FilterOperator(pipeline, predicate)
 
         case plans.Expand(lhs, IdName(fromName), dir, types, IdName(to), IdName(relName), ExpandAll) =>
