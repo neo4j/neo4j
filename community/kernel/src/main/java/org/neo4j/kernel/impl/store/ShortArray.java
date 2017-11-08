@@ -550,37 +550,13 @@ public enum ShortArray
     {
         int getRequiredBits( double value )
         {
-            long v = Double.doubleToLongBits( value );
-            long mask = 1L << maxBits - 1;
-            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
-            {
-                if ( (mask & v) != 0 )
-                {
-                    return i;
-                }
-            }
-            return 1;
+            return 64;
         }
 
         @Override
         int getRequiredBits( Object array, int arrayLength )
         {
-            int highest = 1;
-            if ( isPrimitive( array ) )
-            {
-                for ( double value : (double[]) array )
-                {
-                    highest = Math.max( getRequiredBits( value ), highest );
-                }
-            }
-            else
-            {
-                for ( double value : (Double[]) array )
-                {
-                    highest = Math.max( getRequiredBits( value ), highest );
-                }
-            }
-            return highest;
+            return 64;
         }
 
         @Override
