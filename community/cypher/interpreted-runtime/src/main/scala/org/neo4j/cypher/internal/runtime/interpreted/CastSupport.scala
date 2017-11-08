@@ -91,7 +91,14 @@ object CastSupport {
       case (_: FloatValue, _: NumberValue) => a
       case (_: DoubleValue, _: NumberValue) => a
 
-      case (_: PointValue, _: PointValue) => a
+      case (p1: PointValue, p2: PointValue) =>
+        if (p1.getCoordinateReferenceSystem != p2.getCoordinateReferenceSystem) {
+          throw new CypherTypeException("Collections containing point values with different CRS can not be stored in properties.");
+        } else if(p1.coordinate().length != p2.coordinate().length) {
+          throw new CypherTypeException("Collections containing point values with different dimensions can not be stored in properties.");
+        } else {
+          p1
+        }
 
       case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")

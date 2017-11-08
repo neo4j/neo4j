@@ -256,13 +256,26 @@ public enum GeometryType
     public static byte[] encodePointArray( PointValue[] points )
     {
         int dimension = points[0].coordinate().length;
+        CoordinateReferenceSystem crs = points[0].getCoordinateReferenceSystem();
+        for ( int i = 1; i < points.length; i++ )
+        {
+            if ( dimension != points[i].coordinate().length )
+            {
+                throw new IllegalArgumentException(
+                        "Attempting to store array of points with inconsistent dimension. Point " + i + " has a different dimension." );
+            }
+            if ( !crs.equals( points[i].getCoordinateReferenceSystem() ) )
+            {
+                throw new IllegalArgumentException( "Attempting to store array of points with inconsistent CRS. Point " + i + " has a different CRS." );
+            }
+        }
+
         double[] data = new double[points.length * dimension];
         for ( int i = 0; i < data.length; i++ )
         {
             data[i] = points[i / dimension].coordinate()[i % dimension];
         }
-        GeometryHeader geometryHeader = new GeometryHeader( GeometryType.GEOMETRY_POINT.gtype, dimension,
-                points[0].getCoordinateReferenceSystem() );
+        GeometryHeader geometryHeader = new GeometryHeader( GeometryType.GEOMETRY_POINT.gtype, dimension, crs );
         byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
         geometryHeader.writeArrayHeaderTo( bytes );
         return bytes;
@@ -300,8 +313,8 @@ public enum GeometryType
             bytes[1] = (byte) geometryType;
             bytes[2] = (byte) dimension;
             bytes[3] = (byte) crs.table.getTableId();
-            bytes[4] = (byte) (crs.code & 0xFFL);
-            bytes[5] = (byte) (crs.code >> 8 & 0xFFL);
+            bytes[4] = (byte) (crs.code >> 8 & 0xFFL);
+            bytes[5] = (byte) (crs.code & 0xFFL);
         }
 
         static GeometryHeader fromArrayHeaderBytes( byte[] header )
@@ -309,7 +322,7 @@ public enum GeometryType
             int geometryType = Byte.toUnsignedInt( header[1] );
             int dimension = Byte.toUnsignedInt( header[2] );
             int crsTableId = Byte.toUnsignedInt( header[3] );
-            int crsCode = Byte.toUnsignedInt( header[4] ) + (Byte.toUnsignedInt( header[5] ) << 8);
+            int crsCode = Byte.toUnsignedInt( header[5] ) + (Byte.toUnsignedInt( header[4] ) << 8);
             return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
         }
 
@@ -318,7 +331,7 @@ public enum GeometryType
             int geometryType = Byte.toUnsignedInt( buffer.get() );
             int dimension = Byte.toUnsignedInt( buffer.get() );
             int crsTableId = Byte.toUnsignedInt( buffer.get() );
-            int crsCode = Byte.toUnsignedInt( buffer.get() ) + (Byte.toUnsignedInt( buffer.get() ) << 8);
+            int crsCode = (Byte.toUnsignedInt( buffer.get() ) << 8) + Byte.toUnsignedInt( buffer.get() );
             return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
         }
     }

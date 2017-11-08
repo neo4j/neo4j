@@ -361,7 +361,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     ))))
   }
 
-  test("array of points should be readable from node property") {
+  test("array of cartesian points should be readable from node property") {
     // Given
     createLabeledNode("Place")
     graph.execute(
@@ -385,5 +385,48 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       CartesianPoint(2.0, 2.0, CRS.Cartesian),
       CartesianPoint(3.0, 3.0, CRS.Cartesian)
     ))
+  }
+
+  test("array of wgs84 points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({latitude: num, longitude: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      CartesianPoint(1.0, 1.0, CRS.WGS84),
+      CartesianPoint(2.0, 2.0, CRS.WGS84),
+      CartesianPoint(3.0, 3.0, CRS.WGS84)
+    ))
+  }
+
+  test("array of mixed points should not be assignable to node property") {
+    // Given
+    createLabeledNode("Place")
+
+    // When
+    val config = expectedToSucceed - Configs.SlottedInterpreted - Configs.Cost3_1 - Configs.AllRulePlanners
+    val query =
+      """
+        |WITH [point({x: 1, y: 2}), point({latitude: 1, longitude: 2})] as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN points
+      """.stripMargin
+
+    // Then
+    failWithError(config + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
   }
 }
