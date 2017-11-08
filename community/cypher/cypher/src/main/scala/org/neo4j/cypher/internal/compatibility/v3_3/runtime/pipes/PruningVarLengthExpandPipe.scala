@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
@@ -260,18 +261,22 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         (Empty, null)
       } else {
         val row = input.next()
-        val nextState = new PrePruningDFS(whenEmptied = this,
-                                          node = getNodeFromRow(row),
-                                          path = new Array[Long](max),
-                                          pathLength = 0,
-                                          state = state,
-                                          row = row,
-                                          expandMap = Primitive.longObjectMap[FullExpandDepths]())
-        nextState.next()
+        row.get(fromName) match {
+          case Some(node: NodeValue) =>
+            val nextState = new PrePruningDFS(whenEmptied = this,
+                                              node = node,
+                                              path = new Array[Long](max),
+                                              pathLength = 0,
+                                              state = state,
+                                              row = row,
+                                              expandMap = Primitive.longObjectMap[FullExpandDepths]())
+            nextState.next()
+          case Some(x: Value) if x == Values.NO_VALUE =>
+            (Empty, null)
+          case _ =>
+            throw new InternalException(s"Expected a node on `$fromName`")
+        }
       }
-
-    private def getNodeFromRow(row: ExecutionContext): NodeValue =
-      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[NodeValue]
   }
 
   trait CheckPath {
