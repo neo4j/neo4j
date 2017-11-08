@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
+import org.neo4j.cypher.InvalidSemanticsException
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, NonEmptyList}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal}
@@ -239,7 +240,11 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
         if (!lhs.isInstanceOf[TextValue])
           None
         else
-          Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
+          try {
+            Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
+          } catch {
+            case e: java.util.regex.PatternSyntaxException => throw new InvalidSemanticsException("Invalid Regex: " + e.getMessage)
+          }
     }
   }
 

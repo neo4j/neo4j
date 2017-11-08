@@ -52,4 +52,13 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       Seq("A single relationship type must be specified for MERGE",
       "The given query is not currently supported in the selected cost-based planner"))
   }
+
+  test("should provide sensible error message for invalid regex syntax together with index") {
+
+    graph.execute("CREATE (n:Person {text:'abcxxxdefyyyfff'})")
+    // Fixed in 3.2.8
+    // Fixed in 3.3.1
+    failWithError(Configs.Version3_4 + Configs.Procs - Configs.Compiled - Configs.AllRulePlanners,
+      "MATCH (x:Person) WHERE x.text =~ '*xxx*yyy*' RETURN x.text", List("Invalid Regex:"))
+  }
 }
