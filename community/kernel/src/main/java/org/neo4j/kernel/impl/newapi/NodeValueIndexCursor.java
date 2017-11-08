@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class NodeValueIndexCursor extends IndexCursor
-        implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, IndexCursorProgressor.NodeValueCursor
+        implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, NodeValueClient
 {
     private final Read read;
     private long node;
@@ -38,14 +40,14 @@ class NodeValueIndexCursor extends IndexCursor
     }
 
     @Override
-    public void initialize( IndexCursorProgressor progressor, int[] keys )
+    public void initialize( IndexProgressor progressor, int[] propertyIds )
     {
         super.initialize( progressor );
-        this.keys = keys;
+        this.keys = propertyIds;
     }
 
     @Override
-    public boolean node( long reference, Value[] values )
+    public boolean acceptNode( long reference, Value[] values )
     {
         this.node = reference;
         this.values = values;

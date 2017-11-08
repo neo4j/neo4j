@@ -21,16 +21,17 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-class NodeLabelIndexProgressor implements IndexCursorProgressor
+class NodeLabelIndexProgressor implements IndexProgressor
 {
     private final PrimitiveLongIterator iterator;
-    private final NodeLabelCursor target;
+    private final NodeLabelClient client;
 
-    NodeLabelIndexProgressor( PrimitiveLongIterator iterator, NodeLabelCursor target )
+    NodeLabelIndexProgressor( PrimitiveLongIterator iterator, NodeLabelClient client )
     {
         this.iterator = iterator;
-        this.target = target;
+        this.client = client;
     }
 
     @Override
@@ -38,7 +39,7 @@ class NodeLabelIndexProgressor implements IndexCursorProgressor
     {
         while ( iterator.hasNext() )
         {
-            if ( target.node( iterator.next(), null ) )
+            if ( client.acceptNode( iterator.next(), null ) )
             {
                 return true;
             }

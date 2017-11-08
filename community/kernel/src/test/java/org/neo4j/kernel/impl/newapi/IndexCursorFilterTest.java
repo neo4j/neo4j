@@ -31,6 +31,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.Assert.assertEquals;
@@ -40,7 +42,7 @@ import static org.neo4j.kernel.impl.newapi.MockStore.block;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursorProgressor.NodeValueCursor
+public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
 {
     @Rule
     public final MockStore store = new MockStore();
@@ -54,7 +56,7 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
         IndexCursorFilter filter = initializeFilter( null );
 
         // when
-        assertTrue( filter.node( 17, null ) );
+        assertTrue( filter.acceptNode( 17, null ) );
         filter.done();
 
         // then
@@ -68,7 +70,7 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
         IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
-        assertFalse( filter.node( 17, null ) );
+        assertFalse( filter.acceptNode( 17, null ) );
         filter.done();
 
         // then
@@ -83,7 +85,7 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
         IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
-        assertFalse( filter.node( 17, null ) );
+        assertFalse( filter.acceptNode( 17, null ) );
         filter.done();
 
         // then
@@ -99,7 +101,7 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
         IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
-        assertTrue( filter.node( 17, null ) );
+        assertTrue( filter.acceptNode( 17, null ) );
         filter.done();
 
         // then
@@ -115,7 +117,7 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
         IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
-        assertFalse( filter.node( 17, null ) );
+        assertFalse( filter.acceptNode( 17, null ) );
         filter.done();
 
         // then
@@ -141,9 +143,9 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
     }
 
     @Override
-    public void initialize( IndexCursorProgressor progressor, int[] keys )
+    public void initialize( IndexProgressor progressor, int[] propertyIds )
     {
-        events.add( new Event.Initialize( progressor, keys ) );
+        events.add( new Event.Initialize( progressor, propertyIds ) );
     }
 
     @Override
@@ -153,7 +155,7 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
     }
 
     @Override
-    public boolean node( long reference, Value[] values )
+    public boolean acceptNode( long reference, Value[] values )
     {
         events.add( new Event.Node( reference, values ) );
         return true;
@@ -175,10 +177,10 @@ public class IndexCursorFilterTest implements IndexCursorProgressor, IndexCursor
     {
         static class Initialize extends Event
         {
-            final transient IndexCursorProgressor progressor;
+            final transient IndexProgressor progressor;
             final int[] keys;
 
-            Initialize( IndexCursorProgressor progressor, int[] keys )
+            Initialize( IndexProgressor progressor, int[] keys )
             {
                 this.progressor = progressor;
                 this.keys = keys;

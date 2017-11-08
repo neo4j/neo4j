@@ -20,16 +20,17 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.kernel.api.ExplicitIndexHits;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-class ExplicitIndexProgressor implements IndexCursorProgressor
+class ExplicitIndexProgressor implements IndexProgressor
 {
-    private final ExplicitCursor cursor;
+    private final ExplicitClient client;
     private final ExplicitIndexHits hits;
 
-    ExplicitIndexProgressor( ExplicitCursor cursor, ExplicitIndexHits hits )
+    ExplicitIndexProgressor( ExplicitIndexHits hits, ExplicitClient client )
     {
-        this.cursor = cursor;
         this.hits = hits;
+        this.client = client;
     }
 
     @Override
@@ -37,7 +38,7 @@ class ExplicitIndexProgressor implements IndexCursorProgressor
     {
         while ( hits.hasNext() )
         {
-            if ( cursor.entity( hits.next(), hits.currentScore() ) )
+            if ( client.acceptEntity( hits.next(), hits.currentScore() ) )
             {
                 return true;
             }

@@ -23,19 +23,20 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-class IndexCursorFilter implements IndexCursorProgressor.NodeValueCursor
+class IndexCursorFilter implements IndexProgressor.NodeValueClient
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
-    private final IndexCursorProgressor.NodeValueCursor target;
+    private final IndexProgressor.NodeValueClient target;
     private final NodeCursor node;
     private final PropertyCursor property;
     private final IndexQuery[] filters;
     private int[] keys;
 
     IndexCursorFilter(
-            IndexCursorProgressor.NodeValueCursor target,
+            IndexProgressor.NodeValueClient target,
             NodeCursor node, PropertyCursor property, IndexQuery... filters )
     {
         this.target = target;
@@ -46,10 +47,10 @@ class IndexCursorFilter implements IndexCursorProgressor.NodeValueCursor
     }
 
     @Override
-    public void initialize( IndexCursorProgressor progressor, int[] keys )
+    public void initialize( IndexProgressor progressor, int[] propertyIds )
     {
-        this.keys = keys;
-        target.initialize( progressor, keys );
+        this.keys = propertyIds;
+        target.initialize( progressor, propertyIds );
     }
 
     @Override
@@ -61,7 +62,7 @@ class IndexCursorFilter implements IndexCursorProgressor.NodeValueCursor
     }
 
     @Override
-    public boolean node( long reference, Value[] values )
+    public boolean acceptNode( long reference, Value[] values )
     {
         if ( keys != null && values != null )
         {
@@ -102,7 +103,7 @@ class IndexCursorFilter implements IndexCursorProgressor.NodeValueCursor
             assert false : "Cannot satisfy filter " + filter + " - no corresponding key!";
             return false;
         }
-        return target.node( reference, values );
+        return target.acceptNode( reference, values );
     }
 
     private boolean filterByCursors( long reference, Value[] values )
@@ -132,6 +133,6 @@ class IndexCursorFilter implements IndexCursorProgressor.NodeValueCursor
         {
             return false; // not all filters were matched
         }
-        return target.node( reference, values );
+        return target.acceptNode( reference, values );
     }
 }

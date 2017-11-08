@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class NodeLabelIndexCursor extends IndexCursor
-        implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor, IndexCursorProgressor.NodeLabelCursor
+        implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor, NodeLabelClient
 {
     private final Read read;
     private long node;
@@ -37,13 +39,13 @@ class NodeLabelIndexCursor extends IndexCursor
     }
 
     @Override
-    public void initialize( IndexCursorProgressor progressor, boolean providesLabels )
+    public void initialize( IndexProgressor progressor, boolean providesLabels )
     {
         super.initialize( progressor );
     }
 
     @Override
-    public boolean node( long reference, LabelSet labels )
+    public boolean acceptNode( long reference, LabelSet labels )
     {
         this.node = reference;
         this.labels = labels;

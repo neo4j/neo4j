@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressor.ExplicitClient;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class NodeExplicitIndexCursor extends IndexCursor
-        implements org.neo4j.internal.kernel.api.NodeExplicitIndexCursor, IndexCursorProgressor.ExplicitCursor
+        implements org.neo4j.internal.kernel.api.NodeExplicitIndexCursor, ExplicitClient
 {
     private final Read read;
     private int expectedSize;
@@ -37,14 +39,14 @@ class NodeExplicitIndexCursor extends IndexCursor
     }
 
     @Override
-    public void initialize( IndexCursorProgressor progressor, int expectedSize )
+    public void initialize( IndexProgressor progressor, int expectedSize )
     {
         super.initialize( progressor );
         this.expectedSize = expectedSize;
     }
 
     @Override
-    public boolean entity( long reference, float score )
+    public boolean acceptEntity( long reference, float score )
     {
         this.node = reference;
         this.score = score;

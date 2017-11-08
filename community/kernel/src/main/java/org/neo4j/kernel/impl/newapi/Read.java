@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.values.storable.ArrayValue;
@@ -59,7 +60,7 @@ abstract class Read implements
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
             IndexQuery... query ) throws KernelException
     {
-        IndexCursorProgressor.NodeValueCursor target = (NodeValueIndexCursor) cursor;
+        IndexProgressor.NodeValueClient target = (NodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( (IndexReference) index );
         if ( !reader.hasFullNumberPrecision( query ) )
         {
@@ -127,9 +128,9 @@ abstract class Read implements
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
     }
 
-    private void labelScan( IndexCursorProgressor.NodeLabelCursor target, PrimitiveLongIterator iterator )
+    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongIterator iterator )
     {
-        target.initialize( new NodeLabelIndexProgressor( iterator, target ), false );
+        client.initialize( new NodeLabelIndexProgressor( iterator, client ), false );
     }
 
     @Override
@@ -339,9 +340,9 @@ abstract class Read implements
                         key, query instanceof Value ? ((Value) query).asObject() : query, source, target ) );
     }
 
-    private static void explicitIndex( IndexCursorProgressor.ExplicitCursor cursor, ExplicitIndexHits hits )
+    private static void explicitIndex( IndexProgressor.ExplicitClient client, ExplicitIndexHits hits )
     {
-        cursor.initialize( new ExplicitIndexProgressor( cursor, hits ), hits.size() );
+        client.initialize( new ExplicitIndexProgressor( hits, client ), hits.size() );
     }
 
     @Override
