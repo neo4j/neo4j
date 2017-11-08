@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
-import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState =>  OldQueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
+import org.neo4j.cypher.internal.runtime.vectorized._
 /*
 Takes an input morsel and compacts all rows to the beginning of it, only keeping the rows that match a predicate
  */
@@ -38,15 +38,14 @@ class FilterOperator(pipeline: PipelineInformation, predicate: Predicate) extend
     val longCount = pipeline.numberOfLongs
     val refCount = pipeline.numberOfReferences
     val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = readingPos)
-    val longs = data.longs
-    val objects = data.refs
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     while (readingPos < data.validRows) {
       currentRow.currentRow = readingPos
-      if (predicate.isTrue(currentRow, queryState)) {
-        System.arraycopy(data.longs, readingPos * longCount, longs, longCount * writingPos, longCount)
-        System.arraycopy(data.refs, readingPos * refCount, objects, refCount * writingPos, refCount)
+      val matches = predicate.isTrue(currentRow, queryState)
+      if (matches) {
+        System.arraycopy(data.longs, readingPos * longCount, data.longs, writingPos * longCount, longCount)
+        System.arraycopy(data.refs, readingPos * refCount, data.refs, writingPos * refCount, refCount)
         writingPos += 1
       }
       readingPos += 1

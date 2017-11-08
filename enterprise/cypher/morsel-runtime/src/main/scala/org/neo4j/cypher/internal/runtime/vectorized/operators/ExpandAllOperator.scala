@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
-import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
+import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.impl.api.RelationshipVisitor
@@ -37,7 +37,7 @@ class ExpandAllOperator(toPipeline: PipelineInformation,
                         dir: SemanticDirection,
                         types: LazyTypes) extends Operator {
 
-  override def operate( source: Message,
+  override def operate(source: Message,
                        output: Morsel,
                        context: QueryContext,
                        state: QueryState): Continuation = {
@@ -70,19 +70,23 @@ class ExpandAllOperator(toPipeline: PipelineInformation,
         throw new InternalException("Unknown continuation received")
     }
 
+    val inputLongCount = fromPipeline.numberOfLongs
+    val inputRefCount = fromPipeline.numberOfReferences
+    val outputLongCount = toPipeline.numberOfLongs
+    val outputRefCount = toPipeline.numberOfReferences
+
     while (readPos < input.validRows && writePos < output.validRows) {
 
-      val inputLongRow = readPos * fromPipeline.numberOfLongs
-      val fromNode = input.longs(inputLongRow + fromOffset)
-
+      val fromNode = input.longs(readPos * inputLongCount + fromOffset)
       if (nodeIsNull(fromNode))
-        readPos += 1
+      readPos += 1
       else {
         if (relationships == null) {
           relationships = context.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(context))
         }
 
         var otherSide: Long = 0
+
         val relVisitor = new RelationshipVisitor[InternalException] {
           override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =
             if (fromNode == startNodeId)
@@ -90,17 +94,15 @@ class ExpandAllOperator(toPipeline: PipelineInformation,
             else
               otherSide = startNodeId
         }
-
         while (writePos < output.validRows && relationships.hasNext) {
           val relId = relationships.next()
           relationships.relationshipVisit(relId, relVisitor)
 
           // Now we have everything needed to create a row.
-          val outputRow = toPipeline.numberOfLongs * writePos
-          System.arraycopy(input.longs, inputLongRow, output.longs, outputRow, fromPipeline.numberOfLongs)
-          System.arraycopy(input.refs, fromPipeline.numberOfReferences * readPos, output.refs, toPipeline.numberOfReferences * writePos, fromPipeline.numberOfReferences)
-          output.longs(outputRow + relOffset) = relId
-          output.longs(outputRow + toOffset) = otherSide
+          System.arraycopy(input.longs, readPos * inputLongCount, output.longs, writePos * outputLongCount, inputLongCount)
+          System.arraycopy(input.refs, readPos * inputRefCount, output.refs, writePos * outputRefCount, inputRefCount)
+          output.longs(writePos * outputLongCount + relOffset) = relId
+          output.longs(writePos * outputLongCount + toOffset) = otherSide
           writePos += 1
         }
 
