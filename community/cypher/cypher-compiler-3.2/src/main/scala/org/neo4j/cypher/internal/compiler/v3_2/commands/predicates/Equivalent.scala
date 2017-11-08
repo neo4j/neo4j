@@ -113,7 +113,7 @@ object Equivalent {
     val it = x.toIterator
     if (it.isEmpty) return None
     val e1 = eager(it.next())
-    if (it.isEmpty) return e1
+    if (it.isEmpty) return Some(e1)
     val e2 = eager(it.next())
     if (it.isEmpty) return (e1, e2)
     val e3 = eager(it.next())

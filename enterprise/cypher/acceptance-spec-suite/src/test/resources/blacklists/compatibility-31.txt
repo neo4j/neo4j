@@ -7,3 +7,5 @@ Ordering for lists, ascending
 Ordering for lists, descending
 
 Shorthand case with filter should work as expected
+equality with boolean lists
+optional equality with boolean lists
