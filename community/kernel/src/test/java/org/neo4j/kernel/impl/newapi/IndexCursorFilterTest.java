@@ -53,7 +53,7 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
-        IndexCursorFilter filter = initializeFilter( null );
+        NodeValueClientFilter filter = initializeFilter( null );
 
         // when
         assertTrue( filter.acceptNode( 17, null ) );
@@ -67,7 +67,7 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
     public void shouldRejectNodeNotInUse() throws Exception
     {
         // given
-        IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
         assertFalse( filter.acceptNode( 17, null ) );
@@ -82,7 +82,7 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
-        IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
         assertFalse( filter.acceptNode( 17, null ) );
@@ -98,7 +98,7 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         // given
         store.node( 17, 1, false, NO_ID, 0 );
         store.property( 1, NO_ID, NO_ID, block( 12, stringValue( "hello" ) ) );
-        IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
         assertTrue( filter.acceptNode( 17, null ) );
@@ -114,7 +114,7 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         // given
         store.node( 17, 1, false, NO_ID, 0 );
         store.property( 1, NO_ID, NO_ID, block( 7, stringValue( "wrong" ) ) );
-        IndexCursorFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
         assertFalse( filter.acceptNode( 17, null ) );
@@ -124,9 +124,9 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         assertEvents( initialize(), Event.DONE );
     }
 
-    private IndexCursorFilter initializeFilter( int[] keys, IndexQuery... filters )
+    private NodeValueClientFilter initializeFilter( int[] keys, IndexQuery... filters )
     {
-        IndexCursorFilter filter = new IndexCursorFilter(
+        NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, new NodeCursor( store ), new PropertyCursor( store ), filters );
         filter.initialize( this, keys );
         return filter;

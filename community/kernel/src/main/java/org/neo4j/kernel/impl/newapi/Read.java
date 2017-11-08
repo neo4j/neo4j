@@ -93,7 +93,7 @@ abstract class Read implements
             if ( j > 0 )
             {
                 filters = Arrays.copyOf( filters, j );
-                target = new IndexCursorFilter( target, new NodeCursor( this ), new PropertyCursor( this ), filters );
+                target = new NodeValueClientFilter( target, new NodeCursor( this ), new PropertyCursor( this ), filters );
             }
         }
         reader.query( target, query );

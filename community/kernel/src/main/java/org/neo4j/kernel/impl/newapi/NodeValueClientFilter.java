@@ -26,7 +26,11 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-class IndexCursorFilter implements IndexProgressor.NodeValueClient
+/**
+ * This class filters acceptNode() calls from an index progressor, to assert that exact entries returned from the
+ * progressor really match the exact property values. See also org.neo4j.kernel.impl.api.LookupFilter.
+ */
+class NodeValueClientFilter implements IndexProgressor.NodeValueClient
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
     private final IndexProgressor.NodeValueClient target;
@@ -35,7 +39,7 @@ class IndexCursorFilter implements IndexProgressor.NodeValueClient
     private final IndexQuery[] filters;
     private int[] keys;
 
-    IndexCursorFilter(
+    NodeValueClientFilter(
             IndexProgressor.NodeValueClient target,
             NodeCursor node, PropertyCursor property, IndexQuery... filters )
     {
