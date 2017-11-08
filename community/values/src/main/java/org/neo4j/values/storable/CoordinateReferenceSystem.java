@@ -29,8 +29,19 @@ public class CoordinateReferenceSystem implements CRS
     public static CoordinateReferenceSystem get( int tableId, int code )
     {
         CRSTable table = CRSTable.find( tableId );
-        // TODO this might break, since we are changing the name. Use the function below?
-        return new CoordinateReferenceSystem( table.getName() + "-" + code, table, code );
+        if ( tableId == CRSTable.SR_ORG.getTableId() && code == Cartesian.code )
+        {
+            return CoordinateReferenceSystem.Cartesian;
+        }
+        else if ( tableId == CRSTable.EPSG.getTableId() && code == WGS84.code )
+        {
+            return CoordinateReferenceSystem.WGS84;
+        }
+        else
+        {
+            // We expect this path only to get executed once we allow writing custom CRS's to the store
+            return new CoordinateReferenceSystem( table.getName() + "-" + code, table, code );
+        }
     }
 
     public static CoordinateReferenceSystem get( CRS crs )

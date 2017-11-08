@@ -124,9 +124,6 @@ public enum GeometryType
 
     public abstract Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset );
 
-    // TODO this might not work this way for Polygons or other geometries that do not
-    // know their length just from the firstBlock. Since we will probably use dynamic property
-    // stores, it might be that the answer here is just 1.
     public abstract int calculateNumberOfBlocksUsedForGeometry( long firstBlock );
 
     public abstract ArrayValue decodeArray( GeometryHeader header, byte[] data );

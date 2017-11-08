@@ -166,7 +166,9 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
         return crs;
     }
 
-    // TODO can we be sure consumers do not modify the internal array?
+    /*
+     * Consumers must not modify the returned array.
+     */
     public double[] coordinate()
     {
         return this.coordinate;
