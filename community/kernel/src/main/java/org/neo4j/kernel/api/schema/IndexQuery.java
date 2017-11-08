@@ -179,6 +179,7 @@ public abstract class IndexQuery implements Predicate<Value>
         return propertyKeyId;
     }
 
+    @Override
     public abstract boolean test( Value value );
 
     public enum IndexQueryType

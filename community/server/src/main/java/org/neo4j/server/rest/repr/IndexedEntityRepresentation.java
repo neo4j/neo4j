@@ -55,6 +55,7 @@ public final class IndexedEntityRepresentation extends MappingRepresentation imp
         return ( (ExtensibleRepresentation) entity ).getIdentity();
     }
 
+    @Override
     public ValueRepresentation selfUri()
     {
         return selfUri;

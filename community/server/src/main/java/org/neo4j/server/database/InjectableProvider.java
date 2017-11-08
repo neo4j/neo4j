@@ -66,6 +66,7 @@ public abstract class InjectableProvider<E> extends AbstractHttpContextInjectabl
         this.t = t;
     }
 
+    @Override
     public Injectable<E> getInjectable( ComponentContext ic, Context a, Class<E> c )
     {
         if ( c.equals( t ) )
@@ -81,6 +82,7 @@ public abstract class InjectableProvider<E> extends AbstractHttpContextInjectabl
         return this;
     }
 
+    @Override
     public ComponentScope getScope()
     {
         return ComponentScope.PerRequest;

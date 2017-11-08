@@ -39,6 +39,7 @@ public class Alias extends AbstractApp
                 "Usage: alias <key>=<value>";
     }
 
+    @Override
     public Continuation execute( AppCommandParser parser, Session session,
                                  Output out ) throws Exception
     {

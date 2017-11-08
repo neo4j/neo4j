@@ -95,6 +95,7 @@ public class NamedThreadFactory implements ThreadFactory
         this.monitor = monitor;
     }
 
+    @Override
     public Thread newThread( Runnable runnable )
     {
         int id = threadCounter.getAndIncrement();

@@ -195,11 +195,13 @@ public class JmxService implements AdvertisableService
                 .build();
     }
 
+    @Override
     public String getName()
     {
         return "jmx";
     }
 
+    @Override
     public String getServerPath()
     {
         return ROOT_PATH;

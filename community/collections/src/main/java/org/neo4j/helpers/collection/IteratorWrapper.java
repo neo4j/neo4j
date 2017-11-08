@@ -37,16 +37,19 @@ public abstract class IteratorWrapper<T, U> implements Iterator<T>
         this.source = iteratorToWrap;
     }
 
+    @Override
     public boolean hasNext()
     {
         return this.source.hasNext();
     }
 
+    @Override
     public T next()
     {
         return underlyingObjectToObject( this.source.next() );
     }
 
+    @Override
     public void remove()
     {
         this.source.remove();

@@ -241,26 +241,31 @@ public enum NotificationCode
             }
         }
 
+        @Override
         public String getCode()
         {
             return status.code().serialize();
         }
 
+        @Override
         public String getTitle()
         {
             return status.code().description();
         }
 
+        @Override
         public String getDescription()
         {
             return detailedDescription;
         }
 
+        @Override
         public InputPosition getPosition()
         {
             return position;
         }
 
+        @Override
         public SeverityLevel getSeverity()
         {
             return severity;

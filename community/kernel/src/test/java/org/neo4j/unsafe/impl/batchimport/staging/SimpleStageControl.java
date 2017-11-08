@@ -46,6 +46,7 @@ public class SimpleStageControl implements StageControl
         }
     }
 
+    @Override
     public void assertHealthy()
     {
         if ( panic != null )

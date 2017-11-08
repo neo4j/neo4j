@@ -111,6 +111,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
             this.dirs = dirs;
         }
 
+        @Override
         public Double getCost( Relationship relationship, Direction direction )
         {
             if ( !dirs.containsKey( relationship ) )

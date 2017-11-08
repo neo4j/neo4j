@@ -67,6 +67,7 @@ class SourceCodeGenerator extends CodeGenerator
         return writer;
     }
 
+    @Override
     protected Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader ) throws CompilationFailureException
     {
         return compiler.compile( sourceFiles(), classpathLoader );

@@ -80,6 +80,7 @@ public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.S
         return descriptor.schema();
     }
 
+    @Override
     public ConstraintDescriptor getConstraintDescriptor()
     {
         return descriptor;

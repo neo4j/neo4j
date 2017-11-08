@@ -217,6 +217,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return swapper.file();
     }
 
+    @Override
     public void close() throws IOException
     {
         pageCache.unmap( this );

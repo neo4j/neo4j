@@ -92,6 +92,7 @@ public final class DynamicRelationshipType implements RelationshipType
      *
      * @return the name of the relationship type
      */
+    @Override
     public String name()
     {
         return this.name;

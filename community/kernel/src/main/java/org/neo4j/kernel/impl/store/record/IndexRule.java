@@ -148,6 +148,7 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
         return descriptor.schema();
     }
 
+    @Override
     public IndexDescriptor getIndexDescriptor()
     {
         return descriptor;

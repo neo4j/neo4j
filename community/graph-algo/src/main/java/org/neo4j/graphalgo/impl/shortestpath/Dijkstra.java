@@ -118,6 +118,7 @@ public class Dijkstra<CostType> implements
      * Resets the result data to force the computation to be run again when some
      * result is asked for.
      */
+    @Override
     public void reset()
     {
         doneCalculation = false;
@@ -231,11 +232,13 @@ public class Dijkstra<CostType> implements
             mySeen.put( startNode, startCost );
         }
 
+        @Override
         public boolean hasNext()
         {
             return !queue.isEmpty() && !limitReached();
         }
 
+        @Override
         public void remove()
         {
             // Not used
@@ -286,6 +289,7 @@ public class Dijkstra<CostType> implements
             }
         }
 
+        @Override
         public Node next()
         {
             Node currentNode = queue.extractMin();
@@ -528,6 +532,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return The cost for the found path(s).
      */
+    @Override
     public CostType getCost()
     {
         if ( startNode == null || endNode == null )
@@ -541,6 +546,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return All the found paths or null.
      */
+    @Override
     public List<List<PropertyContainer>> getPaths()
     {
         if ( startNode == null || endNode == null )
@@ -581,6 +587,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return All the found paths or null.
      */
+    @Override
     public List<List<Node>> getPathsAsNodes()
     {
         if ( startNode == null || endNode == null )
@@ -621,6 +628,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return All the found paths or null.
      */
+    @Override
     public List<List<Relationship>> getPathsAsRelationships()
     {
         if ( startNode == null || endNode == null )
@@ -661,6 +669,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return One of the shortest paths found or null.
      */
+    @Override
     public List<PropertyContainer> getPath()
     {
         if ( startNode == null || endNode == null )
@@ -684,6 +693,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return One of the shortest paths found or null.
      */
+    @Override
     public List<Node> getPathAsNodes()
     {
         if ( startNode == null || endNode == null )
@@ -707,6 +717,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return One of the shortest paths found or null.
      */
+    @Override
     public List<Relationship> getPathAsRelationships()
     {
         if ( startNode == null || endNode == null )
@@ -754,6 +765,7 @@ public class Dijkstra<CostType> implements
      *
      * @param endNode the endNode to set
      */
+    @Override
     public void setEndNode( Node endNode )
     {
         reset();
@@ -765,6 +777,7 @@ public class Dijkstra<CostType> implements
      *
      * @param startNode the startNode to set
      */
+    @Override
     public void setStartNode( Node startNode )
     {
         this.startNode = startNode;
@@ -774,6 +787,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return the relationDirection
      */
+    @Override
     public Direction getDirection()
     {
         return relationDirection;
@@ -782,6 +796,7 @@ public class Dijkstra<CostType> implements
     /**
      * @return the costRelationType
      */
+    @Override
     public RelationshipType[] getRelationshipTypes()
     {
         return costRelationTypes;

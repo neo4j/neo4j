@@ -84,6 +84,7 @@ public abstract class AbstractClient implements ShellClient
         };
     }
 
+    @Override
     public void grabPrompt()
     {
         init();
@@ -209,6 +210,7 @@ public abstract class AbstractClient implements ShellClient
         return e.getMessage();
     }
 
+    @Override
     public String getPrompt()
     {
         if ( !multiLine.isEmpty() )
@@ -275,11 +277,13 @@ public abstract class AbstractClient implements ShellClient
         this.timeConnection = System.currentTimeMillis();
     }
 
+    @Override
     public long timeForMostRecentConnection()
     {
         return timeConnection;
     }
 
+    @Override
     public void shutdown()
     {
         if ( !multiLine.isEmpty() )

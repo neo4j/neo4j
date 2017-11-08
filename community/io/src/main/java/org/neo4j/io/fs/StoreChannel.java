@@ -64,7 +64,9 @@ public interface StoreChannel
 
     void force( boolean metaData ) throws IOException;
 
+    @Override
     StoreChannel position( long newPosition ) throws IOException;
 
+    @Override
     StoreChannel truncate( long size ) throws IOException;
 }

@@ -112,6 +112,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         return transaction.transactionType() == KernelTransaction.Type.implicit;
     }
 
+    @Override
     public void close( boolean success )
     {
         if ( isOpen )

@@ -32,21 +32,25 @@ public class DelegatingPagedFile implements PagedFile
         this.delegate = delegate;
     }
 
+    @Override
     public PageCursor io( long pageId, int pf_flags ) throws IOException
     {
         return delegate.io( pageId, pf_flags );
     }
 
+    @Override
     public void flushAndForce() throws IOException
     {
         delegate.flushAndForce();
     }
 
+    @Override
     public long getLastPageId() throws IOException
     {
         return delegate.getLastPageId();
     }
 
+    @Override
     public int pageSize()
     {
         return delegate.pageSize();
@@ -58,6 +62,7 @@ public class DelegatingPagedFile implements PagedFile
         return delegate.fileSize();
     }
 
+    @Override
     public void close() throws IOException
     {
         delegate.close();
@@ -75,6 +80,7 @@ public class DelegatingPagedFile implements PagedFile
         return delegate.openWritableByteChannel();
     }
 
+    @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         delegate.flushAndForce( limiter );

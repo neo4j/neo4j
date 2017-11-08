@@ -41,6 +41,7 @@ import org.neo4j.graphdb.RelationshipType;
 class PluginPointFactoryImpl implements PluginPointFactory
 {
 
+    @Override
     public PluginPoint createFrom( ServerPlugin plugin, Method method, Class<?> discovery )
     {
         ResultConverter result = ResultConverter.get( method.getGenericReturnType() );

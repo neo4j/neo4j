@@ -28,6 +28,7 @@ class NotUnique extends AbstractUniquenessFilter
         super( null );
     }
 
+    @Override
     public boolean check( TraversalBranch source )
     {
         return true;

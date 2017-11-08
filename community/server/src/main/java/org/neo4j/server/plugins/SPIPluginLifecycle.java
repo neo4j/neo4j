@@ -28,5 +28,6 @@ public interface SPIPluginLifecycle extends PluginLifecycle
 
     Collection<Injectable<?>> start( NeoServer neoServer );
 
+    @Override
     void stop();
 }

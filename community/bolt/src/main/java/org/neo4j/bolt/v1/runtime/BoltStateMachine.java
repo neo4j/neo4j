@@ -34,8 +34,8 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
-import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.values.AnyValue;
@@ -733,6 +733,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             }
         }
 
+        @Override
         public void onRecords( BoltResult result, boolean pull ) throws Exception
         {
             if ( responseHandler != null )

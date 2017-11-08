@@ -178,6 +178,7 @@ public interface PagedFile extends AutoCloseable
      * @throws IOException instead of the Exception superclass as defined in AutoCloseable, if .
      * @see AutoCloseable#close()
      */
+    @Override
     void close() throws IOException;
 
     /**

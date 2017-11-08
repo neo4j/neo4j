@@ -52,11 +52,13 @@ public abstract class IntegralValue extends NumberValue
         }
     }
 
+    @Override
     public int compareTo( IntegralValue other )
     {
         return Long.compare( longValue(), other.longValue() );
     }
 
+    @Override
     public int compareTo( FloatingPointValue other )
     {
         return NumberValues.compareLongAgainstDouble( longValue(), other.doubleValue() );

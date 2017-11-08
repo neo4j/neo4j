@@ -36,41 +36,49 @@ public class DelegatingPageSwapper implements PageSwapper
         this.delegate = delegate;
     }
 
+    @Override
     public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
     {
         return delegate.read( filePageId, bufferAddress, bufferSize );
     }
 
+    @Override
     public void close() throws IOException
     {
         delegate.close();
     }
 
+    @Override
     public void evicted( long filePageId )
     {
         delegate.evicted( filePageId );
     }
 
+    @Override
     public void force() throws IOException
     {
         delegate.force();
     }
 
+    @Override
     public File file()
     {
         return delegate.file();
     }
 
+    @Override
     public long write( long filePageId, long bufferAddress ) throws IOException
     {
         return delegate.write( filePageId, bufferAddress );
     }
 
+    @Override
     public long getLastPageId() throws IOException
     {
         return delegate.getLastPageId();
     }
 
+    @Override
     public void truncate() throws IOException
     {
         delegate.truncate();
@@ -82,11 +90,13 @@ public class DelegatingPageSwapper implements PageSwapper
         delegate.closeAndDelete();
     }
 
+    @Override
     public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
     {
         return delegate.read( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
     }
 
+    @Override
     public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         return delegate.write( startFilePageId, bufferAddresses, arrayOffset, length );

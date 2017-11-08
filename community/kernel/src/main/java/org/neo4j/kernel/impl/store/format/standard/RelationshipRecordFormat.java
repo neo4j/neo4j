@@ -47,6 +47,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
         return new RelationshipRecord( -1 );
     }
 
+    @Override
     public void read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize ) throws IOException
     {
         byte headerByte = cursor.getByte();

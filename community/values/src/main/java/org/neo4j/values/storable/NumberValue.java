@@ -47,6 +47,7 @@ public abstract class NumberValue extends ScalarValue
         return false;
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.NUMBER;

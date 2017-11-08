@@ -28,6 +28,7 @@ abstract class AbstractUniquenessFilter implements BidirectionalUniquenessFilter
         this.type = type;
     }
 
+    @Override
     public boolean checkFirst( TraversalBranch branch )
     {
         return type == PrimitiveTypeFetcher.RELATIONSHIP || check( branch );

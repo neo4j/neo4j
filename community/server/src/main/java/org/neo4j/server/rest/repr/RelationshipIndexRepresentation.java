@@ -35,6 +35,7 @@ public class RelationshipIndexRepresentation extends IndexRepresentation
         super( name, config );
     }
 
+    @Override
     public String propertyContainerType()
     {
         return "relationship";

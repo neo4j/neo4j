@@ -47,6 +47,7 @@ public class AdversarialChannelDefaultFileSystemAbstraction extends DefaultFileS
         this.adversary = adversary;
     }
 
+    @Override
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )
     {
         return AdversarialFileChannel.wrap( super.getStoreFileChannel( channel ), adversary );

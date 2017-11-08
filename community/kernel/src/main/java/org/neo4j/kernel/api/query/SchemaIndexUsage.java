@@ -41,6 +41,7 @@ public class SchemaIndexUsage extends IndexUsage
         return labelId;
     }
 
+    @Override
     public Map<String,String> asMap()
     {
         Map<String,String> map = new HashMap<>();

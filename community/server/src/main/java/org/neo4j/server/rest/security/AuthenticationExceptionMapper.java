@@ -34,6 +34,7 @@ import javax.ws.rs.ext.Provider;
 public class AuthenticationExceptionMapper implements ExceptionMapper<AuthenticationException>
 {
 
+    @Override
     public Response toResponse( AuthenticationException e )
     {
         if ( e.getRealm() != null )

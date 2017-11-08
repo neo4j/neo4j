@@ -132,6 +132,7 @@ public class SwitchToSlaveBranchThenCopy extends SwitchToSlave
         this.logService = logService;
     }
 
+    @Override
     void checkDataConsistency( MasterClient masterClient, TransactionIdStore txIdStore, StoreId storeId,
                                        URI masterUri, URI me,
                                        CancellationRequest cancellationRequest ) throws Throwable

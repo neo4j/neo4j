@@ -148,6 +148,7 @@ final class NoValue extends Value
         return "NO_VALUE";
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.NO_VALUE;

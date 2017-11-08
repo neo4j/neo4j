@@ -116,6 +116,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         return new BoundState( clusterId, snapshot );
     }
 
+    @Override
     public Optional<ClusterId> get()
     {
         return Optional.ofNullable( clusterId );

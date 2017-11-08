@@ -70,11 +70,13 @@ public abstract class NodeValue extends VirtualNodeValue
             this.properties = properties;
         }
 
+        @Override
         public TextArray labels()
         {
             return labels;
         }
 
+        @Override
         public MapValue properties()
         {
             return properties;

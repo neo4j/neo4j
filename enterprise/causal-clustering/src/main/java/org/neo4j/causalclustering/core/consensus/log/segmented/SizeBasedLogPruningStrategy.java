@@ -32,6 +32,7 @@ class SizeBasedLogPruningStrategy implements CoreLogPruningStrategy, Visitor<Seg
         this.bytesToKeep = bytesToKeep;
     }
 
+    @Override
     public synchronized long getIndexToKeep( Segments segments )
     {
         accumulatedSize = 0;

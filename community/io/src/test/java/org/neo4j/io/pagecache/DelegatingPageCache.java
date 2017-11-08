@@ -23,9 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Optional;
-import java.util.stream.Stream;
 
-import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class DelegatingPageCache implements PageCache
@@ -37,6 +35,7 @@ public class DelegatingPageCache implements PageCache
         this.delegate = delegate;
     }
 
+    @Override
     public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
     {
         return delegate.map( file, pageSize, openOptions );
@@ -48,16 +47,19 @@ public class DelegatingPageCache implements PageCache
         return delegate.getExistingMapping( file );
     }
 
+    @Override
     public int pageSize()
     {
         return delegate.pageSize();
     }
 
+    @Override
     public void close()
     {
         delegate.close();
     }
 
+    @Override
     public long maxCachedPages()
     {
         return delegate.maxCachedPages();
@@ -69,11 +71,13 @@ public class DelegatingPageCache implements PageCache
         return delegate.getCachedFileSystem();
     }
 
+    @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         delegate.flushAndForce( limiter );
     }
 
+    @Override
     public void flushAndForce() throws IOException
     {
         delegate.flushAndForce();

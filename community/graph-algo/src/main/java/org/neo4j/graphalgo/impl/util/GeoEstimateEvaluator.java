@@ -37,6 +37,7 @@ public class GeoEstimateEvaluator implements EstimateEvaluator<Double>
         this.longitudePropertyKey = longitudePropertyKey;
     }
 
+    @Override
     public Double getCost( Node node, Node goal )
     {
         double[] nodeCoordinates = getCoordinates( node );

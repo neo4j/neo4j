@@ -46,6 +46,7 @@ public class ShellTabCompleter implements Completer
         this.client = client;
     }
 
+    @Override
     public int complete( String buffer, int cursor, List candidates )
     {
         if ( buffer == null || buffer.length() == 0 )

@@ -119,11 +119,13 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
         luceneIndex.markAsFailed( failure );
     }
 
+    @Override
     public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
     {
         return luceneIndex.hasSinglePartition( partitions );
     }
 
+    @Override
     public AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
     {
         return luceneIndex.getFirstPartition( partitions );

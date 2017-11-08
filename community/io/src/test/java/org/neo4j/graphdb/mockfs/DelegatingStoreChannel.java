@@ -34,92 +34,110 @@ public class DelegatingStoreChannel implements StoreChannel
         this.delegate = delegate;
     }
 
+    @Override
     public FileLock tryLock() throws IOException
     {
         return delegate.tryLock();
     }
 
+    @Override
     public int write( ByteBuffer src, long position ) throws IOException
     {
         return delegate.write( src, position );
     }
 
+    @Override
     public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
     {
         return delegate.write( srcs, offset, length );
     }
 
+    @Override
     public void close() throws IOException
     {
         delegate.close();
     }
 
+    @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         delegate.writeAll( src, position );
     }
 
+    @Override
     public StoreChannel truncate( long size ) throws IOException
     {
         delegate.truncate( size );
         return this;
     }
 
+    @Override
     public void writeAll( ByteBuffer src ) throws IOException
     {
         delegate.writeAll( src );
     }
 
+    @Override
     public int write( ByteBuffer src ) throws IOException
     {
         return delegate.write( src );
     }
 
+    @Override
     public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
     {
         return delegate.read( dsts, offset, length );
     }
 
+    @Override
     public long write( ByteBuffer[] srcs ) throws IOException
     {
         return delegate.write( srcs );
     }
 
+    @Override
     public boolean isOpen()
     {
         return delegate.isOpen();
     }
 
+    @Override
     public int read( ByteBuffer dst ) throws IOException
     {
         return delegate.read( dst );
     }
 
+    @Override
     public void force( boolean metaData ) throws IOException
     {
         delegate.force( metaData );
     }
 
+    @Override
     public long read( ByteBuffer[] dsts ) throws IOException
     {
         return delegate.read( dsts );
     }
 
+    @Override
     public int read( ByteBuffer dst, long position ) throws IOException
     {
         return delegate.read( dst, position );
     }
 
+    @Override
     public long position() throws IOException
     {
         return delegate.position();
     }
 
+    @Override
     public long size() throws IOException
     {
         return delegate.size();
     }
 
+    @Override
     public StoreChannel position( long newPosition ) throws IOException
     {
         delegate.position( newPosition );

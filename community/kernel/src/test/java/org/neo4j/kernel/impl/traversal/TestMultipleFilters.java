@@ -94,6 +94,7 @@ public class TestMultipleFilters extends TraversalTestBase
             }
         }
 
+        @Override
         public Evaluation evaluate( Path path )
         {
             return test( path ) ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.EXCLUDE_AND_CONTINUE;

@@ -32,6 +32,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
         this.entity = entity;
     }
 
+    @Override
     public boolean isEmpty()
     {
         return !entity.getPropertyKeys()

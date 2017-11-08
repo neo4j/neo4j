@@ -22,9 +22,9 @@ package org.neo4j.causalclustering.core.state.machines.locks;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
+import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
@@ -49,6 +49,7 @@ public class ReplicatedLockTokenRequest implements CoreReplicatedContent, LockTo
         return candidateId;
     }
 
+    @Override
     public MemberId owner()
     {
         return owner;

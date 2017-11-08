@@ -38,6 +38,7 @@ public abstract class NestingIterable<T, U> implements Iterable<T>
         this.source = source;
     }
 
+    @Override
     public Iterator<T> iterator()
     {
         return new NestingIterator<T, U>( source.iterator() )

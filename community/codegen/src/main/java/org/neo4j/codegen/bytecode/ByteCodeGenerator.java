@@ -58,6 +58,7 @@ class ByteCodeGenerator extends CodeGenerator
         return codeWriter;
     }
 
+    @Override
     protected Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader ) throws CompilationFailureException
     {
         List<ByteCodes> byteCodes = new ArrayList<>( classes.size() );

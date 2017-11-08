@@ -30,6 +30,7 @@ import org.neo4j.shell.impl.AbstractApp;
  */
 public class Jsh extends AbstractApp
 {
+    @Override
     public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {

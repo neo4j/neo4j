@@ -590,6 +590,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      *
      * @param id The id to free
      */
+    @Override
     public void freeId( long id )
     {
         IdGenerator generator = this.idGenerator;

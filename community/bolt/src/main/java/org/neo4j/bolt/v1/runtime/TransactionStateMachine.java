@@ -29,8 +29,8 @@ import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -126,6 +126,7 @@ public class TransactionStateMachine implements StatementProcessor
         }
     }
 
+    @Override
     public void markCurrentTransactionForTermination()
     {
         KernelTransaction tx = ctx.currentTransaction;

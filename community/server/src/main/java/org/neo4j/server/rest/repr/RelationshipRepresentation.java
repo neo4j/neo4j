@@ -53,6 +53,7 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
         return rel.getId();
     }
 
+    @Override
     @Mapping( "self" )
     public ValueRepresentation selfUri()
     {

@@ -73,6 +73,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     @Rule
     public final RandomRule random = new RandomRule();
 
+    @Override
     protected GraphDatabaseService createGraphDatabase()
     {
         return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()

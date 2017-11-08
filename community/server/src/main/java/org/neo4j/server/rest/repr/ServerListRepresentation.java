@@ -28,6 +28,7 @@ public class ServerListRepresentation extends ListRepresentation
         super( type, content );
     }
 
+    @Override
     protected void serialize( ListSerializer serializer )
     {
         for ( Object val : content )

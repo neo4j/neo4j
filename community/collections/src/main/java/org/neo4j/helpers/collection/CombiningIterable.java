@@ -37,6 +37,7 @@ public class CombiningIterable<T> implements Iterable<T>
         this.iterables = iterables;
     }
 
+    @Override
     public Iterator<T> iterator()
     {
         LinkedList<Iterator<T>> iterators = new LinkedList<Iterator<T>>();

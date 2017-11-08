@@ -34,6 +34,7 @@ public class FailingByteChannel extends KnownDataByteChannel
         this.failWithMessage = failWithMessage;
     }
 
+    @Override
     public int read( ByteBuffer dst ) throws IOException
     {
         if ( position > sizeToFailAt )

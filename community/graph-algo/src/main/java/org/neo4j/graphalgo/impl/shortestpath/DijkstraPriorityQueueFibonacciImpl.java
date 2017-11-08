@@ -110,6 +110,7 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
                 (Comparator<HeapObject>) ( o1, o2 ) -> costComparator.compare( o1.getCost(), o2.getCost() ) );
     }
 
+    @Override
     public void decreaseValue( Node node, CostType newValue )
     {
         FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heapNodes
@@ -117,6 +118,7 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
         heap.decreaseKey( fNode, new HeapObject( node, newValue ) );
     }
 
+    @Override
     public Node extractMin()
     {
         HeapObject heapObject = heap.extractMin();
@@ -127,6 +129,7 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
         return heapObject.getNode();
     }
 
+    @Override
     public void insertValue( Node node, CostType value )
     {
         FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heap
@@ -134,11 +137,13 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
         heapNodes.put( node, fNode );
     }
 
+    @Override
     public boolean isEmpty()
     {
         return heap.isEmpty();
     }
 
+    @Override
     public Node peek()
     {
         FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heap.getMinimum();

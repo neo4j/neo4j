@@ -104,6 +104,7 @@ public final class BooleanValue extends ScalarValue
         return format( "Boolean('%s')", Boolean.toString( value ) );
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.BOOLEAN;

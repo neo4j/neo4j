@@ -83,6 +83,7 @@ public class FastSlf4jLog
         }
     }
 
+    @Override
     protected Logger newLogger( String fullname )
     {
         return new FastSlf4jLog( fullname );

@@ -60,6 +60,7 @@ class HEvents
             this.event = event;
         }
 
+        @Override
         public void print( PrintStream out, String exceptionLinePrefix )
         {
             out.print( '-' );

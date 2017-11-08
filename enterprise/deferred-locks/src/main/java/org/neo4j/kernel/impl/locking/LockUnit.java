@@ -43,11 +43,13 @@ public class LockUnit implements Comparable<LockUnit>, ActiveLock
         return exclusive ? EXCLUSIVE_MODE : SHARED_MODE;
     }
 
+    @Override
     public ResourceType resourceType()
     {
         return resourceType;
     }
 
+    @Override
     public long resourceId()
     {
         return resourceId;

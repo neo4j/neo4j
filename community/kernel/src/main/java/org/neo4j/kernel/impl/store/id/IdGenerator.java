@@ -23,6 +23,7 @@ import java.io.Closeable;
 
 public interface IdGenerator extends IdSequence, Closeable
 {
+    @Override
     IdRange nextIdBatch( int size );
 
     /**
@@ -36,6 +37,7 @@ public interface IdGenerator extends IdSequence, Closeable
     /**
      * Closes the id generator, marking it as clean.
      */
+    @Override
     void close();
     long getNumberOfIdsInUse();
     long getDefragCount();

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.RelationshipType;
 public class SingleSourceShortestPathBFSTest extends
     SingleSourceShortestPathTest
 {
+    @Override
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode )
     {
@@ -36,6 +37,7 @@ public class SingleSourceShortestPathBFSTest extends
         return sourceBFS;
     }
 
+    @Override
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode, Direction direction, RelationshipType... relTypes )
     {

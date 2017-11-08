@@ -70,6 +70,7 @@ public abstract class TextArray extends ArrayValue
         return false;
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.TEXT_ARRAY;

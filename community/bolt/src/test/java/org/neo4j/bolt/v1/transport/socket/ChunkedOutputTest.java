@@ -220,6 +220,7 @@ public class ChunkedOutputTest
 
         class ParallelWriter extends Thread
         {
+            @Override
             public void run()
             {
                 try

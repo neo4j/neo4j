@@ -56,6 +56,7 @@ public class MyVirtualValue extends VirtualValue
         return hashCode;
     }
 
+    @Override
     public void writeTo( AnyValueWriter writer )
     {
     }

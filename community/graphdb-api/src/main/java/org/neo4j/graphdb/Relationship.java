@@ -81,7 +81,8 @@ public interface Relationship extends Entity
      *
      * @return The id of this relationship
      */
-     long getId();
+    @Override
+    long getId();
 
     /**
      * Deletes this relationship. Invoking any methods on this relationship

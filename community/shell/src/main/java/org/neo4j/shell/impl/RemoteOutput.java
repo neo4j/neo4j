@@ -53,21 +53,25 @@ public class RemoteOutput extends UnicastRemoteObject implements Output
         }
     }
 
+    @Override
     public void print( Serializable object )
     {
         System.out.print( object );
     }
 
+    @Override
     public void println()
     {
         System.out.println();
     }
 
+    @Override
     public void println( Serializable object )
     {
         System.out.println( object );
     }
 
+    @Override
     public Appendable append( char ch )
     {
         this.print( ch );
@@ -85,12 +89,14 @@ public class RemoteOutput extends UnicastRemoteObject implements Output
         return sequence == null ? "null" : sequence.toString();
     }
 
+    @Override
     public Appendable append( CharSequence sequence )
     {
         this.println( asString( sequence ) );
         return this;
     }
 
+    @Override
     public Appendable append( CharSequence sequence, int start, int end )
     {
         this.print( asString( sequence ).substring( start, end ) );

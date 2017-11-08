@@ -38,11 +38,13 @@ public class ByteCountsMetric implements ByteCounterMonitor
         return bytesRead.getCount();
     }
 
+    @Override
     public void bytesWritten( long bytes )
     {
         bytesWritten.inc( bytes );
     }
 
+    @Override
     public void bytesRead( long bytes )
     {
         bytesRead.inc( bytes );

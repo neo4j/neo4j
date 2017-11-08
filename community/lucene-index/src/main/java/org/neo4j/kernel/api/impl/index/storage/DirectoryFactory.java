@@ -49,6 +49,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
      * Called when the directory factory is disposed of, really only here to allow
      * the ram directory thing to close open directories.
      */
+    @Override
     void close();
 
     DirectoryFactory PERSISTENT = new DirectoryFactory()

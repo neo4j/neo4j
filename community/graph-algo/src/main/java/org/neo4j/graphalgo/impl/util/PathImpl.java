@@ -140,11 +140,13 @@ public final class PathImpl implements Path
         return new Builder( start ).build();
     }
 
+    @Override
     public Node startNode()
     {
         return start;
     }
 
+    @Override
     public Node endNode()
     {
         if ( end != null )
@@ -161,11 +163,13 @@ public final class PathImpl implements Path
         return stepNode;
     }
 
+    @Override
     public Relationship lastRelationship()
     {
         return path != null && path.length > 0 ? path[path.length - 1] : null;
     }
 
+    @Override
     public Iterable<Node> nodes()
     {
         return nodeIterator( start, relationships() );
@@ -224,6 +228,7 @@ public final class PathImpl implements Path
         };
     }
 
+    @Override
     public Iterable<Relationship> relationships()
     {
         return () -> new ArrayIterator<>( path );
@@ -235,6 +240,7 @@ public final class PathImpl implements Path
         return () -> new ReverseArrayIterator<>( path );
     }
 
+    @Override
     public Iterator<PropertyContainer> iterator()
     {
         return new Iterator<PropertyContainer>()
@@ -268,6 +274,7 @@ public final class PathImpl implements Path
         };
     }
 
+    @Override
     public int length()
     {
         return path.length;

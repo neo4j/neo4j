@@ -54,6 +54,7 @@ public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.C
         this.applicationProcess = applicationProcess;
     }
 
+    @Override
     public synchronized void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
     {
         if ( boundClusterId == null )

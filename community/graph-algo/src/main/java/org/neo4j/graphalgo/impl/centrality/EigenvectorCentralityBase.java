@@ -111,6 +111,7 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
      * done the first time this method is run. Upon successive requests, the old
      * result is returned, unless the calculation is reset via {@link #reset()}
      */
+    @Override
     public void calculate()
     {
         // Don't do it more than once

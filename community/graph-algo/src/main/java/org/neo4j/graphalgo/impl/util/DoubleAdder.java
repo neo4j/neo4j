@@ -23,6 +23,7 @@ import org.neo4j.graphalgo.CostAccumulator;
 
 public class DoubleAdder implements CostAccumulator<Double>
 {
+        @Override
         public Double addCosts( Double c1, Double c2 )
         {
                 return c1 + c2;

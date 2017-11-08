@@ -50,35 +50,41 @@ public class SystemOutput implements Output
         this( new PrintWriter( new OutputStreamWriter( out, StandardCharsets.UTF_8 ) ) );
     }
 
+    @Override
     public void print( Serializable object )
     {
         out.print(object);
     }
 
+    @Override
     public void println()
     {
         out.println();
         out.flush();
     }
 
+    @Override
     public void println( Serializable object )
     {
         out.println( object );
         out.flush();
     }
 
+    @Override
     public Appendable append( char ch )
     {
         this.print( ch );
         return this;
     }
 
+    @Override
     public Appendable append( CharSequence sequence )
     {
         this.println( RemoteOutput.asString( sequence ) );
         return this;
     }
 
+    @Override
     public Appendable append( CharSequence sequence, int start, int end )
     {
         this.print( RemoteOutput.asString( sequence ).substring( start, end ) );

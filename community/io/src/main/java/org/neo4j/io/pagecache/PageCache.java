@@ -97,6 +97,7 @@ public interface PageCache extends AutoCloseable
      * @throws RuntimeException if the {@link PageSwapperFactory#close()} method throws. In this case the page cache
      * <em>WILL BE</em> considered to have been closed successfully.
      **/
+    @Override
     void close() throws IllegalStateException;
 
     /**

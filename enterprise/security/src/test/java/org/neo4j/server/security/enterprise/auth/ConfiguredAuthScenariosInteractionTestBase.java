@@ -97,6 +97,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
         transaction.close();
     }
 
+    @Override
     protected Object valueOf( Object obj )
     {
         return obj;

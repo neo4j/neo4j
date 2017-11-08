@@ -80,11 +80,13 @@ public class RemoteClient extends AbstractClient
         }
     }
 
+    @Override
     public Output getOutput()
     {
         return this.out;
     }
 
+    @Override
     public ShellServer getServer()
     {
         // Poke the server by calling a method, f.ex. the welcome() method.
@@ -131,6 +133,7 @@ public class RemoteClient extends AbstractClient
         return this.server;
     }
 
+    @Override
     public void shutdown()
     {
         super.shutdown();

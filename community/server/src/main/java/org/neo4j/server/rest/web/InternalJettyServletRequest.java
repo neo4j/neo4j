@@ -59,6 +59,7 @@ public class InternalJettyServletRequest extends Request
             bytes = UTF8.encode( data );
         }
 
+        @Override
         public int read() throws IOException
         {
             if ( bytes.length > position )
@@ -184,11 +185,13 @@ public class InternalJettyServletRequest extends Request
         return contentType;
     }
 
+    @Override
     public void setContentType( String contentType )
     {
         this.contentType = contentType;
     }
 
+    @Override
     public long getContentRead()
     {
         return input.contentRead();

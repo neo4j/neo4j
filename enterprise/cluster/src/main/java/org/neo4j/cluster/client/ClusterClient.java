@@ -161,6 +161,7 @@ public class ClusterClient
         snapshot.refreshSnapshot();
     }
 
+    @Override
     public void addBindingListener( BindingListener bindingListener )
     {
         protocolServer.addBindingListener( bindingListener );

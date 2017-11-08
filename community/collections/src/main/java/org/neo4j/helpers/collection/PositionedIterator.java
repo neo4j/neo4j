@@ -42,11 +42,13 @@ public class PositionedIterator<T> implements Iterator<T>
         inner = iterator;
     }
 
+    @Override
     public boolean hasNext()
     {
         return inner.hasNext();
     }
 
+    @Override
     public T next()
     {
         initiated = true;
@@ -54,6 +56,7 @@ public class PositionedIterator<T> implements Iterator<T>
         return current;
     }
 
+    @Override
     public void remove()
     {
         inner.remove();
