@@ -41,18 +41,23 @@ public class CoordinateReferenceSystem implements CRS
         }
         else
         {
-            if ( CoordinateReferenceSystem.WGS84.href.equals( crs.getHref() ) )
-            {
-                return CoordinateReferenceSystem.WGS84;
-            }
-            else if ( CoordinateReferenceSystem.Cartesian.href.equals( crs.getHref() ) )
-            {
-                return CoordinateReferenceSystem.Cartesian;
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Unknown CRS: " + crs );
-            }
+            return get(crs.getHref());
+        }
+    }
+
+    public static CoordinateReferenceSystem get( String href )
+    {
+        if ( CoordinateReferenceSystem.WGS84.href.equals( href ) )
+        {
+            return CoordinateReferenceSystem.WGS84;
+        }
+        else if ( CoordinateReferenceSystem.Cartesian.href.equals( href ) )
+        {
+            return CoordinateReferenceSystem.Cartesian;
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unknown CRS: " + href );
         }
     }
 

@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import java.lang.Math._
 
-import org.neo4j.cypher.internal.runtime.CRS
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{DoubleValue, PointValue, Values}
+import org.neo4j.values.storable.{CoordinateReferenceSystem, DoubleValue, PointValue, Values}
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
@@ -74,7 +73,8 @@ trait DistanceCalculator {
 
 object CartesianCalculator extends DistanceCalculator {
   override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.code == CRS.Cartesian.code && p2.getCoordinateReferenceSystem.code == CRS.Cartesian.code
+    p1.getCoordinateReferenceSystem.code == CoordinateReferenceSystem.Cartesian.code &&
+      p2.getCoordinateReferenceSystem.code == CoordinateReferenceSystem.Cartesian.code
 
   override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
     val p1Coordinates = p1.coordinate()
@@ -90,7 +90,8 @@ object HaversinCalculator extends DistanceCalculator {
   private val EARTH_RADIUS_METERS = 6378140.0
 
   override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.code == CRS.WGS84.code && p2.getCoordinateReferenceSystem.code == CRS.WGS84.code
+    p1.getCoordinateReferenceSystem.code == CoordinateReferenceSystem.WGS84.code &&
+      p2.getCoordinateReferenceSystem.code == CoordinateReferenceSystem.WGS84.code
 
   override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
     val c1Coord = p1.coordinate()

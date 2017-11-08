@@ -28,9 +28,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.cypher.internal.runtime.CRS;
-import org.neo4j.cypher.internal.runtime.CartesianPoint;
-import org.neo4j.cypher.internal.runtime.GeographicPoint;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -38,16 +35,15 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 /**
  * Used for turning parameters into appropriate types in the compiled runtime
@@ -346,18 +342,7 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     @Override
     public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
     {
-        if ( crs.equals( WGS84 ) )
-        {
-            writeValue( new GeographicPoint( coordinate[0], coordinate[1], new CRS( crs.name, crs.code, crs.href ) ) );
-        }
-        else if ( crs.equals( Cartesian ) )
-        {
-            writeValue( new CartesianPoint( coordinate[0], coordinate[1], new CRS( crs.name, crs.code, crs.href ) ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( crs + " is not a supported coordinate reference system" );
-        }
+        writeValue( Values.pointValue( crs, coordinate ) );
     }
 
     private interface Writer

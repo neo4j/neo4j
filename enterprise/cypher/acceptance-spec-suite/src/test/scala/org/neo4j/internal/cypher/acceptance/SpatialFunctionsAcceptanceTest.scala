@@ -20,10 +20,10 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -36,7 +36,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
   }
 
   test("point function should work with literal map and cartesian coordinates") {
@@ -44,7 +44,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5))))
   }
 
   test("point function should work with literal map and geographic coordinates") {
@@ -52,7 +52,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
       expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
   }
 
   test("point function should not work with literal map and incorrect cartesian CRS") {
@@ -68,7 +68,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> CartesianPoint(2, 4, CRS.Cartesian))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2, 4))))
   }
 
   test("should fail properly if missing cartesian coordinates") {
@@ -96,7 +96,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5))))
   }
 
   test("should default to WGS84 if missing geographic CRS") {
@@ -104,7 +104,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
   }
 
   test("should allow Geographic CRS with x/y coordinates") {
@@ -112,7 +112,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
   }
 
   test("should not allow Cartesian CRS with latitude/longitude coordinates") {
@@ -125,7 +125,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
   }
 
   test("distance function should work on co-located points") {
@@ -251,7 +251,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
   }
 
   test("point function should work with relationship properties") {
@@ -264,7 +264,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
   }
 
   test("point function should work with node as map") {
@@ -277,7 +277,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
   }
 
   test("point function should work with null input") {
@@ -315,7 +315,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result.toList should equal(List(Map("point" -> GeographicPoint(12.78, 56.7, CRS.WGS84))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
   test("point should be readable from node property") {
@@ -330,7 +330,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
-    point should equal(GeographicPoint(12.78, 56.7, CRS.WGS84))
+    point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
@@ -355,9 +355,9 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
     // Then
     result.toList should equal(List(Map("points" -> List(
-      CartesianPoint(1.0, 1.0, CRS.Cartesian),
-      CartesianPoint(2.0, 2.0, CRS.Cartesian),
-      CartesianPoint(3.0, 3.0, CRS.Cartesian)
+      Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian, 3.0, 3.0)
     ))))
   }
 
@@ -381,9 +381,9 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // Then
     val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
     points should equal(Array(
-      CartesianPoint(1.0, 1.0, CRS.Cartesian),
-      CartesianPoint(2.0, 2.0, CRS.Cartesian),
-      CartesianPoint(3.0, 3.0, CRS.Cartesian)
+      Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian, 3.0, 3.0)
     ))
   }
 
@@ -407,9 +407,9 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // Then
     val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
     points should equal(Array(
-      CartesianPoint(1.0, 1.0, CRS.WGS84),
-      CartesianPoint(2.0, 2.0, CRS.WGS84),
-      CartesianPoint(3.0, 3.0, CRS.WGS84)
+      Values.pointValue(CoordinateReferenceSystem.WGS84, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84, 3.0, 3.0)
     ))
   }
 
