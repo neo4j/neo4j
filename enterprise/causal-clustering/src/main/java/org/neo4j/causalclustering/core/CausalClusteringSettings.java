@@ -143,7 +143,7 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "causal_clustering.disable_middleware_logging", BOOLEAN, TRUE );
 
-    @Description( "Logging level of middleware logging" )
+    @Description( "The level of middleware logging" )
     public static final Setting<Integer> middleware_logging_level =
             setting( "causal_clustering.middleware_logging.level", INTEGER, Integer.toString( Level.FINE.intValue() ) );
 
