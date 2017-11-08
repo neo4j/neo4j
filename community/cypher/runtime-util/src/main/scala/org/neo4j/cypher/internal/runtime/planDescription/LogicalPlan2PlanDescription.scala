@@ -69,6 +69,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case ProduceResult(_, _) =>
         PlanDescriptionImpl(id, "ProduceResults", NoChildren, Seq(), variables)
 
+      case _: SingleRow if variables.size > 0 =>
+        PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
+
       case _: SingleRow =>
         SingleRowPlanDescription(id, Seq.empty, variables)
 
