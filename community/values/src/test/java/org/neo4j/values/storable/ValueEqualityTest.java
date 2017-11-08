@@ -134,7 +134,11 @@ public class ValueEqualityTest
                 shouldMatch( new int[]{1, 2, 3}, new double[]{1.0, 2.0, 3.0} ),
                 shouldMatch( new String[]{"A", "B", "C"}, new String[]{"A", "B", "C"} ),
                 shouldMatch( new String[]{"A", "B", "C"}, new char[]{'A', 'B', 'C'} ),
-                shouldMatch( new char[]{'A', 'B', 'C'},  new String[]{"A", "B", "C"} )
+                shouldMatch( new char[]{'A', 'B', 'C'},  new String[]{"A", "B", "C"} ),
+
+                shouldNotMatch( false, new boolean[]{false} ),
+                shouldNotMatch( 1, new int[]{1} ),
+                shouldNotMatch( "apa", new String[]{"apa"} )
         );
     }
 
