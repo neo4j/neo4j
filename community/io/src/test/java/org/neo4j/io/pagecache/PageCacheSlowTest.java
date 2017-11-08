@@ -112,7 +112,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                           int pf_flags ) throws IOException;
     }
 
-    @RepeatRule.Repeat( times = 250 )
+    @RepeatRule.Repeat( times = 50 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustNotLoseUpdates() throws Exception
     {
@@ -482,7 +482,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatRule.Repeat( times = 20 )
     @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {

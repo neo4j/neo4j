@@ -116,7 +116,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier );
         pageCachePageSize = pageCache.pageSize();
         recordsPerFilePage = pageCachePageSize / recordSize;
-        recordCount = 25 * maxPages * recordsPerFilePage;
+        recordCount = 5 * maxPages * recordsPerFilePage;
         filePageSize = recordsPerFilePage * recordSize;
         bufA = ByteBuffer.allocate( recordSize );
         return pageCache;

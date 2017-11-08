@@ -153,7 +153,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     public void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
-        final int filePageCount = 20_000;
+        final int filePageCount = 2_000;
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
             harness.setConcurrencyLevel( 16 );
@@ -164,7 +164,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setCachePageCount( filePageCount / 2 );
             harness.setFilePageCount( filePageCount );
             harness.setInitialMappedFiles( 3 );
-            harness.setCommandCount( 150_000 );
+            harness.setCommandCount( 15_000 );
             harness.setFileSystem( fs );
             harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
             harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
@@ -202,5 +202,4 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             }
         };
     }
-
 }

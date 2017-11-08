@@ -360,7 +360,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         long startPageId = 0;
         long endPageId = 21;
-        int iterations = 10000;
+        int iterations = 500;
         int shortsPerPage = pageCachePageSize / 2;
 
         try ( PagedFile pagedFile = cache.map( file( "a" ), pageCachePageSize ) )
@@ -5021,7 +5021,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @RepeatRule.Repeat( times = 20 )
+    @RepeatRule.Repeat( times = 5 )
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void readableByteChannelMustReadAllBytesInFileConsistently() throws Exception
     {
