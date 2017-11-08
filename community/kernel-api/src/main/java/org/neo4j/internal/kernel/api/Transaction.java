@@ -19,25 +19,59 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * A transaction with the graph database.
+ */
 public interface Transaction
 {
+    /**
+     * The store id of a read-only transaction.
+     */
     long READ_ONLY_TRANSACTION = 0;
 
+    /**
+     * Commit this transaction.
+     * @return the id of the commited transaction, or {@link READ_ONLY_TRANSACTION} if this was a read only transaction.
+     */
     long commit();
 
+    /**
+     * Rollback this transaction.
+     */
     void rollback();
 
+    /**
+     * @return The Read operations of the graph.
+     */
     Read dataRead();
 
+    /**
+     * @return The Write operations of the graph.
+     */
     Write dataWrite();
 
+    /**
+     * @return The explicit index read operations of the graph.
+     */
     ExplicitIndexRead indexRead();
 
+    /**
+     * @return The explicit index write operations of the graph.
+     */
     ExplicitIndexWrite indexWrite();
 
+    /**
+     * @return The schema index read operations of the graph, used for finding indexes.
+     */
     SchemaRead schemaRead();
 
+    /**
+     * @return The schema index write operations of the graph, used for creating and dropping indexes and constraints.
+     */
     SchemaWrite schemaWrite();
 
+    /**
+     * @return The lock operations of the graph.
+     */
     Locks locks();
 }
