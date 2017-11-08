@@ -14,8 +14,7 @@
   <name>Neo4j - Enterprise</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <description>A meta package containing the most used Neo4j Enterprise libraries. Intended use: as a Maven
-    dependency.
+  <description>A meta package containing the most used Neo4j Enterprise libraries. Intended use: as a Maven dependency.
   </description>
 
   <scm>
@@ -90,6 +89,11 @@
       <artifactId>neo4j-security-enterprise</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-bolt</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- For the tests specified by this v3_2 -->
     <dependency>
@@ -122,12 +126,6 @@
       <artifactId>neo4j</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-bolt</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
