@@ -93,7 +93,7 @@ Function Get-Neo4jPrunsrv
     # Build the PRUNSRV command line
     switch ($PsCmdlet.ParameterSetName) {
       "ServerInstallInvoke"   {
-        $PrunArgs += @("//IS//$($Name)")
+        $PrunArgs += @("`"//IS//$($Name)`"")
 
         $JvmOptions = @()
 
@@ -140,12 +140,12 @@ Function Get-Neo4jPrunsrv
         $JavaCMD.args | ForEach-Object -Process {
           if ($Matches -ne $null) { $Matches.Clear() }
           if ($_ -match '^-Xms([\d]+)m$') {
-            $PrunArgs += "--JvmMs $($matches[1])"
+            $PrunArgs += "`"--JvmMs $($matches[1])`""
             Write-Verbose "Use JVM Start Memory of $($matches[1]) MB"
           }
           if ($Matches -ne $null) { $Matches.Clear() }
           if ($_ -match '^-Xmx([\d]+)m$') {
-            $PrunArgs += "--JvmMx $($matches[1])"
+            $PrunArgs += "`"--JvmMx $($matches[1])`""
             Write-Verbose "Use JVM Max Memory of $($matches[1]) MB"
           }
         }
@@ -154,11 +154,11 @@ Function Get-Neo4jPrunsrv
         if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
         if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
         if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
-        $PrunArgs += @("--StopClass=$($serverMainClass)",
-                       "--StartClass=$($serverMainClass)")
+        $PrunArgs += @("`"--StopClass=$($serverMainClass)`"",
+                       "`"--StartClass=$($serverMainClass)`"")
       }
-      "ServerUninstallInvoke" { $PrunArgs += @("//DS//$($Name)") }
-      "ConsoleInvoke"         { $PrunArgs += @("//TS//$($Name)") }
+      "ServerUninstallInvoke" { $PrunArgs += @("`"//DS//$($Name)`"") }
+      "ConsoleInvoke"         { $PrunArgs += @("`"//TS//$($Name)`"") }
       default {
         throw "Unknown ParameterSerName $($PsCmdlet.ParameterSetName)"
         return $null

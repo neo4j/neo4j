@@ -78,6 +78,30 @@ InModuleScope Neo4j-Management {
       }
     }
 
+    Context "PRUNSRV arguments are quoted" {
+      $quotedStringRegex = ([regex]::New("^"".*""$"))
+      $serverObject = global:New-MockNeo4jInstall -RootDir "TestDrive:\Neo4j Install With Space"
+
+      It "on service install" {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
+
+        $prunsrv.args | Should Match ($quotedStringRegex)
+      }
+
+      It "on service uninstall" {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerUninstall
+
+        $prunsrv.args | Should Match ($quotedStringRegex)
+      }
+
+      It "on console" {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForConsole
+
+        $prunsrv.args | Should Match ($quotedStringRegex)
+      }
+    }
+
+
     Context "Server Invoke - Community v3.0" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community'
 
