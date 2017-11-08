@@ -47,8 +47,7 @@ public class ExecutionEngine implements QueryExecutionEngine
      * @param queryService The database to wrap
      * @param logProvider A {@link LogProvider} for cypher-statements
      */
-    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider,
-            CompatibilityFactory compatibilityFactory )
+    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompatibilityFactory compatibilityFactory )
     {
         inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService, logProvider, compatibilityFactory );
     }
@@ -112,5 +111,11 @@ public class ExecutionEngine implements QueryExecutionEngine
     public String prettify( String query )
     {
         return inner.prettify( query );
+    }
+
+    @Override
+    public long clearQueryCaches()
+    {
+        return inner.clearQueryCaches();
     }
 }

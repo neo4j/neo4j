@@ -134,6 +134,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def preParseQuery(queryText: String): PreParsedQuery =
     preParsedQueries.getOrElseUpdate(queryText, queryDispatcher.preParseQuery(queryText))
 
+  def clearQueryCaches(): Long = {
+    Math.max(parsedQueries.clear(),
+      preParsedQueries.clear())
+  }
+
   @throws(classOf[SyntaxException])
   protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapper) = {
     val executingQuery = transactionalContext.executingQuery()
@@ -171,7 +176,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           })
 
           def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
-
           def producePlan() = {
             val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
             parsedQuery.plan(tc, phaseTracer)
@@ -316,7 +320,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val config = graph.getDependencyResolver.resolveDependency(classOf[Config])
     Option(config.get(setting)).getOrElse(defaultValue)
   }
-
 }
 
 object ExecutionEngine {

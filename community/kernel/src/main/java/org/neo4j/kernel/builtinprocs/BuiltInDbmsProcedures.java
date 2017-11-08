@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -83,6 +84,24 @@ public class BuiltInDbmsProcedures
                 .map( FunctionResult::new );
     }
 
+    @Description( "Clears all query caches." )
+    @Procedure( name = "dbms.clearQueryCaches", mode = DBMS )
+    public Stream<StringResult> clearAllQueryCaches()
+    {
+        securityContext.assertCredentialsNotExpired();
+        if ( !securityContext.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+
+        QueryExecutionEngine queryExecutionEngine = graph.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
+        long numberOfClearedQueries = queryExecutionEngine.clearQueryCaches() - 1; // this query itself does not count
+
+        String result = numberOfClearedQueries == 0 ? "Query cache already empty."
+                                                    : "Query caches successfully cleared of " + numberOfClearedQueries + " queries.";
+        return Stream.of( new StringResult( result ) );
+    }
+
     public static class FunctionResult
     {
         public final String name;
@@ -108,6 +127,16 @@ public class BuiltInDbmsProcedures
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+        }
+    }
+
+    public class StringResult
+    {
+        public final String value;
+
+        StringResult( String value )
+        {
+            this.value = value;
         }
     }
 }

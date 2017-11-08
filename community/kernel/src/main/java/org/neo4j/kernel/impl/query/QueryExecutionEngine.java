@@ -38,5 +38,7 @@ public interface QueryExecutionEngine
     boolean isPeriodicCommit( String query );
 
     String prettify( String query );
+
+    long clearQueryCaches();
 }
 

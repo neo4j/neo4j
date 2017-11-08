@@ -250,6 +250,10 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "db.index.explicit.searchRelationshipsOut(indexName :: STRING?, out :: NODE?, query :: ANY?) :: " +
                                 "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
                         "Search relationship in explicit index, ending at the node 'out'."
+                } ),
+                equalTo( new Object[]{"dbms.clearQueryCaches",
+                        "dbms.clearQueryCaches() :: (value :: STRING?)",
+                        "Clears all query caches."
                 } )
         ) );
         commit();

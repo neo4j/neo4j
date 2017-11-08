@@ -53,7 +53,6 @@ import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.allOf;
@@ -914,6 +913,24 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 "RETURN test.nestedAllowedFunction('test.allowedFunction2()') AS value",
                 r -> assertKeyIs( r, "value", "foo" )
         );
+    }
+
+    //---------- clearing query cache -----------
+
+    @Test
+    public void shouldNotClearQueryCachesIfNotAdmin()
+    {
+        assertFail( noneSubject, "CALL dbms.clearQueryCaches()", PERMISSION_DENIED );
+        assertFail( readSubject, "CALL dbms.clearQueryCaches()", PERMISSION_DENIED );
+        assertFail( writeSubject, "CALL dbms.clearQueryCaches()", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.clearQueryCaches()", PERMISSION_DENIED );
+    }
+
+    @Test
+    public void shouldClearQueryCachesIfAdmin()
+    {
+        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", r -> r.close());
+        // any answer is okay, as long as it isn't denied. That is why we don't care about the actual result here
     }
 
     /*
