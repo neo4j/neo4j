@@ -22,7 +22,6 @@ package org.neo4j.values.storable;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.spatial.Geometry;
-import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 
@@ -47,7 +46,14 @@ public abstract class PointArray extends ArrayValue
     @Override
     public boolean equals( Value other )
     {
-        return false;
+        if ( other instanceof PointArray )
+        {
+            return Arrays.equals( this.value(), ((PointArray) other).value() );
+        }
+        else
+        {
+            return false;
+        }
     }
 
     @Override

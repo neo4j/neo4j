@@ -306,19 +306,19 @@ public enum GeometryType
 
         static GeometryHeader fromArrayHeaderBytes( byte[] header )
         {
-            int geometryType = header[1];
-            int dimension = header[2];
-            int crsTableId = header[3];
-            int crsCode = header[4] + (header[5] << 8);
+            int geometryType = Byte.toUnsignedInt( header[1] );
+            int dimension = Byte.toUnsignedInt( header[2] );
+            int crsTableId = Byte.toUnsignedInt( header[3] );
+            int crsCode = Byte.toUnsignedInt( header[4] ) + (Byte.toUnsignedInt( header[5] ) << 8);
             return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
         }
 
         public static GeometryHeader fromArrayHeaderByteBuffer( ByteBuffer buffer )
         {
-            int geometryType = buffer.get();
-            int dimension = buffer.get();
-            int crsTableId = buffer.get();
-            int crsCode = buffer.get() + (buffer.get() << 8);
+            int geometryType = Byte.toUnsignedInt( buffer.get() );
+            int dimension = Byte.toUnsignedInt( buffer.get() );
+            int crsTableId = Byte.toUnsignedInt( buffer.get() );
+            int crsCode = Byte.toUnsignedInt( buffer.get() ) + (Byte.toUnsignedInt( buffer.get() ) << 8);
             return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
         }
     }
