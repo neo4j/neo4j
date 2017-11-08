@@ -9,17 +9,6 @@ Handling inlined equality of large integer
 Handling explicit equality of large integer
 Handling inlined equality of large integer, non-equal values
 Handling explicit equality of large integer, non-equal values
-Return an integer
-Return a float
-Return a float in exponent form
-Return a boolean
-Return a single-quoted string
-Return a double-quoted string
-Return null
-Return an empty list
-Return a nonempty list
-Return an empty map
-Return a nonempty map
 Use multiple MATCH clauses to do a Cartesian product
 Returning bound nodes that are not part of the pattern
 Matching using an undirected pattern
@@ -35,6 +24,40 @@ Non-optional matches should not return nulls
 Handling cyclic patterns
 Handling cyclic patterns when separated into two parts
 Matching with aggregation
+Undirected match of self-relationship in self-relationship graph
+Directed match on self-relationship graph, count
+Directed match of self-relationship on self-relationship graph
+Counting undirected self-relationships in self-relationship graph
+Counting distinct undirected self-relationships in self-relationship graph
+Directed match of a simple relationship, count
+Counting directed self-relationships
+Mixing directed and undirected pattern parts with self-relationship, simple
+Handle projections with ORDER BY - GH#4937
+Handle ORDER BY with LIMIT 1
+ORDER BY with LIMIT 0 should not generate errors
+ORDER BY with negative parameter for LIMIT should not generate errors
+Limit to two hits
+Start the result from the second row
+Start the result from the second row by param
+Get rows in the middle
+Get rows in the middle by param
+Support sort and distinct
+Support ordering by a property after being distinct-ified
+LIMIT 0 should return an empty result
+DISTINCT on nullable values
+Limiting amount of rows when there are fewer left than the LIMIT argument
+Using aliased DISTINCT expression in ORDER BY
+Returned columns do not change from using ORDER BY
+Projecting an arithmetic expression with aggregation
+DISTINCT inside aggregation should work with lists in maps
+DISTINCT inside aggregation should work with nested lists in maps
+DISTINCT inside aggregation should work with nested lists of maps in maps
+Find labelled nodes
+Handling triadic friend of a friend
+Passing on pattern nodes
+ORDER BY and LIMIT can be used
+No dependencies between the query parts
+ORDER BY a DISTINCT column
 
 Support multiple divisions in aggregate function
 Aggregates inside normal functions
@@ -70,24 +93,13 @@ Handling string ranges 2
 Handling string ranges 3
 Handling string ranges 4
 Handling empty range
-Handling long chains of operators
 Number-typed integer comparison
 Number-typed float comparison
 Any-typed string comparison
 Comparing nodes to nodes
 Comparing relationships to relationships
-IN should work with nested list subscripting
-IN should work with nested literal list subscripting
-IN should work with list slices
-IN should work with literal list slices
-Execute n[0]
 Execute n['name'] in update queries
-Use dynamic property lookup based on parameters when there is no type information
 Use dynamic property lookup based on parameters when there is lhs type information
-Use dynamic property lookup based on parameters when there is rhs type information
-Use collection lookup based on parameters when there is no type information
-Use collection lookup based on parameters when there is lhs type information
-Use collection lookup based on parameters when there is rhs type information
 Fail at runtime when attempting to index with an Int into a Map
 Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection
@@ -96,9 +108,6 @@ Fail at runtime when trying to index something which is not a map or collection
 Functions should return null if they get path containing unbound
 `split()`
 `properties()` on a node
-`properties()` on a map
-`properties()` on null
-`reverse()`
 `exists()` with dynamic property lookup
 `exists()` with literal maps
 IS NOT NULL with literal maps
@@ -118,8 +127,6 @@ Using `keys()` on an optionally matched node
 Using `keys()` on a relationship, non-empty result
 Using `keys()` on a relationship, empty result
 Using `keys()` on an optionally matched relationship
-Using `keys()` on a literal map
-Using `keys()` on a parameter map
 Adding a single label
 Ignore space before colon
 Adding multiple labels
@@ -181,19 +188,16 @@ Matching relationships into a list and matching variable length using the list, 
 Matching relationships into a list and matching variable length using the list, with bound nodes, wrong direction
 Matching and optionally matching with bound nodes in reverse direction
 Matching and optionally matching with unbound nodes and equality predicate in reverse direction
+Matching nodes with many labels
+Matching and returning ordered results, with LIMIT
 Counting an empty graph
 Matching variable length pattern with property predicate
 Variable length pattern checking labels on endnodes
 Variable length pattern with label predicate on both sides
 Undirected named path
-Named path with WITH
-Named path with alternating directed/undirected relationships
-Named path with multiple alternating directed/undirected relationships
 Named path with undirected fixed variable length pattern
 Variable length relationship variables are lists of relationships
 Variable length patterns and nulls
-Respecting direction when matching existing path
-Respecting direction when matching non-existent path
 Respecting direction when matching non-existent path with multiple directions
 Matching path with both directions should respect other directions
 Matching path with multiple bidirectional relationships
@@ -255,8 +259,6 @@ Remove multiple relationship properties
 Remove a missing property should be a valid operation
 Sort on aggregated function
 Count star should count everything in scope
-Absolute function
-Return collection size
 Fail when returning properties of deleted nodes
 Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
@@ -266,53 +268,20 @@ Ordering with aggregation
 Return all variables
 Setting and returning the size of a list property
 Setting and returning the size of a list property
-`sqrt()` returning float values
 Arithmetic expressions inside aggregation
 Matching and disregarding output, then matching again
-Returning an expression
 Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
-`substring()` with default second argument
-Arithmetic expressions should propagate null values
-Indexing into nested literal lists
 Multiple aliasing and backreferencing
 Aggregating by a list property has a correct definition of equality
 Reusing variable names
 Handling DISTINCT with lists in maps
-Handling property access on the Any type
 Failing when performing property access on a non-map 1
 Failing when performing property access on a non-map 2
 Bad arguments for `range()`
 SKIP with an expression that does not depend on variables
 LIMIT with an expression that does not depend on variables
-Finding exact matches
-Finding beginning of string
-Finding end of string 1
-Finding end of string 2
-Finding middle of string
-Finding the empty string
-Finding when the middle is known
-Finding strings starting with whitespace
-Finding strings starting with newline
-Finding strings ending with newline
-Finding strings ending with whitespace
-Finding strings containing whitespace
-Finding strings containing newline
-No string starts with null
-No string does not start with null
-No string ends with null
-No string does not end with null
-No string contains null
-No string does not contain null
-Combining string operators
-NOT with CONTAINS
 Using `rand()` in aggregations
-A literal null IS null
-A literal null is not IS NOT null
-Using null in AND
-Using null in OR
-Using null in XOR
-Using null in IN
 Handling triadic friend of a friend that is not a friend
 Handling triadic friend of a friend that is not a friend with different relationship type
 Handling triadic friend of a friend that is not a friend with superset of relationship type
@@ -331,40 +300,26 @@ Handling triadic friend of a friend that is a friend with same labels
 Handling triadic friend of a friend that is a friend with different labels
 Handling triadic friend of a friend that is a friend with implicit subset of labels
 Handling triadic friend of a friend that is a friend with implicit superset of labels
-`toBoolean()` on valid literal string
-`toBoolean()` on booleans
-`toBoolean()` on variables with valid string values
-`toBoolean()` on invalid strings
-`toBoolean()` on invalid types
 `toInteger()`
-`toInteger()` on float
-`toInteger()` returning null on non-numerical string
 `toInteger()` handling mixed number types
 `toInteger()` handling Any type
 `toInteger()` on a list of strings
-`toInteger()` on a complex-typed expression
 `toInteger()` failing on invalid arguments
 `toFloat()`
 `toFloat()` on mixed number types
-`toFloat()` returning null on non-numerical string
 `toFloat()` handling Any type
 `toFloat()` on a list of strings
 `toFloat()` failing on invalid arguments
 `toString()`
 `toString()` handling boolean properties
-`toString()` handling inlined boolean
-`toString()` handling boolean literal
 `toString()` should work on Any type
 `toString()` on a list of integers
 `toString()` failing on invalid arguments
-`toString()` should accept potentially correct types 1
-`toString()` should accept potentially correct types 2
 Should be able to create text output from union queries
 Two elements, both unique, not distinct
 Two elements, both unique, distinct
 Three elements, two unique, distinct
 Three elements, two unique, not distinct
-Unwinding a range
 Unwinding a collected unwound expression
 Unwinding a collected expression
 Creating nodes from an unwound parameter list
@@ -401,17 +356,14 @@ Handling mixed relationship patterns and directions 2
 Handling mixed relationship patterns 1
 Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
-NOT and false
 Aliasing
 Handle dependencies across WITH
 Handle dependencies across WITH with SKIP
-WHERE after WITH should filter results
 WHERE after WITH can filter on top of an aggregation
 ORDER BY on an aggregating key
 WHERE on a DISTINCT column
 A simple pattern with one bound endpoint
 Null handling
-Nested maps
 Connected components succeeding WITH
 Single WITH using a predicate and aggregation
 Multiple WITHs using a predicate and aggregation
@@ -595,7 +547,6 @@ Many CREATE clauses
 
 Comparing strings and integers using > in an AND'd predicate
 Comparing strings and integers using > in a OR'd predicate
-Comparing across types yields null, except numbers
 
 `labels()` failing on invalid arguments
 Undirected match in self-relationship graph, count
