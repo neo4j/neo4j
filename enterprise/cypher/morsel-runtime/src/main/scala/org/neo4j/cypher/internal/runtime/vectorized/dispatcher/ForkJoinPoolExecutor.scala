@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.RecursiveAction
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.{concurrent, function}
 
 import org.neo4j.concurrent.BinaryLatch
@@ -43,20 +44,26 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
     val query = new Query()
     val startMessage = StartLeafLoop(iteration)
     val state = QueryState(params, visitor)
-    forkJoinPool.submit(createRunnable(query, startMessage, leaf, queryContext, state))
+    val action = createAction(query, startMessage, leaf, queryContext, state)
+    forkJoinPool.submit(action)
     query.blockUntilQueryFinishes()
+    val failure = query.failure
+    if (failure != null) {
+        taskCloser.close(success = false)
+        throw failure
+    }
     taskCloser.close(success = true)
   }
 
-  private def createRunnable(query: Query,
+  private def createAction(query: Query,
                              incoming: Message,
                              pipeline: Pipeline,
                              q: QueryContext,
-                             state: QueryState): Runnable = {
+                             state: QueryState): RecursiveAction = {
     // We remember that the loop has started even before the task has been scheduled
     query.startLoop(incoming.iterationState)
-    new Runnable {
-      override def run(): Unit = try {
+    new RecursiveAction {
+      override def compute(): Unit = try {
         val queryContext = q.createNewQueryContext()
         var message = incoming
         var continuation: Continuation = null
@@ -77,13 +84,14 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
             case Some(eagerConsumingPipeline) =>
               query.eagerReceiver = None
               val startEager = StartLoopWithEagerData(query.eagerData.asScala.toSeq, incoming.iterationState)
-              forkJoinPool.execute(createRunnable(query, startEager, eagerConsumingPipeline, queryContext, state))
+              forkJoinPool.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
           }
 
         }
       } catch {
         case e: Exception =>
-          e.printStackTrace()
+          query.markFailure(e)
+          query.releaseBlockedThreads()
           throw e
       }
     }
@@ -106,7 +114,7 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
 
       case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
         val nextStep = StartLoopWithSingleMorsel(data, message.iterationState)
-        forkJoinPool.execute(createRunnable(query, nextStep, mother, queryContext, state))
+        forkJoinPool.execute(createAction(query, nextStep, mother, queryContext, state))
 
       case _ =>
     }
@@ -124,6 +132,7 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
 
   class Query() {
     private val loopCount = new concurrent.ConcurrentHashMap[Iteration, AtomicInteger]()
+    private val error = new AtomicReference[Throwable]()
     private val latch = new BinaryLatch
     var eagerReceiver: Option[Pipeline] = None
     lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[Morsel]()
@@ -138,6 +147,9 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
         loopCount.remove(iteration)
       i
     }
+
+    def failure: Throwable = error.get()
+    def markFailure(t: Throwable): Unit = error.compareAndSet(null, t)
 
     def blockUntilQueryFinishes(): Unit = latch.await()
 
