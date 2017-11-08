@@ -1,6 +1,4 @@
 //MatchAcceptance.feature
-difficult to plan query number 1
-difficult to plan query number 2
 Variable length path with both sides already bound
 
 // should be fixed on next 3.2.x
@@ -11,6 +9,3 @@ max() over mixed values
 min() over mixed values
 max() over list values
 min() over list values
-Match on multiple labels with OR
-
-Shorthand case with filter should work as expected
