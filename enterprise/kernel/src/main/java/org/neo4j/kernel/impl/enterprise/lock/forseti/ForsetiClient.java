@@ -717,6 +717,7 @@ public class ForsetiClient implements Locks.Client
         stateHolder.closeClient();
         waitForAllClientsToLeave();
         releaseAllLocks();
+        clientPool.release( this );
     }
 
     private void releaseAllLocks()
