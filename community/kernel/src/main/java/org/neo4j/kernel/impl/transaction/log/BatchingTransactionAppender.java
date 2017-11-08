@@ -61,7 +61,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
     private final TransactionMetadataCache transactionMetadataCache;
-    private LogFile logFile;
+    private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
