@@ -752,4 +752,19 @@ return p""")
     // Then
     result.toList should equal(List(Map("a" -> n)))
   }
+
+  test("Should handle optional match with null parts and distinct without NullPointerException") {
+
+    val query =
+      """
+        |  OPTIONAL MATCH (req:Y)
+        |  WITH req
+        |  OPTIONAL MATCH (req)<-[*2]-(y)
+        |  RETURN DISTINCT req.eid, y.eid
+      """.stripMargin
+
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+
+    result.toList should equal(List(Map("req.eid" -> null, "y.eid" -> null)))
+  }
 }

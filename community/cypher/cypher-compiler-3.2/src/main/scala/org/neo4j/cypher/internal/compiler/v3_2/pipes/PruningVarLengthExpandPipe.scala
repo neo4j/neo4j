@@ -260,14 +260,19 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         (Empty, null)
       } else {
         val row = input.next()
-        val nextState = new PrePruningDFS(whenEmptied = this,
-                                          node = getNodeFromRow(row),
-                                          path = new Array[Long](max),
-                                          pathLength = 0,
-                                          state = state,
-                                          row = row,
-                                          expandMap = Primitive.longObjectMap[FullExpandDepths]())
-        nextState.next()
+        val node = getNodeFromRow(row)
+        if (node == null) {
+          (Empty, null)
+        } else {
+          val nextState = new PrePruningDFS(whenEmptied = this,
+                                            node = node,
+                                            path = new Array[Long](max),
+                                            pathLength = 0,
+                                            state = state,
+                                            row = row,
+                                            expandMap = Primitive.longObjectMap[FullExpandDepths]())
+          nextState.next()
+        }
       }
 
     private def getNodeFromRow(row: ExecutionContext): Node =
