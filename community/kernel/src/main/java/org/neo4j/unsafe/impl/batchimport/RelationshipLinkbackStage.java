@@ -28,6 +28,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
+import org.neo4j.unsafe.impl.batchimport.store.PrepareIdSequence;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.backwards;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
@@ -52,15 +54,15 @@ public class RelationshipLinkbackStage extends Stage
 {
     public static final String NAME = "Relationship <-- Relationship";
 
-    public RelationshipLinkbackStage( String topic, Configuration config, RelationshipStore store,
+    public RelationshipLinkbackStage( String topic, Configuration config, BatchingNeoStores stores,
             NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
-            Predicate<RelationshipRecord> changeFilter, int nodeTypes,
-            StatsProvider... additionalStatsProvider )
+            Predicate<RelationshipRecord> changeFilter, int nodeTypes, StatsProvider... additionalStatsProvider )
     {
         super( NAME, topic, config, ORDER_SEND_DOWNSTREAM );
+        RelationshipStore store = stores.getRelationshipStore();
         add( new BatchFeedStep( control(), config, backwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, store, readFilter ) );
         add( new RelationshipLinkbackStep( control(), config, cache, changeFilter, nodeTypes, additionalStatsProvider ) );
-        add( new UpdateRecordsStep<>( control(), config, store ) );
+        add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ) ) );
     }
 }

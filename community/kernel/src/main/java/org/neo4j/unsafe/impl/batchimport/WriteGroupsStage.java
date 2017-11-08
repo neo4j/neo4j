@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
 import static org.neo4j.unsafe.impl.batchimport.RelationshipGroupCache.GROUP_ENTRY_SIZE;
 
@@ -47,6 +48,6 @@ public class WriteGroupsStage extends Stage
         super( NAME, null, config, 0 );
         add( new ReadGroupsFromCacheStep( control(), config, cache.iterator(), GROUP_ENTRY_SIZE ) );
         add( new EncodeGroupsStep( control(), config, store ) );
-        add( new UpdateRecordsStep<>( control(), config, store ) );
+        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence<>() ) );
     }
 }

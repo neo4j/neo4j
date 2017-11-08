@@ -19,12 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -34,6 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.store.PrepareIdSequence;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.Math.max;
@@ -60,12 +59,12 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final PropertyStore propertyStore;
     private final IoMonitor ioMonitor;
     private final Monitor monitor;
-    private final Function<RecordStore<RECORD>,LongFunction<IdSequence>> prepareIdSequence;
+    private final PrepareIdSequence<RECORD> prepareIdSequence;
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
             CommonAbstractStore<RECORD,? extends StoreHeader> entityStore,
             PropertyStore propertyStore, IoMonitor ioMonitor,
-            Monitor monitor, Function<RecordStore<RECORD>,LongFunction<IdSequence>> prepareIdSequence )
+            Monitor monitor, PrepareIdSequence<RECORD> prepareIdSequence )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, ioMonitor );
         this.entityStore = entityStore;

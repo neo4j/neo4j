@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.store;
 
-import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -27,16 +26,19 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public class SecondaryUnitPrepareIdSequence<RECORD extends AbstractBaseRecord>
-        implements Function<RecordStore<RECORD>,LongFunction<IdSequence>>
+/**
+ * Assumes that records have been allocated such that there will be a free record, right after a given record,
+ * to place the secondary unit of that record.
+ */
+public class SecondaryUnitPrepareIdSequence<RECORD extends AbstractBaseRecord> implements PrepareIdSequence<RECORD>
 {
     @Override
     public LongFunction<IdSequence> apply( RecordStore<RECORD> store )
     {
-        return new Something();
+        return new NeighbourIdSequence();
     }
 
-    private static class Something implements LongFunction<IdSequence>, IdSequence
+    private static class NeighbourIdSequence implements LongFunction<IdSequence>, IdSequence
     {
         private long id;
         private boolean returned;

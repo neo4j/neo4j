@@ -25,6 +25,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
@@ -50,6 +51,6 @@ public class SparseNodeFirstRelationshipStage extends Stage
         add( new ReadRecordsStep<>( control(), config, true, nodeStore, null ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new SparseNodeFirstRelationshipProcessor( cache ), false ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence<>() ) );
     }
 }

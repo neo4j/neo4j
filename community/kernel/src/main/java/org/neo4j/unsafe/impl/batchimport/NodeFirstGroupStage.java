@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
 
@@ -44,6 +45,6 @@ public class NodeFirstGroupStage extends Stage
         add( new BatchFeedStep( control(), config, allIn( groupStore, config ), groupStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, groupStore, null ) );
         add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence<>() ) );
     }
 }

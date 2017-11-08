@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
 /**
  * Takes information about relationship groups in the {@link NodeRelationshipCache}, which is produced
@@ -38,6 +39,6 @@ public class RelationshipGroupStage extends Stage
     {
         super( NAME, topic, config, 0 );
         add( new ReadGroupRecordsByCacheStep( control(), config, store, cache ) );
-        add( new UpdateRecordsStep<>( control(), config, store ) );
+        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence<>() ) );
     }
 }

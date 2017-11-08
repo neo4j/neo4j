@@ -35,6 +35,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
+import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;

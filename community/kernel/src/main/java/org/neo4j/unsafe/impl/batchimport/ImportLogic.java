@@ -122,7 +122,6 @@ public class ImportLogic implements Closeable
     private InputIterable<InputNode> cachedNodes;
     private long peakMemoryUsage;
     private long availableMemoryForLinking;
-    private boolean doubleRelationshipRecordUnits;
 
     /**
      * @param storeDir directory which the db will be created in.
@@ -172,6 +171,10 @@ public class ImportLogic implements Closeable
                 // TODO figure out in a good way if this is the high limit format
                 recordFormats.relationship().getMaxId() > 2L << 36 &&
                 inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
+        if ( doubleRelationshipRecordUnits )
+        {
+            System.out.println( "Will use double record units for all relationships" );
+        }
 
         executionMonitor.initialize( dependencies );
     }
@@ -268,7 +271,7 @@ public class ImportLogic implements Closeable
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         RelationshipStage unlinkedRelationshipStage =
                 new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
-                        badCollector, inputCache, neoStore, storeUpdateMonitor, doubleRelationshipRecordUnits );
+                        badCollector, inputCache, neoStore, storeUpdateMonitor );
         neoStore.startFlushingPageCache();
         executeStage( unlinkedRelationshipStage );
         neoStore.stopFlushingPageCache();
@@ -361,7 +364,7 @@ public class ImportLogic implements Closeable
 
         // LINK Forward
         RelationshipLinkforwardStage linkForwardStage = new RelationshipLinkforwardStage( topic, relationshipConfig,
-                neoStore.getRelationshipStore(), nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes,
+                neoStore, nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes,
                 new RelationshipLinkingProgress(), memoryUsageStats );
         executeStage( linkForwardStage );
 
@@ -377,8 +380,9 @@ public class ImportLogic implements Closeable
 
         // LINK backward
         nodeRelationshipCache.setForwardScan( false, true/*dense*/ );
-        executeStage( new RelationshipLinkbackStage( topic, relationshipConfig, neoStore.getRelationshipStore(),
-                nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes, new RelationshipLinkingProgress(), memoryUsageStats ) );
+        executeStage( new RelationshipLinkbackStage( topic, relationshipConfig, neoStore,
+                nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes,
+                new RelationshipLinkingProgress(), memoryUsageStats ) );
 
         updatePeakMemoryUsage();
 
