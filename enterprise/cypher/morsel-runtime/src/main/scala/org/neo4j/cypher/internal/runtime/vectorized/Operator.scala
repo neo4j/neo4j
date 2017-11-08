@@ -79,34 +79,35 @@ case class Pipeline(start: Operator,
                     dependency: Dependency)
                    (var parent: Option[Pipeline] = None) {
 
-  private def debug(s: String): Unit = if (false) println(s)
-
-  private def debug(): Unit = if (false) println()
-
   def endPipeline: Boolean = parent.isEmpty
 
   def addOperator(operator: MiddleOperator): Pipeline = copy(operators = operators :+ operator)(parent)
 
   def operate(message: Message, data: Morsel, context: QueryContext, state: QueryState): Continuation = {
-    debug(s"Message: $message")
-    debug(s"Pipeline: $this")
     val next = start.operate(message, data, context, state)
 
     operators.foreach { op =>
       op.operate(next.iteration, data, context, state)
     }
 
-    val longCount = slotInformation.numberOfLongs
-    val rows = for (i <- 0 until(data.validRows * longCount, longCount)) yield {
-      util.Arrays.toString(data.longs.slice(i, i + longCount))
+    if (false /*BEDUG!*/ ) {
+      println(s"Message: $message")
+      println(s"Pipeline: $this")
+
+
+      val longCount = slotInformation.numberOfLongs
+      val rows = for (i <- 0 until(data.validRows * longCount, longCount)) yield {
+        util.Arrays.toString(data.longs.slice(i, i + longCount))
+      }
+      val longValues = rows.mkString(System.lineSeparator())
+      println(
+        s"""Resulting rows:
+           |$longValues""".
+          stripMargin)
+      println(s"Resulting continuation: $next")
+      println()
+      println("-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/")
     }
-    val longValues = rows.mkString(System.lineSeparator())
-    debug(
-      s"""Resulting rows:
-         |$longValues""".stripMargin)
-    debug(s"Resulting continuation: $next")
-    debug()
-    debug("-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/")
     next
   }
 

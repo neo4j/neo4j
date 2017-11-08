@@ -23,6 +23,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
 
 class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, var currentRow: Int) extends ExecutionContext {
+
+  def moveToNextRow(): Int = {
+    currentRow += 1
+    currentRow
+  }
+
   override def copyTo(target: ExecutionContext, longOffset: Int, refOffset: Int): Unit = ???
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = ???

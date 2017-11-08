@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -34,7 +35,7 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
   extends TreeBuilder[Pipeline] {
 
   override def create(plan: LogicalPlan): Pipeline = {
-    val pipeline = super.create(plan)
+    val pipeline: Pipeline = super.create(plan)
     pipeline.construct
   }
 
@@ -48,6 +49,8 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
           pipeline.numberOfReferences,
           pipeline.getLongOffsetFor(column))
 
+      case plans.SingleRow() =>
+        new SingleRowOperator
     }
 
     Pipeline(thisOp, Seq.empty, pipeline, NoDependencies)()
@@ -84,6 +87,15 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
           val preSorting = new PreSortOperator(ordering, pipeline)
           source = source.addOperator(preSorting)
           new MergeSortOperator(ordering, pipeline)
+
+        case plans.UnwindCollection(src, variable, collection) =>
+          val offset = pipeline.get(variable.name) match {
+            case Some(RefSlot(idx, _, _)) => idx
+            case _ =>
+              throw new InternalException("Weird slot found for UNWIND")
+          }
+          val runtimeExpression = converters.toCommandExpression(collection)
+          new UnwindOperator(runtimeExpression, offset, pipelines(src.assignedId), pipeline)
 
         case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
       }
