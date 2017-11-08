@@ -114,24 +114,24 @@ Function Get-Neo4jPrunsrv
         Write-Verbose "Reading JVM settings from console java invocation"
         $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add ($JavaCMD.args | Where-Object { $_ -match '(^-D|^-X)' }))
 
-        $PrunArgs += @('--StartMode=jvm',
-          '--StartMethod=start',
+        $PrunArgs += @("`"--StartMode=jvm`"",
+          "`"--StartMethod=start`"",
           "`"--StartPath=$($Neo4jServer.Home)`"",
           "`"--StartParams=--config-dir=$($Neo4jServer.ConfDir)`"",
           "`"++StartParams=--home-dir=$($Neo4jServer.Home)`"",
-          '--StopMode=jvm',
-          '--StopMethod=stop',
+          "`"--StopMode=jvm`"",
+          "`"--StopMethod=stop`"",
           "`"--StopPath=$($Neo4jServer.Home)`"",
           "`"--Description=Neo4j Graph Database - $($Neo4jServer.Home)`"",
           "`"--DisplayName=Neo4j Graph Database - $Name`"",
           "`"--Jvm=$($JvmDLL)`"",
-          "--LogPath=$($Neo4jServer.LogDir)",
-          "--StdOutput=$(Join-Path -Path $Neo4jServer.LogDir -ChildPath 'neo4j.log')",
-          "--StdError=$(Join-Path -Path $Neo4jServer.LogDir -ChildPath 'service-error.log')",
-          '--LogPrefix=neo4j-service',
-          '--Classpath=lib/*;plugins/*',
+          "`"--LogPath=$($Neo4jServer.LogDir)`"",
+          "`"--StdOutput=$(Join-Path -Path $Neo4jServer.LogDir -ChildPath 'neo4j.log')`"",
+          "`"--StdError=$(Join-Path -Path $Neo4jServer.LogDir -ChildPath 'service-error.log')`"",
+          "`"--LogPrefix=neo4j-service`"",
+          "`"--Classpath=lib/*;plugins/*`"",
           "`"--JvmOptions=$($JvmOptions -join ';')`"",
-          '--Startup=auto'
+          "`"--Startup=auto`""
         )
 
         # Check if Java invocation includes Java memory sizing
