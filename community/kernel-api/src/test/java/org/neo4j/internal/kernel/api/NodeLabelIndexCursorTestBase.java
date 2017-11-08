@@ -27,7 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.ExplicitIndexCursorTestBase.assertFoundNodes;
+import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
 
 public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -63,26 +63,26 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeLabelScan( one, cursor );
 
             // then
-            assertFoundNodes( cursor, 1, uniqueIds );
+            assertNodeCount( cursor, 1, uniqueIds );
 
             // when
             read.nodeLabelScan( two, cursor );
 
             // then
-            assertFoundNodes( cursor, 2, uniqueIds );
+            assertNodeCount( cursor, 2, uniqueIds );
 
             // when
             read.nodeLabelScan( three, cursor );
 
             // then
-            assertFoundNodes( cursor, 3, uniqueIds );
+            assertNodeCount( cursor, 3, uniqueIds );
 
             // when
             uniqueIds.clear();
             read.nodeLabelScan( first, cursor );
 
             // then
-            assertFoundNodes( cursor, 3, uniqueIds );
+            assertNodeCount( cursor, 3, uniqueIds );
         }
     }
 
@@ -100,7 +100,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeLabelUnionScan( cursor, first, two );
 
             // then
-            assertFoundNodes( cursor, 4, uniqueIds );
+            assertNodeCount( cursor, 4, uniqueIds );
         }
     }
 
@@ -118,7 +118,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeLabelIntersectionScan( cursor, first, two );
 
             // then
-            assertFoundNodes( cursor, 1, uniqueIds );
+            assertNodeCount( cursor, 1, uniqueIds );
         }
     }
 }

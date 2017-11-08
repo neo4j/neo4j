@@ -107,7 +107,7 @@ public abstract class IndexQuery
      */
     public static StringContainsPredicate stringContains( int propertyKeyId, String contains )
     {
-        return  new StringContainsPredicate( propertyKeyId, contains );
+        return new StringContainsPredicate( propertyKeyId, contains );
     }
 
     /**

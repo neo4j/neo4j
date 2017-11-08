@@ -283,6 +283,7 @@ public class IndexQueryTest
 
         Assert.assertFalse( test( p, "dog" ) );
         Assert.assertFalse( test( p, "cameraman" ) );
+        Assert.assertFalse( test( p, "Cat" ) );
         Assert.assertTrue( test( p, "cat" ) );
         Assert.assertTrue( test( p, "bobcat" ) );
         Assert.assertTrue( test( p, "scatman" ) );

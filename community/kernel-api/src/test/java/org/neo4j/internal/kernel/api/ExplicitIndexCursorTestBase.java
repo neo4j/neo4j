@@ -27,9 +27,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertFoundRelationships;
+import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -59,13 +59,13 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
             indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "this is it" ) );
 
             // then
-            assertFoundNodes( cursor, 1, nodes );
+            assertNodeCount( cursor, 1, nodes );
 
             // when
             indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "not that" ) );
 
             // then
-            assertFoundNodes( cursor, 0, nodes );
+            assertNodeCount( cursor, 0, nodes );
         }
     }
 
@@ -80,26 +80,26 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
             indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar:this*" );
 
             // then
-            assertFoundNodes( cursor, 1, nodes );
+            assertNodeCount( cursor, 1, nodes );
 
             // when
             nodes.clear();
             indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar", "this*" );
 
             // then
-            assertFoundNodes( cursor, 1, nodes );
+            assertNodeCount( cursor, 1, nodes );
 
             // when
             indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar:that*" );
 
             // then
-            assertFoundNodes( cursor, 0, nodes );
+            assertNodeCount( cursor, 0, nodes );
 
             // when
             indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar", "that*" );
 
             // then
-            assertFoundNodes( cursor, 0, nodes );
+            assertNodeCount( cursor, 0, nodes );
         }
     }
 
@@ -164,23 +164,4 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
         }
     }
 
-    static void assertFoundNodes( NodeIndexCursor node, int nodes, PrimitiveLongSet uniqueIds )
-    {
-        for ( int i = 0; i < nodes; i++ )
-        {
-            assertTrue( "at least " + nodes + " nodes", node.next() );
-            assertTrue( uniqueIds.add( node.nodeReference() ) );
-        }
-        assertFalse( "no more than " + nodes + " nodes", node.next() );
-    }
-
-    static void assertFoundRelationships( RelationshipIndexCursor edge, int edges, PrimitiveLongSet uniqueIds )
-    {
-        for ( int i = 0; i < edges; i++ )
-        {
-            assertTrue( "at least " + edges + " relationships", edge.next() );
-            assertTrue( uniqueIds.add( edge.relationshipReference() ) );
-        }
-        assertFalse( "no more than " + edges + " relationships", edge.next() );
-    }
 }
