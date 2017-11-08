@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidSemanticsException
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
@@ -240,7 +241,11 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
         if (!lhs.isInstanceOf[TextValue])
           None
         else
-          Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
+          try {
+            Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
+          } catch {
+            case e: java.util.regex.PatternSyntaxException => throw new InvalidSemanticsException("Invalid Regex: " + e.getMessage)
+          }
     }
   }
 

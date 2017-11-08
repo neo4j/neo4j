@@ -87,7 +87,7 @@ class HintException(message: String, cause: Throwable = null) extends CypherExce
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.hintException(message, cause)
 }
 
-class InvalidSemanticsException(message: String) extends CypherException {
+class InvalidSemanticsException(message: String) extends CypherException(message) {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidSemanticException(message, this)
 }
 
