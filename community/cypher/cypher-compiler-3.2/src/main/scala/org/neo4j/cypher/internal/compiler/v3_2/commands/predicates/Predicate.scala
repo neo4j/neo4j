@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, IsList, IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_2.InvalidSemanticsException
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 import org.neo4j.graphdb._
 
@@ -230,8 +231,13 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
       val rhsAsRegexString = converter(CastSupport.castOrFail[String](rhs))
       if (!lhs.isInstanceOf[String])
         None
-      else
-        Some(rhsAsRegexString.r.pattern.matcher(lhs.asInstanceOf[String]).matches())
+      else {
+        try {
+          Some(rhsAsRegexString.r.pattern.matcher(lhs.asInstanceOf[String]).matches())
+        } catch {
+          case e: java.util.regex.PatternSyntaxException => throw new InvalidSemanticsException("Invalid Regex: " + e.getMessage)
+        }
+      }
   }
 
   override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"
