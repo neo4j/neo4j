@@ -726,7 +726,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |         RETURN candidate
       """.stripMargin
 
-    val res = executeWith(Configs.All - Configs.Compiled, query)
+    val res = executeWith(Configs.All + Configs.Morsel - Configs.Compiled, query)
 
     //Then
     res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
@@ -743,7 +743,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |         RETURN candidate
       """.stripMargin
 
-    val res = executeWith(Configs.All - Configs.Compiled, query)
+    val res = executeWith(Configs.All + Configs.Morsel - Configs.Compiled, query)
 
     //Then
     res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))

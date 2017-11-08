@@ -50,9 +50,9 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupp
   test("deprecated functions still work") {
     val r = relate(createNode(), createNode())
 
-    executeWith(Configs.Interpreted, "RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
-    executeWith(Configs.Interpreted, "RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
-    executeWith(Configs.Interpreted, "RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
+    executeWith(Configs.Interpreted + Configs.Morsel, "RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
+    executeWith(Configs.Interpreted + Configs.Morsel, "RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
+    executeWith(Configs.Interpreted + Configs.Morsel, "RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
     executeWith(Configs.Interpreted + Configs.Morsel, "MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
   }
 }

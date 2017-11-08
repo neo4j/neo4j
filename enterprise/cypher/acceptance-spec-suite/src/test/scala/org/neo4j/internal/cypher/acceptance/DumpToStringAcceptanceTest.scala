@@ -55,7 +55,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   }
 
   test("format collection of maps") {
-    executeWith(Configs.All,  """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
+    executeWith(Configs.All + Configs.Morsel,  """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
       equal(
         """+----------------------------------------+
           || [{ inner: 'Map1' }, { inner: 'Map2' }] |
