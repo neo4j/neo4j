@@ -16,3 +16,5 @@ min() over mixed values
 max() over list values
 min() over list values
 Shorthand case with filter should work as expected
+equality with boolean lists
+optional equality with boolean lists
