@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -61,7 +62,7 @@ abstract class Read implements
             IndexQuery... query ) throws KernelException
     {
         IndexProgressor.NodeValueClient target = (NodeValueIndexCursor) cursor;
-        IndexReader reader = indexReader( (IndexReference) index );
+        IndexReader reader = indexReader( (IndexDescriptor) index );
         if ( !reader.hasFullNumberPrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
@@ -106,7 +107,7 @@ abstract class Read implements
     {
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
-        indexReader( (IndexReference) index )
+        indexReader( (IndexDescriptor) index )
                 .query( (NodeValueIndexCursor) cursor, IndexQuery.exists( firstProperty ) );
     }
 
@@ -365,7 +366,7 @@ abstract class Read implements
     {
     }
 
-    abstract IndexReader indexReader( IndexReference index );
+    abstract IndexReader indexReader( IndexDescriptor index );
 
     abstract LabelScanReader labelScanReader();
 
@@ -374,7 +375,7 @@ abstract class Read implements
     abstract ExplicitIndex explicitRelationshipIndex( String indexName );
 
     @Override
-    public abstract IndexReference index( int label, int... properties );
+    public abstract IndexDescriptor index( int label, int... properties );
 
     abstract PageCursor nodePage( long reference );
 

@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -68,7 +69,7 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    IndexReader indexReader( IndexReference index )
+    IndexReader indexReader( IndexDescriptor index )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -341,7 +342,7 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public IndexReference index( int label, int... properties )
+    public IndexDescriptor index( int label, int... properties )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
