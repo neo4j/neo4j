@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -43,7 +42,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ExplicitIndexTest
 {
-    private static final RelationshipType TYPE = DynamicRelationshipType.withName( "TYPE" );
+    private static final RelationshipType TYPE = RelationshipType.withName( "TYPE" );
 
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();

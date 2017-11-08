@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -80,7 +79,7 @@ public class RecoveryTest
         {
             Node node = db.createNode();
             Node otherNode = db.createNode();
-            Relationship rel = node.createRelationshipTo( otherNode, DynamicRelationshipType.withName( "recovery" ) );
+            Relationship rel = node.createRelationshipTo( otherNode, RelationshipType.withName( "recovery" ) );
             Index<Node> nodeIndex = db.index().forNodes( "node-index" );
             RelationshipIndex relationshipIndex = db.index().forRelationships( "rel-index" );
 

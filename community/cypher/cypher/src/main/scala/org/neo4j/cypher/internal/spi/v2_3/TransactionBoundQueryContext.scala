@@ -571,7 +571,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
         PathExpanderBuilder.allTypes(toGraphDb(dir))
       case TypeAndDirectionExpander(_, _, typDirs) =>
         typDirs.foldLeft(PathExpanderBuilder.empty()) {
-          case (acc, (typ, dir)) => acc.add(DynamicRelationshipType.withName(typ), toGraphDb(dir))
+          case (acc, (typ, dir)) => acc.add(RelationshipType.withName(typ), toGraphDb(dir))
         }
     }
 
