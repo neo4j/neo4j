@@ -44,7 +44,6 @@ class BuildUp(list: ListValue) extends Checker {
   // else we return Some(false).
   private var falseResult: Option[Boolean] = Some(false)
 
-
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value == Values.NO_VALUE) (None, this)
     else {
@@ -56,7 +55,7 @@ class BuildUp(list: ListValue) extends Checker {
   }
 
   private def checkAndBuildUpCache(value: AnyValue): (Option[Boolean], Checker) = {
-    var foundMatch = false
+    var foundMatch: java.lang.Boolean = false
     while (iterator.hasNext && !foundMatch) {
       val nextValue = iterator.next()
 
@@ -65,9 +64,13 @@ class BuildUp(list: ListValue) extends Checker {
       } else {
         cachedSet.add(nextValue)
         foundMatch = (nextValue, value) match {
-          case (a: ArrayValue, b: ListValue) => VirtualValues.fromArray(a).equals(b)
-          case (a: ListValue, b: ArrayValue) => VirtualValues.fromArray(b).equals(a)
-          case (a, b) => a.equals(b)
+          case (a: ArrayValue, b: ListValue) => VirtualValues.fromArray(a).ternaryEquals(b)
+          case (a: ListValue, b: ArrayValue) => VirtualValues.fromArray(b).ternaryEquals(a)
+          case (a, b) => a.ternaryEquals(b)
+        }
+        if (foundMatch == null) {
+          falseResult = None
+          foundMatch = false
         }
       }
     }

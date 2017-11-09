@@ -30,12 +30,12 @@ class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparis
 
   // Comparison between lists and non-lists
 
-  test("equality between list and literal should return null") {
+  test("equality between list and literal should return false") {
     val query = "WITH [1, 2] AS l1, 'foo' AS l2 RETURN l1 = l2 AS res"
 
-    val result = executeWith(Configs.All, query, expectedDifferentResults = nullInListConfigOld)
+    val result = executeWith(Configs.All, query)
 
-    result.toList should equal(List(Map("res" -> null)))
+    result.toList should equal(List(Map("res" -> false)))
   }
 
   // Equality between lists with null
@@ -65,7 +65,7 @@ class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparis
   }
 
   // Nested Lists
-  test("equality ofnested  lists of different length should return false despite nulls") {
+  test("equality of nested lists of different length should return false despite nulls") {
     val query = "WITH [[1]] AS l1, [[1], [null]] AS l2 RETURN l1 = l2 AS res"
 
     val result = executeWith(Configs.All, query)
@@ -84,7 +84,7 @@ class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparis
   test("equality between almost equal nested lists with null should return null") {
     val query = "WITH [[1, 2], ['foo', 'bar']] AS l1, [[1, 2], [null, 'bar']] AS l2 RETURN l1 = l2 AS res"
 
-    val result = executeWith(Configs.Interpreted, query, expectedDifferentResults = nullInListConfigOld)
+    val result = executeWith(Configs.All, query, expectedDifferentResults = nullInListConfigOld)
 
     result.toList should equal(List(Map("res" -> null)))
   }
@@ -115,7 +115,6 @@ class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparis
     result.toList should equal(List(Map("res" -> null)))
   }
 
-
   // IN with null, list version
 
   test("IN should return true if correct list found despite other lists having nulls") {
@@ -134,32 +133,27 @@ class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparis
     result.toList should equal(List(Map("res" -> false)))
   }
 
-  // TODO: This one is using some other code, needs to be fixed
   test("IN should return null if comparison with null is required, list version") {
     val query = "WITH [1,2] AS l1, [[null, 2]] AS l2 RETURN l1 IN l2 as res"
 
-    val result = executeWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query, expectedDifferentResults = nullInListConfigOld)
 
-    result.toList should equal(List(Map("res" -> false)))
-
-    //val result = executeWith(Configs.Interpreted, query, expectedDifferentResults = nullInListConfigOld)
-
-    //result.toList should equal(List(Map("res" -> null)))
+    result.toList should equal(List(Map("res" -> null)))
   }
 
-//  test("comparing equal length lists with null should return null") {
-//    val query = "WITH [1, 2] AS l1, [null, 2] AS l2 RETURN l1 < l2 AS res"
-//
-//    val result = executeWith(Configs.Version3_3 - Configs.AllRulePlanners - Configs.Compiled, query)
-//
-//    result.toList should equal(List(Map("res" -> null)))
-//  }
-//
-//  test("comparing different length lists with null should be ok") {
-//    val query = "WITH [1] AS l1, [null, 2] AS l2 RETURN l1 < l2 AS res"
-//
-//    val result = executeWith(Configs.Version3_3 - Configs.AllRulePlanners - Configs.Compiled, query)
-//
-//    result.toList should equal(List(Map("res" -> true)))
-//  }
+  test("IN should return true with previous null match, list version") {
+    val query = "WITH [1,2] AS l1, [[null, 2], [1, 2]] AS l2 RETURN l1 IN l2 as res"
+
+    val result = executeWith(Configs.Interpreted, query)
+
+    result.toList should equal(List(Map("res" -> true)))
+  }
+
+  test("IN should return null if comparison with null is required, list version 2") {
+    val query = "WITH [1,2] AS l1, [[null, 2], [1, 3]] AS l2 RETURN l1 IN l2 as res"
+
+    val result = executeWith(Configs.Interpreted, query, expectedDifferentResults = nullInListConfigOld)
+
+    result.toList should equal(List(Map("res" -> null)))
+  }
 }
