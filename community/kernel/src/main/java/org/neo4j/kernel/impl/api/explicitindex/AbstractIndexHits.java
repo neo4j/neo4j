@@ -40,13 +40,7 @@ public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implem
     @Override
     public T getSingle()
     {
-        try
-        {
-            return Iterators.singleOrNull( this );
-        }
-        finally
-        {
-            close();
-        }
+        // This instance will be closed by this call
+        return Iterators.singleOrNull( this );
     }
 }
