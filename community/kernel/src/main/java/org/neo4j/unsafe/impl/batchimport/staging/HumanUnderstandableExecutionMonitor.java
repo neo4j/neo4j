@@ -32,7 +32,6 @@ import org.neo4j.unsafe.impl.batchimport.RelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics;
 import org.neo4j.unsafe.impl.batchimport.ScanAndCacheGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.SparseNodeFirstRelationshipStage;
-import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -51,6 +50,7 @@ import static org.neo4j.helpers.Format.count;
 import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterables.last;
+import static org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor.totalMemoryUsageOf;
 
 /**
  * Prints progress you can actually understand, with capabilities to on demand print completely incomprehensible
@@ -110,10 +110,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private static long baselineMemoryRequirement( BatchingNeoStores neoStores )
     {
-        GatheringMemoryStatsVisitor memoryVisitor = new GatheringMemoryStatsVisitor();
-        neoStores.acceptMemoryStatsVisitor( memoryVisitor );
-        long otherMemory = memoryVisitor.getTotalUsage();
-        return otherMemory;
+        return totalMemoryUsageOf( neoStores );
     }
 
     private static long nodesDiskUsage( Estimates estimates, BatchingNeoStores neoStores )
@@ -151,8 +148,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             // - import relationships
             initializeRelationshipImport(
                     dependencyResolver.resolveDependency( Input.Estimates.class ),
-                    dependencyResolver.resolveDependency( BatchingNeoStores.class ),
-                    dependencyResolver.resolveDependency( NodeRelationshipCache.class ) );
+                    dependencyResolver.resolveDependency( IdMapper.class ),
+                    dependencyResolver.resolveDependency( BatchingNeoStores.class ) );
         }
         else if ( execution.getStageName().equals( NodeDegreeCountStage.NAME ) )
         {
@@ -163,7 +160,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             // - backward linking
             // - node relationship linking
             // - forward linking
-            initializeLinking( dependencyResolver.resolveDependency( DataStatistics.class ) );
+            initializeLinking(
+                    dependencyResolver.resolveDependency( BatchingNeoStores.class ),
+                    dependencyResolver.resolveDependency( NodeRelationshipCache.class ),
+                    dependencyResolver.resolveDependency( DataStatistics.class ) );
         }
         else if ( execution.getStageName().equals( CountGroupsStage.NAME ) )
         {
@@ -212,8 +212,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         initializeProgress( goal );
     }
 
-    private void initializeRelationshipImport( Estimates estimates, BatchingNeoStores neoStores,
-            NodeRelationshipCache nodeRelationshipCache )
+    private void initializeRelationshipImport( Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
     {
         long numberOfRelationships = estimates.numberOfRelationships();
         // TODO how to handle UNKNOWN?
@@ -224,13 +223,17 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                         estimates.sizeOfRelationshipProperties() ),
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
                         baselineMemoryRequirement( neoStores ) +
-                        defensivelyPadMemoryEstimate( nodeRelationshipCache.calculateMemoryUsage( estimates.numberOfNodes() ) ) ) );
+                        totalMemoryUsageOf( idMapper ) ) );
         initializeProgress( numberOfRelationships );
     }
 
-    private void initializeLinking( DataStatistics distribution )
+    private void initializeLinking( BatchingNeoStores neoStores,
+            NodeRelationshipCache nodeRelationshipCache, DataStatistics distribution )
     {
-        printStageHeader( "(3/4) Relationship linking" );
+        printStageHeader( "(3/4) Relationship linking",
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
+                        baselineMemoryRequirement( neoStores ) +
+                        defensivelyPadMemoryEstimate( nodeRelationshipCache.calculateMemoryUsage( distribution.getNodeCount() ) ) ) );
         long actualRelationshipCount = distribution.getRelationshipCount();
         initializeProgress(
                 actualRelationshipCount +     // node degrees
@@ -241,7 +244,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private void initializeMisc( BatchingNeoStores stores, DataStatistics distribution )
     {
-        printStageHeader( "(4/4) Post processing" );
+        printStageHeader( "(4/4) Post processing",
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( baselineMemoryRequirement( stores ) ) );
         // written groups + node counts + relationship counts
         long actualNodeCount = distribution.getNodeCount();
         long actualRelationshipCount = distribution.getRelationshipCount();
