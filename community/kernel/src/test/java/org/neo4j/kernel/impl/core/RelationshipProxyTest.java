@@ -23,7 +23,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -124,7 +123,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     @Test
     public void createDropRelationshipLongStringProperty()
     {
-        Label markerLabel = DynamicLabel.label( "marker" );
+        Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
         String propertyValue = RandomStringUtils.randomAscii( 255 );
 
@@ -162,7 +161,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     @Test
     public void createDropRelationshipLongArrayProperty()
     {
-        Label markerLabel = DynamicLabel.label( "marker" );
+        Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
         byte[] propertyValue = RandomUtils.nextBytes( 1024 );
 

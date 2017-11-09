@@ -29,11 +29,11 @@ import java.util.Set;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -204,7 +204,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            node.createRelationshipTo( node, DynamicRelationshipType.withName( "MAYOR_OF" ) );
+            node.createRelationshipTo( node, RelationshipType.withName( "MAYOR_OF" ) );
             tx.success();
         }
 

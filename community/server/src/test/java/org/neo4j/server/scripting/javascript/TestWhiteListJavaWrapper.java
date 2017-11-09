@@ -30,7 +30,7 @@ import org.mozilla.javascript.UniqueTag;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.server.scripting.UserScriptClassWhiteList;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -117,7 +117,7 @@ public class TestWhiteListJavaWrapper
         Scriptable scope = cx.initStandardObjects();
 
         // When
-        Object wrapped = wrapper.wrap( cx, scope, DynamicRelationshipType.withName( "blah" ), null );
+        Object wrapped = wrapper.wrap( cx, scope, RelationshipType.withName( "blah" ), null );
 
         // Then
         assertThat( wrapped, is( instanceOf( NativeJavaObject.class ) ) );
@@ -126,10 +126,4 @@ public class TestWhiteListJavaWrapper
         assertThat( obj.get( "name", scope ),
                 is( instanceOf( NativeJavaMethod.class ) ) );
     }
-
-    public void aGetter()
-    {
-
-    }
-
 }

@@ -27,9 +27,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import java.io.File;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
@@ -57,8 +56,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -82,7 +81,7 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return Iterables.singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( label( type ) ) );
         }
 
         @Override
@@ -127,7 +126,7 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return Iterables.singleOrNull( db.schema().getConstraints( DynamicRelationshipType.withName( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( withName( type ) ) );
         }
 
         @Override
@@ -176,13 +175,13 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return Iterables.singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( Label.label( type ) ) );
         }
 
         @Override
         protected IndexDefinition getIndex( GraphDatabaseService db, String type, String value )
         {
-            return Iterables.singleOrNull( db.schema().getIndexes( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getIndexes( Label.label( type ) ) );
         }
 
         @Override

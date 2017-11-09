@@ -38,7 +38,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ExplicitIndexTest
 {
-    private static final long TEST_TIMEOUT = 40_000;
+    private static final long TEST_TIMEOUT = 80_000;
 
     @Rule
     public TestDirectory directory = TestDirectory.testDirectory();

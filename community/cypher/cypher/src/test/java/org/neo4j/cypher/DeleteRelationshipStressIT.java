@@ -31,15 +31,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 public class DeleteRelationshipStressIT
 {
@@ -64,7 +64,7 @@ public class DeleteRelationshipStressIT
 
                     if ( prev != null )
                     {
-                        Relationship rel = prev.createRelationshipTo( node, DynamicRelationshipType.withName( "T" ) );
+                        Relationship rel = prev.createRelationshipTo( node, RelationshipType.withName( "T" ) );
                         rel.setProperty( "prop", i + j );
                     }
                     prev = node;
