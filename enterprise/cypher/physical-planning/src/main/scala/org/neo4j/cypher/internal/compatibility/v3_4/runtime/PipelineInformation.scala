@@ -29,7 +29,7 @@ import scala.collection.{immutable, mutable}
 object PipelineInformation {
   def empty = new PipelineInformation(mutable.Map.empty, 0, 0)
 
-  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int) = {
+  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int): PipelineInformation = {
 
     val stringToSlot = mutable.Map(slots.toSeq: _*)
     new PipelineInformation(stringToSlot, numberOfLongs, numberOfReferences)
@@ -113,7 +113,7 @@ object PipelineInformation {
           val s = if (slot.isInstanceOf[LongSlot]) "L" else "V"
           val r = if (slot.nullable) "T" else "F"
 
-          result.append(s"[$s $r ${slot.offset} ${slot.typ}] -> ${key}\n")
+          result.append(s"[$s $r ${slot.offset} ${slot.typ}] -> $key\n")
       }
 
       result.append("\n")
@@ -133,7 +133,7 @@ object PipelineInformation {
     result.toString()
   }
 
-  def isLongSlot(slot: Slot) = slot match {
+  def isLongSlot(slot: Slot): Boolean = slot match {
     case _: LongSlot => true
     case _ => false
   }
@@ -143,8 +143,8 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
                           val initialNumberOfLongs: Int,
                           val initialNumberOfReferences: Int) {
 
-  var numberOfLongs = initialNumberOfLongs
-  var numberOfReferences = initialNumberOfReferences
+  var numberOfLongs: Int = initialNumberOfLongs
+  var numberOfReferences: Int = initialNumberOfReferences
 
   private val aliases: mutable.Set[String] = mutable.Set()
 
@@ -236,9 +236,9 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
 
   override def toString = s"PipelineInformation(longs=$numberOfLongs, objs=$numberOfReferences, slots=$slots)"
 
-  private def checkNotAlreadyTaken(key: String, slot: Slot) =
+  private def checkNotAlreadyTaken(key: String, slot: Slot): Unit =
     if (slots.contains(key))
-      throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${slots.get(key).get})")
+      throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${slots(key)})")
 
   /**
     * NOTE: Only use for debugging

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
-import java.util.concurrent.RecursiveAction
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.{concurrent, function}
 
@@ -32,8 +32,8 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
 
-class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
-  lazy val forkJoinPool = new java.util.concurrent.ForkJoinPool(workers)
+class ForkJoinPoolDispatcher(morselSize: Int, workers: Int) extends Dispatcher {
+  lazy val forkJoinPool: ExecutorService = new java.util.concurrent.ForkJoinPool(workers)
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
@@ -56,14 +56,14 @@ class ForkJoinPoolExecutor(morselSize: Int, workers: Int) extends Dispatcher {
   }
 
   private def createAction(query: Query,
-                             incoming: Message,
-                             pipeline: Pipeline,
-                             q: QueryContext,
-                             state: QueryState): RecursiveAction = {
+                           incoming: Message,
+                           pipeline: Pipeline,
+                           q: QueryContext,
+                           state: QueryState): Runnable = {
     // We remember that the loop has started even before the task has been scheduled
     query.startLoop(incoming.iterationState)
-    new RecursiveAction {
-      override def compute(): Unit = try {
+    new Runnable {
+      override def run(): Unit = try {
         val queryContext = q.createNewQueryContext()
         var message = incoming
         var continuation: Continuation = null

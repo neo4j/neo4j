@@ -192,14 +192,14 @@ object SlotAllocation {
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline
 
-      case VarExpand(lhs: LogicalPlan,
-                       IdName(from),
-                       dir,
-                       projectedDir,
-                       types,
+      case VarExpand(_,
+                       _,
+                       _,
+                       _,
+                       _,
                        IdName(to),
                        IdName(edge),
-                       length,
+                       _,
                        ExpandAll,
                        IdName(tempNode),
                        IdName(tempEdge),
@@ -221,15 +221,15 @@ object SlotAllocation {
         incomingPipeline.newLong(name, nullable = false, CTNode)
         incomingPipeline
 
-      case MergeCreateNode(_, IdName(name), _, _) =>
+      case _:MergeCreateNode =>
         // The variable name should already have been allocated by the NodeLeafPlan
         incomingPipeline
 
-      case CreateRelationship(_, IdName(name), startNode, typ, endNode, props) =>
+      case CreateRelationship(_, IdName(name), _, _, _, _) =>
         incomingPipeline.newLong(name, nullable = false, CTRelationship)
         incomingPipeline
 
-      case MergeCreateRelationship(_, IdName(name), startNode, typ, endNode, props) =>
+      case MergeCreateRelationship(_, IdName(name), _, _, _, _) =>
         incomingPipeline.newLong(name, nullable = false, CTRelationship)
         incomingPipeline
 
@@ -239,7 +239,7 @@ object SlotAllocation {
       case DropResult(_) =>
         incomingPipeline
 
-      case UnwindCollection(_, IdName(variable), expression) =>
+      case UnwindCollection(_, IdName(variable), _) =>
         val newPipeline = incomingPipeline.breakPipelineAndClone()
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
@@ -326,7 +326,7 @@ object SlotAllocation {
           case (key, lhsSlot) =>
             //We know lhs uses a ref slot so just look for shared variables.
             rhsPipeline.get(key).foreach {
-              case rhsSlot =>
+              rhsSlot =>
                 val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
                 outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
             }
