@@ -112,6 +112,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 }
             }
         }
+        else if ( type == ShortArray.DOUBLE )
+        {
+            // Skip array compaction for floating point numbers where compaction makes very little difference
+            bytes = new byte[NUMBER_HEADER_SIZE + 8 * arrayLength];
+            bytes[0] = (byte) type.intValue();
+            bytes[1] = (byte) 8;
+            bytes[2] = (byte) 64;
+            ShortArray.DOUBLE.writeAll( array, bytes, NUMBER_HEADER_SIZE );
+        }
         else
         {
             Bits bits = Bits.bits( numberOfBytes );
