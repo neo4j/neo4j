@@ -52,9 +52,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case _: AllNodesScan =>
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq.empty, variables)
 
-      case _: plans.Argument =>
-        PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
-
       case NodeByLabelScan(_, label, _) =>
         PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), variables)
 
@@ -71,6 +68,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
 
       case ProduceResult(_, _) =>
         PlanDescriptionImpl(id, "ProduceResults", NoChildren, Seq(), variables)
+
+      case _: SingleRow if variables.size > 0 =>
+        PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
 
       case _: SingleRow =>
         SingleRowPlanDescription(id, Seq.empty, variables)

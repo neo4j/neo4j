@@ -29,6 +29,6 @@ object argumentLeafPlanner extends LeafPlanner {
     if ((qg.argumentIds intersect ids).isEmpty)
       Seq.empty
     else
-      Seq(context.logicalPlanProducer.planQueryArgumentRow(qg))
+      Seq(context.logicalPlanProducer.planQuerySingleRow(qg))
   }
 }

@@ -46,32 +46,20 @@ case object unnestApply extends Rewriter {
     case Apply(_: SingleRow, rhs) =>
       rhs
 
-    // Arg Ax R => R
-    case Apply(_: Argument, rhs) =>
-      rhs
-
-    // L Ax Arg => L
-    case Apply(lhs, _: Argument) =>
-      lhs
-
     // L Ax SR => L
     case Apply(lhs, _: SingleRow) =>
       lhs
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@Apply(lhs, Apply(_: Argument, rhs)) =>
+    case original@Apply(lhs, Apply(_: SingleRow, rhs)) =>
       Apply(lhs, rhs)(original.solved)
-
-    // L Ax (Arg FE R) => L FE R
-    case original@Apply(lhs, foreach@ForeachApply(_: Argument, rhs, _, _)) =>
-      foreach.copy(left = lhs, right = rhs)(original.solved)
 
     // L Ax (SR FE R) => L FE R
     case original@Apply(lhs, foreach@ForeachApply(_: SingleRow, rhs, _, _)) =>
       foreach.copy(left = lhs, right = rhs)(original.solved)
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
+    case original@AntiConditionalApply(lhs, Apply(_: SingleRow, rhs), _) =>
       original.copy(lhs, rhs)(original.solved)
 
     // L Ax (σ R) => σ(L Ax R)
@@ -101,7 +89,7 @@ case object unnestApply extends Rewriter {
       expand.copy(source = newApply)(apply.solved)
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
+    case apply@Apply(lhs, join@OuterHashJoin(_, _:SingleRow, rhs)) =>
       join.copy(left = lhs)(apply.solved)
 
     // L Ax (CN R) => CN Ax (L R)

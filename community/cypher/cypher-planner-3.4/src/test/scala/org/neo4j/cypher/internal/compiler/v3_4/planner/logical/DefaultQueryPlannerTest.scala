@@ -88,7 +88,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(plannerQuery.allHints).thenReturn(Set[Hint]())
 
     val lp = {
-      val plan = SingleRow()(plannerQuery)
+      val plan = SingleRow()(plannerQuery)()
       Projection(plan, Map.empty)(plannerQuery)
     }
 

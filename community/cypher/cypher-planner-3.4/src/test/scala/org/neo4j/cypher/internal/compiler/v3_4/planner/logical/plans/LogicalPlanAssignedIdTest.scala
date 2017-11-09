@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("assignedId survives rewriting") {
-    val sr1 = SingleRow()(solved)
+    val sr1 = SingleRow()(solved)()
     val pr = Projection(sr1, Map.empty)(solved)
     pr.assignIds()
 
     val prPrim = pr.endoRewrite(topDown(Rewriter.lift {
-      case sr: SingleRow => SingleRow()(solved)
+      case sr: SingleRow => SingleRow()(solved)()
     }))
 
     pr.assignedId should equal(prPrim.assignedId)
@@ -40,8 +40,8 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
   }
 
   test("assignedIds are different between plans") {
-    val sr1 = SingleRow()(solved)
-    val sr2 = SingleRow()(solved)
+    val sr1 = SingleRow()(solved)()
+    val sr2 = SingleRow()(solved)()
     val apply = Apply(sr1, sr2)(solved)
     apply.assignIds()
 
@@ -54,11 +54,11 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
         ApplyA(5)         ApplyB(2)
     SR1A(4)  SR2A(3)   SR1B(1) SR2B(0)
      */
-    val sr1A = SingleRow()(solved)
-    val sr2A = SingleRow()(solved)
+    val sr1A = SingleRow()(solved)()
+    val sr2A = SingleRow()(solved)()
     val applyA = Apply(sr1A, sr2A)(solved)
-    val sr1B = SingleRow()(solved)
-    val sr2B = SingleRow()(solved)
+    val sr1B = SingleRow()(solved)()
+    val sr2B = SingleRow()(solved)()
     val applyB = Apply(sr1B, sr2B)(solved)
     val applyAll = Apply(applyA, applyB)(solved) // I heard you guys like Apply, so we applied an Apply in your Apply
 
@@ -74,14 +74,14 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
   }
 
   test("cant assign ids twice") {
-    val sr1 = SingleRow()(solved)
+    val sr1 = SingleRow()(solved)()
     val pr = Projection(sr1, Map.empty)(solved)
     pr.assignIds()
     intercept[CypherException](pr.assignIds())
   }
 
   test("can assign inside expressions as well") {
-    val singleRow = SingleRow()(solved)
+    val singleRow = SingleRow()(solved)()
     val inner = AllNodesScan(IdName("x"), Set.empty)(solved)
     val filter = Selection(Seq(NestedPlanExpression(inner, literalInt(42))(pos)), singleRow)(solved)
 

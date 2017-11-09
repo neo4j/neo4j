@@ -28,7 +28,7 @@ class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should build plans containing single row") {
     planFor("RETURN 42")._2 should equal(
       Projection(
-        SingleRow()(solved), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
+        SingleRow()(solved)(), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
       )(solved)
     )
   }

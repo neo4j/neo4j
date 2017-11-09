@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
-import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
+import org.neo4j.cypher.internal.v3_4.logical.plans.SingleRow
 import org.neo4j.cypher.internal.v3_4.expressions.PatternExpression
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -61,7 +61,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     argumentLeafPlanner(qg) should equal(
-      Seq(Argument(Set("a", "b","c"))(solved)())
+      Seq(SingleRow(Set("a", "b","c"))(solved)())
     )
   }
 }

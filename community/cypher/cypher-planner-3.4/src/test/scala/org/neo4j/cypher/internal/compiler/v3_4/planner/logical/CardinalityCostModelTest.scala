@@ -36,7 +36,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         Expand(
           Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
             Expand(
-              Argument(Set("a"))(solvedWithEstimation(10.0))(),
+              SingleRow(Set("a"))(solvedWithEstimation(10.0))(),
               "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
           )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
       )(solvedWithEstimation(10.0))
@@ -99,7 +99,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val card10 = solvedWithEstimation(cardinality)
     val plan =
       Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
-        Argument(Set("a"))(card10)())(card10)
+        SingleRow(Set("a"))(card10)())(card10)
 
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates
