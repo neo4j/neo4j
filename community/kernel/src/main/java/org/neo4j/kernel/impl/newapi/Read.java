@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -46,6 +45,10 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static org.neo4j.kernel.impl.newapi.References.clearFlags;
+import static org.neo4j.kernel.impl.newapi.References.hasDirectFlag;
+import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
+import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 abstract class Read implements
@@ -53,8 +56,6 @@ abstract class Read implements
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
         org.neo4j.internal.kernel.api.SchemaRead
 {
-    static final long FILTER_MASK = 0x2000_0000_0000_0000L;
-
     @Override
     public final void nodeIndexSeek(
             org.neo4j.internal.kernel.api.IndexReference index,
@@ -196,9 +197,9 @@ abstract class Read implements
         {
             cursor.close();
         }
-        else if ( reference < NO_ID ) // the relationships for this node are not grouped
+        else if ( hasDirectFlag( reference ) ) // the relationships for this node are not grouped
         {
-            ((RelationshipGroupCursor) cursor).buffer( nodeReference, invertReference( reference ) );
+            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearFlags( reference ) );
         }
         else // this is a normal group reference.
         {
@@ -241,13 +242,13 @@ abstract class Read implements
         {
             cursor.close();
         }
-        else if ( reference < NO_ID ) // this reference is actually to a group record
+        else if ( hasGroupFlag( reference ) ) // this reference is actually to a group record
         {
-            ((RelationshipTraversalCursor) cursor).groups( nodeReference, invertReference( reference ) );
+            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearFlags( reference ) );
         }
-        else if ( needsFiltering( reference ) )
+        else if ( hasFilterFlag( reference ) ) // this relationship chain need to be filtered
         {
-            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, removeFilteringFlag( reference ) );
+            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearFlags( reference ) );
         }
         else // this is a normal relationship reference
         {
@@ -406,40 +407,4 @@ abstract class Read implements
     abstract TextValue string( PropertyCursor cursor, long reference, PageCursor page );
 
     abstract ArrayValue array( PropertyCursor cursor, long reference, PageCursor page );
-
-    /**
-     * Inverted references are used to signal that the reference is of a special type.
-     * <p>
-     * For example that it is a direct reference to a relationship record rather than a reference to relationship group
-     * record in {@link NodeCursor#relationshipGroupReference()}.
-     * <p>
-     * Since {@code -1} is used to encode {@link AbstractBaseRecord#NO_ID that the reference is invalid}, we reserve
-     * this value from the range by subtracting the reference from {@code -2} when inverting.
-     * <p>
-     * This function is its own inverse function.
-     *
-     * @param reference the reference to invert.
-     * @return the inverted reference.
-     */
-    static long invertReference( long reference )
-    {
-        return -2 - reference;
-    }
-
-    static long addFilteringFlag( long reference )
-    {
-        assert reference >= -1;
-        // set a high order bit as flag noting that "filtering is required"
-        return reference | FILTER_MASK;
-    }
-
-    static long removeFilteringFlag( long reference )
-    {
-        return reference & ~FILTER_MASK;
-    }
-
-    static boolean needsFiltering( long reference )
-    {
-        return (reference & FILTER_MASK) != 0L;
-    }
 }

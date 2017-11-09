@@ -29,7 +29,8 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static org.neo4j.kernel.impl.newapi.Read.invertReference;
+import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
+import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
 class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.NodeCursor
 {
@@ -113,17 +114,13 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public long relationshipGroupReference()
     {
-        // use negatives to encode the fact that this is not a proper group reference,
-        // although not -1, because it is special
-        return isDense() ? getNextRel() : invertReference( getNextRel() );
+        return isDense() ? getNextRel() : setDirectFlag( getNextRel() );
     }
 
     @Override
     public long allRelationshipsReference()
     {
-        // use negatives to encode the fact that this is not a proper relationship reference,
-        // although not -1, because it is special
-        return isDense() ? invertReference( getNextRel() ) : getNextRel();
+        return isDense() ? setGroupFlag( getNextRel() ) : getNextRel();
     }
 
     @Override

@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.kernel.impl.newapi.Read.addFilteringFlag;
+import static org.neo4j.kernel.impl.newapi.References.setFilterFlag;
 
 class RelationshipGroupCursor extends RelationshipGroupRecord
         implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
@@ -322,17 +322,17 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
 
         long outgoing()
         {
-            return addFilteringFlag( firstOut );
+            return setFilterFlag( firstOut );
         }
 
         long incoming()
         {
-            return addFilteringFlag( firstIn );
+            return setFilterFlag( firstIn );
         }
 
         long loops()
         {
-            return addFilteringFlag( firstLoop );
+            return setFilterFlag( firstLoop );
         }
 
     }
