@@ -41,7 +41,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Long.max;
-import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Format.bytes;
@@ -65,18 +64,33 @@ import static org.neo4j.helpers.Format.duration;
  */
 public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
 {
+    public interface Monitor
+    {
+        public void detailsPrinted();
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void detailsPrinted()
+        {   // ignored
+        }
+    };
+
     private final List<StageDetails> details = new ArrayList<>();
     private final PrintStream out;
     private final Map<String,Pair<String,Runnable>> actions = new HashMap<>();
     private final CollectingMonitor gcBlockTime = new CollectingMonitor();
     private final MeasureDoNothing gcMonitor;
+    private final Monitor monitor;
 
     private StageDetails current;
     private boolean printDetailsOnDone;
 
-    public OnDemandDetailsExecutionMonitor( PrintStream out )
+    public OnDemandDetailsExecutionMonitor( PrintStream out, Monitor monitor )
     {
         this.out = out;
+        this.monitor = monitor;
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
         this.actions.put( "c", Pair.of( "Print more detailed information about current stage", this::printDetailsForCurrentStage ) );
         this.actions.put( "gc", Pair.of( "Trigger GC", this::triggerGC ) );
@@ -135,11 +149,24 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
             stageDetails.print( out );
         }
 
-        out.println( "Environment information:");
-        out.println( "  Free physical memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
-        out.println( "  Max VM memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
-        out.println( "  Free VM memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
-        out.println( "  GC block time: " + duration( gcBlockTime.getGcBlockTime() ) );
+        printIndented( out, "Environment information:" );
+        printIndented( out, "  Free physical memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
+        printIndented( out, "  Max VM memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
+        printIndented( out, "  Free VM memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
+        printIndented( out, "  GC block time: " + duration( gcBlockTime.getGcBlockTime() ) );
+        out.println();
+    }
+
+    private void printDetailsHeadline()
+    {
+        out.println();
+        out.println();
+        printIndented( out, "************** DETAILS **************" );
+        out.println();
+
+        // Make sure that if user is interested in details then also print the entire details set when import is done
+        printDetailsOnDone = true;
+        monitor.detailsPrinted();
     }
 
     private void printDetailsForCurrentStage()
@@ -151,12 +178,9 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         }
     }
 
-    private void printDetailsHeadline()
+    private static void printIndented( PrintStream out, String string )
     {
-        out.println( format( "%n************** DETAILS **************%n" ) );
-
-        // Make sure that if user is interested in details then also print the entire details set when import is done
-        printDetailsOnDone = true;
+        out.println( "\t" + string );
     }
 
     private void triggerGC()
@@ -209,10 +233,10 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
 
         void print( PrintStream out )
         {
-            out.println( execution.name() );
+            printIndented( out, execution.name() );
             StringBuilder builder = new StringBuilder();
             SpectrumExecutionMonitor.printSpectrum( builder, execution, SpectrumExecutionMonitor.DEFAULT_WIDTH, DetailLevel.NO );
-            out.println( builder.toString() );
+            printIndented( out, builder.toString() );
             printValue( out, memoryUsage, "Memory usage", Format::bytes );
             printValue( out, ioThroughput, "I/O throughput", value -> bytes( value ) + "/s" );
             printValue( out, stageGcBlockTime, "GC block time", Format::duration );
@@ -226,7 +250,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         {
             if ( value > 0 )
             {
-                out.println( description + ": " + toStringConverter.apply( value ) );
+                printIndented( out, description + ": " + toStringConverter.apply( value ) );
             }
         }
 

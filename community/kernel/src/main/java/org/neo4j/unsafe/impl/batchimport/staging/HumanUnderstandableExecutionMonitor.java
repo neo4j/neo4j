@@ -58,6 +58,11 @@ import static org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisito
  */
 public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 {
+    public interface Monitor
+    {
+        boolean somethingElseBrokeMyNiceOutput();
+    }
+
     private static final String ESTIMATED_REQUIRED_MEMORY_USAGE = "Estimated required memory usage";
     private static final String ESTIMATED_DISK_SPACE_USAGE = "Estimated disk space usage";
     private static final String ESTIMATED_NUMBER_OF_RELATIONSHIP_PROPERTIES = "Estimated number of relationship properties";
@@ -70,6 +75,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     // assigned later on
     private final PrintStream out;
+    private final Monitor monitor;
     private DependencyResolver dependencyResolver;
 
     // progress of current stage
@@ -77,9 +83,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private long stashedProgress;
     private long progress;
 
-    public HumanUnderstandableExecutionMonitor( PrintStream out )
+    public HumanUnderstandableExecutionMonitor( PrintStream out, Monitor monitor )
     {
         this.out = out;
+        this.monitor = monitor;
     }
 
     @Override
@@ -385,9 +392,24 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     @Override
     public void check( StageExecution execution )
     {
+        reprintProgressIfNecessary();
         if ( includeStage( execution ) )
         {
             updateProgress( progressOf( execution ) );
+        }
+    }
+
+    private void reprintProgressIfNecessary()
+    {
+        if ( monitor.somethingElseBrokeMyNiceOutput() )
+        {
+            long prevProgress = this.progress;
+            long prevStashedProgress = this.stashedProgress;
+            this.progress = 0;
+            this.stashedProgress = 0;
+            updateProgress( prevProgress + prevStashedProgress );
+            this.progress = prevProgress;
+            this.stashedProgress = prevStashedProgress;
         }
     }
 

@@ -31,9 +31,10 @@ public class ExecutionMonitors
 
     public static ExecutionMonitor defaultVisible()
     {
+        ProgressRestoringMonitor monitor = new ProgressRestoringMonitor();
         return new MultiExecutionMonitor(
-                new HumanUnderstandableExecutionMonitor( System.out ),
-                new OnDemandDetailsExecutionMonitor( System.out ) );
+                new HumanUnderstandableExecutionMonitor( System.out, monitor ),
+                new OnDemandDetailsExecutionMonitor( System.out, monitor ) );
     }
 
     private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()
