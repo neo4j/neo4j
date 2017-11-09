@@ -22,13 +22,30 @@ package org.neo4j.cypher.internal.queryReduction
 import org.neo4j.cypher.internal.queryReduction.BT.BTConfiguration
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 
+import scala.collection.mutable
 
 object BT {
   type BTConfiguration = Array[Int]
 
+  private val cache = mutable.Map[Seq[Int], OracleResult]()
+
   def apply[I, O](input: BTInput[I, O])(test: Oracle[I]): I = {
     // Create initial configuration
+    cache.clear()
     val conf: BTConfiguration = new Array[Int](input.length)
+
+    def runWithCache: OracleResult = {
+      val key = conf.clone()
+      if (cache.contains(key)) {
+        cache(key)
+      } else {
+        // No cached value available
+        val res = test(input.toInput(conf))
+        // Cache the result
+        cache(key) = res
+        res
+      }
+    }
 
     var improvementFound = false
     do {
@@ -46,7 +63,7 @@ object BT {
             // Assign that value
             conf(i) = j
             // Test the current assignment
-            val result = test(input.toInput(conf))
+            val result = runWithCache
 
             if (result == Reproduced) {
               // If it is valid, we mark that an improvement was found

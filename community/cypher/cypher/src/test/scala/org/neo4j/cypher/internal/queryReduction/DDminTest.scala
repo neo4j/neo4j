@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.queryReduction
 
-import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
-class DDminTest extends CypherFunSuite {
+class DDminTest extends CypherFunSuite with ReductionTestHelper {
 
   class TestDDInput(originalLength: Int) extends DDInput[Array[Int]](originalLength) {
     override def getCurrentCode: Array[Int] = activeTokens
@@ -34,31 +33,6 @@ class DDminTest extends CypherFunSuite {
         activeTokens
       } else {
         throw new IllegalSyntaxException()
-      }
-    }
-  }
-
-  trait TestExhausted {
-    def assertExhausted
-  }
-
-  def getOracle(expectedInvocationsAndResults: Seq[(Array[Int], OracleResult)]): Oracle[Array[Int]] with TestExhausted = {
-    var i = 0
-    new Oracle[Array[Int]] with TestExhausted {
-      override def apply(a: Array[Int]): OracleResult = {
-        if (i >= expectedInvocationsAndResults.length) {
-          fail(s"Oracle invoked too often. Argument was: ${a.toSeq}")
-        }
-        a should equal(expectedInvocationsAndResults(i)._1)
-        val res = expectedInvocationsAndResults(i)._2
-        i = i + 1
-        res
-      }
-
-      def assertExhausted = {
-        if (i != expectedInvocationsAndResults.length) {
-          fail(s"Oracle not invoked often enough. Next expected call: ${expectedInvocationsAndResults(i)._1.toSeq}")
-        }
       }
     }
   }
