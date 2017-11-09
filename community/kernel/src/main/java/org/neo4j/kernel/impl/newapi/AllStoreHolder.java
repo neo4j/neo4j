@@ -38,15 +38,14 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.StoreHolder;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -76,11 +76,11 @@ class AllStoreHolder extends Read implements Token
     private final StoreReadLayer read;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
-    AllStoreHolder( RecordStorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
+    AllStoreHolder( StorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
     {
         read = engine.storeReadLayer();
         statement = read.newStatement();
-        NeoStores stores = engine.testAccessNeoStores();
+        StoreHolder stores = engine.stores();
         this.nodeStore = stores.getNodeStore();
         this.relationshipStore = stores.getRelationshipStore();
         this.groupStore = stores.getRelationshipGroupStore();

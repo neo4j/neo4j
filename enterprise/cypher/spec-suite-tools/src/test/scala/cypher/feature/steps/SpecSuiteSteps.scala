@@ -34,7 +34,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
 import org.neo4j.graphdb.factory.{EnterpriseGraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryStatistics, Result, Transaction}
-import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
@@ -120,7 +120,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     scenarioBuilder.procedureRegistration { g: GraphDatabaseAPI =>
       val parsedSignature = ProcedureSignature.parse(signatureText)
       val kernelProcedure = buildProcedure(parsedSignature, values)
-      Try(g.getDependencyResolver.resolveDependency(classOf[KernelAPI]).registerProcedure(kernelProcedure)) match {
+      Try(g.getDependencyResolver.resolveDependency(classOf[InwardKernel]).registerProcedure(kernelProcedure)) match {
         case Success(_) =>
         case Failure(e) => System.err.println(s"\nRegistration of procedure $signatureText failed: " + e.getMessage)
       }

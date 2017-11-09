@@ -53,7 +53,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
     }
 
     val logProvider = NullLogProvider.getInstance()
-    val compatibilityFactory = new CommunityCompatibilityFactory(graph, kernelAPI, kernelMonitors, logProvider)
+    val compatibilityFactory = new CommunityCompatibilityFactory(graph, kernelMonitors, logProvider)
     val engine = new ExecutionEngine(graph, logProvider, compatibilityFactory)
 
     val query = "MATCH (n:Label) WHERE n.x > 12 RETURN n.name"

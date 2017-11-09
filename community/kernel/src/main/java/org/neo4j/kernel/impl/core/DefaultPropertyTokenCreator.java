@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultPropertyTokenCreator( Supplier<KernelAPI> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+    public DefaultPropertyTokenCreator( Supplier<InwardKernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
         super( kernelSupplier, idGeneratorFactory );
     }

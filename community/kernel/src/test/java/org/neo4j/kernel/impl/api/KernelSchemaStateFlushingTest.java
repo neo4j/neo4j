@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -49,7 +49,7 @@ public class KernelSchemaStateFlushingTest
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private GraphDatabaseAPI db;
-    private KernelAPI kernel;
+    private InwardKernel kernel;
 
     @Test
     public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
@@ -224,7 +224,7 @@ public class KernelSchemaStateFlushingTest
     public void setup()
     {
         db = dbRule.getGraphDatabaseAPI();
-        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
     }
 
     @After

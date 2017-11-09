@@ -30,7 +30,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
@@ -71,7 +70,6 @@ This class is responsible for managing the pre-parsing of queries and based on t
 Cypher compiler to use
  */
 class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
-                              kernelAPI: KernelAPI,
                               kernelMonitors: KernelMonitors,
                               configuredVersion: CypherVersion,
                               configuredPlanner: CypherPlanner,

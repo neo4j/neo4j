@@ -34,7 +34,7 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -102,14 +102,14 @@ public class CompositeUniquenessConstraintValidationIT
     private KernelTransaction transaction;
     private Statement statement;
     private GraphDatabaseAPI graphDatabaseAPI;
-    protected KernelAPI kernel;
+    protected InwardKernel kernel;
 
     @Before
     public void setup() throws Exception
     {
 
         graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( KernelAPI.class );
+        kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( InwardKernel.class );
 
         newTransaction();
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );

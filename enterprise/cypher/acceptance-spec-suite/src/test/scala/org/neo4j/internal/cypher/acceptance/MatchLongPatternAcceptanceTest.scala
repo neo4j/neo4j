@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_idp_solver_duration_threshold, cypher_idp_solver_table_threshold}
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.NullLogProvider
@@ -245,11 +244,10 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
     val graph = new GraphDatabaseCypherService(new ImpermanentGraphDatabase(new File("target/test-data/pattern-acceptance"), config))
     try {
-      val kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
       val monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
       val logProvider = NullLogProvider.getInstance()
       // FIXME: probably both?
-      val factory = new CommunityCompatibilityFactory(graph, kernelAPI, monitors, logProvider)
+      val factory = new CommunityCompatibilityFactory(graph, monitors, logProvider)
       val engine = new ExecutionEngine(graph, logProvider, factory)
       run(engine, graph)
     } finally {

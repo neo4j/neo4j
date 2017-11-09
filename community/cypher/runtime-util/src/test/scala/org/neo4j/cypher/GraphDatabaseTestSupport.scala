@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherT
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.{KernelAPI, Statement}
+import org.neo4j.kernel.api.{InwardKernel, Statement}
+import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -249,9 +250,9 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     func
   }
 
-  def kernelMonitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
+  def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
 
-  def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
+  private def kernelAPI: InwardKernel = graph.getDependencyResolver.resolveDependency(classOf[InwardKernel])
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {

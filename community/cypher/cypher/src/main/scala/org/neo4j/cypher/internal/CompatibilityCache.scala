@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 
@@ -49,23 +48,23 @@ trait CompatibilityFactory {
   def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_]
 }
 
-class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, kernelMonitors: KernelMonitors,
+class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMonitors: KernelMonitors,
                                     logProvider: LogProvider) extends CompatibilityFactory {
 
   private val log: Log = logProvider.getLog(getClass)
 
   override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility = spec.planner match {
     case CypherPlanner.rule =>
-      v2_3.RuleCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI)
+      v2_3.RuleCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors)
     case _ =>
-      v2_3.CostCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime)
+      v2_3.CostCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, log, spec.planner, spec.runtime)
   }
 
   override def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility = spec.planner match {
     case CypherPlanner.rule =>
-      v3_1.RuleCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI)
+      v3_1.RuleCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors)
     case _ =>
-      v3_1.CostCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
+      v3_1.CostCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
   override def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_] =
@@ -73,7 +72,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelAPI:
       case (CypherPlanner.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.4. If you need to use it, please compatibility mode Cypher 3.1")
       case _ =>
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, log,
+        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
                           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
                           CommunityRuntimeContextCreator)
     }

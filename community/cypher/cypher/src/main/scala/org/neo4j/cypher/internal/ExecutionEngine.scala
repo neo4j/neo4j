@@ -33,7 +33,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.api.security.AccessMode
-import org.neo4j.kernel.api.{KernelAPI, ReadOperations}
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -57,7 +57,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // true means we run inside REST server
   protected val isServer = false
   private val resolver = queryService.getDependencyResolver
-  private val kernel = resolver.resolveDependency(classOf[KernelAPI])
   private val lastCommittedTxId = LastCommittedTxIdProvider(queryService)
   private val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
   private val compilationTracer: CompilationTracer =
@@ -305,7 +304,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
 
     val compatibilityCache = new CompatibilityCache(compatibilityFactory)
-    new CompilerEngineDelegator(queryService, kernel, kernelMonitors, version, planner, runtime,
+    new CompilerEngineDelegator(queryService, kernelMonitors, version, planner, runtime,
       useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
       errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, logProvider, compatibilityCache)
   }

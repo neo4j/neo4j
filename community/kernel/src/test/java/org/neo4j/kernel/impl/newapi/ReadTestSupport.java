@@ -25,12 +25,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestSupport;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 class ReadTestSupport implements KernelAPIReadTestSupport
@@ -55,7 +58,10 @@ class ReadTestSupport implements KernelAPIReadTestSupport
     @Override
     public Kernel kernelToTest()
     {
-        return new TempKernel( (GraphDatabaseAPI) db );
+        DependencyResolver resolver = ((GraphDatabaseAPI) this.db).getDependencyResolver();
+        return new NewKernel(
+                resolver.resolveDependency( StorageEngine.class ),
+                resolver.resolveDependency( KernelTransactions.class ) );
     }
 
     @Override

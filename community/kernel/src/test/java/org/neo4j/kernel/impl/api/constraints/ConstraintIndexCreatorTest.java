@@ -25,7 +25,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.Permissions;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
@@ -300,7 +303,7 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
     }
 
-    private class StubKernel implements KernelAPI
+    private class StubKernel implements InwardKernel
     {
         private final List<KernelStatement> statements = new ArrayList<>();
 
@@ -324,12 +327,6 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public void unregisterTransactionHook( TransactionHook hook )
-        {
-            throw new UnsupportedOperationException( "Please implement" );
-        }
-
-        @Override
         public void registerProcedure( CallableProcedure procedure )
         {
             throw new UnsupportedOperationException();
@@ -344,6 +341,18 @@ public class ConstraintIndexCreatorTest
         @Override
         public void registerUserAggregationFunction( CallableUserAggregationFunction function )
                 throws ProcedureException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CursorFactory cursors()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Session beginSession( Permissions permissions )
         {
             throw new UnsupportedOperationException();
         }

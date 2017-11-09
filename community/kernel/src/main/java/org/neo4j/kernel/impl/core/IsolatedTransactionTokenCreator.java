@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.Statement;
@@ -40,9 +40,9 @@ import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 public abstract class IsolatedTransactionTokenCreator implements TokenCreator
 {
     protected final IdGeneratorFactory idGeneratorFactory;
-    private final Supplier<KernelAPI> kernelSupplier;
+    private final Supplier<InwardKernel> kernelSupplier;
 
-    public IsolatedTransactionTokenCreator( Supplier<KernelAPI> kernelSupplier,
+    public IsolatedTransactionTokenCreator( Supplier<InwardKernel> kernelSupplier,
             IdGeneratorFactory idGeneratorFactory )
     {
         this.kernelSupplier = kernelSupplier;
@@ -52,7 +52,7 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     @Override
     public synchronized int getOrCreate( String name ) throws KernelException
     {
-        KernelAPI kernel = kernelSupplier.get();
+        InwardKernel kernel = kernelSupplier.get();
         try ( KernelTransaction transaction = kernel.newTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             try ( Statement statement = transaction.acquireStatement() )

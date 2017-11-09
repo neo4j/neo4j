@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -115,7 +115,7 @@ public class IndexPopulationJobTest
     private final String name = "name";
     private final String age = "age";
 
-    private KernelAPI kernel;
+    private InwardKernel kernel;
     private IndexStoreView indexStoreView;
     private DatabaseSchemaState stateHolder;
     private int labelId;
@@ -125,7 +125,7 @@ public class IndexPopulationJobTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newGraphDatabase();
-        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
 

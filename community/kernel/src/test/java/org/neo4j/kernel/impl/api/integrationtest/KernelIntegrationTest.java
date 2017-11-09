@@ -27,7 +27,7 @@ import org.junit.rules.RuleChain;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -58,7 +58,7 @@ public abstract class KernelIntegrationTest
     @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
-    protected KernelAPI kernel;
+    protected InwardKernel kernel;
     protected IndexingService indexingService;
 
     private KernelTransaction transaction;
@@ -157,7 +157,7 @@ public abstract class KernelIntegrationTest
     protected void startDb()
     {
         db = (GraphDatabaseAPI) createGraphDatabase();
-        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         dbmsOperations = db.getDependencyResolver().resolveDependency( DbmsOperations.class );

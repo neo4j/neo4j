@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.impl.store.StoreHolder;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -117,6 +118,11 @@ public interface StorageEngine
      * during recovery or similar.
      */
     void forceClose();
+
+    /**
+     * @return A store holder with access to the open stores.
+     */
+    StoreHolder stores();
 
     /**
      * Startup process have reached the conclusion that recovery is required. Make the necessary

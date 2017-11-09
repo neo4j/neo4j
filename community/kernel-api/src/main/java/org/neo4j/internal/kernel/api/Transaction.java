@@ -31,7 +31,8 @@ public interface Transaction
 
     /**
      * Commit this transaction.
-     * @return the id of the commited transaction, or {@link READ_ONLY_TRANSACTION} if this was a read only transaction.
+     * @return the id of the commited transaction, or {@link Transaction#READ_ONLY_TRANSACTION} if this was a read only
+     * transaction.
      */
     long commit();
 

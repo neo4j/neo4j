@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -69,7 +68,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
  * anything but extends the AbstractStore for the "type and version" validation
  * performed in there.
  */
-public class NeoStores implements AutoCloseable
+public class NeoStores implements AutoCloseable, StoreHolder
 {
     private static final String STORE_ALREADY_CLOSED_MESSAGE = "Specified store was already closed.";
     private static final String STORE_NOT_INITIALIZED_TEMPLATE = "Specified store was not initialized. Please specify" +
@@ -313,6 +312,7 @@ public class NeoStores implements AutoCloseable
     /**
      * @return The node store
      */
+    @Override
     public NodeStore getNodeStore()
     {
         return (NodeStore) getStore( StoreType.NODE );
@@ -328,6 +328,7 @@ public class NeoStores implements AutoCloseable
      *
      * @return The relationship store
      */
+    @Override
     public RelationshipStore getRelationshipStore()
     {
         return (RelationshipStore) getStore( StoreType.RELATIONSHIP );
@@ -368,6 +369,7 @@ public class NeoStores implements AutoCloseable
      *
      * @return The property store
      */
+    @Override
     public PropertyStore getPropertyStore()
     {
         return (PropertyStore) getStore( StoreType.PROPERTY );
@@ -396,6 +398,12 @@ public class NeoStores implements AutoCloseable
         return (DynamicStringStore) getStore( StoreType.PROPERTY_KEY_TOKEN_NAME );
     }
 
+    /**
+     * The relationship group store.
+     *
+     * @return The relationship group store.
+     */
+    @Override
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return (RelationshipGroupStore) getStore( StoreType.RELATIONSHIP_GROUP );

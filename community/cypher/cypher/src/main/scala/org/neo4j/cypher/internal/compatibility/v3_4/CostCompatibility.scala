@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -38,7 +37,6 @@ case class CostCompatibility[CONTEXT <: CommunityRuntimeContext,
                              T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherCompilerConfiguration,
                                                                                             clock: Clock,
                                                                                             kernelMonitors: KernelMonitors,
-                                                                                            kernelAPI: KernelAPI,
                                                                                             log: Log,
                                                                                             planner: CypherPlanner,
                                                                                             runtime: CypherRuntime,

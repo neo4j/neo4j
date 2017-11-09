@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
@@ -33,24 +32,20 @@ import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
 
 /**
  * This is a temporary implementation of Kernel, used to enable early testing. The plan is to merge this
  * class with org.neo4j.kernel.impl.api.Kernel.
  */
-class TempKernel implements Kernel, Session
+public class NewKernel implements Kernel, Session
 {
     private final Transaction tx;
     private final Cursors cursors;
 
-    TempKernel( GraphDatabaseAPI db )
+    public NewKernel( StorageEngine engine, KernelTransactions ktxs )
     {
-        DependencyResolver resolver = db.getDependencyResolver();
-        RecordStorageEngine engine = resolver.resolveDependency( RecordStorageEngine.class );
-        KernelTransactions ktx = resolver.resolveDependency( KernelTransactions.class );
-        this.tx = new Transaction( engine, ktx );
+        this.tx = new Transaction( engine, ktxs );
         this.cursors = new Cursors( tx );
     }
 
@@ -85,7 +80,7 @@ class TempKernel implements Kernel, Session
 
     private static class Transaction extends AllStoreHolder implements org.neo4j.internal.kernel.api.Transaction
     {
-        Transaction( RecordStorageEngine engine, KernelTransactions ktx )
+        Transaction( StorageEngine engine, KernelTransactions ktx )
         {
             super( engine, ktx.explicitIndexTxStateSupplier() );
         }
