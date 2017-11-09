@@ -418,8 +418,7 @@ abstract class Read implements
      * <p>
      * This function is its own inverse function.
      *
-     * @param reference
-     *         the reference to invert.
+     * @param reference the reference to invert.
      * @return the inverted reference.
      */
     static long invertReference( long reference )

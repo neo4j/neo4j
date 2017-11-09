@@ -22,6 +22,6 @@ package org.neo4j.internal.kernel.api;
 /**
  * Cursor for accessing manual index nodes.
  */
-public interface NodeExplicitIndexCursor extends NodeIndexCursor, ExplicitIndexCursor
+public interface NodeExplicitIndexCursor extends NodeIndexCursor, ExplicitIndexSearchResult
 {
 }

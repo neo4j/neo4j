@@ -54,7 +54,7 @@ class NodeExplicitIndexCursor extends IndexCursor
     }
 
     @Override
-    public int totalExpectedCursorSize()
+    public int expectedTotalNumberOfResults()
     {
         return expectedSize;
     }

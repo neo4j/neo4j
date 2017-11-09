@@ -36,5 +36,5 @@ public interface RelationshipIndexCursor extends Cursor
 
     long targetNodeReference();
 
-    long relationshipReference(); // will relationships have independent references? exposing it is leakage!
+    long relationshipReference();
 }

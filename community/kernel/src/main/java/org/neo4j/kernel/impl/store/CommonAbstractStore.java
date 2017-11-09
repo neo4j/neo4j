@@ -409,7 +409,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * DANGER: make sure to always close this cursor.
      */
-    public PageCursor openPageCursor( long id )
+    public PageCursor openPageCursorForReading( long id )
     {
         try
         {

@@ -20,11 +20,17 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * A cursor for accessing data in an explicit index.
+ * A result from a search in an explicit index.
  */
-interface ExplicitIndexCursor
+interface ExplicitIndexSearchResult
 {
-    int totalExpectedCursorSize();
+    /**
+     * @return The expected total number of results
+     */
+    int expectedTotalNumberOfResults();
 
+    /**
+     * @return The score of this search result.
+     */
     float score();
 }

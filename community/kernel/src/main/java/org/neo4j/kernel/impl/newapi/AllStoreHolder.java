@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
@@ -144,37 +145,37 @@ class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    public int labelGetOrCreateForName( String labelName ) throws SomeException
+    public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws SomeException
+    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws SomeException
+    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void labelCreateForName( String labelName, int id ) throws SomeException
+    public void labelCreateForName( String labelName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws SomeException
+    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws SomeException
+    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -186,6 +187,12 @@ class AllStoreHolder extends Read implements Token
     }
 
     @Override
+    public int relationshipType( String name )
+    {
+        return read.relationshipTypeGetForName( name );
+    }
+
+    @Override
     public int propertyKey( String name )
     {
         return read.propertyKeyGetForName( name );
@@ -194,37 +201,37 @@ class AllStoreHolder extends Read implements Token
     @Override
     PageCursor nodePage( long reference )
     {
-        return nodeStore.openPageCursor( reference );
+        return nodeStore.openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor relationshipPage( long reference )
     {
-        return relationshipStore.openPageCursor( reference );
+        return relationshipStore.openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor groupPage( long reference )
     {
-        return groupStore.openPageCursor( reference );
+        return groupStore.openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor propertyPage( long reference )
     {
-        return propertyStore.openPageCursor( reference );
+        return propertyStore.openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor stringPage( long reference )
     {
-        return propertyStore.getStringStore().openPageCursor( reference );
+        return propertyStore.getStringStore().openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor arrayPage( long reference )
     {
-        return propertyStore.getArrayStore().openPageCursor( reference );
+        return propertyStore.getArrayStore().openPageCursorForReading( reference );
     }
 
     @Override
