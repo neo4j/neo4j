@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -139,9 +140,10 @@ class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    public IndexDescriptor index( int label, int... properties )
+    public IndexReference index( int label, int... properties )
     {
-        return read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        IndexDescriptor desc = read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        return desc == null ? IndexReference.NO_INDEX : desc;
     }
 
     @Override

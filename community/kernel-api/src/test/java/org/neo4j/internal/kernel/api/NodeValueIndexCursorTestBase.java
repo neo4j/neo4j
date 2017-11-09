@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodes;
@@ -137,7 +138,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         int label = token.nodeLabel( "Node" );
-        System.out.println(strThree1);
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
@@ -156,7 +156,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         int label = token.nodeLabel( "Node" );
-        System.out.println(strThree1);
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
@@ -175,7 +174,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         int label = token.nodeLabel( "Node" );
-        System.out.println(strThree1);
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
@@ -194,7 +192,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         int label = token.nodeLabel( "Node" );
-        System.out.println(strThree1);
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
@@ -242,7 +239,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         int label = token.nodeLabel( "Node" );
-        System.out.println(strThree1);
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
@@ -283,7 +279,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         int label = token.nodeLabel( "Node" );
-        System.out.println(strThree1);
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
@@ -295,6 +290,19 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // then
             assertNodeCount( node, 18, uniqueIds );
         }
+    }
+
+    @Test
+    public void shouldGetNoIndex() throws Exception
+    {
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        int badLabel = token.nodeLabel( "BAD_LABEL" );
+        int badProp = token.propertyKey( "badProp" );
+
+        assertEquals( "bad label", IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
+        assertEquals( "bad prop", IndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
+        assertEquals( "just bad", IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
     }
 
     private long nodeWithProp( GraphDatabaseService graphDb, Object value )

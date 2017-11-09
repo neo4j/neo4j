@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
@@ -376,7 +377,7 @@ abstract class Read implements
     abstract ExplicitIndex explicitRelationshipIndex( String indexName );
 
     @Override
-    public abstract IndexDescriptor index( int label, int... properties );
+    public abstract IndexReference index( int label, int... properties );
 
     abstract PageCursor nodePage( long reference );
 

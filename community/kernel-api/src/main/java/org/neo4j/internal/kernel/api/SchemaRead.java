@@ -24,5 +24,12 @@ package org.neo4j.internal.kernel.api;
  */
 public interface SchemaRead
 {
+    /**
+     * Acquire a reference to the index mapping the given {@code label} and {@code properties}.
+     *
+     * @param label the index label
+     * @param properties the index properties
+     * @return the IndexReference, or {@link IndexReference#NO_INDEX} if such an index does not exist.
+     */
     IndexReference index( int label, int... properties );
 }

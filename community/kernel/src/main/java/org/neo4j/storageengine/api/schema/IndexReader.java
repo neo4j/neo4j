@@ -103,11 +103,5 @@ public interface IndexReader extends Resource
         {
             return true;
         }
-
-        @Override
-        public void query( IndexProgressor.NodeValueClient client, IndexQuery... query )
-        {
-            client.done();
-        }
     };
 }

@@ -112,10 +112,23 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * {@code id} as part of this method call.
      * @param mode loading behaviour, read more in method description.
      * @return the record that was passed in, for convenience.
-     * @throws InvalidRecordException if record not in use and the {@code mode} is allows for throwing.
+     * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
     RECORD getRecord( long id, RECORD target, RecordLoad mode ) throws InvalidRecordException;
 
+    /**
+     * Reads a record from the store into {@code target}, see
+     * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
+     * <p>
+     * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
+     * correct page if needed.
+     *
+     * @param id the record id, understood to be the absolute reference to the store.
+     * @param target the record to fill.
+     * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
+     * @param cursor the PageCursor to use for record loading.
+     * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
+     */
     void getRecordByCursor( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
 
     /**
