@@ -121,7 +121,7 @@ public class TransactionIT
     }
 
     @Test
-    public void shouldFailNicelyWhenOutOfOrderRollback() throws Throwable
+    public void shouldNotFailWhenOutOfOrderRollbackInAutoCommitMode() throws Throwable
     {
         // Given
         BoltResponseRecorder runRecorder = new BoltResponseRecorder();
@@ -134,8 +134,8 @@ public class TransactionIT
         machine.pullAll( pullAllRecorder );
 
         // Then
-        assertThat( runRecorder.nextResponse(), failedWithStatus( Status.Statement.SemanticError ) );
-        assertThat( pullAllRecorder.nextResponse(), wasIgnored() );
+        assertThat( runRecorder.nextResponse(), succeeded() );
+        assertThat( pullAllRecorder.nextResponse(), succeeded() );
     }
 
     @Test

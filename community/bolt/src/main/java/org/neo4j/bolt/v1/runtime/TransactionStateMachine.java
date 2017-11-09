@@ -208,8 +208,8 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         else if ( statement.equalsIgnoreCase( ROLLBACK ) )
                         {
-                            throw new QueryExecutionKernelException(
-                                    new InvalidSemanticsException( "No current transaction to rollback." ) );
+                            ctx.currentResult = BoltResult.EMPTY;
+                            return AUTO_COMMIT;
                         }
                         else
                         {
