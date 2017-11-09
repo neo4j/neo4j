@@ -320,6 +320,45 @@ public class ExplicitIndexTest
         assertTrue( "Find relationship by property and start node", relationshipExistsByQuery( index, startNode, endNode, true ) );
     }
 
+    @Test
+    public void getSingleMustNotCloseStatementTwice() throws Exception
+    {
+        // given
+        String indexName = "index";
+        long expected1;
+        long expected2;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            Node node2 = db.createNode();
+            Index<Node> nodeIndex = db.index().forNodes( indexName );
+            nodeIndex.add( node1, "key", "hej" );
+            nodeIndex.add( node2, "key", "hejhej" );
+
+            expected1 = node1.getId();
+            expected2 = node2.getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Index<Node> nodeIndex = db.index().forNodes( indexName );
+
+            // when using getSingle this should not close statement for outer loop
+            IndexHits<Node> hits = nodeIndex.query( "key", "hej" );
+            while ( hits.hasNext() )
+            {
+                Node actual1 = hits.next();
+                assertEquals( expected1, actual1.getId() );
+
+                IndexHits<Node> hits2 = nodeIndex.query( "key", "hejhej" );
+                Node actual2 = hits2.getSingle();
+                assertEquals( expected2, actual2.getId() );
+            }
+            tx.success();
+        }
+    }
+
     private boolean relationshipExistsByQuery( RelationshipIndex index, Node startNode, Node endNode, boolean specifyStartNode )
     {
         boolean found = false;

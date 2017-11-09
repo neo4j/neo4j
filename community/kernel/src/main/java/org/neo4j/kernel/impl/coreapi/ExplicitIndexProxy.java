@@ -505,6 +505,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         private final ExplicitIndexHits ids;
         private final KernelStatement statement;
+        private volatile boolean closed;
 
         ExplicitIndexWrapHits( ExplicitIndexHits ids )
         {
@@ -560,8 +561,12 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         @Override
         public void close()
         {
-            ids.close();
-            statement.close();
+            if ( !closed )
+            {
+                closed = true;
+                ids.close();
+                statement.close();
+            }
         }
     }
 }
