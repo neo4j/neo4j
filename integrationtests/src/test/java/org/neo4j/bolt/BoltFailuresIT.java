@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt;
 
-import java.time.Clock;
-import java.util.function.Consumer;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.time.Clock;
+import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
@@ -39,9 +39,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -52,9 +54,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
@@ -67,7 +67,6 @@ public class BoltFailuresIT
 
     private GraphDatabaseService db;
     private Driver driver;
-    private Session session;
 
     @After
     public void shutdownDb()
@@ -76,7 +75,7 @@ public class BoltFailuresIT
         {
             db.shutdown();
         }
-        IOUtils.closeAllSilently( session, driver );
+        IOUtils.closeAllSilently( driver );
     }
 
     @Test( timeout = TEST_TIMEOUT )
@@ -219,16 +218,21 @@ public class BoltFailuresIT
 
     private GraphDatabaseService startTestDb( Monitors monitors )
     {
-        return startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ) );
+        return startDbWithBolt( newDbFactory().setMonitors( monitors ) );
     }
 
     private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory )
     {
         return dbFactory.newEmbeddedDatabaseBuilder( dir.graphDbDir() )
-                .setConfig( boltConnector( "0" ).type, BOLT.name() )
-                .setConfig( boltConnector( "0" ).enabled, TRUE )
+                .setConfig( new BoltConnector( "0" ).type, BOLT.name() )
+                .setConfig( new BoltConnector( "0" ).enabled, TRUE )
                 .setConfig( GraphDatabaseSettings.auth_enabled, FALSE )
                 .newGraphDatabase();
+    }
+
+    private static TestEnterpriseGraphDatabaseFactory newDbFactory()
+    {
+        return new TestEnterpriseGraphDatabaseFactory();
     }
 
     private static Driver createDriver()

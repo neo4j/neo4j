@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
+import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.packstream.PackStream;
 
 import static java.lang.Math.max;
@@ -160,7 +161,8 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
         if ( closed.get() )
         {
-            throw new IOException( "Cannot write to buffer when closed" );
+            throw new PackOutputClosedException( "Network channel towards " + channel.remoteAddress() + " is closed. " +
+                                                 "Client has probably been stopped." );
         }
         int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
         synchronized ( this )
