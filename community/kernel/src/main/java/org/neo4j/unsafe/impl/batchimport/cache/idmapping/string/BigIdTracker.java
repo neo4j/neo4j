@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.Arrays;
+
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 
 /**
@@ -26,8 +28,14 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
  */
 public class BigIdTracker extends AbstractTracker<ByteArray>
 {
-    static final int ID_SIZE = 6;
-    static final byte[] DEFAULT_VALUE = new byte[] {-1, -1, -1, -1, -1, -1};
+    static final int ID_SIZE = 5;
+    static final byte[] DEFAULT_VALUE;
+    public static final long MAX_ID = 2L << (ID_SIZE * Byte.SIZE) - 1;
+    static
+    {
+        DEFAULT_VALUE = new byte[ID_SIZE];
+        Arrays.fill( DEFAULT_VALUE, (byte) -1 );
+    }
 
     public BigIdTracker( ByteArray array )
     {
@@ -37,12 +45,12 @@ public class BigIdTracker extends AbstractTracker<ByteArray>
     @Override
     public long get( long index )
     {
-        return array.get6ByteLong( index, 0 );
+        return array.get5ByteLong( index, 0 );
     }
 
     @Override
     public void set( long index, long value )
     {
-        array.set6ByteLong( index, 0, value );
+        array.set5ByteLong( index, 0, value );
     }
 }

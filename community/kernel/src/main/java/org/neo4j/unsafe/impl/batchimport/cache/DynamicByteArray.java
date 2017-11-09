@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.HeapByteArray.get3ByteIntFromByteBuffer;
 import static org.neo4j.unsafe.impl.batchimport.cache.HeapByteArray.get6BLongFromByteBuffer;
+import static org.neo4j.unsafe.impl.batchimport.cache.HeapByteArray.get5BLongFromByteBuffer;
 
 public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements ByteArray
 {
@@ -95,6 +96,14 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     }
 
     @Override
+    public long get5ByteLong( long index, int offset )
+    {
+        ByteArray chunk = chunkOrNullAt( index );
+        return chunk != null ? chunk.get5ByteLong( index, offset ) :
+            get5BLongFromByteBuffer( defaultValueConvenienceBuffer, offset );
+    }
+
+    @Override
     public long get6ByteLong( long index, int offset )
     {
         ByteArray chunk = chunkOrNullAt( index );
@@ -131,6 +140,12 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     public void setInt( long index, int offset, int value )
     {
         at( index ).setInt( index, offset, value );
+    }
+
+    @Override
+    public void set5ByteLong( long index, int offset, long value )
+    {
+        at( index ).set5ByteLong( index, offset, value );
     }
 
     @Override

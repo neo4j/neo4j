@@ -78,6 +78,16 @@ public interface ByteArray extends NumberArray<ByteArray>
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
+     * multiple values. This call will get a 5-byte long at the given {@code offset}.
+     *
+     * @param index array index to get.
+     * @param offset offset into this index to get the value from.
+     * @return the 5-byte long at the given offset at the given array index.
+     */
+    long get5ByteLong( long index, int offset );
+
+    /**
+     * Gets a part of an item, at the given {@code index}. An item in this array can consist of
      * multiple values. This call will get a 6-byte long at the given {@code offset}.
      *
      * @param index array index to get.
@@ -133,6 +143,16 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param value the int value to set at the given offset at the given array index.
      */
     void setInt( long index, int offset, int value );
+
+    /**
+     * Sets a part of an item, at the given {@code index}. An item in this array can consist of
+     * multiple values. This call will set a 5-byte long at the given {@code offset}.
+     *
+     * @param index array index to get.
+     * @param offset offset into this index to set the value for.
+     * @param value the 5-byte long value to set at the given offset at the given array index.
+     */
+    void set5ByteLong( long index, int offset, long value );
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
