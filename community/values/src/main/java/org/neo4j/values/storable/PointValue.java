@@ -98,7 +98,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
 
     public boolean equals( Point other )
     {
-        if ( !other.getCRS().getHref().equals( this.crs.href ) )
+        if ( !other.getCRS().getHref().equals( this.getCRS().getHref() ) )
         {
             return false;
         }
@@ -129,7 +129,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
 
     public int compareTo( PointValue other )
     {
-        int cmpCRS = this.crs.code - other.crs.code;
+        int cmpCRS = this.crs.getCode() - other.crs.getCode();
         if ( cmpCRS != 0 )
         {
             return cmpCRS;
@@ -178,7 +178,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     public int computeHash()
     {
         int result = 1;
-        result = 31 * result + NumberValues.hash( crs.code );
+        result = 31 * result + NumberValues.hash( crs.getCode() );
         result = 31 * result + NumberValues.hash( coordinate );
         return result;
     }
@@ -186,7 +186,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     @Override
     public String toString()
     {
-        return format( "Point{ %s, %s}", getCoordinateReferenceSystem().name, Arrays.toString( coordinate ) );
+        return format( "Point{ %s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
     }
 
     @Override

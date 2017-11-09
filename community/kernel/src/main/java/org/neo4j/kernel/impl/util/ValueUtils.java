@@ -179,11 +179,11 @@ public final class ValueUtils
         // From a (public class) CRS we can not get the name of the CRSTable.
         // I do not know how to a sensible mapping here.
         // Maybe we have to deprecate the public types after all and rewrite them
-        if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.code )
+        if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.getCode() )
         {
             return Values.pointValue( CoordinateReferenceSystem.Cartesian, primitiveCoordinate );
         }
-        else if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.WGS84.code )
+        else if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.WGS84.getCode() )
         {
             return Values.pointValue( CoordinateReferenceSystem.WGS84, primitiveCoordinate );
         }
@@ -273,11 +273,11 @@ public final class ValueUtils
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.name ) )
+            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.getName() ) )
             {
                 return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
             }
-            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name ) )
+            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
             {
                 return Values.pointValue( CoordinateReferenceSystem.WGS84, x, y );
             }
@@ -296,7 +296,7 @@ public final class ValueUtils
             }
 
             TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name ) )
+            if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
             {
                 return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
             }

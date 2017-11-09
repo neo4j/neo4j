@@ -158,9 +158,9 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         append( "{geometry: {type: \"Point\", coordinates: " );
         append( Arrays.toString(coordinate) );
         append( ", crs: {type: link, properties: {href: \"" );
-        append( crs.href );
+        append( crs.getHref() );
         append( "\", code: " );
-        append( Integer.toString( crs.code ) );
+        append( Integer.toString( crs.getCode() ) );
         append( "}}}}" );
     }
 

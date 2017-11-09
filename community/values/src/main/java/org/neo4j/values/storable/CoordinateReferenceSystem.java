@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Objects;
+
 import org.neo4j.graphdb.spatial.CRS;
 
 public class CoordinateReferenceSystem implements CRS
@@ -46,14 +48,8 @@ public class CoordinateReferenceSystem implements CRS
 
     public static CoordinateReferenceSystem get( CRS crs )
     {
-        if ( crs == null || crs.getHref() == null )
-        {
-            throw new IllegalArgumentException( "Invalid CRS: " + crs );
-        }
-        else
-        {
-            return get(crs.getHref());
-        }
+        Objects.requireNonNull( crs );
+        return get(crs.getHref());
     }
 
     public static CoordinateReferenceSystem get( String href )
@@ -68,14 +64,14 @@ public class CoordinateReferenceSystem implements CRS
         }
         else
         {
-            throw new UnsupportedOperationException( "Unknown CRS: " + href );
+            throw new IllegalArgumentException( "Unknown CRS: " + href );
         }
     }
 
-    public final String name;
-    public final CRSTable table;
-    public final int code;
-    public final String href;
+    private final String name;
+    private final CRSTable table;
+    private final int code;
+    private final String href;
 
     CoordinateReferenceSystem( String name, CRSTable table, int code )
     {
@@ -101,6 +97,16 @@ public class CoordinateReferenceSystem implements CRS
     public String getHref()
     {
         return href;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public CRSTable getTable()
+    {
+        return table;
     }
 
     @Override

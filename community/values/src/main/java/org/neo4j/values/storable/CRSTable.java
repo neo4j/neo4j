@@ -28,15 +28,6 @@ public enum CRSTable
     EPSG( "epsg", 1 ),
     SR_ORG( "sr-org", 2 );
 
-    private final String name;
-    private final int tableId;
-
-    CRSTable( String name, int tableId )
-    {
-        this.name = name;
-        this.tableId = tableId;
-    }
-
     private static final CRSTable[] TYPES = CRSTable.values();
     private static final Map<String, CRSTable> all = new HashMap<>( TYPES.length );
 
@@ -71,6 +62,15 @@ public enum CRSTable
         {
             throw new IllegalArgumentException( "No known Coordinate Reference System table: " + name );
         }
+    }
+
+    private final String name;
+    private final int tableId;
+
+    CRSTable( String name, int tableId )
+    {
+        this.name = name;
+        this.tableId = tableId;
     }
 
     public String href( int code )

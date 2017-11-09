@@ -133,9 +133,9 @@ public final class ArrayEncoder
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
         {
-            builder.append( crs.table.getTableId() );
+            builder.append( crs.getTable().getTableId() );
             builder.append( ':' );
-            builder.append( crs.code );
+            builder.append( crs.getCode() );
             builder.append( ':' );
             int index = 0;
             for ( double c : coordinate )

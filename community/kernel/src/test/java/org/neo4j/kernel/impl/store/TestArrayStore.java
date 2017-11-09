@@ -105,9 +105,11 @@ public class TestArrayStore
     @Test
     public void doubleArrayPropertiesShouldBeBitPacked() throws Exception
     {
-        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L )},
+        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
+                new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L )},
                 PropertyType.DOUBLE, 3 );
-        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x8L )},
+        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
+                new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x8L )},
                 PropertyType.DOUBLE, 4 );
     }
 
@@ -143,9 +145,13 @@ public class TestArrayStore
     @Test
     public void pointArraysOfWgs84() throws Exception
     {
-        PointValue[] array =
-                new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.WGS84, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x1L ) )};
+        PointValue[] array = new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.WGS84,
+                        Double.longBitsToDouble( 0x1L ),
+                        Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.WGS84,
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x1L ) )};
         int numberOfBitsUsedForDoubles = 3;
 
         assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
@@ -155,8 +161,13 @@ public class TestArrayStore
     public void pointArraysOfCartesian() throws Exception
     {
         PointValue[] array =
-                new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x1L ) )};
+                new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                        Double.longBitsToDouble( 0x1L ),
+                        Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x1L ) )};
         int numberOfBitsUsedForDoubles = 3;
 
         assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
@@ -166,8 +177,12 @@ public class TestArrayStore
     public void pointArraysOfMixedCRS() throws Exception
     {
         PointValue[] array =
-                new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.WGS84, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x1L ) )};
+                new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                        Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.WGS84,
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x1L ) )};
 
         Collection<DynamicRecord> records = new ArrayList<>();
         arrayStore.allocateRecords( records, array );
@@ -177,8 +192,13 @@ public class TestArrayStore
     public void pointArraysOfMixedDimension() throws Exception
     {
         PointValue[] array =
-                new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x1L ),
+                new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                        Double.longBitsToDouble( 0x1L ),
+                        Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x1L ),
                                 Double.longBitsToDouble( 0x4L ) )};
 
         Collection<DynamicRecord> records = new ArrayList<>();
@@ -190,8 +210,11 @@ public class TestArrayStore
         Collection<DynamicRecord> records = new ArrayList<>();
         arrayStore.allocateRecords( records, array );
         Pair<byte[],byte[]> loaded = loadArray( records );
-        assertGeometryHeader( loaded.first(), GeometryType.GEOMETRY_POINT.gtype, 2, array[0].getCoordinateReferenceSystem().table.getTableId(),
-                array[0].getCoordinateReferenceSystem().code );
+        assertGeometryHeader( loaded.first(),
+                GeometryType.GEOMETRY_POINT.getGtype(),
+                2,
+                array[0].getCoordinateReferenceSystem().getTable().getTableId(),
+                array[0].getCoordinateReferenceSystem().getCode() );
 
         final int dimension = array[0].coordinate().length;
         double[] pointDoubles = new double[array.length * dimension];

@@ -113,20 +113,55 @@ public enum GeometryType
                 }
             };
 
-    public final int gtype;
-    private final String name;
-
-    GeometryType( int gtype, String name )
+    /**
+     * Handler for header information for Geometry objects and arrays of Geometry objects
+     */
+    public static class GeometryHeader
     {
-        this.gtype = gtype;
-        this.name = name;
+        private final int geometryType;
+        private final int dimension;
+        private final CoordinateReferenceSystem crs;
+
+        private GeometryHeader( int geometryType, int dimension, CoordinateReferenceSystem crs )
+        {
+            this.geometryType = geometryType;
+            this.dimension = dimension;
+            this.crs = crs;
+        }
+
+        private GeometryHeader( int geometryType, int dimension, int crsTableId, int crsCode )
+        {
+            this( geometryType, dimension, CoordinateReferenceSystem.get( crsTableId, crsCode ) );
+        }
+
+        private void writeArrayHeaderTo( byte[] bytes )
+        {
+            bytes[0] = (byte) PropertyType.GEOMETRY.intValue();
+            bytes[1] = (byte) geometryType;
+            bytes[2] = (byte) dimension;
+            bytes[3] = (byte) crs.getTable().getTableId();
+            bytes[4] = (byte) (crs.getCode() >> 8 & 0xFFL);
+            bytes[5] = (byte) (crs.getCode() & 0xFFL);
+        }
+
+        static GeometryHeader fromArrayHeaderBytes( byte[] header )
+        {
+            int geometryType = Byte.toUnsignedInt( header[1] );
+            int dimension = Byte.toUnsignedInt( header[2] );
+            int crsTableId = Byte.toUnsignedInt( header[3] );
+            int crsCode = (Byte.toUnsignedInt( header[4] ) << 8) + Byte.toUnsignedInt( header[5] );
+            return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
+        }
+
+        public static GeometryHeader fromArrayHeaderByteBuffer( ByteBuffer buffer )
+        {
+            int geometryType = Byte.toUnsignedInt( buffer.get() );
+            int dimension = Byte.toUnsignedInt( buffer.get() );
+            int crsTableId = Byte.toUnsignedInt( buffer.get() );
+            int crsCode = (Byte.toUnsignedInt( buffer.get() ) << 8) + Byte.toUnsignedInt( buffer.get() );
+            return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
+        }
     }
-
-    public abstract Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset );
-
-    public abstract int calculateNumberOfBlocksUsedForGeometry( long firstBlock );
-
-    public abstract ArrayValue decodeArray( GeometryHeader header, byte[] data );
 
     private static final GeometryType[] TYPES = GeometryType.values();
     private static final Map<String, GeometryType> all = new HashMap<>( TYPES.length );
@@ -238,8 +273,8 @@ public enum GeometryType
         long keyAndType = keyId | (((long) (PropertyType.GEOMETRY.intValue()) << idBits));
         long gtype_bits = GeometryType.GEOMETRY_POINT.gtype << (idBits + 4);
         long dimension_bits = ((long) coordinate.length) << (idBits + 8);
-        long crsTableId_bits = ((long) crs.table.getTableId()) << (idBits + 12);
-        long crsCode_bits = ((long) crs.code) << (idBits + 16);
+        long crsTableId_bits = ((long) crs.getTable().getTableId()) << (idBits + 12);
+        long crsCode_bits = ((long) crs.getCode()) << (idBits + 16);
 
         long[] data = new long[1 + coordinate.length];
         data[0] = keyAndType | gtype_bits | dimension_bits | crsTableId_bits | crsCode_bits;
@@ -283,53 +318,28 @@ public enum GeometryType
         return find( header.geometryType ).decodeArray( header, data );
     }
 
-    /**
-     * Handler for header information for Geometry objects and arrays of Geometry objects
-     */
-    public static class GeometryHeader
+    private final int gtype;
+    private final String name;
+
+    GeometryType( int gtype, String name )
     {
-        private final int geometryType;
-        private final int dimension;
-        private final CoordinateReferenceSystem crs;
+        this.gtype = gtype;
+        this.name = name;
+    }
 
-        private GeometryHeader( int geometryType, int dimension, CoordinateReferenceSystem crs )
-        {
-            this.geometryType = geometryType;
-            this.dimension = dimension;
-            this.crs = crs;
-        }
+    public abstract Value decode( CoordinateReferenceSystem crs, int dimension, long[] valueBlocks, int offset );
 
-        private GeometryHeader( int geometryType, int dimension, int crsTableId, int crsCode )
-        {
-            this( geometryType, dimension, CoordinateReferenceSystem.get( crsTableId, crsCode ) );
-        }
+    public abstract int calculateNumberOfBlocksUsedForGeometry( long firstBlock );
 
-        private void writeArrayHeaderTo( byte[] bytes )
-        {
-            bytes[0] = (byte) PropertyType.GEOMETRY.intValue();
-            bytes[1] = (byte) geometryType;
-            bytes[2] = (byte) dimension;
-            bytes[3] = (byte) crs.table.getTableId();
-            bytes[4] = (byte) (crs.code >> 8 & 0xFFL);
-            bytes[5] = (byte) (crs.code & 0xFFL);
-        }
+    public abstract ArrayValue decodeArray( GeometryHeader header, byte[] data );
 
-        static GeometryHeader fromArrayHeaderBytes( byte[] header )
-        {
-            int geometryType = Byte.toUnsignedInt( header[1] );
-            int dimension = Byte.toUnsignedInt( header[2] );
-            int crsTableId = Byte.toUnsignedInt( header[3] );
-            int crsCode = Byte.toUnsignedInt( header[5] ) + (Byte.toUnsignedInt( header[4] ) << 8);
-            return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
-        }
+    public int getGtype()
+    {
+        return gtype;
+    }
 
-        public static GeometryHeader fromArrayHeaderByteBuffer( ByteBuffer buffer )
-        {
-            int geometryType = Byte.toUnsignedInt( buffer.get() );
-            int dimension = Byte.toUnsignedInt( buffer.get() );
-            int crsTableId = Byte.toUnsignedInt( buffer.get() );
-            int crsCode = (Byte.toUnsignedInt( buffer.get() ) << 8) + Byte.toUnsignedInt( buffer.get() );
-            return new GeometryHeader( geometryType, dimension, crsTableId, crsCode );
-        }
+    public String getName()
+    {
+        return name;
     }
 }
