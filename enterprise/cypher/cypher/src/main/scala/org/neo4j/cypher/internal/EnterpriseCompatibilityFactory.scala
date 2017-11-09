@@ -52,7 +52,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
         val workers = settings.get( GraphDatabaseSettings.cypher_worker_count)
         val dispatcher =
           if (workers == 1) new SingleThreadedExecutor(morselSize)
-          else if (workers == 0) new ForkJoinPoolDispatcher(morselSize, Runtime.getRuntime.availableProcessors() * 2)
+          else if (workers == 0) new ForkJoinPoolDispatcher(morselSize, Runtime.getRuntime.availableProcessors())
           else new ForkJoinPoolDispatcher(morselSize, workers)
         CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog(getClass),
                           spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
