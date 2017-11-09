@@ -23,6 +23,8 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 public abstract class Value extends AnyValue
 {
     @Override
@@ -59,7 +61,7 @@ public abstract class Value extends AnyValue
 
     public Boolean ternaryEquals( Object other )
     {
-        if ( other == null )
+        if ( other == null || other == NO_VALUE )
         {
             return null;
         }
@@ -76,7 +78,7 @@ public abstract class Value extends AnyValue
             }
             return equals( otherValue );
         }
-        return null;
+        return false;
     }
 
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E

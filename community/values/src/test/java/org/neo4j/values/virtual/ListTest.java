@@ -103,9 +103,9 @@ public class ListTest
         assertNotEqual( list( 1 ), list( 1, 2 ) );
         assertNotEqual( list( 1, 1 ), list( 1, 2 ) );
         assertNotEqual( list( 1, "d" ), list( 1, "f" ) );
-        assertIncomparable( list( 1, "d" ), list( "d", 1 ) );
-        assertIncomparable( list( "d" ), list( false ) );
-        assertIncomparable(
+        assertNotEqual( list( 1, "d" ), list( "d", 1 ) );
+        assertNotEqual( list( "d" ), list( false ) );
+        assertNotEqual(
                 list( Values.stringArray( new String[]{"d"} ) ),
                 list( "d" ) );
 
@@ -114,14 +114,14 @@ public class ListTest
                 list( intArray( new int[]{3, 4, 50} ) ) );
 
         // different value types
-        assertIncomparable( list( true, true ), intArray( new int[]{0, 0} ) );
-        assertIncomparable( list( true, true ), longArray( new long[]{0L, 0L} ) );
-        assertIncomparable( list( true, true ), shortArray( new short[]{(short) 0, (short) 0} ) );
-        assertIncomparable( list( true, true ), floatArray( new float[]{0.0f, 0.0f} ) );
-        assertIncomparable( list( true, true ), doubleArray( new double[]{0.0, 0.0} ) );
-        assertIncomparable( list( true, true ), charArray( new char[]{'T', 'T'} ) );
-        assertIncomparable( list( true, true ), stringArray( new String[]{"True", "True"} ) );
-        assertIncomparable( list( true, true ), byteArray( new byte[]{(byte) 0, (byte) 0} ) );
+        assertNotEqual( list( true, true ), intArray( new int[]{0, 0} ) );
+        assertNotEqual( list( true, true ), longArray( new long[]{0L, 0L} ) );
+        assertNotEqual( list( true, true ), shortArray( new short[]{(short) 0, (short) 0} ) );
+        assertNotEqual( list( true, true ), floatArray( new float[]{0.0f, 0.0f} ) );
+        assertNotEqual( list( true, true ), doubleArray( new double[]{0.0, 0.0} ) );
+        assertNotEqual( list( true, true ), charArray( new char[]{'T', 'T'} ) );
+        assertNotEqual( list( true, true ), stringArray( new String[]{"True", "True"} ) );
+        assertNotEqual( list( true, true ), byteArray( new byte[]{(byte) 0, (byte) 0} ) );
 
         // wrong or missing items
         assertNotEqual( list( true ), booleanArray( new boolean[]{true, false} ) );
@@ -143,7 +143,14 @@ public class ListTest
         assertNotEqual( list( "hi", "hello" ), stringArray( new String[]{"hi"} ) );
         assertNotEqual( list( "hello" ), stringArray( new String[]{"hi"} ) );
 
-        assertIncomparable( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
+        assertNotEqual( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
+    }
+
+    @Test
+    public void shouldHandleNullInList()
+    {
+        assertIncomparable( list( 1, null ), list( 1, 2 ) );
+        assertNotEqual( list( 1, null ), list( 2, 3 ) );
     }
 
     @Test
@@ -187,7 +194,7 @@ public class ListTest
                         intArray( new int[]{1, 2} ),
                         stringArray( new String[]{"Hello", "World"} ) ) );
 
-        assertIncomparable(
+        assertNotEqual(
                 list(
                         intArray( new int[]{1, 2} ),
                         booleanArray( new boolean[]{true, false} ),

@@ -29,7 +29,7 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.utils.AnyValueTestUtil.assertIncomparable;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 public class AnyValuesTest
 {
@@ -39,13 +39,13 @@ public class AnyValuesTest
     {
         VirtualValue virtual = new MyVirtualValue( 42 );
 
-        assertIncomparable( booleanValue( false ), virtual );
-        assertIncomparable( byteValue( (byte)0 ), virtual );
-        assertIncomparable( shortValue( (short)0 ), virtual );
-        assertIncomparable( intValue( 0 ), virtual );
-        assertIncomparable( longValue( 0 ), virtual );
-        assertIncomparable( floatValue( 0.0f ), virtual );
-        assertIncomparable( doubleValue( 0.0 ), virtual );
-        assertIncomparable( stringValue( "" ), virtual );
+        assertNotEqual( booleanValue( false ), virtual );
+        assertNotEqual( byteValue( (byte)0 ), virtual );
+        assertNotEqual( shortValue( (short)0 ), virtual );
+        assertNotEqual( intValue( 0 ), virtual );
+        assertNotEqual( longValue( 0 ), virtual );
+        assertNotEqual( floatValue( 0.0f ), virtual );
+        assertNotEqual( doubleValue( 0.0 ), virtual );
+        assertNotEqual( stringValue( "" ), virtual );
     }
 }

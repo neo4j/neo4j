@@ -23,6 +23,8 @@ import java.util.Comparator;
 
 import org.neo4j.values.virtual.VirtualValueGroup;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 /**
  * Value that can exist transiently during computations, but that cannot be stored as a property value. A Virtual
  * Value could be a NodeReference for example.
@@ -48,7 +50,7 @@ public abstract class VirtualValue extends AnyValue
 
     public Boolean ternaryEquals( Object other )
     {
-        if ( other == null )
+        if ( other == null || other == NO_VALUE )
         {
             return null;
         }
@@ -60,7 +62,7 @@ public abstract class VirtualValue extends AnyValue
         {
             return equals( (VirtualValue) other );
         }
-        return null;
+        return false;
     }
 
     public abstract VirtualValueGroup valueGroup();
