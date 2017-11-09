@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

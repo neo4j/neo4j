@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.values.virtual.MapValue;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

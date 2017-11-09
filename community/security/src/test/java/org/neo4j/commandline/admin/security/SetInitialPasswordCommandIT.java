@@ -19,11 +19,11 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.BlockerLocator;
@@ -39,7 +39,7 @@ import org.neo4j.server.security.auth.FileUserRepository;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;

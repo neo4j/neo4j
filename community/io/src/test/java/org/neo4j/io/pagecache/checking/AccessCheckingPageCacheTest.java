@@ -32,10 +32,9 @@ import org.neo4j.io.pagecache.PagedFile;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyVararg;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +50,7 @@ public class AccessCheckingPageCacheTest
         PagedFile mockedPagedFile = mock( PagedFile.class );
         PageCursor mockedCursor = mock( PageCursor.class );
         when( mockedPagedFile.io( anyLong(), anyInt() ) ).thenReturn( mockedCursor );
-        when( mockedPageCache.map( any( File.class ), anyInt(), anyVararg() ) ).thenReturn( mockedPagedFile );
+        when( mockedPageCache.map( any( File.class ), anyInt(), any() ) ).thenReturn( mockedPagedFile );
         pageCache = new AccessCheckingPageCache( mockedPageCache );
         PagedFile file = pageCache.map( new File( "some file" ), 512 );
         cursor = file.io( 0, PagedFile.PF_SHARED_READ_LOCK );

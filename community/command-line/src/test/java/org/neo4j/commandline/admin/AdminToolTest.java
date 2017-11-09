@@ -31,7 +31,7 @@ import javax.annotation.Nonnull;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;

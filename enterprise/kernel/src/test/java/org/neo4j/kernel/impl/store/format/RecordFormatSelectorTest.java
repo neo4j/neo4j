@@ -51,9 +51,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyVararg;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
@@ -158,7 +157,7 @@ public class RecordFormatSelectorTest
         createNeoStoreFile();
         PageCache pageCache = mock( PageCache.class );
         when( pageCache.pageSize() ).thenReturn( 8192 );
-        when( pageCache.map( any(), anyInt(), anyVararg() ) ).thenThrow( new IOException( "No reading..." ) );
+        when( pageCache.map( any(), anyInt(), any() ) ).thenThrow( new IOException( "No reading..." ) );
         assertNull( selectForStore( storeDir, fs, pageCache, LOG ) );
     }
 

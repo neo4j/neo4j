@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.api.TransactionQueue.Applier;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;

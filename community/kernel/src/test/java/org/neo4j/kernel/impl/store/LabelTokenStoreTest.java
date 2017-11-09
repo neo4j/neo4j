@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
 
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
