@@ -32,12 +32,12 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext, PlannerNameFor}
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
-import org.neo4j.cypher.internal.queryReduction.ast._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
@@ -88,18 +88,17 @@ object CypherReductionSupport {
     If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
       CommunityRuntimeBuilder.create(None, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan]))
 
+  private val prettifier = Prettifier(ExpressionStringifier())
+
   def evaluate(query: String): InternalExecutionResult = {
     val parsingBaseState = queryToParsingBaseState(query)
     val statement = parsingBaseState.statement()
     produceResult(query, statement, parsingBaseState, None)
   }
 
-  def reduceQuery(query: String, executeBefore: Option[String] = None)(test: Oracle[Try[InternalExecutionResult]]): Statement = {
+  def reduceQuery(query: String, executeBefore: Option[String] = None)(test: Oracle[Try[InternalExecutionResult]]): String = {
     val parsingBaseState = queryToParsingBaseState(query)
     val statement = parsingBaseState.statement()
-    println("Original:")
-    println(prettyPrint(statement))
-
 
     val oracle: Oracle[Statement] = (currentStatement) => {
       // Actual query
@@ -109,10 +108,7 @@ object CypherReductionSupport {
     }
 
     val smallerStatement = GTRStar(new StatementGTRInput(statement))(oracle)
-    // TODO pretty-print back to CYPHER
-    println("\nReduced:")
-    println(prettyPrint(smallerStatement))
-    smallerStatement
+    prettifier.asString(smallerStatement)
   }
 
   private def queryToParsingBaseState(query: String): BaseState = {

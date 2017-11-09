@@ -83,7 +83,7 @@ object domainsOf {
       case Where(exp) =>
         ofSingle(exp, classOf[Expression])
 
-      case True() => Seq()
+      case _:Literal => Seq()
 
       case Parameter(_, _) => Seq()
 
@@ -91,24 +91,14 @@ object domainsOf {
         ofSingle(map, classOf[Expression]) ++
           ofSingle(propertyKey, classOf[PropertyKeyName])
 
-      case PropertyKeyName(_) => Seq()
-
       case Create(pattern) =>
         ofSingle(pattern, classOf[Pattern])
-
-      case And(lhs, rhs) =>
-        ofSingle(lhs, classOf[Expression]) ++
-          ofSingle(rhs, classOf[Expression])
-
-      case Equals(lhs, rhs) =>
-        ofSingle(lhs, classOf[Expression]) ++
-          ofSingle(rhs, classOf[Expression])
 
       case HasLabels(expression, labels) =>
         ofSingle(expression, classOf[Expression]) ++
           ofSeq(labels, classOf[LabelName])
 
-      case LabelName(_) => Seq()
+      case _:SymbolicName => Seq()
 
       case RelationshipChain(element, relationship, rightNode) =>
         ofSingle(element, classOf[PatternElement]) ++
@@ -121,21 +111,12 @@ object domainsOf {
           ofOption(length.flatten, classOf[Range]) ++
           ofOption(properties, classOf[Expression])
 
-      case RelTypeName(_) => Seq()
-
       case FunctionInvocation(namespace, functionName, distinct, args) =>
         ofSingle(namespace, classOf[Namespace]) ++
           ofSingle(functionName, classOf[FunctionName]) ++
           ofSeq(args, classOf[Expression])
 
       case Namespace(_) => Seq()
-
-      case FunctionName(_) => Seq()
-
-      case StringLiteral(_) => Seq()
-
-      case Not(rhs) =>
-        ofSingle(rhs, classOf[Expression])
 
       case With(_, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
         ofSingle(returnItems, classOf[ReturnItemsDef]) ++
@@ -159,14 +140,34 @@ object domainsOf {
         ofSingle(variable, classOf[Variable]) ++
         ofOption(innerPredicate, classOf[Expression])
 
-      case In(lhs, rhs) =>
-        ofSingle(lhs, classOf[Expression]) ++
-        ofSingle(rhs, classOf[Expression])
+      case i:IterablePredicateExpression =>
+        ofSingle(i.scope, classOf[FilterScope]) ++
+        ofSingle(i.expression, classOf[Expression])
 
       case ListLiteral(expressions) =>
         ofSeq(expressions, classOf[Expression])
 
-      case SignedDecimalIntegerLiteral(_) => Seq()
+      case OrderBy(sortItems) =>
+        ofSeq(sortItems, classOf[SortItem])
+
+      case b:BinaryOperatorExpression =>
+        ofSingle(b.lhs, classOf[Expression]) ++
+          ofSingle(b.rhs, classOf[Expression])
+
+      case l:LeftUnaryOperatorExpression =>
+        ofSingle(l.rhs, classOf[Expression])
+
+      case r:RightUnaryOperatorExpression =>
+        ofSingle(r.lhs, classOf[Expression])
+
+      case m:MultiOperatorExpression =>
+        ofSeq(m.exprs.toSeq, classOf[Expression])
+
+      case s:SortItem =>
+        ofSingle(s.expression, classOf[Expression])
+
+      case a:ASTSlicingPhrase =>
+        ofSingle(a.expression, classOf[Expression])
     }
   }
 }

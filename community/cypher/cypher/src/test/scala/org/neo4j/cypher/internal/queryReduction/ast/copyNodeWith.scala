@@ -75,28 +75,20 @@ object copyNodeWith {
       case Where(exp) =>
         Where(nc.ofSingle(exp))(node.position)
 
-      case True() => node
+      case _:Literal => node
 
       case Parameter(_, _) => node
 
       case Property(map, propertyKey) =>
         Property(nc.ofSingle(map), nc.ofSingle((propertyKey)))(node.position)
 
-      case PropertyKeyName(_) => node
-
       case Create(pattern) =>
         Create(nc.ofSingle(pattern))(node.position)
-
-      case And(lhs, rhs) =>
-        And(nc.ofSingle(lhs), nc.ofSingle(rhs))(node.position)
-
-      case Equals(lhs, rhs) =>
-        Equals(nc.ofSingle(lhs), nc.ofSingle(rhs))(node.position)
 
       case HasLabels(expression, labels) =>
         HasLabels(nc.ofSingle(expression), nc.ofSeq(labels))(node.position)
 
-      case LabelName(_) => node
+      case _:SymbolicName => node
 
       case RelationshipChain(element, relationship, rightNode) =>
         RelationshipChain(nc.ofSingle(element), nc.ofSingle(relationship), nc.ofSingle(rightNode))(node.position)
@@ -104,19 +96,10 @@ object copyNodeWith {
       case RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator) =>
         RelationshipPattern(nc.ofOption(variable), nc.ofSeq(types), Option(nc.ofOption(length.flatten)), nc.ofOption(properties), direction, legacyTypeSeparator)(node.position)
 
-      case RelTypeName(_) => node
-
       case FunctionInvocation(namespace, functionName, distinct, args) =>
         FunctionInvocation(nc.ofSingle(namespace), nc.ofSingle(functionName), distinct, nc.ofSeq(args).toIndexedSeq)(node.position)
 
       case Namespace(_) => node
-
-      case FunctionName(_) => node
-
-      case StringLiteral(_) => node
-
-      case Not(rhs) =>
-        Not(nc.ofSingle(rhs))(node.position)
 
       case With(distinct, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
         With(distinct, nc.ofSingle(returnItems), nc.ofSingle(mandatoryGraphReturnItems), nc.ofOption(orderBy), nc.ofOption(skip), nc.ofOption(limit), nc.ofOption(where))(node.position)
@@ -133,14 +116,26 @@ object copyNodeWith {
       case FilterScope(variable, innerPredicate) =>
         FilterScope(nc.ofSingle(variable), nc.ofOption(innerPredicate))(node.position)
 
-      case In(lhs, rhs) =>
-        In(nc.ofSingle(lhs), nc.ofSingle(rhs))(node.position)
+      case i:IterablePredicateExpression =>
+        i.dup(Seq(nc.ofSingle(i.scope), nc.ofSingle(i.expression)))
 
       case ListLiteral(expressions) =>
         ListLiteral(nc.ofSeq(expressions))(node.position)
 
-      case SignedDecimalIntegerLiteral(_) => node
+      case OrderBy(sortItems) =>
+        OrderBy(nc.ofSeq(sortItems))(node.position)
 
+      case b:BinaryOperatorExpression => b.dup(Seq(nc.ofSingle(b.lhs), nc.ofSingle(b.rhs)))
+
+      case l:LeftUnaryOperatorExpression => l.dup(Seq(nc.ofSingle(l.rhs)))
+
+      case r:RightUnaryOperatorExpression => r.dup(Seq(nc.ofSingle(r.lhs)))
+
+      case s:SortItem =>
+        s.dup(Seq(nc.ofSingle(s.expression)))
+
+      case a:ASTSlicingPhrase =>
+        a.dup(Seq(nc.ofSingle(a.expression)))
     }
 
     newNode.asInstanceOf[A]

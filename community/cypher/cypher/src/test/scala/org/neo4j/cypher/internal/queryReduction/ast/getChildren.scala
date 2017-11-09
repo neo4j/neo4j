@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.queryReduction.ast
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4._
-import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.expressions.{BinaryOperatorExpression, _}
 
 object getChildren {
 
@@ -71,7 +71,7 @@ object getChildren {
       case Where(exp) =>
         Seq(exp)
 
-      case True() =>
+      case _:Literal =>
         Seq()
 
       case Parameter(_, _) =>
@@ -80,22 +80,13 @@ object getChildren {
       case Property(map, propertyKey) =>
         Seq(map, propertyKey)
 
-      case PropertyKeyName(_) =>
-        Seq()
-
       case Create(pattern) =>
         Seq(pattern)
-
-      case And(lhs, rhs) =>
-        Seq(lhs, rhs)
-
-      case Equals(lhs, rhs) =>
-        Seq(lhs, rhs)
 
       case HasLabels(expression, labels) =>
         Seq(expression) ++ labels
 
-      case LabelName(_) =>
+      case _:SymbolicName =>
         Seq()
 
       case RelationshipChain(element, relationship, rightNode) =>
@@ -104,23 +95,11 @@ object getChildren {
       case RelationshipPattern(variable, types, length, properties, _, _) =>
         ofOption(variable) ++  types ++ ofOption(length.flatten) ++ ofOption(properties)
 
-      case RelTypeName(_) =>
-        Seq()
-
       case FunctionInvocation(namespace, functionName, _, args) =>
         Seq(namespace, functionName) ++ args
 
       case Namespace(_) =>
         Seq()
-
-      case FunctionName(_) =>
-        Seq()
-
-      case StringLiteral(_) =>
-        Seq()
-
-      case Not(rhs) =>
-        Seq(rhs)
 
       case With(distinct, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
         Seq(returnItems, mandatoryGraphReturnItems) ++
@@ -135,17 +114,35 @@ object getChildren {
       case FilterExpression(scope, expression) =>
         Seq(scope, expression)
 
+      case i:IterablePredicateExpression =>
+        Seq(i.scope, i.expression)
+
       case FilterScope(variable, innerPredicate) =>
         Seq(variable) ++ ofOption(innerPredicate)
-
-      case In(lhs, rhs) =>
-        Seq(lhs, rhs)
 
       case ListLiteral(expressions) =>
         expressions
 
-      case SignedDecimalIntegerLiteral(_) =>
-        Seq()
+      case OrderBy(sortItems) =>
+        sortItems
+
+      case b:BinaryOperatorExpression =>
+        Seq(b.lhs, b.rhs)
+
+      case l:LeftUnaryOperatorExpression =>
+        Seq(l.rhs)
+
+      case r:RightUnaryOperatorExpression =>
+        Seq(r.lhs)
+
+      case m:MultiOperatorExpression =>
+        m.exprs.toSeq
+
+      case s:SortItem =>
+        Seq(s.expression)
+
+      case a:ASTSlicingPhrase =>
+        Seq(a.expression)
     }
   }
 

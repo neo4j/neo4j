@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.queryReduction
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.queryReduction.ast.ASTNodeHelper._
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.ArithmeticException
 
 import scala.util.{Failure, Success, Try}
 
@@ -47,8 +46,7 @@ class CypherReductionSupportTest extends CypherFunSuite {
         case Failure(_) => NotReproduced
       }
     }
-    forallNodes(reduced)(!_.isInstanceOf[Where]) &&
-      existsNode(reduced)(_.isInstanceOf[Match]) should be(true)
+    reduced should equal("MATCH (n)\nRETURN n.name AS `n.name`")
   }
 
   test("rolls back after each oracle invocation") {
@@ -61,6 +59,24 @@ class CypherReductionSupportTest extends CypherFunSuite {
     val query = "CREATE (n) RETURN n"
     CypherReductionSupport.evaluate(query)
     CypherReductionSupport.evaluate("MATCH (n) RETURN count(n)").toList should be(List(Map("count(n)" -> 0)))
+  }
+
+  test("removes unnecessary stuff") {
+    val setup = "CREATE (n:Label {name: 0}) RETURN n"
+    val query = "MATCH (n:Label)-[:X]->(m:Label),(p) WHERE 100/n.name > 34 AND m.name = n.name WITH n.name AS name RETURN name, $a ORDER BY name SKIP 1 LIMIT 5"
+    println(query)
+    val reduced = CypherReductionSupport.reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
+      tryResults match {
+        case Failure(e:ArithmeticException) =>
+          if(e.getMessage == "/ by zero")
+            Reproduced
+          else
+            NotReproduced
+        case _ => NotReproduced
+      }
+    }
+    println(reduced)
+    //reduced should equal("MATCH (n:Label) WHERE 100/n.name > 34 RETURN n.name")
   }
 
 }
