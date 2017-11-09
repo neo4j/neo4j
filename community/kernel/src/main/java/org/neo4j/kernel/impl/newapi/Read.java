@@ -22,11 +22,9 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.*;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
-import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
@@ -60,6 +58,7 @@ abstract class Read implements
     public final void nodeIndexSeek(
             org.neo4j.internal.kernel.api.IndexReference index,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
+            IndexOrder indexOrder,
             IndexQuery... query ) throws KernelException
     {
         IndexProgressor.NodeValueClient target = (NodeValueIndexCursor) cursor;
@@ -98,17 +97,18 @@ abstract class Read implements
                 target = new NodeValueClientFilter( target, new NodeCursor( this ), new PropertyCursor( this ), filters );
             }
         }
-        reader.query( target, query );
+        reader.query( target, indexOrder, query );
     }
 
     @Override
     public final void nodeIndexScan(
             org.neo4j.internal.kernel.api.IndexReference index,
-            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor ) throws KernelException
+            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
+            IndexOrder indexOrder ) throws KernelException
     {
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
-        indexReader( index ).query( (NodeValueIndexCursor) cursor, IndexQuery.exists( firstProperty ) );
+        indexReader( index ).query( (NodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
     }
 
     @Override

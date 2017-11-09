@@ -24,6 +24,7 @@ import java.util.Queue;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
@@ -106,34 +107,39 @@ class FusionIndexReader implements IndexReader
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
+            throws IndexNotApplicableKernelException
     {
         if ( predicates.length > 1 )
         {
-            luceneReader.query( cursor, predicates );
+            luceneReader.query( cursor, indexOrder, predicates );
             return;
         }
-        else if ( predicates[0] instanceof ExactPredicate )
+
+        if ( predicates[0] instanceof ExactPredicate )
         {
             ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
-            selector.select( nativeReader, luceneReader, exactPredicate.value() ).query( cursor, predicates );
+            selector.select( nativeReader, luceneReader, exactPredicate.value() ).query( cursor, indexOrder, predicates );
             return;
         }
-        else if ( predicates[0] instanceof NumberRangePredicate )
+
+        if ( predicates[0] instanceof NumberRangePredicate )
         {
-            nativeReader.query( cursor, predicates[0] );
+            nativeReader.query( cursor, indexOrder, predicates[0] );
             return;
         }
+
         // todo: There will be no ordering of the node ids here. Is this a problem?
-        else if ( predicates[0] instanceof ExistsPredicate )
+        if ( predicates[0] instanceof ExistsPredicate )
         {
             MultiProgressorNodeValueCursor multiProgressor = new MultiProgressorNodeValueCursor( cursor, propertyKeys );
             cursor.initialize( multiProgressor, propertyKeys );
-            nativeReader.query( multiProgressor, predicates[0] );
-            luceneReader.query( multiProgressor, predicates[0] );
+            nativeReader.query( multiProgressor, indexOrder, predicates[0] );
+            luceneReader.query( multiProgressor, indexOrder, predicates[0] );
             return;
         }
-        luceneReader.query( cursor, predicates );
+
+        luceneReader.query( cursor, indexOrder, predicates );
     }
 
     @Override
@@ -152,11 +158,7 @@ class FusionIndexReader implements IndexReader
                     nativeReader.hasFullNumberPrecision( predicates ),
                     luceneReader.hasFullNumberPrecision( predicates ), value );
         }
-        if ( predicates[0] instanceof NumberRangePredicate )
-        {
-            return nativeReader.hasFullNumberPrecision( predicates );
-        }
-        return false;
+        return predicates[0] instanceof NumberRangePredicate && nativeReader.hasFullNumberPrecision( predicates );
     }
 
     private class MultiProgressorNodeValueCursor implements IndexProgressor.NodeValueClient, IndexProgressor
@@ -164,7 +166,6 @@ class FusionIndexReader implements IndexReader
         private final NodeValueClient cursor;
         private final int[] keys;
         private final Queue<IndexProgressor> progressors;
-        private boolean initialized;
         private IndexProgressor current;
 
         MultiProgressorNodeValueCursor( NodeValueClient cursor, int[] keys )

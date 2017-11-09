@@ -26,7 +26,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexOrderCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -51,7 +51,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
-    private static final IndexCapability CAPABILITY = new NativeIndexCapability();
+    static final IndexCapability CAPABILITY = new NativeIndexCapability();
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -209,13 +209,13 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     private static class NativeIndexCapability implements IndexCapability
     {
         @Override
-        public IndexOrderCapability[] order( ValueGroup... valueGroups )
+        public IndexOrder[] order( ValueGroup... valueGroups )
         {
             if ( support( valueGroups ) )
             {
-                return new IndexOrderCapability[]{IndexOrderCapability.ASCENDING};
+                return new IndexOrder[]{IndexOrder.ASCENDING};
             }
-            return new IndexOrderCapability[0];
+            return new IndexOrder[0];
         }
 
         @Override
@@ -225,7 +225,16 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
             {
                 return IndexValueCapability.YES;
             }
+            if ( singleWildcard( valueGroups ) )
+            {
+                return IndexValueCapability.MAYBE;
+            }
             return IndexValueCapability.NO;
+        }
+
+        private boolean singleWildcard( ValueGroup[] valueGroups )
+        {
+            return valueGroups.length == 1 && valueGroups[0] == null;
         }
 
         private boolean support( ValueGroup[] valueGroups )

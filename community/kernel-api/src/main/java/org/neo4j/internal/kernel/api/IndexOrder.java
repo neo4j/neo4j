@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public enum IndexOrderCapability
+public enum IndexOrder
 {
     ASCENDING, DESCENDING
 }

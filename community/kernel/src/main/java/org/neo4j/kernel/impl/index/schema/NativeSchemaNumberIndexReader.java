@@ -21,14 +21,17 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
@@ -40,6 +43,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+
+import static java.lang.String.format;
 
 class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         implements IndexReader
@@ -110,20 +115,17 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, predicates );
+        query( nodeValueIterator, null, predicates );
         return nodeValueIterator;
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexQuery... predicates )
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
     {
+        validateQuery( indexOrder, predicates );
+
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
-
-        if ( predicates.length != 1 )
-        {
-            throw new UnsupportedOperationException();
-        }
 
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -147,6 +149,30 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
             break;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+        }
+    }
+
+    private void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
+    {
+        if ( predicates.length != 1 )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        if ( indexOrder != null )
+        {
+            ValueGroup[] valueGroups = new ValueGroup[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                valueGroups[i] = predicates[i].valueGroup();
+            }
+            IndexOrder[] capability = NativeSchemaNumberIndexProvider.CAPABILITY.order( valueGroups );
+            if ( !ArrayUtil.contains( capability, indexOrder ) )
+            {
+                throw new UnsupportedOperationException(
+                        format( "Tried to query index with unsupported order %s. Supported orders are for query %s are %s.",
+                                indexOrder, Arrays.toString( predicates ), Arrays.toString( capability ) ) );
+            }
         }
     }
 

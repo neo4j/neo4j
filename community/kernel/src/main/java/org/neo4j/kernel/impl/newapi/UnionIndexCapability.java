@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexOrderCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -42,14 +42,14 @@ public class UnionIndexCapability implements IndexCapability
     }
 
     @Override
-    public IndexOrderCapability[] order( ValueGroup... valueGroups )
+    public IndexOrder[] order( ValueGroup... valueGroups )
     {
-        Set<IndexOrderCapability> orderCapability = new HashSet<>();
+        Set<IndexOrder> orderCapability = new HashSet<>();
         for ( IndexCapability capability : capabilities )
         {
             Arrays.stream( capability.order( valueGroups ) ).forEach( orderCapability::add );
         }
-        return orderCapability.toArray( new IndexOrderCapability[orderCapability.size()] );
+        return orderCapability.toArray( new IndexOrder[orderCapability.size()] );
     }
 
     @Override

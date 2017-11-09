@@ -38,10 +38,10 @@ public interface IndexCapability
      * must correspond to related {@link IndexReference#properties()}. A {@code null} value in the array
      * ({@code new ValueGroup[]{null}}) is interpreted as a wildcard for any {@link ValueGroup}. Note that this is not the same as
      * {@code order(null)} which is undefined.
-     * @return {@link IndexOrderCapability} array containing all possible orderings for provided value groups or empty array if no explicit
+     * @return {@link IndexOrder} array containing all possible orderings for provided value groups or empty array if no explicit
      * ordering is possible or if length of {@code valueGroups} and {@link IndexReference#properties()} differ.
      */
-    IndexOrderCapability[] order( ValueGroup... valueGroups );
+    IndexOrder[] order( ValueGroup... valueGroups );
 
     /**
      * Is the index capable of providing values for a query on given combination of {@link ValueGroup}.
@@ -60,9 +60,9 @@ public interface IndexCapability
     IndexCapability NO_CAPABILITY = new IndexCapability()
     {
         @Override
-        public IndexOrderCapability[] order( ValueGroup... valueGroups )
+        public IndexOrder[] order( ValueGroup... valueGroups )
         {
-            return new IndexOrderCapability[0];
+            return new IndexOrder[0];
         }
 
         @Override

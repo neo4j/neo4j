@@ -27,14 +27,15 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 public interface Read
 {
     /**
-     * @param index
-     * @param cursor
-     *         the cursor to use for consuming the results.
-     * @param query
+     * @param index {@link IndexReference} referencing index to query.
+     * @param cursor the cursor to use for consuming the results.
+     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of {@link IndexReference referenced index}.
+     * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
-    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexQuery... query ) throws KernelException;
+    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, IndexQuery... query )
+            throws KernelException;
 
-    void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor ) throws KernelException;
+    void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder ) throws KernelException;
 
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor );
 

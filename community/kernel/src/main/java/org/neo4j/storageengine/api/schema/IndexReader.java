@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api.schema;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.values.storable.Value;
@@ -57,6 +58,7 @@ public interface IndexReader extends Resource
      */
     default void query(
             IndexProgressor.NodeValueClient client,
+            IndexOrder indexOrder,
             IndexQuery... query ) throws IndexNotApplicableKernelException
     {
         int[] keys = new int[query.length];

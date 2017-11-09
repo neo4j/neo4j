@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexOrderCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -58,7 +58,7 @@ class IndexReference implements org.neo4j.internal.kernel.api.CapableIndexRefere
     }
 
     @Override
-    public IndexOrderCapability[] order( ValueGroup... valueGroups )
+    public IndexOrder[] order( ValueGroup... valueGroups )
     {
         return capability.order( valueGroups );
     }
