@@ -60,13 +60,22 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]]{
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = {
         val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
         arg match {
           case None => Iterator.empty
           case Some(array) if array.isEmpty => Iterator.empty
-          case _ => Iterator(relationship1, relationship2)
+          case _ =>
+            val nodeId = invocationOnMock.getArgument[Long](0)
+            val dir = invocationOnMock.getArgument[SemanticDirection](1)
+            (nodeId, dir) match {
+              case (0, SemanticDirection.INCOMING) => Iterator.empty
+              case (0, _) => Iterator(relationship1, relationship2, relationship3, selfRelationship)
+              case (2, SemanticDirection.OUTGOING) => Iterator.empty
+              case (2, _) => Iterator(relationship1)
+              case (id, d)=> throw new AssertionError(s"I am only a mocked hack, not a real database. I have no clue about $id and $d")
+            }
         }
       }
     })

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.values.AnyValueWriter;
@@ -104,6 +105,20 @@ public class RelationshipProxyWrappingEdgeValue extends EdgeValue
             }
         }
         return end;
+    }
+
+    @Override
+    public NodeValue otherNode( NodeValue node )
+    {
+        if ( node instanceof NodeProxyWrappingNodeValue )
+        {
+            Node proxy = ((NodeProxyWrappingNodeValue) node).nodeProxy();
+            return ValueUtils.fromNodeProxy( relationship.getOtherNode( proxy ) );
+        }
+        else
+        {
+           return super.otherNode( node );
+        }
     }
 
     @Override
