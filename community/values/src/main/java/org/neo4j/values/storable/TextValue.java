@@ -47,6 +47,16 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue rtrim();
 
+    public abstract TextValue toLower();
+
+    public abstract TextValue toUpper();
+
+    public abstract TextArray split( String separator );
+
+    public abstract TextValue replace( String find, String replace );
+
+    public abstract TextValue reverse();
+
     public abstract int compareTo( TextValue other );
 
     @Override

@@ -127,6 +127,18 @@ public class UTF8StringValueTest
     }
 
     @Test
+    public void shouldReverse()
+    {
+        for ( String string : strings )
+        {
+            TextValue stringValue = stringValue( string );
+            byte[] bytes = string.getBytes( UTF_8 );
+            TextValue utf8 = utf8Value( bytes );
+            assertSame( stringValue.reverse(), utf8.reverse() );
+        }
+    }
+
+    @Test
     public void shouldHandleOffset()
     {
         // Given
@@ -137,6 +149,7 @@ public class UTF8StringValueTest
 
         // Then
         assertSame( textValue, stringValue( "de" ) );
+        assertSame( textValue.reverse(), stringValue( "ed" ) );
     }
 
     private void assertSame( TextValue lhs, TextValue rhs )
@@ -153,7 +166,7 @@ public class UTF8StringValueTest
     public void shouldHandleTooLargeStartPointInSubstring()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // When
         TextValue substring = value.substring( 8, 5 );
@@ -166,7 +179,7 @@ public class UTF8StringValueTest
     public void shouldHandleTooLargeLengthInSubstring()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // When
         TextValue substring = value.substring( 3, 76 );
@@ -179,7 +192,7 @@ public class UTF8StringValueTest
     public void shouldThrowOnNegativeStart()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // Expect
         exception.expect( IndexOutOfBoundsException.class );
@@ -192,7 +205,7 @@ public class UTF8StringValueTest
     public void shouldThrowOnNegativeLength()
     {
         // Given
-        UTF8StringValue value = utf8Value( "hello".getBytes( UTF_8 ) );
+        TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         // Expect
         exception.expect( IndexOutOfBoundsException.class );

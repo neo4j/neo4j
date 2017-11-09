@@ -56,6 +56,43 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
+    public TextValue toLower()
+    {
+        return new StringWrappingStringValue( value().toLowerCase() );
+    }
+
+    @Override
+    public TextValue toUpper()
+    {
+        return new StringWrappingStringValue( value().toUpperCase() );
+    }
+
+    @Override
+    public TextArray split( String separator )
+    {
+        assert separator != null;
+        String asString = value();
+        //Cypher has different semantics for the case where the separator
+        //is exactly the value, in cypher we expect two empty arrays
+        //where as java returns an empty array
+        if ( separator.equals( asString ) )
+        {
+            return Values.stringArray( "", "" );
+        }
+        String[] split = asString.split( separator );
+        return Values.stringArray( split );
+    }
+
+    @Override
+    public TextValue replace( String find, String replace )
+    {
+        assert find != null;
+        assert replace != null;
+
+        return Values.stringValue( value().replace( find, replace ) );
+    }
+
+    @Override
     public Object asObjectCopy()
     {
         return value();
@@ -99,7 +136,7 @@ public abstract class StringValue extends TextValue
             }
             k += Character.charCount( c1 );
         }
-        return length() - other.length();
+        return len1 - len2;
     }
 
     static TextValue EMTPY = new StringValue()
@@ -141,9 +178,40 @@ public abstract class StringValue extends TextValue
         }
 
         @Override
+        public TextValue reverse()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue toLower()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue toUpper()
+        {
+            return this;
+        }
+
+        @Override
+        public TextValue replace( String find, String replace )
+        {
+            if ( find.isEmpty() )
+            {
+                return Values.stringValue( replace );
+            }
+            else
+            {
+                return this;
+            }
+        }
+
+        @Override
         public int compareTo( TextValue other )
         {
-            return Integer.compare( 0, other.length() );
+            return -other.length();
         }
 
         @Override

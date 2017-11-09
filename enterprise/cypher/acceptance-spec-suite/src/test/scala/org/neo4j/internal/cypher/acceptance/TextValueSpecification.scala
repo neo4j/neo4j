@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.nio.charset.StandardCharsets
 
 import org.neo4j.values.storable.TextValue
-import org.neo4j.values.storable.Values.{stringValue, utf8Value}
+import org.neo4j.values.storable.Values.{stringArray, stringValue, utf8Value}
 import org.scalacheck.{Properties, _}
 import org.scalatest.prop.Configuration
 
@@ -60,12 +60,60 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
       equivalent(utf8StringValue.trim(), sValue.ltrim().rtrim())}
   }
 
+  property("reverse") = forAll { (x: String) =>
+    val sValue = stringValue(x)
+    val utf8StringValue = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(sValue.reverse(), utf8StringValue.reverse())
+  }
+
   property("ltrim") = forAll { (x: String) =>
     equivalent(stringValue(x).ltrim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).ltrim())
   }
 
   property("rtrim") = forAll { (x: String) =>
     equivalent(stringValue(x).rtrim(), utf8Value(x.getBytes(StandardCharsets.UTF_8)).rtrim())
+  }
+
+  property("toLower") = forAll { (x: String) => {
+    val value = stringValue(x)
+    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(stringValue(x.toLowerCase), value.toLower) &&
+      equivalent(value.toLower, utf8.toLower)
+  }}
+
+  property("toUpper") = forAll { (x: String) => {
+    val value = stringValue(x)
+    val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+    equivalent(stringValue(x.toUpperCase), value.toUpper) &&
+      equivalent(value.toUpper, utf8.toUpper)
+  }}
+
+  private val replaceGen = for {x <- Arbitrary.arbitrary[String]
+                              find <-Gen.alphaStr
+                              replace <- Arbitrary.arbitrary[String]} yield (x,find, replace)
+  property("replace") = forAll(replaceGen) {
+    case (x: String, find: String, replace: String) =>
+      val value = stringValue(x)
+      val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+      equivalent(stringValue(x.replace(find, replace)), value.replace(find, replace)) &&
+        equivalent(value.replace(find, replace), utf8.replace(find, replace))
+  }
+
+  private val splitGen = for {x <- Arbitrary.arbitrary[String]
+                              find <-Gen.alphaStr} yield (x,find)
+
+  property("split") = forAll(splitGen)  {
+    case (x, find) =>
+      val value = stringValue(x)
+      val utf8 = utf8Value(x.getBytes(StandardCharsets.UTF_8))
+      val split = x.split(find)
+      if (x != find) {
+        stringArray(split: _*) == value.split(find) &&
+          value.split(find) == utf8.split(find)
+      } else {
+        value.split(find) == utf8.split(find) && value.split(find) == stringArray("", "")
+      }
+
   }
 
   property("compareTo") = forAll { (x: String, y: String) =>

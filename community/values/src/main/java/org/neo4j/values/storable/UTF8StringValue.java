@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
@@ -58,7 +57,19 @@ public final class UTF8StringValue extends StringValue
     {
         if ( value instanceof UTF8StringValue )
         {
-            return Arrays.equals( bytes, ((org.neo4j.values.storable.UTF8StringValue) value).bytes );
+            UTF8StringValue other = (UTF8StringValue) value;
+            if ( byteLength != other.byteLength )
+            {
+                return false;
+            }
+            for ( int i = offset, j = other.offset; i < byteLength; i++, j++ )
+            {
+                if ( bytes[i] != other.bytes[j] )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         else
         {
@@ -162,6 +173,10 @@ public final class UTF8StringValue extends StringValue
         {
             throw new IndexOutOfBoundsException( "Cannot handle negative start index nor negative length" );
         }
+        if ( length == 0 )
+        {
+            return StringValue.EMTPY;
+        }
 
         int end = start + length;
         byte[] values = bytes;
@@ -255,6 +270,54 @@ public final class UTF8StringValue extends StringValue
             return StringValue.EMTPY;
         }
         return new UTF8StringValue( values, offset, endIndex + 1 - offset );
+    }
+
+    @Override
+    public TextValue reverse()
+    {
+        byte[] values = bytes;
+
+        if ( values.length == 0 || byteLength == 0 )
+        {
+            return StringValue.EMTPY;
+        }
+
+        int i = offset, len = offset + byteLength;
+        byte[] newValues = new byte[byteLength];
+        while ( i < len )
+        {
+            byte b = values[i];
+            //If high bit is zero (equivalent to the byte being positive in two's complement)
+            //we are dealing with an ascii value and use a single byte for storing the value.
+            if ( b >= 0 )
+            {
+                //a single byte is trivial to reverse
+                //just put it at the opposite end of the new array
+                newValues[len - 1 - i] = b;
+                i++;
+                continue;
+            }
+
+            //We can now have one of three situations.
+            //Byte1    Byte2    Byte3    Byte4
+            //110xxxxx 10xxxxxx
+            //1110xxxx 10xxxxxx 10xxxxxx
+            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            //Figure out how many bytes we need by reading the number of leading bytes
+            int bytesNeeded = 0;
+            while ( b < 0 )
+            {
+                bytesNeeded++;
+                b = (byte) (b << 1);
+            }
+            //reversing when multiple bytes are needed for the code point we cannot just reverse
+            //since we need to preserve the code point while moving it,
+            //e.g. [A, b1,b2, B] -> [B, b1,b2, A]
+            System.arraycopy( values, i, newValues, len - i - bytesNeeded, bytesNeeded );
+            i += bytesNeeded;
+        }
+
+        return new UTF8StringValue( newValues, 0, newValues.length );
     }
 
     @Override

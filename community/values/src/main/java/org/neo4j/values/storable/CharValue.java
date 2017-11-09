@@ -133,6 +133,52 @@ public final class CharValue extends TextValue
         return trim();
     }
 
+    @Override
+    public TextValue toLower()
+    {
+        return new CharValue( Character.toLowerCase( value ) );
+    }
+
+    @Override
+    public TextValue toUpper()
+    {
+        return new CharValue( Character.toUpperCase( value ) );
+    }
+
+    @Override
+    public TextArray split( String separator )
+    {
+        if ( separator.equals( stringValue() ) )
+        {
+            return Values.EMPTY_TEXT_ARRAY;
+        }
+        else
+        {
+            return Values.stringArray( stringValue() );
+        }
+    }
+
+    @Override
+    public TextValue replace( String find, String replace )
+    {
+        assert find != null;
+        assert replace != null;
+        if ( stringValue().equals( find ) )
+        {
+            return Values.stringValue( replace );
+        }
+        else
+        {
+            return this;
+        }
+    }
+
+    @Override
+    public TextValue reverse()
+    {
+        return this;
+    }
+
     public char value()
     {
         return value;

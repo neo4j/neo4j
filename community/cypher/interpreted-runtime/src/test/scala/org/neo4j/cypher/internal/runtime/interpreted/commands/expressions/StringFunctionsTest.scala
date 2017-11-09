@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{EMPTY_STRING, stringValue}
+import org.neo4j.values.storable.Values.{EMPTY_STRING, stringArray, stringValue}
 
 class StringFunctionsTest extends CypherFunSuite {
 
@@ -158,5 +157,17 @@ class StringFunctionsTest extends CypherFunSuite {
     reverse(null) should equal(expectedNull)
     reverse("\r\n") should equal(stringValue("\n\r"))
     reverse("\uD801\uDC37") should equal(stringValue("\uD801\uDC37"))
+  }
+
+  test("splitTests") {
+    def split(x: Any, y: Any) = SplitFunction(Literal(x), Literal(y))(ExecutionContext.empty, QueryStateHelper.empty)
+
+    split("HELLO", "LL") should equal(stringArray("HE", "O"))
+    split("Separating,by,comma,is,a,common,use,case", ",") should equal(stringArray("Separating", "by", "comma", "is", "a", "common", "use", "case"))
+    split("hello", "X") should equal(stringArray("hello"))
+    split("hello", null) should equal(expectedNull)
+    split(null, "hello") should equal(expectedNull)
+    split(null, null) should equal(expectedNull)
+    intercept[CypherTypeException](split(1024, 10))
   }
 }
