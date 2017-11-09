@@ -29,11 +29,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.util.TestHelpers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ClearIdServiceTest
 {

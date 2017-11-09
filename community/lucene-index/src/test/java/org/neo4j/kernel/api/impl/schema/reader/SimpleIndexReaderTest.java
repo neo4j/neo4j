@@ -46,7 +46,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

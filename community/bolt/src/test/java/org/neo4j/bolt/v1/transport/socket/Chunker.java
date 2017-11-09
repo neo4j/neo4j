@@ -28,8 +28,8 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

@@ -34,12 +34,11 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyVararg;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class StreamToDiskTest
@@ -81,6 +80,6 @@ public class StreamToDiskTest
             throws IOException
     {
         writer.write( fileName, 16, DATA );
-        verify( pageCache ).map( eq( directory.file( fileName ) ), anyInt(), anyVararg() );
+        verify( pageCache ).map( eq( directory.file( fileName ) ), anyInt(), any() );
     }
 }

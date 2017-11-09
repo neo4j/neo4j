@@ -19,10 +19,10 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.function.Supplier;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -30,8 +30,8 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 

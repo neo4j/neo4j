@@ -27,7 +27,7 @@ import java.util.ListIterator;
 
 import org.neo4j.helpers.collection.Visitor;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

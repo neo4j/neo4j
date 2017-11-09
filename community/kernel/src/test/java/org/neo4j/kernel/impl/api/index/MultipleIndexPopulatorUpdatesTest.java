@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.storable.Values;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;

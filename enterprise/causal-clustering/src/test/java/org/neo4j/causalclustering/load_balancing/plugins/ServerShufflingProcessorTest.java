@@ -26,9 +26,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.causalclustering.load_balancing.Endpoint;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Arrays.asList;
@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
