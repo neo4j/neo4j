@@ -78,6 +78,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     {
         this.out = out;
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
+        this.actions.put( "c", Pair.of( "Print more detailed information about current stage", this::printDetailsForCurrentStage ) );
         this.actions.put( "gc", Pair.of( "Trigger GC", this::triggerGC ) );
         this.gcMonitor = new MeasureDoNothing( "Importer GC monitor", gcBlockTime, 100, 200 );
     }
@@ -128,7 +129,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
 
     private void printDetails()
     {
-        out.println( format( "%n************** DETAILS **************%n" ) );
+        printDetailsHeadline();
         for ( StageDetails stageDetails : details )
         {
             stageDetails.print( out );
@@ -139,6 +140,20 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         out.println( "  Max VM memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
         out.println( "  Free VM memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
         out.println( "  GC block time: " + duration( gcBlockTime.getGcBlockTime() ) );
+    }
+
+    private void printDetailsForCurrentStage()
+    {
+        printDetailsHeadline();
+        if ( !details.isEmpty() )
+        {
+            details.get( details.size() - 1 ).print( out );
+        }
+    }
+
+    private void printDetailsHeadline()
+    {
+        out.println( format( "%n************** DETAILS **************%n" ) );
 
         // Make sure that if user is interested in details then also print the entire details set when import is done
         printDetailsOnDone = true;
