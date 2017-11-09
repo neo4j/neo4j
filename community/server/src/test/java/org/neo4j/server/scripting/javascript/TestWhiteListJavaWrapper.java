@@ -126,10 +126,4 @@ public class TestWhiteListJavaWrapper
         assertThat( obj.get( "name", scope ),
                 is( instanceOf( NativeJavaMethod.class ) ) );
     }
-
-    public void aGetter()
-    {
-
-    }
-
 }

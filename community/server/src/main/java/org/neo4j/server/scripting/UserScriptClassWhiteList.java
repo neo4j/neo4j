@@ -64,6 +64,8 @@ public class UserScriptClassWhiteList
         safe.add( Node.class.getName() );
         safe.add( Relationship.class.getName() );
         safe.add( RelationshipType.class.getName() );
+        // can't list anonymous inner classes, using instance to get name of its class
+        safe.add( RelationshipType.withName( "classSource" ).getClass().getName() );
         safe.add( DynamicRelationshipType.class.getName() );
         safe.add( Lock.class.getName() );
 
