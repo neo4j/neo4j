@@ -215,7 +215,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void initializeRelationshipImport( Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
     {
         long numberOfRelationships = estimates.numberOfRelationships();
-        // TODO how to handle UNKNOWN?
         printStageHeader( "(2/4) Relationship import",
                 ESTIMATED_NUMBER_OF_RELATIONSHIPS, count( numberOfRelationships ),
                 ESTIMATED_DISK_SPACE_USAGE, bytes(
@@ -234,28 +233,34 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
                         baselineMemoryRequirement( neoStores ) +
                         defensivelyPadMemoryEstimate( nodeRelationshipCache.calculateMemoryUsage( distribution.getNodeCount() ) ) ) );
+        // The reason the highId of the relationship store is used, as opposed to actual number of imported relationships
+        // is that the stages underneath operate on id ranges, not knowing which records are actually in use.
+        long relationshipRecordIdCount = neoStores.getRelationshipStore().getHighId();
+        // The progress counting of linking stages is special anyway, in that it uses the "progress" stats key,
+        // which is based on actual number of relationships, not relationship ids.
         long actualRelationshipCount = distribution.getRelationshipCount();
         initializeProgress(
-                actualRelationshipCount +     // node degrees
+                relationshipRecordIdCount +   // node degrees
                 actualRelationshipCount * 2 + // start/end forwards, see RelationshipLinkingProgress
                 actualRelationshipCount * 2   // start/end backwards, see RelationshipLinkingProgress
                 );
     }
 
-    private void initializeMisc( BatchingNeoStores stores, DataStatistics distribution )
+    private void initializeMisc( BatchingNeoStores neoStores, DataStatistics distribution )
     {
         printStageHeader( "(4/4) Post processing",
-                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( baselineMemoryRequirement( stores ) ) );
-        // written groups + node counts + relationship counts
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( baselineMemoryRequirement( neoStores ) ) );
         long actualNodeCount = distribution.getNodeCount();
-        long actualRelationshipCount = distribution.getRelationshipCount();
-        long groupCount = stores.getTemporaryRelationshipGroupStore().getHighId();
+        // The reason the highId of the relationship store is used, as opposed to actual number of imported relationships
+        // is that the stages underneath operate on id ranges, not knowing which records are actually in use.
+        long relationshipRecordIdCount = neoStores.getRelationshipStore().getHighId();
+        long groupCount = neoStores.getTemporaryRelationshipGroupStore().getHighId();
         initializeProgress(
-                groupCount +               // Count groups
-                groupCount +               // Write groups
-                groupCount +               // Node --> Group
-                actualNodeCount +          // Node counts
-                actualRelationshipCount ); // Relationship counts
+                groupCount +                 // Count groups
+                groupCount +                 // Write groups
+                groupCount +                 // Node --> Group
+                actualNodeCount +            // Node counts
+                relationshipRecordIdCount ); // Relationship counts
     }
 
     private static long defensivelyPadMemoryEstimate( long bytes )

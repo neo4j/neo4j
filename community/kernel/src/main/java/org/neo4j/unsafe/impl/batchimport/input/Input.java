@@ -36,8 +36,6 @@ public interface Input
 {
     interface Estimates
     {
-        long UNKNOWN = -1;
-
         /**
          * @return estimated number of nodes for the entire input.
          */
