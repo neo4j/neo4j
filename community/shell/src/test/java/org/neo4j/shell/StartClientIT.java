@@ -258,5 +258,4 @@ public class StartClientIT extends AbstractShellIT
             System.setOut( oldOut );
         }
     }
-
 }
