@@ -127,7 +127,7 @@ public final class MapValue extends VirtualValue
         }
         Map<String,AnyValue> otherMap = ((MapValue) other).map;
         int size = map.size();
-        if (size != otherMap.size())
+        if ( size != otherMap.size() )
         {
             return false;
         }
@@ -148,7 +148,7 @@ public final class MapValue extends VirtualValue
         {
             String key = thisKeys[i];
             Boolean s = map.get( key ).ternaryEquals( otherMap.get( key ) );
-            if (s == null)
+            if ( s == null )
             {
                 equalityResult = null;
             }
