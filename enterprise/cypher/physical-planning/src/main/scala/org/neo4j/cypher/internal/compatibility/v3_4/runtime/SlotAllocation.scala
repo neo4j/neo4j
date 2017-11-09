@@ -251,7 +251,9 @@ object SlotAllocation {
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
-  private def addGroupingMap(groupingExpressions: Map[String, Expression], incoming: PipelineInformation, outgoing: PipelineInformation) = {
+  private def addGroupingMap(groupingExpressions: Map[String, Expression],
+                             incoming: PipelineInformation,
+                             outgoing: PipelineInformation): Unit = {
     groupingExpressions foreach {
       case (key, parserAst.Variable(ident)) =>
         val slotInfo = incoming(ident)
@@ -277,17 +279,16 @@ object SlotAllocation {
            _: ConditionalApply =>
         rhsPipeline
 
-      case _: CartesianProduct |
-           _: NodeHashJoin =>
-        val joinedPipeline = lhsPipeline.breakPipelineAndClone()
+      case _: CartesianProduct =>
+        val newPipeline = lhsPipeline.breakPipelineAndClone()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
         rhsPipeline.foreachSlotOrdered {
-          case (k, slot) if lhsPipeline.get(k).isEmpty =>
-            joinedPipeline.add(k, slot)
-          case _ =>
+          case (k, slot) =>
+            newPipeline.add(k, slot)
         }
-        joinedPipeline
+        newPipeline
+
 
       case NodeHashJoin(nodes, _, _) =>
         val nodeKeys = nodes.map(_.name)
