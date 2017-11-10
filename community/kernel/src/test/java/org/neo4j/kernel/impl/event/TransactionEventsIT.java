@@ -28,9 +28,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -54,6 +60,8 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -184,6 +192,100 @@ public class TransactionEventsIT
 
         assertThat( "Should have specified username", usernameRef.get(), equalTo( "Christof" ) );
         assertThat( "Should have metadata with specified username", metaDataRef.get(), equalTo( metadata ) );
+    }
+
+    @Test
+    public void registerUnregisterWithConcurrentTransactions() throws Exception
+    {
+        ExecutorService executor = Executors.newFixedThreadPool( 2 );
+        AtomicInteger runningCounter = new AtomicInteger();
+        AtomicInteger doneCounter = new AtomicInteger();
+        BinaryLatch startLatch = new BinaryLatch();
+        RelationshipType relationshipType = RelationshipType.withName( "REL" );
+        CountingTransactionEventHandler[] handlers = new CountingTransactionEventHandler[20];
+        for ( int i = 0; i < handlers.length; i++ )
+        {
+            handlers[i] = new CountingTransactionEventHandler();
+        }
+        long relNodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            relNodeId = db.createNode().getId();
+            tx.success();
+        }
+        Future<?> nodeCreator = executor.submit( () ->
+        {
+            try
+            {
+                runningCounter.incrementAndGet();
+                startLatch.await();
+                for ( int i = 0; i < 2_000; i++ )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.createNode();
+                        if ( ThreadLocalRandom.current().nextBoolean() )
+                        {
+                            tx.success();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                doneCounter.incrementAndGet();
+            }
+        } );
+        Future<?> relationshipCreator = executor.submit( () ->
+        {
+            try
+            {
+                runningCounter.incrementAndGet();
+                startLatch.await();
+                for ( int i = 0; i < 1_000; i++ )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        Node relNode = db.getNodeById( relNodeId );
+                        relNode.createRelationshipTo( relNode, relationshipType );
+                        if ( ThreadLocalRandom.current().nextBoolean() )
+                        {
+                            tx.success();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                doneCounter.incrementAndGet();
+            }
+        } );
+        while ( runningCounter.get() < 2 )
+        {
+            Thread.yield();
+        }
+        int i = 0;
+        db.registerTransactionEventHandler( handlers[i] );
+        CountingTransactionEventHandler currentlyRegistered = handlers[i];
+        i++;
+        startLatch.release();
+        while ( doneCounter.get() < 2 )
+        {
+            db.registerTransactionEventHandler( handlers[i] );
+            i++;
+            if ( i == handlers.length )
+            {
+                i = 0;
+            }
+            db.unregisterTransactionEventHandler( currentlyRegistered );
+            currentlyRegistered = handlers[i];
+        }
+        nodeCreator.get();
+        relationshipCreator.get();
+        for ( CountingTransactionEventHandler handler : handlers )
+        {
+            assertEquals( 0, handler.get() );
+        }
     }
 
     private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler( Consumer<TransactionData> dataConsumer )
@@ -509,4 +611,30 @@ public class TransactionEventsIT
         }
     }
 
+    private static class CountingTransactionEventHandler
+            extends AtomicInteger
+            implements TransactionEventHandler<CountingTransactionEventHandler>
+    {
+
+        @Override
+        public CountingTransactionEventHandler beforeCommit( TransactionData data ) throws Exception
+        {
+            getAndIncrement();
+            return this;
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, CountingTransactionEventHandler state )
+        {
+            getAndDecrement();
+            assertThat( state, sameInstance( this ) );
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, CountingTransactionEventHandler state )
+        {
+            getAndDecrement();
+            assertThat( state, sameInstance( this ) );
+        }
+    }
 }
