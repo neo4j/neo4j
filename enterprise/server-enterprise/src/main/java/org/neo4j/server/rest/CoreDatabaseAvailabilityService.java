@@ -37,6 +37,9 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 
+/**
+ * To be deprecated by {@link org.neo4j.server.rest.causalclustering.CausalClusteringService}.
+ */
 @Path(CoreDatabaseAvailabilityService.BASE_PATH)
 public class CoreDatabaseAvailabilityService implements AdvertisableService
 {
