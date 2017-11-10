@@ -23,7 +23,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 
 /**
  * Specifies procedure call operations for the three types of procedure calls that can be made.

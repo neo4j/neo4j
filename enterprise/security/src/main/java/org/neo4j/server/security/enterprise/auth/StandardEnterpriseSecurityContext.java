@@ -29,10 +29,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 
 class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
@@ -167,7 +166,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         }
 
         @Override
-        public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
+        public boolean allowsProcedureWith( String[] roleNames )
         {
             for ( int i = 0; i < roleNames.length; i++ )
             {

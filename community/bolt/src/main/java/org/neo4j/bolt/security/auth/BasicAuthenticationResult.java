@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt.security.auth;
 
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 public class BasicAuthenticationResult implements AuthenticationResult
 {
@@ -41,6 +40,6 @@ public class BasicAuthenticationResult implements AuthenticationResult
     public boolean credentialsExpired()
     {
         return securityContext.subject().getAuthenticationResult() ==
-                org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+                org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
     }
 }

@@ -75,7 +75,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.security.AuthSubject.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
 
 public class QueryLoggerIT
 {

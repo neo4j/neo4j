@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.proc;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /**
  * The context in which a procedure is invoked. This is a read-only map-like structure.

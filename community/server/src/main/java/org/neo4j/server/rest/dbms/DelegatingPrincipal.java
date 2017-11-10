@@ -21,7 +21,7 @@ package org.neo4j.server.rest.dbms;
 
 import java.security.Principal;
 
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 public class DelegatingPrincipal implements Principal
 {

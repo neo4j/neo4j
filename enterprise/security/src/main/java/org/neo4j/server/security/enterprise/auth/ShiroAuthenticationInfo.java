@@ -26,12 +26,12 @@ import org.apache.shiro.util.ByteSource;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 
-import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
-import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
-import static org.neo4j.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 
 public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
 {

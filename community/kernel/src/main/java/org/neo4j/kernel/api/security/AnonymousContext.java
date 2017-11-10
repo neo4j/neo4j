@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.api.security;
 
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+
 /** Controls the capabilities of a KernelTransaction. */
 public class AnonymousContext implements SecurityContext
 {

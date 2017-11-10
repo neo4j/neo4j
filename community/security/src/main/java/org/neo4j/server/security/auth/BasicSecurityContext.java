@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.security.User;
 
-import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
-import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 
 public class BasicSecurityContext implements SecurityContext
 {

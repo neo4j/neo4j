@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.auth.AuthProceduresBase.UserResult;
 

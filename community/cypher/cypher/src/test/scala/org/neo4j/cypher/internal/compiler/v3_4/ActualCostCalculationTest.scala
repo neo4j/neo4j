@@ -37,9 +37,9 @@ import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken, SemanticDirection}
 import org.neo4j.cypher.internal.v3_4.logical.plans.SingleQueryExpression
 import org.neo4j.graphdb._
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
