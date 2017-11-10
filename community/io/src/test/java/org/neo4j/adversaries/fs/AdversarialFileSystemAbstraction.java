@@ -194,6 +194,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         delegate.copyToDirectory( file, toDirectory );
     }
 
+    @Override
     public boolean isDirectory( File file )
     {
         adversary.injectFailure( SecurityException.class );
