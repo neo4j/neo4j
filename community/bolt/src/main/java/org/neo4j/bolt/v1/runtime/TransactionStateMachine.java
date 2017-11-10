@@ -137,13 +137,13 @@ public class TransactionStateMachine implements StatementProcessor
 
         if ( tx != null )
         {
-            Optional<Status> status = tx.getReasonIfTerminated();
+            Optional<Status> statusOpt = tx.getReasonIfTerminated();
 
-            if ( status.isPresent() )
+            if ( statusOpt.isPresent() )
             {
-                if ( status.get().code().classification().rollbackTransaction() )
+                if ( statusOpt.get().code().classification().rollbackTransaction() )
                 {
-                    ctx.pendingTerminationNotice = status;
+                    ctx.pendingTerminationNotice = statusOpt.get();
 
                     reset();
                 }
@@ -153,11 +153,11 @@ public class TransactionStateMachine implements StatementProcessor
 
     private void ensureNoPendingTerminationNotice()
     {
-        if ( ctx.pendingTerminationNotice.isPresent() )
+        if ( ctx.pendingTerminationNotice != null )
         {
-            Status status = ctx.pendingTerminationNotice.get();
+            Status status = ctx.pendingTerminationNotice;
 
-            ctx.pendingTerminationNotice = Optional.empty();
+            ctx.pendingTerminationNotice = null;
 
             throw new TransactionTerminatedException( status );
         }
@@ -422,7 +422,7 @@ public class TransactionStateMachine implements StatementProcessor
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
 
-        Optional<Status> pendingTerminationNotice = Optional.empty();
+        Status pendingTerminationNotice;
 
         /** Last Cypher statement executed */
         String lastStatement = "";

@@ -255,7 +255,7 @@ public class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
-        stateMachine.ctx.pendingTerminationNotice = Optional.of( Status.Transaction.TransactionTimedOut );
+        stateMachine.ctx.pendingTerminationNotice = Status.Transaction.TransactionTimedOut;
 
         try
         {
@@ -280,7 +280,7 @@ public class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
-        stateMachine.ctx.pendingTerminationNotice = Optional.of( Status.Transaction.TransactionTimedOut );
+        stateMachine.ctx.pendingTerminationNotice = Status.Transaction.TransactionTimedOut;
 
         try
         {
