@@ -59,8 +59,8 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
 
   test("cleanUp calls all cleanUp and if there are failures the first exception is thrown") {
     val expected = new Exception("oh noes")
-    taskCloser.addTask(_ => throw expected)
     taskCloser.addTask(_ => throw new Exception)
+    taskCloser.addTask(_ => throw expected)
 
     val ex = intercept[Exception](taskCloser.close(success = true))
 

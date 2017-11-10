@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
-import org.neo4j.cypher.internal.util.v3_4.{CypherException, ProfilerStatisticsNotReadyException, TaskCloser}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, _}
 import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
+import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, _}
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, ProfilerStatisticsNotReadyException, TaskCloser}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.values.virtual.MapValue
 
@@ -68,17 +68,14 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
               notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
-                                 triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
       try {
-        try {
-          createResults(state, planType, notificationLogger, runtimeName)
-        }
-        catch {
-          case e: CypherException =>
-            throw exceptionDecorator(e)
-        }
+        createResults(state, planType, notificationLogger, runtimeName)
       }
       catch {
+        case e: CypherException =>
+          taskCloser.close(success = false)
+          throw exceptionDecorator(e)
         case (t: Throwable) =>
           taskCloser.close(success = false)
           throw t
