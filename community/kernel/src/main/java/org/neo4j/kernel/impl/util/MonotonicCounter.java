@@ -21,54 +21,21 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Counter that produce sequence of incremental numbers
- */
 public interface MonotonicCounter
 {
-    long increment();
+    long incrementAndGet();
 
-    /**
-     * Create new counter with specified initial value
-     * @param initialValue initial value
-     * @return counter newly created counter
-     */
-    static MonotonicCounter newCounter( int initialValue )
+    static MonotonicCounter newAtomicMonotonicCounter()
     {
-        assert initialValue >= 0;
-        return new NaturalCounter( initialValue );
-    }
-
-    /**
-     * Create new counter with default 0 as its initial value
-     * @return counter newly created counter
-     */
-    static MonotonicCounter newCounter()
-    {
-        return new NaturalCounter( 0 );
-    }
-
-    class NaturalCounter implements MonotonicCounter
-    {
-        private final AtomicLong value;
-
-        NaturalCounter( int initialValue )
+        return new MonotonicCounter()
         {
-            value = new AtomicLong( initialValue );
-        }
+            private final AtomicLong value = new AtomicLong( 0L );
 
-        @Override
-        public long increment()
-        {
-            int initialValue;
-            int incrementedValue;
-            do
+            @Override
+            public long incrementAndGet()
             {
-                initialValue = value.intValue();
-                incrementedValue = initialValue == Integer.MAX_VALUE ? 0 : initialValue + 1;
+                return value.incrementAndGet();
             }
-            while ( !value.compareAndSet( initialValue, incrementedValue ) );
-            return incrementedValue;
-        }
+        };
     }
 }

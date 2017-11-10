@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.MapValue;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
-    private final MonotonicCounter lastQueryId = MonotonicCounter.newCounter();
+    private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final HeapAllocation heapAllocation;
@@ -67,7 +67,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         MapValue queryParameters
     )
     {
-        long queryId = lastQueryId.increment();
+        long queryId = lastQueryId.incrementAndGet();
         Thread thread = Thread.currentThread();
         long threadId = thread.getId();
         String threadName = thread.getName();
