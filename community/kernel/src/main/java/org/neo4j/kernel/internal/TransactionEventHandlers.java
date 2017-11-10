@@ -21,6 +21,7 @@ package org.neo4j.kernel.internal;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 public class TransactionEventHandlers
         implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
 {
-    private final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
+    private final CopyOnWriteArraySet<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
     private final NodeActions nodeActions;
     private final RelationshipActions relationshipActions;
@@ -110,8 +111,11 @@ public class TransactionEventHandlers
     public TransactionHandlerState beforeCommit( ReadableTransactionState state, KernelTransaction transaction,
             StoreReadLayer storeReadLayer, StorageStatement statement )
     {
-        if ( transactionEventHandlers.isEmpty() )
+        // The iterator grabs a snapshot of our list of handlers
+        Iterator<TransactionEventHandler> handlers = transactionEventHandlers.iterator();
+        if ( !handlers.hasNext() )
         {
+            // Use 'null' as a signal that no event handlers were registered at beforeCommit time
             return null;
         }
 
@@ -120,8 +124,9 @@ public class TransactionEventHandlers
                         storeReadLayer, statement, transaction );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
-        for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )
+        while ( handlers.hasNext() )
         {
+            TransactionEventHandler<?> handler = handlers.next();
             try
             {
                 handlerStates.add( handler ).setState( handler.beforeCommit( txData ) );
@@ -141,8 +146,10 @@ public class TransactionEventHandlers
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
     {
-        if ( transactionEventHandlers.isEmpty() )
+        if ( handlerState == null )
         {
+            // As per beforeCommit, 'null' means no handlers were registered in time for this transaction to
+            // observe them.
             return;
         }
 
@@ -158,11 +165,6 @@ public class TransactionEventHandlers
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
     {
-        if ( transactionEventHandlers.isEmpty() )
-        {
-            return;
-        }
-
         if ( handlerState == null )
         {
             // For legacy reasons, we don't call transaction handlers on implicit rollback.

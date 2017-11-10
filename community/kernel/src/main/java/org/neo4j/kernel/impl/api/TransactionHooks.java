@@ -58,7 +58,8 @@ public class TransactionHooks
         TransactionHooksState hookState = new TransactionHooksState();
         for ( TransactionHook hook : hooks )
         {
-            hookState.add( hook, hook.beforeCommit( state, tx, storeReadLayer, storageStatement ) );
+            Outcome outcome = hook.beforeCommit( state, tx, storeReadLayer, storageStatement );
+            hookState.add( hook, outcome );
         }
         return hookState;
     }
@@ -72,7 +73,9 @@ public class TransactionHooks
         }
         for ( Pair<TransactionHook, Outcome> hookAndOutcome : hooksState.hooksWithOutcome() )
         {
-            hookAndOutcome.first().afterCommit( state, tx, hookAndOutcome.other() );
+            TransactionHook hook = hookAndOutcome.first();
+            Outcome outcome = hookAndOutcome.other();
+            hook.afterCommit( state, tx, outcome );
         }
     }
 
