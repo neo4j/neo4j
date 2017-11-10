@@ -22,10 +22,8 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
-
-import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 /**
  * {@link LogVersionBridge} naturally transitioning from one {@link LogVersionedStoreChannel} to the next,
@@ -33,12 +31,10 @@ import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersi
  */
 public class ReaderLogVersionBridge implements LogVersionBridge
 {
-    private final FileSystemAbstraction fileSystem;
-    private final PhysicalLogFiles logFiles;
+    private final LogFiles logFiles;
 
-    public ReaderLogVersionBridge( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles )
+    public ReaderLogVersionBridge( LogFiles logFiles )
     {
-        this.fileSystem = fileSystem;
         this.logFiles = logFiles;
     }
 
@@ -48,7 +44,7 @@ public class ReaderLogVersionBridge implements LogVersionBridge
         PhysicalLogVersionedStoreChannel nextChannel;
         try
         {
-            nextChannel = openForVersion( logFiles, fileSystem, channel.getVersion() + 1, false );
+            nextChannel = logFiles.openForVersion( channel.getVersion() + 1 );
         }
         catch ( FileNotFoundException | IncompleteLogHeaderException e )
         {

@@ -33,7 +33,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -43,7 +42,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class RecoveryRequiredCheckerTest
-
 {
     private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -52,7 +50,6 @@ public class RecoveryRequiredCheckerTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fileSystemRule ).around( testDirectory );
 
-    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final Monitors monitors = new Monitors();
     private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;

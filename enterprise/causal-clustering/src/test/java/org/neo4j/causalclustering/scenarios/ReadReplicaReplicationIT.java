@@ -68,8 +68,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -468,9 +468,9 @@ public class ReadReplicaReplicationIT
         return new TransactionIdTracker( transactionIdStore, availabilityGuard );
     }
 
-    private PhysicalLogFiles physicalLogFiles( ClusterMember clusterMember )
+    private LogFiles physicalLogFiles( ClusterMember clusterMember )
     {
-        return clusterMember.database().getDependencyResolver().resolveDependency( PhysicalLogFiles.class );
+        return clusterMember.database().getDependencyResolver().resolveDependency( LogFiles.class );
     }
 
     private boolean readReplicasUpToDateAsTheLeader( CoreClusterMember leader,

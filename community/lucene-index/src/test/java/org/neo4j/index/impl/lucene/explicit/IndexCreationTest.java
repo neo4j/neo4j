@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -125,14 +125,14 @@ public class IndexCreationTest
 
     private void verifyThatIndexCreationTransactionIsTheFirstOne() throws Exception
     {
-        PhysicalLogFile pLogFile = db.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
+        LogFiles logFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
         long version = db.getDependencyResolver().resolveDependency( LogVersionRepository.class ).getCurrentLogVersion();
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
                 new SimpleTriggerInfo( "test" )
         );
 
-        ReadableLogChannel logChannel = pLogFile.getReader( LogPosition.start( version ) );
+        ReadableLogChannel logChannel = logFiles.getLogFile().getReader( LogPosition.start( version ) );
 
         final AtomicBoolean success = new AtomicBoolean( false );
 

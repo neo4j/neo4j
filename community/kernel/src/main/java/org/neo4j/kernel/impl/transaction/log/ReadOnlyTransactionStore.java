@@ -27,14 +27,16 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Used for reading transactions off of file.
  */
-public class ReadOnlyTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
+public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionStore
 {
     private final LifeSupport life = new LifeSupport();
     private final LogicalTransactionStore physicalStore;
@@ -42,16 +44,12 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
     public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, File fromPath, Monitors monitors )
             throws IOException
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100 );
-        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-        final ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, fromPath );
-        PhysicalLogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 0,
-                transactionIdStore::getLastCommittedTransactionId,
-                new ReadOnlyLogVersionRepository( pageCache, fromPath ),
-                monitors.newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader,
+        LogFiles logFiles = LogFilesBuilder
+                .activeFilesBuilder( fromPath, fs, pageCache ).withLogEntryReader( logEntryReader )
+                .build();
+        physicalStore = new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader,
                 monitors, true );
     }
 

@@ -20,27 +20,24 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -71,14 +68,12 @@ public class Runner implements Callable<Long>
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 Lifespan life = new Lifespan() )
         {
-            TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
+            TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
-            LogHeaderCache logHeaderCache = new LogHeaderCache( 1000 );
-
-            LogFile logFile = life.add( createPhysicalLogFile( transactionIdStore, logHeaderCache, fileSystem ) );
+            LogFiles logFiles = life.add( createPhysicalLogFiles( transactionIdStore, fileSystem ) );
 
             TransactionAppender transactionAppender = life.add(
-                    createBatchingTransactionAppender( transactionIdStore, transactionMetadataCache, logFile ) );
+                    createBatchingTransactionAppender( transactionIdStore, transactionMetadataCache, logFiles ) );
 
             ExecutorService executorService = Executors.newFixedThreadPool( threads );
             try
@@ -109,27 +104,25 @@ public class Runner implements Callable<Long>
     }
 
     private BatchingTransactionAppender createBatchingTransactionAppender( TransactionIdStore transactionIdStore,
-            TransactionMetadataCache transactionMetadataCache, LogFile logFile )
+            TransactionMetadataCache transactionMetadataCache, LogFiles logFiles )
     {
         Log log = NullLog.getInstance();
         KernelEventHandlers kernelEventHandlers = new KernelEventHandlers( log );
         DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( kernelEventHandlers );
         DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, log );
-        LogRotationImpl logRotation = new LogRotationImpl( NOOP_LOGROTATION_MONITOR, logFile, databaseHealth );
-        return new BatchingTransactionAppender( logFile, logRotation,
+        LogRotationImpl logRotation = new LogRotationImpl( NOOP_LOGROTATION_MONITOR, logFiles, databaseHealth );
+        return new BatchingTransactionAppender( logFiles, logRotation,
                 transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, databaseHealth );
     }
 
-    private PhysicalLogFile createPhysicalLogFile( TransactionIdStore transactionIdStore, LogHeaderCache logHeaderCache,
-            FileSystemAbstraction fileSystemAbstraction )
+    private LogFiles createPhysicalLogFiles( TransactionIdStore transactionIdStore,
+            FileSystemAbstraction fileSystemAbstraction ) throws IOException
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystemAbstraction );
-        long rotateAtSize = Settings.BYTES.apply(
-                GraphDatabaseSettings.logical_log_rotation_threshold.getDefaultValue() );
-        DeadSimpleLogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
-        return new PhysicalLogFile( fileSystemAbstraction, logFiles, rotateAtSize,
-                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, PhysicalLogFile.NO_MONITOR,
-                logHeaderCache );
+        SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        return LogFilesBuilder.builder( workingDirectory, fileSystemAbstraction )
+                                                      .withTransactionIdStore(transactionIdStore)
+                                                      .withLogVersionRepository( logVersionRepository )
+                                                      .build();
     }
 
     private static final LogRotation.Monitor NOOP_LOGROTATION_MONITOR = new LogRotation.Monitor()

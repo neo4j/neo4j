@@ -34,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Settings;
@@ -42,10 +43,10 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.storemigration.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -181,6 +182,10 @@ public class HAClusterStartupIT
         public final ClusterRule clusterRule = new ClusterRule( getClass() ).withCluster( clusterOfSize( 3 ) )
                 .withSeedDir( dbWithOutLogs() );
 
+        public ClusterWithSeed() throws IOException
+        {
+        }
+
         @Test
         public void aClusterShouldStartAndRunWhenSeededWithAStoreHavingNoLogicalLogFiles() throws Throwable
         {
@@ -189,7 +194,7 @@ public class HAClusterStartupIT
             restartingTheClusterShouldWork( clusterRule );
         }
 
-        private static File dbWithOutLogs()
+        private static File dbWithOutLogs() throws IOException
         {
             File seedDir;
             try
@@ -239,18 +244,20 @@ public class HAClusterStartupIT
         FileUtils.deleteRecursively( instance.getStoreDirectory() );
     }
 
-    private static void deleteAllLogsOn( HighlyAvailableGraphDatabase instance )
+    private static void deleteAllLogsOn( HighlyAvailableGraphDatabase instance ) throws IOException
     {
         deleteAllLogsOn( instance.getStoreDirectory() );
     }
 
-    private static void deleteAllLogsOn( File storeDirectory )
+    private static void deleteAllLogsOn( File storeDirectory ) throws IOException
     {
-        File[] files = storeDirectory.listFiles( LogFiles.FILENAME_FILTER );
-        assertNotNull( files );
-        for ( File file : files )
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            FileUtils.deleteFile( file );
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).build();
+            for ( File file : logFiles.logFiles() )
+            {
+                fileSystem.deleteFile( file );
+            }
         }
     }
 

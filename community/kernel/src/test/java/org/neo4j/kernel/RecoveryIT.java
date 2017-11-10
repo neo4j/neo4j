@@ -54,6 +54,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -73,11 +74,14 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.storemigration.LogFiles;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
+import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -789,7 +793,21 @@ public class RecoveryIT
     private File copyTransactionLogs() throws IOException
     {
         File restoreDbStoreDir = this.directory.directory( "restore-db" );
-        LogFiles.move( fileSystemRule.get(), this.directory.graphDbDir(), restoreDbStoreDir );
+        move( fileSystemRule.get(), this.directory.graphDbDir(), restoreDbStoreDir );
         return restoreDbStoreDir;
+    }
+
+    private static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
+    {
+        assert fs.isDirectory( fromDirectory );
+        assert fs.isDirectory( toDirectory );
+
+        LogFiles transactionLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromDirectory, fs ).build();
+        File[] logFiles = transactionLogFiles.logFiles();
+        for ( File logFile : logFiles )
+        {
+            FileOperation.MOVE.perform( fs, logFile.getName(), fromDirectory, false, toDirectory,
+                    ExistingTargetStrategy.FAIL );
+        }
     }
 }

@@ -48,13 +48,14 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -115,12 +116,17 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        boolean success = checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, NODE );
+        boolean success = checker.scan( getLogFiles(), handler, NODE );
 
         // Then
         assertTrue( success );
 
         assertEquals( 0, handler.recordInconsistencies.size() );
+    }
+
+    private LogFiles getLogFiles() throws IOException
+    {
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirectory, fsRule.get() ).build();
     }
 
     @Test
@@ -159,7 +165,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        boolean success = checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, NODE );
+        boolean success = checker.scan( getLogFiles(), handler, NODE );
 
         // Then
         assertFalse( success );
@@ -223,7 +229,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, NODE );
+        checker.scan( getLogFiles(), handler, NODE );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
@@ -280,7 +286,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        boolean success = checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, NODE );
+        boolean success = checker.scan( getLogFiles(), handler, NODE );
 
         // Then
         assertFalse( success );
@@ -335,7 +341,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        boolean success = checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, PROPERTY );
+        boolean success = checker.scan( getLogFiles(), handler, PROPERTY );
 
         // Then
         assertFalse( success );
@@ -399,7 +405,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        boolean success = checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, PROPERTY );
+        boolean success = checker.scan( getLogFiles(), handler, PROPERTY );
 
         // Then
         assertFalse( success );
@@ -465,7 +471,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, RELATIONSHIP );
+        checker.scan( getLogFiles(), handler, RELATIONSHIP );
 
         // Then
         assertEquals( 1, handler.recordInconsistencies.size() );
@@ -524,7 +530,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, RELATIONSHIP );
+        checker.scan( getLogFiles(), handler, RELATIONSHIP );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
@@ -584,7 +590,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, RELATIONSHIP_GROUP );
+        checker.scan( getLogFiles(), handler, RELATIONSHIP_GROUP );
 
         // Then
         assertEquals( 1, handler.recordInconsistencies.size() );
@@ -645,7 +651,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, RELATIONSHIP_GROUP );
+        checker.scan( getLogFiles(), handler, RELATIONSHIP_GROUP );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
@@ -703,7 +709,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, NEO_STORE );
+        checker.scan( getLogFiles(), handler, NEO_STORE );
 
         // Then
         assertEquals( 1, handler.recordInconsistencies.size() );
@@ -756,7 +762,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, NEO_STORE );
+        checker.scan( getLogFiles(), handler, NEO_STORE );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
@@ -785,7 +791,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // when
-        checker.validateCheckPoints( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler );
+        checker.validateCheckPoints( getLogFiles(), handler );
 
         // then
         assertEquals( 1, handler.checkPointInconsistencies.size() );
@@ -806,7 +812,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // when
-        checker.validateCheckPoints( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler );
+        checker.validateCheckPoints( getLogFiles(), handler );
 
         // then
         assertEquals( 1, handler.checkPointInconsistencies.size() );
@@ -828,7 +834,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // when
-        checker.validateCheckPoints( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler );
+        checker.validateCheckPoints( getLogFiles(), handler );
 
         // then
         assertTrue( handler.checkPointInconsistencies.isEmpty() );
@@ -851,7 +857,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // when
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, CHECK_TYPES );
+        checker.scan( getLogFiles(), handler, CHECK_TYPES );
 
         // then
         assertEquals( 1, handler.txIdSequenceInconsistencies.size() );
@@ -876,7 +882,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // when
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, CHECK_TYPES );
+        checker.scan( getLogFiles(), handler, CHECK_TYPES );
 
         // then
         System.out.println( handler.txIdSequenceInconsistencies );
@@ -904,7 +910,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // when
-        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, CHECK_TYPES );
+        checker.scan( getLogFiles(), handler, CHECK_TYPES );
 
         // then
         assertTrue( handler.txIdSequenceInconsistencies.isEmpty() );
@@ -920,7 +926,7 @@ public class CheckTxLogsTest
         CheckTxLogsWithCustomLogEntryCursor checkTxLogs =
                 new CheckTxLogsWithCustomLogEntryCursor( System.out, fsRule.get(), entryCursor );
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fsRule.get() );
+        LogFiles logFiles = getLogFiles();
         boolean logsValidity = checkTxLogs.validateCheckPoints( logFiles, handler );
 
         assertTrue("empty logs should be valid", logsValidity);
@@ -930,8 +936,7 @@ public class CheckTxLogsTest
     private File logFile( long version )
     {
         fsRule.get().mkdirs( storeDirectory );
-        return new File( storeDirectory,
-                PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + version );
+        return new File( storeDirectory, TransactionLogFiles.DEFAULT_NAME + "." + version );
     }
 
     private static PropertyRecord propertyRecord( long id, boolean inUse, long prevProp, long nextProp, long... blocks )
@@ -974,9 +979,8 @@ public class CheckTxLogsTest
     private void writeContent( File log, ThrowingConsumer<TransactionLogWriter,IOException> consumer )
             throws IOException
     {
-        FileSystemAbstraction fs = ensureLogExists( log );
-
-        try ( StoreChannel channel = fs.open( log, OpenMode.READ_WRITE );
+        ensureLogExists( log );
+        try ( StoreChannel channel = fsRule.open( log, OpenMode.READ_WRITE );
               LogVersionedStoreChannel versionedChannel = new PhysicalLogVersionedStoreChannel( channel, 0, (byte) 0 );
               PhysicalFlushableChannel writableLogChannel = new PhysicalFlushableChannel( versionedChannel ) )
         {
@@ -987,14 +991,14 @@ public class CheckTxLogsTest
         }
     }
 
-    private FileSystemAbstraction ensureLogExists( File log ) throws IOException
+    private File ensureLogExists( File logFile ) throws IOException
     {
         FileSystemAbstraction fs = fsRule.get();
-        if ( !fs.fileExists( log ) )
+        if ( !fs.fileExists( logFile ) )
         {
-            LogHeaderWriter.writeLogHeader( fs, log, PhysicalLogFiles.getLogVersion( log ), 0 );
+            LogHeaderWriter.writeLogHeader( fs, logFile, getLogFiles().getLogVersion( logFile ), 0 );
         }
-        return fs;
+        return logFile;
     }
 
     private class CheckTxLogsWithCustomLogEntryCursor extends CheckTxLogs
@@ -1009,7 +1013,7 @@ public class CheckTxLogsTest
         }
 
         @Override
-        LogEntryCursor openLogEntryCursor( PhysicalLogFiles logFiles ) throws IOException
+        LogEntryCursor openLogEntryCursor( LogFiles logFiles ) throws IOException
         {
             return logEntryCursor;
         }

@@ -17,36 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 
-public class PhysicalLogFileInformation implements LogFileInformation
+import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+
+public class TransactionLogFileInformation implements LogFileInformation
 {
-    public interface LogVersionToTimestamp
-    {
-        long getTimestampForVersion( long version ) throws IOException;
-    }
-
-    public interface LastEntryInLog
-    {
-        long getLastEntryId(  );
-    }
-
-    private final PhysicalLogFiles logFiles;
+    private final LogFiles logFiles;
     private final LogHeaderCache logHeaderCache;
-    private final LastEntryInLog lastEntryInLog;
-    private final LogVersionToTimestamp logVersionToTimestamp;
+    private final TransactionLogFileTimestampMapper logFileTimestampMapper;
+    private final TransactionLogFilesContext logFileContext;
 
-    public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
-                                       LogHeaderCache logHeaderCache,
-                                       LastEntryInLog lastEntryInLog,
-                                       LogVersionToTimestamp logVersionToTimestamp )
+    TransactionLogFileInformation( LogFiles logFiles, LogHeaderCache logHeaderCache, TransactionLogFilesContext context )
     {
         this.logFiles = logFiles;
         this.logHeaderCache = logHeaderCache;
-        this.lastEntryInLog = lastEntryInLog;
-        this.logVersionToTimestamp = logVersionToTimestamp;
+        this.logFileContext = context;
+        this.logFileTimestampMapper = new TransactionLogFileTimestampMapper( logFiles, context.getLogEntryReader() );
     }
 
     @Override
@@ -88,12 +83,42 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public long getLastEntryId()
     {
-        return lastEntryInLog.getLastEntryId();
+        return logFileContext.getLastCommittedTransactionId();
     }
 
     @Override
     public long getFirstStartRecordTimestamp( long version ) throws IOException
     {
-        return logVersionToTimestamp.getTimestampForVersion( version );
+        return logFileTimestampMapper.getTimestampForVersion( version );
+    }
+
+    private static class TransactionLogFileTimestampMapper
+    {
+
+        private final LogFiles logFiles;
+        private final LogEntryReader<ReadableLogChannel> logEntryReader;
+
+        TransactionLogFileTimestampMapper( LogFiles logFiles, LogEntryReader<ReadableLogChannel> logEntryReader )
+        {
+            this.logFiles = logFiles;
+            this.logEntryReader = logEntryReader;
+        }
+
+        long getTimestampForVersion( long version ) throws IOException
+        {
+            LogPosition position = LogPosition.start( version );
+            try ( ReadableLogChannel channel = logFiles.getLogFile().getReader( position ) )
+            {
+                LogEntry entry;
+                while ( (entry = logEntryReader.readLogEntry( channel )) != null )
+                {
+                    if ( entry instanceof LogEntryStart )
+                    {
+                        return entry.<LogEntryStart>as().getTimeWritten();
+                    }
+                }
+            }
+            return -1;
+        }
     }
 }

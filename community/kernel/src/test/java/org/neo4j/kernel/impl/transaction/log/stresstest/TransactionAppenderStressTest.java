@@ -29,8 +29,6 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -41,6 +39,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -135,9 +135,9 @@ public class TransactionAppenderStressTest
 
         private ReadableLogChannel openLogFile( FileSystemAbstraction fs, int version ) throws IOException
         {
-            PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
-            PhysicalLogVersionedStoreChannel channel = PhysicalLogFile.openForVersion( logFiles, fs, version, false );
-            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( fs, logFiles ) );
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fs ).build();
+            PhysicalLogVersionedStoreChannel channel = logFiles.openForVersion( version );
+            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( logFiles ) );
         }
     }
 }

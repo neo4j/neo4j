@@ -66,17 +66,16 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreFile;
-import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
@@ -546,7 +545,7 @@ public class BackupProtocolServiceIT
             createAndIndexNode( db, i );
         }
 
-        final File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
+        final File oldLog = db.getDependencyResolver().resolveDependency( LogFiles.class ).getHighestLogFile();
         rotateAndCheckPoint( db );
 
         for ( int i = 0; i < 1; i++ )
@@ -1077,7 +1076,7 @@ public class BackupProtocolServiceIT
     private void checkPreviousCommittedTxIdFromLog( long logVersion, long txId ) throws IOException
     {
         // Assert header of specified log version containing correct txId
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( backupDir, fileSystem );
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( backupDir, fileSystem ).build();
         LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
         assertEquals( txId, logHeader.lastCommittedTxId );
     }
@@ -1112,9 +1111,10 @@ public class BackupProtocolServiceIT
         return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
-    private void deleteAllBackedUpTransactionLogs()
+    private void deleteAllBackedUpTransactionLogs() throws IOException
     {
-        for ( File log : fileSystem.listFiles( backupDir, LogFiles.FILENAME_FILTER ) )
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( backupDir, fileSystem ).build();
+        for ( File log : logFiles.logFiles() )
         {
             fileSystem.deleteFile( log );
         }

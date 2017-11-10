@@ -17,35 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import java.io.File;
 
-public class DeadSimpleLogVersionRepository implements LogVersionRepository
+/**
+ * Monitor for new transaction log file creation.
+ */
+public interface LogFileCreationMonitor
 {
-    private volatile long logVersion;
+    LogFileCreationMonitor NO_MONITOR = new Adapter();
 
-    public DeadSimpleLogVersionRepository( long initialLogVersion )
-    {
-        this.logVersion = initialLogVersion;
-    }
+    void created( File logFile, long logVersion, long lastTransactionId );
 
-    @Override
-    public long incrementAndGetVersion()
+    class Adapter implements LogFileCreationMonitor
     {
-        logVersion++;
-        return logVersion;
-    }
-
-    @Override
-    public long getCurrentLogVersion()
-    {
-        return logVersion;
-    }
-
-    @Override
-    public void setCurrentLogVersion( long version )
-    {
-        this.logVersion = version;
+        @Override
+        public void created( File logFile, long logVersion, long lastTransactionId )
+        {
+        }
     }
 }

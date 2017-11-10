@@ -30,17 +30,22 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -60,7 +65,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createProperty;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -80,20 +84,20 @@ public class TransactionLogAppendAndRotateIT
     public void shouldKeepTransactionsIntactWhenConcurrentlyRotationAndAppending() throws Throwable
     {
         // GIVEN
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory().getAbsoluteFile(), fileSystemRule.get() );
-        long rotationThreshold = mebiBytes( 1 );
-        LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
+        LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fileSystemRule.get() )
+                .withLogVersionRepository( logVersionRepository )
+                .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
+                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+        life.add( logFiles );
         final AtomicBoolean end = new AtomicBoolean();
         AllTheMonitoring monitoring = new AllTheMonitoring( end, 100 );
-        TransactionIdStore txIdStore = new DeadSimpleTransactionIdStore();
+        TransactionIdStore txIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
-        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-        LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, rotationThreshold,
-                txIdStore::getLastCommittedTransactionId, logVersionRepository, monitoring, logHeaderCache ) );
-        monitoring.setLogFile( logFile );
+        monitoring.setLogFile( logFiles.getLogFile() );
         DatabaseHealth health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
-        LogRotation rotation = new LogRotationImpl( monitoring, logFile, health );
-        final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, rotation, metadataCache,
+        LogRotation rotation = new LogRotationImpl( monitoring, logFiles, health );
+        final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, rotation, metadataCache,
                 txIdStore, BYPASS, health ) );
 
         // WHEN
@@ -142,7 +146,7 @@ public class TransactionLogAppendAndRotateIT
         try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( logVersion, LOG_HEADER_SIZE ) ) )
         {
             VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
-            LogEntry entry = null;
+            LogEntry entry;
             boolean inTx = false;
             int transactions = 0;
             while ( (entry = entryReader.readLogEntry( reader )) != null )
@@ -181,7 +185,7 @@ public class TransactionLogAppendAndRotateIT
         return tx;
     }
 
-    private static class AllTheMonitoring implements PhysicalLogFile.Monitor, LogRotation.Monitor
+    private static class AllTheMonitoring implements LogFileCreationMonitor, LogRotation.Monitor
     {
         private final AtomicBoolean end;
         private final int maxNumberOfRotations;

@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -72,8 +72,7 @@ public class KernelRecoveryTest
             db.shutdown();
 
             // Then the logical log should be in sync
-            File logFile =
-                    new File( storeDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
+            File logFile = new File( storeDir, TransactionLogFiles.DEFAULT_NAME + ".0" );
             assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),

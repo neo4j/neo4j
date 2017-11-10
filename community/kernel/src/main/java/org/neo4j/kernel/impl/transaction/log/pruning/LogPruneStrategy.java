@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+@FunctionalInterface
 public interface LogPruneStrategy
 {
     interface Monitor

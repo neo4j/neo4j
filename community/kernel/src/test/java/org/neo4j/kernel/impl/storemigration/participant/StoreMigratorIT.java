@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
@@ -48,9 +49,9 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.AssertableLogProvider;
@@ -279,10 +280,10 @@ public class StoreMigratorIT
         return new UpgradableDatabase( new StoreVersionCheck( pageCache ), selectFormat(), tailScanner );
     }
 
-    private LogTailScanner getTailScanner( File storeDirectory )
+    private LogTailScanner getTailScanner( File storeDirectory ) throws IOException
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, PhysicalLogFile.DEFAULT_NAME, fs );
-        return new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(), monitors );
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirectory, fs ).build();
+        return new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );
     }
 
     private RecordFormats selectFormat()

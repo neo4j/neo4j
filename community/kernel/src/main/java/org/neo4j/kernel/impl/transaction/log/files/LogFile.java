@@ -17,10 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.IOException;
+
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 /**
  * Sees a log file as bytes, including taking care of rotation of the file into optimal chunks.
@@ -29,7 +36,7 @@ public interface LogFile
 {
     interface LogFileVisitor
     {
-        boolean visit( LogPosition position, ReadableClosablePositionAwareChannel channel ) throws IOException;
+        boolean visit( ReadableClosablePositionAwareChannel channel ) throws IOException;
     }
 
     /**
@@ -60,8 +67,6 @@ public interface LogFile
 
     void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
 
-    void accept( LogHeaderVisitor visitor ) throws IOException;
-
     /**
      * @return {@code true} if a rotation is needed.
      * @throws IOException on I/O error.
@@ -69,8 +74,4 @@ public interface LogFile
     boolean rotationNeeded() throws IOException;
 
     void rotate() throws IOException;
-
-    File currentLogFile();
-
-    long currentLogVersion();
 }

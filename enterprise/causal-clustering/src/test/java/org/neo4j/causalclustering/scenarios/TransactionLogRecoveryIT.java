@@ -31,14 +31,11 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.PageCacheRule;
 
@@ -144,19 +141,15 @@ public class TransactionLogRecoveryIT
 
     private void writePartialTx( File storeDir ) throws IOException
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-
-        ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache.getPageCache( fs ), storeDir );
-        ReadOnlyTransactionIdStore txIdStore = new ReadOnlyTransactionIdStore( pageCache.getPageCache( fs ), storeDir );
-
-        PhysicalLogFile logFile = new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                txIdStore::getLastCommittedTransactionId, logVersionRepository,
-                new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), new LogHeaderCache( 10 ) );
-
-        try ( Lifespan ignored = new Lifespan( logFile ) )
+        try ( PageCache pageCache = this.pageCache.getPageCache( fs ) )
         {
-            LogEntryWriter writer = new LogEntryWriter( logFile.getWriter() );
-            writer.writeStartEntry( 0, 0, 0x123456789ABCDEFL, txIdStore.getLastCommittedTransactionId() + 1, new byte[]{0} );
+            LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).build();
+            try ( Lifespan ignored = new Lifespan( logFiles ) )
+            {
+                LogEntryWriter writer = new LogEntryWriter( logFiles.getLogFile().getWriter() );
+                writer.writeStartEntry( 0, 0, 0x123456789ABCDEFL, logFiles.getLogFileInformation().getLastEntryId() + 1,
+                        new byte[]{0} );
+            }
         }
     }
 }

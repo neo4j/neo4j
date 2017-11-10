@@ -33,6 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
@@ -71,7 +71,7 @@ import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -202,11 +202,9 @@ public class DataSourceModule
                 fileSystem,
                 platformModule.transactionMonitor,
                 databaseHealth,
-                platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
+                platformModule.monitors.newMonitor( LogFileCreationMonitor.class ),
                 editionModule.headerInformationFactory,
-                startupStatistics,
-                guard,
-                editionModule.commitProcessFactory,
+                startupStatistics, editionModule.commitProcessFactory,
                 autoIndexing,
                 pageCache,
                 editionModule.constraintSemantics,

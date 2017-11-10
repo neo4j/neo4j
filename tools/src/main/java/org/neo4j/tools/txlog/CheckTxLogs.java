@@ -37,11 +37,12 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.tools.txlog.checktypes.CheckType;
 import org.neo4j.tools.txlog.checktypes.CheckTypes;
@@ -91,7 +92,7 @@ public class CheckTxLogs
         boolean success = false;
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, fs );
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( dir, fs ).build();
             int numberOfLogFilesFound = (int) (logFiles.getHighestLogVersion() - logFiles.getLowestLogVersion() + 1);
             out.println( "Found " + numberOfLogFilesFound + " log files to verify in " + dir.getCanonicalPath() );
 
@@ -114,14 +115,14 @@ public class CheckTxLogs
     // used in other projects do not remove!
     public boolean checkAll( File storeDirectory ) throws IOException
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirectory, fs ).build();
         InconsistenciesHandler handler = new PrintingInconsistenciesHandler( out );
         boolean success = scan( logFiles, handler, CheckTypes.CHECK_TYPES );
         success &= validateCheckPoints( logFiles, handler );
         return success;
     }
 
-    boolean validateCheckPoints( PhysicalLogFiles logFiles, InconsistenciesHandler handler ) throws IOException
+    boolean validateCheckPoints( LogFiles logFiles, InconsistenciesHandler handler ) throws IOException
     {
         final long lowestLogVersion = logFiles.getLowestLogVersion();
         final long highestLogVersion = logFiles.getHighestLogVersion();
@@ -160,12 +161,12 @@ public class CheckTxLogs
         return success;
     }
 
-    LogEntryCursor openLogEntryCursor( PhysicalLogFiles logFiles ) throws IOException
+    LogEntryCursor openLogEntryCursor( LogFiles logFiles ) throws IOException
     {
         return openLogs( fs, logFiles );
     }
 
-    boolean scan( PhysicalLogFiles logFiles, InconsistenciesHandler handler, CheckType<?,?>... checkTypes )
+    boolean scan( LogFiles logFiles, InconsistenciesHandler handler, CheckType<?,?>... checkTypes )
             throws IOException
     {
         boolean success = true;
@@ -190,7 +191,7 @@ public class CheckTxLogs
         }
     }
 
-    private <C extends Command, R extends AbstractBaseRecord> boolean scan( PhysicalLogFiles logFiles,
+    private <C extends Command, R extends AbstractBaseRecord> boolean scan( LogFiles logFiles,
             InconsistenciesHandler handler, CheckType<C,R> check, boolean checkTxIds ) throws IOException
     {
         out.println( "Checking logs for " + check.name() + " inconsistencies" );

@@ -43,16 +43,13 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -126,18 +123,15 @@ public class CoreBootstrapper
 
     private void appendNullTransactionLogEntryToSetRaftIndexToMinusOne() throws IOException
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
         ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
-        PhysicalLogFile logFile = new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                () -> readOnlyTransactionIdStore.getLastClosedTransactionId() - 1, logVersionRepository,
-                new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
-                new LogHeaderCache( 10 ) );
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
+                .withLastCommittedTransactionIdSupplier( () -> readOnlyTransactionIdStore.getLastClosedTransactionId() - 1 )
+                .build();
 
         long dummyTransactionId;
-        try ( Lifespan lifespan = new Lifespan( logFile ) )
+        try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            FlushableChannel channel = logFile.getWriter();
+            FlushableChannel channel = logFiles.getLogFile().getWriter();
             TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
 
             long lastCommittedTransactionId = readOnlyTransactionIdStore.getLastCommittedTransactionId();

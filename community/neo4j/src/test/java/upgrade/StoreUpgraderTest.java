@@ -63,8 +63,10 @@ import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationPa
 import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -336,11 +338,12 @@ public class StoreUpgraderTest
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, dbDirectory, databaseDirectory );
     }
 
-    private UpgradableDatabase getUpgradableDatabase( PageCache pageCache )
+    private UpgradableDatabase getUpgradableDatabase( PageCache pageCache ) throws IOException
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( dbDirectory, fileSystem );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(),
-                new Monitors() );
+        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( dbDirectory,fileSystem )
+                .withLogEntryReader( entryReader ).build();
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, entryReader, new Monitors() );
         return new UpgradableDatabase( new StoreVersionCheck( pageCache ), getRecordFormats(), tailScanner );
     }
 

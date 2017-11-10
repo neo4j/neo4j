@@ -31,6 +31,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -70,11 +72,11 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private TransactionLogWriter transactionLogWriter;
     private IndexCommandDetector indexCommandDetector;
 
-    public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
+    public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
             IdOrderingQueue explicitIndexTransactionOrdering, DatabaseHealth databaseHealth )
     {
-        this.logFile = logFile;
+        this.logFile = logFiles.getLogFile();
         this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
         this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;

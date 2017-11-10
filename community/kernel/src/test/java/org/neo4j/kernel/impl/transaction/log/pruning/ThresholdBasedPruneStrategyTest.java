@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy.Monitor;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -40,12 +40,11 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 public class ThresholdBasedPruneStrategyTest
 {
     private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
-    private final LogFileInformation logFileInfo = mock( LogFileInformation.class );
-    private final PhysicalLogFiles files = mock( PhysicalLogFiles.class );
+    private final LogFiles files = mock( TransactionLogFiles.class );
     private final Threshold threshold = mock( Threshold.class );
 
     @Test
-    public void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws Exception
+    public void shouldNotDeleteAnythingIfThresholdDoesNotAllow()
     {
         // Given
         File fileName0 = new File( "logical.log.v0" );
@@ -76,7 +75,7 @@ public class ThresholdBasedPruneStrategyTest
 
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( false );
 
-        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, threshold );
+        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, files, threshold );
         Monitor monitor = mock( Monitor.class );
 
         // When
@@ -124,8 +123,7 @@ public class ThresholdBasedPruneStrategyTest
 
         when( fileSystem.getFileSize( any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
 
-        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(
-                fileSystem, logFileInfo, files, threshold );
+        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, files, threshold );
         Monitor monitor = mock( Monitor.class );
 
         // When

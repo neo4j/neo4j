@@ -23,12 +23,11 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
-
-import org.junit.rules.TestName;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DependencyResolver;
@@ -40,7 +39,6 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.ha.HaSettings;
@@ -49,8 +47,9 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -370,11 +369,15 @@ public class ClusterIT
         }
     }
 
-    private static void deleteLogs( File storeDir )
+    private static void deleteLogs( File storeDir ) throws IOException
     {
-        for ( File file : storeDir.listFiles( LogFiles.FILENAME_FILTER ) )
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            FileUtils.deleteFile( file );
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystem ).build();
+            for ( File file : logFiles.logFiles() )
+            {
+                fileSystem.deleteFile( file );
+            }
         }
     }
 

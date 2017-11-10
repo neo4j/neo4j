@@ -35,7 +35,8 @@ import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
@@ -82,7 +83,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         private final FileSystemAbstraction fs;
         private final File storePath;
 
-        private PhysicalLogFiles physicalLogFiles;
+        private LogFiles logFiles;
         private ExplicitIndexProviderLookup explicitIndexProviderLookup;
         private SchemaIndexProviderMap schemaIndexProviderMap;
         private LabelScanStore labelScanStore;
@@ -100,7 +101,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 @Override
                 public void registered( NeoStoreDataSource ds )
                 {
-                    physicalLogFiles = resolveDependency( ds, PhysicalLogFiles.class );
+                    logFiles = resolveDependency( ds, LogFiles.class );
                     explicitIndexProviderLookup = resolveDependency( ds, ExplicitIndexProviderLookup.class );
                     schemaIndexProviderMap = resolveDependency( ds, SchemaIndexProviderMap.class );
                     labelScanStore = resolveDependency( ds, LabelScanStore.class );
@@ -114,7 +115,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 @Override
                 public void unregistered( NeoStoreDataSource ds )
                 {
-                    physicalLogFiles = null;
+                    logFiles = null;
                     explicitIndexProviderLookup = null;
                     schemaIndexProviderMap = null;
                     labelScanStore = null;
@@ -127,7 +128,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         {
             TotalSizeVersionVisitor logVersionVisitor = new TotalSizeVersionVisitor( fs );
 
-            physicalLogFiles.accept( logVersionVisitor );
+            logFiles.accept( logVersionVisitor );
 
             return logVersionVisitor.getTotalSize();
         }
@@ -222,7 +223,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             return storePath == null ? 0L : FileUtils.size( fs, new File( storePath, name ) );
         }
 
-        private static class TotalSizeVersionVisitor implements PhysicalLogFiles.LogVersionVisitor
+        private static class TotalSizeVersionVisitor implements LogVersionVisitor
         {
             private final FileSystemAbstraction fs;
             private long totalSize;

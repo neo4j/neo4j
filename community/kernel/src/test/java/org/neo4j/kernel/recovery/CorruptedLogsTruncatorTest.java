@@ -32,15 +32,16 @@ import java.util.zip.ZipFile;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.storemigration.LogFiles;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
@@ -51,19 +52,28 @@ import static org.junit.Assert.assertTrue;
 public class CorruptedLogsTruncatorTest
 {
     private static final int SINGLE_LOG_FILE_SIZE = 25;
-    private static final int TOTAL_NUMBER_OF_LOG_FILES = 11;
+    private static final int TOTAL_NUMBER_OF_LOG_FILES = 12;
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    public FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final LifeRule life = new LifeRule();
     private File storeDir;
-    private PhysicalLogFiles logFiles;
+    private LogFiles logFiles;
     private CorruptedLogsTruncator logPruner;
 
     @Before
     public void setUp() throws Exception
     {
         storeDir = testDirectory.graphDbDir();
-        logFiles = new PhysicalLogFiles( storeDir, fileSystemRule );
+        SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystemRule )
+                .withRotationThreshold( LogHeader.LOG_HEADER_SIZE + 9L )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore ).build();
+        life.add( logFiles );
         logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule );
     }
 
@@ -77,7 +87,8 @@ public class CorruptedLogsTruncatorTest
     @Test
     public void doNotPruneNonCorruptedLogs() throws IOException
     {
-        generateTransactionLogFiles();
+        life.start();
+        generateTransactionLogFiles( logFiles );
 
         long highestLogVersion = logFiles.getHighestLogVersion();
         long fileSizeBeforePrune = logFiles.getHighestLogFile().length();
@@ -86,7 +97,7 @@ public class CorruptedLogsTruncatorTest
 
         logPruner.truncate( endOfLogsPosition );
 
-        assertEquals( TOTAL_NUMBER_OF_LOG_FILES, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
+        assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
         assertEquals( fileSizeBeforePrune, logFiles.getHighestLogFile().length() );
         assertTrue( ArrayUtil.isEmpty( storeDir.listFiles( File::isDirectory ) ) );
     }
@@ -94,7 +105,8 @@ public class CorruptedLogsTruncatorTest
     @Test
     public void pruneAndArchiveLastLog() throws IOException
     {
-        generateTransactionLogFiles();
+        life.start();
+        generateTransactionLogFiles( logFiles );
 
         long highestLogVersion = logFiles.getHighestLogVersion();
         File highestLogFile = logFiles.getHighestLogFile();
@@ -105,7 +117,7 @@ public class CorruptedLogsTruncatorTest
 
         logPruner.truncate( prunePosition );
 
-        assertEquals( TOTAL_NUMBER_OF_LOG_FILES, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
+        assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
         assertEquals( byteOffset, highestLogFile.length() );
 
         File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
@@ -125,7 +137,8 @@ public class CorruptedLogsTruncatorTest
     @Test
     public void pruneAndArchiveMultipleLogs() throws IOException
     {
-        generateTransactionLogFiles();
+        life.start();
+        generateTransactionLogFiles( logFiles );
 
         long highestCorrectLogFileIndex = 5;
         File highestCorrectLogFile = logFiles.getLogFileForVersion( highestCorrectLogFileIndex );
@@ -136,7 +149,7 @@ public class CorruptedLogsTruncatorTest
 
         logPruner.truncate( prunePosition );
 
-        assertEquals( 6, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
+        assertEquals( 6, logFiles.logFiles().length );
         assertEquals( byteOffset, highestCorrectLogFile.length() );
 
         File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
@@ -148,15 +161,15 @@ public class CorruptedLogsTruncatorTest
         checkArchiveName( highestCorrectLogFileIndex, byteOffset, corruptedLogsArchive );
         try ( ZipFile zipFile = new ZipFile( corruptedLogsArchive ) )
         {
-            assertEquals( 6, zipFile.size() );
+            assertEquals( 7, zipFile.size() );
             checkEntryNameAndSize( zipFile, highestCorrectLogFile.getName(), bytesToPrune );
             long nextLogFileIndex = highestCorrectLogFileIndex + 1;
             int lastFileIndex = TOTAL_NUMBER_OF_LOG_FILES - 1;
             for ( long index = nextLogFileIndex; index < lastFileIndex; index++ )
             {
-                checkEntryNameAndSize( zipFile, PhysicalLogFile.DEFAULT_NAME + "." + index, SINGLE_LOG_FILE_SIZE );
+                checkEntryNameAndSize( zipFile, TransactionLogFiles.DEFAULT_NAME + "." + index, SINGLE_LOG_FILE_SIZE );
             }
-            checkEntryNameAndSize( zipFile, PhysicalLogFile.DEFAULT_NAME + "." + lastFileIndex,
+            checkEntryNameAndSize( zipFile, TransactionLogFiles.DEFAULT_NAME + "." + lastFileIndex,
                     SINGLE_LOG_FILE_SIZE - 1 );
         }
     }
@@ -180,47 +193,18 @@ public class CorruptedLogsTruncatorTest
         assertTrue( FilenameUtils.isExtension( name, "zip" ) );
     }
 
-    private void generateTransactionLogFiles() throws IOException
+    private void generateTransactionLogFiles( LogFiles logFiles ) throws IOException
     {
-        try ( Lifespan lifespan = new Lifespan() )
+        LogFile logFile = logFiles.getLogFile();
+        FlushablePositionAwareChannel writer = logFile.getWriter();
+        for ( byte i = 0; i < 107; i++ )
         {
-            int expectedFileSize = LogHeader.LOG_HEADER_SIZE + 9;
-            PhysicalLogFile logFile = new PhysicalLogFile( fileSystemRule, logFiles, expectedFileSize, () -> 10L,
-                    new LogFilesVersionRepository(), PhysicalLogFile.NO_MONITOR, new LogHeaderCache( 100 ) );
-            lifespan.add( logFile );
-            FlushablePositionAwareChannel writer = logFile.getWriter();
-            for ( byte i = 0; i < 107; i++ )
+            writer.put( i );
+            writer.prepareForFlush();
+            if ( logFile.rotationNeeded() )
             {
-                writer.put( i );
-                writer.prepareForFlush();
-                if ( logFile.rotationNeeded() )
-                {
-                    logFile.rotate();
-                }
+                logFile.rotate();
             }
-        }
-    }
-
-    private static class LogFilesVersionRepository implements LogVersionRepository
-    {
-        private long version;
-
-        @Override
-        public long getCurrentLogVersion()
-        {
-            return version;
-        }
-
-        @Override
-        public void setCurrentLogVersion( long version )
-        {
-            this.version = version;
-        }
-
-        @Override
-        public long incrementAndGetVersion() throws IOException
-        {
-            return version++;
         }
     }
 }

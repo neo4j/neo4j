@@ -74,7 +74,7 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -486,7 +486,7 @@ public class HighAvailabilityMemberStateMachineTest
         when( dataSource.getStoreId() ).thenReturn( storeId );
         when( dependencyResolver.resolveDependency( NeoStoreDataSource.class ) ).thenReturn( dataSource );
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).
-                thenReturn( new DeadSimpleTransactionIdStore() );
+                thenReturn( new SimpleTransactionIdStore() );
         when( dependencyResolver.resolveDependency( ObservedClusterMembers.class ) ).thenReturn( members );
         UpdatePuller updatePuller = mock( UpdatePuller.class );
         when( updatePuller.tryPullUpdates() ).thenReturn( true );

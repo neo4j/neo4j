@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -33,23 +31,19 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 class NeoStoreTransactionLogModule
 {
     private final LogicalTransactionStore logicalTransactionStore;
-    private final LogFileInformation logFileInformation;
-    private final PhysicalLogFiles logFiles;
-    private final LogFile logFile;
+    private final LogFiles logFiles;
     private final LogRotation logRotation;
     private final CheckPointerImpl checkPointer;
     private final TransactionAppender appender;
     private final SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering;
 
     NeoStoreTransactionLogModule( LogicalTransactionStore logicalTransactionStore,
-            LogFileInformation logFileInformation, PhysicalLogFiles logFiles, LogFile logFile, LogRotation logRotation,
+            LogFiles logFiles, LogRotation logRotation,
             CheckPointerImpl checkPointer, TransactionAppender appender,
             SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering )
     {
         this.logicalTransactionStore = logicalTransactionStore;
-        this.logFileInformation = logFileInformation;
         this.logFiles = logFiles;
-        this.logFile = logFile;
         this.logRotation = logRotation;
         this.checkPointer = checkPointer;
         this.appender = appender;
@@ -74,9 +68,9 @@ class NeoStoreTransactionLogModule
     public void satisfyDependencies( Dependencies dependencies )
     {
         dependencies.satisfyDependencies( checkPointer,
-                                          logFile,
-                                          logFileInformation,
-                                          logFiles, explicitIndexTransactionOrdering,
+                                          logFiles,
+                                          logFiles.getLogFileInformation(),
+                                          explicitIndexTransactionOrdering,
                                           logicalTransactionStore,
                                           logRotation,
                                           appender );

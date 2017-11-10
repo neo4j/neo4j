@@ -33,17 +33,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -51,15 +46,16 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
-import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
 @RunWith( Parameterized.class )
@@ -67,16 +63,18 @@ public class LogTailScannerTest
 {
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     private final File directory = new File( "/somewhere" );
     private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
     private LogTailScanner tailScanner;
 
-    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final Monitors monitors = new Monitors();
-    private PhysicalLogFiles logFiles;
+    private LogFiles logFiles;
     private final int startLogVersion;
     private final int endLogVersion;
     private final LogEntryVersion latestLogEntryVersion = LogEntryVersion.CURRENT;
+    private LogVersionRepository logVersionRepository;
 
     public LogTailScannerTest( Integer startLogVersion, Integer endLogVersion )
     {
@@ -91,11 +89,15 @@ public class LogTailScannerTest
     }
 
     @Before
-    public void setUp()
+    public void setUp() throws IOException
     {
         fsRule.get().mkdirs( directory );
-        logFiles = new PhysicalLogFiles( directory, fsRule.get() );
-        tailScanner = new LogTailScanner( logFiles, fsRule.get(), reader, monitors );
+        logVersionRepository = new SimpleLogVersionRepository();
+        logFiles = LogFilesBuilder
+                .activeFilesBuilder( directory, fsRule, pageCacheRule.getPageCache( fsRule ) )
+                .withLogVersionRepository( logVersionRepository )
+                .build();
+        tailScanner = new LogTailScanner( logFiles, reader, monitors );
     }
 
     @Test
@@ -258,7 +260,7 @@ public class LogTailScannerTest
         long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
 
         LogTailScanner tailScanner =
-                new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader, monitors );
+                new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, reader, monitors );
         LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
                 new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
@@ -461,12 +463,11 @@ public class LogTailScannerTest
             try
             {
                 AtomicLong lastTxId = new AtomicLong();
-                Supplier<Long> lastTxIdSupplier = lastTxId::get;
-                LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( logVersion );
-                LifeSupport life = new LifeSupport();
-                life.start();
-                PhysicalLogFile logFile = life.add( new PhysicalLogFile( fsRule.get(), logFiles, mebiBytes( 1 ),
-                        lastTxIdSupplier, logVersionRepository, NO_MONITOR, new LogHeaderCache( 10 ) ) );
+                logVersionRepository.setCurrentLogVersion( logVersion );
+                LifeSupport logFileLife = new LifeSupport();
+                logFileLife.start();
+                logFileLife.add( logFiles );
+                LogFile logFile = logFiles.getLogFile();
                 try
                 {
                     FlushablePositionAwareChannel writeChannel = logFile.getWriter();
@@ -508,7 +509,7 @@ public class LogTailScannerTest
                 }
                 finally
                 {
-                    life.shutdown();
+                    logFileLife.shutdown();
                 }
             }
             catch ( IOException e )
@@ -598,10 +599,10 @@ public class LogTailScannerTest
 
         private final long txId;
 
-        FirstTxIdConfigurableTailScanner( long txId, PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
+        FirstTxIdConfigurableTailScanner( long txId, LogFiles logFiles,
                 LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
         {
-            super( logFiles, fileSystem, logEntryReader, monitors );
+            super( logFiles, logEntryReader, monitors );
             this.txId = txId;
         }
 
