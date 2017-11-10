@@ -45,7 +45,7 @@ public class KernelTransactionTimeoutMonitor implements Runnable
     }
 
     @Override
-    public void run()
+    public synchronized void run()
     {
         Set<KernelTransactionHandle> activeTransactions = kernelTransactions.activeTransactions();
         long now = clock.millis();

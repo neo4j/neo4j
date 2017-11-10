@@ -123,8 +123,10 @@ public class KernelTransactionTimeoutMonitorIT
         }
         while ( !proceed );
 
-        Thread.sleep( 150 ); // locker should be stopped by now
-        assertFalse( lockerDone.get() ); // but still blocked on the latch
+        Thread.sleep( 150 ); // locker transaction is definitely past its allocated time now
+        // make sure it's terminated; we call this explicitly so we don't have to wait for the scheduler to run
+        database.resolveDependency( KernelTransactionTimeoutMonitor.class ).run();
+        assertFalse( lockerDone.get() ); // but the thread should still be blocked on the latch
         // Yet we should be able to proceed and grab the locks they once held
         try ( Transaction tx = database.beginTx() )
         {
