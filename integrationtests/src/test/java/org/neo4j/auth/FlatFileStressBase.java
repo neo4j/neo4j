@@ -172,6 +172,12 @@ abstract class FlatFileStressBase
         }
 
         @Override
+        public ExecutorService workStealingExecutor( Group group, int parallelism )
+        {
+            return null;
+        }
+
+        @Override
         public ThreadFactory threadFactory( Group group )
         {
             return null;
