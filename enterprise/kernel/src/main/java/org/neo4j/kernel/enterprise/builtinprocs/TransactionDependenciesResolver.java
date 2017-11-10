@@ -168,7 +168,7 @@ public class TransactionDependenciesResolver
         StringJoiner stringJoiner = new StringJoiner( ", ", "[", "]" );
         for ( KernelTransactionHandle blocker : allBlockers )
         {
-            stringJoiner.add( TransactionId.ofTransactionHandle( blocker ) );
+            stringJoiner.add( blocker.getUserTransactionName() );
         }
         return stringJoiner.toString();
     }

@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
  */
 public class TestKernelTransactionHandle implements KernelTransactionHandle
 {
+    private static final String USER_TRANSACTION_NAME_PREFIX = "transaction-";
     private final KernelTransaction tx;
 
     public TestKernelTransactionHandle( KernelTransaction tx )
@@ -109,6 +110,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     public long getUserTransactionId()
     {
         return tx.getTransactionId();
+    }
+
+    @Override
+    public String getUserTransactionName()
+    {
+        return USER_TRANSACTION_NAME_PREFIX + getUserTransactionId();
     }
 
     @Override

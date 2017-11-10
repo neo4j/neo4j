@@ -87,7 +87,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier;
     private final SystemNanoClock clock;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
-    private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
+    private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newCounter();
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.

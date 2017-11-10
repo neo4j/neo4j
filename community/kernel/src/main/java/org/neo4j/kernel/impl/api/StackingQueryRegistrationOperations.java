@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.MapValue;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
-    private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
+    private final MonotonicCounter lastQueryId = MonotonicCounter.newCounter();
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final HeapAllocation heapAllocation;

@@ -58,7 +58,7 @@ abstract class ExecutingQueryStatus
 
     /**
      * Is query waiting on a locks
-     * @return true if waiting on a locks, false otherwise
+     * @return true if waiting on locks, false otherwise
      */
     boolean isWaitingOnLocks()
     {
@@ -66,7 +66,7 @@ abstract class ExecutingQueryStatus
     }
 
     /**
-     * List of locks query is waiting on. Will be empty for all of the statuses except
+     * List of locks query is waiting on. Will be empty for all of the statuses except for {@link WaitingOnLock}.
      * @return list of locks query is waiting on, empty list if query is not waiting.
      */
     List<ActiveLock> waitingOnLocks()

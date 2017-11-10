@@ -21,29 +21,54 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Counter that produce sequence of incremental numbers
+ */
 public interface MonotonicCounter
 {
     long increment();
 
-    static MonotonicCounter newAtomicMonotonicCounter()
+    /**
+     * Create new counter with specified initial value
+     * @param initialValue initial value
+     * @return counter newly created counter
+     */
+    static MonotonicCounter newCounter( int initialValue )
     {
-        return new MonotonicCounter()
-        {
-            private final AtomicLong value = new AtomicLong( 0L );
+        assert initialValue >= 0;
+        return new NaturalCounter( initialValue );
+    }
 
-            @Override
-            public long increment()
+    /**
+     * Create new counter with default 0 as its initial value
+     * @return counter newly created counter
+     */
+    static MonotonicCounter newCounter()
+    {
+        return new NaturalCounter( 0 );
+    }
+
+    class NaturalCounter implements MonotonicCounter
+    {
+        private final AtomicLong value;
+
+        NaturalCounter( int initialValue )
+        {
+            value = new AtomicLong( initialValue );
+        }
+
+        @Override
+        public long increment()
+        {
+            int initialValue;
+            int incrementedValue;
+            do
             {
-                int initialValue;
-                int incrementedValue;
-                do
-                {
-                    initialValue = value.intValue();
-                    incrementedValue = initialValue < 0 ? 0 : initialValue + 1;
-                }
-                while ( !value.compareAndSet( initialValue, incrementedValue ) );
-                return incrementedValue;
+                initialValue = value.intValue();
+                incrementedValue = initialValue == Integer.MAX_VALUE ? 0 : initialValue + 1;
             }
-        };
+            while ( !value.compareAndSet( initialValue, incrementedValue ) );
+            return incrementedValue;
+        }
     }
 }

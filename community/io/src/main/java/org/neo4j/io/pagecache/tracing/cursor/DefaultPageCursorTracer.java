@@ -67,12 +67,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         if ( hits > 0 )
         {
             pageCacheTracer.hits( hits );
-            historicalHits = Math.addExact( historicalHits, hits );
+            historicalHits = historicalHits + hits;
         }
         if ( faults > 0 )
         {
             pageCacheTracer.faults( faults );
-            historicalFaults = Math.addExact( historicalFaults, faults );
+            historicalFaults = historicalFaults + faults;
         }
         if ( bytesRead > 0 )
         {
@@ -100,13 +100,13 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     @Override
     public long accumulatedHits()
     {
-        return Math.addExact( historicalHits, hits );
+        return historicalHits + hits;
     }
 
     @Override
     public long accumulatedFaults()
     {
-        return Math.addExact( historicalFaults, faults );
+        return historicalFaults + faults;
     }
 
     private void reset()

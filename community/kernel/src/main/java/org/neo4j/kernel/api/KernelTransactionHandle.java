@@ -109,11 +109,19 @@ public interface KernelTransactionHandle
     boolean isUnderlyingTransaction( KernelTransaction tx );
 
     /**
-     * User transaction id of underlying transaction. User transaction id is positive long number.
+     * User transaction id of underlying transaction. User transaction id is a not negative long number.
      * Should be unique across transactions.
      * @return user transaction id
      */
     long getUserTransactionId();
+
+    /**
+     * User transaction name of the underlying transaction.
+     * User transaction name consists of the name prefix and user transaction id.
+     * Should be unique across transactions.
+     * @return user transaction name
+     */
+    String getUserTransactionName();
 
     /**
      * @return a list of all queries currently executing that use the underlying transaction

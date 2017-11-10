@@ -39,6 +39,8 @@ import org.neo4j.time.SystemNanoClock;
  */
 class KernelTransactionImplementationHandle implements KernelTransactionHandle
 {
+    private static final String USER_TRANSACTION_NAME_PREFIX = "transaction-";
+
     private final long txReuseCount;
     private final long lastTransactionIdWhenStarted;
     private final long lastTransactionTimestampWhenStarted;
@@ -132,6 +134,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public long getUserTransactionId()
     {
         return userTransactionId;
+    }
+
+    @Override
+    public String getUserTransactionName()
+    {
+        return USER_TRANSACTION_NAME_PREFIX + getUserTransactionId();
     }
 
     @Override

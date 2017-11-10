@@ -154,7 +154,8 @@ public class TransactionStatusResultTest
     private ExecutingQuery createExecutingQuery( long queryId )
     {
         return new ExecutingQuery( queryId, getTestConnectionInfo(), "testUser", "testQuery", VirtualValues.EMPTY_MAP,
-                Collections.emptyMap(), () -> 1L, PageCursorTracer.NULL, Thread.currentThread(),
+                Collections.emptyMap(), () -> 1L, PageCursorTracer.NULL,
+                Thread.currentThread().getId(), Thread.currentThread().getName(),
                 new CountingSystemNanoClock(), new CountingCpuClock(), new CountingHeapAllocation() );
     }
 

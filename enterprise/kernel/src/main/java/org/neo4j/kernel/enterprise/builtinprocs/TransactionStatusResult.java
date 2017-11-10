@@ -68,7 +68,7 @@ public class TransactionStatusResult
             TransactionDependenciesResolver transactionDependenciesResolver,
             Map<KernelTransactionHandle,List<QuerySnapshot>> handleSnapshotsMap ) throws InvalidArgumentsException
     {
-        this.transactionId = toUserTransactionId( transaction );
+        this.transactionId = transaction.getUserTransactionName();
         this.username = transaction.securityContext().subject().username();
         this.startTime = ProceduresTimeFormatHelper.formatTime( transaction.startTime() );
         Optional<Status> terminationReason = transaction.terminationReason();
@@ -104,11 +104,6 @@ public class TransactionStatusResult
         this.resourceInformation = transactionDependenciesResolver.describeBlockingLocks( transaction );
         this.status = getStatus( transaction, terminationReason, transactionDependenciesResolver );
         this.metaData = transaction.getMetaData();
-    }
-
-    private String toUserTransactionId( KernelTransactionHandle transaction )
-    {
-        return TransactionId.ofTransactionHandle( transaction );
     }
 
     private String getStatus( KernelTransactionHandle handle, Optional<Status> terminationReason,
