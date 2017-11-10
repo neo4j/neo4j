@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedP
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}

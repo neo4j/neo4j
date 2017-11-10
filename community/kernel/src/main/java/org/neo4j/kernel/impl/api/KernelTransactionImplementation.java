@@ -35,6 +35,12 @@ import java.util.stream.Stream;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.internal.kernel.api.ExplicitIndexRead;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -57,6 +63,7 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -140,6 +147,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long commitTime;
     private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
+    private final Operations operations;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -177,6 +185,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 procedures, accessCapability, lockTracer, statementOperations );
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
+        this.operations = new Operations( storageEngine, explicitIndexTxStateSupplier, this );
     }
 
     /**
@@ -664,6 +673,48 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             afterRollback();
         }
+    }
+
+    @Override
+    public Read dataRead()
+    {
+        return operations;
+    }
+
+    @Override
+    public Write dataWrite()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public ExplicitIndexRead indexRead()
+    {
+        return operations;
+    }
+
+    @Override
+    public ExplicitIndexWrite indexWrite()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public SchemaRead schemaRead()
+    {
+        return operations;
+    }
+
+    @Override
+    public SchemaWrite schemaWrite()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public org.neo4j.internal.kernel.api.Locks locks()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     private void afterCommit( long txId )

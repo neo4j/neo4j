@@ -19,41 +19,44 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.storageengine.api.StorageEngine;
 
 /**
- * This is a temporary implementation of the Kernel API, used to enable early testing. The plan is to merge this
- * class with org.neo4j.kernel.impl.api.Kernel.
+ * Implements a Kernel API Session.
  */
-public class NewKernel implements Kernel
+class KernelSession implements Session
 {
-    private final Cursors cursors;
-    private final StorageEngine engine;
     private final InwardKernel kernel;
-    private final Read read;
+    private final SecurityContext securityContext;
+    private final KernelToken token;
 
-    public NewKernel( StorageEngine engine, KernelTransactions ktxs, InwardKernel kernel )
+    KernelSession( StorageEngine engine, InwardKernel kernel, SecurityContext securityContext )
     {
-        this.engine = engine;
         this.kernel = kernel;
-        this.read = new AllStoreHolder( engine, ktxs.explicitIndexTxStateSupplier() );
-        this.cursors = new Cursors( read );
+        this.securityContext = securityContext;
+        this.token = new KernelToken( engine );
     }
 
     @Override
-    public CursorFactory cursors()
+    public Transaction beginTransaction( KernelTransaction.Type type ) throws KernelException
     {
-        return cursors;
+        return kernel.newTransaction( type, securityContext );
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Session beginSession( SecurityContext securityContext )
+    public org.neo4j.internal.kernel.api.Token token()
     {
-        return new KernelSession( engine, kernel, securityContext );
+        return token;
+    }
+
+    @Override
+    public void close()
+    {
     }
 }

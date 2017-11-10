@@ -37,7 +37,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.NeoStoreDataSource
-import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}

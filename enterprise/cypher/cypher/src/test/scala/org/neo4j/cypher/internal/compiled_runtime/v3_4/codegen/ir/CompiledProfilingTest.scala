@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.v3_4.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AnonymousContext
@@ -102,7 +103,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val database = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {
       val graphDb = new GraphDatabaseCypherService(database)
-      val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
+      val tx = graphDb.beginTransaction(Type.explicit, AnonymousContext.write())
       graphDb.createNode()
       graphDb.createNode()
       tx.success()

@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 class TransactionStateMachineSPI implements TransactionStateMachine.SPI
 {

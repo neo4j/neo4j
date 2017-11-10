@@ -23,6 +23,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Permissions;
 import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -86,18 +87,18 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( engine, transactions );
+        this.newKernel = new NewKernel( engine, transactions, this );
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext )
             throws TransactionFailureException
     {
         return newTransaction( type, securityContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout ) throws
+    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext, long timeout ) throws
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
@@ -143,8 +144,8 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
-    public Session beginSession( Permissions permissions )
+    public Session beginSession( SecurityContext securityContext )
     {
-        return newKernel.beginSession( permissions );
+        return newKernel.beginSession( securityContext );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Optional;
 
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -76,14 +77,8 @@ import org.neo4j.kernel.impl.api.Kernel;
  * }
  * </pre>
  */
-public interface KernelTransaction extends AutoCloseable
+public interface KernelTransaction extends Transaction
 {
-    enum Type
-    {
-        implicit,
-        explicit
-    }
-
     interface CloseListener
     {
         /**
@@ -103,19 +98,6 @@ public interface KernelTransaction extends AutoCloseable
      * @return a {@link Statement} with access to underlying database.
      */
     Statement acquireStatement();
-
-    /**
-     * Marks this transaction as successful. When this transaction later gets {@link #close() closed}
-     * its changes, if any, will be committed. If this method hasn't been called or if {@link #failure()}
-     * has been called then any changes in this transaction will be rolled back as part of {@link #close() closing}.
-     */
-    void success();
-
-    /**
-     * Marks this transaction as failed. No amount of calls to {@link #success()} will clear this flag.
-     * When {@link #close() closing} this transaction any changes will be rolled back.
-     */
-    void failure();
 
     /**
      * Closes this transaction, committing its changes if {@link #success()} has been called and neither

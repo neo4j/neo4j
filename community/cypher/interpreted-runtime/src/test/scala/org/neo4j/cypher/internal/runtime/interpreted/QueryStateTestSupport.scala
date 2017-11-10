@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -29,7 +29,7 @@ trait QueryStateTestSupport {
   self: GraphDatabaseTestSupport =>
 
   def withQueryState[T](f: QueryState => T) = {
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AUTH_DISABLED)
+    val tx = graph.beginTransaction(Type.explicit, AUTH_DISABLED)
     try {
       QueryStateHelper.withQueryState(graph, tx, EMPTY_MAP, queryState => {
         f(queryState)
@@ -40,7 +40,7 @@ trait QueryStateTestSupport {
   }
 
   def withCountsQueryState[T](f: QueryState => T) = {
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AUTH_DISABLED)
+    val tx = graph.beginTransaction(Type.explicit, AUTH_DISABLED)
     try {
       QueryStateHelper.withQueryState(graph, tx, EMPTY_MAP, queryState =>
         {

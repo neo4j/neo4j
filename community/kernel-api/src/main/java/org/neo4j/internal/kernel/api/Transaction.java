@@ -22,24 +22,31 @@ package org.neo4j.internal.kernel.api;
 /**
  * A transaction with the graph database.
  */
-public interface Transaction
+public interface Transaction extends AutoCloseable
 {
+    enum Type
+    {
+        implicit,
+        explicit
+    }
+
     /**
      * The store id of a read-only transaction.
      */
     long READ_ONLY_TRANSACTION = 0;
 
     /**
-     * Commit this transaction.
-     * @return the id of the commited transaction, or {@link Transaction#READ_ONLY_TRANSACTION} if this was a read only
-     * transaction.
+     * Marks this transaction as successful. When this transaction later gets {@link #close() closed}
+     * its changes, if any, will be committed. If this method hasn't been called or if {@link #failure()}
+     * has been called then any changes in this transaction will be rolled back as part of {@link #close() closing}.
      */
-    long commit();
+    void success();
 
     /**
-     * Rollback this transaction.
+     * Marks this transaction as failed. No amount of calls to {@link #success()} will clear this flag.
+     * When {@link #close() closing} this transaction any changes will be rolled back.
      */
-    void rollback();
+    void failure();
 
     /**
      * @return The Read operations of the graph.
