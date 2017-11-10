@@ -33,7 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;

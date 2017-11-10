@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
+import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema.IndexQuery
 import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}

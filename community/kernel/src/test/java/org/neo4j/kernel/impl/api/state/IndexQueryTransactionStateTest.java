@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;

@@ -22,6 +22,18 @@ package org.neo4j.values.storable;
 public abstract class FloatingPointValue extends NumberValue
 {
     @Override
+    public boolean equals( long x )
+    {
+        return NumberValues.numbersEqual( doubleValue(), x );
+    }
+
+    @Override
+    public boolean equals( double x )
+    {
+        return doubleValue() == x;
+    }
+
+    @Override
     public final int computeHash()
     {
         return NumberValues.hash( doubleValue() );

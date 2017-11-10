@@ -70,7 +70,7 @@ public final class ShortValue extends IntegralValue
     }
 
     @Override
-    public Object asObjectCopy()
+    public Short asObjectCopy()
     {
         return value;
     }

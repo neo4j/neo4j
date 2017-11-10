@@ -20,9 +20,38 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * This class is really a renamed org.neo4j.kernel.api.schema.IndexDescriptor. Maybe it will compose an
- * IndexDescriptor with an offset for faster index lookup.
+ * Reference to a specific index. This reference is valid until the schema of the database changes (that is a
+ * create/drop of an index or constraint occurs).
  */
-public class IndexReference
+public interface IndexReference
 {
+    boolean isUnique();
+
+    int label();
+
+    int[] properties();
+
+    /**
+     * IndexReference used for label-property combinations that are not indexed.
+     */
+    IndexReference NO_INDEX = new IndexReference()
+    {
+        @Override
+        public boolean isUnique()
+        {
+            return false;
+        }
+
+        @Override
+        public int label()
+        {
+            return Token.NO_TOKEN;
+        }
+
+        @Override
+        public int[] properties()
+        {
+            return new int[0];
+        }
+    };
 }

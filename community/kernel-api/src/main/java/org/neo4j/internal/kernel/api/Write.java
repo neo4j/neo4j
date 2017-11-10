@@ -24,32 +24,95 @@ import org.neo4j.values.storable.Value;
 /**
  * Defines the write operations of the Kernel API.
  */
-interface Write
+public interface Write
 {
+    /**
+     * Create a node.
+     * @return The internal id of the created node
+     */
     long nodeCreate();
 
+    /**
+     * Delete a node.
+     * @param node the internal id of the node to delete
+     */
     void nodeDelete( long node );
 
+    /**
+     * Create a relationship between two nodes.
+     * @param sourceNode the source internal node id
+     * @param relationshipLabel the label of the relationship to create
+     * @param targetNode the target internal node id
+     * @return the internal id of the created relationship
+     */
     long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode );
 
+    /**
+     * Delete a relationship
+     * @param relationship the internal id of the relationship to delete
+     */
     void relationshipDelete( long relationship );
 
+    /**
+     * Add a label to a node
+     * @param node the internal node id
+     * @param nodeLabel the internal id of the label to add
+     */
     void nodeAddLabel( long node, int nodeLabel );
 
+    /**
+     * Remove a label from a node
+     * @param node the internal node id
+     * @param nodeLabel the internal id of the label to remove
+     */
     void nodeRemoveLabel( long node, int nodeLabel );
 
-    // TODO: Define property value hierarchy
-    // We will want a value type hierarchy to avoid passing objects around, which should be shared by all of Neo4j
-    // server. This can hold general logic such as equality, coercion, ordering and comparability. It also needs some
-    // visitor/writer functionality so we can break out large logic and eg. file formats.
+    /**
+     * Set a property on a node
+     * @param node the internal node id
+     * @param propertyKey the property key id
+     * @param value the value to set
+     * @return The replaced value, or Values.NO_VALUE if the node did not have the property before
+     */
+    Value nodeSetProperty( long node, int propertyKey, Value value );
 
-    // This method will become
-    // void nodeSetProperty( long node, int propertyKey, Value value );
-    void nodeSetProperty( long node, int propertyKey, Object value );
+    /**
+     * Remove a property from a node
+     * @param node the internal node id
+     * @param propertyKey the property key id
+     * @return The removed value, or Values.NO_VALUE if the node did not have the property before
+     */
+    Value nodeRemoveProperty( long node, int propertyKey );
 
-    void nodeRemoveProperty( long node, int propertyKey );
+    /**
+     * Set a property on a relationship
+     * @param relationship the internal relationship id
+     * @param propertyKey the property key id
+     * @param value the value to set
+     * @return The replaced value, or Values.NO_VALUE if the relationship did not have the property before
+     */
+    Value relationshipSetProperty( long relationship, int propertyKey, Value value );
 
-    void relationshipSetProperty( long relationship, int propertyKey, Value value );
+    /**
+     * Remove a property from a relationship
+     * @param node the internal relationship id
+     * @param propertyKey the property key id
+     * @return The removed value, or Values.NO_VALUE if the relationship did not have the property before
+     */
+    Value relationshipRemoveProperty( long node, int propertyKey );
 
-    void relationshipRemoveProperty( long node, int propertyKey );
+    /**
+     * Set a property on the graph
+     * @param propertyKey the property key id
+     * @param value the value to set
+     * @return The replaced value, or Values.NO_VALUE if the graph did not have the property before
+     */
+    Value graphSetProperty( int propertyKey, Value value );
+
+    /**
+     * Remove a property from the graph
+     * @param propertyKey the property key id
+     * @return The removed value, or Values.NO_VALUE if the graph did not have the property before
+     */
+    Value graphRemoveProperty( int propertyKey );
 }

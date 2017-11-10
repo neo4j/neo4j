@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
 public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 {

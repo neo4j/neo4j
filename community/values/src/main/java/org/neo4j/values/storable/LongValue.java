@@ -66,7 +66,7 @@ public final class LongValue extends IntegralValue
     }
 
     @Override
-    public Object asObjectCopy()
+    public Long asObjectCopy()
     {
         return value;
     }

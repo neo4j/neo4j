@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -59,7 +59,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )

@@ -26,14 +26,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.helpers.collection.Iterators.array;
-import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
 public class IndexEntryResourceTypesTest
 {

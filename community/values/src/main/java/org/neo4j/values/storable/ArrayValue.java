@@ -66,6 +66,18 @@ public abstract class ArrayValue extends Value implements SequenceValue
     }
 
     @Override
+    public boolean equals( long x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( double x )
+    {
+        return false;
+    }
+
+    @Override
     public boolean equals( char x )
     {
         return false;

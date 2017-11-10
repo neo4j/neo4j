@@ -19,24 +19,36 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+
 /**
- * Defines the read operations of the Kernel API.
+ * Defines the graph read operations of the Kernel.
  */
 public interface Read
 {
     /**
-     * TODO: this method needs a better definition.
-     *
-     * @param predicates
-     *         predicates describing what to look for in the index.
+     * @param index
      * @param cursor
      *         the cursor to use for consuming the results.
+     * @param query
      */
-    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexPredicate... predicates );
+    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexQuery... query ) throws KernelException;
 
-    void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor );
+    void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor ) throws KernelException;
 
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor );
+
+    /**
+     * Scan for nodes that have a <i>disjunction</i> of the specified labels.
+     * i.e. MATCH (n) WHERE n:Label1 OR n:Label2 OR ...
+     */
+    void nodeLabelUnionScan( NodeLabelIndexCursor cursor, int... labels );
+
+    /**
+     * Scan for nodes that have a <i>conjunction</i> of the specified labels.
+     * i.e. MATCH (n) WHERE n:Label1 AND n:Label2 AND ...
+     */
+    void nodeLabelIntersectionScan( NodeLabelIndexCursor cursor, int... labels );
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 
@@ -106,6 +118,8 @@ public interface Read
      *         the cursor to use for consuming the results.
      */
     void relationshipProperties( long reference, PropertyCursor cursor );
+
+    void graphProperties( PropertyCursor cursor );
 
     // hints to the page cache about data we will be accessing in the future:
 

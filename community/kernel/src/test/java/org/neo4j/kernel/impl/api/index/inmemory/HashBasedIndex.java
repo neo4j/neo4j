@@ -31,12 +31,12 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-import static org.neo4j.kernel.api.schema.IndexQuery.IndexQueryType.exact;
+import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;

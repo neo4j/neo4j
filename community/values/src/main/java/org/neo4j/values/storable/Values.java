@@ -205,7 +205,7 @@ public final class Values
 
     public static BooleanValue booleanValue( boolean value )
     {
-        return new BooleanValue( value );
+        return value ? BooleanValue.TRUE : BooleanValue.FALSE;
     }
 
     public static CharValue charValue( char value )

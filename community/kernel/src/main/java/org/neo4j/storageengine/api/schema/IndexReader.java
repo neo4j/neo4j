@@ -19,12 +19,11 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -49,6 +48,19 @@ public interface IndexReader extends Resource
      * @return the matching entity IDs.
      */
     PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
+
+    /**
+     * Queries the index for the given {@link IndexQuery} predicates.
+     *
+     * @param client the client which will control the progression though query results.
+     * @param query the query so serve.
+     */
+    default void query(
+            IndexProgressor.NodeValueClient client,
+            IndexQuery... query ) throws IndexNotApplicableKernelException
+    {
+        client.initialize( new NodeValueIndexProgressor( query( query ), client ), null );
+    }
 
     /**
      * @param predicates query to determine whether or not index has full number precision for.

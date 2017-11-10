@@ -19,171 +19,288 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.function.ThrowingAction;
-import org.neo4j.values.storable.BufferValueWriter;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-public abstract class PropertyCursorTestBase
+public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
-    private static final int NO_SUCH_PROPERTY = -1;
+    @SuppressWarnings( "SpellCheckingInspection" )
+    private static final String LONG_STRING = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque "
+            + "eget nibh cursus, efficitur risus non, ultrices justo. Nulla laoreet eros mi, non molestie magna "
+            + "luctus in. Fusce nibh neque, tristique ultrices laoreet et, aliquet non dolor. Donec ultrices nisi "
+            + "eget urna luctus volutpat. Vivamus hendrerit eget justo vel scelerisque. Morbi interdum volutpat diam,"
+            + " et cursus arcu efficitur consectetur. Cras vitae facilisis ipsum, vitae ullamcorper orci. Nullam "
+            + "tristique ante sed nibh consequat posuere. Curabitur mauris nisl, condimentum ac varius vel, imperdiet"
+            + " a neque. Sed euismod condimentum nisl, vel efficitur turpis tempus id.\n"
+            + "\n"
+            + "Sed in tempor arcu. Suspendisse molestie rutrum risus a dignissim. Donec et orci non diam tincidunt "
+            + "sollicitudin non id nisi. Aliquam vehicula imperdiet viverra. Cras et lacinia eros. Etiam imperdiet ac"
+            + " dolor ut tristique. Phasellus ut lacinia ex. Pellentesque habitant morbi tristique senectus et netus "
+            + "et malesuada fames ac turpis egestas. Integer libero justo, tincidunt ut felis non, interdum "
+            + "consectetur mauris. Cras eu felis ante. Sed dapibus nulla urna, at elementum tortor ultricies pretium."
+            + " Maecenas sed augue non urna consectetur fringilla vitae eu libero. Vivamus interdum bibendum risus, "
+            + "quis luctus eros.\n"
+            + "\n"
+            + "Sed neque augue, fermentum sit amet iaculis ut, porttitor ac odio. Phasellus et sapien non sapien "
+            + "consequat fermentum accumsan non dolor. Integer eget pellentesque lectus, vitae lobortis ante. Nam "
+            + "elementum, dui ut finibus rutrum, purus mauris efficitur purus, efficitur tempus ante metus bibendum "
+            + "velit. Curabitur commodo, risus et eleifend facilisis, eros augue posuere tortor, eu dictum erat "
+            + "tortor consectetur orci. Fusce a velit dignissim, tempus libero nec, faucibus risus. Nullam pharetra "
+            + "mauris sit amet volutpat facilisis. Pellentesque habitant morbi tristique senectus et netus et "
+            + "malesuada fames ac turpis egestas. Praesent lacinia non felis ut lobortis.\n"
+            + "\n"
+            + "Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed eu nisi dui"
+            + ". Suspendisse imperdiet lorem vel eleifend faucibus. Mauris non venenatis metus. Aenean neque magna, "
+            + "rhoncus vel velit in, dictum convallis leo. Phasellus pulvinar eu sapien ac vehicula. Praesent "
+            + "placerat augue quam, egestas vehicula velit porttitor in. Vivamus velit metus, pellentesque quis "
+            + "fermentum et, porta quis velit. Curabitur sed lacus quis nibh convallis tincidunt.\n"
+            + "\n"
+            + "Etiam eu elit eget dolor dignissim lacinia. Vivamus tortor ex, dapibus id elementum non, suscipit ac "
+            + "nisl. Aenean vel tempor libero, eu venenatis elit. Nunc nec velit eu odio interdum pellentesque sed et"
+            + " eros. Nam quis mi in metus tristique aliquam. Nullam facilisis dapibus lacus, nec lacinia velit. "
+            + "Proin massa enim, accumsan ac libero at, iaculis sodales tellus. Vivamus fringilla justo sed luctus "
+            + "tincidunt. Sed placerat fringilla ex, vel placerat sem faucibus eget. Vestibulum semper dui sit amet "
+            + "efficitur blandit. Donec eu tellus velit. Etiam a mi nec massa euismod posuere. Cras eget lacus leo.";
 
-    abstract PropertyCursor emptyCursor();
-    abstract PropertyCursor withValues( Map<Integer,Object> values );
+    private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
+            floatProp, doubleProp, trueProp, falseProp, charProp, emptyStringProp, shortStringProp, longStringProp,
+            utf8Prop, smallArray, bigArray, allProps;
 
-    private BufferValueWriter writeBuffer = new BufferValueWriter();
+    private static String chinese = "造Unicode之";
 
-    @Test
-    public void shouldBeEmpty()
+    protected boolean supportsBigProperties()
     {
-        assertEmpty( emptyCursor() );
-        assertEmpty( withValues( Collections.emptyMap() ) );
+        return true;
     }
 
-    private void assertEmpty( PropertyCursor cursor )
+    @Override
+    void createTestGraph( GraphDatabaseService graphDb )
     {
-        for ( int i = 0; i < 2; i++ )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            assertFalse( cursor.next() );
+            bare = graphDb.createNode().getId();
 
-            assertThat( cursor.propertyKey(), equalTo( NO_SUCH_PROPERTY ) );
-            assertThat( cursor.propertyValue(), equalTo( Values.NO_VALUE ) );
+            byteProp = createNodeWithProperty( graphDb, "byteProp", (byte) 13 );
+            shortProp = createNodeWithProperty( graphDb, "shortProp", (short) 13 );
+            intProp = createNodeWithProperty( graphDb, "intProp", 13 );
+            inlineLongProp = createNodeWithProperty( graphDb, "inlineLongProp", 13L );
+            longProp = createNodeWithProperty( graphDb, "longProp", Long.MAX_VALUE );
 
-            assertException( cursor::booleanValue );
-            assertException( cursor::stringValue );
-            assertException( cursor::longValue );
-            assertException( cursor::doubleValue );
+            floatProp = createNodeWithProperty( graphDb, "floatProp", 13.0f );
+            doubleProp = createNodeWithProperty( graphDb, "doubleProp", 13.0 );
 
-            // Should we wait with specialized predicates?
-//            assertFalse( cursor.valueEqualTo( 0L ) );
-//            assertFalse( cursor.valueEqualTo( 0.0 ) );
-//            assertFalse( cursor.valueEqualTo( "" ) );
-//            assertFalse( cursor.valueMatches( Pattern.compile( ".*" ) ) );
-//
-//            assertFalse( cursor.valueGreaterThan( 0L ) );
-//            assertFalse( cursor.valueGreaterThan( 0.0 ) );
-//            assertFalse( cursor.valueLessThan( 0L ) );
-//            assertFalse( cursor.valueLessThan( 0.0 ) );
-//            assertFalse( cursor.valueGreaterThanOrEqualTo( 0L ) );
-//            assertFalse( cursor.valueGreaterThanOrEqualTo( 0.0 ) );
-//            assertFalse( cursor.valueLessThanOrEqualTo( 0L ) );
-//            assertFalse( cursor.valueLessThanOrEqualTo( 0.0 ) );
+            trueProp = createNodeWithProperty( graphDb, "trueProp", true );
+            falseProp = createNodeWithProperty( graphDb, "falseProp", false );
+
+            charProp = createNodeWithProperty( graphDb, "charProp", 'x' );
+            emptyStringProp = createNodeWithProperty( graphDb, "emptyStringProp", "" );
+            shortStringProp = createNodeWithProperty( graphDb, "shortStringProp", "hello" );
+            longStringProp = createNodeWithProperty( graphDb, "longStringProp", LONG_STRING );
+            utf8Prop = createNodeWithProperty( graphDb, "utf8Prop", chinese );
+
+            smallArray = createNodeWithProperty( graphDb, "smallArray", new int[] {1, 2, 3, 4} );
+            bigArray = createNodeWithProperty( graphDb, "bigArray", new String[] {LONG_STRING} );
+
+            Node all = graphDb.createNode();
+            // first property record
+            all.setProperty( "byteProp", (byte) 13 );
+            all.setProperty( "shortProp", (short) 13 );
+            all.setProperty( "intProp", 13 );
+            all.setProperty( "inlineLongProp", 13L );
+            // second property record
+            all.setProperty( "longProp", Long.MAX_VALUE );
+            all.setProperty( "floatProp", 13.0f );
+            all.setProperty( "doubleProp", 13.0 );
+            //                  ^^^
+            // third property record halfway through double?
+            all.setProperty( "trueProp", true );
+            all.setProperty( "falseProp", false );
+
+            all.setProperty( "charProp", 'x' );
+            all.setProperty( "emptyStringProp", "" );
+            all.setProperty( "shortStringProp", "hello" );
+            if ( supportsBigProperties() )
+            {
+                all.setProperty( "longStringProp", LONG_STRING );
+            }
+            all.setProperty( "utf8Prop", chinese );
+
+            if ( supportsBigProperties() )
+            {
+                all.setProperty( "smallArray", new int[] {1, 2, 3, 4} );
+                all.setProperty( "bigArray", new String[] {LONG_STRING} );
+            }
+
+            allProps = all.getId();
+
+            tx.success();
+        }
+    }
+
+    private long createNodeWithProperty( GraphDatabaseService graphDb, String propertyKey, Object value )
+    {
+        Node p = graphDb.createNode();
+        p.setProperty( propertyKey, value );
+        return p.getId();
+    }
+
+    @Test
+    public void shouldNotAccessNonExistentProperties() throws Exception
+    {
+        // given
+        try ( NodeCursor node = cursors.allocateNodeCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
+        {
+            // when
+            read.singleNode( bare, node );
+            assertTrue( "node by reference", node.next() );
+            assertFalse( "no properties", node.hasProperties() );
+
+            node.properties( props );
+            assertFalse( "no properties by direct method", props.next() );
+
+            read.nodeProperties( node.propertiesReference(), props );
+            assertFalse( "no properties via property ref", props.next() );
+
+            assertFalse( "only one node", node.next() );
         }
     }
 
     @Test
-    public void shouldParseString()
+    public void shouldAccessSingleProperty() throws Exception
     {
-        String X = "hi";
-        Map<Integer,Object> map = new HashMap<>();
-        map.put( 1, X );
-        PropertyCursor cursor = withValues( map );
-
-        assertTrue( cursor.next() );
-        assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.stringValue(), equalTo( X ) );
-        assertTrue( cursor.valueEqualTo( X ) );
-
-        assertException( cursor::booleanValue );
-        assertException( cursor::longValue );
-        assertException( cursor::doubleValue );
-
-        cursor.writeTo( writeBuffer );
-        writeBuffer.assertBuffer( X );
-
-        assertEmpty( cursor );
-    }
-
-    @Test
-    public void shouldParseInteger()
-    {
-        long X = 2L;
-        Map<Integer,Object> map = new HashMap<>();
-        map.put( 1, X );
-        PropertyCursor cursor = withValues( map );
-
-        assertTrue( cursor.next() );
-        assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.stringValue(), equalTo( X ) );
-        assertTrue( cursor.valueEqualTo( X ) );
-
-        assertException( cursor::booleanValue );
-        assertException( cursor::stringValue );
-        assertException( cursor::doubleValue );
-
-        cursor.writeTo( writeBuffer );
-        writeBuffer.assertBuffer( X );
-
-        assertEmpty( cursor );
-    }
-
-    @Test
-    public void shouldParseFloat()
-    {
-        double X = 2.0;
-        Map<Integer,Object> map = new HashMap<>();
-        map.put( 1, X );
-        PropertyCursor cursor = withValues( map );
-
-        assertTrue( cursor.next() );
-        assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.stringValue(), equalTo( X ) );
-        assertTrue( cursor.valueEqualTo( X ) );
-
-        assertException( cursor::booleanValue );
-        assertException( cursor::stringValue );
-        assertException( cursor::longValue );
-
-        cursor.writeTo( writeBuffer );
-        writeBuffer.assertBuffer( X );
-
-        assertEmpty( cursor );
-    }
-
-    @SuppressWarnings( "ConstantConditions" )
-    @Test
-    public void shouldParseBoolean()
-    {
-        boolean X = false;
-        Map<Integer,Object> map = new HashMap<>();
-        map.put( 1, X );
-        PropertyCursor cursor = withValues( map );
-
-        assertTrue( cursor.next() );
-        assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.stringValue(), equalTo( X ) );
-
-        assertException( cursor::doubleValue );
-        assertException( cursor::stringValue );
-        assertException( cursor::longValue );
-
-        cursor.writeTo( writeBuffer );
-        writeBuffer.assertBuffer( X );
-
-        assertEmpty( cursor );
-    }
-
-    private void assertException( ThrowingAction<?> action )
-    {
-        try
+        assertAccessSingleProperty( byteProp, Values.of( (byte) 13 ) );
+        assertAccessSingleProperty( shortProp, Values.of( (short) 13 ) );
+        assertAccessSingleProperty( intProp, Values.of( 13 ) );
+        assertAccessSingleProperty( inlineLongProp, Values.of( 13L ) );
+        assertAccessSingleProperty( longProp, Values.of( Long.MAX_VALUE ) );
+        assertAccessSingleProperty( floatProp, Values.of( 13.0f ) );
+        assertAccessSingleProperty( doubleProp, Values.of( 13.0 ) );
+        assertAccessSingleProperty( trueProp, Values.of( true ) );
+        assertAccessSingleProperty( falseProp, Values.of( false ) );
+        assertAccessSingleProperty( charProp, Values.of( 'x' ) );
+        assertAccessSingleProperty( emptyStringProp, Values.of( "" ) );
+        assertAccessSingleProperty( shortStringProp, Values.of( "hello" ) );
+        if ( supportsBigProperties() )
         {
-            action.apply();
-            fail( "Expected exception" );
+            assertAccessSingleProperty( longStringProp, Values.of( LONG_STRING ) );
         }
-        catch ( Exception e )
+        assertAccessSingleProperty( utf8Prop, Values.of( chinese ) );
+        if ( supportsBigProperties() )
         {
-            // IGNORE
+            assertAccessSingleProperty( smallArray, Values.of( new int[] {1, 2, 3, 4} ) );
+            assertAccessSingleProperty( bigArray, Values.of( new String[] {LONG_STRING} ) );
         }
+    }
+
+    @Test
+    public void shouldAccessAllNodeProperties() throws Exception
+    {
+        // given
+        try ( NodeCursor node = cursors.allocateNodeCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
+        {
+            // when
+            read.singleNode( allProps, node );
+            assertTrue( "node by reference", node.next() );
+            assertTrue( "has properties", node.hasProperties() );
+
+            node.properties( props );
+            Set<Object> values = new HashSet<>();
+            while ( props.next() )
+            {
+                values.add( props.propertyValue().asObject() );
+            }
+
+            assertTrue( "byteProp", values.contains( (byte) 13 ) );
+            assertTrue( "shortProp", values.contains( (short) 13 ) );
+            assertTrue( "intProp", values.contains( 13 ) );
+            assertTrue( "inlineLongProp", values.contains( 13L ) );
+            assertTrue( "longProp", values.contains( Long.MAX_VALUE ) );
+            assertTrue( "floatProp", values.contains( 13.0f ) );
+            assertTrue( "doubleProp", values.contains( 13.0 ) );
+            assertTrue( "trueProp", values.contains( true ) );
+            assertTrue( "falseProp", values.contains( false ) );
+            assertTrue( "charProp", values.contains( 'x' ) );
+            assertTrue( "emptyStringProp", values.contains( "" ) );
+            assertTrue( "shortStringProp", values.contains( "hello" ) );
+            assertTrue( "utf8Prop", values.contains( chinese ) );
+            if ( supportsBigProperties() )
+            {
+                assertTrue( "longStringProp", values.contains( LONG_STRING ) );
+                assertThat( "smallArray", values, hasItem( intArray( 1, 2, 3, 4 ) ) );
+                assertThat( "bigArray", values, hasItem( arrayContaining( LONG_STRING ) ) );
+            }
+            int expected = supportsBigProperties() ? 16 : 13;
+            assertEquals( "number of values", expected, values.size() );
+        }
+    }
+
+    private void assertAccessSingleProperty( long nodeId, Object expectedValue )
+    {
+        // given
+        try ( NodeCursor node = cursors.allocateNodeCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
+        {
+            // when
+            read.singleNode( nodeId, node );
+            assertTrue( "node by reference", node.next() );
+            assertTrue( "has properties", node.hasProperties() );
+
+            node.properties( props );
+            assertTrue( "has properties by direct method", props.next() );
+            assertEquals( "correct value", expectedValue, props.propertyValue() );
+            assertFalse( "single property", props.next() );
+
+            read.nodeProperties( node.propertiesReference(), props );
+            assertTrue( "has properties via property ref", props.next() );
+            assertEquals( "correct value", expectedValue, props.propertyValue() );
+            assertFalse( "single property", props.next() );
+        }
+    }
+
+    private static TypeSafeMatcher<int[]> intArray( int... content )
+    {
+        return new TypeSafeMatcher<int[]>()
+        {
+            @Override
+            protected boolean matchesSafely( int[] item )
+            {
+                if ( item.length != content.length )
+                {
+                    return false;
+                }
+                for ( int i = 0; i < content.length; i++ )
+                {
+                    if ( item[i] != content[i] )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendValue( content );
+            }
+        };
     }
 }

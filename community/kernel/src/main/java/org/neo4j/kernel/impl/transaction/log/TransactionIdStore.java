@@ -45,7 +45,11 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
  */
 public interface TransactionIdStore
 {
-    // Tx id counting starting from this value (this value means no transaction ever committed)
+    /**
+     * Tx id counting starting from this value (this value means no transaction ever committed).
+     *
+     * Note that a read only transaction will get txId = 0, see {@link org.neo4j.internal.kernel.api.Transaction}.
+     */
     long BASE_TX_ID = 1;
     long BASE_TX_CHECKSUM = 0;
 

@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
-import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
@@ -33,12 +33,12 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.schema.IndexQuery.exact;
-import static org.neo4j.kernel.api.schema.IndexQuery.exists;
-import static org.neo4j.kernel.api.schema.IndexQuery.range;
-import static org.neo4j.kernel.api.schema.IndexQuery.stringContains;
-import static org.neo4j.kernel.api.schema.IndexQuery.stringPrefix;
-import static org.neo4j.kernel.api.schema.IndexQuery.stringSuffix;
+import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.IndexQuery.exists;
+import static org.neo4j.internal.kernel.api.IndexQuery.range;
+import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
+import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
+import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +

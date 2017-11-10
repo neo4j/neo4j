@@ -19,11 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Comparator;
+
 /**
  * A tuple of n values.
  */
-import java.util.Comparator;
-
 public class ValueTuple
 {
     public static ValueTuple of( Value... values )
