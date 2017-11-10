@@ -53,5 +53,5 @@ public abstract class AnyValue
         return false; // per default Values are no SequenceValues
     }
 
-    public abstract Boolean ternaryEquals( Object other );
+    public abstract Boolean ternaryEquals( AnyValue other );
 }

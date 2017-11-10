@@ -200,7 +200,7 @@ public interface SequenceValue extends Iterable<AnyValue>
         return x;
     }
 
-    default Boolean ternaryEquals( SequenceValue other )
+    default Boolean ternaryEquality( SequenceValue other )
     {
         IterationPreference pref = iterationPreference();
         IterationPreference otherPref = other.iterationPreference();

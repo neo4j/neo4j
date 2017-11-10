@@ -59,7 +59,7 @@ public abstract class Value extends AnyValue
 
     public abstract boolean equals( String[] x );
 
-    public Boolean ternaryEquals( Object other )
+    public Boolean ternaryEquals( AnyValue other )
     {
         if ( other == null || other == NO_VALUE )
         {
@@ -67,7 +67,7 @@ public abstract class Value extends AnyValue
         }
         if ( other instanceof SequenceValue && this.isSequenceValue() )
         {
-            return ((SequenceValue) this).ternaryEquals( (SequenceValue) other );
+            return ((SequenceValue) this).ternaryEquality( (SequenceValue) other );
         }
         if ( other instanceof Value && ((Value) other).valueGroup() == valueGroup() )
         {

@@ -30,6 +30,8 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 public final class MapValue extends VirtualValue
 {
     private final Map<String,AnyValue> map;
@@ -119,11 +121,15 @@ public final class MapValue extends VirtualValue
     }
 
     @Override
-    public Boolean ternaryEquals( Object other )
+    public Boolean ternaryEquals( AnyValue other )
     {
-        if ( other == null || !(other instanceof MapValue) )
+        if ( other == null || other == NO_VALUE )
         {
             return null;
+        }
+        else if ( !(other instanceof MapValue) )
+        {
+            return false;
         }
         Map<String,AnyValue> otherMap = ((MapValue) other).map;
         int size = map.size();
@@ -177,7 +183,7 @@ public final class MapValue extends VirtualValue
 
     public AnyValue get( String key )
     {
-      return map.getOrDefault( key, Values.NO_VALUE );
+      return map.getOrDefault( key, NO_VALUE );
     }
 
     @Override
