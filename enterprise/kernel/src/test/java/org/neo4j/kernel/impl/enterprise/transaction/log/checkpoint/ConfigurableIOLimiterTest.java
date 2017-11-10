@@ -40,11 +40,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class ConfigurableIOLimiterTest
 {
     private ConfigurableIOLimiter limiter;
+    private Config config;
     private AtomicLong pauseNanosCounter;
     private static final Flushable FLUSHABLE = () -> {};
 
     private void createIOLimiter( Config config )
     {
+        this.config = config;
         pauseNanosCounter = new AtomicLong();
         ObjLongConsumer<Object> pauseNanos = ( blocker, nanos ) -> pauseNanosCounter.getAndAdd( nanos );
         limiter = new ConfigurableIOLimiter( config, pauseNanos );
@@ -160,5 +162,69 @@ public class ConfigurableIOLimiterTest
 
         // We should've spent no time rushing
         assertThat( pauseNanosCounter.get(), is( 0L ) );
+    }
+
+    @Test
+    public void dynamicConfigurationUpdateMustBecomeVisible() throws Exception
+    {
+        // Create initially unlimited
+        createIOLimiter( 0 );
+
+        // Then set a limit of 100 IOPS
+        config.updateDynamicSetting( GraphDatabaseSettings.check_point_iops_limit.name(), "100" );
+
+        // Do 10*100 = 1000 IOs real quick, when we're limited to 100 IOPS.
+        long stamp = IOLimiter.INITIAL_STAMP;
+        repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
+
+        // Then assert that the updated limit is respected
+        assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
+
+        // Change back to unlimited
+        config.updateDynamicSetting( GraphDatabaseSettings.check_point_iops_limit.name(), "-1" );
+
+        // And verify it's respected
+        assertUnlimited();
+    }
+
+    @Test
+    public void dynamicConfigurationUpdateEnablingLimiterMustNotDisableLimiter() throws Exception
+    {
+        // Create initially unlimited
+        createIOLimiter( 0 );
+        // Disable the limiter...
+        limiter.disableLimit();
+        // ...while a dynamic configuration update happens
+        config.updateDynamicSetting( GraphDatabaseSettings.check_point_iops_limit.name(), "100" );
+        // The limiter must still be disabled...
+        assertUnlimited();
+        // ...and re-enabling it...
+        limiter.enableLimit();
+        // ...must make the limiter limit.
+        long stamp = IOLimiter.INITIAL_STAMP;
+        repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
+        assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
+    }
+
+    @Test
+    public void dynamicConfigurationUpdateDisablingLimiterMustNotDisableLimiter() throws Exception
+    {
+        // Create initially limited
+        createIOLimiter( 100 );
+        // Disable the limiter...
+        limiter.disableLimit();
+        // ...while a dynamic configuration update happens
+        config.updateDynamicSetting( GraphDatabaseSettings.check_point_iops_limit.name(), "-1" );
+        // The limiter must still be disabled...
+        assertUnlimited();
+        // ...and re-enabling it...
+        limiter.enableLimit();
+        // ...must maintain the limiter disabled.
+        assertUnlimited();
+        // Until it is re-enabled.
+        config.updateDynamicSetting( GraphDatabaseSettings.check_point_iops_limit.name(), "100" );
+        long stamp = IOLimiter.INITIAL_STAMP;
+        repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
+        assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
     }
 }

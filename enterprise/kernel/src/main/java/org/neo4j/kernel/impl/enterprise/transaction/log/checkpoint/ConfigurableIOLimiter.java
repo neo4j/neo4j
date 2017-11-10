@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.ObjLongConsumer;
 
@@ -32,41 +32,82 @@ import org.neo4j.kernel.configuration.Config;
 
 public class ConfigurableIOLimiter implements IOLimiter
 {
-    private static final AtomicIntegerFieldUpdater<ConfigurableIOLimiter> disableCountUpdater =
-            AtomicIntegerFieldUpdater.newUpdater( ConfigurableIOLimiter.class, "disabledCount" );
+    private static final AtomicLongFieldUpdater<ConfigurableIOLimiter> stateUpdater =
+            AtomicLongFieldUpdater.newUpdater( ConfigurableIOLimiter.class, "state" );
 
     private static final int NO_LIMIT = 0;
     private static final int QUANTUM_MILLIS = 100;
     private static final int TIME_BITS = 32;
     private static final long TIME_MASK = (1L << TIME_BITS) - 1;
+    private static final int QUANTUMS_PER_SECOND = (int) (TimeUnit.SECONDS.toMillis( 1 ) / QUANTUM_MILLIS);
 
-    private final int iopq; // IOs per quantum
     private final ObjLongConsumer<Object> pauseNanos;
 
-    @SuppressWarnings( "unused" ) // Updated via disableCountUpdater
-    private volatile int disabledCount;
+    /**
+     * Upper 32 bits is the "disabled counter", lower 32 bits is the "IOs per quantum" field.
+     * The "disabled counter" is modified online in 2-increments, leaving the lowest bit for signalling when
+     * the limiter disabled by configuration.
+     */
+    @SuppressWarnings( "unused" ) // Updated via stateUpdater
+    private volatile long state;
 
     public ConfigurableIOLimiter( Config config )
     {
         this( config, LockSupport::parkNanos );
     }
 
-    // Only visible for testing
+    // Only visible for testing.
     ConfigurableIOLimiter( Config config, ObjLongConsumer<Object> pauseNanos )
     {
         this.pauseNanos = pauseNanos;
-        int quantumsPerSecond = (int) (TimeUnit.SECONDS.toMillis( 1 ) / QUANTUM_MILLIS);
         Integer iops = config.get( GraphDatabaseSettings.check_point_iops_limit );
+        updateConfiguration( iops );
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.check_point_iops_limit,
+                ( prev, update ) -> updateConfiguration( update ) );
+    }
+
+    private void updateConfiguration( Integer iops )
+    {
+        long oldState;
+        long newState;
         if ( iops == null || iops < 1 )
         {
-            iopq = NO_LIMIT;
-            disabledCount = 1; // This permanently disables IO limiting
+            do
+            {
+                oldState = stateUpdater.get( this );
+                int disabledCounter = getDisabledCounter( oldState );
+                disabledCounter |= 1; // Raise the "permanently disabled" bit.
+                newState = composeState( disabledCounter, NO_LIMIT );
+            }
+            while ( !stateUpdater.compareAndSet( this, oldState, newState ) );
         }
         else
         {
-            this.iopq = iops / quantumsPerSecond;
+            do
+            {
+                oldState = stateUpdater.get( this );
+                int disabledCounter = getDisabledCounter( oldState );
+                disabledCounter &= 0xFFFFFFFE; // Mask off "permanently disabled" bit.
+                int iopq = iops / QUANTUMS_PER_SECOND;
+                newState = composeState( disabledCounter, iopq );
+            }
+            while ( !stateUpdater.compareAndSet( this, oldState, newState ) );
         }
+    }
 
+    private long composeState( int disabledCounter, int iopq )
+    {
+        return ((long) disabledCounter) << 32 | iopq;
+    }
+
+    private int getIOPQ( long state )
+    {
+        return (int) (state & 0x00000000_FFFFFFFFL);
+    }
+
+    private int getDisabledCounter( long state )
+    {
+        return (int) (state >>> 32);
     }
 
     // The stamp is in two 32-bit parts:
@@ -89,7 +130,8 @@ public class ConfigurableIOLimiter implements IOLimiter
     @Override
     public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException
     {
-        if ( disabledCount > 0 )
+        long state = stateUpdater.get( this );
+        if ( getDisabledCounter( state ) > 0 )
         {
             return INITIAL_STAMP;
         }
@@ -103,7 +145,7 @@ public class ConfigurableIOLimiter implements IOLimiter
         }
 
         long ioSum = (previousStamp >> TIME_BITS) + recentlyCompletedIOs;
-        if ( ioSum >= iopq )
+        if ( ioSum >= getIOPQ( state ) )
         {
             long millisLeftInQuantum = QUANTUM_MILLIS - (now - then);
             pauseNanos.accept( this, TimeUnit.MILLISECONDS.toNanos( millisLeftInQuantum ) );
@@ -116,13 +158,31 @@ public class ConfigurableIOLimiter implements IOLimiter
     @Override
     public void disableLimit()
     {
-        disableCountUpdater.getAndIncrement( this );
+        long currentState;
+        long newState;
+        do
+        {
+            currentState = stateUpdater.get( this );
+            // Increment by two to leave "permanently disabled bit" alone.
+            int disabledCounter = getDisabledCounter( currentState ) + 2;
+            newState = composeState( disabledCounter, getIOPQ( currentState ) );
+        }
+        while ( !stateUpdater.compareAndSet( this, currentState, newState ) );
     }
 
     @Override
     public void enableLimit()
     {
-        disableCountUpdater.getAndDecrement( this );
+        long currentState;
+        long newState;
+        do
+        {
+            currentState = stateUpdater.get( this );
+            // Decrement by two to leave "permanently disabled bit" alone.
+            int disabledCounter = getDisabledCounter( currentState ) - 2;
+            newState = composeState( disabledCounter, getIOPQ( currentState ) );
+        }
+        while ( !stateUpdater.compareAndSet( this, currentState, newState ) );
     }
 
     private long currentTimeMillis()
