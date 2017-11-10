@@ -27,8 +27,6 @@ import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 public abstract class StringValue extends TextValue
 {
-    private static final ListValue EMPTY_SPLIT = fromArray( stringArray( "", "" ) );
-
     abstract String value();
 
     @Override

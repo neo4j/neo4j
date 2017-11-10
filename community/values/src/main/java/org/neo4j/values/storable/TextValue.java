@@ -21,8 +21,13 @@ package org.neo4j.values.storable;
 
 import org.neo4j.values.virtual.ListValue;
 
+import static org.neo4j.values.storable.Values.stringArray;
+import static org.neo4j.values.virtual.VirtualValues.fromArray;
+
 public abstract class TextValue extends ScalarValue
 {
+    protected static final ListValue EMPTY_SPLIT = fromArray( stringArray( "", "" ) );
+
     TextValue()
     {
     }
