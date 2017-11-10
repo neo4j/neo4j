@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -179,6 +181,11 @@ public interface JobScheduler extends Lifecycle
          */
         public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor" );
 
+        /**
+         * Kernel transaction timeout monitor.
+         */
+        public static Group cypherWorker = new Group( "CypherWorker" );
+
         private Groups()
         {
         }
@@ -211,6 +218,9 @@ public interface JobScheduler extends Lifecycle
 
     /** Expose a group scheduler as an {@link Executor} */
     Executor executor( Group group );
+
+    /** Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}*/
+    ExecutorService workStealingExecutor( Group group, int parallelism );
 
     /**
      * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.

@@ -20,14 +20,18 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -53,6 +57,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     // added when starting a database.
     private final Set<JobHandle> jobs = Collections.synchronizedSet( new HashSet<>() );
 
+    // Contains workStealingExecutors for each group that have asked for one.
+    // If threads need to be created, they need to be inside one of these pools.
+    // We also need to remember to shutdown all pools when we shutdown the database to shutdown queries in an orderly fashion.
+    private final ConcurrentHashMap<Group,ExecutorService> workStealingExecutors = new ConcurrentHashMap<>( 1 );
+
     @Override
     public void init()
     {
@@ -67,9 +76,27 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
+    public ExecutorService workStealingExecutor( Group group, int parallelism )
+    {
+        return workStealingExecutors.computeIfAbsent( group, g -> createNewWorkStealingExecutor( g, parallelism ) );
+    }
+
+    @Override
     public ThreadFactory threadFactory( final Group group )
     {
         return job -> createNewThread( group, job, NO_METADATA );
+    }
+
+    private ExecutorService createNewWorkStealingExecutor( Group group, int parallelism )
+    {
+        final ForkJoinPool.ForkJoinWorkerThreadFactory factory = pool ->
+        {
+            final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread( pool );
+            worker.setName( group.threadName( new HashMap<>() ) );
+            return worker;
+        };
+
+        return new ForkJoinPool( parallelism, factory, null, false );
     }
 
     @Override
@@ -178,6 +205,22 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         finally
         {
             scheduledExecutor = null;
+        }
+
+        for ( ExecutorService executor : workStealingExecutors.values() )
+        {
+            try
+            {
+                shutdownPool( executor );
+            }
+            catch ( RuntimeException e )
+            {
+                exception = Exceptions.chain( exception, e );
+            }
+            finally
+            {
+                scheduledExecutor = null;
+            }
         }
 
         if ( exception != null )

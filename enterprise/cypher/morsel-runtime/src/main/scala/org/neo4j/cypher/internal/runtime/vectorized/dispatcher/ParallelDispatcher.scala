@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executor
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.{concurrent, function}
 
@@ -32,8 +32,7 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
 
-class ForkJoinPoolDispatcher(morselSize: Int, workers: Int) extends Dispatcher {
-  lazy val forkJoinPool: ExecutorService = new java.util.concurrent.ForkJoinPool(workers)
+class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) extends Dispatcher {
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
@@ -45,7 +44,7 @@ class ForkJoinPoolDispatcher(morselSize: Int, workers: Int) extends Dispatcher {
     val startMessage = StartLeafLoop(iteration)
     val state = QueryState(params, visitor)
     val action = createAction(query, startMessage, leaf, queryContext, state)
-    forkJoinPool.submit(action)
+    executor.execute(action)
     query.blockUntilQueryFinishes()
     val failure = query.failure
     if (failure != null) {
@@ -84,7 +83,7 @@ class ForkJoinPoolDispatcher(morselSize: Int, workers: Int) extends Dispatcher {
             case Some(eagerConsumingPipeline) =>
               query.eagerReceiver = None
               val startEager = StartLoopWithEagerData(query.eagerData.asScala.toSeq, incoming.iterationState)
-              forkJoinPool.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
+              executor.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
           }
 
         }
@@ -114,7 +113,7 @@ class ForkJoinPoolDispatcher(morselSize: Int, workers: Int) extends Dispatcher {
 
       case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
         val nextStep = StartLoopWithSingleMorsel(data, message.iterationState)
-        forkJoinPool.execute(createAction(query, nextStep, mother, queryContext, state))
+        executor.execute(createAction(query, nextStep, mother, queryContext, state))
 
       case _ =>
     }
