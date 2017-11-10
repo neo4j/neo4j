@@ -10,11 +10,18 @@
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
   <inceptionYear>2002</inceptionYear>
+  <url>http://neo4j.com/</url>
 
   <organization>
     <name>The Neo4j Graph Database Project</name>
     <url>https://neo4j.com/</url>
   </organization>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
+  </scm>
 
   <licenses>
     <license>
