@@ -59,6 +59,7 @@ public abstract class Value extends AnyValue
 
     public abstract boolean equals( String[] x );
 
+    @Override
     public Boolean ternaryEquals( AnyValue other )
     {
         if ( other == null || other == NO_VALUE )
@@ -81,6 +82,7 @@ public abstract class Value extends AnyValue
         return false;
     }
 
+    @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
         writeTo( (ValueWriter<E>)writer );

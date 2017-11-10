@@ -48,6 +48,7 @@ public abstract class VirtualValue extends AnyValue
 
     public abstract boolean equals( VirtualValue other );
 
+    @Override
     public Boolean ternaryEquals( AnyValue other )
     {
         if ( other == null || other == NO_VALUE )
