@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.Values.pointValue;
 
 public class PointTest
@@ -30,46 +32,46 @@ public class PointTest
     @Test
     public void cartesianShouldEqualItself()
     {
-        assertEqual( pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 ), pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 ) );
-        assertEqual( pointValue( CoordinateReferenceSystem.Cartesian, -1.0, 2.0 ), pointValue( CoordinateReferenceSystem.Cartesian, -1.0, 2.0 ) );
-        assertEqual( pointValue( CoordinateReferenceSystem.Cartesian, -1.0, -2.0 ), pointValue( CoordinateReferenceSystem.Cartesian, -1.0, -2.0 ) );
-        assertEqual( pointValue( CoordinateReferenceSystem.Cartesian, 0.0, 0.0 ), pointValue( CoordinateReferenceSystem.Cartesian, 0.0, 0.0 ) );
+        assertEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, 1.0, 2.0 ) );
+        assertEqual( pointValue( Cartesian, -1.0, 2.0 ), pointValue( Cartesian, -1.0, 2.0 ) );
+        assertEqual( pointValue( Cartesian, -1.0, -2.0 ), pointValue( Cartesian, -1.0, -2.0 ) );
+        assertEqual( pointValue( Cartesian, 0.0, 0.0 ), pointValue( Cartesian, 0.0, 0.0 ) );
     }
 
     @Test
     public void cartesianShouldNotEqualOtherPoint()
     {
-        assertNotEqual( pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 ), pointValue( CoordinateReferenceSystem.Cartesian, 3.0, 4.0 ) );
-        assertNotEqual( pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 ), pointValue( CoordinateReferenceSystem.Cartesian, -1.0, 2.0 ) );
+        assertNotEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, 3.0, 4.0 ) );
+        assertNotEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, -1.0, 2.0 ) );
     }
 
     @Test
     public void geographicShouldEqualItself()
     {
-        assertEqual( pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 ), pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 ) );
-        assertEqual( pointValue( CoordinateReferenceSystem.WGS84, -1.0, 2.0 ), pointValue( CoordinateReferenceSystem.WGS84, -1.0, 2.0 ) );
-        assertEqual( pointValue( CoordinateReferenceSystem.WGS84, -1.0, -2.0 ), pointValue( CoordinateReferenceSystem.WGS84, -1.0, -2.0 ) );
-        assertEqual( pointValue( CoordinateReferenceSystem.WGS84, 0.0, 0.0 ), pointValue( CoordinateReferenceSystem.WGS84, 0.0, 0.0 ) );
+        assertEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, 1.0, 2.0 ) );
+        assertEqual( pointValue( WGS84, -1.0, 2.0 ), pointValue( WGS84, -1.0, 2.0 ) );
+        assertEqual( pointValue( WGS84, -1.0, -2.0 ), pointValue( WGS84, -1.0, -2.0 ) );
+        assertEqual( pointValue( WGS84, 0.0, 0.0 ), pointValue( WGS84, 0.0, 0.0 ) );
     }
 
     @Test
     public void geographicShouldNotEqualOtherPoint()
     {
-        assertNotEqual( pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 ), pointValue( CoordinateReferenceSystem.WGS84, 3.0, 4.0 ) );
-        assertNotEqual( pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 ), pointValue( CoordinateReferenceSystem.WGS84, -1.0, 2.0 ) );
+        assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, 3.0, 4.0 ) );
+        assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, -1.0, 2.0 ) );
     }
 
     @Test
     public void geographicShouldNotEqualCartesian()
     {
-        assertNotEqual( pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 ), pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 ) );
+        assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( Cartesian, 1.0, 2.0 ) );
     }
 
     @Test
     public void shouldHaveValueGroup()
     {
-        assertTrue( pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 ).valueGroup() != null );
-        assertTrue( pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ).valueGroup() != null );
+        assertTrue( pointValue( Cartesian, 1, 2 ).valueGroup() != null );
+        assertTrue( pointValue( WGS84, 1, 2 ).valueGroup() != null );
     }
 
     private static void assertEqual( Value a, Value b )

@@ -37,6 +37,11 @@ public abstract class PointArray extends ArrayValue
         return value().length;
     }
 
+    public PointValue pointValue( int offset )
+    {
+        return value()[offset];
+    }
+
     @Override
     public boolean equals( Geometry[] x )
     {
@@ -166,6 +171,24 @@ public abstract class PointArray extends ArrayValue
     public String prettyPrint()
     {
         return Arrays.toString( value() );
+    }
+
+    public int compareTo( PointArray other )
+    {
+        int i = 0;
+        int x = 0;
+        int length = Math.min( this.length(), other.length() );
+
+        while ( x == 0 && i < length )
+        {
+            x = this.pointValue( i ).compareTo( other.pointValue( i ) );
+            i++;
+        }
+        if ( x == 0 )
+        {
+            x = this.length() - other.length();
+        }
+        return x;
     }
 
     static final class Direct extends PointArray

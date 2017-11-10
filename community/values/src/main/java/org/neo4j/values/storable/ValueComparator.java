@@ -97,6 +97,10 @@ public class ValueComparator implements Comparator<Value>
             case BOOLEAN_ARRAY:
                 return ((BooleanArray) v1).compareTo( (BooleanArray) v2 );
 
+            case GEOMETRY_ARRAY:
+                // Currently just Points
+                return ((PointArray) v1).compareTo( (PointArray) v2);
+
             default:
                 throw new UnsupportedOperationException( format(
                         "Cannot compare ValueGroup id '%s' using ValueComparator", id1
