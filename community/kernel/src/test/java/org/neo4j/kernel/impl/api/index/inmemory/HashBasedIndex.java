@@ -164,11 +164,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     synchronized boolean doAdd( long nodeId, boolean applyIdempotently, Object... propertyValue )
     {
-        Set<Long> nodes = data().get( Arrays.asList( propertyValue ) );
-        if ( nodes == null )
-        {
-            data().put( Arrays.asList( propertyValue ), nodes = new HashSet<>() );
-        }
+        Set<Long> nodes = data().computeIfAbsent( Arrays.asList( propertyValue ), k -> new HashSet<>() );
         // In this implementation we don't care about idempotency.
         return nodes.add( nodeId );
     }

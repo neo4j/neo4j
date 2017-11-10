@@ -87,9 +87,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -232,7 +232,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertEquals("Should be deleted by concurrent change.", 0,
+                assertEquals( format( "Should be deleted by concurrent change. Reader is: %s, ", indexReader ), 0,
                         indexReader.countIndexedNodes( color2.getId(), Values.of( "green" ) ) );
             }
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
@@ -494,8 +494,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public PrimitiveLongResourceIterator getNodeIdIterator()
         {
             PrimitiveLongResourceIterator originalIterator = delegate.getNodeIdIterator();
-            return new DelegatingPrimitiveLongResourceIterator( originalIterator,
-                    updates );
+            return new DelegatingPrimitiveLongResourceIterator( originalIterator, updates );
         }
     }
 

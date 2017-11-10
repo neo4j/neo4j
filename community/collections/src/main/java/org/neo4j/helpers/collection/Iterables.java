@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -900,7 +901,7 @@ public final class Iterables
     public static <T, S extends Comparable> Iterable<T> sort( Iterable<T> iterable, final Function<T, S> compareFunction )
     {
         List<T> list = asList( iterable );
-        Collections.sort( list, ( o1, o2 ) -> compareFunction.apply( o1 ).compareTo( compareFunction.apply( o2 ) ) );
+        Collections.sort( list, Comparator.comparing( compareFunction::apply ) );
         return list;
     }
 
