@@ -49,7 +49,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     // label stats
     statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality.SINGLE)
-    statistics.nodesWithLabelCardinality(None) should equal(Cardinality.SINGLE)
+    statistics.nodesAllCardinality() should equal(Cardinality.SINGLE)
 
     // pattern stats
     Set(Some(LabelId(0)), None).foreach { label1 =>
@@ -74,7 +74,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     // label stats
     statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality(100))
     statistics.nodesWithLabelCardinality(Some(LabelId(1))) should equal(Cardinality.SINGLE)
-    statistics.nodesWithLabelCardinality(None) should equal(Cardinality(200))
+    statistics.nodesAllCardinality() should equal(Cardinality(200))
 
     // pattern stats
     statistics.cardinalityByLabelsAndRelationshipType(

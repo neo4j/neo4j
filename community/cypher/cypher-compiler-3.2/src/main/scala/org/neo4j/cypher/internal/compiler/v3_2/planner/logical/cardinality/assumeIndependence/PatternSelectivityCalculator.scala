@@ -40,7 +40,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
 
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])
            (implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
-    val nbrOfNodesInGraph = stats.nodesWithLabelCardinality(None)
+    val nbrOfNodesInGraph = stats.nodesAllCardinality()
     val (lhs, rhs) = pattern.nodes
     val labelsOnLhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(lhs) ++ labels.getOrElse(lhs, Set.empty))
     val labelsOnRhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(rhs) ++ labels.getOrElse(rhs, Set.empty))
@@ -137,8 +137,9 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]], totalNbrOfNodes: Cardinality): Selectivity = {
     val selectivities = specs map {
       case SpecifiedButUnknown() => Selectivity.ZERO
-      case spec: TokenSpec[LabelId] =>
-        stats.nodesWithLabelCardinality(spec.id) / totalNbrOfNodes getOrElse Selectivity.ZERO
+      case Unspecified() => Selectivity.ONE
+      case SpecifiedAndKnown(spec: LabelId) =>  // Specified labels have ids
+          stats.nodesWithLabelCardinality(Some(spec)) / totalNbrOfNodes getOrElse Selectivity.ZERO
     }
 
     combiner.andTogetherSelectivities(selectivities).getOrElse(Selectivity.ONE)

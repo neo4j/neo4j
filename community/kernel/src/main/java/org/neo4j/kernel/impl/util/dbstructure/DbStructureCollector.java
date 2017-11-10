@@ -107,6 +107,12 @@ public class DbStructureCollector implements DbStructureVisitor
             }
 
             @Override
+            public long nodesAllCardinality()
+            {
+                return allNodesCount;
+            }
+
+            @Override
             public Iterator<Pair<String,String[]>> knownRelationshipPropertyExistenceConstraints()
             {
                 return Iterators.map( relConstraint ->
@@ -121,7 +127,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public long nodesWithLabelCardinality( int labelId )
             {
-                Long result = labelId == -1 ? allNodesCount : nodeCounts.get( labelId );
+                Long result = nodeCounts.get( labelId );
                 return result == null ? 0L : result;
             }
 
