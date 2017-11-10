@@ -31,6 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,6 +58,7 @@ import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
@@ -77,6 +81,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final List<ConfigOptions> configOptions;
 
     private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
+    private final Map<String, Collection<BiConsumer<String,String>>> updateListeners = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
     private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>();
@@ -571,14 +576,59 @@ public class Config implements DiagnosticsProvider, Configuration
      * @implNote No migration or config validation is done. If you need this you have to refactor this method.
      *
      * @param setting The setting to set to the specified value.
-     * @param newValue The new value to set, passing {@code null} or empty should reset the value back to default value.
+     * @param update The new value to set, passing {@code null} or the empty string should reset the value back to default value.
      * @param origin The source of the change, e.g. {@code dbms.setConfigValue()}.
      * @throws IllegalArgumentException if the provided setting is unknown or not dynamic.
      * @throws InvalidSettingException if the value is not formatted correctly.
      */
-    public void updateDynamicSetting( String setting, String newValue, String origin ) throws IllegalArgumentException, InvalidSettingException
+    public void updateDynamicSetting( String setting, String update, String origin )
+            throws IllegalArgumentException, InvalidSettingException
     {
-        // Make sure the setting is valid and is marked as dynamic
+        verifyValidDynamicSetting( setting );
+
+        synchronized ( params )
+        {
+            boolean oldDefault = false;
+            boolean newDefault = false;
+            String oldValue;
+            String newValue;
+            if ( update == null || update.isEmpty() )
+            {
+                // Empty means we want to delete the configured value and fallback to the default value
+                String overriddenDefault = overriddenDefaults.get( setting );
+                oldDefault = overriddenDefault != null;
+                oldValue = oldDefault ? params.put( setting, overriddenDefault ) : params.remove( setting );
+                newValue = getConfiguredValueOf( setting );
+                newDefault = true;
+            }
+            else
+            {
+                // Change setting, make sure it's valid
+                Map<String,String> newEntry = stringMap( setting, update );
+                List<SettingValidator> settingValidators = configOptions.stream()
+                                                                        .map( ConfigOptions::settingGroup )
+                                                                        .collect( Collectors.toList() );
+                for ( SettingValidator validator : settingValidators )
+                {
+                    validator.validate( newEntry, ignore -> {} ); // Throws if invalid
+                }
+
+                oldValue = getConfiguredValueOf( setting );
+                if ( params.put( setting, update ) == null )
+                {
+                    oldDefault = true;
+                }
+                newValue = update;
+            }
+            log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
+                    setting, oldDefault ? "default (" + oldValue + ")" : oldValue,
+                    newDefault ? "default (" + newValue + ")" : newValue, origin );
+            updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
+        }
+    }
+
+    private void verifyValidDynamicSetting( String setting )
+    {
         Optional<ConfigValue> option = findConfigValue( setting );
 
         if ( !option.isPresent() )
@@ -591,39 +641,6 @@ public class Config implements DiagnosticsProvider, Configuration
         {
             throw new IllegalArgumentException( "Setting is not dynamic and can not be changed at runtime" );
         }
-
-        String oldValue;
-
-        if ( newValue == null || newValue.isEmpty() )
-        {
-            // Empty means we want to delete the configured value and fallback to the default value
-            oldValue = params.remove( setting );
-            if ( overriddenDefaults.containsKey( setting ) )
-            {
-                params.put( setting, overriddenDefaults.get( setting ) );
-            }
-            newValue = "default (" + getConfiguredValueOf( setting ) + ")";
-        }
-        else
-        {
-            // Change setting, make sure it's valid
-            Map<String,String> newEntry = stringMap( setting, newValue );
-            List<SettingValidator> settingValidators = configOptions.stream()
-                    .map( ConfigOptions::settingGroup )
-                    .collect( Collectors.toList() );
-            for ( SettingValidator validator : settingValidators )
-            {
-                validator.validate( newEntry, ignore -> {} ); // Throws if invalid
-            }
-
-            oldValue = getConfiguredValueOf( setting );
-
-            if ( params.put( setting, newValue ) == null )
-            {
-                oldValue = "default (" + oldValue + ")";
-            }
-        }
-        log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'", setting, oldValue, newValue, origin );
     }
 
     private String getConfiguredValueOf( String setting )
@@ -635,6 +652,38 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         return configOptions.stream().map( it -> it.asConfigValues( params ) ).flatMap( List::stream )
                 .filter( it -> it.name().equals( setting ) ).findFirst();
+    }
+
+    /**
+     * Register a listener for dynamic updates to the given setting.
+     * <p>
+     * The listener will get called whenever the {@link #updateDynamicSetting(String, String, String)} method is used
+     * to change the given setting, and the listener will be supplied the parsed values of the old and the new
+     * configuration value.
+     *
+     * @param setting The {@link Setting} to listen for changes to.
+     * @param listener The listener callback that will be notified of any configuration changes to the given setting.
+     * @param <V> The value type of the setting.
+     */
+    public <V> void registerDynamicUpdateListener( Setting<V> setting, BiConsumer<V,V> listener )
+    {
+        String settingName = setting.name();
+        verifyValidDynamicSetting( settingName );
+        BiConsumer<String,String> projectedListener = ( oldValStr, newValStr ) ->
+        {
+            try
+            {
+                V oldVal = setting.apply( s -> oldValStr );
+                V newVal = setting.apply( s -> newValStr );
+                listener.accept( oldVal, newVal );
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failure when notifying listeners after dynamic setting change; " +
+                           "new setting might not have taken effect: " + e.getMessage(), e );
+            }
+        };
+        updateListeners.computeIfAbsent( settingName, k -> new ConcurrentLinkedQueue<>() ).add( projectedListener );
     }
 
     /**

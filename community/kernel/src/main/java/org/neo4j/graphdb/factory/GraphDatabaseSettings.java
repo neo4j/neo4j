@@ -340,6 +340,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Duration> check_point_interval_time =
             setting( "dbms.checkpoint.interval.time", DURATION, "15m" );
 
+    @Dynamic
     @Description( "Limit the number of IOs the background checkpoint process will consume per second. " +
                   "This setting is advisory, is ignored in Neo4j Community Edition, and is followed to " +
                   "best effort in Enterprise Edition. " +
