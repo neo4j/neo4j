@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.virtual.ListValue;
+
 public abstract class TextValue extends ScalarValue
 {
     TextValue()
@@ -51,7 +53,7 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue toUpper();
 
-    public abstract TextArray split( String separator );
+    public abstract ListValue split( String separator );
 
     public abstract TextValue replace( String find, String replace );
 
