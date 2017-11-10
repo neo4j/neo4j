@@ -61,7 +61,7 @@ class CypherReductionSupportTest extends CypherFunSuite {
     CypherReductionSupport.evaluate("MATCH (n) RETURN count(n)").toList should be(List(Map("count(n)" -> 0)))
   }
 
-  test("removes unnecessary stuff") {
+  test("removes unnecessary stuff from faulty query") {
     val setup = "CREATE (n:Label {name: 0}) RETURN n"
     val query = "MATCH (n:Label)-[:X]->(m:Label),(p) WHERE 100/n.name > 34 AND m.name = n.name WITH n.name AS name RETURN name, $a ORDER BY name SKIP 1 LIMIT 5"
     println(query)
@@ -76,7 +76,30 @@ class CypherReductionSupportTest extends CypherFunSuite {
       }
     }
     println(reduced)
-    //reduced should equal("MATCH (n:Label) WHERE 100/n.name > 34 RETURN n.name")
+  }
+
+  test("removes unnecessary stuff from sensible query") {
+    val setup = "CREATE (n:Label {name: 'satia'})-[:WORKS_WITH]->(m:Label {name: 'andres'})"
+    val query =
+      """ MATCH (n:Label), (m)
+        | WHERE m <> n AND m.name = 'andres' AND n.name = 'satia'
+        | WITH n.name AS name LIMIT 2
+        | RETURN name ORDER BY name DESC SKIP 0 LIMIT 1
+        | UNION
+        | MATCH (n:NoLabel) WHERE 1 = 0 RETURN n.name AS name
+      """.stripMargin
+    println(query)
+    val reduced = CypherReductionSupport.reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
+      tryResults match {
+        case Success(r) =>
+          if (r.hasNext && r.next() == Map("name" -> "satia") && !r.hasNext)
+            Reproduced
+          else
+            NotReproduced
+        case _ => NotReproduced
+      }
+    }
+    println(reduced)
   }
 
 }

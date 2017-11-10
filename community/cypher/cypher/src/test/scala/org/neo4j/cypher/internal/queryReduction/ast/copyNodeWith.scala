@@ -136,6 +136,9 @@ object copyNodeWith {
 
       case a:ASTSlicingPhrase =>
         a.dup(Seq(nc.ofSingle(a.expression)))
+
+      case u:Union =>
+        u.dup(Seq(nc.ofSingle(u.part), nc.ofSingle(u.query)))
     }
 
     newNode.asInstanceOf[A]

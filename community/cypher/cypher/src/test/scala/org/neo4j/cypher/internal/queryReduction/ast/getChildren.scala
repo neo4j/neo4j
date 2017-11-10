@@ -143,6 +143,10 @@ object getChildren {
 
       case a:ASTSlicingPhrase =>
         Seq(a.expression)
+
+      case u:Union =>
+        Seq(u.part, u.query)
+
     }
   }
 

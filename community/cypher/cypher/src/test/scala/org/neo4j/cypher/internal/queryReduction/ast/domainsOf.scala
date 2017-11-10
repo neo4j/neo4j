@@ -168,6 +168,10 @@ object domainsOf {
 
       case a:ASTSlicingPhrase =>
         ofSingle(a.expression, classOf[Expression])
+
+      case u:Union =>
+        ofSingle(u.part, classOf[QueryPart]) ++
+        ofSingle(u.query, classOf[SingleQuery])
     }
   }
 }
