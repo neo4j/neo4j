@@ -105,9 +105,21 @@ public interface Locks
         void releaseExclusive( ResourceType resourceType, long... resourceIds );
 
         /**
-         * Stop all active lock waiters and release them. All already held locks remains.
+         * Start preparing this transaction for committing. In two-phase locking palace, we will in principle no longer
+         * be acquiring any new locks - though we still allow it because it is useful in certain technical situations -
+         * but when we are ready, we will start releasing them. This also means that we will no longer accept being
+         * {@link #stop() asynchronously stopped}. From this point on, only the commit process can decide if the
+         * transaction lives or dies, and in either case, the lock client will end up releasing all locks via the
+         * {@link #close()} method.
+         */
+        void prepare();
+
+        /**
+         * Stop all active lock waiters and release them.
          * All new attempts to acquire any locks will cause exceptions.
          * This client can and should only be {@link #close() closed} afterwards.
+         * If this client has been {@link #prepare() prepared}, then all currently acquired locks will remain held,
+         * otherwise they will be released immediately.
          */
         void stop();
 

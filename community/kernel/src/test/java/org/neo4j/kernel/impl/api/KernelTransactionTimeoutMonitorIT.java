@@ -27,8 +27,11 @@ import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -38,16 +41,25 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class KernelTransactionTimeoutMonitorIT
 {
     @Rule
-    public DatabaseRule database = new EmbeddedDatabaseRule()
-            .withSetting( GraphDatabaseSettings.transaction_monitor_check_interval, "100ms" );
+    public DatabaseRule database = createDatabaseRule();
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     private static final int NODE_ID = 0;
     private ExecutorService executor;
+
+    protected DatabaseRule createDatabaseRule()
+    {
+        return new EmbeddedDatabaseRule()
+                .withSetting( GraphDatabaseSettings.transaction_monitor_check_interval, "100ms" );
+    }
 
     @Before
     public void setUp() throws Exception
@@ -78,6 +90,54 @@ public class KernelTransactionTimeoutMonitorIT
             nodeById.setProperty( "a", "b" );
             executor.submit( startAnotherTransaction() ).get();
         }
+    }
+
+    @Test( timeout = 30_000 )
+    public void terminatingTransactionMustEagerlyReleaseTheirLocks() throws Exception
+    {
+        AtomicBoolean nodeLockAcquired = new AtomicBoolean();
+        AtomicBoolean lockerDone = new AtomicBoolean();
+        BinaryLatch lockerPause = new BinaryLatch();
+        long nodeId;
+        try ( Transaction tx = database.beginTx() )
+        {
+            nodeId = database.createNode().getId();
+            tx.success();
+        }
+        Future<?> locker = executor.submit( () ->
+        {
+            try ( Transaction tx = database.beginTx( 100, TimeUnit.MILLISECONDS ) )
+            {
+                Node node = database.getNodeById( nodeId );
+                tx.acquireReadLock( node );
+                nodeLockAcquired.set( true );
+                lockerPause.await();
+            }
+            lockerDone.set( true );
+        } );
+
+        boolean proceed;
+        do
+        {
+            proceed = nodeLockAcquired.get();
+        }
+        while ( !proceed );
+
+        Thread.sleep( 150 ); // locker transaction is definitely past its allocated time now
+        // make sure it's terminated; we call this explicitly so we don't have to wait for the scheduler to run
+        database.resolveDependency( KernelTransactionTimeoutMonitor.class ).run();
+        assertFalse( lockerDone.get() ); // but the thread should still be blocked on the latch
+        // Yet we should be able to proceed and grab the locks they once held
+        try ( Transaction tx = database.beginTx() )
+        {
+            // Write-locking is only possible if their shared lock was released
+            tx.acquireWriteLock( database.getNodeById( nodeId ) );
+            tx.success();
+        }
+        // No exception from our lock client being stopped (e.g. we ended up blocked for too long) or from timeout
+        lockerPause.release();
+        locker.get();
+        assertTrue( lockerDone.get() );
     }
 
     private Runnable startAnotherTransaction()

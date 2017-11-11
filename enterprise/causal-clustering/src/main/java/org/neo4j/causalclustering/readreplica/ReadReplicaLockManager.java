@@ -95,6 +95,11 @@ public class ReadReplicaLockManager implements Locks
         }
 
         @Override
+        public void prepare()
+        {
+        }
+
+        @Override
         public void stop()
         {
         }

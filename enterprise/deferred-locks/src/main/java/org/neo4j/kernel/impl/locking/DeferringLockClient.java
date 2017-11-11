@@ -158,6 +158,12 @@ public class DeferringLockClient implements Locks.Client
     }
 
     @Override
+    public void prepare()
+    {
+        clientDelegate.prepare();
+    }
+
+    @Override
     public void stop()
     {
         stopped = true;

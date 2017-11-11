@@ -137,6 +137,20 @@ public class DeferringLockClientTest
     }
 
     @Test
+    public void shouldPrepareUnderlyingClient() throws Exception
+    {
+        // GIVEN
+        Locks.Client actualClient = mock( Locks.Client.class );
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        // WHEN
+        client.prepare();
+
+        // THEN
+        verify( actualClient ).prepare();
+    }
+
+    @Test
     public void shouldCloseUnderlyingClient() throws Exception
     {
         // GIVEN
@@ -463,6 +477,11 @@ public class DeferringLockClientTest
 
         @Override
         public void releaseExclusive( ResourceType resourceType, long... resourceIds )
+        {
+        }
+
+        @Override
+        public void prepare()
         {
         }
 
