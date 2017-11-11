@@ -49,7 +49,7 @@ class PipelineBuilder(pipelines: Map[LogicalPlanId, PipelineInformation], conver
           pipeline.numberOfReferences,
           pipeline.getLongOffsetFor(column))
 
-      case plans.SingleRow() =>
+      case plans.Argument(_) =>
         new SingleRowOperator
     }
 
