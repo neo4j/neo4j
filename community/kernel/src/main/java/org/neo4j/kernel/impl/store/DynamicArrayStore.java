@@ -93,7 +93,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    private static byte[] createBitCompactedArray(ShortArray type, Object array )
+    private static byte[] createBitCompactedArray( ShortArray type, Object array )
     {
         Class<?> componentType = array.getClass().getComponentType();
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
