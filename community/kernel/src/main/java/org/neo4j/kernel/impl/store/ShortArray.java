@@ -526,6 +526,36 @@ public enum ShortArray
         }
 
         @Override
+        public void writeAll( Object array, byte[] result, int offset )
+        {
+            if ( isPrimitive( array ) )
+            {
+                float[] values = (float[]) array;
+                for ( int i = 0; i < values.length; i++ )
+                {
+                    writeFloat( values[i], result, offset + i * 4 );
+                }
+            }
+            else
+            {
+                Float[] values = (Float[]) array;
+                for ( int i = 0; i < values.length; i++ )
+                {
+                    writeFloat( values[i], result, offset + i * 4 );
+                }
+            }
+        }
+
+        private void writeFloat( float floaValue, byte[] result, int offset )
+        {
+            long value = Float.floatToIntBits( floaValue );
+            for ( int b = 0; b < 4; b++ )
+            {
+                result[offset + b] = (byte) ((value >> (b * 8)) & 0xFFL);
+            }
+        }
+
+        @Override
         public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
@@ -550,13 +580,37 @@ public enum ShortArray
     {
         int getRequiredBits( double value )
         {
-            return 64;
+            long v = Double.doubleToLongBits( value );
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
+            {
+                if ( (mask & v) != 0 )
+                {
+                    return i;
+                }
+            }
+            return 1;
         }
 
         @Override
         int getRequiredBits( Object array, int arrayLength )
         {
-            return 64;
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( double value : (double[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            }
+            else
+            {
+                for ( double value : (Double[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            }
+            return highest;
         }
 
         @Override
