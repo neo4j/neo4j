@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -58,7 +59,9 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static java.lang.String.format;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.function.ThrowingFunction.catchThrown;
 import static org.neo4j.function.ThrowingFunction.throwIfPresent;
@@ -125,20 +128,6 @@ public class EnterpriseBuiltInDbmsProcedures
     This surface is hidden in 3.1, to possibly be completely removed or reworked later
     ==================================================================================
      */
-    //@Procedure( name = "dbms.listTransactions", mode = DBMS )
-    public Stream<TransactionResult> listTransactions()
-            throws InvalidArgumentsException, IOException
-    {
-        assertAdmin();
-
-        return countTransactionByUsername(
-            getActiveTransactions( graph.getDependencyResolver() )
-                .stream()
-                .filter( tx -> !tx.terminationReason().isPresent() )
-                .map( tx -> tx.securityContext().subject().username() )
-        );
-    }
-
     //@Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
@@ -310,9 +299,44 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
+    @Description( "List all transactions currently executing at this instance that are visible to the user." )
+    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    public Stream<TransactionStatusResult> listTransactions() throws InvalidArgumentsException
+    {
+        securityContext.assertCredentialsNotExpired();
+        try
+        {
+            Set<KernelTransactionHandle> handles = getKernelTransactions().activeTransactions().stream()
+                    .filter( transaction -> isAdminOrSelf( transaction.securityContext().subject().username() ) )
+                    .collect( toSet() );
+
+            Map<KernelTransactionHandle,List<QuerySnapshot>> handleQuerySnapshotsMap = handles.stream()
+                    .collect( toMap( identity(), getTransactionQueries() ) );
+
+            TransactionDependenciesResolver transactionBlockerResolvers =
+                    new TransactionDependenciesResolver( handleQuerySnapshotsMap );
+            return handles.stream()
+                    .map( catchThrown( InvalidArgumentsException.class,
+                            tx -> new TransactionStatusResult( tx, transactionBlockerResolvers,
+                                    handleQuerySnapshotsMap ) ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
+    }
+
+    private Function<KernelTransactionHandle,List<QuerySnapshot>> getTransactionQueries()
+    {
+        return transactionHandle -> transactionHandle.executingQueries()
+                                              .map( ExecutingQuery::snapshot )
+                                              .collect( toList() );
+    }
+
     @Description( "List the active lock requests granted for the transaction executing the query with the given query id." )
     @Procedure( name = "dbms.listActiveLocks", mode = DBMS )
-    public Stream<ActiveLocksQueryResult> listActiveLocks( @Name( "queryId" ) String queryId )
+    public Stream<ActiveLocksResult> listActiveLocks( @Name( "queryId" ) String queryId )
             throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
@@ -420,12 +444,12 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private Stream<ActiveLocksQueryResult> getActiveLocksForQuery( Pair<KernelTransactionHandle, ExecutingQuery> pair )
+    private Stream<ActiveLocksResult> getActiveLocksForQuery( Pair<KernelTransactionHandle, ExecutingQuery> pair )
     {
         ExecutingQuery query = pair.other();
         if ( isAdminOrSelf( query.username() ) )
         {
-            return pair.first().activeLocks().map( ActiveLocksQueryResult::new );
+            return pair.first().activeLocks().map( ActiveLocksResult::new );
         }
         else
         {
@@ -480,7 +504,7 @@ public class EnterpriseBuiltInDbmsProcedures
     public static Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
     {
         return usernames
-            .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
+            .collect( Collectors.groupingBy( identity(), Collectors.counting() ) )
             .entrySet()
             .stream()
             .map( entry -> new TransactionResult( entry.getKey(), entry.getValue() )
@@ -490,7 +514,7 @@ public class EnterpriseBuiltInDbmsProcedures
     public static Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
     {
         return usernames
-            .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
+            .collect( Collectors.groupingBy( identity(), Collectors.counting() ) )
             .entrySet()
             .stream()
             .map( entry -> new ConnectionResult( entry.getKey(), entry.getValue() ) );

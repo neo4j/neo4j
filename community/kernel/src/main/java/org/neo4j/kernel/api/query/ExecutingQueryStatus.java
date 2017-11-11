@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.api.query;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+
+import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
  * Internal representation of the status of an executing query.
@@ -50,5 +54,23 @@ abstract class ExecutingQueryStatus
     boolean isPlanning()
     {
         return false;
+    }
+
+    /**
+     * Is query waiting on a locks
+     * @return true if waiting on locks, false otherwise
+     */
+    boolean isWaitingOnLocks()
+    {
+        return false;
+    }
+
+    /**
+     * List of locks query is waiting on. Will be empty for all of the statuses except for {@link WaitingOnLock}.
+     * @return list of locks query is waiting on, empty list if query is not waiting.
+     */
+    List<ActiveLock> waitingOnLocks()
+    {
+        return Collections.emptyList();
     }
 }

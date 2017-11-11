@@ -21,13 +21,13 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 
 import org.neo4j.kernel.impl.locking.ActiveLock;
 
-public class ActiveLocksQueryResult
+public class ActiveLocksResult
 {
     public final String mode;
     public final String resourceType;
     public final long resourceId;
 
-    public ActiveLocksQueryResult( ActiveLock lock )
+    public ActiveLocksResult( ActiveLock lock )
     {
         this.mode = lock.mode();
         this.resourceType = lock.resourceType().name();

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.values.virtual.MapValue;
 
@@ -37,22 +38,14 @@ public class QuerySnapshot
     private final long waitTimeMillis;
     private final String status;
     private final Map<String,Object> resourceInfo;
+    private final List<ActiveLock> waitingLocks;
     private final long activeLockCount;
     private final long allocatedBytes;
     private final PageCounterValues page;
 
-    QuerySnapshot(
-            ExecutingQuery query,
-            PlannerInfo plannerInfo,
-            PageCounterValues page,
-            long planningTimeMillis,
-            long elapsedTimeMillis,
-            long cpuTimeMillis,
-            long waitTimeMillis,
-            String status,
-            Map<String,Object> resourceInfo,
-            long activeLockCount,
-            long allocatedBytes )
+    QuerySnapshot( ExecutingQuery query, PlannerInfo plannerInfo, PageCounterValues page, long planningTimeMillis,
+            long elapsedTimeMillis, long cpuTimeMillis, long waitTimeMillis, String status,
+            Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes )
     {
         this.query = query;
         this.plannerInfo = plannerInfo;
@@ -63,6 +56,7 @@ public class QuerySnapshot
         this.waitTimeMillis = waitTimeMillis;
         this.status = status;
         this.resourceInfo = resourceInfo;
+        this.waitingLocks = waitingLocks;
         this.activeLockCount = activeLockCount;
         this.allocatedBytes = allocatedBytes;
     }
@@ -216,5 +210,10 @@ public class QuerySnapshot
     public long pageFaults()
     {
         return page.faults;
+    }
+
+    public List<ActiveLock> waitingLocks()
+    {
+        return waitingLocks;
     }
 }

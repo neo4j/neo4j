@@ -118,4 +118,16 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     {
         // nothing to do
     }
+
+    @Override
+    public long accumulatedHits()
+    {
+        return 0;
+    }
+
+    @Override
+    public long accumulatedFaults()
+    {
+        return 0;
+    }
 }

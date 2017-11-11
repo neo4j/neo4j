@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.api.query;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 class WaitingOnLock extends ExecutingQueryStatus
@@ -61,5 +64,36 @@ class WaitingOnLock extends ExecutingQueryStatus
     String name()
     {
         return WAITING_STATE;
+    }
+
+    @Override
+    boolean isWaitingOnLocks()
+    {
+        return true;
+    }
+
+    @Override
+    List<ActiveLock> waitingOnLocks()
+    {
+        List<ActiveLock> locks = new ArrayList<>();
+        switch ( mode )
+        {
+        case ActiveLock.EXCLUSIVE_MODE:
+
+            for ( long resourceId : resourceIds )
+            {
+                locks.add( ActiveLock.exclusiveLock( resourceType, resourceId ) );
+            }
+            break;
+        case ActiveLock.SHARED_MODE:
+            for ( long resourceId : resourceIds )
+            {
+                locks.add( ActiveLock.sharedLock( resourceType, resourceId ) );
+            }
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported type of lock mode: " + mode );
+        }
+        return locks;
     }
 }

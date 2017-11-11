@@ -48,6 +48,8 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -136,7 +138,7 @@ public class KernelTransactionTestBase
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit,
-                securityContext, transactionTimeout );
+                securityContext, transactionTimeout, 1L );
         return tx;
     }
 
@@ -144,7 +146,8 @@ public class KernelTransactionTestBase
     {
         return new KernelTransactionImplementation( statementOperations, schemaWriteGuard,
                 hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor,
-                explicitIndexStateSupplier, txPool, clock, TransactionTracer.NULL, LockTracer.NONE,
+                explicitIndexStateSupplier, txPool, clock, CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
+                TransactionTracer.NULL, LockTracer.NONE,
                 PageCursorTracerSupplier.NULL, storageEngine, new CanWrite() );
     }
 

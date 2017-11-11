@@ -114,6 +114,18 @@ public interface PageCursorTracer extends PageCursorCounters
         {
 
         }
+
+        @Override
+        public long accumulatedHits()
+        {
+            return 0;
+        }
+
+        @Override
+        public long accumulatedFaults()
+        {
+            return 0;
+        }
     };
 
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
@@ -127,7 +139,22 @@ public interface PageCursorTracer extends PageCursorCounters
     /**
      * Report to global page cache tracer events observed by current page cursor tracer.
      * As soon as any event will be reported, page cursor tracer reset corresponding counters and completely forgets
-     * about it.
+     * about all of them except for accumulated counterparts.
      */
     void reportEvents();
+
+    /**
+     * Accumulated number of hits that tracer observed over all reporting cycles.
+     * In counterpart to hits metric that reset each time when reporting cycle is over
+     * @return accumulated number of hits
+     */
+    long accumulatedHits();
+
+    /**
+     * Accumulated number of faults that tracer observed over all reporting cycles.
+     * In counterpart to faults metric that reset each time when reporting cycle is over
+     * @return accumulated number of faults
+     */
+    long accumulatedFaults();
+
 }

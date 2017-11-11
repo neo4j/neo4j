@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -91,15 +93,14 @@ public class KernelTransactionFactory
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( Supplier.class ),
                 mock( Pool.class ),
-                Clocks.systemClock(),
-                NULL,
+                Clocks.systemClock(), CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE, NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite() );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, securityContext, 0L );
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, securityContext, 0L, 1L );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }

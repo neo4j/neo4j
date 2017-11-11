@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,25 +28,21 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.kernel.enterprise.builtinprocs.ProceduresTimeFormatHelper.formatInterval;
+import static org.neo4j.kernel.enterprise.builtinprocs.ProceduresTimeFormatHelper.formatTime;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 
 public class QueryStatusResult
 {
-    public static final ZoneId UTC_ZONE_ID = ZoneId.of( "UTC" );
     public final String queryId;
     public final String username;
     public final Map<String,Object> metaData;
@@ -136,22 +129,6 @@ public class QueryStatusResult
             map.put( s, writer.value() );
         } );
         return map;
-    }
-
-    private static String formatTime( final long startTime )
-    {
-        return OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( startTime ), UTC_ZONE_ID )
-                .format( ISO_OFFSET_DATE_TIME );
-    }
-
-    private static String formatInterval( final long l )
-    {
-        final long hr = MILLISECONDS.toHours( l );
-        final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
-        final long sec = MILLISECONDS.toSeconds( l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) );
-        final long ms = l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) - SECONDS.toMillis( sec );
-        return String.format( "%02d:%02d:%02d.%03d", hr, min, sec, ms );
     }
 
     private static class ParameterWriter extends BaseToObjectValueWriter<RuntimeException>

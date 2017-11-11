@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -64,12 +65,15 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 /**
@@ -119,6 +123,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
+    private volatile long userTransactionId;
     private boolean beforeHookInvoked;
     private volatile boolean closing;
     private volatile boolean closed;
@@ -129,6 +134,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long timeoutMillis;
     private long lastTransactionIdWhenStarted;
     private volatile long lastTransactionTimestampWhenStarted;
+    private final Statistics statistics;
     private TransactionEvent transactionEvent;
     private Type type;
     private long transactionId;
@@ -145,22 +151,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationParts statementOperations,
-                                            SchemaWriteGuard schemaWriteGuard,
-                                            TransactionHooks hooks,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            Procedures procedures,
-                                            TransactionHeaderInformationFactory headerInformationFactory,
-                                            TransactionCommitProcess commitProcess,
-                                            TransactionMonitor transactionMonitor,
-                                            Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
-                                            Pool<KernelTransactionImplementation> pool,
-                                            Clock clock,
-                                            TransactionTracer transactionTracer,
-                                            LockTracer lockTracer,
-                                            PageCursorTracerSupplier cursorTracerSupplier,
-                                            StorageEngine storageEngine,
-                                            AccessCapability accessCapability )
+    public KernelTransactionImplementation( StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
+            TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
+            TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
+            TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
+            Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
+            TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
+            StorageEngine storageEngine, AccessCapability accessCapability )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -179,18 +176,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
                 procedures, accessCapability, lockTracer, statementOperations );
+        this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
     }
 
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize(
-            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type,
-            SecurityContext frozenSecurityContext, long transactionTimeout )
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type,
+            SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId )
     {
         this.type = type;
         this.statementLocks = statementLocks;
+        this.userTransactionId = userTransactionId;
         this.terminationReason = null;
         this.closing = false;
         this. closed = false;
@@ -208,7 +206,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
-        this.currentStatement.initialize( statementLocks, cursorTracerSupplier.get() );
+        PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
+        this.statistics.init( Thread.currentThread().getId(), pageCursorTracer );
+        this.currentStatement.initialize( statementLocks, pageCursorTracer );
         return this;
     }
 
@@ -721,6 +721,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             closeListeners.clear();
             reuseCount++;
             userMetaData = Collections.emptyMap();
+            userTransactionId = 0;
+            statistics.reset();
             pool.release( this );
         }
         finally
@@ -820,6 +822,118 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         StatementLocks locks = this.statementLocks;
         return locks == null ? Stream.empty() : locks.activeLocks();
+    }
+
+    public long userTransactionId()
+    {
+        return userTransactionId;
+    }
+
+    public Statistics getStatistics()
+    {
+        return statistics;
+    }
+
+    public static class Statistics
+    {
+        private volatile long cpuTimeNanosWhenQueryStarted;
+        private volatile long heapAllocatedBytesWhenQueryStarted;
+        private volatile long waitingTimeNanos;
+        private volatile long transactionThreadId;
+        private final KernelTransactionImplementation transaction;
+        private final CpuClock cpuClock;
+        private final HeapAllocation heapAllocation;
+        private volatile PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
+
+        public Statistics( KernelTransactionImplementation transaction, CpuClock cpuClock, HeapAllocation heapAllocation )
+        {
+            this.transaction = transaction;
+            this.cpuClock = cpuClock;
+            this.heapAllocation = heapAllocation;
+        }
+
+        void init( long threadId, PageCursorTracer pageCursorTracer )
+        {
+            this.transactionThreadId = threadId;
+            this.pageCursorTracer = pageCursorTracer;
+            this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( transactionThreadId );
+            this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes( transactionThreadId );
+        }
+
+        /**
+         * Returns number of allocated bytes by current transaction.
+         * @return number of allocated bytes by the thread.
+         */
+        public long heapAllocateBytes()
+        {
+            return heapAllocation.allocatedBytes( transactionThreadId ) - heapAllocatedBytesWhenQueryStarted;
+        }
+
+        /**
+         * Return CPU time used by current transaction in milliseconds
+         * @return the current CPU time used by the transaction, in milliseconds.
+         */
+        public long cpuTimeMillis()
+        {
+            long cpuTimeNanos = cpuClock.cpuTimeNanos( transactionThreadId ) - cpuTimeNanosWhenQueryStarted;
+            return NANOSECONDS.toMillis( cpuTimeNanos );
+        }
+
+        /**
+         * Return total number of page cache hits that current transaction performed
+         * @return total page cache hits
+         */
+        public long totalTransactionPageCacheHits()
+        {
+            return pageCursorTracer.accumulatedHits();
+        }
+
+        /**
+         * Return total number of page cache faults that current transaction performed
+         * @return total page cache faults
+         */
+        public long totalTransactionPageCacheFaults()
+        {
+            return pageCursorTracer.accumulatedFaults();
+        }
+
+        /**
+         * Report how long any particular query was waiting during it's execution
+         * @param waitTimeNanos query waiting time in nanoseconds
+         */
+        @SuppressWarnings( "NonAtomicOperationOnVolatileField" )
+        void addWaitingTime( long waitTimeNanos )
+        {
+            waitingTimeNanos += waitTimeNanos;
+        }
+
+        /**
+         * Accumulated transaction waiting time that includes waiting time of all already executed queries
+         * plus waiting time of currently executed query.
+         * @return accumulated transaction waiting time
+         * @param nowNanos current moment in nanoseconds
+         */
+        public long getWaitingTimeNanos( long nowNanos )
+        {
+            ExecutingQueryList queryList = transaction.executingQueries();
+            long waitingTime = waitingTimeNanos;
+            if ( queryList != null )
+            {
+                Long latestQueryWaitingNanos = queryList.top( executingQuery ->
+                        executingQuery.totalWaitingTimeNanos( nowNanos ) );
+                waitingTime = latestQueryWaitingNanos != null ? waitingTime + latestQueryWaitingNanos : waitingTime;
+            }
+            return waitingTime;
+        }
+
+        void reset()
+        {
+            pageCursorTracer = PageCursorTracer.NULL;
+            cpuTimeNanosWhenQueryStarted = 0;
+            heapAllocatedBytesWhenQueryStarted = 0;
+            waitingTimeNanos = 0;
+            transactionThreadId = -1;
+        }
     }
 
     /**
