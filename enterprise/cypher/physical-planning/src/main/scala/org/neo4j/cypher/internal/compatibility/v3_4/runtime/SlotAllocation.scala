@@ -119,7 +119,7 @@ object SlotAllocation {
         pipeline.newLong(leaf.idName.name, nullable, CTNode)
         pipeline
 
-      case _:SingleRow =>
+      case _:Argument =>
         argument.getOrElse(PipelineInformation.empty)
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")

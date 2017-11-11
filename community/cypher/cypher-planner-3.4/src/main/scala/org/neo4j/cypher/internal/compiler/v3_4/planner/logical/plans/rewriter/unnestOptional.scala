@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 case object unnestOptional extends Rewriter {
@@ -45,13 +45,13 @@ case object unnestOptional extends Rewriter {
 
     case apply@Apply(lhs,
       Optional(
-      e@Expand(_: SingleRow, _, _, _, _, _, _), _)) =>
+      e@Expand(_: Argument, _, _, _, _, _, _), _)) =>
         optionalExpand(e, lhs)(Seq.empty)(apply.solved)
 
     case apply@Apply(lhs,
       Optional(
       Selection(predicates,
-      e@Expand(_: SingleRow, _, _, _, _, _, _)), _)) =>
+      e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
         optionalExpand(e, lhs)(predicates)(apply.solved)
   })
 

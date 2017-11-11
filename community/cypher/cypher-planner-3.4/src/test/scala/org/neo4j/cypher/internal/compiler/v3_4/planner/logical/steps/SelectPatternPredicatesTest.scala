@@ -21,15 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -74,7 +73,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -106,7 +105,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -172,8 +171,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val singleRow = SingleRow(Set(IdName("a")))(solved)()
-    val inner = Expand(singleRow, IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val argument = Argument(Set(IdName("a")))(solved)()
+    val inner = Expand(argument, IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -209,7 +208,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -255,8 +254,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
-    val inner2 = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -301,8 +300,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
-    val inner2 = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -347,8 +346,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
-    val inner2 = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -398,8 +397,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
-    val inner2 = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -449,8 +448,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
-    val inner2 = Expand(SingleRow(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)

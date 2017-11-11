@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.frontend.v3_4.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, Predicate, ShortestPathPattern, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
+import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.functions.{Length, Nodes}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 
 case object planShortestPaths {
 
@@ -87,13 +87,13 @@ case object planShortestPaths {
 
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
-    val lhsArgument = lpp.planSingleRowFrom(inner)
+    val lhsArgument = lpp.planArgumentFrom(inner)
     val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
                                      disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime)
     val lhsOption = lpp.planOptional(lhsSp, Set.empty)
     val lhs = lpp.planApply(inner, lhsOption)
 
-    val rhsArgument = lpp.planSingleRowFrom(lhs)
+    val rhsArgument = lpp.planArgumentFrom(lhs)
 
     val rhs = if (context.errorIfShortestPathFallbackUsedAtRuntime) {
       lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException)

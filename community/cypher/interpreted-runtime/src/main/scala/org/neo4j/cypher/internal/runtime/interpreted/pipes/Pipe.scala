@@ -48,7 +48,7 @@ trait Pipe {
   def id: LogicalPlanId
 }
 
-case class SingleRowPipe()(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+case class ArgumentPipe()(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.createOrGetInitialContext())

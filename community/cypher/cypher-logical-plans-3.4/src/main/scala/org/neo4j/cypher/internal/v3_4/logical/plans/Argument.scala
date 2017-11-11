@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 
 /**
   * Produce a single row with the contents of argument
   */
-case class SingleRow(argumentIds: Set[IdName] = Set.empty)(val solved: PlannerQuery with CardinalityEstimation)
+case class Argument(argumentIds: Set[IdName] = Set.empty)(val solved: PlannerQuery with CardinalityEstimation)
                    (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap)
   extends LogicalLeafPlan {
 
   def availableSymbols: Set[IdName] = argumentIds
 
-  override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): SingleRow =
+  override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): Argument =
     copy(argumentIds)(newSolved)(typeInfo)
 
   override def copyPlan(): LogicalPlan = this.copy(argumentIds)(solved)(typeInfo).asInstanceOf[this.type]

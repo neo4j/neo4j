@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ir.v3_4.LazyMode
 import org.neo4j.cypher.internal.util.v3_4.Cost
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, LabelName, SemanticDirection}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -36,7 +36,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         Expand(
           Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
             Expand(
-              SingleRow(Set("a"))(solvedWithEstimation(10.0))(),
+              Argument(Set("a"))(solvedWithEstimation(10.0))(),
               "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
           )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
       )(solvedWithEstimation(10.0))
@@ -99,7 +99,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val card10 = solvedWithEstimation(cardinality)
     val plan =
       Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
-        SingleRow(Set("a"))(card10)())(card10)
+        Argument(Set("a"))(card10)())(card10)
 
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates

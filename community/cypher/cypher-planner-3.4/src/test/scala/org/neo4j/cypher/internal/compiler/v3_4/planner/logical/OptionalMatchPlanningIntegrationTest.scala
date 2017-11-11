@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, SimplePatternLength}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Limit, _}
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
@@ -39,7 +39,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         case (p: Expand, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
         case (_: Expand, _) => 10.0
         case (_: OuterHashJoin, _) => 20.0
-        case (_: SingleRow, _) => 1.0
+        case (_: Argument, _) => 1.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
@@ -79,7 +79,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
         Optional(
         ProjectEndpoints(
-        SingleRow(args), IdName("r"), IdName("b2"), false, IdName("a1"), true, None, true, SimplePatternLength
+        Argument(args), IdName("r"), IdName("b2"), false, IdName("a1"), true, None, true, SimplePatternLength
         ), _
         )
         ) =>
@@ -95,7 +95,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Selection(
       predicates,
       ProjectEndpoints(
-      SingleRow(args),
+      Argument(args),
       IdName("r"), IdName("b2"), false, IdName("a2"), false, None, true, SimplePatternLength
       )
       ), _
@@ -113,7 +113,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
       Optional(
       ProjectEndpoints(
-      SingleRow(args),
+      Argument(args),
       IdName("r"), IdName("a2"), false, IdName("b2"), false, None, true, SimplePatternLength
       ), _
       )

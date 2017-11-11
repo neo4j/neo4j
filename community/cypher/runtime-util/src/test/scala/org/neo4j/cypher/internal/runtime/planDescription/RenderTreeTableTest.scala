@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlanId, SingleRow}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, Expand, ExpandAll, LogicalPlanId}
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -217,7 +217,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-  val singleRow = SingleRow()(solved)()
+  val argument = Argument()(solved)()
 
   test("single node is represented nicely") {
     val arguments = Seq(
@@ -321,7 +321,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("Expand contains information about its relations") {
-    val expandPlan = Expand(singleRow, IdName("from"), SemanticDirection.INCOMING, Seq.empty, IdName("to"), IdName("rel"), ExpandAll)(solved)
+    val expandPlan = Expand(argument, IdName("from"), SemanticDirection.INCOMING, Seq.empty, IdName("to"), IdName("rel"), ExpandAll)(solved)
     expandPlan.assignIds()
     val description = LogicalPlan2PlanDescription(true)
 

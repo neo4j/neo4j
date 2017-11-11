@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
@@ -28,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 
@@ -355,20 +355,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     SemiApply(left, right)(solved)
   }
 
-  def planQuerySingleRow(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planQueryArgument(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
     val otherIds = queryGraph.argumentIds -- patternNodes
-    planSingleRow(patternNodes, patternRels, otherIds)
+    planArgument(patternNodes, patternRels, otherIds)
   }
 
-  def planSingleRowFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    SingleRow(plan.availableSymbols)(plan.solved)(Map.empty)
+  def planArgumentFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
+    Argument(plan.availableSymbols)(plan.solved)(Map.empty)
 
-  def planSingleRow(patternNodes: Set[IdName],
-                    patternRels: Set[PatternRelationship] = Set.empty,
-                    other: Set[IdName] = Set.empty)
-                   (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planArgument(patternNodes: Set[IdName],
+                   patternRels: Set[PatternRelationship] = Set.empty,
+                   other: Set[IdName] = Set.empty)
+                  (implicit context: LogicalPlanningContext): LogicalPlan = {
     val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
     val typeInfoSeq = patternNodes.toIndexedSeq.map((x: IdName) => x.name -> CTNode) ++
@@ -383,11 +383,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
         patternRelationships = Set.empty
       ))
 
-    SingleRow(coveredIds)(solved)(typeInfo)
+    Argument(coveredIds)(solved)(typeInfo)
   }
 
-  def planSingleRow()(implicit context: LogicalPlanningContext): LogicalPlan =
-    SingleRow(Set.empty)(PlannerQuery.empty)(Map.empty)
+  def planArgument()(implicit context: LogicalPlanningContext): LogicalPlan =
+    Argument(Set.empty)(PlannerQuery.empty)(Map.empty)
 
   def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     EmptyResult(inner)(inner.solved)

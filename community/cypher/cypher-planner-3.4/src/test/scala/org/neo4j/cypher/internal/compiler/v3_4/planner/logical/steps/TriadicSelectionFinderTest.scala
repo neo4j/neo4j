@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {
 
@@ -234,7 +234,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
   private def produceTriadicTestPlan(expand1: Expand, predicateExpressionCase: Boolean = false,
                                      r1Types: Seq[String] = Seq.empty, r1Direction: SemanticDirection = OUTGOING, bLabels: Seq[String] = Seq.empty,
                                      r2Types: Seq[String] = Seq.empty, r2Direction: SemanticDirection = OUTGOING, cLabels: Seq[String] = Seq.empty) = {
-    val argument = SingleRow(expand1.availableSymbols)(solved)()
+    val argument = Argument(expand1.availableSymbols)(solved)()
     val expand2B = Expand(argument, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
     val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
     val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))

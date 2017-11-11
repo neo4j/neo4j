@@ -23,12 +23,12 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.LargeLabelWithLoadCsvNotification
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.HasHeaders
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
@@ -51,14 +51,14 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   private val checker = CheckForLoadCsvAndMatchOnLargeLabel(planContext, THRESHOLD)
 
   test("should notify when doing LoadCsv on top of large label scan") {
-    val loadCsvPipe = LoadCSVPipe(SingleRowPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
+    val loadCsvPipe = LoadCSVPipe(ArgumentPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
     val pipe = CartesianProductPipe(loadCsvPipe, NodeByLabelScanPipe("bar", LazyLabel(labelOverThreshold))())()
 
     checker(pipe) should equal(Some(LargeLabelWithLoadCsvNotification))
   }
 
   test("should not notify when doing LoadCsv on top of a small label scan") {
-    val loadCsvPipe = LoadCSVPipe(SingleRowPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
+    val loadCsvPipe = LoadCSVPipe(ArgumentPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
     val pipe = CartesianProductPipe(loadCsvPipe, NodeByLabelScanPipe("bar", LazyLabel(labelUnderThreshold))())()
 
     checker(pipe) should equal(None)

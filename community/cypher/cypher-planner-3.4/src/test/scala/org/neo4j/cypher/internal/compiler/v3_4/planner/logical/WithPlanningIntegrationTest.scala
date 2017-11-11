@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, DoNotIncludeTies, Limit, Projection}
 
@@ -90,7 +90,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |    }
         |  }
         |  RHS -> ProjectEndpoints(IdName(r), IdName(u), false, IdName(v), false, None, true, SimplePatternLength) {
-        |    LHS -> SingleRow(Set(IdName(r))) {}
+        |    LHS -> Argument(Set(IdName(r))) {}
         |  }
         |}""".stripMargin)
   }
@@ -106,7 +106,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |    }
         |  }
         |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
-        |    LHS -> SingleRow(Set(IdName(a), IdName(r))) {}
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
         |  }
         |}""".stripMargin)
   }
@@ -122,7 +122,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |    }
         |  }
         |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b), true, None, true, SimplePatternLength) {
-        |    LHS -> SingleRow(Set(IdName(a), IdName(b), IdName(r))) {}
+        |    LHS -> Argument(Set(IdName(a), IdName(b), IdName(r))) {}
         |  }
         |}""".stripMargin)
   }
@@ -138,7 +138,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |    }
         |  }
         |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
-        |    LHS -> SingleRow(Set(IdName(a), IdName(r))) {}
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
         |  }
         |}""".stripMargin)
   }
@@ -154,7 +154,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |    }
         |  }
         |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, false, SimplePatternLength) {
-        |    LHS -> SingleRow(Set(IdName(a), IdName(r))) {}
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
         |  }
         |}""".stripMargin)
   }
@@ -170,7 +170,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |    }
         |  }
         |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, VarPatternLength(1,None)) {
-        |    LHS -> SingleRow(Set(IdName(a), IdName(r))) {}
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
         |  }
         |}""".stripMargin)
   }

@@ -351,9 +351,9 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
 }
 
-final case class SingleRowPlanDescription(id: LogicalPlanId,
-                                          arguments: Seq[Argument] = Seq.empty,
-                                          variables: Set[String])
+final case class ArgumentPlanDescription(id: LogicalPlanId,
+                                         arguments: Seq[Argument] = Seq.empty,
+                                         variables: Set[String])
   extends InternalPlanDescription {
 
   def children = NoChildren

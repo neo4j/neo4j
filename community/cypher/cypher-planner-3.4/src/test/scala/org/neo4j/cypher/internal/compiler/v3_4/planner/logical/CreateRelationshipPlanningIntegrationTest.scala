@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{RelTypeName, Variable}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -32,7 +32,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CreateNode(
-            CreateNode(SingleRow()(solved)(), IdName("a"), Seq.empty, None)(solved),
+            CreateNode(Argument()(solved)(), IdName("a"), Seq.empty, None)(solved),
             IdName("b"), Seq.empty, None)(solved),
           IdName("r"), IdName("a"), relType("R"), IdName("b"), None)(solved)
       )(solved)
@@ -48,7 +48,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
               CreateNode(
                 CreateNode(
                   CreateNode(
-                    CreateNode(SingleRow()(solved)(),IdName("a"),Seq.empty,None)(solved),
+                    CreateNode(Argument()(solved)(),IdName("a"),Seq.empty,None)(solved),
                     IdName("b"),Seq.empty,None)(solved),
                   IdName("c"),Seq.empty,None)(solved),
                 IdName("d"),Seq.empty,None)(solved),
@@ -66,7 +66,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateRelationship(
             CreateNode(
               CreateNode(
-                CreateNode(SingleRow()(solved)(),IdName("a"),Seq.empty,None)(solved),
+                CreateNode(Argument()(solved)(),IdName("a"),Seq.empty,None)(solved),
                 IdName("b"),Seq.empty,None)(solved),
               IdName("c"),Seq.empty,None)(solved),
             IdName("r1"),IdName("b"),relType("R1"),IdName("a"),None)(solved),
