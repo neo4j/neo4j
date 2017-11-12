@@ -76,16 +76,19 @@ class AllStoreHolder extends Read implements Token
     private final StoreReadLayer read;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
-    AllStoreHolder( StorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes )
+    AllStoreHolder( StorageEngine engine,
+                    StorageStatement statement,
+                    Supplier<ExplicitIndexTransactionState> explicitIndexes )
     {
-        read = engine.storeReadLayer();
-        statement = read.newStatement();
+        this.read = engine.storeReadLayer();
+        this.statement = statement; // use provided statement, to assert no leakage
+        this.explicitIndexes = Suppliers.lazySingleton( explicitIndexes );
+
         StoreHolder stores = engine.stores();
         this.nodeStore = stores.getNodeStore();
         this.relationshipStore = stores.getRelationshipStore();
         this.groupStore = stores.getRelationshipGroupStore();
         this.propertyStore = stores.getPropertyStore();
-        this.explicitIndexes = Suppliers.lazySingleton( explicitIndexes );
     }
 
     @Override

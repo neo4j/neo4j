@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -53,13 +54,16 @@ import org.neo4j.values.storable.Value;
  */
 public class Operations implements Read, ExplicitIndexRead, SchemaRead
 {
-    final KernelTransactionImplementation ktx;
-    final AllStoreHolder allStoreHolder;
+    private final KernelTransactionImplementation ktx;
+    private final AllStoreHolder allStoreHolder;
 
-    public Operations( StorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes,
-            KernelTransactionImplementation ktx )
+    public Operations(
+            StorageEngine engine,
+            StorageStatement statement,
+            KernelTransactionImplementation ktx,
+            Supplier<ExplicitIndexTransactionState> explicitIndexes )
     {
-        allStoreHolder = new AllStoreHolder( engine, explicitIndexes );
+        allStoreHolder = new AllStoreHolder( engine, statement, explicitIndexes );
         this.ktx = ktx;
     }
 

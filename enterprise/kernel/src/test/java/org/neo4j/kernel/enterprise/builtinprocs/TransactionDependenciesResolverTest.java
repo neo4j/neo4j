@@ -24,16 +24,12 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.api.TestKernelTransactionHandle;
@@ -206,113 +202,6 @@ public class TransactionDependenciesResolverTest
         public long getUserTransactionId()
         {
             return userTxId;
-        }
-    }
-
-    private static class TestKernelTransaction implements KernelTransaction
-    {
-        @Override
-        public Statement acquireStatement()
-        {
-            return null;
-        }
-
-        @Override
-        public void success()
-        {
-        }
-
-        @Override
-        public void failure()
-        {
-        }
-
-        @Override
-        public long closeTransaction() throws TransactionFailureException
-        {
-            return 0;
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return false;
-        }
-
-        @Override
-        public SecurityContext securityContext()
-        {
-            return null;
-        }
-
-        @Override
-        public Optional<Status> getReasonIfTerminated()
-        {
-            return Optional.empty();
-        }
-
-        @Override
-        public boolean isTerminated()
-        {
-            return false;
-        }
-
-        @Override
-        public void markForTermination( Status reason )
-        {
-        }
-
-        @Override
-        public long lastTransactionTimestampWhenStarted()
-        {
-            return 0;
-        }
-
-        @Override
-        public long lastTransactionIdWhenStarted()
-        {
-            return 0;
-        }
-
-        @Override
-        public long startTime()
-        {
-            return 0;
-        }
-
-        @Override
-        public long timeout()
-        {
-            return 0;
-        }
-
-        @Override
-        public void registerCloseListener( CloseListener listener )
-        {
-        }
-
-        @Override
-        public Type transactionType()
-        {
-            return null;
-        }
-
-        @Override
-        public long getTransactionId()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getCommitTime()
-        {
-            return 0;
-        }
-
-        @Override
-        public Revertable overrideWith( SecurityContext context )
-        {
-            return null;
         }
     }
 }

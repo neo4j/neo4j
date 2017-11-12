@@ -41,7 +41,10 @@ public class NewKernel implements Kernel
     {
         this.engine = engine;
         this.kernel = kernel;
-        this.read = new AllStoreHolder( engine, ktxs.explicitIndexTxStateSupplier() );
+        // This extra statement will be remove once we start adding tx-state. That is because
+        // by then we cannot use a global Read in the CursorFactory, but need to use transaction
+        // specific Read instances which are given to the Cursors on initialization.
+        this.read = new AllStoreHolder( engine, engine.storeReadLayer().newStatement(), ktxs.explicitIndexTxStateSupplier() );
         this.cursors = new Cursors( read );
     }
 

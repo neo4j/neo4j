@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StoreHolder;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -72,6 +73,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
 public class KernelTransactionTestBase
 {
     protected final StorageEngine storageEngine = mock( StorageEngine.class );
+    protected final StoreHolder storeHolder = mock( StoreHolder.class );
     protected final NeoStores neoStores = mock( NeoStores.class );
     protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     protected final StoreReadLayer readLayer = mock( StoreReadLayer.class );
@@ -97,6 +99,7 @@ public class KernelTransactionTestBase
         when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        when( storageEngine.stores() ).thenReturn( storeHolder );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
                 .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
             .when( storageEngine ).createCommands(
