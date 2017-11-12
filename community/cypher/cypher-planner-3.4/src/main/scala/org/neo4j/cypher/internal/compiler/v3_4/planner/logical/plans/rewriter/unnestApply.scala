@@ -36,30 +36,29 @@ case object unnestApply extends Rewriter {
     Arg: Argument
     EXP: Expand
     LOJ: Left Outer Join
-    SR : SingleRow - operator that produces single row with no columns
     CN : CreateNode
     FE : Foreach
    */
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    // SR Ax R => R
-    case Apply(_: SingleRow, rhs) =>
+    // Arg Ax R => R
+    case Apply(_: Argument, rhs) =>
       rhs
 
-    // L Ax SR => L
-    case Apply(lhs, _: SingleRow) =>
+    // L Ax Arg => L
+    case Apply(lhs, _: Argument) =>
       lhs
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@Apply(lhs, Apply(_: SingleRow, rhs)) =>
+    case original@Apply(lhs, Apply(_: Argument, rhs)) =>
       Apply(lhs, rhs)(original.solved)
 
-    // L Ax (SR FE R) => L FE R
-    case original@Apply(lhs, foreach@ForeachApply(_: SingleRow, rhs, _, _)) =>
+    // L Ax (Arg FE R) => L FE R
+    case original@Apply(lhs, foreach@ForeachApply(_: Argument, rhs, _, _)) =>
       foreach.copy(left = lhs, right = rhs)(original.solved)
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@AntiConditionalApply(lhs, Apply(_: SingleRow, rhs), _) =>
+    case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
       original.copy(lhs, rhs)(original.solved)
 
     // L Ax (σ R) => σ(L Ax R)
@@ -89,7 +88,7 @@ case object unnestApply extends Rewriter {
       expand.copy(source = newApply)(apply.solved)
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@OuterHashJoin(_, _:SingleRow, rhs)) =>
+    case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
       join.copy(left = lhs)(apply.solved)
 
     // L Ax (CN R) => CN Ax (L R)

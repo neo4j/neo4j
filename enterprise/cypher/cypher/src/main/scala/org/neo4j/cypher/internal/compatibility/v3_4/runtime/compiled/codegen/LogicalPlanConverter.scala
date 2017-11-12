@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen
 
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, One, ZeroOneOrMany, symbols}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.aggregation.AggregationConverter.aggregateExpressionConverter
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.aggregation.Distinct
@@ -27,19 +26,19 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.SortItem
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation}
-import org.neo4j.cypher.internal.v3_4.{functions => ast_functions}
-import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.util.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, One, ZeroOneOrMany, symbols}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.v3_4.{expressions => ast, functions => ast_functions}
 
 object LogicalPlanConverter {
 
   def asCodeGenPlan(logicalPlan: plans.LogicalPlan): CodeGenPlan = logicalPlan match {
-    case p: plans.SingleRow => singleRowAsCodeGenPlan(p)
+    case p: plans.Argument => argumentAsCodeGenPlan(p)
     case p: plans.AllNodesScan => allNodesScanAsCodeGenPlan(p)
     case p: plans.NodeByLabelScan => nodeByLabelScanAsCodeGenPlan(p)
     case p: plans.NodeIndexSeek => nodeIndexSeekAsCodeGenPlan(p)
@@ -70,13 +69,13 @@ object LogicalPlanConverter {
       throw new CantCompileQueryException(s"This logicalPlan is not yet supported: $logicalPlan")
   }
 
-  private def singleRowAsCodeGenPlan(singleRow: plans.SingleRow) = new CodeGenPlan with LeafCodeGenPlan {
+  private def argumentAsCodeGenPlan(argument: plans.Argument) = new CodeGenPlan with LeafCodeGenPlan {
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val (methodHandle, actions) = context.popParent().consume(context, this)
       (methodHandle, actions)
     }
 
-    override val logicalPlan: plans.LogicalPlan = singleRow
+    override val logicalPlan: plans.LogicalPlan = argument
   }
 
   private def aggregationNotSupported(p: plans.Aggregation) = {

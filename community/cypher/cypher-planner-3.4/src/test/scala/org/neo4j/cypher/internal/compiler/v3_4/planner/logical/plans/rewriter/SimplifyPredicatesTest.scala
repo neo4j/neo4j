@@ -19,41 +19,41 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, Selection, SingleRow}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan, Selection}
 
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {
-    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
+    val argument: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val predicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
     val cleanPredicate: Expression = Equals(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val selection = Selection(Seq(predicate), singleRow)(solved)
+    val selection = Selection(Seq(predicate), argument)(solved)
 
     selection.endoRewrite(simplifyPredicates) should equal(
-      Selection(Seq(cleanPredicate), singleRow)(solved))
+      Selection(Seq(cleanPredicate), argument)(solved))
   }
 
   test("should not rewrite WHERE x.prop in [1, 2]") {
-    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
+    val argument: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val collection = ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos), SignedDecimalIntegerLiteral("2")(pos)))(pos)
     val orgPredicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), collection)(pos)
-    val selection = Selection(Seq(orgPredicate), singleRow)(solved)
+    val selection = Selection(Seq(orgPredicate), argument)(solved)
 
     selection.endoRewrite(simplifyPredicates) should equal(selection)
   }
 
   test("should rewrite WHERE AndedPropertyInequality(x.prop, 1) to WHERE x.prop > 42") {
-    val singleRow: LogicalPlan = SingleRow(Set(IdName("x")))(solved)(Map.empty)
+    val argument: LogicalPlan = Argument(Set(IdName("x")))(solved)(Map.empty)
     val variable = Variable("x")(pos)
     val property = Property(variable, PropertyKeyName("prop")(pos))(pos)
     val greaterThan = GreaterThan(property, SignedDecimalIntegerLiteral("42")(pos))(pos)
     val complexForm = AndedPropertyInequalities(variable, property, NonEmptyList(greaterThan))
-    val selection = Selection(Seq(complexForm), singleRow)(solved)
-    val expectedSelection = Selection(Seq(greaterThan), singleRow)(solved)
+    val selection = Selection(Seq(complexForm), argument)(solved)
+    val expectedSelection = Selection(Seq(greaterThan), argument)(solved)
 
     selection.endoRewrite(simplifyPredicates) should equal(expectedSelection)
   }

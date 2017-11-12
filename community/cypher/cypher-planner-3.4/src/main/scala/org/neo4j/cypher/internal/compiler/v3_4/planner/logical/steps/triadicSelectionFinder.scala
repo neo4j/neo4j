@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
@@ -81,7 +81,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
       else
         exp1
 
-      val argument = context.logicalPlanProducer.planSingleRowFrom(left)
+      val argument = context.logicalPlanProducer.planArgumentFrom(left)
       val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(exp2.solved)
       val right = if (incomingPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, incomingPredicates)

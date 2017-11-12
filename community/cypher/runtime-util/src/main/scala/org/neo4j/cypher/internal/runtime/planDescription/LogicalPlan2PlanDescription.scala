@@ -69,11 +69,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case ProduceResult(_, _) =>
         PlanDescriptionImpl(id, "ProduceResults", NoChildren, Seq(), variables)
 
-      case _: SingleRow if variables.size > 0 =>
+      case _: plans.Argument if variables.nonEmpty =>
         PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
 
-      case _: SingleRow =>
-        SingleRowPlanDescription(id, Seq.empty, variables)
+      case _: plans.Argument =>
+        ArgumentPlanDescription(id, Seq.empty, variables)
 
       case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
         val entityByIdRhs = EntityByIdRhs(relIds)
@@ -121,7 +121,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
 
     val id = plan.assignedId
     val variables = plan.availableSymbols.map(_.name)
-    val children = if (source.isInstanceOf[SingleRowPlanDescription]) NoChildren else SingleChild(source)
+    val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
       case Aggregation(_, groupingExpressions, aggregationExpressions) if aggregationExpressions.isEmpty =>
@@ -329,8 +329,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case LetSelectOrSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
 
-      case row: SingleRow =>
-        SingleRowPlanDescription(id = plan.assignedId, Seq.empty, row.argumentIds.map(_.name))
+      case row: plans.Argument =>
+        ArgumentPlanDescription(id = plan.assignedId, Seq.empty, row.argumentIds.map(_.name))
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)

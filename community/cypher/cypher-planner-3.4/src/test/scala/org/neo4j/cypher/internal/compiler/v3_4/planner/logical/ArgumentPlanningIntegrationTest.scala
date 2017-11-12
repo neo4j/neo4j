@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Projection, SingleRow}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, Projection}
 
-class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class ArgumentPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans containing single row") {
     planFor("RETURN 42")._2 should equal(
       Projection(
-        SingleRow()(solved)(), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
+        Argument()(solved)(), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
       )(solved)
     )
   }

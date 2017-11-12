@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, _}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => logicalPlans}
 
@@ -388,7 +388,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("that argument does not apply here") {
     // given MATCH (x) MATCH (x)<-[r]-(y)
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val arg = SingleRow(Set(x))(solved)()
+    val arg = Argument(Set(x))(solved)()
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
 
     val apply = Apply(lhs, rhs)(solved)
@@ -417,7 +417,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("unwind and project") {
     // given UNWIND [1,2,3] as x RETURN x
-    val leaf = SingleRow()(solved)()
+    val leaf = Argument()(solved)()
     val unwind = UnwindCollection(leaf, IdName("x"), listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val produceResult = ProduceResult(unwind, Seq("x"))
     produceResult.assignIds()
@@ -440,7 +440,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
     val xVarName = IdName.fromVariable(xVar)
-    val leaf = SingleRow()(solved)()
+    val leaf = Argument()(solved)()
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val sort = Sort(unwind, List(Ascending(xVarName)))(solved)
     val produceResult = ProduceResult(sort, Seq("x"))
@@ -477,7 +477,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
                        PlannerQuery with CardinalityEstimation => AbstractSemiApply
                    ): Unit = {
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val arg = SingleRow(Set(x))(solved)()
+    val arg = Argument(Set(x))(solved)()
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
     val semiApply = semiApplyBuilder(lhs, rhs)(solved)
     semiApply.assignIds()
@@ -502,11 +502,11 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations(arg.assignedId) should equal(argumentSide)
   }
 
-  test("singlerow on two sides of Apply") {
-    val sr1 = SingleRow()(solved)()
-    val sr2 = SingleRow()(solved)()
-    val pr1 = Projection(sr1, Map("x" -> literalInt(42)))(solved)
-    val pr2 = Projection(sr2, Map("y" -> literalInt(666)))(solved)
+  test("argument on two sides of Apply") {
+    val arg1 = Argument()(solved)()
+    val arg2 = Argument()(solved)()
+    val pr1 = Projection(arg1, Map("x" -> literalInt(42)))(solved)
+    val pr2 = Projection(arg2, Map("y" -> literalInt(666)))(solved)
     val apply = Apply(pr1, pr2)(solved)
     apply.assignIds()
 
@@ -517,9 +517,9 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations should have size 5
     val lhsPipeline = PipelineInformation(Map("x" -> RefSlot(0, nullable = true, CTAny)), 0, 1)
     val rhsPipeline = PipelineInformation(Map("x" -> RefSlot(0, nullable = true, CTAny), "y" -> RefSlot(1, nullable = true, CTAny)), 0, 2)
-    allocations(sr1.assignedId) should equal(lhsPipeline)
+    allocations(arg1.assignedId) should equal(lhsPipeline)
     allocations(pr1.assignedId) should equal(lhsPipeline)
-    allocations(sr2.assignedId) should equal(rhsPipeline)
+    allocations(arg2.assignedId) should equal(rhsPipeline)
     allocations(pr2.assignedId) should equal(rhsPipeline)
     allocations(apply.assignedId) should equal(rhsPipeline)
   }
@@ -563,7 +563,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // Given RollUpApply with RHS ~= MATCH (x)-[r:R]->(y) WITH x, x.prop as prop, r ...
 
     // LHS
-    val lhsLeaf = SingleRow()(solved)()
+    val lhsLeaf = Argument()(solved)()
 
     // RHS
     val labelScan = NodeByLabelScan(x, LABEL, Set.empty)(solved)
@@ -628,7 +628,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("should handle UNION of projected variables") {
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
     val lhs = Projection(allNodesScan, Map("A" -> varFor("x")))(solved)
-    val rhs = Projection(SingleRow()(solved)(), Map("A" -> literalInt(42)))(solved)
+    val rhs = Projection(Argument()(solved)(), Map("A" -> literalInt(42)))(solved)
     val plan = Union(lhs, rhs)(solved)
     plan.assignIds()
 

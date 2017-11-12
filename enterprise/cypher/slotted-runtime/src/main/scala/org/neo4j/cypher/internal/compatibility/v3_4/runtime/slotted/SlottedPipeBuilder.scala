@@ -80,8 +80,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanSlottedPipe(column, LazyLabel(label), pipelineInformation)(id)
 
-      case _:SingleRow =>
-        SingleRowSlottedPipe(pipelineInformation)(id)
+      case _:Argument =>
+        ArgumentSlottedPipe(pipelineInformation)(id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LockNodes, LogicalPlan}
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.{ContainerIndex, PathExpression, Variable}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LockNodes, LogicalPlan}
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -64,7 +64,7 @@ case object PlanUpdates
       //FOREACH
       case foreach: ForeachPattern =>
         val innerLeaf = context.logicalPlanProducer
-          .planSingleRow(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
+          .planArgument(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
         val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
         context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach)
 
@@ -176,7 +176,7 @@ case object PlanUpdates
     //          apply  onMatch
     val condApply = if (onMatchPatterns.nonEmpty) {
       val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
-      val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQuerySingleRow(qgWithAllNeededArguments)) {
+      val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgument(qgWithAllNeededArguments)) {
         case (src, current) => planUpdate(src, current, first)
       }
       producer.planConditionalApply(mergeMatch, onMatch, ids)(innerContext)
@@ -188,7 +188,7 @@ case object PlanUpdates
     //       /         \
     //      /     mergeCreatePart
     // condApply
-    val createNodes = createNodePatterns.foldLeft(producer.planQuerySingleRow(matchGraph): LogicalPlan) {
+    val createNodes = createNodePatterns.foldLeft(producer.planQueryArgument(matchGraph): LogicalPlan) {
       case (acc, current) => producer.planMergeCreateNode(acc, current)
     }
     val mergeCreatePart = createRelationshipPatterns.foldLeft(createNodes) {

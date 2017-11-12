@@ -129,8 +129,8 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("create node") {
     // given
     val label = LabelName("label")(pos)
-    val singleRow = SingleRow()(solved)()
-    val createNode = CreateNode(singleRow, z, Seq(label), None)(solved)
+    val argument = Argument()(solved)()
+    val createNode = CreateNode(argument, z, Seq(label), None)(solved)
 
     // when
     val pipe = build(createNode)
@@ -138,7 +138,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     pipe should equal(
       CreateNodeSlottedPipe(
-        SingleRowSlottedPipe(PipelineInformation(Map("z" -> LongSlot(0, nullable = false, CTNode)), 1, 0))(),
+        ArgumentSlottedPipe(PipelineInformation(Map("z" -> LongSlot(0, nullable = false, CTNode)), 1, 0))(),
         "z",
         PipelineInformation(Map("z" -> LongSlot(0, nullable = false, CTNode)), 1, 0),
         Seq(LazyLabel(label)),
@@ -594,7 +594,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("that argument does not apply here") {
     // given MATCH (x) MATCH (x)<-[r]-(y)
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val arg = SingleRow(Set(x))(solved)()
+    val arg = Argument(Set(x))(solved)()
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
 
     val apply = Apply(lhs, rhs)(solved)
@@ -617,7 +617,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     pipe should equal(ApplySlottedPipe(
       NodesByLabelScanSlottedPipe("x", LazyLabel(LABEL), lhsPipeline)(),
       ExpandAllSlottedPipe(
-        SingleRowSlottedPipe(lhsPipeline)(), 0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, rhsPipeline)())())
+        ArgumentSlottedPipe(lhsPipeline)(), 0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, rhsPipeline)())())
   }
 
   test("NodeIndexScan should yield a NodeIndexScanSlottedPipe") {
@@ -663,7 +663,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
     val xVarName = IdName.fromVariable(xVar)
-    val leaf = SingleRow()(solved)()
+    val leaf = Argument()(solved)()
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val sort = Sort(unwind, List(plans.Ascending(xVarName)))(solved)
 
@@ -680,7 +680,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     pipe should equal(
       SortSlottedPipe(orderBy = Seq(slottedPipes.Ascending(xSlot)), pipelineInformation = expectedPipeline2,
         source = UnwindSlottedPipe(collection = commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2), commands.expressions.Literal(3)), offset = 0, pipeline = expectedPipeline2,
-          source = SingleRowSlottedPipe(expectedPipeline1)()
+          source = ArgumentSlottedPipe(expectedPipeline1)()
         )()
       )()
     )

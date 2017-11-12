@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.scalatest.exceptions.TestFailedException
 
 import scala.collection.immutable
@@ -336,7 +336,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
-  test("should solve empty graph with SingleRow") {
+  test("should solve empty graph with Argument") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
@@ -347,7 +347,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        SingleRow()(solved)()
+        Argument()(solved)()
       )
 
       verify(monitor).emptyComponentPlanned(cfg.qg, plan)
@@ -369,7 +369,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan: LogicalPlan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        SingleRow(Set("a"))(solved)()
+        Argument(Set("a"))(solved)()
       )
 
       verify(monitor).emptyComponentPlanned(cfg.qg, plan)
@@ -394,7 +394,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan: LogicalPlan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        ProjectEndpoints(SingleRow(Set("r"))(solved)(), "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(solved)
+        ProjectEndpoints(Argument(Set("r"))(solved)(), "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg)
@@ -436,7 +436,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan: LogicalPlan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         Expand(
-          ProjectEndpoints(SingleRow(Set("r1"))(solved)(), "r1", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(solved),
+          ProjectEndpoints(Argument(Set("r1"))(solved)(), "r1", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(solved),
           "b", SemanticDirection.OUTGOING, Seq.empty, "c", "r2", ExpandAll
         )(solved)
       )
@@ -469,7 +469,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        Expand(SingleRow(Set("a"))(solved)(), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)(solved)
+        Expand(Argument(Set("a"))(solved)(), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg)
@@ -614,7 +614,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        SingleRow(Set("a"))(solved)()
+        Argument(Set("a"))(solved)()
       )
 
       verify(monitor).noIDPIterationFor(cfg.qg, plan)
@@ -708,7 +708,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val qgs = cfg.qg.connectedComponents
       val allNodeScanA: AllNodesScan = AllNodesScan("a", Set.empty)(solved)
-      val expandAtoB = Expand(SingleRow(Set("a"))(solved)(), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
+      val expandAtoB = Expand(Argument(Set("a"))(solved)(), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
       val expandBtoA = Expand(AllNodesScan("b", Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "a", "r")(solved)
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
@@ -813,7 +813,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       queryGraphSolver.plan(cfg.qg) should equal(
         Apply(
-          SingleRow()(solved)(),
+          Argument()(solved)(),
           Optional(
             Expand(
               AllNodesScan("b", Set.empty)(solved),
@@ -874,7 +874,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       queryGraphSolver.plan(cfg.qg) should equal(
         ProjectEndpoints(
           ProjectEndpoints(
-            SingleRow(Set("r1", "r2"))(solved)(),
+            Argument(Set("r1", "r2"))(solved)(),
             "r2", "b", startInScope = false, "c", endInScope = false, None, directed = true, SimplePatternLength)(solved),
           "r1", "a", startInScope = false, "b", endInScope = true, None, directed = true, SimplePatternLength)(solved))
     }
@@ -903,7 +903,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Expand(
           ProjectEndpoints(
             ProjectEndpoints(
-              SingleRow(Set("r2", "r1", "a", "d", "b", "c"))(solved)(),
+              Argument(Set("r2", "r1", "a", "d", "b", "c"))(solved)(),
               "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength)(solved),
             "r1", "a" , startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength)(solved),
           "a", OUTGOING, List(), "d", "r3", ExpandInto)(solved))
@@ -923,7 +923,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       implicit val x = ctx
 
       queryGraphSolver.plan(cfg.qg) should equal(
-        SingleRow(Set("a", "b"))(solved)()
+        Argument(Set("a", "b"))(solved)()
       )
     }
   }

@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.{ProcedureCall, Projection, ResolvedCall, SingleRow}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, ProcedureCall, Projection, ResolvedCall}
 
 class PlanEventHorizonTest extends CypherFunSuite {
 
@@ -40,7 +40,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     // Given
     val literal = SignedDecimalIntegerLiteral("42")(pos)
     val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
-    val inputPlan = SingleRow()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))()
+    val inputPlan = Argument()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))()
 
     // When
     val producedPlan = PlanEventHorizon(pq, inputPlan)
@@ -54,7 +54,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     val literal = SignedDecimalIntegerLiteral("42")(pos)
     val call = mock[ResolvedCall]
     val pq = RegularPlannerQuery(horizon = ProcedureCallProjection(call))
-    val inputPlan = SingleRow()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))()
+    val inputPlan = Argument()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))()
 
     // When
     val producedPlan = PlanEventHorizon(pq, inputPlan)

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Apply, LogicalPlan, SingleRow}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Apply, Argument, LogicalPlan}
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
@@ -43,33 +43,33 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   }
 
   test("single row returns itself as the leafs") {
-    val singleRow = SingleRow(Set(IdName("a")))(solved)()
+    val argument = Argument(Set(IdName("a")))(solved)()
 
-    singleRow.leaves should equal(Seq(singleRow))
+    argument.leaves should equal(Seq(argument))
   }
 
-  test("apply with two singlerows should return them both") {
-    val singleRow1 = SingleRow(Set(IdName("a")))(solved)()
-    val singleRow2 = SingleRow()(solved)()
-    val apply = Apply(singleRow1, singleRow2)(solved)
+  test("apply with two arguments should return them both") {
+    val argument1 = Argument(Set(IdName("a")))(solved)()
+    val argument2 = Argument()(solved)()
+    val apply = Apply(argument1, argument2)(solved)
 
-    apply.leaves should equal(Seq(singleRow1, singleRow2))
+    apply.leaves should equal(Seq(argument1, argument2))
   }
 
   test("apply pyramid should work multiple levels deep") {
-    val singleRow1 = SingleRow(Set(IdName("a")))(solved)()
-    val singleRow2 = SingleRow()(solved)()
-    val singleRow3 = SingleRow(Set(IdName("b")))(solved)()
-    val singleRow4 = SingleRow()(solved)()
-    val apply1 = Apply(singleRow1, singleRow2)(solved)
-    val apply2 = Apply(singleRow3, singleRow4)(solved)
+    val argument1 = Argument(Set(IdName("a")))(solved)()
+    val argument2 = Argument()(solved)()
+    val argument3 = Argument(Set(IdName("b")))(solved)()
+    val argument4 = Argument()(solved)()
+    val apply1 = Apply(argument1, argument2)(solved)
+    val apply2 = Apply(argument3, argument4)(solved)
     val metaApply = Apply(apply1, apply2)(solved)
 
-    metaApply.leaves should equal(Seq(singleRow1, singleRow2, singleRow3, singleRow4))
+    metaApply.leaves should equal(Seq(argument1, argument2, argument3, argument4))
   }
 
   test("calling updateSolved on argument should work") {
-    val argument = SingleRow(Set(IdName("a")))(solved)()
+    val argument = Argument(Set(IdName("a")))(solved)()
     val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
     val newPlan = argument.updateSolved(updatedPlannerQuery)
     newPlan.solved should equal(updatedPlannerQuery)
