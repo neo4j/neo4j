@@ -34,7 +34,10 @@ import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 
-@Path( ReadReplicaDatabaseAvailabilityService.BASE_PATH )
+/**
+ * To be deprecated by {@link org.neo4j.server.rest.causalclustering.CausalClusteringService}.
+ */
+@Path( ReadReplicaDatabaseAvailabilityService.BASE_PATH)
 public class ReadReplicaDatabaseAvailabilityService implements AdvertisableService
 {
     static final String BASE_PATH = "server/read-replica";
