@@ -537,7 +537,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void use_cypher_periodic_commit() throws Exception
+    public void useCypherPeriodicCommit() throws Exception
     {
         File file = File.createTempFile( "file", "csv", null );
         try ( PrintWriter writer = new PrintWriter( file ) )
