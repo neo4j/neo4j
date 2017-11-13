@@ -122,7 +122,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         log.info( String.format( "HazelcastCoreTopologyService stopping and unbinding from %s",
                 config.get( discovery_listen_address ) ) );
 
-        scheduler.cancelAndWaitTermination( refreshJob );
+        refreshJob.cancel( true );
 
         try
         {
