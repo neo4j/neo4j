@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
@@ -61,7 +62,7 @@ public class BoltMessagingProtocolV1HandlerTest
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
         BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
-                boltChannel, new SynchronousBoltWorker( machine ), NullLogService.getInstance() );
+                boltChannel, new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
         verify( outputChannel ).alloc();
 
         // And given inbound data that'll explode when the protocol tries to interpret it
@@ -94,7 +95,7 @@ public class BoltMessagingProtocolV1HandlerTest
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
         BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
-                boltChannel, new SynchronousBoltWorker( machine ), NullLogService.getInstance() );
+                boltChannel, new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
         protocol.close();
 
         verify( machine ).close();
@@ -115,7 +116,7 @@ public class BoltMessagingProtocolV1HandlerTest
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
         BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
-                boltChannel, mock( BoltWorker.class ), logService );
+                boltChannel, mock( BoltWorker.class ), TransportThrottleGroup.NO_THROTTLE, logService );
 
         protocol.handle( mock( ChannelHandlerContext.class ), data );
 

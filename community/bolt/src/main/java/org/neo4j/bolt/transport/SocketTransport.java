@@ -42,10 +42,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final boolean encryptionRequired;
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
+    private final TransportThrottleGroup throttleGroup;
     private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
 
     public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
                             LogProvider logging, BoltMessageLogging boltLogging,
+                            TransportThrottleGroup throttleGroup,
                             Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions )
     {
         this.address = address;
@@ -53,6 +55,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         this.encryptionRequired = encryptionRequired;
         this.logging = logging;
         this.boltLogging = boltLogging;
+        this.throttleGroup = throttleGroup;
         this.protocolVersions = protocolVersions;
     }
 
@@ -65,6 +68,13 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             public void initChannel( SocketChannel ch ) throws Exception
             {
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+
+                // install throttles
+                throttleGroup.install( ch );
+
+                // add a close listener that will uninstall throttles
+                ch.closeFuture().addListener( future -> throttleGroup.uninstall( ch ) );
+
                 ch.pipeline().addLast(
                         new TransportSelectionHandler( sslCtx, encryptionRequired, false, logging, protocolVersions,
                                 boltLogging ) );

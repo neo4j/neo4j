@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.factory;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -752,6 +754,25 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
             GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
+
+    @Description( "Whether to apply network level write throttling" )
+    @Internal
+    public static final Setting<Boolean> bolt_write_throttle = setting( "unsupported.dbms.bolt.write_throttle", BOOLEAN, TRUE );
+
+    @Description( "When the size (in bytes) of write buffers, used by bolt's network layer, " +
+            "grows beyond this value bolt channel will advertise itself as unwritable and bolt worker " +
+            "threads will block until it becomes writable again." )
+    @Internal
+    public static final Setting<Integer> bolt_write_buffer_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
+                    range( (int) ByteUnit.kibiBytes( 64 ), Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the size (in bytes) of write buffers, previously advertised as unwritable, " +
+            "gets below this value bolt channel will re-advertise itself as writable and blocked bolt worker " + "threads will resume execution." )
+    @Internal
+    public static final Setting<Integer> bolt_write_buffer_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
+                    range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
