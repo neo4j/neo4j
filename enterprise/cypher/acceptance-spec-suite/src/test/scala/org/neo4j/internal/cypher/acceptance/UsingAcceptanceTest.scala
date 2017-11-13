@@ -386,7 +386,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
          |USING JOIN ON a
          |RETURN a.prop AS res""".stripMargin
 
-    val result = executeWith(Configs.Version3_4 - Configs.SlottedInterpreted + Configs.AllRulePlanners , query,
+    val result = executeWith(Configs.Version3_4 + Configs.AllRulePlanners , query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("a"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -403,7 +403,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
           |USING JOIN ON b
           |RETURN b.prop AS res""".stripMargin
 
-    val result = executeWith(Configs.Version3_4 - Configs.SlottedInterpreted + Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.Version3_4 + Configs.AllRulePlanners, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("b"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -458,7 +458,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       relate(c, d, "X")
       relate(d, e, "X")
 
-      val result = executeWith(Configs.AllExceptSlotted,
+      val result = executeWith(Configs.All,
         s"""
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
            |USING JOIN ON c
@@ -482,7 +482,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       relate(c, d, "X")
       relate(e, d, "Y")
 
-      val result = executeWith(Configs.CommunityInterpreted,
+      val result = executeWith(Configs.Interpreted,
         s"""
            |MATCH (a:Foo)-[:X*]->(b)<-[:Y]->(c:Bar)
            |USING JOIN ON b
@@ -506,7 +506,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       relate(c, d, "X")
       relate(d, e, "X")
 
-    executeWith(Configs.AllExceptSlotted,
+    executeWith(Configs.All,
         s"""
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
            |USING JOIN ON b
@@ -535,7 +535,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.AllExceptSlotted, query,
+      executeWith(Configs.All, query,
         planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("x"),
           expectPlansToFail = Configs.AllRulePlanners))
     }
@@ -569,7 +569,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.AllExceptSlotted, query)
+      executeWith(Configs.All, query)
     }
 
   test("should work when join hint is applied to x in (a)-->(x)<--(b) where a and b are labeled") {
@@ -599,7 +599,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.AllExceptSlotted, query,
+      executeWith(Configs.All, query,
         planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
           planDescription should includeOnlyOneHashJoinOn("x")
           planDescription.toString should not include "AllNodesScan"
@@ -637,7 +637,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.AllExceptSlotted, query,
+      executeWith(Configs.All, query,
         planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
           planDescription should includeOnlyOneHashJoinOn("x")
           planDescription.toString should not include "AllNodesScan"
@@ -673,7 +673,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.AllExceptSlotted, query,
+      executeWith(Configs.All, query,
         planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
           planDescription should includeOnlyOneHashJoinOn("x")
           planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "x")
@@ -709,7 +709,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |USING INDEX b:Person(name)
         |RETURN x""".stripMargin
 
-    executeWith(Configs.AllExceptSlotted, query,
+    executeWith(Configs.All, query,
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeOnlyOneHashJoinOn("x")
         planDescription.toString should not include "AllNodesScan"

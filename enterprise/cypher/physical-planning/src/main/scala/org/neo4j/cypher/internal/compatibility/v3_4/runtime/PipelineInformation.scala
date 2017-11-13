@@ -212,7 +212,7 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
     slots.foreach(f)
 
   // NOTE: This will give duplicate slots when we have aliases
-  def foreachSlotOrdered[U](f: ((String,Slot)) => U): Unit =
+  def foreachSlotOrdered[U](f: ((String, Slot)) => U): Unit =
     slots.toSeq.sortBy(_._2)(SlotOrdering).foreach(f)
 
   // NOTE: This will give duplicate slots when we have aliases
