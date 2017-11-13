@@ -74,6 +74,18 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     }
 
     @Override
+    public boolean equals( long x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( double x )
+    {
+        return false;
+    }
+
+    @Override
     public boolean equals( char x )
     {
         return false;
