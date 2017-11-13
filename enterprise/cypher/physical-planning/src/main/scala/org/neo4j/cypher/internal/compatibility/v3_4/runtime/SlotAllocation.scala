@@ -287,6 +287,20 @@ object SlotAllocation {
         }
         newPipeline
 
+      case NodeHashJoin(nodes, _, _) =>
+        val nodeKeys = nodes.map(_.name)
+        val newPipeline = lhsPipeline.breakPipelineAndClone()
+        // For the implementation of the slotted pipe to use array copy
+        // it is very important that we add the slots in the same order
+        rhsPipeline.foreachSlotOrdered {
+          case (k, slot) if !nodeKeys(k) =>
+            newPipeline.add(k, slot)
+            // If the column is one of the join columns there is no need to add it again
+
+          case _ =>
+        }
+        newPipeline
+
       case RollUpApply(_, _, collectionName, _, _) =>
         lhsPipeline.newReference(collectionName.name, nullable, CTList(CTAny))
         lhsPipeline
