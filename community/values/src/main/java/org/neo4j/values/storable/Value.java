@@ -66,7 +66,7 @@ public abstract class Value extends AnyValue
         {
             return null;
         }
-        if ( other instanceof SequenceValue && this.isSequenceValue() )
+        if ( other.isSequenceValue() && this.isSequenceValue() )
         {
             return ((SequenceValue) this).ternaryEquality( (SequenceValue) other );
         }
