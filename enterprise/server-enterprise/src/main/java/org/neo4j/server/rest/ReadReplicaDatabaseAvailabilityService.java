@@ -37,7 +37,7 @@ import static javax.ws.rs.core.Response.status;
 /**
  * To be deprecated by {@link org.neo4j.server.rest.causalclustering.CausalClusteringService}.
  */
-@Path( ReadReplicaDatabaseAvailabilityService.BASE_PATH)
+@Path( ReadReplicaDatabaseAvailabilityService.BASE_PATH )
 public class ReadReplicaDatabaseAvailabilityService implements AdvertisableService
 {
     static final String BASE_PATH = "server/read-replica";

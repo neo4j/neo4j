@@ -40,7 +40,7 @@ import static javax.ws.rs.core.Response.status;
 /**
  * To be deprecated by {@link org.neo4j.server.rest.causalclustering.CausalClusteringService}.
  */
-@Path(CoreDatabaseAvailabilityService.BASE_PATH)
+@Path( CoreDatabaseAvailabilityService.BASE_PATH )
 public class CoreDatabaseAvailabilityService implements AdvertisableService
 {
     public static final String BASE_PATH = "server/core";
