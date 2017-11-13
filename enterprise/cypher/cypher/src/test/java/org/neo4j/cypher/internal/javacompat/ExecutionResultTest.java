@@ -35,6 +35,7 @@ import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class ExecutionResultTest
@@ -264,6 +265,13 @@ public class ExecutionResultTest
         assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime-impl" ), equalTo( "PROCEDURE" ) );
+    }
+
+    @Test
+    public void shouldReturnListFromSplit()
+    {
+        assertThat(db.execute( "RETURN split('hello, world', ',') AS s" ).next().get("s"),
+                instanceOf(List.class));
     }
 
     private void createNode()

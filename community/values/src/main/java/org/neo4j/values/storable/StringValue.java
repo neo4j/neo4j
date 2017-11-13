@@ -19,7 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.virtual.ListValue;
+
 import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.stringArray;
+import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 public abstract class StringValue extends TextValue
 {
@@ -68,7 +72,7 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
-    public TextArray split( String separator )
+    public ListValue split( String separator )
     {
         assert separator != null;
         String asString = value();
@@ -77,10 +81,10 @@ public abstract class StringValue extends TextValue
         //where as java returns an empty array
         if ( separator.equals( asString ) )
         {
-            return Values.stringArray( "", "" );
+            return EMPTY_SPLIT;
         }
         String[] split = asString.split( separator );
-        return Values.stringArray( split );
+        return fromArray( stringArray( split ) );
     }
 
     @Override

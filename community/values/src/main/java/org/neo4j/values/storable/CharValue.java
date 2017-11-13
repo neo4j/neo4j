@@ -19,7 +19,10 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.virtual.ListValue;
+
 import static java.lang.String.format;
+import static org.neo4j.values.virtual.VirtualValues.list;
 
 public final class CharValue extends TextValue
 {
@@ -146,15 +149,15 @@ public final class CharValue extends TextValue
     }
 
     @Override
-    public TextArray split( String separator )
+    public ListValue split( String separator )
     {
         if ( separator.equals( stringValue() ) )
         {
-            return Values.EMPTY_TEXT_ARRAY;
+            return EMPTY_SPLIT;
         }
         else
         {
-            return Values.stringArray( stringValue() );
+            return list( Values.stringValue( stringValue() ) );
         }
     }
 

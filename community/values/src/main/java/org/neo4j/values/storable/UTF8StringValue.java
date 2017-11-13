@@ -107,6 +107,8 @@ public final class UTF8StringValue extends StringValue
             if ( b >= 0 )
             {
                 i++;
+                count++;
+                continue;
             }
 
             //The number of high bits tells us how many bytes we use to store the value
