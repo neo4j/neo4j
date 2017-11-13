@@ -383,6 +383,101 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       "x" -> LongSlot(0, nullable = false, CTNode),
       "y" -> LongSlot(1, nullable = false, CTNode)
     )))
+
+  }
+
+  test("node hash join I") {
+    // given
+    val lhs = NodeByLabelScan(x, LabelName("label1")(pos), Set.empty)(solved)
+    val rhs = NodeByLabelScan(x, LabelName("label2")(pos), Set.empty)(solved)
+    val hashJoin = NodeHashJoin(Set(x), lhs, rhs)(solved)
+    hashJoin.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(hashJoin)
+
+    // then
+    allocations should have size 3
+    allocations(lhs.assignedId) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode)
+    )))
+    allocations(rhs.assignedId) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode)
+    )))
+    allocations(hashJoin.assignedId) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode)
+    )))
+  }
+
+  test("node hash join II") {
+    // given
+    val lhs = NodeByLabelScan(x, LabelName("label1")(pos), Set.empty)(solved)
+    val lhsE = Expand(lhs, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
+
+    val rhs = NodeByLabelScan(x, LabelName("label2")(pos), Set.empty)(solved)
+    val r2 = IdName("r2")
+    val rhsE = Expand(rhs, x, SemanticDirection.INCOMING, Seq.empty, z, r2, ExpandAll)(solved)
+
+    val hashJoin = NodeHashJoin(Set(x), lhsE, rhsE)(solved)
+    hashJoin.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(hashJoin)
+
+    // then
+    allocations should have size 5
+    allocations(lhsE.assignedId) should equal(PipelineInformation(numberOfLongs = 3, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "r" -> LongSlot(1, nullable = false, CTRelationship),
+      "y" -> LongSlot(2, nullable = false, CTNode)
+    )))
+    allocations(rhsE.assignedId) should equal(PipelineInformation(numberOfLongs = 3, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "r2" -> LongSlot(1, nullable = false, CTRelationship),
+      "z" -> LongSlot(2, nullable = false, CTNode)
+    )))
+    allocations(hashJoin.assignedId) should equal(PipelineInformation(numberOfLongs = 5, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "r" -> LongSlot(1, nullable = false, CTRelationship),
+      "y" -> LongSlot(2, nullable = false, CTNode),
+      "r2" -> LongSlot(3, nullable = false, CTRelationship),
+      "z" -> LongSlot(4, nullable = false, CTNode)
+
+    )))
+  }
+
+  test("node hash join III") {
+    // given
+    val lhs = NodeByLabelScan(x, LabelName("label1")(pos), Set.empty)(solved)
+    val lhsE = Expand(lhs, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
+
+    val rhs = NodeByLabelScan(x, LabelName("label2")(pos), Set.empty)(solved)
+    val rhsE = Expand(rhs, x, SemanticDirection.INCOMING, Seq.empty, y, IdName("r2"), ExpandAll)(solved)
+
+    val hashJoin = NodeHashJoin(Set(x, y), lhsE, rhsE)(solved)
+    hashJoin.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(hashJoin)
+
+    // then
+    allocations should have size 5 // One for each label-scan and expand, and one after the join
+    allocations(lhsE.assignedId) should equal(PipelineInformation(numberOfLongs = 3, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "r" -> LongSlot(1, nullable = false, CTRelationship),
+      "y" -> LongSlot(2, nullable = false, CTNode)
+    )))
+    allocations(rhsE.assignedId) should equal(PipelineInformation(numberOfLongs = 3, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "r2" -> LongSlot(1, nullable = false, CTRelationship),
+      "y" -> LongSlot(2, nullable = false, CTNode)
+    )))
+    allocations(hashJoin.assignedId) should equal(PipelineInformation(numberOfLongs = 4, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "r" -> LongSlot(1, nullable = false, CTRelationship),
+      "y" -> LongSlot(2, nullable = false, CTNode),
+      "r2" -> LongSlot(3, nullable = false, CTRelationship)
+    )))
   }
 
   test("that argument does not apply here") {
