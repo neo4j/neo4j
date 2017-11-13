@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.StoreHolder;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.resources.CpuClock;
@@ -81,12 +80,10 @@ public class KernelTransactionFactory
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
-        StoreHolder storeHolder = mock( StoreHolder.class );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
         when( storeReadLayer.newStatement() ).thenReturn( storageStatement );
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
-        when( storageEngine.stores() ).thenReturn( storeHolder );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 mock( StatementOperationParts.class ),

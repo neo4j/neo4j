@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.StoreHolder;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -532,7 +531,6 @@ public class KernelTransactionsTest
         when( readLayer.newStatement() ).thenReturn( firstStoreStatements, otherStorageStatements );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
-        when( storageEngine.stores() ).thenReturn( mock( StoreHolder.class ) );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         doAnswer( invocation ->
         {
