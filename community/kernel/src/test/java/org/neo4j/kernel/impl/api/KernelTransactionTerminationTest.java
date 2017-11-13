@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -340,7 +341,7 @@ public class KernelTransactionTerminationTest
                     mock( Pool.class ), Clocks.fakeClock(), CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
-                            mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite() );
+                            mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock(Cursors.class) );
 
             this.monitor = monitor;
         }

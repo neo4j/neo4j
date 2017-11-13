@@ -24,12 +24,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor
 {
-    final Read read;
+    Read read;
 
-    RelationshipCursor( Read read )
+    RelationshipCursor()
     {
         super( NO_ID );
-        this.read = read;
     }
 
     @Override

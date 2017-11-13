@@ -62,6 +62,11 @@ public class MockStore extends Read implements TestRule
         }
     };
 
+    MockStore( Cursors cursors )
+    {
+        super( cursors );
+    }
+
     @Override
     long graphPropertiesReference()
     {

@@ -70,8 +70,10 @@ class AllStoreHolder extends Read implements Token
 
     AllStoreHolder( StorageEngine engine,
                     StorageStatement statement,
-                    Supplier<ExplicitIndexTransactionState> explicitIndexes )
+                    Supplier<ExplicitIndexTransactionState> explicitIndexes,
+                    Cursors cursors )
     {
+        super( cursors );
         this.read = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
         this.explicitIndexes = Suppliers.lazySingleton( explicitIndexes );
@@ -238,11 +240,6 @@ class AllStoreHolder extends Read implements Token
         return nodes.newLabelCursor();
     }
 
-    private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store )
-    {
-        return store.newRecordCursor( store.newRecord() ).acquire( store.getNumberOfReservedLowIds(), NORMAL );
-    }
-
     @Override
     void node( NodeRecord record, long reference, PageCursor pageCursor )
     {
@@ -293,5 +290,10 @@ class AllStoreHolder extends Read implements Token
         ByteBuffer buffer = cursor.buffer = properties.loadArray( reference, cursor.buffer, page );
         buffer.flip();
         return PropertyUtil.readArrayFromBuffer( buffer );
+    }
+
+    public boolean nodeExists( long id )
+    {
+        return read.nodeExists( id );
     }
 }

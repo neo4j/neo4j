@@ -19,66 +19,59 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-class Cursors implements org.neo4j.internal.kernel.api.CursorFactory
+public class Cursors implements org.neo4j.internal.kernel.api.CursorFactory
 {
-    private final Read read;
-
-    Cursors( Read read )
-    {
-        this.read = read;
-    }
-
     @Override
     public NodeCursor allocateNodeCursor()
     {
-        return new NodeCursor( read );
+        return new NodeCursor( );
     }
 
     @Override
     public RelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return new RelationshipScanCursor( read );
+        return new RelationshipScanCursor( );
     }
 
     @Override
     public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return new RelationshipTraversalCursor( read );
+        return new RelationshipTraversalCursor( allocateRelationshipGroupCursor() );
     }
 
     @Override
     public PropertyCursor allocatePropertyCursor()
     {
-        return new PropertyCursor( read );
+        return new PropertyCursor( );
     }
 
     @Override
     public RelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return new RelationshipGroupCursor( read );
+        return new RelationshipGroupCursor( );
     }
 
     @Override
     public NodeValueIndexCursor allocateNodeValueIndexCursor()
     {
-        return new NodeValueIndexCursor( read );
+        return new NodeValueIndexCursor( );
     }
 
     @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
-        return new NodeLabelIndexCursor( read );
+        return new NodeLabelIndexCursor( );
     }
 
     @Override
     public NodeExplicitIndexCursor allocateNodeManualIndexCursor()
     {
-        return new NodeExplicitIndexCursor( read );
+        return new NodeExplicitIndexCursor( );
     }
 
     @Override
     public RelationshipExplicitIndexCursor allocateRelationshipManualIndexCursor()
     {
-        return new RelationshipExplicitIndexCursor( read );
+        return new RelationshipExplicitIndexCursor( );
     }
 }

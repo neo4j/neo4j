@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -52,19 +53,22 @@ import org.neo4j.values.storable.Value;
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
  */
-public class Operations implements Read, ExplicitIndexRead, SchemaRead
+public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final StorageStatement statement;
 
     public Operations(
             StorageEngine engine,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Supplier<ExplicitIndexTransactionState> explicitIndexes )
+            Supplier<ExplicitIndexTransactionState> explicitIndexes,
+            Cursors cursors )
     {
-        allStoreHolder = new AllStoreHolder( engine, statement, explicitIndexes );
+        allStoreHolder = new AllStoreHolder( engine, statement, explicitIndexes, cursors );
         this.ktx = ktx;
+        this.statement = statement;
     }
 
     // READ
@@ -303,5 +307,116 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead
         {
             throw new TransactionTerminatedException( terminationReason.get() );
         }
+    }
+
+    // WRITE
+
+    @Override
+    public long nodeCreate()
+    {
+        assertOpen();
+        long nodeId = statement.reserveNode();
+        ktx.txState().nodeDoCreate( nodeId );
+        return nodeId;
+    }
+
+    @Override
+    public boolean nodeDelete( long node )
+    {
+        assertOpen();
+
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            if ( ktx.txState().nodeIsAddedInThisTx( node ) )
+            {
+                ktx.txState().nodeDoDelete( node );
+                return true;
+            }
+            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
+            {
+                // already deleted
+                return false;
+            }
+        }
+
+        if ( allStoreHolder.nodeExists( node ) )
+        {
+            ktx.txState().nodeDoDelete( node );
+            return true;
+        }
+
+        // tried to delete node that does not exist
+        return false;
+    }
+
+    @Override
+    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void relationshipDelete( long relationship )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void nodeAddLabel( long node, int nodeLabel )
+    {
+        assertOpen();
+        ktx.txState().nodeDoAddLabel( nodeLabel, node );
+    }
+
+    @Override
+    public void nodeRemoveLabel( long node, int nodeLabel )
+    {
+        assertOpen();
+
+        ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
+    }
+
+    @Override
+    public Value nodeSetProperty( long node, int propertyKey, Value value )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Value nodeRemoveProperty( long node, int propertyKey )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Value relationshipSetProperty( long relationship, int propertyKey, Value value )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Value relationshipRemoveProperty( long node, int propertyKey )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Value graphSetProperty( int propertyKey, Value value )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Value graphRemoveProperty( int propertyKey )
+    {
+        assertOpen();
+        throw new UnsupportedOperationException();
     }
 }

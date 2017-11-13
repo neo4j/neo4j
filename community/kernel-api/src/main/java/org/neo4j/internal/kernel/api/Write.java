@@ -35,8 +35,9 @@ public interface Write
     /**
      * Delete a node.
      * @param node the internal id of the node to delete
+     * @return returns true if it deleted a node or false if no node was found for this id
      */
-    void nodeDelete( long node );
+    boolean nodeDelete( long node );
 
     /**
      * Create a relationship between two nodes.

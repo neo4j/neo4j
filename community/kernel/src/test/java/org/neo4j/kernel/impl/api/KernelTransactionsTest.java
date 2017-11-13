@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -586,7 +587,7 @@ public class KernelTransactionsTest
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard,
                 tracers, storageEngine, new Procedures(), transactionIdStore, clock, CpuClock.NOT_AVAILABLE,
-                HeapAllocation.NOT_AVAILABLE, new CanWrite() );
+                HeapAllocation.NOT_AVAILABLE, new CanWrite(), new Cursors() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -598,7 +599,7 @@ public class KernelTransactionsTest
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite() );
+                new CanWrite(), new Cursors() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -647,12 +648,12 @@ public class KernelTransactionsTest
                 ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-                AccessCapability accessCapability )
+                AccessCapability accessCapability, Cursors cursors )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard,
                     txHeaderFactory, transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks,
                     transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
-                    clock, CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE, accessCapability );
+                    clock, CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE, accessCapability, cursors );
         }
 
         @Override

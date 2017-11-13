@@ -26,17 +26,17 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 
 class KernelToken implements Token
 {
-    private final StoreReadLayer read;
+    private final StoreReadLayer store;
 
     KernelToken( StorageEngine engine )
     {
-        read = engine.storeReadLayer();
+        store = engine.storeReadLayer();
     }
 
     @Override
     public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return store.labelGetOrCreateForName( labelName );
     }
 
     @Override
@@ -72,18 +72,18 @@ class KernelToken implements Token
     @Override
     public int nodeLabel( String name )
     {
-        return read.labelGetForName( name );
+        return store.labelGetForName( name );
     }
 
     @Override
     public int relationshipType( String name )
     {
-        return read.relationshipTypeGetForName( name );
+        return store.relationshipTypeGetForName( name );
     }
 
     @Override
     public int propertyKey( String name )
     {
-        return read.propertyKeyGetForName( name );
+        return store.propertyKeyGetForName( name );
     }
 }

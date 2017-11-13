@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -164,7 +165,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability )
+            StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -185,7 +186,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 procedures, accessCapability, lockTracer, statementOperations );
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
-        this.operations = new Operations( storageEngine, storageStatement, this, explicitIndexTxStateSupplier );
+        this.operations = new Operations( storageEngine, storageStatement, this, explicitIndexTxStateSupplier, cursors );
     }
 
     /**
@@ -684,7 +685,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Write dataWrite()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return operations;
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.neo4j.helpers.collection.Iterables;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 
@@ -70,6 +71,53 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
+    public void shouldRemoveNode() throws Exception
+    {
+        long node;
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode().getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.dataWrite().nodeDelete( node );
+            tx.success();
+        }
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            try
+            {
+                graphDb.getNodeById( node );
+                fail( "Did not remove node" );
+            }
+            catch ( NotFoundException e )
+            {
+                // expected
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotRemoveNodeThatDoesNotExist() throws Exception
+    {
+        long node = 0;
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertFalse( tx.dataWrite().nodeDelete( node ) );
+            tx.failure();
+        }
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertFalse( tx.dataWrite().nodeDelete( node ) );
+            tx.success();
+        }
+        // should not crash
+    }
+
+    @Test
     public void shouldAddLabelNode() throws Exception
     {
         long node;
@@ -85,9 +133,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            assertThat(
-                    graphDb.getNodeById( node ).getLabels(),
-                    equalTo( Iterables.iterable( label( labelName ) ) ) );
+            assertThat( graphDb.getNodeById( node ).getLabels(), equalTo( Iterables.iterable( label( labelName ) ) ) );
         }
     }
 
@@ -113,9 +159,9 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            assertThat(
-                    graphDb.getNodeById( nodeId ).getLabels(),
-                    equalTo( Iterables.empty() ) );
+            assertThat( graphDb.getNodeById( nodeId ).getLabels(), equalTo( Iterables.empty() ) );
         }
     }
+
+
 }

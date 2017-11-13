@@ -28,15 +28,10 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 class NodeExplicitIndexCursor extends IndexCursor
         implements org.neo4j.internal.kernel.api.NodeExplicitIndexCursor, ExplicitClient
 {
-    private final Read read;
+    private Read read;
     private int expectedSize;
     private long node;
     private float score;
-
-    NodeExplicitIndexCursor( Read read )
-    {
-        this.read = read;
-    }
 
     @Override
     public void initialize( IndexProgressor progressor, int expectedSize )
@@ -51,6 +46,11 @@ class NodeExplicitIndexCursor extends IndexCursor
         this.node = reference;
         this.score = score;
         return true;
+    }
+
+    public void setRead( Read read )
+    {
+        this.read = read;
     }
 
     @Override
