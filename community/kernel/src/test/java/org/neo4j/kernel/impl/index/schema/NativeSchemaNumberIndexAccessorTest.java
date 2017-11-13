@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,24 +40,28 @@ import java.util.stream.Stream;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.newapi.SimpleNodeValueClient;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -374,11 +379,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         assertEntityIdHits( extractEntityIds( updates, lessThan( Double.POSITIVE_INFINITY ) ), result );
     }
 
-    private static int compare( Value value, Number other )
-    {
-        return COMPARATOR.compare( value, Values.of( other ) );
-    }
-
     @Test
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
     {
@@ -422,6 +422,70 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         assertEntityIdHits( extractEntityIds( updates,
                 all( greaterThan( Double.NEGATIVE_INFINITY ), greaterThan( Double.NEGATIVE_INFINITY ) ) ), result );
     }
+
+    // <READER ordering>
+    @Test
+    public void throwForUnsupportedIndexOrder() throws Exception
+    {
+        // given
+        // Unsupported index order for query
+        IndexReader indexReader = accessor.newReader();
+        IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
+        IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, "Legolas" );
+
+        try
+        {
+            // when
+            indexReader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
+            fail( "Should have failed" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // then
+            assertThat( e.getMessage(), CoreMatchers.allOf(
+                    CoreMatchers.containsString( "unsupported order" ),
+                    CoreMatchers.containsString( unsupportedOrder.toString() ),
+                    CoreMatchers.containsString( unsupportedQuery.toString() ) )
+            );
+        }
+    }
+
+    @Test
+    public void respectIndexOrder() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
+        processAll( someUpdates );
+        Value[] expectedValues = layoutUtil.extractValuesFromUpdates( someUpdates );
+
+        // when
+        IndexReader indexReader = accessor.newReader();
+        IndexQuery.NumberRangePredicate supportedQuery =
+                IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
+
+        for ( IndexOrder supportedOrder : NativeSchemaNumberIndexProvider.CAPABILITY.order( ValueGroup.NUMBER ) )
+        {
+            if ( IndexOrder.ASCENDING.equals( supportedOrder ) )
+            {
+                Arrays.sort( expectedValues, Values.COMPARATOR );
+            }
+            if ( IndexOrder.DESCENDING.equals( supportedOrder ) )
+            {
+                Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
+            }
+
+            SimpleNodeValueClient client = new SimpleNodeValueClient();
+            indexReader.query( client, supportedOrder, supportedQuery );
+            int i = 0;
+            while ( client.next() )
+            {
+                assertEquals( "values in order", expectedValues[i++], client.values[0] );
+            }
+            assertTrue( "found all values", i == expectedValues.length );
+        }
+    }
+
+    // </READER ordering>
 
     @Test
     public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
@@ -735,6 +799,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // then
         Set<Long> expectedIds = Collections.emptySet();
         assertEquals( expectedIds, ids );
+    }
+
+    private static int compare( Value value, Number other )
+    {
+        return COMPARATOR.compare( value, Values.of( other ) );
     }
 
     private static Predicate<Value> lessThan( Double other )

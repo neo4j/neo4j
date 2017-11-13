@@ -170,7 +170,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
             if ( !ArrayUtil.contains( capability, indexOrder ) )
             {
                 throw new UnsupportedOperationException(
-                        format( "Tried to query index with unsupported order %s. Supported orders are for query %s are %s.",
+                        format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.",
                                 indexOrder, Arrays.toString( predicates ), Arrays.toString( capability ) ) );
             }
         }
