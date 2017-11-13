@@ -28,6 +28,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.rule.SuppressOutput;
@@ -52,7 +53,10 @@ public class StoreMigrationTest
         StoreMigration.main( new String[]{testDir.graphDbDir().getAbsolutePath()} );
 
         // after migration we can open store and do something
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
+        GraphDatabaseService database = new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() )
+                .newGraphDatabase();
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();

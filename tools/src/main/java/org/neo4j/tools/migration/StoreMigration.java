@@ -91,13 +91,15 @@ public class StoreMigration
         FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            new StoreMigration().run( fileSystem, storeDir, getMigrationConfig(), userLogProvider );
+            new StoreMigration().run( fileSystem, storeDir, getMigrationConfig( storeDir ), userLogProvider );
         }
     }
 
-    private static Config getMigrationConfig()
+    private static Config getMigrationConfig( File storeDir )
     {
-        return Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE);
+        Config config = Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
+        config.augment( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
+        return config;
     }
 
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,
