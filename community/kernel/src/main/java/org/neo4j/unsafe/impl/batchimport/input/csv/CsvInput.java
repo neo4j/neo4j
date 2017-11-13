@@ -274,15 +274,21 @@ public class CsvInput implements Input
         long[] estimates = new long[4]; // [entity count, property count, property size, labels (for nodes only)]
         for ( DataFactory<E> dataFactory : dataFactories ) // one input group
         {
+            // One group of input files
+            Header header = null;
             RawIterator<CharReadable,IOException> dataItems = dataFactory.create( config ).stream();
-            while ( dataItems.hasNext() ) // one input file
+            while ( dataItems.hasNext() )
             {
                 CharReadable stream = dataItems.next();
                 // TODO for now only a single 1MB chunk from the start of each file is sampled.
                 //      more samples from other places in each file could also be sampled.
                 try ( CharSeeker dataStream = charSeeker( stream, config, true ) ) // sample it
                 {
-                    Header header = headerFactory.create( dataStream, config, idType );
+                    if ( header == null )
+                    {
+                        // Extract the header from the first file in this group
+                        header = headerFactory.create( dataStream, config, idType );
+                    }
                     sample( estimates, stream.length(), dataStream, header,
                             deserialization.apply( header, dataStream ), valueSizeCalculator, additionalCalculator );
                 }
