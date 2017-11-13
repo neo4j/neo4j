@@ -55,7 +55,7 @@ public class NewKernel implements Kernel
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Session beginSession( SecurityContext securityContext )
+    public KernelSession beginSession( SecurityContext securityContext )
     {
         return new KernelSession( engine, kernel, securityContext );
     }

@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class TestKernelTransaction implements KernelTransaction
+class StubKernelTransaction implements KernelTransaction
 {
     @Override
     public Statement acquireStatement()

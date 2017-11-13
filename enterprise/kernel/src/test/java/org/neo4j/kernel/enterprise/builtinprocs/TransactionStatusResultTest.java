@@ -59,7 +59,7 @@ public class TransactionStatusResultTest
 {
 
     private TestKernelTransactionHandle transactionHandle =
-            new TransactionHandleWithLocks( new TestKernelTransaction() );
+            new TransactionHandleWithLocks( new StubKernelTransaction() );
     private HashMap<KernelTransactionHandle,List<QuerySnapshot>> snapshotsMap = new HashMap<>();
     private TransactionDependenciesResolver blockerResolver = new TransactionDependenciesResolver( snapshotsMap );
 

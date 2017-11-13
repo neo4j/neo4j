@@ -31,9 +31,14 @@ public interface Transaction extends AutoCloseable
     }
 
     /**
+     * The store id of a rolled back transaction.
+     */
+    long ROLLBACK = -1;
+
+    /**
      * The store id of a read-only transaction.
      */
-    long READ_ONLY_TRANSACTION = 0;
+    long READ_ONLY = 0;
 
     /**
      * Marks this transaction as successful. When this transaction later gets {@link #close() closed}
