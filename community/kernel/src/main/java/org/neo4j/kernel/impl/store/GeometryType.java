@@ -76,7 +76,7 @@ public enum GeometryType
                 public int calculateNumberOfBlocksUsedForGeometry( long firstBlock )
                 {
                     int dimension = getDimension( firstBlock );
-                    if ( dimension > 3 )
+                    if ( dimension > GeometryType.getMaxSupportedDimensions() )
                     {
                         return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
                     }
@@ -205,6 +205,11 @@ public enum GeometryType
         return ((firstBlock & PRECISION_MASK) >> 56) == 1;
     }
 
+    private static int getMaxSupportedDimensions()
+    {
+        return PropertyType.getPayloadSizeLongs() - 1;
+    }
+
     public static int calculateNumberOfBlocksUsed( long firstBlock )
     {
         GeometryType geometryType = find( getGeometryType( firstBlock ) );
@@ -252,9 +257,11 @@ public enum GeometryType
         {
             throw new UnsupportedOperationException( "Float precision is unsupported in Geometry properties" );
         }
-        if ( dimension > 3 )
+        if ( dimension > GeometryType.getMaxSupportedDimensions() )
         {
-            throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported" );
+            throw new UnsupportedOperationException(
+                    "Points with more than " + GeometryType.getMaxSupportedDimensions() +
+                    " dimensions are not supported" );
         }
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( getCRSTable( firstBlock ), getCRSCode( firstBlock ) );
         return find( gtype ).decode( crs, dimension, valueBlocks, offset );
@@ -262,10 +269,12 @@ public enum GeometryType
 
     public static long[] encodePoint( int keyId, CoordinateReferenceSystem crs, double[] coordinate )
     {
-        if ( coordinate.length > 3 )
+        if ( coordinate.length > GeometryType.getMaxSupportedDimensions() )
         {
             // One property block can only contains at most 4x8 byte parts, one for header and 3 for coordinates
-            throw new UnsupportedOperationException( "Points with more than 3 dimensions are not supported" );
+            throw new UnsupportedOperationException(
+                    "Points with more than " + GeometryType.getMaxSupportedDimensions() +
+                    " dimensions are not supported" );
         }
 
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
