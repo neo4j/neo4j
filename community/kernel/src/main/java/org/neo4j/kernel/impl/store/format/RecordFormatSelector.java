@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Arrays.asList;
@@ -60,7 +61,8 @@ public class RecordFormatSelector
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
             StandardV2_3.RECORD_FORMATS,
             StandardV3_0.RECORD_FORMATS,
-            StandardV3_2.RECORD_FORMATS
+            StandardV3_2.RECORD_FORMATS,
+            StandardV3_4.RECORD_FORMATS
     );
 
     private RecordFormatSelector()

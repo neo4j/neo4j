@@ -55,7 +55,12 @@ public enum Capability
     /**
      * Lucene version 5.x
      */
-    LUCENE_5( CapabilityType.INDEX );
+    LUCENE_5( CapabilityType.INDEX ),
+
+    /**
+     * Point Geometries are an addition to the format, not a change
+     */
+    POINT_PROPERTIES( CapabilityType.STORE );
 
     private final CapabilityType[] types;
 
