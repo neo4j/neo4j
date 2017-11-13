@@ -106,17 +106,17 @@ public class TransactionLogCatchUpWriterTest
     @Test
     public void shouldCreateTransactionLogWithCheckpoint() throws Exception
     {
-        createTransactionLogWithCheckpoint( Config.defaults() );
+        createTransactionLogWithCheckpoint( Config.defaults(), true );
     }
 
     @Test
     public void createTransactionLogWithCheckpointInCustomLocation() throws IOException
     {
         createTransactionLogWithCheckpoint( Config.defaults( GraphDatabaseSettings.logical_logs_location,
-                "custom-tx-logs") );
+                "custom-tx-logs"), false );
     }
 
-    private void createTransactionLogWithCheckpoint( Config config ) throws IOException
+    private void createTransactionLogWithCheckpoint( Config config, boolean logsInStoreDir ) throws IOException
     {
         org.neo4j.kernel.impl.store.StoreId storeId = simulateStoreCopy();
 
@@ -124,7 +124,7 @@ public class TransactionLogCatchUpWriterTest
         int endTxId = fromTxId + 5;
 
         TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config,
-                NullLogProvider.getInstance(), fromTxId, partOfStoreCopy );
+                NullLogProvider.getInstance(), fromTxId, partOfStoreCopy, logsInStoreDir );
 
         // when
         for ( int i = fromTxId; i <= endTxId; i++ )
@@ -136,7 +136,7 @@ public class TransactionLogCatchUpWriterTest
 
         // then
         LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache );
-        if ( !partOfStoreCopy )
+        if ( !logsInStoreDir )
         {
             logFilesBuilder.withConfig( config );
         }

@@ -85,7 +85,7 @@ public class OnlineBackupCommandConfigLoaderTest
 
         // expect
         assertFalse( additionalConf.exists() );
-        subject.loadConfig( Optional.of( additionalConf.toPath() ), homeDir );
+        subject.loadConfig( Optional.of( additionalConf.toPath() ) );
     }
 
     @Test
@@ -101,7 +101,7 @@ public class OnlineBackupCommandConfigLoaderTest
         appendToFile( homeDirConfigFile, "causal_clustering.raft_in_queue_max_batch=21" );
 
         // when
-        Config config  = subject.loadConfig( Optional.empty(), homeDir );
+        Config config  = subject.loadConfig( Optional.empty() );
 
         // then
         assertEquals( Integer.valueOf( 4 ), config.get( CausalClusteringSettings.expected_core_cluster_size ) );
@@ -121,7 +121,7 @@ public class OnlineBackupCommandConfigLoaderTest
         appendToFile( additionalConfigFile, "causal_clustering.expected_core_cluster_size=5" );
 
         // when
-        Config config = subject.loadConfig( Optional.of( additionalConfigFile.toPath() ), homeDir );
+        Config config = subject.loadConfig( Optional.of( additionalConfigFile.toPath() ) );
 
         // then
         assertEquals( Integer.valueOf( 5 ), config.get( CausalClusteringSettings.expected_core_cluster_size ) );

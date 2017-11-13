@@ -63,8 +63,8 @@ public class RemoteStore
     private final TxPullClient txPullClient;
     private final TransactionLogCatchUpFactory transactionLogFactory;
 
-    public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-            TransactionLogCatchUpFactory transactionLogFactory, Config config, Monitors monitors )
+    public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient,
+            TxPullClient txPullClient, TransactionLogCatchUpFactory transactionLogFactory, Config config, Monitors monitors )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -127,10 +127,11 @@ public class RemoteStore
         }
     }
 
-    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
+    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir,
+            boolean keepTxLogsInStoreDir ) throws StoreCopyFailedException, IOException
     {
         long pullIndex = getPullIndex( storeDir );
-        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
+        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false, keepTxLogsInStoreDir );
     }
 
     public void copy( AdvertisedSocketAddress from, StoreId expectedStoreId, File destDir )
@@ -147,7 +148,8 @@ public class RemoteStore
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
-            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true );
+            CatchupResult catchupResult =
+                    pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true, true );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
@@ -159,11 +161,12 @@ public class RemoteStore
         }
     }
 
-    private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy )
+    private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId,
+            boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir )
             throws IOException, StoreCopyFailedException
     {
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
-                logProvider, fromTxId, asPartOfStoreCopy ) )
+                logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 

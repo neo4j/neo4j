@@ -49,8 +49,7 @@ public class OnlineBackupContextLoader
         try
         {
             OnlineBackupRequiredArguments requiredArguments = backupCommandArgumentHandler.establishRequiredArguments( commandlineArgs );
-            Config config = onlineBackupCommandConfigLoader.loadConfig( requiredArguments.getAdditionalConfig(),
-                    requiredArguments.getFolder() );
+            Config config = onlineBackupCommandConfigLoader.loadConfig( requiredArguments.getAdditionalConfig() );
             ConsistencyFlags consistencyFlags = backupCommandArgumentHandler.readFlagsFromArgumentsOrDefaultToConfig( config );
 
             return new OnlineBackupContext( requiredArguments, config, consistencyFlags );

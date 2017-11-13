@@ -136,7 +136,7 @@ public class RemoteStoreTest
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
         when( factory.create( isNull(), any( FileSystemAbstraction.class ), isNull(), any( Config.class ),
-                any( LogProvider.class ), anyLong(), anyBoolean() ) ).thenReturn( writer );
+                any( LogProvider.class ), anyLong(), anyBoolean(), anyBoolean() ) ).thenReturn( writer );
         return factory;
     }
 }

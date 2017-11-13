@@ -30,9 +30,10 @@ import org.neo4j.logging.LogProvider;
 public class TransactionLogCatchUpFactory
 {
     public TransactionLogCatchUpWriter create( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
-            Config config, LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy ) throws IOException
+            Config config, LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir )
+            throws IOException
     {
         return new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config, logProvider, fromTxId,
-                asPartOfStoreCopy );
+                asPartOfStoreCopy, keepTxLogsInStoreDir );
     }
 }

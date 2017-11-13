@@ -339,8 +339,7 @@ public class StoreCopyClient
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.logical_logs_location,
-                        config.get( GraphDatabaseSettings.logical_logs_location ).toString() )
+                .setConfig( GraphDatabaseSettings.logical_logs_location, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade,
                         config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
                 .newGraphDatabase();

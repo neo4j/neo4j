@@ -160,8 +160,8 @@ public class StoreCopyClientTest
     @Test
     public void storeCopyClientUseCustomTransactionLogLocationWhenConfigured() throws Exception
     {
-        final File copyDir = new File( directory.directory(), "copy" );
-        final File originalDir = new File( directory.directory(), "original" );
+        final File copyDir = new File( directory.directory(), "copyCustomLocation" );
+        final File originalDir = new File( directory.directory(), "originalCustomLocation" );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         File copyCustomLogFilesLocation = new File( copyDir, "CopyCustomLogFilesLocation" );
         File originalCustomLogFilesLocation = new File( originalDir, "originalCustomLogFilesLocation" );
@@ -183,6 +183,7 @@ public class StoreCopyClientTest
                 fileSystem, true );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
+        original.shutdown();
 
         assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
 

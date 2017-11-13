@@ -54,14 +54,14 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private long expectedTxId;
 
     TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Config config,
-            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy ) throws IOException
+            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir ) throws IOException
     {
         this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
         this.asPartOfStoreCopy = asPartOfStoreCopy;
         LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
                 .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 );
-        if ( !asPartOfStoreCopy )
+        if ( !keepTxLogsInStoreDir )
         {
             logFilesBuilder.withConfig( config );
         }
