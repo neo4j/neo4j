@@ -464,6 +464,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
                 Arrays.sort( expectedValues, Values.COMPARATOR );
             }
             if ( supportedOrder == IndexOrder.DESCENDING )
+
             {
                 Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
             }
