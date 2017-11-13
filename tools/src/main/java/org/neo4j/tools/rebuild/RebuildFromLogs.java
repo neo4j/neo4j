@@ -20,7 +20,6 @@
 package org.neo4j.tools.rebuild;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -66,7 +65,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 
-import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -154,19 +152,6 @@ class RebuildFromLogs
                 printUsage( "Inconsistent number of log files found in " + source );
                 return;
             }
-            long txCount = findLastTransactionId( logFiles, highestVersion );
-            ProgressMonitorFactory progress;
-            if ( txCount < 0 )
-            {
-                progress = ProgressMonitorFactory.NONE;
-                System.err.println(
-                        "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
-            }
-            else
-            {
-                progress = ProgressMonitorFactory.textual( System.err );
-            }
-            progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
 
             long lastTxId;
             try ( TransactionApplier applier = new TransactionApplier( fs, target, pageCache ) )
@@ -188,25 +173,6 @@ class RebuildFromLogs
         {
             checker.checkConsistency();
         }
-    }
-
-    private long findLastTransactionId( LogFiles logFiles, long highestVersion ) throws IOException
-    {
-        PhysicalLogVersionedStoreChannel channel = logFiles.openForVersion( highestVersion );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel );
-
-        long lastTransactionId = -1;
-
-        LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
-        try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                new PhysicalTransactionCursor<>( logChannel, entryReader ) )
-        {
-            while ( cursor.next() )
-            {
-                lastTransactionId = cursor.get().getCommitEntry().getTxId();
-            }
-        }
-        return lastTransactionId;
     }
 
     private static void printUsage( String... msgLines )

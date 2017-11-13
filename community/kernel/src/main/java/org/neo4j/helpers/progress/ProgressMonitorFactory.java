@@ -36,12 +36,6 @@ public abstract class ProgressMonitorFactory
         {
             return Indicator.NONE;
         }
-
-        @Override
-        protected Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution )
-        {
-            return Indicator.NONE;
-        }
     };
 
     public static ProgressMonitorFactory textual( final OutputStream out )
@@ -57,12 +51,6 @@ public abstract class ProgressMonitorFactory
             protected Indicator newIndicator( String process )
             {
                 return new Indicator.Textual( process, writer() );
-            }
-
-            @Override
-            protected Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution )
-            {
-                return new Indicator.OpenEndedTextual( process, writer(), resolution );
             }
 
             private PrintWriter writer()
@@ -82,20 +70,12 @@ public abstract class ProgressMonitorFactory
         return new ProgressListener.SinglePartProgressListener( newIndicator( process ), totalCount );
     }
 
-    public final ProgressListener openEnded( String process, int resolution )
-    {
-        return new ProgressListener.OpenEndedProgressListener( newOpenEndedIndicator( process, resolution ) );
-    }
-
     protected abstract Indicator newIndicator( String process );
-
-    protected abstract Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution );
 
     public static class MultiPartBuilder
     {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<>();
-        private Completion completion;
 
         private MultiPartBuilder( ProgressMonitorFactory factory, String process )
         {
@@ -137,15 +117,14 @@ public abstract class ProgressMonitorFactory
             }
         }
 
-        public Completion build()
+        public void build()
         {
             if ( aggregator != null )
             {
-                completion = aggregator.initialize();
+                aggregator.initialize();
             }
             aggregator = null;
             parts = null;
-            return completion;
         }
     }
 }

@@ -57,7 +57,7 @@ import static org.neo4j.consistency.checking.full.QueueDistribution.ROUND_ROBIN;
 
 public class ConsistencyCheckTasks
 {
-    private final ProgressMonitorFactory.MultiPartBuilder progress;
+    private final ProgressMonitorFactory.MultiPartBuilder multiPartBuilder;
     private final StoreProcessor defaultProcessor;
     private final StoreAccess nativeStores;
     private final Statistics statistics;
@@ -68,12 +68,12 @@ public class ConsistencyCheckTasks
     private final CacheAccess cacheAccess;
     private final int numberOfThreads;
 
-    ConsistencyCheckTasks( ProgressMonitorFactory.MultiPartBuilder progress,
+    ConsistencyCheckTasks( ProgressMonitorFactory.MultiPartBuilder multiPartBuilder,
             StoreProcessor defaultProcessor, StoreAccess nativeStores, Statistics statistics,
             CacheAccess cacheAccess, LabelScanStore labelScanStore,
             IndexAccessors indexes, MultiPassStore.Factory multiPass, ConsistencyReporter reporter, int numberOfThreads )
     {
-        this.progress = progress;
+        this.multiPartBuilder = multiPartBuilder;
         this.defaultProcessor = defaultProcessor;
         this.nativeStores = nativeStores;
         this.statistics = statistics;
@@ -155,11 +155,11 @@ public class ConsistencyCheckTasks
                 new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
-                schemaCheck, progress, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
+                schemaCheck, multiPartBuilder, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
         // PASS 3: Obligation verification and semantic rule uniqueness
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_obligations", statistics,
                     numberOfThreads, nativeStores.getSchemaStore(), nativeStores,
-                "check_obligations", schemaCheck.forObligationChecking(), progress, cacheAccess, defaultProcessor,
+                "check_obligations", schemaCheck.forObligationChecking(), multiPartBuilder, cacheAccess, defaultProcessor,
                 ROUND_ROBIN ) );
         if ( checkGraph )
         {
@@ -200,23 +200,23 @@ public class ConsistencyCheckTasks
             @SuppressWarnings( "rawtypes" ) IterableStore... warmupStores )
     {
         return stage.isParallel()
-                ? new ParallelRecordScanner<>( name, statistics, numberOfThreads, store, progress, processor,
+                ? new ParallelRecordScanner<>( name, statistics, numberOfThreads, store, multiPartBuilder, processor,
                         cacheAccess, distribution, warmupStores )
-                : new SequentialRecordScanner<>( name, statistics, numberOfThreads, store, progress, processor,
+                : new SequentialRecordScanner<>( name, statistics, numberOfThreads, store, multiPartBuilder, processor,
                         warmupStores );
     }
 
     private <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( String name,
             RecordStore<RECORD> input, QueueDistribution distribution )
     {
-        return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, progress,
+        return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, multiPartBuilder,
                 cacheAccess, defaultProcessor, distribution );
     }
 
     private <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( String name,
             RecordStore<RECORD> input, StoreProcessor processor, QueueDistribution distribution )
     {
-        return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, progress,
+        return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, multiPartBuilder,
                 cacheAccess, processor, distribution );
     }
 }
