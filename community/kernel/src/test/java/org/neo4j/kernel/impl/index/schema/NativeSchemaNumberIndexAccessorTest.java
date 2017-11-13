@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,9 +63,7 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.function.Predicates.all;
 import static org.neo4j.function.Predicates.alwaysTrue;
@@ -89,6 +89,9 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         extends SchemaNumberIndexTestUtil<KEY,VALUE>
 {
     private NativeSchemaNumberIndexAccessor<KEY,VALUE> accessor;
+
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
 
     @Before
     public void setupAccessor() throws IOException
@@ -131,16 +134,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         IndexUpdater updater = accessor.newUpdater( ONLINE );
         updater.close();
 
+        // then
+        expected.expect( IllegalStateException.class );
+
         // when
-        try
-        {
-            updater.process( simpleUpdate() );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then good
-        }
+        updater.process( simpleUpdate() );
     }
 
     @Test
@@ -433,21 +431,15 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
         IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, "Legolas" );
 
-        try
-        {
-            // when
-            indexReader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
-            fail( "Should have failed" );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            // then
-            assertThat( e.getMessage(), CoreMatchers.allOf(
-                    CoreMatchers.containsString( "unsupported order" ),
-                    CoreMatchers.containsString( unsupportedOrder.toString() ),
-                    CoreMatchers.containsString( unsupportedQuery.toString() ) )
-            );
-        }
+        // then
+        expected.expect( UnsupportedOperationException.class );
+        expected.expectMessage( CoreMatchers.allOf(
+                CoreMatchers.containsString( "unsupported order" ),
+                CoreMatchers.containsString( unsupportedOrder.toString() ),
+                CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
+
+        // when
+        indexReader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
     }
 
     @Test
@@ -613,16 +605,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // given
         try ( IndexUpdater ignored = accessor.newUpdater( ONLINE ) )
         {
+            // then
+            expected.expect( IllegalStateException.class );
+
             // when
-            try
-            {
-                accessor.newUpdater( ONLINE );
-                fail( "Should have failed" );
-            }
-            catch ( IllegalStateException e )
-            {
-                // then good
-            }
+            accessor.newUpdater( ONLINE );
         }
     }
 
@@ -707,16 +694,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // given
         accessor.drop();
 
-        try
-        {
-            // when
-            accessor.newReader();
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then good
-        }
+        // then
+        expected.expect( IllegalStateException.class );
+
+        // when
+        accessor.newReader();
     }
 
     @Test
@@ -725,16 +707,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // given
         accessor.drop();
 
-        try
-        {
-            // when
-            accessor.newUpdater( IndexUpdateMode.ONLINE );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then good
-        }
+        // then
+        expected.expect( IllegalStateException.class );
+
+        // when
+        accessor.newUpdater( IndexUpdateMode.ONLINE );
     }
 
     @Test
@@ -743,16 +720,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // given
         accessor.close();
 
-        try
-        {
-            // when
-            accessor.newReader();
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then good
-        }
+        // then
+        expected.expect( IllegalStateException.class );
+
+        // when
+        accessor.newReader();
     }
 
     @Test
@@ -761,16 +733,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // given
         accessor.close();
 
-        try
-        {
-            // when
-            accessor.newUpdater( IndexUpdateMode.ONLINE );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then good
-        }
+        // then
+        expected.expect( IllegalStateException.class );
+
+        // when
+        accessor.newUpdater( IndexUpdateMode.ONLINE );
     }
 
     @Test

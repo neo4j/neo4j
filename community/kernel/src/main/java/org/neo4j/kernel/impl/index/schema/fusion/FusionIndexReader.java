@@ -132,7 +132,7 @@ class FusionIndexReader implements IndexReader
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicates[0] instanceof ExistsPredicate )
         {
-            MultiProgressorNodeValueCursor multiProgressor = new MultiProgressorNodeValueCursor( cursor, propertyKeys );
+            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, propertyKeys );
             cursor.initialize( multiProgressor, propertyKeys );
             nativeReader.query( multiProgressor, indexOrder, predicates[0] );
             luceneReader.query( multiProgressor, indexOrder, predicates[0] );
@@ -161,16 +161,19 @@ class FusionIndexReader implements IndexReader
         return predicates[0] instanceof NumberRangePredicate && nativeReader.hasFullNumberPrecision( predicates );
     }
 
-    private class MultiProgressorNodeValueCursor implements IndexProgressor.NodeValueClient, IndexProgressor
+    /**
+     * Combine multiple progressor to act like one single logical progressor seen from clients perspective.
+     */
+    private class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
     {
-        private final NodeValueClient cursor;
+        private final NodeValueClient client;
         private final int[] keys;
         private final Queue<IndexProgressor> progressors;
         private IndexProgressor current;
 
-        MultiProgressorNodeValueCursor( NodeValueClient cursor, int[] keys )
+        BridgingIndexProgressor( NodeValueClient client, int[] keys )
         {
-            this.cursor = cursor;
+            this.client = client;
             this.keys = keys;
             progressors = new ArrayDeque<>();
         }
@@ -190,6 +193,7 @@ class FusionIndexReader implements IndexReader
                 }
                 else
                 {
+                    current.close();
                     current = progressors.poll();
                 }
             }
@@ -223,13 +227,7 @@ class FusionIndexReader implements IndexReader
         @Override
         public boolean acceptNode( long reference, Value[] values )
         {
-            return cursor.acceptNode( reference, values );
-        }
-
-        @Override
-        public void done()
-        {
-            cursor.done();
+            return client.acceptNode( reference, values );
         }
     }
 }

@@ -30,15 +30,15 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 public class NumberHitIndexCursorProgressor<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> implements IndexProgressor
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
-    private final NodeValueClient cursor;
+    private final NodeValueClient client;
     private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
     private boolean closed;
 
-    NumberHitIndexCursorProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient cursor,
+    NumberHitIndexCursorProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
     {
         this.seeker = seeker;
-        this.cursor = cursor;
+        this.client = client;
         this.toRemoveFromOnClose = toRemoveFromOnClose;
     }
 
@@ -50,7 +50,7 @@ public class NumberHitIndexCursorProgressor<KEY extends SchemaNumberKey, VALUE e
             if ( seeker.next() )
             {
                 KEY key = seeker.get().key();
-                cursor.acceptNode( key.entityId, key.asValue() );
+                client.acceptNode( key.entityId, key.asValue() );
                 return true;
             }
             return false;

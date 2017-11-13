@@ -210,19 +210,19 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         return true;
     }
 
-    private void startSeekForInitializedRange( IndexProgressor.NodeValueClient cursor, KEY treeKeyFrom, KEY treeKeyTo )
+    private void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
-            cursor.initialize( IndexProgressor.EMPTY, propertyKeys );
+            client.initialize( IndexProgressor.EMPTY, propertyKeys );
             return;
         }
         try
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
             openSeekers.add( seeker );
-            IndexProgressor hitProgressor = new NumberHitIndexCursorProgressor<>( seeker, cursor, openSeekers );
-            cursor.initialize( hitProgressor, propertyKeys );
+            IndexProgressor hitProgressor = new NumberHitIndexCursorProgressor<>( seeker, client, openSeekers );
+            client.initialize( hitProgressor, propertyKeys );
         }
         catch ( IOException e )
         {

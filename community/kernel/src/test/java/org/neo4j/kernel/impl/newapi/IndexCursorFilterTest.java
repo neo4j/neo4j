@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -56,11 +52,12 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         NodeValueClientFilter filter = initializeFilter( null );
 
         // when
+        filter.next();
         assertTrue( filter.acceptNode( 17, null ) );
-        filter.done();
+        filter.close();
 
         // then
-        assertEvents( initialize(), new Event.Node( 17, null ), Event.DONE );
+        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, null ), Event.CLOSE );
     }
 
     @Test
@@ -70,11 +67,12 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
+        filter.next();
         assertFalse( filter.acceptNode( 17, null ) );
-        filter.done();
+        filter.close();
 
         // then
-        assertEvents( initialize(), Event.DONE );
+        assertEvents( initialize(), Event.NEXT, Event.CLOSE );
     }
 
     @Test
@@ -85,11 +83,12 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
+        filter.next();
         assertFalse( filter.acceptNode( 17, null ) );
-        filter.done();
+        filter.close();
 
         // then
-        assertEvents( initialize(), Event.DONE );
+        assertEvents( initialize(), Event.NEXT, Event.CLOSE );
     }
 
     @Test
@@ -101,11 +100,12 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
+        filter.next();
         assertTrue( filter.acceptNode( 17, null ) );
-        filter.done();
+        filter.close();
 
         // then
-        assertEvents( initialize(), new Event.Node( 17, null ), Event.DONE );
+        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, null ), Event.CLOSE );
     }
 
     @Test
@@ -117,11 +117,12 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
         NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
 
         // when
+        filter.next();
         assertFalse( filter.acceptNode( 17, null ) );
-        filter.done();
+        filter.close();
 
         // then
-        assertEvents( initialize(), Event.DONE );
+        assertEvents( initialize(), Event.NEXT, Event.CLOSE );
     }
 
     private NodeValueClientFilter initializeFilter( int[] keys, IndexQuery... filters )
@@ -149,12 +150,6 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
     }
 
     @Override
-    public void done()
-    {
-        events.add( Event.DONE );
-    }
-
-    @Override
     public boolean acceptNode( long reference, Value[] values )
     {
         events.add( new Event.Node( reference, values ) );
@@ -164,13 +159,14 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
     @Override
     public boolean next()
     {
-        throw new UnsupportedOperationException( "should not be called in these tests" );
+        events.add( Event.NEXT );
+        return true;
     }
 
     @Override
     public void close()
     {
-        throw new UnsupportedOperationException( "should not be called in these tests" );
+        events.add( Event.CLOSE );
     }
 
     private abstract static class Event
@@ -185,14 +181,29 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
                 this.progressor = progressor;
                 this.keys = keys;
             }
+
+            @Override
+            public String toString()
+            {
+                return "INITIALIZE(" + Arrays.toString( keys )+ ")";
+            }
         }
 
-        static final Event DONE = new Event()
+        static final Event CLOSE = new Event()
         {
             @Override
             public String toString()
             {
-                return "DONE";
+                return "CLOSE";
+            }
+        };
+
+        static final Event NEXT = new Event()
+        {
+            @Override
+            public String toString()
+            {
+                return "NEXT";
             }
         };
 
@@ -203,29 +214,27 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
 
             Node( long reference, Value[] values )
             {
-
                 this.reference = reference;
                 this.values = values;
             }
+
+            @Override
+            public String toString()
+            {
+                return "Node(" + reference + "," + values + ")";
+            }
         }
 
-        @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" )
         @Override
         public final boolean equals( Object other )
         {
-            return EqualsBuilder.reflectionEquals( this, other, true );
+            return toString().equals( other.toString() );
         }
 
         @Override
         public final int hashCode()
         {
-            return HashCodeBuilder.reflectionHashCode( this, false );
-        }
-
-        @Override
-        public String toString()
-        {
-            return ToStringBuilder.reflectionToString( this, ToStringStyle.SHORT_PREFIX_STYLE );
+            return toString().hashCode();
         }
     }
 }

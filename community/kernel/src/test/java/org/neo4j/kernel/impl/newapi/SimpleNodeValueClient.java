@@ -30,7 +30,12 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
 
     public boolean next()
     {
-        return progressor.next();
+        if ( progressor.next() )
+        {
+            return true;
+        }
+        closeProgressor();
+        return false;
     }
 
     @Override
@@ -47,11 +52,12 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
         return true;
     }
 
-    @Override
-    public void done()
+    private void closeProgressor()
     {
-        reference = 0;
-        values = null;
-        progressor = null;
+        if ( progressor != null )
+        {
+            progressor.close();
+            progressor = null;
+        }
     }
 }
