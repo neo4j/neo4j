@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.TransactionHookException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -538,7 +537,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer(), storageStatement );
                     if ( hooksState != null && hooksState.failed() )
                     {
-                        TransactionHookException cause = hooksState.failure();
+                        Throwable cause = hooksState.failure();
                         throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, "" );
                     }
                 }

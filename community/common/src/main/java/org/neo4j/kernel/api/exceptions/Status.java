@@ -135,8 +135,6 @@ public interface Status
                 "to be terminated, an operator might have asked for the database to be shut down, or the current " +
                 "instance is about to go through a cluster role switch. Simply retry your operation in a new " +
                 "transaction." ),
-        TransactionEventHandlerFailed( ClientError,
-                "A transaction event handler threw an exception. The transaction will be rolled back." ),
         TransactionValidationFailed( ClientError,
                 "Transaction changes did not pass validation checks" ),
         TransactionHookFailed( ClientError,
