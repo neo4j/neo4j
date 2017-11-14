@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.concurrent.atomic.LongAdder;
+
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -28,20 +30,20 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
  */
 public class CountingStoreUpdateMonitor implements EntityStoreUpdaterStep.Monitor
 {
-    private long nodes;
-    private long relationships;
-    private long properties;
+    private final LongAdder nodes = new LongAdder();
+    private final LongAdder relationships = new LongAdder();
+    private final LongAdder properties = new LongAdder();
 
     @Override
     public void entitiesWritten( Class<? extends PrimitiveRecord> type, long count )
     {
         if ( type.equals( NodeRecord.class ) )
         {
-            nodes += count;
+            nodes.add( count );
         }
         else if ( type.equals( RelationshipRecord.class ) )
         {
-            relationships += count;
+            relationships.add( count );
         }
         else
         {
@@ -52,21 +54,21 @@ public class CountingStoreUpdateMonitor implements EntityStoreUpdaterStep.Monito
     @Override
     public void propertiesWritten( long count )
     {
-        properties += count;
+        properties.add( count );
     }
 
     public long propertiesWritten()
     {
-        return properties;
+        return properties.sum();
     }
 
     public long nodesWritten()
     {
-        return nodes;
+        return nodes.sum();
     }
 
     public long relationshipsWritten()
     {
-        return relationships;
+        return relationships.sum();
     }
 }
