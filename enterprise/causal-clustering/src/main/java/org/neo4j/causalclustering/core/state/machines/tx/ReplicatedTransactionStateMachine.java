@@ -26,6 +26,7 @@ import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.StateMachine;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
@@ -47,17 +48,21 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     private final ReplicatedLockTokenStateMachine lockTokenStateMachine;
     private final int maxBatchSize;
     private final Log log;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
 
     private TransactionQueue queue;
     private long lastCommittedIndex = -1;
 
     public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker,
-            ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize, LogProvider logProvider )
+                                              ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize,
+                                              LogProvider logProvider,
+                                              PageCursorTracerSupplier pageCursorTracerSupplier )
     {
         this.commandIndexTracker = commandIndexTracker;
         this.lockTokenStateMachine = lockStateMachine;
         this.maxBatchSize = maxBatchSize;
         this.log = logProvider.getLog( getClass() );
+        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
     }
 
     public synchronized void installCommitProcess( TransactionCommitProcess commitProcess, long lastCommittedIndex )
@@ -65,7 +70,10 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
         this.lastCommittedIndex = lastCommittedIndex;
         log.info( format("Updated lastCommittedIndex to %d", lastCommittedIndex) );
         this.queue = new TransactionQueue( maxBatchSize, ( first, last ) ->
-            commitProcess.commit( first, CommitEvent.NULL, TransactionApplicationMode.EXTERNAL ) );
+        {
+            commitProcess.commit( first, CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            pageCursorTracerSupplier.get().reportEvents(); // Report paging metrics for the commit
+        } );
     }
 
     @Override
