@@ -135,17 +135,18 @@ Function Get-Neo4jPrunsrv
         )
 
         # Check if Java invocation includes Java memory sizing
-        $JvmMs = ''
-        $JvmMx = ''
         $JavaCMD.args | ForEach-Object -Process {
           if ($Matches -ne $null) { $Matches.Clear() }
           if ($_ -match '^-Xms([\d]+)m$') {
-            $PrunArgs += "`"--JvmMs $($matches[1])`""
+            $PrunArgs += "`"--JvmMs`""
+            $PrunArgs += "`"$($matches[1])`""
             Write-Verbose "Use JVM Start Memory of $($matches[1]) MB"
           }
           if ($Matches -ne $null) { $Matches.Clear() }
           if ($_ -match '^-Xmx([\d]+)m$') {
-            $PrunArgs += "`"--JvmMx $($matches[1])`""
+            $PrunArgs += "`"--JvmMx`""
+            $PrunArgs += "`"$($matches[1])`""
+
             Write-Verbose "Use JVM Max Memory of $($matches[1]) MB"
           }
         }

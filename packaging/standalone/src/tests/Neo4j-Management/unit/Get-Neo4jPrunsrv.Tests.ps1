@@ -164,11 +164,11 @@ InModuleScope Neo4j-Management {
       # http://commons.apache.org/proper/commons-daemon/procrun.html
 
       It "should specify --JvmMs if dbms.memory.heap.initial_size is set" {
-        $prunArgs | Should Match ([regex]::Escape("--JvmMs $mockJvmMs"))
+        $prunArgs | Should Match ([regex]::Escape("`"--JvmMs`" `"$mockJvmMs`""))
       }
 
       It "should specify --JvmMx if dbms.memory.heap.max_size is set" {
-        $prunArgs | Should Match ([regex]::Escape("--JvmMx $mockJvmMx"))
+        $prunArgs | Should Match ([regex]::Escape("`"--JvmMx`" `"$mockJvmMx`""))
       }
     }
 
