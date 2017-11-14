@@ -111,31 +111,15 @@ class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    ExplicitIndex explicitNodeIndex( String indexName )
+    ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
-        try
-        {
-            return explicitIndexes.get().nodeChanges( indexName );
-        }
-        catch ( ExplicitIndexNotFoundKernelException e )
-        {
-            // TODO: exception handling
-            throw new RuntimeException( "SOMEONE HAS NOT IMPLEMENTED PROPER EXCEPTION HANDLING!", e );
-        }
+        return explicitIndexes.get().nodeChanges( indexName );
     }
 
     @Override
-    ExplicitIndex explicitRelationshipIndex( String indexName )
+    ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
-        try
-        {
-            return explicitIndexes.get().relationshipChanges( indexName );
-        }
-        catch ( ExplicitIndexNotFoundKernelException e )
-        {
-            // TODO: exception handling
-            throw new RuntimeException( "SOMEONE HAS NOT IMPLEMENTED PROPER EXCEPTION HANDLING!", e );
-        }
+        return explicitIndexes.get().relationshipChanges( indexName );
     }
 
     @Override
@@ -215,7 +199,6 @@ class AllStoreHolder extends Read implements Token
     @Override
     PageCursor nodePage( long reference )
     {
-//        return read.nodes().openPageCursor( reference );
         return nodes.openPageCursor( reference );
     }
 
