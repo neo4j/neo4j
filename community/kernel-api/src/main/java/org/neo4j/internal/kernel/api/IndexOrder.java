@@ -21,5 +21,5 @@ package org.neo4j.internal.kernel.api;
 
 public enum IndexOrder
 {
-    ASCENDING, DESCENDING, UNORDERED
+    ASCENDING, DESCENDING
 }

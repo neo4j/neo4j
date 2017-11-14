@@ -213,9 +213,9 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         {
             if ( support( valueGroups ) )
             {
-                return new IndexOrder[]{IndexOrder.ASCENDING, IndexOrder.UNORDERED};
+                return new IndexOrder[]{IndexOrder.ASCENDING};
             }
-            return new IndexOrder[]{IndexOrder.UNORDERED};
+            return new IndexOrder[0];
         }
 
         @Override

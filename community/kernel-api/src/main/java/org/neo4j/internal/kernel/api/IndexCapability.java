@@ -61,7 +61,7 @@ public interface IndexCapability
         @Override
         public IndexOrder[] orderCapability( ValueGroup... valueGroups )
         {
-            return new IndexOrder[]{IndexOrder.UNORDERED};
+            return new IndexOrder[0];
         }
 
         @Override

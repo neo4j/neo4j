@@ -38,7 +38,6 @@ public class UnionIndexCapabilityTest
     private static final IndexOrder[] ORDER_CAPABILITIES_ALL = IndexOrder.values();
     private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_ASC = new IndexOrder[]{IndexOrder.ASCENDING};
     private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_DES = new IndexOrder[]{IndexOrder.DESCENDING};
-    private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_UNORDERED = new IndexOrder[]{IndexOrder.UNORDERED};
     private static final IndexOrder[] ORDER_CAPABILITIES_NONE = new IndexOrder[0];
 
     @Test
@@ -61,12 +60,6 @@ public class UnionIndexCapabilityTest
         union = unionOfOrderCapabilities( ORDER_CAPABILITIES_ONLY_ASC, ORDER_CAPABILITIES_ONLY_DES );
 
         // then
-        assertOrderCapability( union, IndexOrder.ASCENDING, IndexOrder.DESCENDING );
-
-        // given
-        union = unionOfOrderCapabilities( ORDER_CAPABILITIES_ONLY_ASC, ORDER_CAPABILITIES_ONLY_DES, ORDER_CAPABILITIES_ONLY_UNORDERED );
-
-        // then
         assertOrderCapability( union, ORDER_CAPABILITIES_ALL );
 
         // given
@@ -80,12 +73,6 @@ public class UnionIndexCapabilityTest
 
         // then
         assertOrderCapability( union, ORDER_CAPABILITIES_ONLY_ASC );
-
-        // given
-        union = unionOfOrderCapabilities( ORDER_CAPABILITIES_ONLY_ASC, ORDER_CAPABILITIES_ONLY_UNORDERED );
-
-        // then
-        assertOrderCapability( union, IndexOrder.ASCENDING, IndexOrder.UNORDERED );
     }
 
     @Test
