@@ -163,6 +163,16 @@ final class MuninnPage extends SequenceLock implements Page
         }
     }
 
+    void markAsLoaded( long filePageId )
+    {
+        this.filePageId = filePageId;
+    }
+
+    void markAsBound( PageSwapper swapper )
+    {
+        this.swapper = swapper;
+    }
+
     /**
      * NOTE: This method MUST be called while holding the exclusive page lock.
      */

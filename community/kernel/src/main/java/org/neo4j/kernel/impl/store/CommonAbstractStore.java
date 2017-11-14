@@ -1124,6 +1124,30 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
+    public void prefetchAllPages() throws IOException
+    {
+        long startId = getNumberOfReservedLowIds();
+        long endId = Math.max( startId, getHighId() - 1 );
+
+        long startPageId = pageIdForRecord( startId );
+        long endPageId = pageIdForRecord( endId );
+
+        log.info( "Starting prefetch for: " + getStorageFileName() );
+        long totalAttemptCount = 0;
+        for ( long pageId = startPageId; pageId <= endPageId; )
+        {
+            int attemptCount = storeFile.prefetch( pageId );
+            if ( attemptCount == 0 )
+            {
+                break;
+            }
+            pageId += attemptCount;
+            totalAttemptCount += attemptCount;
+        }
+        log.info( "Finished prefetch of %d pages", totalAttemptCount );
+    }
+
+    @Override
     public Collection<RECORD> getRecords( long firstId, RecordLoad mode )
     {
         try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )

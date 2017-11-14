@@ -64,6 +64,12 @@ public class AdversarialPagedFile implements PagedFile
     }
 
     @Override
+    public int prefetch( long startPageId ) throws IOException
+    {
+        return delegate.prefetch( startPageId );
+    }
+
+    @Override
     public int pageSize()
     {
         return delegate.pageSize();

@@ -37,6 +37,12 @@ public class DelegatingPagedFile implements PagedFile
         return delegate.io( pageId, pf_flags );
     }
 
+    @Override
+    public int prefetch( long startPageId ) throws IOException
+    {
+        return delegate.prefetch( startPageId );
+    }
+
     public void flushAndForce() throws IOException
     {
         delegate.flushAndForce();

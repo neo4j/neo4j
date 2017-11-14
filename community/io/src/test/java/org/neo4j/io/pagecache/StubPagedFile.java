@@ -43,6 +43,12 @@ public class StubPagedFile implements PagedFile
         return cursor;
     }
 
+    @Override
+    public int prefetch( long startPageId ) throws IOException
+    {
+        return 0;
+    }
+
     protected void prepareCursor( StubPageCursor cursor )
     {
     }
