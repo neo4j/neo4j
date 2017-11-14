@@ -58,14 +58,14 @@ class IndexReference implements org.neo4j.internal.kernel.api.CapableIndexRefere
     }
 
     @Override
-    public IndexOrder[] order( ValueGroup... valueGroups )
+    public IndexOrder[] orderCapability( ValueGroup... valueGroups )
     {
-        return capability.order( valueGroups );
+        return capability.orderCapability( valueGroups );
     }
 
     @Override
-    public IndexValueCapability value( ValueGroup... valueGroups )
+    public IndexValueCapability valueCapability( ValueGroup... valueGroups )
     {
-        return capability.value( valueGroups );
+        return capability.valueCapability( valueGroups );
     }
 }

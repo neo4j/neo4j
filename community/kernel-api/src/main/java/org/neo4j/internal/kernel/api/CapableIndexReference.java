@@ -30,15 +30,15 @@ public interface CapableIndexReference extends IndexReference, IndexCapability
     CapableIndexReference NO_INDEX = new CapableIndexReference()
     {
         @Override
-        public IndexOrder[] order( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
         {
-            return new IndexOrder[0];
+            return NO_CAPABILITY.orderCapability( valueGroups );
         }
 
         @Override
-        public IndexValueCapability value( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
         {
-            return IndexValueCapability.NO;
+            return NO_CAPABILITY.valueCapability( valueGroups );
         }
 
         @Override

@@ -455,7 +455,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         IndexQuery.NumberRangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
-        for ( IndexOrder supportedOrder : NativeSchemaNumberIndexProvider.CAPABILITY.order( ValueGroup.NUMBER ) )
+        for ( IndexOrder supportedOrder : NativeSchemaNumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
         {
             if ( IndexOrder.ASCENDING.equals( supportedOrder ) )
             {

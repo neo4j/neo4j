@@ -38,6 +38,7 @@ public class UnionIndexCapabilityTest
     private static final IndexOrder[] ORDER_CAPABILITIES_ALL = IndexOrder.values();
     private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_ASC = new IndexOrder[]{IndexOrder.ASCENDING};
     private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_DES = new IndexOrder[]{IndexOrder.DESCENDING};
+    private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_UNORDERED = new IndexOrder[]{IndexOrder.UNORDERED};
     private static final IndexOrder[] ORDER_CAPABILITIES_NONE = new IndexOrder[0];
 
     @Test
@@ -60,6 +61,12 @@ public class UnionIndexCapabilityTest
         union = unionOfOrderCapabilities( ORDER_CAPABILITIES_ONLY_ASC, ORDER_CAPABILITIES_ONLY_DES );
 
         // then
+        assertOrderCapability( union, IndexOrder.ASCENDING, IndexOrder.DESCENDING );
+
+        // given
+        union = unionOfOrderCapabilities( ORDER_CAPABILITIES_ONLY_ASC, ORDER_CAPABILITIES_ONLY_DES, ORDER_CAPABILITIES_ONLY_UNORDERED );
+
+        // then
         assertOrderCapability( union, ORDER_CAPABILITIES_ALL );
 
         // given
@@ -73,6 +80,12 @@ public class UnionIndexCapabilityTest
 
         // then
         assertOrderCapability( union, ORDER_CAPABILITIES_ONLY_ASC );
+
+        // given
+        union = unionOfOrderCapabilities( ORDER_CAPABILITIES_ONLY_ASC, ORDER_CAPABILITIES_ONLY_UNORDERED );
+
+        // then
+        assertOrderCapability( union, IndexOrder.ASCENDING, IndexOrder.UNORDERED );
     }
 
     @Test
@@ -87,10 +100,10 @@ public class UnionIndexCapabilityTest
         assertValueCapability( union, IndexValueCapability.NO );
 
         // given
-        union = unionOfValueCapabilities( IndexValueCapability.NO, IndexValueCapability.MAYBE );
+        union = unionOfValueCapabilities( IndexValueCapability.NO, IndexValueCapability.PARTIAL );
 
         // then
-        assertValueCapability( union, IndexValueCapability.MAYBE );
+        assertValueCapability( union, IndexValueCapability.PARTIAL );
 
         // given
         union = unionOfValueCapabilities( IndexValueCapability.NO, IndexValueCapability.YES );
@@ -99,13 +112,13 @@ public class UnionIndexCapabilityTest
         assertValueCapability( union, IndexValueCapability.YES );
 
         // given
-        union = unionOfValueCapabilities( IndexValueCapability.MAYBE, IndexValueCapability.MAYBE );
+        union = unionOfValueCapabilities( IndexValueCapability.PARTIAL, IndexValueCapability.PARTIAL );
 
         // then
-        assertValueCapability( union, IndexValueCapability.MAYBE );
+        assertValueCapability( union, IndexValueCapability.PARTIAL );
 
         // given
-        union = unionOfValueCapabilities( IndexValueCapability.MAYBE, IndexValueCapability.YES );
+        union = unionOfValueCapabilities( IndexValueCapability.PARTIAL, IndexValueCapability.YES );
 
         // then
         assertValueCapability( union, IndexValueCapability.YES );
@@ -140,26 +153,26 @@ public class UnionIndexCapabilityTest
     private IndexCapability capabilityWithValue( IndexValueCapability valueCapability )
     {
         IndexCapability mock = mock( IndexCapability.class );
-        when( mock.value( any() ) ).thenReturn( valueCapability );
+        when( mock.valueCapability( any() ) ).thenReturn( valueCapability );
         return mock;
     }
 
     private IndexCapability capabilityWithOrder( IndexOrder[] indexOrder )
     {
         IndexCapability mock = mock( IndexCapability.class );
-        when( mock.order( any() ) ).thenReturn( indexOrder );
+        when( mock.orderCapability( any() ) ).thenReturn( indexOrder );
         return mock;
     }
 
     private void assertValueCapability( UnionIndexCapability union, IndexValueCapability expectedValueCapability )
     {
-        IndexValueCapability actual = union.value( someValueGroup() );
+        IndexValueCapability actual = union.valueCapability( someValueGroup() );
         assertEquals( expectedValueCapability, actual );
     }
 
-    private void assertOrderCapability( UnionIndexCapability union, IndexOrder[] expected )
+    private void assertOrderCapability( UnionIndexCapability union, IndexOrder... expected )
     {
-        IndexOrder[] actual = union.order( someValueGroup() );
+        IndexOrder[] actual = union.orderCapability( someValueGroup() );
         assertTrue( "Actual contains all expected", ArrayUtil.containsAll( expected, actual ) );
         assertTrue( "Actual contains nothing else than expected", ArrayUtil.containsAll( actual, expected ) );
     }

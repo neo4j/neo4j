@@ -22,7 +22,7 @@ package org.neo4j.internal.kernel.api;
 public enum IndexValueCapability
 {
     YES( 3 ),
-    MAYBE( 2 ),
+    PARTIAL( 2 ),
     NO( 1 );
 
     /**

@@ -209,17 +209,17 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     private static class NativeIndexCapability implements IndexCapability
     {
         @Override
-        public IndexOrder[] order( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
         {
             if ( support( valueGroups ) )
             {
-                return new IndexOrder[]{IndexOrder.ASCENDING};
+                return new IndexOrder[]{IndexOrder.ASCENDING, IndexOrder.UNORDERED};
             }
-            return new IndexOrder[0];
+            return new IndexOrder[]{IndexOrder.UNORDERED};
         }
 
         @Override
-        public IndexValueCapability value( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
         {
             if ( support( valueGroups ) )
             {
@@ -227,7 +227,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
             }
             if ( singleWildcard( valueGroups ) )
             {
-                return IndexValueCapability.MAYBE;
+                return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
         }

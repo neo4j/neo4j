@@ -41,7 +41,7 @@ public interface IndexCapability
      * @return {@link IndexOrder} array containing all possible orderings for provided value groups or empty array if no explicit
      * ordering is possible or if length of {@code valueGroups} and {@link IndexReference#properties()} differ.
      */
-    IndexOrder[] order( ValueGroup... valueGroups );
+    IndexOrder[] orderCapability( ValueGroup... valueGroups );
 
     /**
      * Is the index capable of providing values for a query on given combination of {@link ValueGroup}.
@@ -52,21 +52,21 @@ public interface IndexCapability
      * ({@code new ValueGroup[]{null}}) is interpreted as a wildcard for any {@link ValueGroup}. Note that this is not the same as
      * {@code order(null)} which is undefined.
      * @return {@link IndexValueCapability#YES} if index is capable of providing values for query on provided array of value groups,
-     * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#MAYBE} for some results. If length of
+     * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#PARTIAL} for some results. If length of
      * {@code valueGroups} and {@link IndexReference#properties()} differ {@link IndexValueCapability#NO} is returned.
      */
-    IndexValueCapability value( ValueGroup... valueGroups );
+    IndexValueCapability valueCapability( ValueGroup... valueGroups );
 
     IndexCapability NO_CAPABILITY = new IndexCapability()
     {
         @Override
-        public IndexOrder[] order( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
         {
-            return new IndexOrder[0];
+            return new IndexOrder[]{IndexOrder.UNORDERED};
         }
 
         @Override
-        public IndexValueCapability value( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
         {
             return IndexValueCapability.NO;
         }

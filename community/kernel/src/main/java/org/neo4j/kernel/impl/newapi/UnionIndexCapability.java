@@ -42,23 +42,23 @@ public class UnionIndexCapability implements IndexCapability
     }
 
     @Override
-    public IndexOrder[] order( ValueGroup... valueGroups )
+    public IndexOrder[] orderCapability( ValueGroup... valueGroups )
     {
         Set<IndexOrder> orderCapability = new HashSet<>();
         for ( IndexCapability capability : capabilities )
         {
-            Arrays.stream( capability.order( valueGroups ) ).forEach( orderCapability::add );
+            orderCapability.addAll( Arrays.asList( capability.orderCapability( valueGroups ) ) );
         }
         return orderCapability.toArray( new IndexOrder[orderCapability.size()] );
     }
 
     @Override
-    public IndexValueCapability value( ValueGroup... valueGroups )
+    public IndexValueCapability valueCapability( ValueGroup... valueGroups )
     {
         IndexValueCapability currentBest = IndexValueCapability.NO;
         for ( IndexCapability capability : capabilities )
         {
-            IndexValueCapability next = capability.value( valueGroups );
+            IndexValueCapability next = capability.valueCapability( valueGroups );
             if ( next.compare( currentBest ) > 0 )
             {
                 currentBest = next;
