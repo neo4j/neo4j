@@ -43,6 +43,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -135,7 +136,17 @@ public class RemoteStore
     public CatchupResult tryCatchingUp( MemberId from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
     {
         long pullIndex = getPullIndex( storeDir );
-        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
+        CatchupResult catchupResult = pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
+        if ( catchupResult == E_TRANSACTION_PRUNED )
+        {
+            /* This is for leader-side bootstrapped stores from a backup, which will
+               be 1 step ahead of the followers non-bootstrapped copy of the same backup. */
+            return pullTransactions( from, expectedStoreId, storeDir, pullIndex + 1, false );
+        }
+        else
+        {
+            return catchupResult;
+        }
     }
 
     public void copy( MemberId from, StoreId expectedStoreId, File destDir )

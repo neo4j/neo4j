@@ -26,6 +26,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -118,10 +123,19 @@ public class ClusterSeedingIT
         fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 0 ).storeDir() );
         fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 1 ).storeDir() );
         fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 2 ).storeDir() );
+
+        Map<File,FileTime> creation1 = creationTimes( cluster.getCoreMemberById( 0 ).storeDir() );
+        Map<File,FileTime> creation2 = creationTimes( cluster.getCoreMemberById( 1 ).storeDir() );
+        Map<File,FileTime> creation3 = creationTimes( cluster.getCoreMemberById( 2 ).storeDir() );
+
         cluster.start();
 
         // then
         dataMatchesEventually( before, cluster.coreMembers() );
+
+        assertCreationTimesUnchanged( creation1 );
+        assertCreationTimesUnchanged( creation2 );
+        assertCreationTimesUnchanged( creation3 );
     }
 
     @Test
@@ -138,10 +152,12 @@ public class ClusterSeedingIT
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
         fsa.copyRecursively( backupDir, newMember.storeDir() );
+        Map<File,FileTime> creationTimes = creationTimes( cluster.getCoreMemberById( 3 ).storeDir() );
         newMember.start();
 
         // then
         dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
+        assertCreationTimesUnchanged( creationTimes );
     }
 
     @Test
@@ -159,10 +175,12 @@ public class ClusterSeedingIT
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
         fsa.copyRecursively( backupDir, newMember.storeDir() );
+        Map<File,FileTime> creationTimes = creationTimes( cluster.getCoreMemberById( 3 ).storeDir() );
         newMember.start();
 
         // then
         dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
+        assertCreationTimesUnchanged( creationTimes );
     }
 
     @Test
@@ -182,5 +200,32 @@ public class ClusterSeedingIT
 
         // then
         dataMatchesEventually( before, cluster.coreMembers() );
+    }
+
+    private void assertCreationTimesUnchanged( Map<File,FileTime> creationTimes ) throws IOException
+    {
+        for ( Map.Entry<File,FileTime> e : creationTimes.entrySet() )
+        {
+            File file = e.getKey();
+            FileTime oldTime = e.getValue();
+
+            BasicFileAttributes attr = Files.readAttributes( file.toPath(), BasicFileAttributes.class );
+            assertEquals( "Creation time for file: " + file, oldTime, attr.creationTime() );
+        }
+    }
+
+    private Map<File,FileTime> creationTimes( File dir ) throws IOException
+    {
+        Map<File,FileTime> map = new HashMap<>();
+        File[] files = dir.listFiles();
+        assert files != null;
+
+        for ( File file : files )
+        {
+            BasicFileAttributes attr = Files.readAttributes( file.toPath(), BasicFileAttributes.class );
+            map.put( file, attr.creationTime() );
+        }
+
+        return map;
     }
 }
