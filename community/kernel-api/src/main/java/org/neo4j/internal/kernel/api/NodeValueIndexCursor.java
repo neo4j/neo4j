@@ -40,7 +40,7 @@ import org.neo4j.values.storable.Value;
  *         }
  *         else
  *         {
- *             values = getValuesFromStoreInstead();
+ *             values[i] = getPropertyValueFromStore( cursor.nodeReference(), cursor.propertyKey( i ) )
  *         }
  *
  *         doWhatYouWantToDoWith( values );
