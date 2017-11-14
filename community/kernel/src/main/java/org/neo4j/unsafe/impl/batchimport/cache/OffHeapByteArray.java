@@ -315,6 +315,16 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
 
     private long address( long index, int offset )
     {
+        checkBounds( index );
         return address + (rebase( index ) * itemSize) + offset;
+    }
+
+    private void checkBounds( long index )
+    {
+        long rebased = rebase( index );
+        if ( rebased < 0 || rebased >= length )
+        {
+            throw new IndexOutOfBoundsException( "Wanted to access " + rebased + " but range is " + base + "-" + length );
+        }
     }
 }
