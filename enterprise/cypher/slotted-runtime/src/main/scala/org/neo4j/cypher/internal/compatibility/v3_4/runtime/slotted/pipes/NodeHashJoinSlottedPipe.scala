@@ -25,67 +25,18 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-import scala.collection.mutable
-
-case class NodeHashJoinSlottedPipe(leftNodes: Array[Int],
-                                   rightNodes: Array[Int],
+case class NodeHashJoinSlottedPipe(leftSide: Array[Int],
+                                   rightSide: Array[Int],
                                    left: Pipe,
                                    right: Pipe,
                                    slots: SlotConfiguration,
                                    longsToCopy: Array[(Int, Int)],
                                    refsToCopy: Array[(Int, Int)])
-                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(left) {
-
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-
-    if (input.isEmpty)
-      return Iterator.empty
-
-    val rhsIterator = right.createResults(state)
-
-    if (rhsIterator.isEmpty)
-      return Iterator.empty
-
-    val table = buildProbeTable(input)
-
-    if (table.isEmpty)
-      return Iterator.empty
-
-    val result = for {rhs: ExecutionContext <- rhsIterator
-                      joinKey <- computeKey(rhs, rightNodes)}
-      yield {
-        val matchesFromLhs: mutable.Seq[ExecutionContext] = table.getOrElse(joinKey, mutable.MutableList.empty)
-
-        matchesFromLhs.map{ lhs =>
-          val newRow = PrimitiveExecutionContext(slots)
-          lhs.copyTo(newRow)
-          longsToCopy foreach {
-            case (from, to) => newRow.setLongAt(to, rhs.getLongAt(from))
-          }
-          refsToCopy foreach {
-            case (from, to) => newRow.setRefAt(to, rhs.getRefAt(from))
-          }
-          newRow
-        }
-      }
-
-    result.flatten
-  }
-
-  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[HashKey, mutable.MutableList[ExecutionContext]] = {
-    val table = new mutable.HashMap[HashKey, mutable.MutableList[ExecutionContext]]
-
-    for {context <- input
-         joinKey <- computeKey(context, leftNodes)} {
-      val matchingRows = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
-      matchingRows += context
-    }
-
-    table
-  }
+                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+  extends AbstractHashJoinPipe[HashKey, Array[Int]](left, right, slots) {
 
   /**
     * Creates an array of longs to do the hash join on. If any of the nodes is null, nothing will match and we'll simply return a None
@@ -93,7 +44,7 @@ case class NodeHashJoinSlottedPipe(leftNodes: Array[Int],
     * @param context The execution context to get the node ids from
     * @return A Some[Array] if all nodes are valid, or None if any is null
     */
-  private def computeKey(context: ExecutionContext, keyColumns: Array[Int]): Option[HashKey] = {
+  override def computeKey(context: ExecutionContext, keyColumns: Array[Int]): Option[HashKey] = {
     val key = new Array[Long](keyColumns.length)
     for (i <- keyColumns.indices) {
       val idx = keyColumns(i)
@@ -105,15 +56,23 @@ case class NodeHashJoinSlottedPipe(leftNodes: Array[Int],
     Some(HashKey(key))
   }
 
-  private case class HashKey(longs: Array[Long]) {
-    override def hashCode(): Int = util.Arrays.hashCode(longs)
-
-    override def equals(obj: scala.Any): Boolean = obj match {
-      case HashKey(other) => util.Arrays.equals(longs, other)
-      case _ => false
+  override def copyDataFromRhs(newRow: PrimitiveExecutionContext, rhs: ExecutionContext): Unit = {
+    longsToCopy foreach {
+      case (from, to) => newRow.setLongAt(to, rhs.getLongAt(from))
     }
+    refsToCopy foreach {
+      case (from, to) => newRow.setRefAt(to, rhs.getRefAt(from))
+    }
+  }
+}
 
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[HashKey]
+case class HashKey(longs: Array[Long]) {
+  override def hashCode(): Int = util.Arrays.hashCode(longs)
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    case HashKey(other) => util.Arrays.equals(longs, other)
+    case _ => false
   }
 
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[HashKey]
 }
