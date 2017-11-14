@@ -71,7 +71,7 @@ Feature: SkipLimitAcceptance
       |   1   |
     And no side effects
 
-  Scenario: Normal limit in the end should work
+  Scenario: Stand alone limit in the return clause
     And having executed:
       """
       CREATE (:A {id:0})-[:REL]->(:B {id:1})
@@ -88,7 +88,7 @@ Feature: SkipLimitAcceptance
       | 1  |
     And no side effects
 
-  Scenario: Order by followed by limit in the end should work
+  Scenario: Order by followed by limit in return clause
     And having executed:
       """
       CREATE (:A {id:0})-[:REL]->(:B {id:1})
@@ -105,7 +105,7 @@ Feature: SkipLimitAcceptance
       | 1  |
     And no side effects
 
-  Scenario: Limit in with should work
+  Scenario: Limit in with clause
       And having executed:
       """
       CREATE (:A {id:0})-[:REL]->(:B {id:1})
@@ -121,7 +121,7 @@ Feature: SkipLimitAcceptance
         | 1  |
       And no side effects
 
-  Scenario: Limit before sort should work except in compiled
+  Scenario: Limit before sort
     And having executed:
       """
       CREATE (:A {id:0})-[:REL]->(:B {id:1})
@@ -138,7 +138,7 @@ Feature: SkipLimitAcceptance
       | 1  |
     And no side effects
 
-  Scenario: Limit before top should work except in compiled
+  Scenario: Limit before top
     And having executed:
       """
       CREATE (:A {id:0})-[:REL]->(:B {id:1})
@@ -155,7 +155,7 @@ Feature: SkipLimitAcceptance
       | 1  |
     And no side effects
 
-  Scenario: Limit before distinct should work except in compiled
+  Scenario: Limit before distinct
     And having executed:
       """
       CREATE (:A {id:0})-[:REL]->(:B {id:1})
