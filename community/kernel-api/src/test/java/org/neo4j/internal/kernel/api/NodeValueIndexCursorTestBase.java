@@ -312,7 +312,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
-        IndexValueCapability wildcardCapability = index.valueCapability( new ValueGroup[]{null} );
+        IndexValueCapability wildcardCapability = index.valueCapability( ValueGroup.UNKNOWN );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -373,7 +373,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
-        IndexOrder[] orderCapabilities = index.orderCapability( new ValueGroup[]{null} );
+        IndexOrder[] orderCapabilities = index.orderCapability( ValueGroup.UNKNOWN );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )

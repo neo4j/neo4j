@@ -48,9 +48,8 @@ public interface IndexCapability
      * Ordering of ValueGroup correspond to ordering of {@code properties} in related {@link IndexReference}.
      *
      * @param valueGroups Ordered array of {@link ValueGroup ValueGroups} for which index should be queried. Note that valueGroup
-     * must correspond to related {@link IndexReference#properties()}. A {@code null} value in the array
-     * ({@code new ValueGroup[]{null}}) is interpreted as a wildcard for any {@link ValueGroup}. Note that this is not the same as
-     * {@code order(null)} which is undefined.
+     * must correspond to related {@link IndexReference#properties()}. {@link ValueGroup#UNKNOWN} can be used as a wildcard for
+     * any {@link ValueGroup}. Behaviour is undefined for empty {@code null} array and {@code null} values in array.
      * @return {@link IndexValueCapability#YES} if index is capable of providing values for query on provided array of value groups,
      * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#PARTIAL} for some results. If length of
      * {@code valueGroups} and {@link IndexReference#properties()} differ {@link IndexValueCapability#NO} is returned.

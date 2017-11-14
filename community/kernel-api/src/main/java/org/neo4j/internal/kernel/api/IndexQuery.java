@@ -222,7 +222,7 @@ public abstract class IndexQuery
         @Override
         public ValueGroup valueGroup()
         {
-            return null;
+            return ValueGroup.UNKNOWN;
         }
     }
 

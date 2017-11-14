@@ -140,7 +140,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
             public IndexOrder[] orderCapability( ValueGroup... valueGroups )
             {
                 // No order capability when combining results from different indexes
-                if ( valueGroups.length == 1 && valueGroups[0] == null )
+                if ( valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN )
                 {
                     return new IndexOrder[]{IndexOrder.UNORDERED};
                 }

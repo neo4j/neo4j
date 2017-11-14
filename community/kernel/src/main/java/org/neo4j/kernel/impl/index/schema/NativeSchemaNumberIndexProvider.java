@@ -234,7 +234,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 
         private boolean singleWildcard( ValueGroup[] valueGroups )
         {
-            return valueGroups.length == 1 && valueGroups[0] == null;
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
         }
 
         private boolean support( ValueGroup[] valueGroups )

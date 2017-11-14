@@ -29,6 +29,7 @@ package org.neo4j.values.storable;
  */
 public enum ValueGroup
 {
+    UNKNOWN,
     TEXT_ARRAY,
     BOOLEAN_ARRAY,
     NUMBER_ARRAY,
