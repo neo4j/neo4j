@@ -38,5 +38,7 @@ public interface StatementProcessor
 
     boolean hasTransaction();
 
+    void validateTransaction() throws KernelException;
+
     void setQuerySource( BoltQuerySource querySource );
 }
