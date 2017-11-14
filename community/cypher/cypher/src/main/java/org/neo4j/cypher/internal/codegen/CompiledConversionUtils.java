@@ -35,6 +35,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException;
@@ -184,6 +185,10 @@ public abstract class CompiledConversionUtils
         }
     }
 
+    /**
+     * Checks equality according to OpenCypher
+     * @return true if equal, false if not equal and null if incomparable
+     */
     public static Boolean equals( Object lhs, Object rhs )
     {
         if ( lhs == null || rhs == null )
@@ -191,16 +196,27 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
-        if ( (lhs instanceof NodeIdWrapper && !(rhs instanceof NodeIdWrapper)) ||
-             (rhs instanceof NodeIdWrapper && !(lhs instanceof NodeIdWrapper)) ||
-             (lhs instanceof RelationshipIdWrapper && !(rhs instanceof RelationshipIdWrapper)) ||
-             (rhs instanceof RelationshipIdWrapper && !(lhs instanceof RelationshipIdWrapper)) )
-        {
+        boolean lhsNodeIdWrapper = lhs instanceof NodeIdWrapper;
+        boolean rhsNodeIdWrapper = rhs instanceof NodeIdWrapper;
+        boolean lhsRelIdWrapper = lhs instanceof RelationshipIdWrapper;
+        boolean rhsRelIdWrapper = rhs instanceof RelationshipIdWrapper;
 
-            throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+        if ( lhsNodeIdWrapper || rhsNodeIdWrapper || lhsRelIdWrapper || rhsRelIdWrapper )
+        {
+            if ( (lhsNodeIdWrapper && !rhsNodeIdWrapper) ||
+                 (rhsNodeIdWrapper && !lhsNodeIdWrapper) ||
+                 (lhsRelIdWrapper && !rhsRelIdWrapper) ||
+                 (rhsRelIdWrapper && !lhsRelIdWrapper) )
+            {
+                throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+            }
+            return lhs.equals( rhs );
         }
 
-        return CompiledEquivalenceUtils.equals( lhs, rhs );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueConversion.asValue( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueConversion.asValue( rhs );
+
+        return lhsValue.ternaryEquals( rhsValue );
     }
 
     public static Boolean or( Object lhs, Object rhs )

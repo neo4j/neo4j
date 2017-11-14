@@ -27,6 +27,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 
 public class UTF8StringValueTest
 {
@@ -40,7 +41,8 @@ public class UTF8StringValueTest
             TextValue stringValue = stringValue( string );
             byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
             TextValue utf8 = utf8Value( bytes );
-            assertSame( stringValue, utf8 );
+            assertEqual( stringValue, utf8 );
+            assertThat( stringValue.length(), equalTo( utf8.length() ) );
         }
     }
 
@@ -54,14 +56,7 @@ public class UTF8StringValueTest
         TextValue textValue = utf8Value( bytes, 3, 2 );
 
         // Then
-        assertSame( textValue, stringValue( "de" ) );
-    }
-
-    private void assertSame( TextValue lhs, TextValue rhs )
-    {
-        assertThat( lhs.length(), equalTo( rhs.length() ) );
-        assertThat( lhs, equalTo( rhs ) );
-        assertThat( rhs, equalTo( lhs ) );
-        assertThat( lhs.hashCode(), equalTo( rhs.hashCode() ) );
+        assertEqual( textValue, stringValue( "de" ) );
+        assertThat( textValue.length(), equalTo( stringValue( "de" ).length() ) );
     }
 }

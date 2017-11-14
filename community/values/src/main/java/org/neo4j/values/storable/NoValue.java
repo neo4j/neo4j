@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.AnyValue;
+
 /**
  * Not a value.
  *
@@ -38,6 +40,12 @@ final class NoValue extends Value
     public boolean eq( Object other )
     {
         return this == other;
+    }
+
+    @Override
+    public Boolean ternaryEquals( AnyValue other )
+    {
+        return null;
     }
 
     @Override

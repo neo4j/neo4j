@@ -21,7 +21,6 @@ package org.neo4j.values;
 
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertFalse;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -30,6 +29,7 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 public class AnyValuesTest
 {
@@ -47,11 +47,5 @@ public class AnyValuesTest
         assertNotEqual( floatValue( 0.0f ), virtual );
         assertNotEqual( doubleValue( 0.0 ), virtual );
         assertNotEqual( stringValue( "" ), virtual );
-    }
-
-    private void assertNotEqual( AnyValue a, AnyValue b )
-    {
-        assertFalse( "should not be equal", a.equals( b ) );
-        assertFalse( "should not be equal", b.equals( a ) );
     }
 }

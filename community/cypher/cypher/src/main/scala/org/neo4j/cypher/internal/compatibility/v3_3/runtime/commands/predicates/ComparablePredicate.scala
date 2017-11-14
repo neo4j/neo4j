@@ -71,12 +71,12 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
   }
 
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
-    val a1 = a(m, state)
-    val b1 = b(m, state)
+    val l = a(m, state)
+    val r = b(m, state)
 
-    (a1, b1) match {
-      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => None
-      case _ => Some(a1.equals(b1))
+    l.ternaryEquals(r) match {
+      case null => None
+      case v => Some(v)
     }
   }
 

@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTBoolean
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTBoolean, CTMap, ListType}
 import org.neo4j.cypher.internal.frontend.v3_3.{IncomparableValuesException, symbols}
 
 case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
-  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
+  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable ||
+    isCollectionOfNonPrimitives(lhs) || isCollectionOfNonPrimitives(rhs)
 
   override def codeGenType(implicit context: CodeGenContext) =
     if (nullable) CypherCodeGenType(CTBoolean, ReferenceType)
@@ -95,4 +96,14 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
           CypherCodeGenType(CTBoolean, ReferenceType))
       }
   }
+
+  private def isCollectionOfNonPrimitives(e: CodeGenExpression)(implicit context: CodeGenContext) =
+    e.codeGenType match {
+      case CypherCodeGenType(ListType(_), ListReferenceType(inner)) if !RepresentationType.isPrimitive(inner) =>
+        true
+      case CypherCodeGenType(CTMap, _) =>
+        true
+      case _ =>
+        false
+    }
 }

@@ -86,6 +86,6 @@ class NaNAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = execute("MATCH (n) RETURN n.x = n.x AS eq, n.x <> n.x as ne")
 
     // Then
-    result.toList should equal(List(Map("eq" -> false, "ne" -> true)))
+    result.toList should equal(List(Map("eq" -> null, "ne" -> null)))
   }
 }

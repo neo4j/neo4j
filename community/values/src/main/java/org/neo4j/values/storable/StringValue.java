@@ -28,12 +28,6 @@ public abstract class StringValue extends TextValue
     abstract String value();
 
     @Override
-    public boolean eq( Object other )
-    {
-        return other != null && other instanceof Value && equals( (Value) other );
-    }
-
-    @Override
     public boolean equals( Value value )
     {
         return value.equals( value() );

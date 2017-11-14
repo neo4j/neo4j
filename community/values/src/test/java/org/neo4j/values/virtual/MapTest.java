@@ -21,7 +21,7 @@ package org.neo4j.values.virtual;
 
 import org.junit.Test;
 
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
 
 public class MapTest

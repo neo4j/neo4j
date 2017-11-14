@@ -21,8 +21,6 @@ package org.neo4j.values.storable;
 
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -41,6 +39,7 @@ import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 
 public class ValuesTest
 {
@@ -85,12 +84,5 @@ public class ValuesTest
         assertEqual( doubleArray( new double[]{1.0} ), doubleArray( new double[]{1.0} ) );
         assertEqual( charArray( new char[]{'x'} ), charArray( new char[]{'x'} ) );
         assertEqual( stringArray( new String[]{"hi"} ), stringArray( new String[]{"hi"} ) );
-    }
-
-    private void assertEqual( Value a, Value b )
-    {
-        assertTrue( "should be equal", a.equals( b ) );
-        assertTrue( "should be equal", b.equals( a ) );
-        assertTrue( "should have same has", a.hashCode() == b.hashCode() );
     }
 }

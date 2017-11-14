@@ -21,9 +21,18 @@ package org.neo4j.values.storable;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.SequenceValue;
+
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class Value extends AnyValue
 {
+    @Override
+    public boolean eq( Object other )
+    {
+        return other != null && other instanceof Value && equals( (Value) other );
+    }
+
     public abstract boolean equals( Value other );
 
     public abstract boolean equals( byte[] x );
@@ -50,6 +59,30 @@ public abstract class Value extends AnyValue
 
     public abstract boolean equals( String[] x );
 
+    @Override
+    public Boolean ternaryEquals( AnyValue other )
+    {
+        if ( other == null || other == NO_VALUE )
+        {
+            return null;
+        }
+        if ( other.isSequenceValue() && this.isSequenceValue() )
+        {
+            return ((SequenceValue) this).ternaryEquality( (SequenceValue) other );
+        }
+        if ( other instanceof Value && ((Value) other).valueGroup() == valueGroup() )
+        {
+            Value otherValue = (Value) other;
+            if ( this.isNaN() || otherValue.isNaN() )
+            {
+                return null;
+            }
+            return equals( otherValue );
+        }
+        return false;
+    }
+
+    @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
         writeTo( (ValueWriter<E>)writer );
@@ -84,4 +117,9 @@ public abstract class Value extends AnyValue
     public abstract ValueGroup valueGroup();
 
     public abstract NumberType numberType();
+
+    public boolean isNaN()
+    {
+        return false;
+    }
 }
