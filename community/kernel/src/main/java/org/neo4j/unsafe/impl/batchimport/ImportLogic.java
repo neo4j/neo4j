@@ -263,7 +263,7 @@ public class ImportLogic implements Closeable
     {
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
-        nodeRelationshipCache.setNodeCount( getState( DataStatistics.class ).getNodeCount() );
+        nodeRelationshipCache.setNodeCount( neoStore.getNodeStore().getHighId() );
         NodeDegreeCountStage nodeDegreeStage = new NodeDegreeCountStage( relationshipConfig,
                 neoStore.getRelationshipStore(), nodeRelationshipCache, memoryUsageStats );
         executeStage( nodeDegreeStage );
