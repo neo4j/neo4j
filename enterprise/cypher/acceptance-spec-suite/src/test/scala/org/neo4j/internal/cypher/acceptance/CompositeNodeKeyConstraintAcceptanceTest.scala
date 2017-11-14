@@ -31,10 +31,26 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
-class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
+  }
+
+  test("Node key constraint creation should be reported") {
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
+
+    // Then
+    assertStats(result, constraintsAdded = 1)
+  }
+
+  test("Uniqueness constraint creation should be reported") {
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE")
+
+    // Then
+    assertStats(result, constraintsAdded = 1)
   }
 
   test("should be able to create and remove single property NODE KEY") {

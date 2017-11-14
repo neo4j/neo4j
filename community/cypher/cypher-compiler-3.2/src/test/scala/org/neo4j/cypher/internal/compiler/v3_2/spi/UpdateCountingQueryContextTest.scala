@@ -58,6 +58,8 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
 
   when(inner.createUniqueConstraint(anyObject())).thenReturn(true)
 
+  when(inner.createNodeKeyConstraint(anyObject())).thenReturn(true)
+
   when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
@@ -178,5 +180,17 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.dropRelationshipPropertyExistenceConstraint(0, 1)
 
     context.getStatistics should equal(InternalQueryStatistics(existenceConstraintsRemoved = 1))
+  }
+
+  test("create node key constraint") {
+    context.createNodeKeyConstraint(IndexDescriptor(0, 1))
+
+    context.getStatistics should equal(InternalQueryStatistics(nodekeyConstraintsAdded = 1))
+  }
+
+  test("drop node key constraint") {
+    context.dropNodeKeyConstraint(IndexDescriptor(0, 42))
+
+    context.getStatistics should equal(InternalQueryStatistics(nodekeyConstraintsRemoved = 1))
   }
 }
