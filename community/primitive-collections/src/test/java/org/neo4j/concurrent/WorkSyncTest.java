@@ -197,11 +197,25 @@ public class WorkSyncTest
     @Test
     public void mustCombineWork() throws Exception
     {
-        ExecutorService executor = Executors.newFixedThreadPool( 64 );
-        for ( int i = 0; i < 1000; i++ )
+        ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+        BinaryLatch startLatch = new BinaryLatch();
+        BinaryLatch blockLatch = new BinaryLatch();
+        executor.submit( new CallableWork( new AddWork( 1 )
+        {
+            @Override
+            public void apply( Adder adder )
+            {
+                startLatch.release();
+                super.apply( adder );
+                blockLatch.await();
+            }
+        } ) );
+        startLatch.await();
+        for ( int i = 0; i < 20; i++ )
         {
             executor.submit( new CallableWork( new AddWork( 1 ) ) );
         }
+        blockLatch.release();
         executor.shutdown();
         assertTrue( executor.awaitTermination( 2, TimeUnit.SECONDS ) );
 
