@@ -185,7 +185,7 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
             @Override
             public String toString()
             {
-                return "INITIALIZE(" + Arrays.toString( keys )+ ")";
+                return "INITIALIZE(" + Arrays.toString( keys ) + ")";
             }
         }
 

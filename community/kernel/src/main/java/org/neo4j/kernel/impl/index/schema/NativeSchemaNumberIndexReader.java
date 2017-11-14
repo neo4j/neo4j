@@ -161,7 +161,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
 
         if ( indexOrder != null )
         {
-            ValueGroup valueGroup = predicates[0].valueGroup();;
+            ValueGroup valueGroup = predicates[0].valueGroup();
             IndexOrder[] capability = NativeSchemaNumberIndexProvider.CAPABILITY.orderCapability( valueGroup );
             if ( !ArrayUtil.contains( capability, indexOrder ) )
             {
