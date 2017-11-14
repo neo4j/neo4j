@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
