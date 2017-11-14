@@ -38,7 +38,7 @@ import static org.neo4j.helpers.NamedThreadFactory.named;
 
 public class ListenersTest
 {
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = NullPointerException.class )
     public void copyConstructorWithNull()
     {
         new Listeners<>( null );
@@ -54,7 +54,7 @@ public class ListenersTest
         assertEquals( Iterables.asList( original ), Iterables.asList( copy ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = NullPointerException.class )
     public void addNull()
     {
         new Listeners<>().add( null );
@@ -70,7 +70,7 @@ public class ListenersTest
         assertArrayEquals( listenersArray, Iterables.asArray( Listener.class, listeners ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = NullPointerException.class )
     public void removeNull()
     {
         new Listeners<>().remove( null );
@@ -94,7 +94,7 @@ public class ListenersTest
         assertEquals( singletonList( listener2 ), Iterables.asList( listeners ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = NullPointerException.class )
     public void notifyWithNullNotification()
     {
         new Listeners<>().notify( null );
@@ -118,19 +118,19 @@ public class ListenersTest
         assertEquals( currentThread().getName(), listener2.threadName );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = NullPointerException.class )
     public void notifyWithNullExecutorAndNullNotification()
     {
         new Listeners<>().notify( null, null );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = NullPointerException.class )
     public void notifyWithNullExecutorAndNotification()
     {
         new Listeners<Listener>().notify( null, listener -> listener.process( "foo" ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = NullPointerException.class )
     public void notifyWithExecutorAndNullNotification()
     {
         new Listeners<Listener>().notify( newSingleThreadExecutor(), null );

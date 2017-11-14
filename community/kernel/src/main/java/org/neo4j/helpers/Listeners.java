@@ -26,6 +26,7 @@ import java.util.concurrent.Executor;
 import javax.annotation.Nonnull;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Mutable thread-safe container of listeners that can be notified with {@link Notification}.
@@ -54,14 +55,6 @@ public class Listeners<T> implements Iterable<T>
         requireNonNull( other, "prototype listeners can't be null" );
 
         this.listeners = createListeners( other.listeners );
-    }
-
-    private void requireNonNull( Object obj, String message )
-    {
-        if ( obj == null )
-        {
-            throw new IllegalArgumentException( message );
-        }
     }
 
     /**
