@@ -80,8 +80,8 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
               yield {
                 for (i <- 1 to length)
                   yield {
-                    val labelsOnL: Seq[TokenSpec[LabelId]] = if (i == 1) labelsOnLhs else Seq(Unspecified())
-                    val labelsOnR: Seq[TokenSpec[LabelId]] = if (i == length) labelsOnRhs else Seq(Unspecified())
+                    val labelsOnL: Seq[TokenSpec[LabelId]] = if (i == 1) labelsOnLhs else Seq(Unspecified)
+                    val labelsOnR: Seq[TokenSpec[LabelId]] = if (i == length) labelsOnRhs else Seq(Unspecified)
                     calculateSelectivityForSingleRelHop(types, labelsOnL, labelsOnR, pattern.dir, estimatedMaxCardForPatternBasedOnLabels)
                   }
               }
@@ -137,7 +137,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]], totalNbrOfNodes: Cardinality): Selectivity = {
     val selectivities = specs map {
       case SpecifiedButUnknown() => Selectivity.ZERO
-      case Unspecified() => Selectivity.ONE
+      case Unspecified => Selectivity.ONE
       case SpecifiedAndKnown(spec: LabelId) =>  // Specified labels have ids
           stats.nodesWithLabelCardinality(Some(spec)) / totalNbrOfNodes getOrElse Selectivity.ZERO
     }
@@ -148,7 +148,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
   // These two methods should be one, but I failed to conjure up the proper Scala type magic to make it work
   private def mapToLabelTokenSpecs(input: Set[LabelName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[LabelId]] =
     if (input.isEmpty)
-      Seq(Unspecified())
+      Seq(Unspecified)
     else
       input.toIndexedSeq.map {
         case label =>
@@ -158,7 +158,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
 
   private def mapToRelTokenSpecs(input: Set[RelTypeName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[RelTypeId]] =
     if (input.isEmpty)
-      Seq(Unspecified())
+      Seq(Unspecified)
     else
       input.toIndexedSeq.map {
         case rel =>

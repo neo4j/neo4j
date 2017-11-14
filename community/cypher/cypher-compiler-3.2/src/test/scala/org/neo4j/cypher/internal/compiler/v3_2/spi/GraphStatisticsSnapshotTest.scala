@@ -49,7 +49,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
 
     snapshot.freeze.statsValues should equal(Map(
-      NodesAllCardinality() -> allNodes,
+      NodesAllCardinality -> allNodes,
       IndexSelectivity(index) -> indexSelectivity,
       NodesWithLabelCardinality(Some(label4)) -> nodesWithLabel,
       CardinalityByLabelsAndRelationshipType(Some(label2), None, None) -> relationships
