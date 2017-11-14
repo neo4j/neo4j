@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Queue;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -35,6 +36,8 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
+
+import static java.lang.String.format;
 
 class FusionIndexReader implements IndexReader
 {
@@ -132,6 +135,12 @@ class FusionIndexReader implements IndexReader
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicates[0] instanceof ExistsPredicate )
         {
+            if ( indexOrder != IndexOrder.UNORDERED )
+            {
+                throw new UnsupportedOperationException(
+                        format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.",
+                                indexOrder, Arrays.toString( predicates ), Arrays.toString( new IndexOrder[]{IndexOrder.UNORDERED} ) ) );
+            }
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, propertyKeys );
             cursor.initialize( multiProgressor, propertyKeys );
             nativeReader.query( multiProgressor, indexOrder, predicates[0] );

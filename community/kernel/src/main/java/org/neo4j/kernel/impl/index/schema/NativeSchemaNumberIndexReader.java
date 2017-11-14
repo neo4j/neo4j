@@ -161,12 +161,8 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
 
         if ( indexOrder != null )
         {
-            ValueGroup[] valueGroups = new ValueGroup[predicates.length];
-            for ( int i = 0; i < predicates.length; i++ )
-            {
-                valueGroups[i] = predicates[i].valueGroup();
-            }
-            IndexOrder[] capability = NativeSchemaNumberIndexProvider.CAPABILITY.orderCapability( valueGroups );
+            ValueGroup valueGroup = predicates[0].valueGroup();;
+            IndexOrder[] capability = NativeSchemaNumberIndexProvider.CAPABILITY.orderCapability( valueGroup );
             if ( !ArrayUtil.contains( capability, indexOrder ) )
             {
                 throw new UnsupportedOperationException(
