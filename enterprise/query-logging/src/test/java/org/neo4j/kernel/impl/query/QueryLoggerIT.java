@@ -239,6 +239,25 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
+    @Test
+    public void shouldLogRuntime() throws Exception
+    {
+        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.log_queries_runtime_logging_enabled, Settings.TRUE )
+                .newGraphDatabase();
+
+        String query = "RETURN 42";
+        executeQueryAndShutdown( database, query, Collections.emptyMap() );
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ), endsWith( String.format(
+                " ms: %s - %s - {} - runtime=interpreted - {}",
+                clientConnectionInfo(),
+                query ) ) );
+    }
+
     private String clientConnectionInfo()
     {
         return ClientConnectionInfo.EMBEDDED_CONNECTION.withUsername( AUTH_DISABLED.username() ).asConnectionDetails();

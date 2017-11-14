@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.PlannerInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -52,6 +53,7 @@ import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_ALLOCATED_BYT
 import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_DETAILED_TIME;
 import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PAGE_DETAILS;
 import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PARAMETERS;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_RUNTIME;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class QueryLoggerTest
@@ -481,6 +483,30 @@ public class QueryLoggerTest
         // then
         logProvider.assertExactly( inLog( getClass() ).info(
                 containsString( " 17 page hits, 12 page faults - " ) ) );
+    }
+
+    @Test
+    public void shouldLogRuntime() throws Exception
+    {
+        // given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Map<String,Object> params = new HashMap<>();
+        params.put( "ages", Arrays.asList( 41, 42, 43 ) );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_4, params, emptyMap() );
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS, LOG_RUNTIME );
+
+        // when
+        queryLogger.startQueryExecution( query );
+        clock.forward( 11, TimeUnit.MILLISECONDS );
+        query.planningCompleted( new PlannerInfo( "magic", "quantum", Collections.emptyList() ) );
+        queryLogger.endSuccess( query );
+
+        // then
+        String expectedSessionString = sessionConnectionDetails( SESSION_1, "TestUser" );
+        logProvider.assertExactly(
+                inLog( getClass() ).info( format( "%d ms: %s - %s - %s - {}", 11L, expectedSessionString, QUERY_4,
+                        "{ages: [41, 42, 43]} - runtime=quantum" ) )
+        );
     }
 
     private QueryLogger queryLogger( LogProvider logProvider, QueryLogEntryContent... flags )
