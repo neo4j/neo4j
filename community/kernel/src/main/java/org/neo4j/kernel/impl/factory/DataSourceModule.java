@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
@@ -226,6 +227,8 @@ public class DataSourceModule
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );
 
         life.add( nodeManager );
+
+        life.add( new PublishPageCacheTracerMetricsAfterStart( platformModule.tracers.pageCursorTracerSupplier ) );
 
         life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor,
                 config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() ) );

@@ -25,9 +25,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
@@ -37,10 +40,13 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -104,6 +110,39 @@ public class CoreReplicationIT
             // expected
             assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
         }
+    }
+
+    @Test
+    public void pageFaultsFromReplicationMustCountInMetrics() throws Exception
+    {
+        // given initial pin counts on all members
+        Function<CoreClusterMember,PageCacheCounters> getPageCacheCounters =
+                ccm -> ccm.database().getDependencyResolver().resolveDependency( PageCacheCounters.class );
+        List<PageCacheCounters> countersList =
+                cluster.coreMembers().stream().map( getPageCacheCounters ).collect( Collectors.toList() );
+        long[] initialPins = countersList.stream().mapToLong( PageCacheCounters::pins ).toArray();
+
+        // when the leader commits a write transaction
+        cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
+
+        // then the replication should cause pins on a majority of core members to increase
+        long[] pinsAfterCommit = countersList.stream().mapToLong( PageCacheCounters::pins ).toArray();
+        int membersWithIncreasedPinCount = 0;
+        for ( int i = 0; i < initialPins.length; i++ )
+        {
+            long before = initialPins[i];
+            long after = pinsAfterCommit[i];
+            if ( before < after )
+            {
+                membersWithIncreasedPinCount++;
+            }
+        }
+        assertThat( membersWithIncreasedPinCount, is( greaterThan( countersList.size() / 2 ) ) );
     }
 
     @Test

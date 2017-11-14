@@ -52,6 +52,7 @@ import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -172,9 +173,10 @@ public class CoreStateMachinesModule
                 new ReplicatedTokenStateMachine<>( relationshipTypeTokenRegistry, new RelationshipTypeToken.Factory(),
                         logProvider );
 
+        PageCursorTracerSupplier cursorTracerSupplier = platformModule.tracers.pageCursorTracerSupplier;
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
                 new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine,
-                        config.get( state_machine_apply_max_batch_size ), logProvider );
+                        config.get( state_machine_apply_max_batch_size ), logProvider, cursorTracerSupplier );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
