@@ -22,6 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 /**
   * Runs the 14 LDBC queries and checks so that the result is what is expected.
@@ -70,6 +71,34 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     // no precision loss resulting in insane numbers
     all(collectEstimations(result.executionPlanDescription())) should be > 0.0
     all(collectEstimations(result.executionPlanDescription())) should be < 10.0
+  }
+
+  test("This LDBC query should work") {
+    // given
+    val ldbcQuery = """MATCH (knownTag:Tag {name:{2}})
+                      |MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+                      |WHERE NOT person=friend
+                      |WITH DISTINCT friend, knownTag
+                      |MATCH (friend)<-[:POST_HAS_CREATOR]-(post)
+                      |WHERE (post)-[:POST_HAS_TAG]->(knownTag)
+                      |WITH post, knownTag
+                      |MATCH (post)-[:POST_HAS_TAG]->(commonTag)
+                      |WHERE NOT commonTag=knownTag
+                      |WITH commonTag, count(post) AS postCount
+                      |RETURN commonTag.name AS tagName, postCount
+                      |ORDER BY postCount DESC, tagName ASC
+                      |LIMIT {3}""".stripMargin
+    eengine.execute(LdbcQueries.Query4.createQuery, LdbcQueries.Query4.createParams)
+
+
+    val params: Map[String, Any] = Map("1" -> 1, "2" ->  "tag1-ᚠさ丵פش", "3" -> 10)
+
+    val result =
+    // when
+      executeWith(Configs.CommunityInterpreted, ldbcQuery, params = params)
+
+    // then
+    result should not be empty
   }
 
   private def collectEstimations(plan: InternalPlanDescription): Seq[Double] = {
