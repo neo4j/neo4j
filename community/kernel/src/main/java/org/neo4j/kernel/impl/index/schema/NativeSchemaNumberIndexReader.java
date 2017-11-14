@@ -221,7 +221,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
             openSeekers.add( seeker );
-            IndexProgressor hitProgressor = new NumberHitIndexCursorProgressor<>( seeker, client, openSeekers );
+            IndexProgressor hitProgressor = new NumberHitIndexProgressor<>( seeker, client, openSeekers );
             client.initialize( hitProgressor, propertyKeys );
         }
         catch ( IOException e )

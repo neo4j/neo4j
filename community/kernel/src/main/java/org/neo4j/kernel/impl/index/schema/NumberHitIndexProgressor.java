@@ -27,14 +27,14 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-public class NumberHitIndexCursorProgressor<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> implements IndexProgressor
+public class NumberHitIndexProgressor<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> implements IndexProgressor
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
     private final NodeValueClient client;
     private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
     private boolean closed;
 
-    NumberHitIndexCursorProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
+    NumberHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
     {
         this.seeker = seeker;
