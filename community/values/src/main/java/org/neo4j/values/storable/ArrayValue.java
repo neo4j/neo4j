@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
@@ -54,7 +55,11 @@ public abstract class ArrayValue extends Value implements SequenceValue
             @Override
             public AnyValue next()
             {
-                return value( offset );
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return value( offset++ );
             }
         };
     }

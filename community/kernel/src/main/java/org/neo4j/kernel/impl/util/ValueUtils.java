@@ -50,6 +50,7 @@ import org.neo4j.values.virtual.PointValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.stream.StreamSupport.stream;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
@@ -293,4 +294,5 @@ public final class ValueUtils
     {
         return new RelationshipProxyWrappingEdgeValue( relationship );
     }
+
 }

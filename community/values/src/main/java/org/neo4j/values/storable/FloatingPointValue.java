@@ -83,6 +83,12 @@ public abstract class FloatingPointValue extends NumberValue
     }
 
     @Override
+    public boolean isNaN()
+    {
+        return Double.isNaN( this.doubleValue() );
+    }
+
+    @Override
     public long longValue()
     {
         return (long) doubleValue();

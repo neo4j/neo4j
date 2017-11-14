@@ -38,10 +38,10 @@ import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.stringArray;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqualValues;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqualValues;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqualValues;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertIncomparable;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValues.range;
 
@@ -114,36 +114,43 @@ public class ListTest
                 list( intArray( new int[]{3, 4, 50} ) ) );
 
         // different value types
-        assertNotEqualValues( list( true, true ), intArray( new int[]{0, 0} ) );
-        assertNotEqualValues( list( true, true ), longArray( new long[]{0L, 0L} ) );
-        assertNotEqualValues( list( true, true ), shortArray( new short[]{(short) 0, (short) 0} ) );
-        assertNotEqualValues( list( true, true ), floatArray( new float[]{0.0f, 0.0f} ) );
-        assertNotEqualValues( list( true, true ), doubleArray( new double[]{0.0, 0.0} ) );
-        assertNotEqualValues( list( true, true ), charArray( new char[]{'T', 'T'} ) );
-        assertNotEqualValues( list( true, true ), stringArray( new String[]{"True", "True"} ) );
-        assertNotEqualValues( list( true, true ), byteArray( new byte[]{(byte) 0, (byte) 0} ) );
+        assertNotEqual( list( true, true ), intArray( new int[]{0, 0} ) );
+        assertNotEqual( list( true, true ), longArray( new long[]{0L, 0L} ) );
+        assertNotEqual( list( true, true ), shortArray( new short[]{(short) 0, (short) 0} ) );
+        assertNotEqual( list( true, true ), floatArray( new float[]{0.0f, 0.0f} ) );
+        assertNotEqual( list( true, true ), doubleArray( new double[]{0.0, 0.0} ) );
+        assertNotEqual( list( true, true ), charArray( new char[]{'T', 'T'} ) );
+        assertNotEqual( list( true, true ), stringArray( new String[]{"True", "True"} ) );
+        assertNotEqual( list( true, true ), byteArray( new byte[]{(byte) 0, (byte) 0} ) );
 
         // wrong or missing items
-        assertNotEqualValues( list( true ), booleanArray( new boolean[]{true, false} ) );
-        assertNotEqualValues( list( true, true ), booleanArray( new boolean[]{true, false} ) );
-        assertNotEqualValues( list( 84, 104, 32, 105, 115, 32, 106, 117, 115, 116, 32, 97, 32, 116, 101, 115, 116 ),
+        assertNotEqual( list( true ), booleanArray( new boolean[]{true, false} ) );
+        assertNotEqual( list( true, true ), booleanArray( new boolean[]{true, false} ) );
+        assertNotEqual( list( 84, 104, 32, 105, 115, 32, 106, 117, 115, 116, 32, 97, 32, 116, 101, 115, 116 ),
                 byteArray( "This is just a test".getBytes() ) );
-        assertNotEqualValues( list( 'h' ), charArray( new char[]{'h', 'i'} ) );
-        assertNotEqualValues( list( 'h', 'o' ), charArray( new char[]{'h', 'i'} ) );
-        assertNotEqualValues( list( 9.0, 2.0 ), doubleArray( new double[]{1.0, 2.0} ) );
-        assertNotEqualValues( list( 1.0 ), doubleArray( new double[]{1.0, 2.0} ) );
-        assertNotEqualValues( list( 1.5f ), floatArray( new float[]{1.5f, -5f} ) );
-        assertNotEqualValues( list( 1.5f, 5f ), floatArray( new float[]{1.5f, -5f} ) );
-        assertNotEqualValues( list( 1, 3 ), intArray( new int[]{1, -3} ) );
-        assertNotEqualValues( list( -3 ), intArray( new int[]{1, -3} ) );
-        assertNotEqualValues( list( 2L, 3L ), longArray( new long[]{2L, -3L} ) );
-        assertNotEqualValues( list( 2L ), longArray( new long[]{2L, -3L} ) );
-        assertNotEqualValues( list( (short) 2, (short) 3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
-        assertNotEqualValues( list( (short) 2 ), shortArray( new short[]{(short) 2, (short) -3} ) );
-        assertNotEqualValues( list( "hi", "hello" ), stringArray( new String[]{"hi"} ) );
-        assertNotEqualValues( list( "hello" ), stringArray( new String[]{"hi"} ) );
+        assertNotEqual( list( 'h' ), charArray( new char[]{'h', 'i'} ) );
+        assertNotEqual( list( 'h', 'o' ), charArray( new char[]{'h', 'i'} ) );
+        assertNotEqual( list( 9.0, 2.0 ), doubleArray( new double[]{1.0, 2.0} ) );
+        assertNotEqual( list( 1.0 ), doubleArray( new double[]{1.0, 2.0} ) );
+        assertNotEqual( list( 1.5f ), floatArray( new float[]{1.5f, -5f} ) );
+        assertNotEqual( list( 1.5f, 5f ), floatArray( new float[]{1.5f, -5f} ) );
+        assertNotEqual( list( 1, 3 ), intArray( new int[]{1, -3} ) );
+        assertNotEqual( list( -3 ), intArray( new int[]{1, -3} ) );
+        assertNotEqual( list( 2L, 3L ), longArray( new long[]{2L, -3L} ) );
+        assertNotEqual( list( 2L ), longArray( new long[]{2L, -3L} ) );
+        assertNotEqual( list( (short) 2, (short) 3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
+        assertNotEqual( list( (short) 2 ), shortArray( new short[]{(short) 2, (short) -3} ) );
+        assertNotEqual( list( "hi", "hello" ), stringArray( new String[]{"hi"} ) );
+        assertNotEqual( list( "hello" ), stringArray( new String[]{"hi"} ) );
 
-        assertNotEqualValues( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
+        assertNotEqual( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
+    }
+
+    @Test
+    public void shouldHandleNullInList()
+    {
+        assertIncomparable( list( 1, null ), list( 1, 2 ) );
+        assertNotEqual( list( 1, null ), list( 2, 3 ) );
     }
 
     @Test
