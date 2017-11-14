@@ -22,9 +22,12 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.internal.kernel.api.*;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
