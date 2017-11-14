@@ -146,8 +146,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
         val slot1 = pipelineInformation(k1)
         val slot2 = pipelineInformation(k2)
-        if (slot1.typ == slot2.typ && PipelineInformation.isLongSlot(slot1)) {
-          assert(PipelineInformation.isLongSlot(slot2))
+        if (slot1.typ == slot2.typ && PipelineInformation.isLongSlot(slot1) && PipelineInformation.isLongSlot(slot2)) {
           PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
         }
         else
