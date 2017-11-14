@@ -266,6 +266,16 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         ctx.statementProcessor.markCurrentTransactionForTermination();
     }
 
+    /**
+     * When this is invoked, the machine will check whether the related transaction is
+     * marked for termination and will reset the TransactionStateMachine to AUTO_COMMIT mode
+     * while releasing the related transactional resources.
+     */
+    public void validateTransaction() throws KernelException
+    {
+        ctx.statementProcessor.validateTransaction();
+    }
+
     public void externalError( Neo4jError error, BoltResponseHandler handler ) throws BoltConnectionFatality
     {
         before( handler );
@@ -823,6 +833,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         public void markCurrentTransactionForTermination()
         {
             // nothing to mark
+        }
+
+        @Override
+        public void validateTransaction() throws KernelException
+        {
+            // nothing to validate
         }
 
         @Override
