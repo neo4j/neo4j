@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 
 case class NodeIndexScanSlottedPipe(ident: String,
@@ -43,7 +43,7 @@ case class NodeIndexScanSlottedPipe(ident: String,
     val nodes = state.query.indexScanPrimitive(descriptor)
     PrimitiveLongHelper.map(nodes, { node =>
       val context = PrimitiveExecutionContext(pipelineInformation)
-      state.copyArgumentStateTo(context, pipelineInformation.numberOfLongs, pipelineInformation.numberOfReferences)
+      state.copyArgumentStateTo(context, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
       context.setLongAt(offset, node)
       context
     })
