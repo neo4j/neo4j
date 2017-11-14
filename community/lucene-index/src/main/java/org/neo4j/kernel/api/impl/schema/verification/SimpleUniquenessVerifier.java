@@ -32,9 +32,11 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 /**
  * A {@link UniquenessVerifier} that is able to verify value uniqueness inside a single index partition using
@@ -49,15 +51,18 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 public class SimpleUniquenessVerifier implements UniquenessVerifier
 {
     private final PartitionSearcher partitionSearcher;
+    private final IndexDescriptor descriptor;
 
-    public SimpleUniquenessVerifier( PartitionSearcher partitionSearcher )
+    public SimpleUniquenessVerifier( PartitionSearcher partitionSearcher, IndexDescriptor descriptor )
     {
         this.partitionSearcher = partitionSearcher;
+        this.descriptor = descriptor;
     }
 
     @Override
     public void verify( PropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException
     {
+        TermQuery query = null;
         try
         {
             DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
@@ -76,7 +81,8 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                             if ( terms.docFreq() > 1 )
                             {
                                 collector.init( terms.docFreq() );
-                                searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
+                                query = new TermQuery( new Term( field, termsRef ) );
+                                searcher.search( query, collector );
                             }
                         }
                     }
@@ -92,19 +98,24 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
             }
             throw e;
         }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( LuceneErrorDetails.searchError( descriptor.toString(), query ), t );
+        }
     }
 
     @Override
     public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Object> updatedPropertyValues )
             throws IndexEntryConflictException, IOException
     {
+        Query query = null;
         try
         {
             DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
             for ( Object propertyValue : updatedPropertyValues )
             {
                 collector.init();
-                Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
+                query = LuceneDocumentStructure.newSeekQuery( propertyValue );
                 indexSearcher().search( query, collector );
             }
         }
@@ -116,6 +127,10 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                 throw (IndexEntryConflictException) cause;
             }
             throw e;
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( LuceneErrorDetails.searchError( descriptor.toString(), query ), t );
         }
     }
 

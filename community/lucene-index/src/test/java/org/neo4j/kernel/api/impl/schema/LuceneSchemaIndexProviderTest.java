@@ -26,11 +26,17 @@ import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.reader.SimpleIndexReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -38,10 +44,17 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -116,6 +129,73 @@ public class LuceneSchemaIndexProviderTest
 
         // We assert that 'force' does not throw an exception
         getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force();
+    }
+
+    @Test
+    public void exceptionMustIncludeQueryInformation() throws Exception
+    {
+        SimpleIndexReader simpleIndexReader = getFailingIndexReader();
+
+        String propertyValue = "myPropertyValue";
+        try
+        {
+            simpleIndexReader.query( IndexQuery.exact( 1, propertyValue ) );
+            fail( "Should have failed" );
+        }
+        catch ( Throwable t )
+        {
+            assertThat( t.getMessage(), allOf( containsString( descriptor.toString() ), containsString( propertyValue ) ) );
+        }
+    }
+
+    @Test
+    public void readerMustToggleVerboseOnException() throws Exception
+    {
+        SimpleIndexReader simpleIndexReader = getFailingIndexReader();
+
+        String propertyValue = "myPropertyValue";
+        try
+        {
+            assertFalse( ToggleableInfoStream.isEnabled() );
+            simpleIndexReader.query( IndexQuery.exact( 1, propertyValue ) );
+            fail( "Should have failed" );
+        }
+        catch ( Throwable t )
+        {   // ok
+            assertTrue( ToggleableInfoStream.isEnabled() );
+        }
+    }
+
+    @Test
+    public void mustLogInfoStreamIfToggled() throws Exception
+    {
+        // given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Config config = Config.defaults();
+        LuceneSchemaIndexProvider indexProvider =
+                new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, graphDbDir, logProvider, config, OperationalMode.single );
+
+        // when
+        IndexAccessor onlineAccessor = indexProvider.getOnlineAccessor( 1L, descriptor, new IndexSamplingConfig( config ) );
+        logProvider.assertNoLogCallContaining( "Lucene:" );
+        logProvider.assertNoLogCallContaining( "[main]:" );
+        ToggleableInfoStream.toggle( true );
+        try ( IndexUpdater indexUpdater = onlineAccessor.newUpdater( IndexUpdateMode.ONLINE ) )
+        {
+            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor, "value" ) );
+        }
+
+        // then
+        logProvider.assertContainsLogCallContaining( "Lucene:" );
+        logProvider.assertContainsLogCallContaining( "[main]:" );
+    }
+
+    private SimpleIndexReader getFailingIndexReader()
+    {
+        Config config = Config.defaults();
+        TaskCoordinator whateverTaskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
+        IndexSamplingConfig whateverIndexSamplingConfig = new IndexSamplingConfig( config );
+        return new SimpleIndexReader( null /* should cause NPE*/, descriptor, whateverIndexSamplingConfig, whateverTaskCoordinator );
     }
 
     private void createEmptySchemaIndex( DirectoryFactory directoryFactory ) throws IOException

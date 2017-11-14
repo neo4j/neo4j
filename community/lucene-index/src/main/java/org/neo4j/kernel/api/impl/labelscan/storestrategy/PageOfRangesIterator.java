@@ -25,10 +25,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
-import java.io.IOException;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesAccess;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
@@ -113,9 +112,9 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
                     new Sort( new SortField( BitmapDocumentFormat.RANGE, SortField.Type.LONG ) ) );
             return rangesIterator;
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
-            throw new RuntimeException( e );
+            throw new RuntimeException( LuceneErrorDetails.searchError( "LabelScanStore", query ), e );
         }
     }
 
