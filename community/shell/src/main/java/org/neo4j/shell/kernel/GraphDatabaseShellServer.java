@@ -99,14 +99,17 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     public Response interpretLine( Serializable clientId, String line, Output out ) throws ShellException
     {
-        bindTransaction( clientId );
+        boolean alreadyBound = bindTransaction( clientId );
         try
         {
             return super.interpretLine( clientId, line, out );
         }
         finally
         {
-            unbindAndRegisterTransaction( clientId );
+            if ( !alreadyBound )
+            {
+                unbindAndRegisterTransaction( clientId );
+            }
         }
     }
 
@@ -162,21 +165,33 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    public void bindTransaction( Serializable clientId ) throws ShellException
+    public boolean bindTransaction( Serializable clientId ) throws ShellException
     {
         KernelTransaction tx = clients.get( clientId );
         if ( tx != null )
         {
             try
             {
-                ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
-                threadToStatementContextBridge.bindTransactionToCurrentThread( tx );
+                ThreadToStatementContextBridge bridge = getThreadToStatementContextBridge();
+                if ( bridge.getKernelTransactionBoundToThisThread( false ) == tx )
+                {
+                    // This thread is already bound to this transaction. This can happen if a shell command
+                    // in turn calls out to other shell commands. In those cases the sub-commands should just
+                    // participate in the existing transaction. Neo4j already has support for nested
+                    // transactions, but in the shell server, we are managing the transaction context bridge
+                    // in this laborious and manual way, so it is easier for us to just avoid re-binding the
+                    // existing transaction. We return 'true' here to indicate that our transaction context
+                    // is nested, and that we therefor have to avoid unbinding this transaction later.
+                    return true;
+                }
+                bridge.bindTransactionToCurrentThread( tx );
             }
             catch ( Exception e )
             {
                 throw wrapException( e );
             }
         }
+        return false;
     }
 
     @Override

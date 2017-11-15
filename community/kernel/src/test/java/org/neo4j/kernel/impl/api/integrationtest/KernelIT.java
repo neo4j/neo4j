@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -55,6 +56,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -64,6 +66,7 @@ import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class KernelIT extends KernelIntegrationTest
 {
@@ -482,8 +485,10 @@ public class KernelIT extends KernelIntegrationTest
             db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
             tx.success();
         }
-        // THEN
-        assertFalse( schemaStateContains( "my key" ) );
+        // THEN schema state is eventually updated (clearing the schema cache is not atomic with respect to flipping
+        // the new index to the ONLINE state, but happens as soon as possible *after* the index becomes ONLINE).
+        assertEventually( "Schema state should have been updated",
+                () -> schemaStateContains( "my key" ), is( false ), 1, TimeUnit.SECONDS );
     }
 
     @Test
@@ -503,7 +508,8 @@ public class KernelIT extends KernelIntegrationTest
         schemaWriteOperationsInNewTransaction().indexDrop( idx );
         commit();
 
-        // THEN
+        // THEN schema state should be immediately updated (this works because the schema cache is updated during
+        // transaction apply, while the schema lock is held).
         assertFalse( schemaStateContains("my key") );
     }
 
