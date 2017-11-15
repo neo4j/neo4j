@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 class PipelineInformationTest extends CypherFunSuite {
   test("can't overwrite variable name by mistake1") {
     // given
-    val pipeline = PipelineInformation.empty
+    val pipeline = SlotConfiguration.empty
     pipeline.newLong("x", nullable = false, CTNode)
 
     // when && then
@@ -35,7 +35,7 @@ class PipelineInformationTest extends CypherFunSuite {
 
   test("can't overwrite variable name by mistake2") {
     // given
-    val pipeline = PipelineInformation.empty
+    val pipeline = SlotConfiguration.empty
     pipeline.newLong("x", nullable = false, CTNode)
 
     // when && then
@@ -44,7 +44,7 @@ class PipelineInformationTest extends CypherFunSuite {
 
   test("can't overwrite variable name by mistake3") {
     // given
-    val pipeline = PipelineInformation.empty
+    val pipeline = SlotConfiguration.empty
     pipeline.newReference("x", nullable = false, CTNode)
 
     // when && then
@@ -53,7 +53,7 @@ class PipelineInformationTest extends CypherFunSuite {
 
   test("can't overwrite variable name by mistake4") {
     // given
-    val pipeline = PipelineInformation.empty
+    val pipeline = SlotConfiguration.empty
     pipeline.newReference("x", nullable = false, CTNode)
 
     // when && then
@@ -62,11 +62,11 @@ class PipelineInformationTest extends CypherFunSuite {
 
   test("deepClone creates an immutable copy") {
     // given
-    val pipeline = PipelineInformation(Map(
+    val pipeline = SlotConfiguration(Map(
       "x" -> LongSlot(0, nullable = false, CTNode),
       "y" -> LongSlot(1, nullable = false, CTNode)),
       numberOfLongs = 2, numberOfReferences = 0)
-    val clone: PipelineInformation = pipeline.breakPipelineAndClone()
+    val clone: SlotConfiguration = pipeline.copy()
     pipeline should equal(clone)
 
     // when

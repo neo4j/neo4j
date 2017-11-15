@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.ReferenceFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
@@ -34,12 +34,12 @@ import scala.collection.JavaConverters._
 class UnwindSlottedPipeTest extends CypherFunSuite {
 
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
-    val inputPipeline = PipelineInformation
+    val inputPipeline = SlotConfiguration
       .empty
       .newReference("x", nullable = false, CTAny)
 
     val outputPipeline = inputPipeline
-      .breakPipelineAndClone()
+      .copy()
       .newReference("y", nullable = true, CTAny)
 
     val x = inputPipeline.getReferenceOffsetFor("x")

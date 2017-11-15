@@ -43,8 +43,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+    val pipeline = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       allNodes.assignedId -> pipeline,
       selection.assignedId -> pipeline,
       produceResult.assignedId -> pipeline)
@@ -72,7 +72,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = PipelineInformation(Map(
+    val pipelineInformation = SlotConfiguration(Map(
       "a" -> nodeAt(0, "a"),
       "b" -> nodeAt(1, "b"),
       "r1" -> edgeAt(2, "r1"),
@@ -80,7 +80,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
       "r2" -> edgeAt(4, "r2")
     ), numberOfLongs = 5, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> pipelineInformation,
       selection.assignedId -> pipelineInformation
     )
@@ -103,11 +103,11 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(prop("a", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = PipelineInformation(Map(
+    val pipelineInformation = SlotConfiguration(Map(
       "a" -> LongSlot(0, nullable = true, typ = CTNode)
     ), numberOfLongs = 1, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> pipelineInformation,
       selection.assignedId -> pipelineInformation
     )
@@ -132,8 +132,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+    val pipeline = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       allNodes.assignedId -> pipeline,
       selection.assignedId -> pipeline,
       produceResult.assignedId -> pipeline)
@@ -158,13 +158,13 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = PipelineInformation(Map(
+    val pipelineInformation = SlotConfiguration(Map(
       "a" -> nodeAt(0, "a"),
       "b" -> nodeAt(1, "b"),
       "r" -> edgeAt(2, "r")
     ), numberOfLongs = 3, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> pipelineInformation,
       selection.assignedId -> pipelineInformation
     )
@@ -188,11 +188,11 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     produceResult.assignIds()
     val nodeOffset = 0
     val propOffset = 0
-    val pipeline = PipelineInformation(Map(
+    val pipeline = SlotConfiguration(Map(
       "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode),
       "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny)),
       1, 1)
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       allNodes.assignedId -> pipeline,
       projection.assignedId -> pipeline,
       produceResult.assignedId -> pipeline)
@@ -218,7 +218,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
-    val pipeline = PipelineInformation.empty.
+    val pipeline = SlotConfiguration.empty.
       newLong("x", nullable = false, CTNode).
       newReference("x.propertyKey", nullable = true, CTAny)
 
@@ -243,7 +243,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
-    val pipeline = PipelineInformation.empty.
+    val pipeline = SlotConfiguration.empty.
       newLong("x", nullable = true, CTNode).
       newReference("x.propertyKey", nullable = true, CTAny)
 
@@ -270,11 +270,11 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val apply = Apply(pr1B, pr2)(solved)
     apply.assignIds()
 
-    val lhsPipeline = PipelineInformation.empty.
+    val lhsPipeline = SlotConfiguration.empty.
       newReference("x", nullable = true, CTAny).
       newReference("xx", nullable = true, CTAny)
 
-    val rhsPipeline = PipelineInformation.empty.
+    val rhsPipeline = SlotConfiguration.empty.
       newReference("y", nullable = true, CTAny)
 
     // when

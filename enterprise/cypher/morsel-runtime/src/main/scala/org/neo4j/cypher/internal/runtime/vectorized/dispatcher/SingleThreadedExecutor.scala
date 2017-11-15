@@ -54,7 +54,7 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
 
       while (jobStack.nonEmpty) {
         val (message, pipeline) = jobStack.pop()
-        val data = Morsel.create(pipeline.slotInformation, morselSize)
+        val data = Morsel.create(pipeline.slots, morselSize)
         val continuation = pipeline.operate(message, data, queryContext, state)
         if (continuation != EndOfLoop(iteration)) {
           jobStack.push((ContinueLoopWith(continuation), pipeline))

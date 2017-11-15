@@ -97,7 +97,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
   }
 
   private def execute(query: Query, pipeline: Pipeline, message: Message, queryContext: QueryContext, state: QueryState) = {
-    val data = Morsel.create(pipeline.slotInformation, morselSize)
+    val data = Morsel.create(pipeline.slots, morselSize)
     val continuation = pipeline.operate(message, data, queryContext, state)
 
     pipeline.parent match {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.symbols
@@ -28,9 +28,9 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues._
 
 
-class ProduceResultOperator(pipelineInformation: PipelineInformation, fieldNames: Array[String]) extends MiddleOperator {
+class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-    val resultRow = new MorselResultRow(data, 0, pipelineInformation, fieldNames, context)
+    val resultRow = new MorselResultRow(data, 0, slots, fieldNames, context)
     (0 until data.validRows) foreach { position =>
       resultRow.currentPos = position
       state.visitor.visit(resultRow)
@@ -40,19 +40,19 @@ class ProduceResultOperator(pipelineInformation: PipelineInformation, fieldNames
 
 class MorselResultRow(var morsel: Morsel,
                       var currentPos: Int,
-                      pipelineInformation: PipelineInformation,
+                      slots: SlotConfiguration,
                       fieldNames: Array[String],
                       queryContext: QueryContext) extends QueryResult.Record {
   private val array = new Array[AnyValue](fieldNames.length)
 
-  private val updateArray: Array[() => AnyValue] = fieldNames.map(key => pipelineInformation.get(key) match {
+  private val updateArray: Array[() => AnyValue] = fieldNames.map(key => slots.get(key) match {
     case None => throw new IllegalStateException()
     case Some(RefSlot(offset, _, _)) => () =>
-       morsel.refs(currentPos * pipelineInformation.numberOfReferences + offset)
+       morsel.refs(currentPos * slots.numberOfReferences + offset)
     case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
-      node(morsel.longs(currentPos * pipelineInformation.numberOfLongs + offset))
+      node(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
-      edge(morsel.longs(currentPos * pipelineInformation.numberOfLongs + offset))
+      edge(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case _ => throw new IllegalStateException
   })
 

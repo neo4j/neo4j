@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -31,7 +31,7 @@ case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe,
                                   collectionRefSlotOffset: Int,
                                   identifierToCollect: (String, Expression),
                                   nullableIdentifiers: Set[String],
-                                  pipelineInformation: PipelineInformation)
+                                  slots: SlotConfiguration)
                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(lhs) {
 
@@ -42,7 +42,7 @@ case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe,
 
   private val hasNullValuePredicates: Seq[(ExecutionContext) => Boolean] =
     nullableIdentifiers.toSeq.map { elem =>
-      val elemSlot = pipelineInformation.get(elem)
+      val elemSlot = slots.get(elem)
       elemSlot match {
         case Some(LongSlot(offset, true, _)) => { (ctx: ExecutionContext) => ctx.getLongAt(offset) == -1 }
         case Some(RefSlot(offset, true, _)) => { (ctx: ExecutionContext) => ctx.getRefAt(offset) == NO_VALUE }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -44,7 +44,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
                                       min: Int,
                                       maxDepth: Option[Int],
                                       shouldExpandAll: Boolean,
-                                      pipeline: PipelineInformation,
+                                      slots: SlotConfiguration,
                                       tempNodeOffset: Int,
                                       tempEdgeOffset: Int,
                                       nodePredicate: Predicate,
@@ -121,8 +121,8 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
           paths collect {
             case (toNode: LNode, rels: Seq[Relationship])
               if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
-              val resultRow = PrimitiveExecutionContext(pipeline)
-              resultRow.copyFrom(inputRowWithFromNode, longsToCopy, pipeline .initialNumberOfReferences)
+              val resultRow = PrimitiveExecutionContext(slots)
+              resultRow.copyFrom(inputRowWithFromNode, longsToCopy, slots.initialNumberOfReferences)
               resultRow.setLongAt(toOffset, toNode)
               resultRow.setRefAt(relOffset, ValueUtils.asListOfEdges(rels.toArray))
               resultRow

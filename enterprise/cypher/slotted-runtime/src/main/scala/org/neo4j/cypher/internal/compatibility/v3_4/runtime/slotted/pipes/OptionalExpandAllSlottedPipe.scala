@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker
@@ -39,7 +39,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
                                         dir: SemanticDirection,
                                         types: LazyTypes,
                                         predicate: Predicate,
-                                        pipelineInformation: PipelineInformation)
+                                        slots: SlotConfiguration)
                                        (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with Pipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -63,8 +63,8 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
 
           val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
             relationships.relationshipVisit(relId, relVisitor)
-            val outputRow = PrimitiveExecutionContext(pipelineInformation)
-            outputRow.copyFrom(inputRow, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
+            val outputRow = PrimitiveExecutionContext(slots)
+            outputRow.copyFrom(inputRow, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
             outputRow.setLongAt(relOffset, relId)
             outputRow.setLongAt(toOffset, otherSide)
             outputRow
@@ -79,8 +79,8 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
   }
 
   private def withNulls(inputRow: ExecutionContext) = {
-    val outputRow = PrimitiveExecutionContext(pipelineInformation)
-    outputRow.copyFrom(inputRow, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
+    val outputRow = PrimitiveExecutionContext(slots)
+    outputRow.copyFrom(inputRow, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
     outputRow.setLongAt(relOffset, -1)
     outputRow.setLongAt(toOffset, -1)
     outputRow

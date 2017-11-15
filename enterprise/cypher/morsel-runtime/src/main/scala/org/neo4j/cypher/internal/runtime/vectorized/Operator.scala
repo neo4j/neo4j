@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import java.util
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
@@ -75,7 +75,7 @@ case class QueryState(params: MapValue, visitor: QueryResultVisitor[_])
 
 case class Pipeline(start: Operator,
                     operators: Seq[MiddleOperator],
-                    slotInformation: PipelineInformation,
+                    slots: SlotConfiguration,
                     dependency: Dependency)
                    (var parent: Option[Pipeline] = None) {
 
@@ -95,7 +95,7 @@ case class Pipeline(start: Operator,
       println(s"Pipeline: $this")
 
 
-      val longCount = slotInformation.numberOfLongs
+      val longCount = slots.numberOfLongs
       val rows = for (i <- 0 until(data.validRows * longCount, longCount)) yield {
         util.Arrays.toString(data.longs.slice(i, i + longCount))
       }

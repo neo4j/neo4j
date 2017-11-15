@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
@@ -36,9 +36,10 @@ import scala.collection.mutable.{Map => MutableMap}
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationSlottedPipe(source: Pipe,
-                                       pipelineInformation: PipelineInformation,
+                                       slots: SlotConfiguration,
                                        groupingExpressions: Map[Int, Expression],
-                                       aggregations: Map[Int, AggregationExpression])(val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                       aggregations: Map[Int, AggregationExpression])
+                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))
@@ -103,7 +104,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
 
     // Used when we have no input and no grouping expressions. In this case, we'll return a single row
     def createEmptyResult(params: MapValue): Iterator[ExecutionContext] = {
-      val context = PrimitiveExecutionContext(pipelineInformation)
+      val context = PrimitiveExecutionContext(slots)
       val aggregationOffsetsAndFunctions = aggregationOffsets zip aggregations
         .map(_._2.createAggregationFunction.result(state))
 
@@ -114,7 +115,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
     }
 
     def writeAggregationResultToContext(groupingKey: AnyValue, aggregator: Seq[AggregationFunction]): ExecutionContext = {
-      val context = PrimitiveExecutionContext(pipelineInformation)
+      val context = PrimitiveExecutionContext(slots)
       addGroupingValuesToResult(context, groupingKey)
       (aggregationOffsets zip aggregator.map(_.result(state))).foreach {
         case (offset, value) => context.setRefAt(offset, value)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -37,7 +37,7 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
                                          dir: SemanticDirection,
                                          lazyTypes: LazyTypes,
                                          predicate: Predicate,
-                                         pipelineInformation: PipelineInformation)
+                                         slots: SlotConfiguration)
                                         (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with PrimitiveCachingExpandInto {
   self =>
@@ -59,8 +59,8 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
             .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
           val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
-            val outputRow = PrimitiveExecutionContext(pipelineInformation)
-            outputRow.copyFrom(inputRow, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
+            val outputRow = PrimitiveExecutionContext(slots)
+            outputRow.copyFrom(inputRow, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
             outputRow.setLongAt(relOffset, relId)
             outputRow
           }).filter(ctx => predicate.isTrue(ctx, state))
@@ -74,8 +74,8 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
   }
 
   private def withNulls(inputRow: ExecutionContext) = {
-    val outputRow = PrimitiveExecutionContext(pipelineInformation)
-    outputRow.copyFrom(inputRow, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
+    val outputRow = PrimitiveExecutionContext(slots)
+    outputRow.copyFrom(inputRow, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
     outputRow.setLongAt(relOffset, -1)
     outputRow
   }

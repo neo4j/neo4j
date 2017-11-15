@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.values.AnyValue
 
 /*
@@ -31,9 +31,9 @@ class Morsel(val longs: Array[Long], val refs: Array[AnyValue], var validRows: I
 }
 
 object Morsel {
-  def create(slotInformation: PipelineInformation, size: Int): Morsel = {
-    val longs = new Array[Long](slotInformation.numberOfLongs * size)
-    val refs = new Array[AnyValue](slotInformation.numberOfReferences * size)
+  def create(slots: SlotConfiguration, size: Int): Morsel = {
+    val longs = new Array[Long](slots.numberOfLongs * size)
+    val refs = new Array[AnyValue](slots.numberOfReferences * size)
     new Morsel(longs, refs, size)
   }
 }

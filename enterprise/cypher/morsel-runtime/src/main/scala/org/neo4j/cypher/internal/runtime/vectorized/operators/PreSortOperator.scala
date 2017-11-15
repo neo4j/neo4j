@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.ColumnOrder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, MiddleOperator, Morsel, QueryState}
 import org.neo4j.values.AnyValue
@@ -30,7 +30,7 @@ import org.neo4j.values.AnyValue
 /*
 Responsible for sorting the Morsel in place, which will then be merged together with other sorted Morsels
  */
-class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation) extends MiddleOperator {
+class PreSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) extends MiddleOperator {
 
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
 
@@ -54,8 +54,8 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineIn
   }
 
   private def createSortedMorselData(data: Morsel, arrayToSort: Array[Object]): (Array[Long], Array[AnyValue]) = {
-    val longCount = pipelineInformation.numberOfLongs
-    val refCount = pipelineInformation.numberOfReferences
+    val longCount = slots.numberOfLongs
+    val refCount = slots.numberOfReferences
     val newLongs = new Array[Long](data.validRows * longCount)
     val newRefs = new Array[AnyValue](data.validRows * refCount)
 
@@ -92,7 +92,7 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineIn
     case LongSlot(offset, _, _) =>
       new Comparator[Object] {
         override def compare(idx1: Object, idx2: Object) = {
-          val longs = pipelineInformation.numberOfLongs
+          val longs = slots.numberOfLongs
           val aIdx = longs * idx1.asInstanceOf[Int] + offset
           val bIdx = longs * idx2.asInstanceOf[Int] + offset
           val aVal = data.longs(aIdx)
@@ -104,7 +104,7 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineIn
     case RefSlot(offset, _, _) =>
       new Comparator[Object] {
         override def compare(idx1: Object, idx2: Object) = {
-          val refs = pipelineInformation.numberOfReferences
+          val refs = slots.numberOfReferences
           val aIdx = refs * idx1.asInstanceOf[Int] + offset
           val bIdx = refs * idx2.asInstanceOf[Int] + offset
           val aVal = data.refs(aIdx)

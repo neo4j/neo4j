@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -34,10 +34,10 @@ case class NodeIndexSeekSlottedPipe(ident: String,
                                     propertyKeys: Seq[PropertyKeyToken],
                                     valueExpr: QueryExpression[Expression],
                                     indexMode: IndexSeekMode = IndexSeek,
-                                    pipelineInformation: PipelineInformation)
+                                    slots: SlotConfiguration)
                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
-  private val offset = pipelineInformation.getLongOffsetFor(ident)
+  private val offset = slots.getLongOffsetFor(ident)
 
   private val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
 
@@ -52,8 +52,8 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     val baseContext = state.initialContext.getOrElse(PrimitiveExecutionContext.empty)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
     resultNodes.map { node =>
-      val context = PrimitiveExecutionContext(pipelineInformation)
-      state.copyArgumentStateTo(context, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
+      val context = PrimitiveExecutionContext(slots)
+      state.copyArgumentStateTo(context, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
       context.setLongAt(offset, node.getId)
       context
     }

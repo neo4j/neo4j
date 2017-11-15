@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import java.util
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -34,7 +34,7 @@ case class NodeHashJoinSlottedPipe(leftNodes: Array[Int],
                                    rightNodes: Array[Int],
                                    left: Pipe,
                                    right: Pipe,
-                                   pipelineInformation: PipelineInformation,
+                                   slots: SlotConfiguration,
                                    longsToCopy: Array[(Int, Int)],
                                    refsToCopy: Array[(Int, Int)])
                                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(left) {
@@ -60,7 +60,7 @@ case class NodeHashJoinSlottedPipe(leftNodes: Array[Int],
         val matchesFromLhs: mutable.Seq[ExecutionContext] = table.getOrElse(joinKey, mutable.MutableList.empty)
 
         matchesFromLhs.map{ lhs =>
-          val newRow = PrimitiveExecutionContext(pipelineInformation)
+          val newRow = PrimitiveExecutionContext(slots)
           lhs.copyTo(newRow)
           longsToCopy foreach {
             case (from, to) => newRow.setLongAt(to, rhs.getLongAt(from))

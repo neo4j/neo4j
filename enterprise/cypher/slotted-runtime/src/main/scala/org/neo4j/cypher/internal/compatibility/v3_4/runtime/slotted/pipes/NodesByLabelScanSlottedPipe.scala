@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-case class NodesByLabelScanSlottedPipe(ident: String, label: LazyLabel, pipelineInformation: PipelineInformation)
+case class NodesByLabelScanSlottedPipe(ident: String, label: LazyLabel, slots: SlotConfiguration)
                                       (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
-  private val offset = pipelineInformation.getLongOffsetFor(ident)
+  private val offset = slots.getLongOffsetFor(ident)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     label.getOptId(state.query) match {
       case Some(labelId) =>
         PrimitiveLongHelper.map(state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
-          val context = PrimitiveExecutionContext(pipelineInformation)
+          val context = PrimitiveExecutionContext(slots)
           state.copyArgumentStateTo(context)
           context.setLongAt(offset, nodeId)
           context
