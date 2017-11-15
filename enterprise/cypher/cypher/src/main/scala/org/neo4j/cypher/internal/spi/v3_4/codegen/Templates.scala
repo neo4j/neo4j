@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
-import java.io.PrintStream
 import java.util
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
@@ -29,13 +28,13 @@ import org.neo4j.codegen.MethodDeclaration.Builder
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, TaskCloser}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, TaskCloser}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.TokenNameLookup
@@ -199,8 +198,7 @@ object Templates {
     put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer])).
     put(self(classHandle), typeRef[MapValue], "params", load("params", typeRef[MapValue])).
     put(self(classHandle), typeRef[NodeManager], "nodeManager",
-        cast(typeRef[NodeManager],
-             invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))).
+             invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, NodeManager]("entityAccessor"))).
     put(self(classHandle), typeRef[Boolean], "skip", Expression.constant(false)).
     build()
 
@@ -210,12 +208,10 @@ object Templates {
       val ro = Expression.get(generate.self(), fields.ro)
       using(generate.ifStatement(Expression.isNull(ro))) { block =>
         val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
-        val readOperations: MethodReference = method[QueryTransactionalContext, Object]("readOperations")
+        val readOperations: MethodReference = method[QueryTransactionalContext, ReadOperations]("readOperations")
         val queryContext = Expression.get(block.self(), fields.queryContext)
         block.put(block.self(), fields.ro,
-          Expression.cast(typeRef[ReadOperations],
-            Expression.invoke(Expression.invoke(queryContext, transactionalContext),
-              readOperations)))
+            Expression.invoke(Expression.invoke(queryContext, transactionalContext), readOperations))
       }
       generate.returns(ro)
     }

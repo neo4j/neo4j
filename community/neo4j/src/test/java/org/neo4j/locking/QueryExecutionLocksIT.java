@@ -46,6 +46,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -72,7 +73,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -106,8 +106,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-
-//import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 
 public class QueryExecutionLocksIT
 {
@@ -266,6 +264,12 @@ public class QueryExecutionLocksIT
         public DbmsOperations dbmsOperations()
         {
             return delegate.dbmsOperations();
+        }
+
+        @Override
+        public KernelTransaction kernelTransaction()
+        {
+            return delegate.kernelTransaction();
         }
 
         @Override
