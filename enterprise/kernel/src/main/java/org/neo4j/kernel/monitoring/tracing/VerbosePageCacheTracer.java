@@ -234,7 +234,7 @@ public class VerbosePageCacheTracer extends DefaultPageCacheTracer
         }
 
         @Override
-        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
         {
             long now = clock.nanos();
             long opportunityIntervalNanos = now - lastReportingTime;

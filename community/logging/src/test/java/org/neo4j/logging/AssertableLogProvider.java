@@ -641,7 +641,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertLogStringContains( String partOfMessage )
     {
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {

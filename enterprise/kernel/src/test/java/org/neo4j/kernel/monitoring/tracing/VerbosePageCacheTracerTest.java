@@ -65,7 +65,7 @@ public class VerbosePageCacheTracerTest
         try ( MajorFlushEvent majorFlushEvent = tracer.beginCacheFlush() )
         {
             FlushEventOpportunity flushEventOpportunity = majorFlushEvent.flushEventOpportunity();
-            FlushEvent flushEvent = flushEventOpportunity.beginFlush( 1, 2, new DummyPageSwapper( "testFile" ) );
+            FlushEvent flushEvent = flushEventOpportunity.beginFlush( 1, 2, new DummyPageSwapper( "testFile", 1 ) );
             flushEvent.addBytesWritten( 2 );
             flushEvent.addPagesFlushed( 7 );
             flushEvent.done();
@@ -82,7 +82,7 @@ public class VerbosePageCacheTracerTest
         try ( MajorFlushEvent majorFlushEvent = tracer.beginCacheFlush() )
         {
             FlushEventOpportunity flushEventOpportunity = majorFlushEvent.flushEventOpportunity();
-            FlushEvent flushEvent = flushEventOpportunity.beginFlush( 1, 2, new DummyPageSwapper( "testFile" ) );
+            FlushEvent flushEvent = flushEventOpportunity.beginFlush( 1, 2, new DummyPageSwapper( "testFile", 1 ) );
             clock.forward( 2, TimeUnit.MILLISECONDS );
 
             try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( 5 ) )
@@ -90,7 +90,8 @@ public class VerbosePageCacheTracerTest
                 try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
                 {
                     FlushEventOpportunity evictionEventOpportunity = evictionEvent.flushEventOpportunity();
-                    FlushEvent evictionFlush = evictionEventOpportunity.beginFlush( 2, 3, new DummyPageSwapper( "evictionFile" ) );
+                    FlushEvent evictionFlush = evictionEventOpportunity.beginFlush( 2, 3,
+                            new DummyPageSwapper( "evictionFile", 1 ) );
                     evictionFlush.addPagesFlushed( 10 );
                     evictionFlush.addPagesFlushed( 100 );
                 }
@@ -108,7 +109,7 @@ public class VerbosePageCacheTracerTest
     public void traceFileFlush()
     {
         VerbosePageCacheTracer tracer = createTracer();
-        DummyPageSwapper swapper = new DummyPageSwapper( "fileToFlush" );
+        DummyPageSwapper swapper = new DummyPageSwapper( "fileToFlush", 1 );
         try ( MajorFlushEvent fileToFlush = tracer.beginFileFlush( swapper ) )
         {
             FlushEventOpportunity flushEventOpportunity = fileToFlush.flushEventOpportunity();
