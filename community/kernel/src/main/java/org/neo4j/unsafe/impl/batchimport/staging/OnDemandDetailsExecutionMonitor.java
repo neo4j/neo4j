@@ -44,6 +44,7 @@ import static java.lang.Long.max;
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
 
 /**
@@ -144,9 +145,11 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     private void printDetails()
     {
         printDetailsHeadline();
+        long totalTime = 0;
         for ( StageDetails stageDetails : details )
         {
             stageDetails.print( out );
+            totalTime += stageDetails.totalTimeMillis;
         }
 
         printIndented( out, "Environment information:" );
@@ -154,6 +157,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         printIndented( out, "  Max VM memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
         printIndented( out, "  Free VM memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
         printIndented( out, "  GC block time: " + duration( gcBlockTime.getGcBlockTime() ) );
+        printIndented( out, "  Duration: " + duration( totalTime ) );
         out.println();
     }
 
@@ -161,7 +165,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     {
         out.println();
         out.println();
-        printIndented( out, "************** DETAILS **************" );
+        printIndented( out, "******** DETAILS " + date() + " ********" );
         out.println();
 
         // Make sure that if user is interested in details then also print the entire details set when import is done
