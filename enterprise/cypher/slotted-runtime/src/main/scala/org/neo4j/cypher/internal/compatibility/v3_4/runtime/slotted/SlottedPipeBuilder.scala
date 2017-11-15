@@ -328,6 +328,24 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val lhsPipeline = pipelines(lhsPlan.assignedId)
         CartesianProductSlottedPipe(lhs, rhs, lhsPipeline.numberOfLongs, lhsPipeline.numberOfReferences, pipeline)(id)
 
+      case joinPlan: NodeHashJoin =>
+        val leftNodes: Array[Int] = joinPlan.nodes.map(k => pipeline.getLongOffsetFor(k.name)).toArray
+        val rhsPipe = pipelines(joinPlan.right.assignedId)
+        val rightNodes: Array[Int] = joinPlan.nodes.map(k => rhsPipe.getLongOffsetFor(k.name)).toArray
+        val copyLongsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
+        val copyRefsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
+
+        // When executing the HashJoin, the LHS will be copied to the first slots in the produced row, and any additional RHS columns that are not
+        // part of the join comparison
+        rhsPipe.foreachSlot {
+          case (key, LongSlot(offset, _, _)) =>
+            copyLongsFromRHS += ((offset, pipeline.getLongOffsetFor(key)))
+          case (key, RefSlot(offset, _, _)) =>
+            copyRefsFromRHS += ((offset, pipeline.getReferenceOffsetFor(key)))
+        }
+
+        NodeHashJoinSlottedPipe(leftNodes, rightNodes, lhs, rhs, pipeline, copyLongsFromRHS.result().toArray, copyRefsFromRHS.result().toArray)(id)
+
       case ConditionalApply(_, _, items) =>
         val (longIds , refIds) = items.partition(idName => pipeline.get(idName.name) match {
           case Some(s: LongSlot) => true
