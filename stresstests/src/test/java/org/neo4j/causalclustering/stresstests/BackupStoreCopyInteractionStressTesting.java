@@ -40,6 +40,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
@@ -106,7 +107,8 @@ public class BackupStoreCopyInteractionStressTesting
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster =
                 new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
-                        instanceCoreParams, readReplicaParams, instanceReadReplicaParams, StandardV3_0.NAME );
+                        instanceCoreParams, readReplicaParams, instanceReadReplicaParams, StandardV3_0.NAME,
+                        new Monitors() );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );
