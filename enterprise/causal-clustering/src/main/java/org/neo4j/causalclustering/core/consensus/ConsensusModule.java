@@ -76,6 +76,8 @@ public class ConsensusModule
     private final RaftMembershipManager raftMembershipManager;
     private final InFlightCache inFlightCache;
 
+    private final ElectionTiming electionTiming;
+
     public ConsensusModule( MemberId myself, final PlatformModule platformModule,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, File clusterStateDirectory,
             CoreTopologyService coreTopologyService )
@@ -113,7 +115,7 @@ public class ConsensusModule
                         new RaftMembershipState.Marshal(),
                         config.get( CausalClusteringSettings.raft_membership_state_size ), logProvider ) );
 
-        ElectionTiming electionTiming = createElectionTiming( config );
+        electionTiming = createElectionTiming( config );
 
         Integer expectedClusterSize = config.get( CausalClusteringSettings.expected_core_cluster_size );
 
@@ -208,5 +210,10 @@ public class ConsensusModule
     public InFlightCache inFlightCache()
     {
         return inFlightCache;
+    }
+
+    public ElectionTiming getElectionTiming()
+    {
+        return electionTiming;
     }
 }

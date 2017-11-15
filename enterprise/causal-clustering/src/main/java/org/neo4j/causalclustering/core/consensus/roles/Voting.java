@@ -30,7 +30,7 @@ import org.neo4j.logging.Log;
 
 public class Voting
 {
-    static  void handleVoteRequest( ReadableRaftState state, Outcome outcome,
+    static void handleVoteRequest( ReadableRaftState state, Outcome outcome,
             RaftMessages.Vote.Request voteRequest, Log log ) throws IOException
     {
         if ( voteRequest.term() > state.term() )
