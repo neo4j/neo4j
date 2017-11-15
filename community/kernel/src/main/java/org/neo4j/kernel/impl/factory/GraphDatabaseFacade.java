@@ -378,9 +378,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public boolean isAvailable( long timeout )
+    public boolean isAvailable( long timeoutMillis )
     {
-        return spi.databaseIsAvailable( timeout );
+        return spi.databaseIsAvailable( timeoutMillis );
     }
 
     @Override

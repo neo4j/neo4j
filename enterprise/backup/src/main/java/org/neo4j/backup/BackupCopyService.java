@@ -21,36 +21,45 @@ package org.neo4j.backup;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.neo4j.com.storecopy.FileMoveAction;
+import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.String.format;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 
 public class BackupCopyService
 {
     private static final int MAX_OLD_BACKUPS = 1000;
 
-    private final OutsideWorld outsideWorld;
+    private final PageCache pageCache;
 
-    public BackupCopyService( OutsideWorld outsideWorld )
+    private final FileMoveProvider fileMoveProvider;
+
+    public BackupCopyService( PageCache pageCache, FileMoveProvider fileMoveProvider )
     {
-        this.outsideWorld = outsideWorld;
+        this.pageCache = pageCache;
+        this.fileMoveProvider = fileMoveProvider;
     }
 
     public void moveBackupLocation( File oldLocation, File newLocation ) throws CommandFailed
     {
         try
         {
-            outsideWorld.fileSystem().renameFile( oldLocation, newLocation );
+            Iterator<FileMoveAction> moves = fileMoveProvider.traverseGenerateMoveActions( oldLocation ).iterator();
+            while ( moves.hasNext() )
+            {
+                moves.next().move( newLocation );
+            }
         }
         catch ( IOException e )
         {
@@ -58,9 +67,15 @@ public class BackupCopyService
         }
     }
 
+    public void clearLogs( File neo4jHome )
+    {
+        File logsDirectory = Config.defaults( logs_directory, neo4jHome.getPath() ).get( store_internal_log_path );
+        logsDirectory.delete();
+    }
+
     boolean backupExists( File destination )
     {
-        File[] listFiles = outsideWorld.fileSystem().listFiles( destination );
+        File[] listFiles = pageCache.getCachedFileSystem().listFiles( destination );
         return listFiles != null && listFiles.length > 0;
     }
 
@@ -74,6 +89,13 @@ public class BackupCopyService
         return findAnAvailableBackupLocation( desiredBackupLocation, "%s.temp.%d" );
     }
 
+    /**
+     * Given a desired file name, find an available name that is similar to the given one that doesn't conflict with already existing backups
+     *
+     * @param file desired ideal file name
+     * @param pattern pattern to follow if desired name is taken (requires %s for original name, and %d for iteration)
+     * @return the resolved file name which can be the original desired, or a variation that matches the pattern
+     */
     private File findAnAvailableBackupLocation( File file, String pattern )
     {
         if ( backupExists( file ) )
@@ -84,7 +106,7 @@ public class BackupCopyService
 
             return availableAlternativeNames( file, pattern )
                     .peek( countNumberOfFilesProcessedForPotentialErrorMessage )
-                    .filter( f -> !backupExists(f) )
+                    .filter( f -> !backupExists( f ) )
                     .findFirst()
                     .orElseThrow( () -> new RuntimeException(
                             String.format( "Unable to find a free backup location for the provided %s. Number of iterations %d", file, counter.get() ) ) );
@@ -100,8 +122,7 @@ public class BackupCopyService
 
     private static File alteredBackupDirectoryName( String pattern, File directory, int iteration )
     {
-        return directory
-                .toPath()
+        return directory.toPath()
                 .resolveSibling( format( pattern, directory.getName(), iteration ) )
                 .toFile();
     }

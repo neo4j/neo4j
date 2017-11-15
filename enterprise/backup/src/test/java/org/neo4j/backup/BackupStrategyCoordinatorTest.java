@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.ExceptionMatchers.exceptionContainsSuppressedThrowable;
 
-public class BackupFlowTest
+public class BackupStrategyCoordinatorTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -61,7 +61,7 @@ public class BackupFlowTest
     private final BackupStrategyWrapper firstStrategy = mock( BackupStrategyWrapper.class );
     private final BackupStrategyWrapper secondStrategy = mock( BackupStrategyWrapper.class );
 
-    BackupFlow subject;
+    BackupStrategyCoordinator subject;
 
     // test method parameter mocks
     private final OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
@@ -78,7 +78,7 @@ public class BackupFlowTest
         when( outsideWorld.fileSystem() ).thenReturn( fileSystem );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( requiredArguments.getReportDir() ).thenReturn( reportDir );
-        subject = new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
+        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
                 Arrays.asList( firstStrategy, secondStrategy ) );
     }
 
@@ -157,10 +157,8 @@ public class BackupFlowTest
         // given
         anyStrategyPasses();
         when( requiredArguments.isDoConsistencyCheck() ).thenReturn( true );
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(),
-                eq(progressMonitorFactory), any( LogProvider.class ), any(),
-                eq(false), any(), any() ) )
-                .thenReturn( consistencyCheckResult );
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), eq( progressMonitorFactory ), any( LogProvider.class ), any(), eq( false ), any(),
+                any() ) ).thenReturn( consistencyCheckResult );
         when( consistencyCheckResult.isSuccessful() ).thenReturn( true );
 
         // when
@@ -193,10 +191,8 @@ public class BackupFlowTest
         RuntimeException secondCause = new RuntimeException( "Second cause" );
 
         // and strategies fail with given causes
-        when( firstStrategy.doBackup( any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, firstCause ) );
-        when( secondStrategy.doBackup( any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, secondCause ) );
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, firstCause ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, secondCause ) );
 
         // then the command failed exception contains the specified causes
         expectedException.expect( exceptionContainsSuppressedThrowable( firstCause ) );
@@ -214,10 +210,8 @@ public class BackupFlowTest
         // given
         anyStrategyPasses();
         when( requiredArguments.isDoConsistencyCheck() ).thenReturn( true );
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(),
-                eq(progressMonitorFactory), any( LogProvider.class ), any(),
-                eq(false), any(), any() ) )
-                .thenThrow( new IOException( "Predictable message" ) );
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), eq( progressMonitorFactory ), any( LogProvider.class ), any(), eq( false ), any(),
+                any() ) ).thenThrow( new IOException( "Predictable message" ) );
 
         // then
         expectedException.expect( CommandFailed.class );
@@ -234,10 +228,8 @@ public class BackupFlowTest
         anyStrategyPasses();
         when( requiredArguments.isDoConsistencyCheck() ).thenReturn( true );
         when( consistencyCheckResult.isSuccessful() ).thenReturn( false );
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(),
-                eq(progressMonitorFactory), any( LogProvider.class ), any(),
-                eq(false), any(), any() ) )
-                .thenReturn( consistencyCheckResult );
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), eq( progressMonitorFactory ), any( LogProvider.class ), any(), eq( false ), any(),
+                any() ) ).thenReturn( consistencyCheckResult );
 
         // then
         expectedException.expect( CommandFailed.class );
@@ -251,7 +243,7 @@ public class BackupFlowTest
     public void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
     {
         // given there are no strategies in the solution
-        subject = new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, Collections.emptyList() );
+        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, Collections.emptyList() );
 
         // then we want a predictable exception (instead of NullPointer)
         expectedException.expect( CommandFailed.class );
@@ -267,6 +259,6 @@ public class BackupFlowTest
     private void anyStrategyPasses()
     {
         when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null ) );
-        when( secondStrategy.doBackup( any() )).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null ) );
     }
 }
