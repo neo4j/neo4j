@@ -31,8 +31,10 @@ import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
-import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
+import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
+import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,6 +42,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ReplicationModule
 {
@@ -70,9 +74,10 @@ public class ReplicationModule
         Duration initialBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_base );
         Duration upperBoundBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_limit );
 
-        ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( initialBackoff, upperBoundBackoff );
+        TimeoutStrategy progressRetryStrategy = new ExponentialBackoffStrategy( initialBackoff, upperBoundBackoff );
+        TimeoutStrategy leaderRetryStrategy = new ConstantTimeTimeoutStrategy( 500, MILLISECONDS );
         replicator = life.add( new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool,
-            progressTracker, retryStrategy, platformModule.availabilityGuard, logProvider, replicationLimit ) );
+            progressTracker, progressRetryStrategy, leaderRetryStrategy, platformModule.availabilityGuard, logProvider, replicationLimit ) );
     }
 
     public RaftReplicator getReplicator()

@@ -46,22 +46,24 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
-    private final TimeoutStrategy timeoutStrategy;
+    private final TimeoutStrategy progressTimeoutStrategy;
     private final AvailabilityGuard availabilityGuard;
     private final LeaderLocator leaderLocator;
+    private final TimeoutStrategy leaderTimeoutStrategy;
     private final Log log;
     private final Throttler throttler;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
-            ProgressTracker progressTracker, TimeoutStrategy timeoutStrategy, AvailabilityGuard availabilityGuard,
-            LogProvider logProvider, long replicationLimit )
+            ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy,
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit )
     {
         this.me = me;
         this.outbound = outbound;
         this.progressTracker = progressTracker;
         this.sessionPool = sessionPool;
-        this.timeoutStrategy = timeoutStrategy;
+        this.progressTimeoutStrategy = progressTimeoutStrategy;
+        this.leaderTimeoutStrategy = leaderTimeoutStrategy;
         this.availabilityGuard = availabilityGuard;
         this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
@@ -89,7 +91,8 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
         Progress progress = progressTracker.start( operation );
 
-        TimeoutStrategy.Timeout timeout = timeoutStrategy.newTimeout();
+        TimeoutStrategy.Timeout progressTimeout = progressTimeoutStrategy.newTimeout();
+        TimeoutStrategy.Timeout leaderTimeout = leaderTimeoutStrategy.newTimeout();
         do
         {
             assertDatabaseNotShutdown();
@@ -97,8 +100,11 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
             {
                 // blocking at least until the send has succeeded or failed before retrying
                 outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ), true );
-                progress.awaitReplication( timeout.getMillis() );
-                timeout.increment();
+
+                leaderTimeout = leaderTimeoutStrategy.newTimeout();
+
+                progress.awaitReplication( progressTimeout.getMillis() );
+                progressTimeout.increment();
             }
             catch ( InterruptedException e )
             {
@@ -108,6 +114,8 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
             catch ( NoLeaderFoundException e )
             {
                 log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
+                Thread.sleep( leaderTimeout.getMillis() );
+                leaderTimeout.increment();
             }
         }
         while ( !progress.isReplicated() );
