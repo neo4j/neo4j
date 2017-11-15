@@ -21,48 +21,53 @@ package org.neo4j.causalclustering.core.state;
 
 import java.io.IOException;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 
 import static java.lang.String.format;
 
 public class InFlightLogEntryReader implements AutoCloseable
 {
     private final ReadableRaftLog raftLog;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
-    private final boolean removeReadIndexFromMap;
+    private final InFlightCache inFlightCache;
+    private final boolean pruneAfterRead;
 
     private RaftLogCursor cursor;
-    private boolean useInFlightMap = true;
+    private boolean useCache = true;
 
-    public InFlightLogEntryReader( ReadableRaftLog raftLog, InFlightMap<RaftLogEntry> inFlightMap,
-            boolean removeReadIndexFromMap )
+    public InFlightLogEntryReader( ReadableRaftLog raftLog, InFlightCache inFlightCache,
+            boolean pruneAfterRead )
     {
         this.raftLog = raftLog;
-        this.inFlightMap = inFlightMap;
-        this.removeReadIndexFromMap = removeReadIndexFromMap;
+        this.inFlightCache = inFlightCache;
+        this.pruneAfterRead = pruneAfterRead;
     }
 
     public RaftLogEntry get( long logIndex ) throws IOException
     {
         RaftLogEntry entry = null;
 
-        if ( useInFlightMap )
+        if ( useCache )
         {
-            entry = inFlightMap.get( logIndex );
+            entry = inFlightCache.get( logIndex );
         }
 
         if ( entry == null )
         {
-            useInFlightMap = false;
+            /*
+             * N.B.
+             * This fallback code is strictly necessary since getUsingCursor() requires
+             * that entries are accessed in strictly increasing order using a single cursor.
+             */
+            useCache = false;
             entry = getUsingCursor( logIndex );
         }
 
-        if ( removeReadIndexFromMap )
+        if ( pruneAfterRead )
         {
-            inFlightMap.remove( logIndex );
+            inFlightCache.prune( logIndex );
         }
 
         return entry;
@@ -77,7 +82,10 @@ public class InFlightLogEntryReader implements AutoCloseable
 
         if ( cursor.next() )
         {
-            assert cursor.index() == logIndex : format( "expected index %d but was %s", logIndex, cursor.index() );
+            if ( cursor.index() != logIndex )
+            {
+                throw new IllegalStateException( format( "expected index %d but was %s", logIndex, cursor.index() ) );
+            }
             return cursor.get();
         }
         else
