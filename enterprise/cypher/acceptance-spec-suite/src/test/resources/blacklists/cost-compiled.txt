@@ -166,6 +166,9 @@ Should allow OR with index and regex predicates
 //SkipLimitAcceptance.feature
 Combining LIMIT and aggregation
 Using a optional match after aggregation and before an aggregation
+Limit before sort
+Limit before top
+Limit before distinct
 
 //VarLengthAcceptance.feature
 Handles checking properties on nodes in path - using in-pattern property value
