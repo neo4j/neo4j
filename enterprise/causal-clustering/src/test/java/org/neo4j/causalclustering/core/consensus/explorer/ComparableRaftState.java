@@ -24,10 +24,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
@@ -54,24 +54,24 @@ public class ComparableRaftState implements ReadableRaftState
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
+    private final InFlightCache inFlightCache;
     private long commitIndex = -1;
 
     ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers,
-                         RaftLog entryLog, InFlightMap<RaftLogEntry> inFlightMap, LogProvider logProvider )
+                         RaftLog entryLog, InFlightCache inFlightCache, LogProvider logProvider )
     {
         this.myself = myself;
         this.votingMembers = votingMembers;
         this.replicationMembers = replicationMembers;
         this.entryLog = entryLog;
-        this.inFlightMap = inFlightMap;
+        this.inFlightCache = inFlightCache;
         this.log = logProvider.getLog( getClass() );
     }
 
     ComparableRaftState( ReadableRaftState original ) throws IOException
     {
         this( original.myself(), original.votingMembers(), original.replicationMembers(),
-                new ComparableRaftLog( original.entryLog() ), new InFlightMap<>(), NullLogProvider.getInstance() );
+                new ComparableRaftLog( original.entryLog() ), new ConsecutiveInFlightCache(), NullLogProvider.getInstance() );
     }
 
     @Override
@@ -164,7 +164,7 @@ public class ComparableRaftState implements ReadableRaftState
         for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {
             logCommand.applyTo( entryLog, log );
-            logCommand.applyTo( inFlightMap, log );
+            logCommand.applyTo( inFlightCache, log );
         }
 
         commitIndex = outcome.getCommitIndex();

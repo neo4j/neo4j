@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
@@ -128,6 +129,19 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<List<AdvertisedSocketAddress>> initial_discovery_members =
             setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ),
                     NO_DEFAULT );
+
+    @Description( "Type of in-flight cache." )
+    public static final Setting<InFlightCacheFactory.Type> in_flight_cache_type =
+            setting( "causal_clustering.in_flight_cache.type", options( InFlightCacheFactory.Type.class, true ),
+                    InFlightCacheFactory.Type.CONSECUTIVE.name() );
+
+    @Description( "The maximum number of entries in the in-flight cache." )
+    public static final Setting<Integer> in_flight_cache_max_entries =
+            setting( "causal_clustering.in_flight_cache.max_entries", INTEGER, "1024" );
+
+    @Description( "The maximum number of bytes in the in-flight cache." )
+    public static final Setting<Long> in_flight_cache_max_bytes =
+            setting( "causal_clustering.in_flight_cache.max_bytes", BYTES, "2G" );
 
     public enum DiscoveryType
     {
