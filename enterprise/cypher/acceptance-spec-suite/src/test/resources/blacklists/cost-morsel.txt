@@ -149,6 +149,12 @@ Should allow OR with index and regex predicates
 Combining LIMIT and aggregation
 Using a optional match after aggregation and before an aggregation
 Negative parameter for LIMIT should not generate errors
+Stand alone limit in the return clause
+Order by followed by limit in return clause
+Limit in with clause
+Limit before sort
+Limit before top
+Limit before distinct
 
 //VarLengthAcceptance.feature
 Handles checking properties on nodes in path - using in-pattern property value
