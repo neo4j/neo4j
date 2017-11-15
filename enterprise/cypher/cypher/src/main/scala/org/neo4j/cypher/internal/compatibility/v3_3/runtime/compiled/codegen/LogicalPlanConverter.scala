@@ -58,6 +58,7 @@ object LogicalPlanConverter {
     case p: plans.Aggregation if hasLimit(p) || hasMultipleAggregations(p) =>
       throw new CantCompileQueryException(s"Not able to combine aggregation with $p")
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
+    case p: plans.Distinct if hasStandaloneLimit(p) => throw new CantCompileQueryException(s"Not able to combine LIMIT and $p")
     case p: plans.Distinct => distinctAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
