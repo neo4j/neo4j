@@ -87,6 +87,7 @@ public interface KernelTransaction extends Transaction
          */
         void notify( long txId );
     }
+
     /**
      * Acquires a new {@link Statement} for this transaction which allows for reading and writing data from and
      * to the underlying database. After the group of reads and writes have been performed the statement

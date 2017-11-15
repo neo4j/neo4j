@@ -31,10 +31,7 @@ public interface Session extends AutoCloseable
      *
      * @return The new transaction
      */
-    default Transaction beginTransaction() throws KernelException
-    {
-        return beginTransaction( Transaction.Type.explicit );
-    }
+    Transaction beginTransaction() throws KernelException;
 
     /**
      * Begin new transaction.

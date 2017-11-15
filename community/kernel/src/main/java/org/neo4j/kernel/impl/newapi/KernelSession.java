@@ -44,6 +44,12 @@ class KernelSession implements Session
     }
 
     @Override
+    public Transaction beginTransaction() throws KernelException
+    {
+        return beginTransaction( Transaction.Type.explicit );
+    }
+
+    @Override
     public Transaction beginTransaction( KernelTransaction.Type type ) throws KernelException
     {
         return kernel.newTransaction( type, securityContext );
