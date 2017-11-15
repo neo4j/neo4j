@@ -66,7 +66,9 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
     val divergedStats = (statsValues map {
       case (k, e1) =>
         val e2 = snapshot.statsValues(k)
-        abs(e1 - e2) / max(e1, e2)
+        val r = abs(e1 - e2) / max(e1, e2)
+        println(s"Replanning: $k has diverged by $r. Min threshold: $minThreshold")
+        r
     }).max
     divergedStats > minThreshold
   }

@@ -161,7 +161,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
             new QueryCache(cacheAccessor, lruCache)
           })
 
-          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
+          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = {
+            println(s"Replanning: Is query stale?: $cacheKey")
+            plan.isStale(lastCommittedTxId, tc)
+          }
           def producePlan() = {
             val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
             parsedQuery.plan(tc, phaseTracer)

@@ -29,6 +29,17 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("replanning") {
+    graph.execute("CREATE (:Label)")
+    Range(0, 100).foreach { i =>
+      Thread.sleep(1000)
+      graph.inTx ({
+        graph.execute(s"MATCH (n:${if(i % 2 == 0) "Label" else "Babel"}) RETURN n LIMIT ${i % 2}")
+        graph.execute("CREATE (:Babel)")
+      }, org.neo4j.kernel.api.KernelTransaction.Type.explicit)
+    }
+  }
+
   test("Should not use both pruning var expand and projections that need path info") {
     val n1 = createLabeledNode("Neo")
     val n2 = createLabeledNode()

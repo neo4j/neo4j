@@ -29,15 +29,28 @@ class PlanFingerprintReference(clock: Clock, minimalTimeToLive: Long, statsDiver
                                private var fingerprint: Option[PlanFingerprint]) {
 
   def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
-    fingerprint.fold(false) { f =>
+    fingerprint.fold({println("Replanning: NO  - No fingerprint"); false}) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      f.creationTimeMillis + minimalTimeToLive <= currentTimeMillis &&
-      check(currentTxId != f.txId,
-        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&
-      check(f.snapshot.diverges(f.snapshot.recompute(statistics), statsDivergenceThreshold),
-        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) })
+      println(s"Replanning: Creation:${f.creationTimeMillis} TTL:$minimalTimeToLive Current:$currentTimeMillis currentTx:$currentTxId")
+
+      if(!(f.creationTimeMillis + minimalTimeToLive <= currentTimeMillis)) {
+        println("Replanning: NO  - Shorter than minimal TTL")
+        return false
+      }
+      if(!(check(currentTxId != f.txId,
+        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }))) {
+        println(s"Replanning: NO  - Same txID. Setting CreationTime to $currentTimeMillis")
+        return false
+      }
+      if(!(check(f.snapshot.diverges(f.snapshot.recompute(statistics), statsDivergenceThreshold),
+        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) }))) {
+        println(s"Replanning: NO  - Statistics don't diverge. Setting CreationTime to $currentTimeMillis. Setting txID to $currentTxId")
+        return false
+      }
+      println("Replanning: YES")
+      true
     }
   }
 
