@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.util.v3_4.CypherException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
@@ -84,10 +85,10 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val slotConfigurations: Map[LogicalPlanId, SlotConfiguration] = SlotAllocation.allocateSlots(beforeRewrite)
+    val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite)
     val slottedRewriter = new SlottedRewriter(context.planContext)
-    val logicalPlan = slottedRewriter(beforeRewrite, slotConfigurations)
-    (logicalPlan, slotConfigurations)
+    val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
+    (logicalPlan, physicalPlan.slotConfigurations)
   }
 
   case class SlottedExecutionPlan(fingerprint: PlanFingerprintReference,

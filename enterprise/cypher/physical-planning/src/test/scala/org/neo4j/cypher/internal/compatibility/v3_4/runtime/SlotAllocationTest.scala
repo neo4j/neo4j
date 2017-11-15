@@ -42,7 +42,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan)
+    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
 
     // then
     allocations should have size 1
@@ -56,7 +56,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan)
+    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
 
     // then
     allocations should have size 2
@@ -70,7 +70,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan)
+    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
 
     // then
     allocations should have size 1
@@ -84,7 +84,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     filter.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(filter)
+    val allocations = SlotAllocation.allocateSlots(filter).slotConfigurations
 
     // then
     allocations should have size 2
@@ -99,7 +99,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand)
+    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -122,7 +122,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand)
+    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -143,7 +143,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan)
+    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
 
     // then
     allocations should have size 2
@@ -157,7 +157,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand)
+    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -182,7 +182,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand)
+    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -209,7 +209,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand)
+    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -236,7 +236,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     skip.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(skip)
+    val allocations = SlotAllocation.allocateSlots(skip).slotConfigurations
 
     // then
     allocations should have size 2
@@ -258,7 +258,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     apply.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(apply)
+    val allocations = SlotAllocation.allocateSlots(apply).slotConfigurations
 
     // then
     allocations should have size 3
@@ -283,7 +283,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     distinct.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(distinct)
+    val allocations = SlotAllocation.allocateSlots(distinct).slotConfigurations
 
     // then
     allocations should have size 2
@@ -302,7 +302,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     distinct.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(distinct)
+    val allocations = SlotAllocation.allocateSlots(distinct).slotConfigurations
 
     // then
     allocations should have size 3
@@ -327,7 +327,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     countStar.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(countStar)
+    val allocations = SlotAllocation.allocateSlots(countStar).slotConfigurations
 
     // then
     allocations should have size 3
@@ -350,7 +350,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     projection.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(projection)
+    val allocations = SlotAllocation.allocateSlots(projection).slotConfigurations
 
     // then
     allocations should have size 2
@@ -369,7 +369,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     Xproduct.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(Xproduct)
+    val allocations = SlotAllocation.allocateSlots(Xproduct).slotConfigurations
 
     // then
     allocations should have size 3
@@ -394,7 +394,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     hashJoin.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(hashJoin)
+    val allocations = SlotAllocation.allocateSlots(hashJoin).slotConfigurations
 
     // then
     allocations should have size 3
@@ -422,7 +422,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     hashJoin.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(hashJoin)
+    val allocations = SlotAllocation.allocateSlots(hashJoin).slotConfigurations
 
     // then
     allocations should have size 5
@@ -458,7 +458,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     hashJoin.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(hashJoin)
+    val allocations = SlotAllocation.allocateSlots(hashJoin).slotConfigurations
 
     // then
     allocations should have size 5 // One for each label-scan and expand, and one after the join
@@ -491,7 +491,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     apply.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(apply)
+    val allocations = SlotAllocation.allocateSlots(apply).slotConfigurations
 
     // then
     val lhsPipeline = SlotConfiguration(Map(
@@ -519,7 +519,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     produceResult.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(produceResult)
+    val allocations = SlotAllocation.allocateSlots(produceResult).slotConfigurations
 
     // then
     allocations should have size 3
@@ -543,7 +543,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     produceResult.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(produceResult)
+    val allocations = SlotAllocation.allocateSlots(produceResult).slotConfigurations
 
     // then
     allocations should have size 4
@@ -577,7 +577,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
     val semiApply = semiApplyBuilder(lhs, rhs)(solved)
     semiApply.assignIds()
-    val allocations = SlotAllocation.allocateSlots(semiApply)
+    val allocations = SlotAllocation.allocateSlots(semiApply).slotConfigurations
 
     val lhsPipeline = SlotConfiguration(Map(
       "x" -> LongSlot(0, nullable = false, CTNode)),
@@ -607,7 +607,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     apply.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(apply)
+    val allocations = SlotAllocation.allocateSlots(apply).slotConfigurations
 
     // then
     allocations should have size 5
@@ -636,7 +636,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     aggregation.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(aggregation)
+    val allocations = SlotAllocation.allocateSlots(aggregation).slotConfigurations
 
     allocations should have size 3
     allocations(expand.assignedId) should equal(
@@ -677,7 +677,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     rollUp.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(rollUp)
+    val allocations = SlotAllocation.allocateSlots(rollUp).slotConfigurations
 
     // then
     allocations should have size 5
@@ -696,7 +696,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan)
+    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
 
     // then
     allocations should have size 3
@@ -713,7 +713,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan)
+    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
 
     // then
     allocations should have size 4
@@ -729,7 +729,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan)
+    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
 
     // then
     allocations should have size 5

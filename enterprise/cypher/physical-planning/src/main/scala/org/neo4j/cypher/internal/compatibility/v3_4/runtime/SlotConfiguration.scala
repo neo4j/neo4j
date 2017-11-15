@@ -135,6 +135,11 @@ object SlotConfiguration {
     case _: LongSlot => true
     case _ => false
   }
+
+  case class Size(nLongs: Int, nReferences: Int)
+  object Size {
+    val zero = Size(nLongs = 0, nReferences = 0)
+  }
 }
 
 /**
@@ -154,6 +159,8 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
 
   private val aliases: mutable.Set[String] = mutable.Set()
   private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
+
+  def size() = SlotConfiguration.Size(numberOfLongs, numberOfReferences)
 
   def addAliasFor(slot: Slot, key: String): SlotConfiguration = {
     checkNotAlreadyTaken(key, slot)
