@@ -589,11 +589,14 @@ public class MuninnPageCache implements PageCache
     {
         try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
         {
-            FlushEventOpportunity flushOpportunity = cacheFlush.flushEventOpportunity();
             FileMapping fileMapping = mappedFiles;
             while ( fileMapping != null )
             {
-                fileMapping.pagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( fileMapping.pagedFile.swapper ) )
+                {
+                    FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
+                    fileMapping.pagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+                }
                 fileMapping = fileMapping.next;
             }
             syncDevice();

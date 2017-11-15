@@ -22,6 +22,7 @@ package org.neo4j.io;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class ByteUnitTest
@@ -148,5 +149,21 @@ public class ByteUnitTest
         assertThat( ByteUnit.tebiBytes( 1 ), is( 1099511627776L ) );
         assertThat( ByteUnit.pebiBytes( 1 ), is( 1125899906842624L ) );
         assertThat( ByteUnit.exbiBytes( 1 ), is( 1152921504606846976L ) );
+    }
+
+    @Test
+    public void bytesToString()
+    {
+        assertEquals( "1B", ByteUnit.bytesToString( 1 ) );
+        assertEquals( "10B", ByteUnit.bytesToString( 10 ) );
+        assertEquals( "1000B", ByteUnit.bytesToString( 1000 ) );
+        assertEquals( "1.001KiB", ByteUnit.bytesToString( 1025 ) );
+        assertEquals( "10.01KiB", ByteUnit.bytesToString( 10250 ) );
+        assertEquals( "100.1KiB", ByteUnit.bytesToString( 102500 ) );
+        assertEquals( "1001KiB", ByteUnit.bytesToString( 1025000 ) );
+        assertEquals( "9.775MiB", ByteUnit.bytesToString( 10250000 ) );
+        assertEquals( "97.75MiB", ByteUnit.bytesToString( 102500000 ) );
+        assertEquals( "977.5MiB", ByteUnit.bytesToString( 1025000000 ) );
+        assertEquals( "9.546GiB", ByteUnit.bytesToString( 10250000000L) );
     }
 }

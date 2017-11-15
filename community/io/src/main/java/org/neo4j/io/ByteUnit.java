@@ -19,6 +19,10 @@
  */
 package org.neo4j.io;
 
+import java.util.Locale;
+
+import static java.lang.String.format;
+
 /**
  * A ByteUnit is a unit for a quantity of bytes.
  * <p>
@@ -43,7 +47,11 @@ public enum ByteUnit
     GibiByte( 3, "GiB" ),
     TebiByte( 4, "TiB" ),
     PebiByte( 5, "PiB" ),
-    ExbiByte( 6, "EiB" ),;
+    ExbiByte( 6, "EiB" );
+
+    public static final long ONE_KIBI_BYTE = ByteUnit.KibiByte.toBytes( 1 );
+    public static final long ONE_MEBI_BYTE = ByteUnit.MebiByte.toBytes( 1 );
+    public static final long ONE_GIBI_BYTE = ByteUnit.GibiByte.toBytes( 1 );
 
     private static final long EIC_MULTIPLIER = 1024;
 
@@ -165,5 +173,25 @@ public enum ByteUnit
     public static long exbiBytes( long exbibytes )
     {
         return ExbiByte.toBytes( exbibytes );
+    }
+
+    public static String bytesToString( long bytes )
+    {
+        if ( bytes > ONE_GIBI_BYTE )
+        {
+            return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_GIBI_BYTE, GibiByte.shortName );
+        }
+        else if ( bytes > ONE_MEBI_BYTE )
+        {
+            return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_MEBI_BYTE, MebiByte.shortName );
+        }
+        else if ( bytes > ONE_KIBI_BYTE )
+        {
+            return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_KIBI_BYTE, KibiByte.shortName );
+        }
+        else
+        {
+            return bytes + Byte.shortName;
+        }
     }
 }
