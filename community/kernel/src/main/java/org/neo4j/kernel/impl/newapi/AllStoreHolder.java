@@ -26,10 +26,12 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -38,14 +40,13 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -55,8 +56,6 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 class AllStoreHolder extends Read implements Token
 {
@@ -69,9 +68,9 @@ class AllStoreHolder extends Read implements Token
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
     AllStoreHolder( StorageEngine engine,
-                    StorageStatement statement,
-                    Supplier<ExplicitIndexTransactionState> explicitIndexes,
-                    Cursors cursors )
+            StorageStatement statement,
+            Supplier<ExplicitIndexTransactionState> explicitIndexes,
+            Cursors cursors )
     {
         super( cursors );
         this.read = engine.storeReadLayer();
@@ -295,5 +294,26 @@ class AllStoreHolder extends Read implements Token
     public boolean nodeExists( long id )
     {
         return read.nodeExists( id );
+    }
+
+    public boolean nodeHasLabel( long node, int nodeLabel ) throws KernelException
+    {
+        try ( org.neo4j.internal.kernel.api.NodeCursor nodes = cursors.allocateNodeCursor() )
+        {
+            singleNode( node, nodes );
+            if ( !nodes.next() )
+            {
+                throw new EntityNotFoundException( EntityType.NODE, node );
+            }
+            LabelSet labels = nodes.labels();
+            for ( int i = 0; i < labels.numberOfLabels(); i++ )
+            {
+                if ( labels.label( i ) == nodeLabel )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

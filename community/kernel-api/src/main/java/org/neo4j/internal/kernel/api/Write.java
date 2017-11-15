@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -58,15 +59,17 @@ public interface Write
      * Add a label to a node
      * @param node the internal node id
      * @param nodeLabel the internal id of the label to add
+     * @return <tt>true</tt> if a label was added otherwise <tt>false</tt>
      */
-    void nodeAddLabel( long node, int nodeLabel );
+    boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException;
 
     /**
      * Remove a label from a node
      * @param node the internal node id
      * @param nodeLabel the internal id of the label to remove
+     * @return <tt>true</tt> if node was removed otherwise <tt>false</tt>
      */
-    void nodeRemoveLabel( long node, int nodeLabel );
+    boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException;
 
     /**
      * Set a property on a node

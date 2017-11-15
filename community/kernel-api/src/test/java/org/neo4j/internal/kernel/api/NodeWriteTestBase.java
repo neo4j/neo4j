@@ -19,20 +19,27 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 
 public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void shouldCreateNode() throws Exception
     {
@@ -120,14 +127,48 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     @Test
     public void shouldAddLabelNode() throws Exception
     {
+        // Given
         long node;
         int labelId;
         final String labelName = "Town";
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode( label( labelName ) ).getId();
+            ctx.success();
+        }
+
+        // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            node = tx.dataWrite().nodeCreate();
             labelId = session.token().labelGetOrCreateForName( labelName );
             tx.dataWrite().nodeAddLabel( node, labelId );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getNodeById( node ).getLabels(), equalTo( Iterables.iterable( label( labelName ) ) ) );
+        }
+    }
+
+    @Test
+    public void shouldAddLabelNodeOnce() throws Exception
+    {
+        long node;
+        int labelId;
+        final String labelName = "Town";
+
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode( label( labelName ) ).getId();
+            ctx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            labelId = session.token().labelGetOrCreateForName( labelName );
+            assertFalse( tx.dataWrite().nodeAddLabel( node, labelId ) );
             tx.success();
         }
 
@@ -163,5 +204,50 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
     }
 
+    @Test
+    public void shouldNotAddLabelToNonExistingNode() throws Exception
+    {
+        long node = 1337L;
+        int labelId;
+        final String labelName = "Town";
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            labelId = session.token().labelGetOrCreateForName( labelName );
+            exception.expect( KernelException.class );
+            tx.dataWrite().nodeAddLabel( node, labelId );
+        }
+    }
 
+    @Test
+    public void shouldRemoveLabelOnce() throws Exception
+    {
+        long nodeId;
+        int labelId;
+        final String labelName = "Town";
+
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            nodeId = graphDb.createNode( label( labelName ) ).getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            labelId = session.token().labelGetOrCreateForName( labelName );
+            assertTrue( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            labelId = session.token().labelGetOrCreateForName( labelName );
+            assertFalse( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getNodeById( nodeId ).getLabels(), equalTo( Iterables.empty() ) );
+        }
+    }
 }

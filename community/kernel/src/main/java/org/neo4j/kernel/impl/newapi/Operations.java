@@ -364,18 +364,31 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
     }
 
     @Override
-    public void nodeAddLabel( long node, int nodeLabel )
+    public boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException
     {
         assertOpen();
+        if ( allStoreHolder.nodeHasLabel( node, nodeLabel ) )
+        {
+            return false;
+        }
+        //TODO indexTxStateUpdater.onLabelChange
+
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
+        return true;
     }
 
     @Override
-    public void nodeRemoveLabel( long node, int nodeLabel )
+    public boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException
     {
         assertOpen();
+        //TODO indexTxStateUpdater.onLabelChange
+        if ( !allStoreHolder.nodeHasLabel( node, nodeLabel ) )
+        {
+            return false;
+        }
 
         ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
+        return true;
     }
 
     @Override
