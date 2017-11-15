@@ -22,23 +22,27 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -71,6 +75,64 @@ public class FusionIndexReaderTest
         // then
         verify( nativeReader, times( 1 ) ).close();
         verify( luceneReader, times( 1 ) ).close();
+    }
+
+    // close iterator
+
+    @Test
+    public void closeIteratorMustCloseNativeAndLucene() throws Exception
+    {
+        // given
+        PrimitiveLongResourceIterator nativeIter = mock( PrimitiveLongResourceIterator.class );
+        PrimitiveLongResourceIterator luceneIter = mock( PrimitiveLongResourceIterator.class );
+        when( nativeReader.query( any( IndexQuery.class ) ) ).thenReturn( nativeIter );
+        when( luceneReader.query( any( IndexQuery.class ) ) ).thenReturn( luceneIter );
+
+        // when
+        fusionIndexReader.query( IndexQuery.exists( PROP_KEY ) ).close();
+
+        // then
+        verify( nativeIter, times( 1 ) ).close();
+        verify( luceneIter, times( 1 ) ).close();
+    }
+
+    @Test
+    public void closeIteratorMustCloseNativeIfLuceneThrows() throws Exception
+    {
+        // given
+        verifyCloseOtherQueryIteratorWhenOneThrows( nativeReader, luceneReader );
+    }
+
+    @Test
+    public void closeIteratorMustCloseLuceneIfNativeThrows() throws Exception
+    {
+        // given
+        verifyCloseOtherQueryIteratorWhenOneThrows( luceneReader, nativeReader );
+    }
+
+    private void verifyCloseOtherQueryIteratorWhenOneThrows( IndexReader succeedingReader, IndexReader throwingReader )
+            throws IndexNotApplicableKernelException
+    {
+        PrimitiveLongResourceIterator throwingIter = mock( PrimitiveLongResourceIterator.class );
+        PrimitiveLongResourceIterator succeedingIter = mock( PrimitiveLongResourceIterator.class );
+        when( throwingReader.query( any( IndexQuery.class ) ) ).thenReturn( throwingIter );
+        when( succeedingReader.query( any( IndexQuery.class ) ) ).thenReturn( succeedingIter );
+        RuntimeException closeException = new RuntimeException( "You shall not close" );
+        doThrow( closeException ).when( throwingIter ).close();
+
+        // when
+        try
+        {
+            fusionIndexReader.query( IndexQuery.exists( PROP_KEY ) ).close();
+            fail( "Should have failed" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertSame( closeException, e.getCause() );
+        }
+
+        // then
+        verify( succeedingIter, times( 1 ) ).close();
     }
 
     /* countIndexedNodes */
@@ -200,8 +262,8 @@ public class FusionIndexReaderTest
     {
         // given
         IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
-        when( nativeReader.query( exists ) ).thenReturn( Primitive.iterator( 0L, 1L, 3L, 4L, 7L ) );
-        when( luceneReader.query( exists ) ).thenReturn( Primitive.iterator( 2L, 5L, 6L ) );
+        when( nativeReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 0L, 1L, 3L, 4L, 7L ) );
+        when( luceneReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2L, 5L, 6L ) );
 
         // when
         PrimitiveLongIterator result = fusionIndexReader.query( exists );

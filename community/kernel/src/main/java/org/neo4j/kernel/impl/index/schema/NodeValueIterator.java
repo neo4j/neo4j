@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Resource;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -29,7 +29,7 @@ import org.neo4j.values.storable.Value;
  * A {@link IndexProgressor} + {@link IndexProgressor.NodeValueClient} combo presented as a {@link PrimitiveLongIterator}.
  */
 public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-        implements IndexProgressor.NodeValueClient, Resource
+        implements IndexProgressor.NodeValueClient, PrimitiveLongResourceIterator
 {
     private boolean closed;
     private IndexProgressor progressor;
@@ -66,6 +66,7 @@ public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBas
         {
             closed = true;
             progressor.close();
+            progressor = null;
         }
     }
 }
