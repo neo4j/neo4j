@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.io.File;
+import java.time.Duration;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.EnterpriseCoreEditionModule;
@@ -112,8 +113,7 @@ public class ConsensusModule
                         new RaftMembershipState.Marshal(),
                         config.get( CausalClusteringSettings.raft_membership_state_size ), logProvider ) );
 
-        long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
-        long heartbeatInterval = electionTimeout / 3;
+        ElectionTiming electionTiming = createElectionTiming( config );
 
         Integer expectedClusterSize = config.get( CausalClusteringSettings.expected_core_cluster_size );
 
@@ -122,7 +122,7 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                expectedClusterSize, electionTimeout, systemClock(), config.get( join_catch_up_timeout ).toMillis(),
+                expectedClusterSize, electionTiming.getElectionTimeout(), systemClock(), config.get( join_catch_up_timeout ).toMillis(),
                 raftMembershipStorage );
 
         life.add( raftMembershipManager );
@@ -131,21 +131,27 @@ public class ConsensusModule
 
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(), myself,
-                        raftMembershipManager, electionTimeout, config.get( catchup_batch_size ),
+                        raftMembershipManager, electionTiming.getElectionTimeout(), config.get( catchup_batch_size ),
                         config.get( log_shipping_max_lag ), inFlightCache );
 
         raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
 
         boolean supportsPreVoting = config.get( CausalClusteringSettings.enable_pre_voting );
 
-        raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
+        raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTiming,
                 raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightCache,
                 RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config, logProvider.getLog( getClass() ) ),
-               supportsPreVoting, platformModule.monitors, systemClock() );
+               supportsPreVoting, platformModule.monitors );
 
         life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
 
         life.add( logShipping );
+    }
+
+    private ElectionTiming createElectionTiming( Config config )
+    {
+        Duration electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout );
+        return new ElectionTiming( electionTimeout, electionTimeout.dividedBy( 3 ), systemClock() );
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
