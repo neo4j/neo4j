@@ -53,17 +53,17 @@ public class CoreMetrics extends LifecycleAdapter
     public static final String DROPPED_MESSAGES = name( CAUSAL_CLUSTERING_PREFIX, "dropped_messages" );
     @Documented( "How many RAFT messages are queued up?" )
     public static final String QUEUE_SIZE = name( CAUSAL_CLUSTERING_PREFIX, "queue_sizes" );
-    @Documented("In-flight cache total bytes")
+    @Documented( "In-flight cache total bytes" )
     public static final String TOTAL_BYTES = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "total_bytes" );
-    @Documented("In-flight cache max bytes")
+    @Documented( "In-flight cache max bytes" )
     public static final String MAX_BYTES = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "max_bytes" );
-    @Documented("In-flight cache element count")
+    @Documented( "In-flight cache element count" )
     public static final String ELEMENT_COUNT = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "element_count" );
-    @Documented("In-flight cache maximum elements")
+    @Documented( "In-flight cache maximum elements" )
     public static final String MAX_ELEMENTS = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "max_elements" );
-    @Documented("In-flight cache hits")
+    @Documented( "In-flight cache hits" )
     public static final String HITS = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "hits" );
-    @Documented("In-flight cache misses")
+    @Documented( "In-flight cache misses" )
     public static final String MISSES = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "misses" );
 
     private Monitors monitors;
