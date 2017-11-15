@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
@@ -115,7 +117,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, null, predicates );
+        query( nodeValueIterator, IndexOrder.NONE, predicates );
         return nodeValueIterator;
     }
 
@@ -159,12 +161,13 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
             throw new UnsupportedOperationException();
         }
 
-        if ( indexOrder != null )
+        if ( indexOrder != IndexOrder.NONE )
         {
             ValueGroup valueGroup = predicates[0].valueGroup();
             IndexOrder[] capability = NativeSchemaNumberIndexProvider.CAPABILITY.orderCapability( valueGroup );
             if ( !ArrayUtil.contains( capability, indexOrder ) )
             {
+                capability = ArrayUtils.add( capability, IndexOrder.NONE );
                 throw new UnsupportedOperationException(
                         format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.",
                                 indexOrder, Arrays.toString( predicates ), Arrays.toString( capability ) ) );

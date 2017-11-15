@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 
 public class UnionIndexCapabilityTest
 {
-    private static final IndexOrder[] ORDER_CAPABILITIES_ALL = IndexOrder.values();
+    private static final IndexOrder[] ORDER_CAPABILITIES_ALL = new IndexOrder[]{IndexOrder.ASCENDING, IndexOrder.DESCENDING};
     private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_ASC = new IndexOrder[]{IndexOrder.ASCENDING};
     private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_DES = new IndexOrder[]{IndexOrder.DESCENDING};
     private static final IndexOrder[] ORDER_CAPABILITIES_NONE = new IndexOrder[0];

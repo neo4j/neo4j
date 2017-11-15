@@ -61,6 +61,12 @@ public interface IndexReader extends Resource
             IndexOrder indexOrder,
             IndexQuery... query ) throws IndexNotApplicableKernelException
     {
+        if ( indexOrder != IndexOrder.NONE )
+        {
+            throw new UnsupportedOperationException(
+                    String.format( "This reader only have support for index order %s. Provided index order was %s.",
+                            IndexOrder.NONE, indexOrder ) );
+        }
         int[] keys = new int[query.length];
         for ( int i = 0; i < query.length; i++ )
         {

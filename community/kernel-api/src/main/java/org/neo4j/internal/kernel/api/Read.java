@@ -29,12 +29,19 @@ public interface Read
     /**
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
-     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of {@link IndexReference referenced index}.
+     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
+     * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
      * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
     void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, IndexQuery... query )
             throws KernelException;
 
+    /**
+     * @param index {@link IndexReference} referencing index to query.
+     * @param cursor the cursor to use for consuming the results.
+     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
+     * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
+     */
     void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder ) throws KernelException;
 
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor );

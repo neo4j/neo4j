@@ -135,11 +135,11 @@ class FusionIndexReader implements IndexReader
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicates[0] instanceof ExistsPredicate )
         {
-            if ( indexOrder != null )
+            if ( indexOrder != IndexOrder.NONE )
             {
                 throw new UnsupportedOperationException(
                         format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.",
-                                indexOrder, Arrays.toString( predicates ), null ) );
+                                indexOrder, Arrays.toString( predicates ), IndexOrder.NONE ) );
             }
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, propertyKeys );
             cursor.initialize( multiProgressor, propertyKeys );
