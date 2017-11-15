@@ -23,8 +23,8 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
@@ -80,7 +80,7 @@ class FusionIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         if ( predicates.length > 1 )
         {
@@ -101,9 +101,9 @@ class FusionIndexReader implements IndexReader
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicates[0] instanceof ExistsPredicate )
         {
-            PrimitiveLongIterator nativeResult = nativeReader.query( predicates[0] );
-            PrimitiveLongIterator luceneResult = luceneReader.query( predicates[0] );
-            return PrimitiveLongCollections.concat( nativeResult, luceneResult );
+            PrimitiveLongResourceIterator nativeResult = nativeReader.query( predicates[0] );
+            PrimitiveLongResourceIterator luceneResult = luceneReader.query( predicates[0] );
+            return PrimitiveLongResourceCollections.concat( nativeResult, luceneResult );
         }
 
         return luceneReader.query( predicates );

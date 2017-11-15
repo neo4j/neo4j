@@ -19,15 +19,15 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Resource;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.values.storable.Value;
 
 class NodeValueIndexProgressor implements IndexProgressor
 {
-    private final PrimitiveLongIterator ids;
+    private final PrimitiveLongResourceIterator ids;
     private final NodeValueClient client;
 
-    NodeValueIndexProgressor( PrimitiveLongIterator ids, NodeValueClient client )
+    NodeValueIndexProgressor( PrimitiveLongResourceIterator ids, NodeValueClient client )
     {
         this.ids = ids;
         this.client = client;
@@ -38,7 +38,7 @@ class NodeValueIndexProgressor implements IndexProgressor
     {
         while ( ids.hasNext() )
         {
-            if ( client.acceptNode( ids.next(), null ) )
+            if ( client.acceptNode( ids.next(), (Value[]) null ) )
             {
                 return true;
             }
@@ -49,9 +49,9 @@ class NodeValueIndexProgressor implements IndexProgressor
     @Override
     public void close()
     {
-        if ( ids instanceof Resource )
+        if ( ids != null )
         {
-            ((Resource) ids).close();
+            ids.close();
         }
     }
 }
