@@ -45,6 +45,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -314,7 +315,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = reader.query( IndexQuery.exists( 0 ) );
+        PrimitiveLongIterator result = query( reader, IndexQuery.exists( 0 ) );
 
         // then
         assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
@@ -325,7 +326,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
     {
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = reader.query( IndexQuery.exists( 0 ) );
+        PrimitiveLongIterator result = query( reader, IndexQuery.exists( 0 ) );
 
         // then
         long[] actual = PrimitiveLongCollections.asArray( result );
@@ -344,7 +345,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             Value value = update.values()[0];
-            PrimitiveLongIterator result = reader.query( IndexQuery.exact( 0, value ) );
+            PrimitiveLongIterator result = query( reader, IndexQuery.exact( 0, value ) );
             assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
         }
     }
@@ -359,7 +360,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // when
         IndexReader reader = accessor.newReader();
         Object value = NON_EXISTENT_VALUE;
-        PrimitiveLongIterator result = reader.query( IndexQuery.exact( 0, value ) );
+        PrimitiveLongIterator result = query( reader, IndexQuery.exact( 0, value ) );
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
 
@@ -372,7 +373,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = reader.query(
+        PrimitiveLongIterator result = query( reader,
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, false ) );
         assertEntityIdHits( extractEntityIds( updates, lessThan( Double.POSITIVE_INFINITY ) ), result );
     }
@@ -386,7 +387,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = reader.query(
+        PrimitiveLongIterator result = query( reader,
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true ) );
         assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
     }
@@ -400,7 +401,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = reader.query(
+        PrimitiveLongIterator result = query( reader,
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, false, Double.POSITIVE_INFINITY, false ) );
         assertEntityIdHits( extractEntityIds( updates,
                 all( greaterThan( Double.NEGATIVE_INFINITY ), lessThan( Double.POSITIVE_INFINITY ) ) ), result );
@@ -415,19 +416,20 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = reader.query(
+        PrimitiveLongIterator result = query( reader,
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, false, Double.POSITIVE_INFINITY, true ) );
         assertEntityIdHits( extractEntityIds( updates,
                 all( greaterThan( Double.NEGATIVE_INFINITY ), greaterThan( Double.NEGATIVE_INFINITY ) ) ), result );
     }
 
     // <READER ordering>
+
     @Test
     public void throwForUnsupportedIndexOrder() throws Exception
     {
         // given
         // Unsupported index order for query
-        IndexReader indexReader = accessor.newReader();
+        IndexReader reader = accessor.newReader();
         IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
         IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, "Legolas" );
 
@@ -439,7 +441,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
                 CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
 
         // when
-        indexReader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
+        reader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
     }
 
     @Test
@@ -451,23 +453,23 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         Value[] expectedValues = layoutUtil.extractValuesFromUpdates( someUpdates );
 
         // when
-        IndexReader indexReader = accessor.newReader();
+        IndexReader reader = accessor.newReader();
         IndexQuery.NumberRangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
         for ( IndexOrder supportedOrder : NativeSchemaNumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
         {
-            if ( IndexOrder.ASCENDING.equals( supportedOrder ) )
+            if ( supportedOrder == IndexOrder.ASCENDING )
             {
                 Arrays.sort( expectedValues, Values.COMPARATOR );
             }
-            if ( IndexOrder.DESCENDING.equals( supportedOrder ) )
+            if ( supportedOrder == IndexOrder.DESCENDING )
             {
                 Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
             }
 
             SimpleNodeValueClient client = new SimpleNodeValueClient();
-            indexReader.query( client, supportedOrder, supportedQuery );
+            reader.query( client, supportedOrder, supportedQuery );
             int i = 0;
             while ( client.next() )
             {
@@ -488,7 +490,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = reader.query(
+        PrimitiveLongIterator result = query( reader,
                 IndexQuery.range( 0, NON_EXISTENT_VALUE, true, NON_EXISTENT_VALUE + 10, true ) );
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
@@ -516,12 +518,12 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         long[] expectedOuter = new long[]{2, 3};
         long[] expectedInner = new long[]{0, 1};
 
-        PrimitiveLongIterator outerIter = reader.query( outerQuery );
+        PrimitiveLongIterator outerIter = query( reader, outerQuery );
         Collection<Long> outerResult = new ArrayList<>();
         while ( outerIter.hasNext() )
         {
             outerResult.add( outerIter.next() );
-            PrimitiveLongIterator innerIter = reader.query( innerQuery );
+            PrimitiveLongIterator innerIter = query( reader, innerQuery );
             assertEntityIdHits( expectedInner, innerIter );
         }
         assertEntityIdHits( expectedOuter, outerResult );
@@ -555,19 +557,19 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         long[] expected3 = new long[]{0, 1};
 
         Collection<Long> result1 = new ArrayList<>();
-        PrimitiveLongIterator iter1 = reader.query( query1 );
+        PrimitiveLongIterator iter1 = query( reader, query1 );
         while ( iter1.hasNext() )
         {
             result1.add( iter1.next() );
 
             Collection<Long> result2 = new ArrayList<>();
-            PrimitiveLongIterator iter2 = reader.query( query2 );
+            PrimitiveLongIterator iter2 = query( reader, query2 );
             while ( iter2.hasNext() )
             {
                 result2.add( iter2.next() );
 
                 Collection<Long> result3 = new ArrayList<>();
-                PrimitiveLongIterator iter3 = reader.query( query3 );
+                PrimitiveLongIterator iter3 = query( reader, query3 );
                 while ( iter3.hasNext() )
                 {
                     result3.add( iter3.next() );
@@ -766,6 +768,13 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // then
         Set<Long> expectedIds = Collections.emptySet();
         assertEquals( expectedIds, ids );
+    }
+
+    private PrimitiveLongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
+    {
+        NodeValueIterator client = new NodeValueIterator();
+        reader.query( client, IndexOrder.NONE, query );
+        return client;
     }
 
     private static int compare( Value value, Number other )
