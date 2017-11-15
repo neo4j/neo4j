@@ -17,43 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests.transaction.checkpoint.tracers;
+package org.neo4j.kernel.monitoring.tracing;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.tracing.TracerFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.time.SystemNanoClock;
 
-public class TimerTracerFactory implements TracerFactory
+@Service.Implementation( TracerFactory.class )
+public class VerboseTracerFactory extends DefaultTracerFactory
 {
-    private TimerTransactionTracer timerTransactionTracer = new TimerTransactionTracer();
-
     @Override
     public String getImplementationName()
     {
-        return "timer";
+        return "verbose";
     }
 
     @Override
     public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock,
-            Log log )
+            Log msgLog )
     {
-        return PageCacheTracer.NULL;
-    }
-
-    @Override
-    public TransactionTracer createTransactionTracer( Monitors monitors, JobScheduler jobScheduler )
-    {
-        return timerTransactionTracer;
-    }
-
-    @Override
-    public CheckPointTracer createCheckPointTracer( Monitors monitors, JobScheduler jobScheduler )
-    {
-        return timerTransactionTracer;
+        return new VerbosePageCacheTracer( msgLog, clock );
     }
 }

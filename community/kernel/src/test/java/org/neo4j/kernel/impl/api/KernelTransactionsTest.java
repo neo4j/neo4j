@@ -71,6 +71,8 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -107,7 +109,7 @@ public class KernelTransactionsTest
     public final ExpectedException expectedException = ExpectedException.none();
 
     private static final long TEST_TIMEOUT = 10_000;
-    private static final Clock clock = Clock.systemUTC();
+    private static final SystemNanoClock clock = Clocks.nanoClock();
     private static AvailabilityGuard availabilityGuard;
 
     @Before
@@ -529,7 +531,8 @@ public class KernelTransactionsTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
 
-        Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ) );
+        Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ),
+                clock );
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
         StatementOperationParts statementOperations = mock( StatementOperationParts.class );

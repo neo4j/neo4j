@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * <h1>Tracers</h1>
@@ -115,7 +116,8 @@ public class Tracers
      * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
      */
-    public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler )
+    public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler,
+            SystemNanoClock clock )
     {
         if ( "null".equalsIgnoreCase( desiredImplementationName ) )
         {
@@ -153,7 +155,7 @@ public class Tracers
             }
 
             pageCursorTracerSupplier = foundFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
-            pageCacheTracer = foundFactory.createPageCacheTracer( monitors, jobScheduler );
+            pageCacheTracer = foundFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
             transactionTracer = foundFactory.createTransactionTracer( monitors, jobScheduler );
             checkPointTracer = foundFactory.createCheckPointTracer( monitors, jobScheduler );
             lockTracer = foundFactory.createLockTracer( monitors, jobScheduler );
