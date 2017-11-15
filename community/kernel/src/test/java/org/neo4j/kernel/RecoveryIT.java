@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
@@ -442,13 +443,16 @@ public class RecoveryIT
 
     private void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, File storeDir )
     {
+        NullLogProvider logProvider = NullLogProvider.getInstance();
         try (
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
-                NeoStores store1 = new StoreFactory( storeDir, pageCache1, fs1, NullLogProvider.getInstance() ).openAllNeoStores();
-                NeoStores store2 = new StoreFactory( storeDir, pageCache2, fs2, NullLogProvider.getInstance() ).openAllNeoStores();
+                NeoStores store1 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs1 ),
+                        pageCache1, fs1, logProvider ).openAllNeoStores();
+                NeoStores store2 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs2 ),
+                        pageCache2, fs2, logProvider ).openAllNeoStores();
                 )
         {
             for ( StoreType storeType : StoreType.values() )

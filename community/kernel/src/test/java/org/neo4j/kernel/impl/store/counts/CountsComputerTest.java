@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -64,6 +66,8 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class CountsComputerTest
 {
+    private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
+    private static final Config CONFIG = Config.defaults();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pcRule = new PageCacheRule();
     private final TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
@@ -311,15 +315,16 @@ public class CountsComputerTest
 
     private CountsTracker createCountsTracker()
     {
-        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                Config.defaults(), new File( dir, COUNTS_STORE_BASE ) );
+        return new CountsTracker( LOG_PROVIDER, fs, pageCache,
+                CONFIG, new File( dir, COUNTS_STORE_BASE ) );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
     {
         cleanupCountsForRebuilding();
 
-        StoreFactory storeFactory = new StoreFactory( dir, pageCache, fs, NullLogProvider.getInstance() );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
+        StoreFactory storeFactory = new StoreFactory( dir, CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

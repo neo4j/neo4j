@@ -161,6 +161,14 @@ public class IdContainer
         }
     }
 
+    static long readDefragCount( FileSystemAbstraction fileSystem, File file ) throws IOException
+    {
+        try ( StoreChannel channel = fileSystem.open( file, "r" ) )
+        {
+            return FreeIdKeeper.countFreeIds( new OffsetChannel( channel, HEADER_SIZE ) );
+        }
+    }
+
     private void markAsSticky() throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( Byte.BYTES );

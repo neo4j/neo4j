@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import java.io.File;
-import java.util.function.Supplier;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.function.Supplier;
+
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
 import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
 import org.neo4j.test.rule.TestDirectory;
@@ -150,6 +151,27 @@ public class IdGeneratorImplTest
 
         // THEN
         assertEquals( highId, readHighId );
+    }
+
+    @Test
+    public void shouldReadDefragCountUsingStaticMethod() throws Exception
+    {
+        EphemeralFileSystemAbstraction fs = fsr.get();
+        IdGeneratorImpl.createGenerator( fs, file, 0, false );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fs, file, 1, 10000, false, () -> 0L );
+        idGenerator.nextId();
+        long a = idGenerator.nextId();
+        idGenerator.nextId();
+        long b = idGenerator.nextId();
+        idGenerator.nextId();
+        idGenerator.freeId( a );
+        idGenerator.freeId( b );
+        long expectedDefragCount = idGenerator.getDefragCount();
+        idGenerator.close();
+
+        long actualDefragCount = IdGeneratorImpl.readDefragCount( fs, file );
+        assertEquals( 2, expectedDefragCount );
+        assertEquals( expectedDefragCount, actualDefragCount );
     }
 
     @Test

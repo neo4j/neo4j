@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -116,13 +115,6 @@ public class PlatformModule
     public final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     public final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-
-    public PlatformModule( File providedStoreDir, Map<String,String> params, DatabaseInfo databaseInfo,
-            GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
-    {
-        this( providedStoreDir, Config.defaults( params ), databaseInfo, externalDependencies,
-                graphDatabaseFacade );
-    }
 
     public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )

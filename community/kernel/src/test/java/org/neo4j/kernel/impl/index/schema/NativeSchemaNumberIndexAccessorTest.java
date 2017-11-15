@@ -44,7 +44,9 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -86,7 +88,14 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
     @Before
     public void setupAccessor() throws IOException
     {
-        accessor = new NativeSchemaNumberIndexAccessor<>( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
+        createAccessorWithSamplingConfig( samplingConfig );
+    }
+
+    private void createAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    {
+        accessor = new NativeSchemaNumberIndexAccessor<>(
+                pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
     }
 
     @After
