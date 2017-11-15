@@ -645,6 +645,23 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
+    public void assertLogStringContains( String partOfMessage )
+    {
+        synchronized ( logCalls )
+        {
+            for ( LogCall logCall : logCalls )
+            {
+                if ( logCall.toLogLikeString().contains( partOfMessage ) )
+                {
+                    return;
+                }
+            }
+        }
+        fail( format(
+                "Expected at least one log strings containing '%s', but none found. Actual log calls were:\n%s",
+                partOfMessage, serialize( logCalls.iterator() ) ) );
+    }
+
     public void assertContainsLogCallContaining( String partOfMessage )
     {
         if ( !containsLogCallContaining( partOfMessage ) )

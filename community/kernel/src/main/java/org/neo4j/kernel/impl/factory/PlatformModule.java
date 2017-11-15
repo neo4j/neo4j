@@ -166,7 +166,7 @@ public class PlatformModule
 
         String desiredImplementationName = config.get( GraphDatabaseFacadeFactory.Configuration.tracer );
         tracers = dependencies.satisfyDependency( new Tracers( desiredImplementationName,
-                logging.getInternalLog( Tracers.class ), monitors, jobScheduler ) );
+                logging.getInternalLog( Tracers.class ), monitors, jobScheduler, clock ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );
         dependencies.satisfyDependency( firstImplementor(
                 LogRotationMonitor.class, tracers.transactionTracer, LogRotationMonitor.NULL ) );

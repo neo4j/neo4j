@@ -33,6 +33,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -43,6 +45,7 @@ public class TracersTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
+    private final SystemNanoClock clock = Clocks.nanoClock();
     private final Monitors monitors = new Monitors();
 
     private Log log;
@@ -57,7 +60,7 @@ public class TracersTest
     @Test
     public void mustProduceNullImplementationsWhenRequested() throws Exception
     {
-        Tracers tracers = new Tracers( "null", log, monitors, jobScheduler );
+        Tracers tracers = createTracers( "null" );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
         assertThat( tracers.pageCursorTracerSupplier, is( PageCursorTracerSupplier.NULL ) );
         assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
@@ -67,7 +70,7 @@ public class TracersTest
     @Test
     public void mustProduceNullImplementationsWhenRequestedIgnoringCase() throws Exception
     {
-        Tracers tracers = new Tracers( "NuLl", log, monitors, jobScheduler );
+        Tracers tracers = createTracers( "NuLl" );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
         assertThat( tracers.pageCursorTracerSupplier, is( PageCursorTracerSupplier.NULL ) );
         assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
@@ -77,7 +80,7 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationForNullConfiguration() throws Exception
     {
-        Tracers tracers = new Tracers( null, log, monitors, jobScheduler );
+        Tracers tracers = createTracers( null );
         assertDefaultImplementation( tracers );
         assertNoWarning();
     }
@@ -85,7 +88,7 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationWhenRequested() throws Exception
     {
-        Tracers tracers = new Tracers( "default", log, monitors, jobScheduler );
+        Tracers tracers = createTracers( "default" );
         assertDefaultImplementation( tracers );
         assertNoWarning();
     }
@@ -93,7 +96,7 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationWhenRequestedIgnoringCase() throws Exception
     {
-        Tracers tracers = new Tracers( "DeFaUlT", log, monitors, jobScheduler );
+        Tracers tracers = createTracers( "DeFaUlT" );
         assertDefaultImplementation( tracers );
         assertNoWarning();
     }
@@ -101,9 +104,14 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationWhenRequestingUnknownImplementation() throws Exception
     {
-        Tracers tracers = new Tracers( "there's nothing like this", log, monitors, jobScheduler );
+        Tracers tracers = createTracers( "there's nothing like this" );
         assertDefaultImplementation( tracers );
         assertWarning( "there's nothing like this" );
+    }
+
+    private Tracers createTracers( String s )
+    {
+        return new Tracers( s, log, monitors, jobScheduler, clock );
     }
 
     private void assertDefaultImplementation( Tracers tracers )

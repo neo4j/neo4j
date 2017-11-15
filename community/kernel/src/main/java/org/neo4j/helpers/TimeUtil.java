@@ -22,6 +22,14 @@ package org.neo4j.helpers;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public final class TimeUtil
 {
     public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
@@ -67,6 +75,55 @@ public final class TimeUtil
             throw new IllegalArgumentException( "Unrecognized unit '" + unit + "'. " + VALID_TIME_DESCRIPTION );
         }
     };
+
+    public static String nanosToString( long nanos )
+    {
+        assert nanos >= 0;
+        long nanoSeconds = nanos;
+        StringBuilder timeString = new StringBuilder();
+
+        long days = DAYS.convert( nanoSeconds, NANOSECONDS );
+        if ( days > 0 )
+        {
+            nanoSeconds -= DAYS.toNanos( days );
+            timeString.append( days ).append( "d" );
+        }
+        long hours = HOURS.convert( nanoSeconds, NANOSECONDS );
+        if ( hours > 0 )
+        {
+            nanoSeconds -= HOURS.toNanos( hours );
+            timeString.append( hours ).append( "h" );
+        }
+        long minutes = MINUTES.convert( nanoSeconds, NANOSECONDS );
+        if ( minutes > 0 )
+        {
+            nanoSeconds -= MINUTES.toNanos( minutes );
+            timeString.append( minutes ).append( "m" );
+        }
+        long seconds = SECONDS.convert( nanoSeconds, NANOSECONDS );
+        if ( seconds > 0 )
+        {
+            nanoSeconds -= SECONDS.toNanos( seconds );
+            timeString.append( seconds ).append( "s" );
+        }
+        long milliseconds = MILLISECONDS.convert( nanoSeconds, NANOSECONDS );
+        if ( milliseconds > 0 )
+        {
+            nanoSeconds -= MILLISECONDS.toNanos( milliseconds );
+            timeString.append( milliseconds ).append( "ms" );
+        }
+        long microseconds = MICROSECONDS.convert( nanoSeconds, NANOSECONDS );
+        if ( microseconds > 0 )
+        {
+            nanoSeconds -= MICROSECONDS.toNanos( microseconds );
+            timeString.append( microseconds ).append( "μs" );
+        }
+        if ( nanoSeconds > 0 || timeString.length() == 0 )
+        {
+            timeString.append( nanoSeconds ).append( "ns" );
+        }
+        return timeString.toString();
+    }
 
     private TimeUtil()
     {
