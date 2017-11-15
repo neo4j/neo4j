@@ -44,7 +44,6 @@ import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -186,6 +185,10 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "The upper limit for the exponentially incremented retry timeout." )
     public static final Setting<Duration> replication_retry_timeout_limit =
             setting( "causal_clustering.replication_retry_timeout_limit", DURATION, "60s" );
+
+    @Description( "The retry timeout for finding a leader for replication. Relevant during leader elections." )
+    public static final Setting<Duration> replication_leader_retry_timeout =
+            setting( "causal_clustering.replication_leader", DURATION, "500ms" );
 
     @Description( "The number of operations to be processed before the state machines flush to disk" )
     public static final Setting<Integer> state_machine_flush_window_size =

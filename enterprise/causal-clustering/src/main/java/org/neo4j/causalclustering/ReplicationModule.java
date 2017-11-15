@@ -43,8 +43,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 public class ReplicationModule
 {
     public static final String SESSION_TRACKER_NAME = "session-tracker";
@@ -73,9 +71,10 @@ public class ReplicationModule
         long replicationLimit = config.get( CausalClusteringSettings.replication_total_size_limit );
         Duration initialBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_base );
         Duration upperBoundBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_limit );
+        Duration leaderBackoff = config.get( CausalClusteringSettings.replication_leader_retry_timeout );
 
         TimeoutStrategy progressRetryStrategy = new ExponentialBackoffStrategy( initialBackoff, upperBoundBackoff );
-        TimeoutStrategy leaderRetryStrategy = new ConstantTimeTimeoutStrategy( 500, MILLISECONDS );
+        TimeoutStrategy leaderRetryStrategy = new ConstantTimeTimeoutStrategy( leaderBackoff );
         replicator = life.add( new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool,
             progressTracker, progressRetryStrategy, leaderRetryStrategy, platformModule.availabilityGuard, logProvider, replicationLimit ) );
     }

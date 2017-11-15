@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.helper;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 public class ConstantTimeTimeoutStrategy implements TimeoutStrategy
@@ -42,6 +43,11 @@ public class ConstantTimeTimeoutStrategy implements TimeoutStrategy
             {
             }
         };
+    }
+
+    public ConstantTimeTimeoutStrategy( Duration backoffTime )
+    {
+        this( backoffTime.toMillis(), TimeUnit.MILLISECONDS );
     }
 
     @Override
