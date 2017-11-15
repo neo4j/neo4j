@@ -87,7 +87,8 @@ public class DatabaseMigrator
 
         ExplicitIndexMigrator explicitIndexMigrator = new ExplicitIndexMigrator( fs, indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
-        NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache );
+        NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator =
+                new NativeLabelScanStoreMigrator( fs, pageCache, config );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
         schemaIndexProviderMap.accept(

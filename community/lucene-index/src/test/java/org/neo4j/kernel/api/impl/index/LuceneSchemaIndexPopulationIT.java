@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -90,7 +91,7 @@ public class LuceneSchemaIndexPopulationIT
     @Test
     public void partitionedIndexPopulation() throws Exception
     {
-        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor )
+        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( new File( testDir.directory( "partitionIndex" + affectedNodes ), "uniqueIndex" + affectedNodes ) )
                 .build() )

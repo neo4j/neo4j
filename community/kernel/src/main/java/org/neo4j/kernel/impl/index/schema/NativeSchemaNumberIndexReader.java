@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -47,12 +46,15 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
 {
     private final GBPTree<KEY,VALUE> tree;
     private final Layout<KEY,VALUE> layout;
+    private final IndexSamplingConfig samplingConfig;
     private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
 
-    NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
+    NativeSchemaNumberIndexReader(
+            GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig )
     {
         this.tree = tree;
         this.layout = layout;
+        this.samplingConfig = samplingConfig;
         this.openSeekers = new HashSet<>();
     }
 
@@ -72,9 +74,8 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         // non-unique sampler which scans the index and counts (potentially duplicates, of which there will
         // be none in a unique index).
 
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         FullScanNonUniqueIndexSampler<KEY,VALUE> sampler =
-                new FullScanNonUniqueIndexSampler<>( tree, layout, indexSamplingConfig );
+                new FullScanNonUniqueIndexSampler<>( tree, layout, samplingConfig );
         return sampler::result;
     }
 

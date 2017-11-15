@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
@@ -77,9 +78,13 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         try ( PageCache pages = createPageCache( fs );
               Lifespan life = new Lifespan() )
         {
+            NullLogProvider logProvider = NullLogProvider.getInstance();
+            Config config = Config.defaults();
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( path, pages, fs, NullLogProvider.getInstance() );
+                StoreFactory factory = new StoreFactory( path, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+                        pages, fs,
+                        logProvider );
 
                 NeoStores neoStores = factory.openAllNeoStores();
                 SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
@@ -88,7 +93,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             else
             {
                 VisitableCountsTracker tracker = new VisitableCountsTracker(
-                        NullLogProvider.getInstance(), fs, pages, Config.defaults(), path );
+                        logProvider, fs, pages, config, path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );

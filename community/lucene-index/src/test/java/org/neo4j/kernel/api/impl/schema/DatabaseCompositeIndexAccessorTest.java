@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -68,6 +69,7 @@ public class DatabaseCompositeIndexAccessorTest
     private static final int PROP_ID1 = 1;
     private static final int PROP_ID2 = 2;
     private static final IndexDescriptor DESCRIPTOR = IndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
+    private static final Config config = Config.defaults();
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @ClassRule
@@ -94,7 +96,7 @@ public class DatabaseCompositeIndexAccessorTest
         return Arrays.asList(
                 arg( dirFactory1 ->
                 {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor )
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor, config )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( new File( dir, "1" ) )
@@ -106,7 +108,7 @@ public class DatabaseCompositeIndexAccessorTest
                 } ),
                 arg( dirFactory1 ->
                 {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor )
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor, config )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( new File( dir, "testIndex" ) )

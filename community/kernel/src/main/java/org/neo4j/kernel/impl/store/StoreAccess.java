@@ -72,11 +72,6 @@ public class StoreAccess
         this.counts = store.getCounts();
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
-    {
-        this( fileSystem, pageCache, storeDir, Config.defaults() );
-    }
-
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,

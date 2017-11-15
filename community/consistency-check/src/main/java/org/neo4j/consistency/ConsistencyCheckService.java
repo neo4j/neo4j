@@ -262,7 +262,8 @@ public class ConsistencyCheckService
             }
             storeAccess.initialize();
             DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
-            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags );
+            FullCheck check = new FullCheck(
+                    progressFactory, statistics, numberOfThreads, consistencyFlags, config );
             summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
         }
         finally

@@ -83,9 +83,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                         .withFileSystem( fileSystem )
-                                        .withConfig( config )
                                         .withOperationalMode( operationalMode )
                                         .withSamplingConfig( samplingConfig )
                                         .withIndexStorage( getIndexStorage( indexId ) )
@@ -109,8 +108,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
-                                            .withConfig( config )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                             .withOperationalMode( operationalMode )
                                             .withSamplingConfig( samplingConfig )
                                             .withIndexStorage( getIndexStorage( indexId ) )
@@ -168,7 +166,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor ).withIndexStorage( indexStorage ).build() )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {

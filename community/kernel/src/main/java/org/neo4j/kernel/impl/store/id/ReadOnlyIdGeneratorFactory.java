@@ -20,9 +20,14 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 /**
  * {@link IdGeneratorFactory} managing read-only {@link IdGenerator} instances which basically only can access
@@ -31,6 +36,17 @@ import java.util.function.Supplier;
 public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType,IdGenerator> idGenerators = new HashMap<>();
+    private final FileSystemAbstraction fileSystemAbstraction;
+
+    public ReadOnlyIdGeneratorFactory()
+    {
+        this.fileSystemAbstraction = new DefaultFileSystemAbstraction();
+    }
+
+    public ReadOnlyIdGeneratorFactory( FileSystemAbstraction fileSystemAbstraction )
+    {
+        this.fileSystemAbstraction = fileSystemAbstraction;
+    }
 
     @Override
     public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
@@ -41,7 +57,7 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
-        IdGenerator generator = new ReadOnlyIdGenerator( highId );
+        IdGenerator generator = new ReadOnlyIdGenerator( highId, fileSystemAbstraction, filename );
         idGenerators.put( idType, generator );
         return generator;
     }
@@ -61,10 +77,28 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     class ReadOnlyIdGenerator implements IdGenerator
     {
         private final long highId;
+        private final long defragCount;
 
-        ReadOnlyIdGenerator( Supplier<Long> highId )
+        ReadOnlyIdGenerator( Supplier<Long> highId, FileSystemAbstraction fs, File filename )
         {
-            this.highId = highId.get();
+            if ( fs != null && fs.fileExists( filename ) )
+            {
+                try
+                {
+                    this.highId = IdGeneratorImpl.readHighId( fs, filename );
+                    defragCount = IdGeneratorImpl.readDefragCount( fs, filename );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException(
+                            "Failed to read id counts of the id file: " + filename, e );
+                }
+            }
+            else
+            {
+                this.highId = highId.get();
+                defragCount = 0;
+            }
         }
 
         @Override
@@ -109,13 +143,13 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public long getNumberOfIdsInUse()
         {
-            return 0;
+            return highId - defragCount;
         }
 
         @Override
         public long getDefragCount()
         {
-            return 0;
+            return defragCount;
         }
 
         @Override

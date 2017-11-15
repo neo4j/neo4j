@@ -30,11 +30,15 @@ import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -48,13 +52,15 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
 {
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
+    private final Config config;
     private boolean nativeLabelScanStoreMigrated;
 
-    public NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache )
+    public NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
     {
         super( "Native label scan index" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
+        this.config = config;
     }
 
     @Override
@@ -129,8 +135,11 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
 
     private StoreFactory getStoreFactory( File storeDir, String versionToMigrateFrom )
     {
-        return new StoreFactory( storeDir, pageCache, fileSystem,
-                        selectForVersion( versionToMigrateFrom ), NullLogProvider.getInstance() );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        RecordFormats recordFormats = selectForVersion( versionToMigrateFrom );
+        IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
+        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem,
+                recordFormats, logProvider );
     }
 
     private boolean isNativeLabelScanStoreMigrationRequired( File storeDir ) throws IOException

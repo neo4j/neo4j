@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -289,7 +291,10 @@ public class StorePropertyCursorTest
                 fs.deleteRecursively( storeDir );
             }
             fs.mkdirs( storeDir );
-            neoStores = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() )
+            Config config = Config.defaults();
+            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+            NullLogProvider logProvider = NullLogProvider.getInstance();
+            neoStores = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider )
                     .openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }

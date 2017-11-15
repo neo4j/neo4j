@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import javax.annotation.Nonnull;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -50,7 +49,7 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param other listeners to copy.
      */
-    public Listeners( @Nonnull Listeners<T> other )
+    public Listeners( Listeners<T> other )
     {
         requireNonNull( other, "prototype listeners can't be null" );
 
@@ -62,7 +61,7 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param listener the listener to add.
      */
-    public void add( @Nonnull T listener )
+    public void add( T listener )
     {
         requireNonNull( listener, "added listener can't be null" );
 
@@ -74,7 +73,7 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param listener the listener to remove.
      */
-    public void remove( @Nonnull T listener )
+    public void remove( T listener )
     {
         requireNonNull( listener, "removed listener can't be null" );
 
@@ -87,7 +86,7 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param notification the notification to be applied to each listener.
      */
-    public void notify( @Nonnull Notification<T> notification )
+    public void notify( Notification<T> notification )
     {
         requireNonNull( notification, "notification can't be null" );
 
@@ -105,7 +104,7 @@ public class Listeners<T> implements Iterable<T>
      * @param executor the executor to submit notifications to.
      * @param notification the notification to be applied to each listener.
      */
-    public void notify( @Nonnull Executor executor, @Nonnull Notification<T> notification )
+    public void notify( Executor executor, Notification<T> notification )
     {
         requireNonNull( executor, "executor can't be null" );
         requireNonNull( notification, "notification can't be null" );

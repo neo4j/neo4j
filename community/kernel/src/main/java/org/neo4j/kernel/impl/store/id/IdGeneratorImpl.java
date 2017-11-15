@@ -265,9 +265,36 @@ public class IdGeneratorImpl implements IdGenerator
         IdContainer.createEmptyIdFile( fs, fileName, highId, throwIfFileExists );
     }
 
+    /**
+     * Read the high-id count from the given id-file.
+     *
+     * Note that this method should only be used when the file is not currently in use by an IdGenerator, since this
+     * method does not take any in-memory state into account.
+     *
+     * @param fileSystem The file system to use for accessing the given file.
+     * @param file The path to the id-file from which to read the high-id.
+     * @return The high-id from the given file.
+     * @throws IOException If anything goes wrong when accessing the file, for instance if the file does not exist.
+     */
     public static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         return IdContainer.readHighId( fileSystem, file );
+    }
+
+    /**
+     * Read the defragmented id count from the given id-file.
+     *
+     * Note that this method should only be used when the file is not currently in use by an IdGenerator, since this
+     * method does not take any in-memory state into account.
+     *
+     * @param fileSystem The file system to use for accessing the given file.
+     * @param file The path to the id-file from which to read the defrag count.
+     * @return The number of defragmented ids in the id-file.
+     * @throws IOException If anything goes wrong when accessing the file, for instance if the file does not exist.
+     */
+    public static long readDefragCount( FileSystemAbstraction fileSystem, File file ) throws IOException
+    {
+        return IdContainer.readDefragCount( fileSystem, file );
     }
 
     @Override

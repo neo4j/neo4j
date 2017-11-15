@@ -63,19 +63,19 @@ public class FullCheck
     private final int threads;
     private final Statistics statistics;
 
-    public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+    public FullCheck( Config config, ProgressMonitorFactory progressFactory,
             Statistics statistics, int threads )
     {
-        this( progressFactory, statistics, threads, new ConsistencyFlags( tuningConfiguration ) );
+        this( progressFactory, statistics, threads, new ConsistencyFlags( config ), config );
     }
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
-            ConsistencyFlags consistencyFlags )
+                      ConsistencyFlags consistencyFlags, Config config )
     {
         this.statistics = statistics;
         this.threads = threads;
         this.progressFactory = progressFactory;
-        this.samplingConfig = new IndexSamplingConfig( Config.defaults() );
+        this.samplingConfig = new IndexSamplingConfig( config );
         this.checkGraph = consistencyFlags.isCheckGraph();
         this.checkIndexes = consistencyFlags.isCheckIndexes();
         this.checkLabelScanStore = consistencyFlags.isCheckLabelScanStore();

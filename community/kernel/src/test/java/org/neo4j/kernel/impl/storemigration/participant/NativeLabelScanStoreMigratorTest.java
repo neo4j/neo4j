@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -93,7 +94,7 @@ public class NativeLabelScanStoreMigratorTest
 
         fileSystem = fileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( fileSystemRule );
-        indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache );
+        indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, Config.defaults() );
         fileSystem.mkdirs( luceneLabelScanStore );
     }
 

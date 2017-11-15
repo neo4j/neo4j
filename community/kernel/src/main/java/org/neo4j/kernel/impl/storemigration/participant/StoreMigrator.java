@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -492,8 +493,10 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     private void createStore( File migrationDir, RecordFormats newFormat )
     {
-        StoreFactory storeFactory = new StoreFactory( new File( migrationDir.getPath() ), pageCache, fileSystem,
-                newFormat, NullLogProvider.getInstance() );
+        IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        StoreFactory storeFactory = new StoreFactory(
+                migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();

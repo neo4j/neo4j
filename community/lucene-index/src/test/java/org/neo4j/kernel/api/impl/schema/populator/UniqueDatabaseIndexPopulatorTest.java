@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.OtherThreadExecutor;
@@ -98,7 +99,7 @@ public class UniqueDatabaseIndexPopulatorTest
     {
         File folder = testDir.directory( "folder" );
         indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, false );
-        index = LuceneSchemaIndexBuilder.create( descriptor )
+        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withIndexStorage( indexStorage )
                 .build();
         schemaDescriptor = descriptor.schema();
