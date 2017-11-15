@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 
-class SingleRowOperator extends Operator {
+class ArgumentOperator extends Operator {
   override def operate(message: Message, data: Morsel, context: QueryContext, state: QueryState): Continuation = {
     data.validRows = 1
 
