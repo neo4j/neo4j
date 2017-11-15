@@ -41,9 +41,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.function.Consumer;
 import javax.naming.directory.BasicAttribute;
@@ -54,6 +57,7 @@ import javax.naming.ldap.LdapContext;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -79,6 +83,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE;
+import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
 
 interface TimeoutTests
@@ -120,6 +125,9 @@ interface TimeoutTests
 @ApplyLdifFiles( "ldap_test_data.ldif" )
 public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 {
+    public static final String LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS = "LDAP: error code 49 - INVALID_CREDENTIALS";
+    public static final String NON_ROUTABLE_IP = "192.0.2.0"; // Ip in the TEST-NET-1 range, reserved for documentation...
+    public static final String REFUSED_IP = "127.0.0.1"; // "0.6.6.6";
     private final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
 
     @Before
@@ -903,6 +911,203 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    public void shouldNotLogErrorsFromLdapRealmWhenLoginSuccessfulInNativeRealmAndNativeFirst() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+        } );
+
+        // Given
+        // we have a native 'foo' that does not exist in ldap
+        testCreateReaderUser( "foo" );
+
+        // Then
+        // the created "foo" can log in
+        reconnect();
+        assertAuth( "foo", createdUserPassword );
+
+        // We should not get errors spammed in the security log
+        assertSecurityLogDoesNotContain( "ERROR" );
+    }
+
+    @Test
+    public void shouldNotLogErrorsFromLdapRealmWhenLoginSuccessfulInNativeRealmAndLdapFirst() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.LDAP_REALM_NAME + "," + SecuritySettings.NATIVE_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+        } );
+
+        // Given
+        // we have a native 'foo' that does not exist in ldap
+        testCreateReaderUser( "foo" );
+
+        // Then
+        // the created "foo" can log in
+        reconnect();
+        assertAuth( "foo", createdUserPassword );
+
+        // We should not get errors spammed in the security log
+        assertSecurityLogDoesNotContain( "ERROR" );
+    }
+
+    @Test
+    public void shouldLogInvalidCredentialErrorFromLdapRealm() throws Throwable
+    {
+        // When
+        assertAuthFail( "neo", "wrong-password" );
+
+        // Then
+        assertSecurityLogContains( LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS );
+    }
+
+    @Test
+    public void shouldLogInvalidCredentialErrorFromLdapRealmWithMultipleRealmsFailingAndNativeFirst() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.NATIVE_REALM_NAME + ", " + SecuritySettings.LDAP_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+        } );
+
+        // Given
+        // we have a native 'foo' that does not exist in ldap
+        testCreateReaderUser( "foo" );
+
+        // Then
+        // the created "foo" can log in
+        reconnect();
+        assertAuthFail( "foo", "wrong-password" );
+
+        // Then
+        assertSecurityLogContains( LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS );
+    }
+
+    @Test
+    public void shouldLogInvalidCredentialErrorFromLdapRealmWithMultipleRealmsFailingAndLdapFirst() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.LDAP_REALM_NAME + ", " + SecuritySettings.NATIVE_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+        } );
+
+        // Given
+        // we have a native 'foo' that does not exist in ldap
+        testCreateReaderUser( "foo" );
+
+        // Then
+        // the created "foo" can log in
+        reconnect();
+        assertAuthFail( "foo", "wrong-password" );
+
+        // Then
+        assertSecurityLogContains( LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS );
+    }
+
+    // This is not guaranteed to time out, but may work on your local machine
+    //@Test
+    public void shouldLogConnectionTimeoutFromLdapRealm() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
+                settings -> {
+                    settings.put( SecuritySettings.ldap_server, "ldap://" + NON_ROUTABLE_IP );
+                    settings.put( SecuritySettings.ldap_connection_timeout, "1s" );
+                } ) );
+
+        assertConnectionTimeout( authToken( "neo", "abc123", null ),
+                LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE );
+
+        assertSecurityLogContains( "ERROR" );
+        assertSecurityLogContains( NON_ROUTABLE_IP );
+    }
+
+    // This is not guaranteed to time out, but may work on your local machine
+    //@Test
+    public void shouldLogConnectionTimeoutFromLdapRealmWithMultipleRealms() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.NATIVE_REALM_NAME + ", " + SecuritySettings.LDAP_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+            settings.put( SecuritySettings.ldap_server, "ldap://" + NON_ROUTABLE_IP );
+            settings.put( SecuritySettings.ldap_connection_timeout, "1s" );
+        } );
+
+        assertAuthFail( "neo", "abc123" );
+
+        assertSecurityLogContains( "ERROR" );
+        assertSecurityLogContains( "LDAP connection timed out" );
+        assertSecurityLogContains( NON_ROUTABLE_IP );
+    }
+
+    @Test
+    public void shouldLogConnectionRefusedFromLdapRealm() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
+                settings -> settings.put( SecuritySettings.ldap_server, "ldap://" + REFUSED_IP ) ) );
+
+        assertConnectionRefused( authToken( "neo", "abc123", null ),
+                LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE );
+
+        assertSecurityLogContains( "ERROR" );
+        assertSecurityLogContains( "auth server connection refused" );
+        assertSecurityLogContains( REFUSED_IP );
+    }
+
+    @Test
+    public void shouldLogConnectionRefusedFromLdapRealmWithMultipleRealms() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.NATIVE_REALM_NAME + ", " + SecuritySettings.LDAP_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+            settings.put( SecuritySettings.ldap_server, "ldap://0.6.6.6" );
+        } );
+
+        assertAuthFail( "neo", "abc123" );
+
+        assertSecurityLogContains( "ERROR" );
+        assertSecurityLogContains( "LDAP connection refused" );
+        assertSecurityLogContains( "0.6.6.6" );
+    }
+
+    @Test
     public void shouldClearAuthenticationCache() throws Throwable
     {
         getLdapServer().setConfidentialityRequired( true );
@@ -1051,6 +1256,49 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         client.send( TransportTestUtil.chunk( run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
 
         assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
+    private void assertSecurityLogContains( String message ) throws IOException
+    {
+        FileSystemAbstraction fileSystem = server.getFileSystem();
+        File workingDirectory = server.getWorkingDirectory();
+        File logFile = new File( workingDirectory, "storeDir/logs/security.log" );
+
+        Reader reader = fileSystem.openAsReader( logFile, Charset.forName( "UTF-8" ) );
+        BufferedReader bufferedReader = new BufferedReader( reader );
+        String line;
+        boolean foundError = false;
+
+        while ( (line = bufferedReader.readLine()) != null )
+        {
+            if ( line.contains( message ) )
+            {
+                foundError = true;
+            }
+        }
+        bufferedReader.close();
+        reader.close();
+
+        assertThat( "Security log should contain message '" + message + "'", foundError );
+    }
+
+    private void assertSecurityLogDoesNotContain( String message ) throws IOException
+    {
+        FileSystemAbstraction fileSystem = server.getFileSystem();
+        File workingDirectory = server.getWorkingDirectory();
+        File logFile = new File( workingDirectory, "storeDir/logs/security.log" );
+
+        Reader reader = fileSystem.openAsReader( logFile, Charset.forName( "UTF-8" ) );
+        BufferedReader bufferedReader = new BufferedReader( reader );
+        String line;
+
+        while ( (line = bufferedReader.readLine()) != null )
+        {
+            assertThat( "Security log should not contain message '" + message + "'",
+                    !line.contains( message ) );
+        }
+        bufferedReader.close();
+        reader.close();
     }
 
     private void modifyLDAPAttribute( String username, Object credentials, String attribute, Object value )

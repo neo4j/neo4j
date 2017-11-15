@@ -56,7 +56,7 @@ public class BoltInitChangePasswordTest
         authentication.authenticate( authToken( "neo4j", "123", "secret" ) );
 
         FullSecurityLog fullLog = authManagerRule.getFullSecurityLog();
-        fullLog.assertHasLine( "neo4j", "logged in" );
+        fullLog.assertHasLine( "neo4j", "logged in (password change required)" );
         fullLog.assertHasLine( "neo4j", "changed password" );
     }
 
@@ -67,7 +67,7 @@ public class BoltInitChangePasswordTest
                 AuthenticationException.class, "Old password and new password cannot be the same." );
 
         FullSecurityLog fullLog = authManagerRule.getFullSecurityLog();
-        fullLog.assertHasLine( "neo4j", "logged in" );
+        fullLog.assertHasLine( "neo4j", "logged in (password change required)" );
         fullLog.assertHasLine( "neo4j", "tried to change password: Old password and new password cannot be the same." );
     }
 
