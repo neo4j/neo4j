@@ -49,7 +49,6 @@ class Appending
             return;
         }
 
-        outcome.renewElectionTimeout();
         outcome.setPreElection( false );
         outcome.setNextTerm( request.leaderTerm() );
         outcome.setLeader( request.from() );
