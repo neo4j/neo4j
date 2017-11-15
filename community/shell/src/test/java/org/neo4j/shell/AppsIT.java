@@ -540,7 +540,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void use_cypher_periodic_commit() throws Exception
+    public void useCypherPeriodicCommit() throws Exception
     {
         File file = File.createTempFile( "file", "csv", null );
         try ( PrintWriter writer = new PrintWriter( file ) )
@@ -1232,6 +1232,76 @@ public class AppsIT extends AbstractShellIT
     public void canUseCall() throws Exception
     {
         executeCommand( "CALL db.labels" );
+    }
+
+    @Test
+    public void travMustListAllPathsWithinDistance() throws Exception
+    {
+        long me;
+        RelationshipType type;
+        long firstOut;
+        long firstOutOut;
+        long secondOut;
+        long secondOutOut;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship[] firstChain = createRelationshipChain( 2 );
+            Node startNode = firstChain[0].getStartNode();
+            type = firstChain[0].getType();
+            Relationship[] secondChain = createRelationshipChain( startNode, type, 3 );
+            me = startNode.getId();
+            firstOut = firstChain[0].getEndNodeId();
+            firstOutOut = firstChain[1].getEndNodeId();
+            secondOut = secondChain[0].getEndNodeId();
+            secondOutOut = secondChain[1].getEndNodeId();
+            tx.success();
+        }
+        String pb = "\\(";
+        String pe = "\\)";
+        String rel = pe + "-\\[:" + type + "\\]->" + pb;
+        executeCommand( "cd " + me );
+        executeCommand( "trav -d 2",
+                pb + "me" + pe,
+                pb + "me" + rel + firstOut + pe,
+                pb + "me" + rel + firstOut + rel + firstOutOut + pe,
+                pb + "me" + rel + secondOut + pe,
+                pb + "me" + rel + secondOut + rel + secondOutOut + pe );
+    }
+
+    @Test
+    public void travMustRunCommandForAllPaths() throws Exception
+    {
+        long me;
+        RelationshipType type;
+        long firstOut;
+        long firstOutOut;
+        long secondOut;
+        long secondOutOut;
+        long secondOutOutOut;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship[] firstChain = createRelationshipChain( 2 );
+            Node startNode = firstChain[0].getStartNode();
+            type = firstChain[0].getType();
+            Relationship[] secondChain = createRelationshipChain( startNode, type, 3 );
+            me = startNode.getId();
+            firstOut = firstChain[0].getEndNodeId();
+            firstOutOut = firstChain[1].getEndNodeId();
+            secondOut = secondChain[0].getEndNodeId();
+            secondOutOut = secondChain[1].getEndNodeId();
+            secondOutOutOut = secondChain[2].getEndNodeId();
+            tx.success();
+        }
+        String pb = "\\(";
+        String pe = "\\)";
+        String rel = pe + "-\\[:" + type + "\\]->" + pb;
+        executeCommand( "cd " + me );
+        executeCommand( "trav -d 2 -c \"ls $i\" ",
+                pb + "me" + rel + firstOut + pe,
+                pb + firstOut + rel + firstOutOut + pe,
+                pb + "me" + rel + secondOut + pe,
+                pb + secondOut + rel + secondOutOut + pe,
+                pb + secondOutOut + rel + secondOutOutOut + pe );
     }
 
     @Test

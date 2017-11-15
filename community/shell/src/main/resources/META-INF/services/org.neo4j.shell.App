@@ -6,6 +6,7 @@ org.neo4j.shell.apps.Man
 org.neo4j.shell.kernel.apps.Begin
 org.neo4j.shell.kernel.apps.Cd
 org.neo4j.shell.kernel.apps.Commit
+org.neo4j.shell.kernel.apps.cypher.Call
 org.neo4j.shell.kernel.apps.cypher.Create
 org.neo4j.shell.kernel.apps.cypher.Cypher
 org.neo4j.shell.kernel.apps.cypher.Drop
