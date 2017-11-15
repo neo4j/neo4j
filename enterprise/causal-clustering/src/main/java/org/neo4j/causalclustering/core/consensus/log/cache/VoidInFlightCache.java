@@ -17,27 +17,53 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.consensus.outcome;
+package org.neo4j.causalclustering.core.consensus.log.cache;
 
-import java.io.IOException;
-
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.logging.Log;
 
-public interface RaftLogCommand
+/**
+ * A cache which caches nothing. This means that all lookups
+ * will go to the on-disk Raft log, which might be quite good
+ * anyway since recently written items will be in OS page cache
+ * memory generally. But it will incur an unmarshalling overhead.
+ */
+public class VoidInFlightCache implements InFlightCache
 {
-    interface Handler
+    @Override
+    public void enable()
     {
-        void append( long baseIndex, RaftLogEntry... entries ) throws IOException;
-        void truncate( long fromIndex ) throws IOException;
-        void prune( long pruneIndex );
     }
 
-    void dispatch( Handler handler ) throws IOException;
+    @Override
+    public void put( long logIndex, RaftLogEntry entry )
+    {
+    }
 
-    void applyTo( RaftLog raftLog, Log log ) throws IOException;
+    @Override
+    public RaftLogEntry get( long logIndex )
+    {
+        return null;
+    }
 
-    void applyTo( InFlightCache inFlightCache, Log log ) throws IOException;
+    @Override
+    public void truncate( long fromIndex )
+    {
+    }
+
+    @Override
+    public void prune( long upToIndex )
+    {
+    }
+
+    @Override
+    public long totalBytes()
+    {
+        return 0;
+    }
+
+    @Override
+    public int elementCount()
+    {
+        return 0;
+    }
 }

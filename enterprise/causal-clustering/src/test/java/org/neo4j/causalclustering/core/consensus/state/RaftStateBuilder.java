@@ -25,12 +25,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
 import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
@@ -136,7 +136,7 @@ public class RaftStateBuilder
         StubMembership membership = new StubMembership( votingMembers, replicationMembers );
 
         RaftState state = new RaftState( myself, termStore, membership, entryLog,
-                voteStore, new InFlightMap<>(), NullLogProvider.getInstance() );
+                voteStore, new ConsecutiveInFlightCache(), NullLogProvider.getInstance() );
 
         Collection<RaftMessages.Directed> noMessages = Collections.emptyList();
         List<RaftLogCommand> noLogCommands = Collections.emptyList();

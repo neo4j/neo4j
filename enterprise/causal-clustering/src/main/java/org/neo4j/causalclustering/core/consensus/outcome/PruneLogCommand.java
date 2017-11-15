@@ -22,9 +22,8 @@ package org.neo4j.causalclustering.core.consensus.outcome;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.logging.Log;
 
 public class PruneLogCommand implements RaftLogCommand
@@ -49,7 +48,7 @@ public class PruneLogCommand implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightMap<RaftLogEntry> inFlightMap, Log log ) throws IOException
+    public void applyTo( InFlightCache inFlightCache, Log log ) throws IOException
     {
         // only the actual log prunes
     }

@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.SessionTracker;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ProgressTracker;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
@@ -50,7 +50,7 @@ public class CommandApplicationProcess
     private final ProgressTracker progressTracker;
     private final SessionTracker sessionTracker;
     private final Supplier<DatabaseHealth> dbHealth;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
+    private final InFlightCache inFlightCache;
     private final Log log;
     private final CoreState coreState;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
@@ -71,7 +71,7 @@ public class CommandApplicationProcess
             ProgressTracker progressTracker,
             SessionTracker sessionTracker,
             CoreState coreState,
-            InFlightMap<RaftLogEntry> inFlightMap,
+            InFlightCache inFlightCache,
             Monitors monitors )
     {
         this.raftLog = raftLog;
@@ -81,7 +81,7 @@ public class CommandApplicationProcess
         this.log = logProvider.getLog( getClass() );
         this.dbHealth = dbHealth;
         this.coreState = coreState;
-        this.inFlightMap = inFlightMap;
+        this.inFlightCache = inFlightCache;
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
         this.batcher = new CommandBatcher( maxBatchSize, this::applyBatch );
         this.batchStat = StatUtil.create( "BatchSize", log, 4096, true );
@@ -165,7 +165,7 @@ public class CommandApplicationProcess
 
     private void applyUpTo( long applyUpToIndex ) throws Exception
     {
-        try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, true ) )
+        try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightCache, true ) )
         {
             for ( long logIndex = applierState.lastApplied + 1; applierState.keepRunning && logIndex <= applyUpToIndex; logIndex++ )
             {
