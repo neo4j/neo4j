@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -202,7 +203,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     @Override
     public MemberId getLeader() throws NoLeaderFoundException
     {
-        return waitForLeader( 0, member -> member != null );
+        return waitForLeader( 0, Objects::nonNull );
     }
 
     private MemberId waitForLeader( long timeoutMillis, Predicate<MemberId> predicate ) throws NoLeaderFoundException

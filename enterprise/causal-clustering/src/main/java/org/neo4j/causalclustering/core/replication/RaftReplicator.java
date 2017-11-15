@@ -44,21 +44,22 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
-    private final RetryStrategy retryStrategy;
+    private final RetryStrategy progressRetryStrategy;
     private final LeaderLocator leaderLocator;
+    private final RetryStrategy leaderRetryStrategy;
     private final Log log;
 
     private volatile boolean shutdown;
 
-    public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
-                           Outbound<MemberId, RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
-                           ProgressTracker progressTracker, RetryStrategy retryStrategy, LogProvider logProvider )
+    public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
+            ProgressTracker progressTracker, RetryStrategy progressRetryStrategy, RetryStrategy leaderRetryStrategy, LogProvider logProvider )
     {
         this.me = me;
         this.outbound = outbound;
         this.progressTracker = progressTracker;
         this.sessionPool = sessionPool;
-        this.retryStrategy = retryStrategy;
+        this.progressRetryStrategy = progressRetryStrategy;
+        this.leaderRetryStrategy = leaderRetryStrategy;
 
         this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
@@ -66,23 +67,26 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     }
 
     @Override
-    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException, NoLeaderFoundException
-
+    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException
     {
         OperationContext session = sessionPool.acquireSession();
 
         DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
         Progress progress = progressTracker.start( operation );
 
-        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
+        RetryStrategy.Timeout progressTimeout = progressRetryStrategy.newTimeout();
+        RetryStrategy.Timeout leaderTimeout = leaderRetryStrategy.newTimeout();
         do
         {
             assertDatabaseNotShutdown();
             try
             {
                 outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ) );
-                progress.awaitReplication( timeout.getMillis() );
-                timeout.increment();
+
+                leaderTimeout = leaderRetryStrategy.newTimeout();
+
+                progress.awaitReplication( progressTimeout.getMillis() );
+                progressTimeout.increment();
             }
             catch ( InterruptedException e )
             {
@@ -92,6 +96,8 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
             catch ( NoLeaderFoundException e )
             {
                 log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
+                Thread.sleep( leaderTimeout.getMillis() );
+                leaderTimeout.increment();
             }
         } while( !progress.isReplicated() );
 
