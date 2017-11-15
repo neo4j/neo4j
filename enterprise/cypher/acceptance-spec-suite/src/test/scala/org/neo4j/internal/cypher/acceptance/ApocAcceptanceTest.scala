@@ -22,18 +22,17 @@ package org.neo4j.internal.cypher.acceptance
 import java.util.Collections
 
 import org.junit.Assert.assertEquals
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
 import org.neo4j.graphdb.{GraphDatabaseService, Path, Result, Transaction}
 import org.neo4j.helpers.collection.Iterators
 import org.neo4j.kernel.impl.proc.Procedures
 
-class ApocAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ApocAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should complete APOC-like procedure using traversal API") {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
 
     graph.execute(movies)
-//    graph.execute(bigbrother)
 
     graph.execute("MATCH (c:Person) WHERE c.name in ['Clint Eastwood', 'Gene Hackman'] SET c:Western")
 
