@@ -47,21 +47,22 @@ object LogicalPlanConverter {
     case p: plans.NodeHashJoin => nodeHashJoinAsCodeGenPlan(p)
     case p: plans.CartesianProduct if p.findByAllClass[plans.NodeHashJoin].nonEmpty =>
       throw new CantCompileQueryException(s"This logicalPlan is not yet supported: $logicalPlan")
-
     case p: plans.CartesianProduct => cartesianProductAsCodeGenPlan(p)
     case p: plans.Selection => selectionAsCodeGenPlan(p)
+    case p: plans.Top if hasStandaloneLimit(p) => throw new CantCompileQueryException(s"Not able to combine LIMIT and $p")
     case p: plans.Top => topAsCodeGenPlan(p)
     case p: plans.Limit => limitAsCodeGenPlan(p)
     case p: plans.Skip => skipAsCodeGenPlan(p)
     case p: plans.ProduceResult => produceResultsAsCodeGenPlan(p)
     case p: plans.Projection => projectionAsCodeGenPlan(p)
-    case p: plans.Aggregation if aggregationNotSupported(p) => throw new CantCompileQueryException(
-      s"Not able to combine aggregation with $p")
+    case p: plans.Aggregation if hasLimit(p) || hasMultipleAggregations(p) =>
+      throw new CantCompileQueryException(s"Not able to combine aggregation with $p")
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.Distinct => distinctAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
     case p: plans.UnwindCollection => unwindAsCodeGenPlan(p)
+    case p: plans.Sort if hasStandaloneLimit(p) => throw new CantCompileQueryException(s"Not able to combine LIMIT and $p")
     case p: plans.Sort => sortAsCodeGenPlan(p)
 
     case _ =>
@@ -77,17 +78,20 @@ object LogicalPlanConverter {
     override val logicalPlan: plans.LogicalPlan = singleRow
   }
 
-  private def aggregationNotSupported(p: plans.Aggregation) = {
-    val notValid = p.treeExists {
-      case _: plans.Limit => true
-      //top is limit + sort
-      case _: plans.Top => true
-    }
-    notValid || p.aggregationExpression.values.toList.treeCount {
-      case f: FunctionInvocation if f.function == ast.functions.Count => true
-      case _ => false
-    } > 1
+  private def hasLimit(p: plans.LogicalPlan) = p.treeExists {
+    case _: plans.Limit => true
+    //top is limit + sort
+    case _: plans.Top => true
   }
+
+  private def hasStandaloneLimit(p: plans.LogicalPlan)= p.treeExists {
+    case _: plans.Limit => true
+  }
+
+  private def hasMultipleAggregations(p: plans.Aggregation) = p.aggregationExpression.values.toList.treeCount {
+    case f: FunctionInvocation if f.function == ast.functions.Count => true
+    case _ => false
+  } > 1
 
   private def projectionAsCodeGenPlan(projection: plans.Projection) = new CodeGenPlan {
 
