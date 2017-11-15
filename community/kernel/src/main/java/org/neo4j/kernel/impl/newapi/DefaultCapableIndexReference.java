@@ -24,14 +24,14 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueGroup;
 
-class IndexReference implements org.neo4j.internal.kernel.api.CapableIndexReference
+class DefaultCapableIndexReference implements org.neo4j.internal.kernel.api.CapableIndexReference
 {
     private final int label;
     private final int[] properties;
     private final boolean unique;
     private final IndexCapability capability;
 
-    IndexReference( boolean unique, IndexCapability indexCapability, int label, int... properties )
+    DefaultCapableIndexReference( boolean unique, IndexCapability indexCapability, int label, int... properties )
     {
         this.unique = unique;
         this.capability = indexCapability;

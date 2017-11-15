@@ -156,7 +156,7 @@ class AllStoreHolder extends Read implements Token
         try
         {
             IndexCapability indexCapability = read.indexGetCapability( indexDescriptor );
-            return new IndexReference( unique, indexCapability, label, properties );
+            return new DefaultCapableIndexReference( unique, indexCapability, label, properties );
         }
         catch ( IndexNotFoundKernelException e )
         {
