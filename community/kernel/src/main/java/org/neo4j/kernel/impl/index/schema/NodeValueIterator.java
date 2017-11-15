@@ -31,7 +31,7 @@ import org.neo4j.values.storable.Value;
 public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
         implements IndexProgressor.NodeValueClient, Resource
 {
-    private volatile boolean closed;
+    private boolean closed;
     private IndexProgressor progressor;
 
     @Override

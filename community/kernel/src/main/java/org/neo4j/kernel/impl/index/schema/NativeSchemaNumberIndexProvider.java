@@ -208,14 +208,17 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 
     private static class NativeIndexCapability implements IndexCapability
     {
+        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
+        private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
+
         @Override
         public IndexOrder[] orderCapability( ValueGroup... valueGroups )
         {
             if ( support( valueGroups ) )
             {
-                return new IndexOrder[]{IndexOrder.ASCENDING};
+                return SUPPORTED_ORDER;
             }
-            return new IndexOrder[0];
+            return EMPTY_ORDER;
         }
 
         @Override
@@ -239,7 +242,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 
         private boolean support( ValueGroup[] valueGroups )
         {
-            return valueGroups.length == 1 && ValueGroup.NUMBER.equals( valueGroups[0] );
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.NUMBER;
         }
     }
 }

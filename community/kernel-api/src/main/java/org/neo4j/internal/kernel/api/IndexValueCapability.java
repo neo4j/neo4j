@@ -19,16 +19,19 @@
  */
 package org.neo4j.internal.kernel.api;
 
+/**
+ * Describe the capability of an index to also return the exact property value for a given query.
+ */
 public enum IndexValueCapability
 {
-    YES( 3 ),
-    PARTIAL( 2 ),
-    NO( 1 );
+    YES( 3 ),     // Can provide values for query
+    PARTIAL( 2 ), // Can provide values for query for part of result set, often depending on what type the value has
+    NO( 1 );      // Can not provide values for query
 
     /**
      * Higher order indicate a higher capability.
      */
-    int order;
+    private int order;
 
     IndexValueCapability( int order )
     {
@@ -42,6 +45,6 @@ public enum IndexValueCapability
      */
     public int compare( IndexValueCapability other )
     {
-        return order - other.order;
+        return Integer.compare( order, other.order );
     }
 }

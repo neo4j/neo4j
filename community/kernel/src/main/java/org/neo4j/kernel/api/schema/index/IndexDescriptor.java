@@ -36,9 +36,6 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
- *
- * This will be renamed to IndexDescriptor, once the old org.neo4j.kernel.api.schema.IndexDescriptor is completely
- * removed.
  */
 public class IndexDescriptor implements LabelSchemaSupplier
 {

@@ -177,9 +177,7 @@ public abstract class IndexQuery
     }
 
     /**
-     * todo Is this useful?
-     *
-     * @return Target {@link ValueGroup} for query or {@code null} if not targeting single group.
+     * @return Target {@link ValueGroup} for query or {@link ValueGroup#UNKNOWN} if not targeting single group.
      */
     public abstract ValueGroup valueGroup();
 
