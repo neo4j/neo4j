@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.NodeIndexSeek
+import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
 /**
@@ -355,6 +357,37 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // Then
     result.toList should equal(List(Map("n" -> node1)))
+  }
+
+  test("should use index when using =") {
+    val n1 = createLabeledNode(Map("ID"->1),"LABEL")
+    createLabeledNode(Map("name"->"blah", "allowedIDs" -> Array(1), "singleID" -> 1),"LABEL")
+    graph.createIndex("LABEL", "ID")
+    val query =
+      """
+        |MATCH (object2:LABEL) WHERE object2.name = "blah"
+        |MATCH (object:LABEL) WHERE object.ID = object2.singleID
+        |RETURN object
+      """.stripMargin
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "object"), expectPlansToFail = Configs.BackwardsCompatibility + Configs.AllRulePlanners))
+    result.columnAs[Node]("object").toList should equal(List(n1))
+  }
+
+  test("should use index when using IN") {
+    val n1 = createLabeledNode(Map("ID"->1),"LABEL")
+    createLabeledNode(Map("name"->"blah", "allowedIDs" -> Array(1), "singleID" -> 1),"LABEL")
+    graph.createIndex("LABEL", "ID")
+    val query =
+      """
+        |MATCH (object2:LABEL) WHERE object2.name = "blah"
+        |WITH object2
+        |MATCH (object:LABEL) WHERE object.ID IN object2.allowedIDs
+        |RETURN object
+      """.stripMargin
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "object"), expectPlansToFail = Configs.BackwardsCompatibility + Configs.AllRulePlanners))
+    result.columnAs[Node]("object").toList should equal(List(n1))
   }
 
   private def setUpDatabaseForTests() {
