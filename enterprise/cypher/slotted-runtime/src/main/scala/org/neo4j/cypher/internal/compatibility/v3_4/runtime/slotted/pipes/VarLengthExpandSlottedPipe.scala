@@ -49,7 +49,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
                                       tempEdgeOffset: Int,
                                       nodePredicate: Predicate,
                                       edgePredicate: Predicate,
-                                      longsToCopy: Int)
+                                      argumentSize: SlotConfiguration.Size)
                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
   type LNode = Long
 
@@ -109,20 +109,20 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
-      inputRowWithFromNode =>
-        val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
+      inputRow =>
+        val fromNode = inputRow.getLongAt(fromOffset)
 
         // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
         // the start node is valid
-        inputRowWithFromNode.setLongAt(tempNodeOffset, fromNode)
-        if (nodePredicate.isTrue(inputRowWithFromNode, state)) {
+        inputRow.setLongAt(tempNodeOffset, fromNode)
+        if (nodePredicate.isTrue(inputRow, state)) {
 
-          val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
+          val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRow)
           paths collect {
             case (toNode: LNode, rels: Seq[Relationship])
-              if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
+              if rels.length >= min && isToNodeValid(inputRow, toNode) =>
               val resultRow = PrimitiveExecutionContext(slots)
-              resultRow.copyFrom(inputRowWithFromNode, longsToCopy, slots.initialNumberOfReferences)
+              resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
               resultRow.setLongAt(toOffset, toNode)
               resultRow.setRefAt(relOffset, ValueUtils.asListOfEdges(rels.toArray))
               resultRow

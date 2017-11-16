@@ -31,7 +31,8 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 case class NodeIndexScanSlottedPipe(ident: String,
                                     label: LabelToken,
                                     propertyKey: PropertyKeyToken,
-                                    slots: SlotConfiguration)
+                                    slots: SlotConfiguration,
+                                    argumentSize: SlotConfiguration.Size)
                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends Pipe {
 
@@ -43,7 +44,7 @@ case class NodeIndexScanSlottedPipe(ident: String,
     val nodes = state.query.indexScanPrimitive(descriptor)
     PrimitiveLongHelper.map(nodes, { node =>
       val context = PrimitiveExecutionContext(slots)
-      state.copyArgumentStateTo(context, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
+      state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
       context.setLongAt(offset, node)
       context
     })

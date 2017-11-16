@@ -216,10 +216,8 @@ object SlotAllocation {
           case (key, parserAst.Variable(ident)) if key == ident =>
           // it's already there. no need to add a new slot for it
 
-          case (key, parserAst.Variable(ident)) if key != ident =>
-            val slot = source.get(ident).getOrElse(
-              throw new SlotAllocationFailed(s"Tried to lookup key $key that should be in slot configuration but wasn't"))
-            source.addAliasFor(slot, key)
+          case (newKey, parserAst.Variable(ident)) if newKey != ident =>
+            source.addAlias(newKey, ident)
 
           case (key, _) =>
             source.newReference(key, nullable = true, CTAny)

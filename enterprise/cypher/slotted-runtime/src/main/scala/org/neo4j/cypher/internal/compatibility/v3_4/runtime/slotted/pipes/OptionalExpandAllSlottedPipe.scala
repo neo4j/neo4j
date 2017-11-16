@@ -64,7 +64,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
           val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
             relationships.relationshipVisit(relId, relVisitor)
             val outputRow = PrimitiveExecutionContext(slots)
-            outputRow.copyFrom(inputRow, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
+            inputRow.copyTo(outputRow)
             outputRow.setLongAt(relOffset, relId)
             outputRow.setLongAt(toOffset, otherSide)
             outputRow
@@ -80,7 +80,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
 
   private def withNulls(inputRow: ExecutionContext) = {
     val outputRow = PrimitiveExecutionContext(slots)
-    outputRow.copyFrom(inputRow, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
+    inputRow.copyTo(outputRow)
     outputRow.setLongAt(relOffset, -1)
     outputRow.setLongAt(toOffset, -1)
     outputRow

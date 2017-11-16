@@ -20,15 +20,19 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-case class ArgumentSlottedPipe(slots: SlotConfiguration)(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+case class ArgumentSlottedPipe(slots: SlotConfiguration,
+                               argumentSize:Size)
+                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+  extends Pipe {
 
   def internalCreateResults(state: QueryState): Iterator[PrimitiveExecutionContext] = {
     val context = PrimitiveExecutionContext(slots)
-    state.copyArgumentStateTo(context, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
+    state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
     Iterator(context)
   }
 }

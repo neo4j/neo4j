@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.DropResultPipe
@@ -45,7 +46,7 @@ import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
                          monitors: Monitors,
-                         slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
+                         physicalPlan: PhysicalPlan,
                          readOnly: Boolean,
                          rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                         (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
@@ -58,30 +59,31 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.assignedId
-    val slots = slotConfigurations(plan.assignedId)
+    val slots = physicalPlan.slotConfigurations(plan.assignedId)
+    val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
 
     plan match {
       case AllNodesScan(IdName(column), _) =>
-        AllNodesScanSlottedPipe(column, slots)(id)
+        AllNodesScanSlottedPipe(column, slots, argumentSize)(id)
 
       case NodeIndexScan(IdName(column), label, propertyKeys, _) =>
-        NodeIndexScanSlottedPipe(column, label, propertyKeys, slots)(id)
+        NodeIndexScanSlottedPipe(column, label, propertyKeys, slots, argumentSize)(id)
 
       case NodeIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(column, label, propertyKeys,
-                                  valueExpr.map(convertExpressions), indexSeekMode, slots)(id)
+                                  valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
 
       case NodeUniqueIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(column, label, propertyKeys,
-                                  valueExpr.map(convertExpressions), indexSeekMode, slots)(id = id)
+                                  valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id = id)
 
       case NodeByLabelScan(IdName(column), label, _) =>
-        NodesByLabelScanSlottedPipe(column, LazyLabel(label), slots)(id)
+        NodesByLabelScanSlottedPipe(column, LazyLabel(label), slots, argumentSize)(id)
 
       case _:Argument =>
-        ArgumentSlottedPipe(slots)(id)
+        ArgumentSlottedPipe(slots, argumentSize)(id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
@@ -93,7 +95,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.assignedId
-    val slots = slotConfigurations(plan.assignedId)
+    val slots = physicalPlan.slotConfigurations(plan.assignedId)
 
     plan match {
       case ProduceResult(_, columns) =>
@@ -141,22 +143,23 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val relOffset = slots.getReferenceOffsetFor(relName)
 
         // The node/edge predicates are evaluated on the source pipeline, not the produced one
-        val sourceSlots = slotConfigurations(sourcePlan.assignedId)
+        val sourceSlots = physicalPlan.slotConfigurations(sourcePlan.assignedId)
         val tempNodeOffset = sourceSlots.getLongOffsetFor(tempNode)
         val tempEdgeOffset = sourceSlots.getLongOffsetFor(tempEdge)
-        val sizeOfTemporaryStorage = 2
+        val argumentSize = SlotConfiguration.Size(sourceSlots.numberOfLongs - 2, sourceSlots.numberOfReferences)
         VarLengthExpandSlottedPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types.toArray), min,
                                     max, shouldExpandAll, slots,
                                     tempNodeOffset = tempNodeOffset,
                                     tempEdgeOffset = tempEdgeOffset,
                                     nodePredicate = buildPredicate(nodePredicate),
                                     edgePredicate = buildPredicate(edgePredicate),
-                                    longsToCopy = sourceSlots.numberOfLongs - sizeOfTemporaryStorage)(id)
+                                    argumentSize = argumentSize)(id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
         val nullableOffsets = nullableKeys.map(k => slots.getLongOffsetFor(k.name))
-        OptionalSlottedPipe(source, nullableOffsets.toSeq, slots)(id)
+        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+        OptionalSlottedPipe(source, nullableOffsets.toSeq, slots, argumentSize)(id)
 
       case Projection(_, expressions) =>
         val expressionsWithSlots: Map[Int, Expression] = expressions collect {
@@ -300,8 +303,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
+    val slotConfigs = physicalPlan.slotConfigurations
     val id = plan.assignedId
-    val slots = slotConfigurations(plan.assignedId)
+    val slots = slotConfigs(plan.assignedId)
 
     plan match {
       case Apply(_, _) =>
@@ -312,7 +316,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         fallback.build(plan, lhs, rhs)
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect, nullables) =>
-        val rhsSlots = slotConfigurations(rhsPlan.assignedId)
+        val rhsSlots = slotConfigs(rhsPlan.assignedId)
         val identifierToCollectExpression = createProjectionForIdentifier(rhsSlots)(identifierToCollect.name)
         val collectionRefSlotOffset = slots.getReferenceOffsetFor(collectionName.name)
         RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset, identifierToCollectExpression,
@@ -320,12 +324,12 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _: CartesianProduct =>
         val lhsPlan = plan.lhs.get
-        val lhsSlots = slotConfigurations(lhsPlan.assignedId)
+        val lhsSlots = slotConfigs(lhsPlan.assignedId)
         CartesianProductSlottedPipe(lhs, rhs, lhsSlots.numberOfLongs, lhsSlots.numberOfReferences, slots)(id)
 
       case joinPlan: NodeHashJoin =>
         val leftNodes: Array[Int] = joinPlan.nodes.map(k => slots.getLongOffsetFor(k.name)).toArray
-        val rhsSlots = slotConfigurations(joinPlan.right.assignedId)
+        val rhsSlots = slotConfigs(joinPlan.right.assignedId)
         val rightNodes: Array[Int] = joinPlan.nodes.map(k => rhsSlots.getLongOffsetFor(k.name)).toArray
         val copyLongsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
         val copyRefsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
@@ -362,8 +366,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, slots)(id)
 
       case Union(_, _) =>
-        val lhsSlots = slotConfigurations(lhs.id)
-        val rhsSlots = slotConfigurations(rhs.id)
+        val lhsSlots = slotConfigs(lhs.id)
+        val rhsSlots = slotConfigs(rhs.id)
         UnionSlottedPipe(lhs, rhs,
           SlottedPipeBuilder.computeUnionMapping(lhsSlots, slots),
           SlottedPipeBuilder.computeUnionMapping(rhsSlots, slots))(id = id)

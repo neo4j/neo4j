@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
@@ -79,10 +80,10 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val slotConfigurations: Map[LogicalPlanId, SlotConfiguration] = SlotAllocation.allocateSlots(beforeRewrite)
+    val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite)
     val slottedRewriter = new SlottedRewriter(context.planContext)
-    val logicalPlan = slottedRewriter(beforeRewrite, slotConfigurations)
-    (logicalPlan, slotConfigurations)
+    val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
+    (logicalPlan, physicalPlan.slotConfigurations)
   }
 
   override def postConditions: Set[Condition] = Set.empty

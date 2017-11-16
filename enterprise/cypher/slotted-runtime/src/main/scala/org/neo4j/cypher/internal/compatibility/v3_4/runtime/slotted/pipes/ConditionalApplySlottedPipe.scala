@@ -46,7 +46,7 @@ case class ConditionalApplySlottedPipe(lhs: Pipe,
         }
         else {
           val output = PrimitiveExecutionContext(slots)
-          output.copyFrom(lhsContext, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
+          lhsContext.copyTo(output)
           Iterator.single(output)
         }
     }
