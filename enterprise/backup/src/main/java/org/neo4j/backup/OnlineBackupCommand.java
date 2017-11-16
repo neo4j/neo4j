@@ -38,6 +38,7 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TimeUtil;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.toHostnamePort;
 
 public class OnlineBackupCommand implements AdminCommand
@@ -65,6 +67,8 @@ public class OnlineBackupCommand implements AdminCommand
                             "fallback to a full backup instead." ) )
             .withArgument( new OptionalNamedArg( "timeout", "timeout", "20m",
                     "Timeout in the form <time>[ms|s|m|h], where the default unit is seconds." ) )
+            .withArgument( new OptionalNamedArg( "pagecache", "8m", "8m",
+                    "The size of the page cache to use for the backup process" ) )
             .withArgument( new OptionalBooleanArg( "check-consistency", true,
                     "If a consistency check should be made." ) )
             .withArgument( new OptionalCanonicalPath( "cc-report-dir", "directory", ".",
@@ -113,6 +117,7 @@ public class OnlineBackupCommand implements AdminCommand
         final Path folder;
         final String name;
         final boolean fallbackToFull;
+        final String pageCacheSize;
         final boolean doConsistencyCheck;
         final Optional<Path> additionalConfig;
         final Path reportDir;
@@ -129,6 +134,7 @@ public class OnlineBackupCommand implements AdminCommand
             folder = arguments.getMandatoryPath( "backup-dir" );
             name = arguments.get( "name" );
             fallbackToFull = arguments.getBoolean( "fallback-to-full" );
+            pageCacheSize = arguments.get( "pagecache" );
             doConsistencyCheck = arguments.getBoolean( "check-consistency" );
             timeout = arguments.get( "timeout", TimeUtil.parseTimeMillis );
             additionalConfig = arguments.getOptionalPath( "additional-config" );
@@ -152,7 +158,8 @@ public class OnlineBackupCommand implements AdminCommand
         }
 
         File destination = folder.resolve( name ).toFile();
-        Config config = loadConfig( additionalConfig );
+        Config config = loadConfig( additionalConfig ).augment(
+                stringMap( GraphDatabaseSettings.pagecache_memory.name(), pageCacheSize ) );
         boolean done = false;
 
         try
