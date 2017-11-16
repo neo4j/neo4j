@@ -367,12 +367,38 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
     public boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException
     {
         assertOpen();
+
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            boolean justAdded = ktx.txState().nodeIsAddedInThisTx( node );
+            if ( justAdded && ktx.txState().nodeStateLabelDiffSets( node ).isAdded( nodeLabel ) )
+            {
+                //the newly added node already have the label
+                return false;
+            }
+            else if ( justAdded )
+            {
+                // we have a new node, let's add the label
+                ktx.txState().nodeDoAddLabel( nodeLabel, node );
+                return true;
+            }
+            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
+            {
+                // already deleted, false or EntityNotFoundException?
+                return false;
+            }
+        }
+
+        //node was neither created nor deleted in this transaction
+        //will throw if node isn't there
         if ( allStoreHolder.nodeHasLabel( node, nodeLabel ) )
         {
             return false;
         }
         //TODO indexTxStateUpdater.onLabelChange
 
+        //node is there and doesn't already have the label
+        //let's add it
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
         return true;
     }
