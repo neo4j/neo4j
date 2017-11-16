@@ -78,7 +78,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
+    case (count, labelId) => if (transactionalContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
   }
 
   def createNewQueryContext(): QueryContext = {
