@@ -65,8 +65,8 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
       labelsRemoved = i.labelsRemoved,
       indexesAdded = i.indexesAdded,
       indexesRemoved = i.indexesRemoved,
-      constraintsAdded = i.uniqueConstraintsAdded + i.existenceConstraintsAdded,
-      constraintsRemoved = i.uniqueConstraintsRemoved + i.existenceConstraintsRemoved
+      constraintsAdded = i.uniqueConstraintsAdded + i.existenceConstraintsAdded + i.nodekeyConstraintsAdded,
+      constraintsRemoved = i.uniqueConstraintsRemoved + i.existenceConstraintsRemoved + i.nodekeyConstraintsRemoved
     )
   }
 
