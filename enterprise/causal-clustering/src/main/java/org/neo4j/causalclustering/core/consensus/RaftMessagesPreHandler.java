@@ -90,7 +90,7 @@ public class RaftMessagesPreHandler implements Inbound.MessageHandler<RaftMessag
             RaftMessages.Heartbeat heartbeat = (RaftMessages.Heartbeat) message;
             return heartbeat.leaderTerm() >= raftMachine.term();
         case APPEND_ENTRIES_REQUEST:
-            RaftMessages.AppendEntries.Request request = (RaftMessages.AppendEntries.Request)message;
+            RaftMessages.AppendEntries.Request request = (RaftMessages.AppendEntries.Request) message;
             return request.leaderTerm() >= raftMachine.term();
         default:
             return false;
