@@ -42,13 +42,13 @@ abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
     if (rhsIterator.isEmpty)
       return Iterator.empty
 
-    val table = buildProbeTable(input)
+    val table = buildProbeTable(input, state)
 
     if (table.isEmpty)
       return Iterator.empty
 
     val result = for {rhs: ExecutionContext <- rhsIterator
-                      joinKey <- computeKey(rhs, rightSide)}
+                      joinKey <- computeKey(rhs, rightSide, state)}
       yield {
         val matchesFromLhs: mutable.Seq[ExecutionContext] = table.getOrElse(joinKey, mutable.MutableList.empty)
 
@@ -63,11 +63,11 @@ abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
     result.flatten
   }
 
-  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[Key, mutable.MutableList[ExecutionContext]] = {
+  private def buildProbeTable(input: Iterator[ExecutionContext], queryState: QueryState): mutable.HashMap[Key, mutable.MutableList[ExecutionContext]] = {
     val table = new mutable.HashMap[Key, mutable.MutableList[ExecutionContext]]
 
     for {context <- input
-         joinKey <- computeKey(context, leftSide)} {
+         joinKey <- computeKey(context, leftSide, queryState)} {
       val matchingRows = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
       matchingRows += context
     }
@@ -75,7 +75,7 @@ abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
     table
   }
 
-  def computeKey(context: ExecutionContext, keyColumns: T): Option[Key]
+  def computeKey(context: ExecutionContext, keyColumns: T, queryState: QueryState): Option[Key]
 
   def copyDataFromRhs(newRow: PrimitiveExecutionContext, rhs: ExecutionContext): Unit
 }

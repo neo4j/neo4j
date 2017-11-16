@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class NodeHashJoinSlottedPipe(leftSide: Array[Int],
@@ -44,7 +44,7 @@ case class NodeHashJoinSlottedPipe(leftSide: Array[Int],
     * @param context The execution context to get the node ids from
     * @return A Some[Array] if all nodes are valid, or None if any is null
     */
-  override def computeKey(context: ExecutionContext, keyColumns: Array[Int]): Option[HashKey] = {
+  override def computeKey(context: ExecutionContext, keyColumns: Array[Int], ignored: QueryState): Option[HashKey] = {
     val key = new Array[Long](keyColumns.length)
     for (i <- keyColumns.indices) {
       val idx = keyColumns(i)

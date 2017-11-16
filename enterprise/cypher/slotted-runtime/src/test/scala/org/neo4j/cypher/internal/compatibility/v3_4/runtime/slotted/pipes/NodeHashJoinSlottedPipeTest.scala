@@ -33,17 +33,6 @@ import org.neo4j.values.AnyValue
 
 class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
 
-  private def testableResult(list: Iterator[ExecutionContext], slots: SlotConfiguration): List[Map[String, Any]] = {
-    list.toList map { in =>
-      val build = scala.collection.mutable.HashMap.empty[String, Any]
-      slots.foreachSlot {
-        case (column, LongSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
-        case (column, RefSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
-      }
-      build.toMap
-    }
-  }
-
   test("should support simple hash join over nodes") {
     // given
     val node1 = 1
@@ -178,6 +167,17 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
       }
     })
     p
+  }
+
+  private def testableResult(list: Iterator[ExecutionContext], slots: SlotConfiguration): List[Map[String, Any]] = {
+    list.toList map { in =>
+      val build = scala.collection.mutable.HashMap.empty[String, Any]
+      slots.foreachSlot {
+        case (column, LongSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
+        case (column, RefSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
+      }
+      build.toMap
+    }
   }
 
 }
