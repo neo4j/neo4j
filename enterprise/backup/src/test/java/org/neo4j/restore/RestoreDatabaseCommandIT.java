@@ -21,6 +21,7 @@ package org.neo4j.restore;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -52,7 +53,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCommandIT
@@ -233,6 +237,25 @@ public class RestoreDatabaseCommandIT
         assertThat( customLogLocationLogFiles.logFiles(), arrayWithSize( 1 ) );
         assertEquals( fromStoreLogFiles.getLogFileForVersion( 0 ).length(),
                 customLogLocationLogFiles.getLogFileForVersion( 0 ).length() );
+    }
+
+    @Test
+    public void doNotRemoveRelativeTransactionDirectoryAgain() throws IOException, CommandFailed
+    {
+        FileSystemAbstraction fileSystem = Mockito.spy( fileSystemRule.get() );
+        File fromPath = directory.directory( "from" );
+        File databaseFile = directory.directory();
+        File relativeLogDirectory = directory.directory( "relativeDirectory" );
+
+        Config config = Config.defaults( GraphDatabaseSettings.database_path, databaseFile.getAbsolutePath() );
+        config.augment( GraphDatabaseSettings.logical_logs_location, relativeLogDirectory.getAbsolutePath() );
+
+        createDbAt( fromPath, 10 );
+
+        new RestoreDatabaseCommand( fileSystem, fromPath, config, "testDatabase", true ).execute();
+
+        verify( fileSystem ).deleteRecursively( eq( databaseFile ) );
+        verify( fileSystem, never() ).deleteRecursively( eq( relativeLogDirectory ) );
     }
 
     @Test

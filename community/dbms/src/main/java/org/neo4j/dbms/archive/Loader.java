@@ -19,39 +19,69 @@
  */
 package org.neo4j.dbms.archive;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
-import static java.nio.file.Files.exists;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+
+import static java.nio.file.Files.exists;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 
 public class Loader
 {
-    public void load( Path archive, Path destination ) throws IOException, IncorrectFormat
+    public void load( Path archive, Path databaseDestination, Path transactionLogsDirectory ) throws IOException, IncorrectFormat
     {
-        if ( exists( destination ) )
-        {
-            throw new FileAlreadyExistsException( destination.toString() );
-        }
-        checkWritableDirectory( destination.getParent() );
+        validatePath( databaseDestination );
+        validatePath( transactionLogsDirectory );
+
+        createDestination( databaseDestination );
+        createDestination( transactionLogsDirectory );
+
         try ( ArchiveInputStream stream = openArchiveIn( archive ) )
         {
             ArchiveEntry entry;
             while ( (entry = nextEntry( stream, archive )) != null )
             {
+                Path destination = determineEntryDestination( entry, databaseDestination, transactionLogsDirectory );
                 loadEntry( destination, stream, entry );
             }
         }
+    }
+
+    private void createDestination( Path destination ) throws IOException
+    {
+        if ( !destination.toFile().exists() )
+        {
+            Files.createDirectories( destination );
+        }
+    }
+
+    private void validatePath( Path path ) throws FileSystemException
+    {
+        if ( exists( path ) )
+        {
+            throw new FileAlreadyExistsException( path.toString() );
+        }
+        checkWritableDirectory( path.getParent() );
+    }
+
+    private static Path determineEntryDestination( ArchiveEntry entry, Path databaseDestination,
+            Path transactionLogsDirectory )
+    {
+        String entryName = Paths.get( entry.getName() ).getFileName().toString();
+        return TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, entryName ) ? transactionLogsDirectory
+                                                                                           : databaseDestination;
     }
 
     private ArchiveEntry nextEntry( ArchiveInputStream stream, Path archive ) throws IncorrectFormat
