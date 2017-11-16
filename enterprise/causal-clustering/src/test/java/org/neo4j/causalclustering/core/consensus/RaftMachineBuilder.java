@@ -56,8 +56,9 @@ public class RaftMachineBuilder
     private int expectedClusterSize;
     private RaftGroup.Builder memberSetBuilder;
 
-    private StateStorage<TermState> termState = new InMemoryStateStorage<>( new TermState() );
-    private StateStorage<VoteState> voteState = new InMemoryStateStorage<>( new VoteState() );
+    private TermState termState = new TermState();
+    private StateStorage<TermState> termStateStorage = new InMemoryStateStorage<>( termState );
+    private StateStorage<VoteState> voteStateStorage = new InMemoryStateStorage<>( new VoteState() );
     private RaftLog raftLog = new InMemoryRaftLog();
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clocks.systemClock(),
             getInstance() );
@@ -68,6 +69,8 @@ public class RaftMachineBuilder
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clocks.systemClock();
     private Clock shippingClock = Clocks.systemClock();
+
+    private long term = termState.currentTerm();
 
     private long electionTimeout = 500;
     private long heartbeatInterval = 150;
@@ -91,6 +94,7 @@ public class RaftMachineBuilder
 
     public RaftMachine build()
     {
+        termState.update( term );
         ElectionTiming electionTiming = new ElectionTiming( Duration.ofMillis( electionTimeout ), Duration.ofMillis( heartbeatInterval ), clock,
                 renewableTimeoutService, logProvider );
         SendToMyself leaderOnlyReplicator = new SendToMyself( member, outbound );
@@ -101,7 +105,7 @@ public class RaftMachineBuilder
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, shippingClock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightCache );
-        RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTiming, outbound, logProvider,
+        RaftMachine raft = new RaftMachine( member, termStateStorage, voteStateStorage, raftLog, electionTiming, outbound, logProvider,
                 membershipManager, logShipping, inFlightCache, false, false, monitors );
         inbound.registerHandler( ( incomingMessage ) ->
         {
@@ -185,6 +189,12 @@ public class RaftMachineBuilder
     RaftMachineBuilder monitors( Monitors monitors )
     {
         this.monitors = monitors;
+        return this;
+    }
+
+    public RaftMachineBuilder term( long term )
+    {
+        this.term = term;
         return this;
     }
 
