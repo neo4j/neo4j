@@ -150,7 +150,7 @@ class LoadExternalResourceException(message: String, cause: Throwable = null)
 }
 
 class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException)
-    extends CypherException(cause) {
+    extends CypherException(extraInfo,  cause) {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
     // the mapper will map the cause here, so we cannot pass 'this' in as the cause...
     mapper.loadCsvStatusWrapCypherException(extraInfo, cause)
