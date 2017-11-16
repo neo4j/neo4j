@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.util.Objects;
+import java.util.function.LongSupplier;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.messaging.Inbound;
@@ -30,16 +31,16 @@ public class RaftMessagesPreHandler implements Inbound.MessageHandler<RaftMessag
 {
     private final Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler;
     private final ElectionTiming electionTiming;
-    private final RaftMachine raftMachine;
+    private final LongSupplier term;
     private final Log log;
     private volatile ClusterId boundClusterId;
 
     public RaftMessagesPreHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler, ElectionTiming electionTiming,
-            RaftMachine raftMachine, LogProvider logProvider )
+            LongSupplier term, LogProvider logProvider )
     {
         this.delegateHandler = delegateHandler;
         this.electionTiming = electionTiming;
-        this.raftMachine = raftMachine;
+        this.term = term;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -88,10 +89,10 @@ public class RaftMessagesPreHandler implements Inbound.MessageHandler<RaftMessag
         {
         case HEARTBEAT:
             RaftMessages.Heartbeat heartbeat = (RaftMessages.Heartbeat) message;
-            return heartbeat.leaderTerm() >= raftMachine.term();
+            return heartbeat.leaderTerm() >= term.getAsLong();
         case APPEND_ENTRIES_REQUEST:
             RaftMessages.AppendEntries.Request request = (RaftMessages.AppendEntries.Request) message;
-            return request.leaderTerm() >= raftMachine.term();
+            return request.leaderTerm() >= term.getAsLong();
         default:
             return false;
         }

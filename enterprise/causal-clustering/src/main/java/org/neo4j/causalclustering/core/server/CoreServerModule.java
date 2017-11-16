@@ -189,7 +189,7 @@ public class CoreServerModule
                 logProvider );
 
         RaftMessagesPreHandler raftMessagesPreHandler = new RaftMessagesPreHandler( batchingMessageHandler, consensusModule.getElectionTiming(),
-                consensusModule.raftMachine(), logProvider );
+                consensusModule.raftMachine()::term, logProvider );
 
         CoreLife coreLife = new CoreLife( consensusModule.raftMachine(), localDatabase,
                 clusteringModule.clusterBinder(), commandApplicationProcess,

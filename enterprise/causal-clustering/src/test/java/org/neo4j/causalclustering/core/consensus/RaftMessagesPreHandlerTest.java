@@ -1,14 +1,33 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.causalclustering.core.consensus;
 
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.UUID;
+import java.util.function.LongSupplier;
 
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.logging.NullLogProvider;
 
@@ -17,24 +36,20 @@ public class RaftMessagesPreHandlerTest
     @SuppressWarnings( "unchecked" )
     private Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegate = Mockito.mock( Inbound.MessageHandler.class );
     private ElectionTiming electionTiming = Mockito.mock( ElectionTiming.class );
-    private MemberId myself = new MemberId( UUID.randomUUID() );
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
-    private long term = 3;
-    private RaftMachine raftMachine = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-            .term( term )
-            .build();
+    private LongSupplier term = () -> 3;
 
-    private RaftMessagesPreHandler handler = new RaftMessagesPreHandler( delegate, electionTiming, raftMachine, NullLogProvider.getInstance() );
+    private RaftMessagesPreHandler handler = new RaftMessagesPreHandler( delegate, electionTiming, term, NullLogProvider.getInstance() );
 
     private MemberId leader = new MemberId( UUID.randomUUID() );
     private RaftMessages.ClusterIdAwareMessage heartbeat =
-            new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Heartbeat( leader, term, 0, 0 ) );
+            new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Heartbeat( leader, term.getAsLong(), 0, 0 ) );
     private RaftMessages.ClusterIdAwareMessage appendEntries =
             new RaftMessages.ClusterIdAwareMessage( clusterId,
-                    new RaftMessages.AppendEntries.Request( leader, term, 0, 0, RaftLogEntry.empty, 0 )
+                    new RaftMessages.AppendEntries.Request( leader, term.getAsLong(), 0, 0, RaftLogEntry.empty, 0 )
             );
     private RaftMessages.ClusterIdAwareMessage voteResponse =
-            new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Vote.Response( leader, term, false ) );
+            new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Vote.Response( leader, term.getAsLong(), false ) );
 
     @Test
     public void shouldDropMessagesIfHasNotBeenStarted() throws Exception
@@ -68,7 +83,7 @@ public class RaftMessagesPreHandlerTest
 
         // when
         handler.handle( new RaftMessages.ClusterIdAwareMessage(
-                new ClusterId( UUID.randomUUID() ), new RaftMessages.Heartbeat( leader, term, 0, 0 )
+                new ClusterId( UUID.randomUUID() ), new RaftMessages.Heartbeat( leader, term.getAsLong(), 0, 0 )
         ) );
 
         // then
@@ -132,7 +147,7 @@ public class RaftMessagesPreHandlerTest
     {
         // given
         RaftMessages.ClusterIdAwareMessage heartbeat =
-                new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Heartbeat( leader, term - 1, 0, 0 ) );
+                new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Heartbeat( leader, term.getAsLong() - 1, 0, 0 ) );
 
         handler.start( clusterId );
 
@@ -148,7 +163,7 @@ public class RaftMessagesPreHandlerTest
     {
         RaftMessages.ClusterIdAwareMessage appendEntries =
                 new RaftMessages.ClusterIdAwareMessage( clusterId,
-                        new RaftMessages.AppendEntries.Request( leader, term - 1, 0, 0, RaftLogEntry.empty, 0 )
+                        new RaftMessages.AppendEntries.Request( leader, term.getAsLong() - 1, 0, 0, RaftLogEntry.empty, 0 )
                 );
 
         handler.start( clusterId );
