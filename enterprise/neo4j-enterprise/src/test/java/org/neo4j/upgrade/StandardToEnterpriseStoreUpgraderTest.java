@@ -19,10 +19,9 @@
  */
 package org.neo4j.upgrade;
 
-import upgrade.StoreUpgraderTest;
-
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.storemigration.StoreUpgraderTest;
 
 /**
  * Runs the store upgrader tests from older versions, migrating to the current enterprise version.
