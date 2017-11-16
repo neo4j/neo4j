@@ -99,24 +99,6 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
     Selections(keptPredicates ++ other.predicates)
   }
 
-  // TODO Andrés: "clean up the if and move that whole shit to a more sensible location"
-  // Value joins are equality comparisons between two expressions. As long as they depend on different, non-overlapping
-  // sets of variables, they can be solved with a traditional hash join, similar to what a SQL database would
-  lazy val equalPredicatesForPotentialValueJoins: Set[Equals] = flatPredicates.collect {
-    case e@Equals(l, r)
-      if l.dependencies.nonEmpty &&
-         r.dependencies.nonEmpty &&
-         r.dependencies != l.dependencies => e
-  }.toSet
-
-  // TODO Satia: "collect is called twice. Oh no!"
-  lazy val inPredicatesForPotentialValueJoins: Set[In] = flatPredicates.collect {
-        case i@In(l, r)
-          if l.dependencies.nonEmpty &&
-            r.dependencies.nonEmpty &&
-            r.dependencies != l.dependencies => i
-  }.toSet
-
   def ++(expressions: Traversable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 
   def nonEmpty: Boolean = !isEmpty

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.util.v3_4.FreshIdNameGenerator
-import org.neo4j.cypher.internal.v3_4.expressions.{Equals, In}
+import org.neo4j.cypher.internal.v3_4.expressions.{BinaryOperatorExpression, Equals, In}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexLeafPlan, LogicalPlan, UnwindCollection}
 
 trait JoinDisconnectedQueryGraphComponents {
@@ -110,86 +110,67 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                    (implicit context: LogicalPlanningContext, kit: QueryPlannerKit,
                                     singleComponentPlanner: SingleComponentPlannerTrait):
                                    Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
-    val joinsForEquals = (for {
-      equalPredicate <- qg.selections.equalPredicatesForPotentialValueJoins
-      t1@PlannedComponent(qgA, planA) <- plans if planA.satisfiesExpressionDependencies(equalPredicate.lhs)
-      t2@PlannedComponent(qgB, planB) <- plans if planB.satisfiesExpressionDependencies(equalPredicate.rhs) && planA != planB
+    (for {
+      valueJoinPredicate <- predicatesForPotentialValueJoins(qg.selections)
+      t1@PlannedComponent(qgA, planA) <- plans if planA.satisfiesExpressionDependencies(valueJoinPredicate.lhs)
+      t2@PlannedComponent(qgB, planB) <- plans if planB.satisfiesExpressionDependencies(valueJoinPredicate.rhs) && planA != planB
     } yield {
-      val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, equalPredicate, equalPredicate), qg)
-      val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, equalPredicate.switchSides, equalPredicate), qg)
-      val nestedIndexJoinAB = planNestedIndexJoinForEquals(planA, planB, qgA, qgB, qg, equalPredicate)
-      val nestedIndexJoinBA = planNestedIndexJoinForEquals(planB, planA, qgB, qgA, qg, equalPredicate)
 
-      Set(
-        (PlannedComponent(hashJoinAB.solved.lastQueryGraph, hashJoinAB), t1 -> t2),
-        (PlannedComponent(hashJoinBA.solved.lastQueryGraph, hashJoinBA), t1 -> t2)
-      ) ++
+        val nestedIndexJoinAB = planNestedIndexJoin(planA, planB.solved, qgA, qgB, qg, valueJoinPredicate)
+        val nestedIndexJoinBA = planNestedIndexJoin(planB, planA.solved, qgB, qgA, qg, valueJoinPredicate)
+
         nestedIndexJoinAB.map(x => (x, t1 -> t2)) ++
-        nestedIndexJoinBA.map(x => (x, t1 -> t2))
+          nestedIndexJoinBA.map(x => (x, t1 -> t2)) ++ {
+          valueJoinPredicate match {
+            case e: Equals =>
+              val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, e, e), qg)
+              val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, e.switchSides, e), qg)
+
+              Set(
+                (PlannedComponent(hashJoinAB.solved.lastQueryGraph, hashJoinAB), t1 -> t2),
+                (PlannedComponent(hashJoinBA.solved.lastQueryGraph, hashJoinBA), t1 -> t2)
+              )
+            case _:In => Set.empty
+          }
+        }
+
 
     }).flatten.toMap
-
-    val joinsForIn = (for {
-      inPredicate <- qg.selections.inPredicatesForPotentialValueJoins
-      // WHERE l.prop IN r.prop
-      t1@PlannedComponent(qgA, planA) <- plans if planA.satisfiesExpressionDependencies(inPredicate.lhs)
-      t2@PlannedComponent(qgB, planB) <- plans if planB.satisfiesExpressionDependencies(inPredicate.rhs) && planA != planB
-    } yield {
-      val nestedIndexJoinAB = planNestedIndexJoinForIn(planA, planB.solved, qgA, qgB, qg, inPredicate)
-      val nestedIndexJoinBA = planNestedIndexJoinForIn(planB, planA.solved, qgB, qgA, qg, inPredicate)
-
-      nestedIndexJoinAB.map(x => (x, t1 -> t2)) ++
-        nestedIndexJoinBA.map(x => (x, t1 -> t2))
-
-    }).flatten.toMap
-
-    joinsForEquals ++ joinsForIn
   }
 
-  /*
-  Index Nested Loop Joins -- if there is a value join connection between the LHS and RHS, and a useful index exists for
-  one of the sides, it can be used if the query is planned as an apply with the index seek on the RHS.
+  // Value joins are equality comparisons between two expressions. As long as they depend on different, non-overlapping
+  // sets of variables, they can be solved with a traditional hash join, similar to what a SQL database would
+  def predicatesForPotentialValueJoins(selections: Selections): Set[BinaryOperatorExpression] = selections.flatPredicates.collect {
+    case e@Equals(l, r)
+      if l.dependencies.nonEmpty &&
+        r.dependencies.nonEmpty &&
+        r.dependencies != l.dependencies => e
+    case i@In(l, r)
+      if l.dependencies.nonEmpty &&
+        r.dependencies.nonEmpty &&
+        r.dependencies != l.dependencies => i
+  }.toSet
 
-      Apply
-    LHS  Index Seek
+  /**
+    *
+    * Index Nested Loop Joins -- if there is a value join connection between the LHS and RHS, and a useful index exists for
+    * one of the sides, it can be used if the query is planned as an apply with the index seek on the RHS.
+    *
+    * For WHERE a.prop = b.prop
+    * ---Apply
+    * LHS  Index Seek
+    *
+    * For WHERE a.prop IN b.prop
+    * -----Apply
+    * Unwind   Index Seek
+    * LHS
    */
-  private def planNestedIndexJoinForEquals(lhsPlan: LogicalPlan, rhsInputPlan: LogicalPlan,
-                      lhsQG: QueryGraph, rhsQG: QueryGraph,
-                      fullQG: QueryGraph, predicate: Equals)
-                     (implicit context: LogicalPlanningContext,
-                      kit: QueryPlannerKit,
-                      singleComponentPlanner: SingleComponentPlannerTrait) = {
-
-    val notSingleComponent = rhsQG.connectedComponents.size > 1
-    val containsOptionals = rhsInputPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
-
-    if (notSingleComponent || containsOptionals) None
-    else {
-      // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
-      val rhsQueryGraphWithArgs = rhsInputPlan.solved.lastQueryGraph.addArgumentIds(lhsQG.coveredIds.toIndexedSeq).addPredicates(predicate)
-      val rhsPlan = singleComponentPlanner.planComponent(rhsQueryGraphWithArgs)
-      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
-
-      // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
-      // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and
-      // this confuses the cost model
-      val lhsDependencies = result.leaves.collect {
-        case x: IndexLeafPlan => x.valueExpr.expressions.flatMap(_.dependencies)
-      }.flatten
-
-      if (lhsDependencies.nonEmpty)
-        Some(PlannedComponent(result.solved.lastQueryGraph, result))
-      else
-        None
-    }
-  }
-
-  private def planNestedIndexJoinForIn(lhsPlan: LogicalPlan, rhsSolved: PlannerQuery with CardinalityEstimation,
-                                           lhsQG: QueryGraph, rhsQG: QueryGraph,
-                                           fullQG: QueryGraph, predicate: In)
-                                          (implicit context: LogicalPlanningContext,
-                                           kit: QueryPlannerKit,
-                                           singleComponentPlanner: SingleComponentPlannerTrait) = {
+  private def planNestedIndexJoin(lhsPlan: LogicalPlan, rhsSolved: PlannerQuery with CardinalityEstimation,
+                                  lhsQG: QueryGraph, rhsQG: QueryGraph,
+                                  fullQG: QueryGraph, predicate: BinaryOperatorExpression)
+                                 (implicit context: LogicalPlanningContext,
+                                  kit: QueryPlannerKit,
+                                  singleComponentPlanner: SingleComponentPlannerTrait) = {
 
     val notSingleComponent = rhsQG.connectedComponents.size > 1
     val containsOptionals = rhsSolved.lastQueryGraph.optionalMatches.nonEmpty
@@ -197,12 +178,19 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     if (notSingleComponent || containsOptionals) None
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
-      val unwindVar = IdName(FreshIdNameGenerator.name(predicate.position))
-      val arguments = unwindVar +: lhsQG.coveredIds.toIndexedSeq
-      val rhsQueryGraphWithArgs = rhsSolved.lastQueryGraph.addArgumentIds(arguments).addPredicates(predicate)
-      val rhsPlan = singleComponentPlanner.planComponent(rhsQueryGraphWithArgs)
-      val unwind = UnwindCollection(lhsPlan, unwindVar, predicate.rhs)(lhsPlan.solved)
-      val result = kit.select(context.logicalPlanProducer.planApply(unwind, rhsPlan), fullQG)
+      val result = predicate match {
+        case e: Equals =>
+          val rhsQueryGraphWithArgs = rhsSolved.lastQueryGraph.addArgumentIds(lhsQG.coveredIds.toIndexedSeq).addPredicates(e)
+          val rhsPlan = singleComponentPlanner.planComponent(rhsQueryGraphWithArgs)
+          kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
+        case i: In =>
+          val unwindVar = IdName(FreshIdNameGenerator.name(i.position))
+          val arguments = unwindVar +: lhsQG.coveredIds.toIndexedSeq
+          val rhsQueryGraphWithArgs = rhsSolved.lastQueryGraph.addArgumentIds(arguments).addPredicates(i)
+          val rhsPlan = singleComponentPlanner.planComponent(rhsQueryGraphWithArgs)
+          val unwind = UnwindCollection(lhsPlan, unwindVar, i.rhs)(lhsPlan.solved)
+          kit.select(context.logicalPlanProducer.planApply(unwind, rhsPlan), fullQG)
+      }
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
       // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and
