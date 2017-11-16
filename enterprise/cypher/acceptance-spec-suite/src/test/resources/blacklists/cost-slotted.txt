@@ -38,7 +38,6 @@ Using a longer pattern
 Using bound nodes in mid-pattern
 Using bound nodes in mid-pattern when pattern partly matches
 Introduce named paths
-Unbound pattern
 Returning an `extract()` expression
 Using an `extract()` expression in a WITH
 Using an `extract()` expression in a WHERE
