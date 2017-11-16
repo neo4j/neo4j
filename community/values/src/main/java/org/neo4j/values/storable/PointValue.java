@@ -130,7 +130,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     }
 
     @Override
-    protected boolean eq( Object other )
+    public boolean eq( Object other )
     {
         return other != null &&
                (
