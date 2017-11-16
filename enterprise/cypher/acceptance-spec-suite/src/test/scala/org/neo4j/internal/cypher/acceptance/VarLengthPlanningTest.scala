@@ -17,25 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v3_3.ast.NoneIterablePredicate
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Direction._
 import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable
 
-class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   test("should handle LIKES*0.LIKES") {
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -44,7 +46,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*0]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*0]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -53,7 +55,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -62,7 +64,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*1]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*1]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -71,7 +73,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -80,7 +82,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -89,7 +91,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 5)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*3]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*3]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -98,7 +100,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 5, directions = Seq(INCOMING))
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)<-[:LIKES]-()-[r:LIKES*3]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)<-[:LIKES]-()-[r:LIKES*3]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -107,7 +109,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 5, directions = Seq(OUTGOING, INCOMING, INCOMING, INCOMING))
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()<-[r:LIKES*3]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()<-[r:LIKES*3]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -116,7 +118,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 5)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }
@@ -125,7 +127,7 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
     //Given
     makeTreeModel(maxNodeDepth = 5)
     //When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWith(Configs.CommunityInterpreted, "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
   }

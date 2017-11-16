@@ -20,20 +20,24 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, Version => IPDVersion}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.Exceptions
+import org.neo4j.internal.cypher.acceptance.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-import org.scalacheck.Prop.True
 import org.scalatest.Assertions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -260,6 +264,48 @@ trait CypherComparisonSupport extends CypherTestSupport {
         rawNegatedFailureMessage = s"Results are equal")
     }
   }
+}
+
+class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
+  private var traceBuilder = List.newBuilder[NewRuntimeMonitorCall]
+
+  override def unableToHandlePlan(plan: LogicalPlan, e: CantCompileQueryException) {
+    traceBuilder += UnableToCompileQuery(Exceptions.stringify(e))
+  }
+
+  override def newPlanSeen(plan: LogicalPlan) {
+    traceBuilder += NewPlanSeen(plan.toString)
+  }
+
+  def trace = traceBuilder.result()
+
+  def clear() {
+    traceBuilder.clear()
+  }
+}
+
+object NewPlannerMonitor {
+
+  sealed trait NewPlannerMonitorCall {
+    def stackTrace: String
+  }
+
+  final case class UnableToHandleQuery(stackTrace: String) extends NewPlannerMonitorCall
+
+  final case class NewQuerySeen(stackTrace: String) extends NewPlannerMonitorCall
+
+}
+
+object NewRuntimeMonitor {
+
+  sealed trait NewRuntimeMonitorCall {
+    def stackTrace: String
+  }
+
+  final case class UnableToCompileQuery(stackTrace: String) extends NewRuntimeMonitorCall
+
+  final case class NewPlanSeen(stackTrace: String) extends NewRuntimeMonitorCall
+
 }
 
 /**

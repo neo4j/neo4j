@@ -20,10 +20,10 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("GH #5803 query should work with shortest path") {
     def createTestGraph() = {
@@ -103,7 +103,7 @@ class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with N
                   |WHERE ALL(id IN wps WHERE id IN EXTRACT(n IN nodes(p) | n.id))
                   |WITH p, size(nodes(p)) as length order by length limit 1
                   |RETURN size(nodes(p)) as size""".stripMargin
-    val results = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val results = executeWith(Configs.CommunityInterpreted, query)
     results.toList should equal(List(Map("size" -> 7)))
   }
 
