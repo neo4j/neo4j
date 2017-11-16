@@ -125,7 +125,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     val selections = Selections.from(equalityComparison)
 
     // when
-    val result = selections.valueJoins
+    val result = selections.equalPredicatesForPotentialValueJoins
 
     // then
     result should equal(Set(equalityComparison))
@@ -136,7 +136,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     val selections = Selections.from(propEquality("x","id", 42))
 
     // when
-    val result = selections.valueJoins
+    val result = selections.equalPredicatesForPotentialValueJoins
 
     // then
     result should be(empty)
@@ -150,7 +150,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     val selections = Selections.from(equalityComparison)
 
     // when
-    val result = selections.valueJoins
+    val result = selections.equalPredicatesForPotentialValueJoins
 
     // then
     result should be(empty)
@@ -170,7 +170,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     val selections = Selections.from(Seq(pred1, pred2, pred3))
 
     // when
-    val result = selections.valueJoins
+    val result = selections.equalPredicatesForPotentialValueJoins
 
     // then
     result should be(Set(pred2))
