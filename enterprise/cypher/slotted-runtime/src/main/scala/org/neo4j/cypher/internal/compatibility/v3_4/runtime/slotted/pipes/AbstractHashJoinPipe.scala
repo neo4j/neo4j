@@ -29,8 +29,8 @@ import scala.collection.mutable
 abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
                                             right: Pipe,
                                             slots: SlotConfiguration) extends PipeWithSource(left) {
-  val leftSide: T
-  val rightSide: T
+  protected val leftSide: T
+  protected val rightSide: T
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -44,6 +44,8 @@ abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
 
     val table = buildProbeTable(input, state)
 
+    // This will only happen if all the lhs-values evaluate to null, which is probably rare.
+    // But, it's cheap to check and will save us from exhausting the rhs, so it's probably worth it
     if (table.isEmpty)
       return Iterator.empty
 

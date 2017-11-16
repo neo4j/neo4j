@@ -21,15 +21,12 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.{RowL, mockPipeFor, testableResult}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.values.AnyValue
 
 class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
 
@@ -42,8 +39,8 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
 
     val slots = SlotConfiguration.empty.newLong("b", nullable = false, CTNode)
 
-    val left = mockPipeFor(slots, Row(Longs(node1)), Row(Longs(node2)))
-    val right = mockPipeFor(slots, Row(Longs(node2)), Row(Longs(node3)))
+    val left = mockPipeFor(slots, RowL(node1), RowL(node2))
+    val right = mockPipeFor(slots, RowL(node2), RowL(node3))
 
     // when
     val result = NodeHashJoinSlottedPipe(Array(0), Array(0), left, right, slots, Array(), Array())().createResults(queryState)
@@ -72,18 +69,18 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     hashSlots.newLong("d", nullable = false, CTNode)
 
     val left = mockPipeFor(leftSlots,
-      Row(Longs(node0, node1, node1)),
-      Row(Longs(node0, node2, node2)),
-      Row(Longs(node0, node2, node3)),
-      Row(Longs(node1, node2, node4)),
-      Row(Longs(node0, NULL, node5))
+      RowL(node0, node1, node1),
+      RowL(node0, node2, node2),
+      RowL(node0, node2, node3),
+      RowL(node1, node2, node4),
+      RowL(node0, NULL, node5)
     )
 
     val right = mockPipeFor(rightSlots,
-      Row(Longs(node0, node1, node1)),
-      Row(Longs(node0, node2, node2)),
-      Row(Longs(node2, node2, node3)),
-      Row(Longs(NULL, node2, node4))
+      RowL(node0, node1, node1),
+      RowL(node0, node2, node2),
+      RowL(node2, node2, node3),
+      RowL(NULL, node2, node4)
     )
 
     // when
@@ -126,8 +123,8 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     val slots = SlotConfiguration.empty
     slots.newLong("a", nullable = false, CTNode)
 
-    val left = mockPipeFor(slots, Row(Longs(NULL)))
-    val right = mockPipeFor(slots, Row(Longs(node0)))
+    val left = mockPipeFor(slots, RowL(NULL))
+    val right = mockPipeFor(slots, RowL(node0))
 
     // when
     val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array())().
@@ -139,12 +136,6 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     verifyNoMoreInteractions(right)
   }
 
-  case class Row(l: Longs = Longs(), r: Refs = Refs())
-
-  case class Longs(l: Long*)
-
-  case class Refs(l: AnyValue*)
-
   private val node0 = 0
   private val node1 = 1
   private val node2 = 2
@@ -152,32 +143,5 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
   private val node4 = 4
   private val node5 = 5
   private val NULL = -1
-
-  private def mockPipeFor(slots: SlotConfiguration, rows: Row*) = {
-    val p = mock[Pipe]
-    when(p.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[ExecutionContext] = {
-        rows.toIterator.map { row =>
-          val createdRow = PrimitiveExecutionContext(slots)
-          row.l.l.zipWithIndex foreach {
-            case (v, idx) => createdRow.setLongAt(idx, v)
-          }
-          createdRow
-        }
-      }
-    })
-    p
-  }
-
-  private def testableResult(list: Iterator[ExecutionContext], slots: SlotConfiguration): List[Map[String, Any]] = {
-    list.toList map { in =>
-      val build = scala.collection.mutable.HashMap.empty[String, Any]
-      slots.foreachSlot {
-        case (column, LongSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
-        case (column, RefSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
-      }
-      build.toMap
-    }
-  }
 
 }

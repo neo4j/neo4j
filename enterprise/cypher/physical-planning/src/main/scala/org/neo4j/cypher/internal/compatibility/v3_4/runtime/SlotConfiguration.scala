@@ -242,7 +242,7 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   }
 
   override def hashCode(): Int = {
-    val state = Seq(slots, numberOfLongs, numberOfReferences)
+    val state = Seq[Any](slots, numberOfLongs, numberOfReferences)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 

@@ -347,7 +347,7 @@ object SlotAllocation {
         }
         result
 
-      case ValueHashJoin(_, _, predicate) =>
+      case _: ValueHashJoin =>
         val newPipeline = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
