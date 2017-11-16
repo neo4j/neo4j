@@ -42,6 +42,7 @@
         <module>compatibility-spec-suite</module>
         <module>physical-planning</module>
         <module>slotted-runtime</module>
+        <module>morsel-runtime</module>
         <module>cypher</module>
       </modules>
     </profile>

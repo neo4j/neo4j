@@ -26,7 +26,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.Interpreted - Configs.Version2_3
+  val expectedToSucceed = Configs.Interpreted + Configs.Morsel - Configs.Version2_3
 
   val expectedToFail = TestConfiguration(Versions(Versions.Default, V3_1), Planners.all, Runtimes.Default)
 
@@ -245,7 +245,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
-    val result = executeWith(expectedToSucceed, "MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point",
+    val result = executeWith(expectedToSucceed - Configs.Morsel, "MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -271,7 +271,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
-    val result = executeWith(expectedToSucceed, "MATCH (p:Place) RETURN point(p) as point",
+    val result = executeWith(expectedToSucceed - Configs.Morsel, "MATCH (p:Place) RETURN point(p) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 

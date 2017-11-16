@@ -102,14 +102,14 @@ public interface NotificationDetail
             return createNotificationDetail( labels, "indexed label", "indexed labels" );
         }
 
-        public static NotificationDetail startDeprecated( String message )
+        public static NotificationDetail message( String name, String message )
         {
             return new NotificationDetail()
             {
                 @Override
                 public String name()
                 {
-                    return "START";
+                    return name;
                 }
 
                 @Override

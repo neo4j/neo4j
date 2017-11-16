@@ -30,7 +30,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWith(Configs.All, ("match (n) return n")).dumpToString() should
+    executeWith(Configs.All + Configs.Morsel, ("match (n) return n")).dumpToString() should
       equal(
         """+----------------------------+
           || n                          |
@@ -44,7 +44,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   test("format relationship") {
     relate(createNode(), createNode(), "T", Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWith(Configs.All, "match ()-[r]->() return r").dumpToString() should equal(
+    executeWith(Configs.All + Configs.Morsel, "match ()-[r]->() return r").dumpToString() should equal(
       """+--------------------------+
         || r                        |
         |+--------------------------+
@@ -55,7 +55,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   }
 
   test("format collection of maps") {
-    executeWith(Configs.All,  """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
+    executeWith(Configs.All + Configs.Morsel,  """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
       equal(
         """+----------------------------------------+
           || [{ inner: 'Map1' }, { inner: 'Map2' }] |

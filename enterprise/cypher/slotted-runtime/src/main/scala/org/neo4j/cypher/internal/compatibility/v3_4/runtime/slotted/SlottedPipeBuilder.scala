@@ -423,7 +423,8 @@ object SlottedPipeBuilder {
         incoming
     }
     else {
-      //find columns where output is a reference slot but where the input is a long slot
+    //find columns where output is a reference slot but where the input is a long slot
+
       val mapSlots: Iterable[(ExecutionContext, ExecutionContext, QueryState) => Unit] = out.mapSlot {
         case (k, v: LongSlot) =>
           val sourceOffset = in.getLongOffsetFor(k)
@@ -449,4 +450,18 @@ object SlottedPipeBuilder {
     }
 
   }
+
+  def translateColumnOrder(pipeline: PipelineInformation, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
+    case plans.Ascending(IdName(name)) =>
+      pipeline.get(name) match {
+        case Some(slot) => pipes.Ascending(slot)
+        case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
+      }
+    case plans.Descending(IdName(name)) =>
+      pipeline.get(name) match {
+        case Some(slot) => pipes.Descending(slot)
+        case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
+      }
+  }
+
 }

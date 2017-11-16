@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.{BuildCompiledExecutionPlan, EnterpriseRuntimeContext}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_4.notification.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Do, If, Transformer}
+import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 
 object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] = {
@@ -45,6 +45,19 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
 
       case Some(InterpretedRuntimeName) =>
         BuildInterpretedExecutionPlan
+
+      case Some(MorselRuntimeName)if useErrorsOverWarnings =>
+        BuildVectorizedExecutionPlan andThen
+          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
+            Do((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
+          )
+
+      case Some(MorselRuntimeName) =>
+        BuildVectorizedExecutionPlan andThen
+          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
+            Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
+              pickInterpretedExecutionPlan()
+          )
 
       case Some(SlottedRuntimeName) if useErrorsOverWarnings =>
         BuildSlottedExecutionPlan andThen

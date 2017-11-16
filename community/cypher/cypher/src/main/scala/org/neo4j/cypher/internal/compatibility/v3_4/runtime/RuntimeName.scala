@@ -32,6 +32,10 @@ case object SlottedRuntimeName extends RuntimeName {
   override val name = "SLOTTED"
 }
 
+case object MorselRuntimeName extends RuntimeName {
+  override val name = "MORSEL"
+}
+
 case object CompiledRuntimeName extends RuntimeName {
   override val name = "COMPILED"
 }

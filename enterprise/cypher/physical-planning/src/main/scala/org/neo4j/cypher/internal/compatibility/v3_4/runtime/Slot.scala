@@ -36,7 +36,7 @@ sealed trait SlotWithAliases {
 
   protected def makeString: String = {
     val aliasesString = s"${aliases.mkString("'", "','", "'")}"
-    f"${slot}%-30s ${aliasesString}%-10s"
+    f"$slot%-30s $aliasesString%-10s"
   }
 }
 

@@ -133,7 +133,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWith(Configs.Interpreted, "match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n",
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, "match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
 
     result.toList should equal(List(
@@ -146,7 +146,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWith(Configs.Interpreted, "match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n")
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, "match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n")
 
     result should have size 3
   }
@@ -156,7 +156,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWith(Configs.Interpreted, "match (n) where (case when id(n) < 0 then length((n)-[:X]->()) else 42 end) > 0 return n")
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, "match (n) where (case when id(n) < 0 then length((n)-[:X]->()) else 42 end) > 0 return n")
 
     result should have size 3
   }
@@ -383,7 +383,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("use getDegree for simple pattern expression with rel-type ORs") {
     setup()
 
-    executeWith(Configs.Interpreted, "MATCH (n) WHERE length((n)-[:X|Y]->()) > 2 RETURN n",
+    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH (n) WHERE length((n)-[:X|Y]->()) > 2 RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
   }
 

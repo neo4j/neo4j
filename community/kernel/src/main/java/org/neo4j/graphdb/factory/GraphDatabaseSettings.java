@@ -190,7 +190,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "unsupported.cypher.runtime",
-            options( "INTERPRETED", "COMPILED", "SLOTTED" ,  DEFAULT ), DEFAULT );
+            options( "INTERPRETED", "COMPILED", "SLOTTED" , "MORSEL", DEFAULT ), DEFAULT );
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal
@@ -251,6 +251,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, TRUE );
     @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query." )
     public static Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, TRUE );
+
+    @Description( "The size of the morsels" )
+    @Internal
+    public static final Setting<Integer> cypher_morsel_size =
+            setting( "unsupported.cypher.morsel_size", INTEGER, "100000" );
+
+    @Description( "Number of threads to allocate to Cypher worker threads. If set to 0, two workers will be started" +
+            " for every physical core in the system." )
+    @Internal
+    public static final Setting<Integer> cypher_worker_count =
+            setting( "unsupported.cypher.number_of_workers", INTEGER, "0" );
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )

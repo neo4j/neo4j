@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -41,6 +39,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
+import java.util.function.Supplier;
+
 public class Neo4jTransactionalContext implements TransactionalContext
 {
     private final GraphDatabaseQueryService graph;
@@ -49,8 +49,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final ThreadToStatementContextBridge txBridge;
     private final PropertyContainerLocker locker;
 
-    private final KernelTransaction.Type transactionType;
-    private final SecurityContext securityContext;
+    public final KernelTransaction.Type transactionType;
+    public final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
 
     /**
@@ -232,6 +232,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
             isOpen = true;
         }
         return this;
+    }
+
+    public TransactionalContext beginInNewThread()
+    {
+        InternalTransaction newTx = graph.beginTransaction( transactionType, securityContext );
+        return new Neo4jTransactionalContext( graph, statementSupplier, guard, txBridge, locker, newTx,
+                statementSupplier.get(), executingQuery );
     }
 
     private void checkNotTerminated()

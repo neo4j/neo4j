@@ -189,8 +189,11 @@ public enum NotificationCode
     START_DEPRECATED(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "START has been deprecated and will be removed in a future version."
-    );
+            "START has been deprecated and will be removed in a future version." ),
+    EXPERIMENTAL_FEATURE(
+            SeverityLevel.WARNING,
+            Status.Statement.ExperimentalFeature,
+            "You are using an experimental feature" );
 
     private final Status status;
     private final String description;

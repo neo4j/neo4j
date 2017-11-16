@@ -145,7 +145,7 @@ public class StartClientIT extends AbstractShellIT
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
-                    String configFile ) throws RemoteException
+                                                                            String configFile ) throws RemoteException
             {
                 return databaseShellServer;
             }
@@ -206,7 +206,7 @@ public class StartClientIT extends AbstractShellIT
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
-                    String configFile ) throws RemoteException
+                                                                            String configFile ) throws RemoteException
             {
                 TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory().setUserLogProvider( log );
                 shellServer = new GraphDatabaseShellServer( factory, path, readOnly, configFile );
@@ -258,5 +258,4 @@ public class StartClientIT extends AbstractShellIT
             System.setOut( oldOut );
         }
     }
-
 }
