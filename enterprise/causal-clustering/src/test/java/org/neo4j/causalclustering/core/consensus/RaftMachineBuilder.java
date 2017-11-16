@@ -91,7 +91,8 @@ public class RaftMachineBuilder
 
     public RaftMachine build()
     {
-        ElectionTiming electionTiming = new ElectionTiming( Duration.ofMillis( electionTimeout ), Duration.ofMillis( heartbeatInterval ), clock );
+        ElectionTiming electionTiming = new ElectionTiming( Duration.ofMillis( electionTimeout ), Duration.ofMillis( heartbeatInterval ), clock,
+                renewableTimeoutService, logProvider );
         SendToMyself leaderOnlyReplicator = new SendToMyself( member, outbound );
         RaftMembershipManager membershipManager = new RaftMembershipManager( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTiming.getElectionTimeout(), clock, catchupTimeout,
@@ -100,8 +101,7 @@ public class RaftMachineBuilder
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, shippingClock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightCache );
-        RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTiming,
-                renewableTimeoutService, outbound, logProvider,
+        RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTiming, outbound, logProvider,
                 membershipManager, logShipping, inFlightCache, false, false, monitors );
         inbound.registerHandler( ( incomingMessage ) ->
         {

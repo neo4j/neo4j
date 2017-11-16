@@ -23,23 +23,32 @@ import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.function.ThrowingAction;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 class ElectionTiming
 {
     private final long electionTimeout;
     private final long heartbeatInterval;
     private final Clock clock;
+    private final RenewableTimeoutService renewableTimeoutService;
+    private final Log log;
 
     private volatile long lastElectionRenewalMillis;
 
     private RenewableTimeoutService.RenewableTimeout heartbeatTimer;
     private RenewableTimeoutService.RenewableTimeout electionTimer;
 
-    ElectionTiming( Duration electionTimeout, Duration heartbeatInterval, Clock clock )
+    ElectionTiming( Duration electionTimeout, Duration heartbeatInterval, Clock clock, RenewableTimeoutService renewableTimeoutService,
+            LogProvider logProvider )
     {
         this.electionTimeout = electionTimeout.toMillis();
         this.heartbeatInterval = heartbeatInterval.toMillis();
         this.clock = clock;
+        this.renewableTimeoutService = renewableTimeoutService;
+        this.log = logProvider.getLog( getClass() );
+
         if ( this.electionTimeout < this.heartbeatInterval )
         {
             throw new IllegalArgumentException( String.format(
@@ -48,10 +57,12 @@ class ElectionTiming
         }
     }
 
-    synchronized void start( RenewableTimeoutService.RenewableTimeout electionTimer, RenewableTimeoutService.RenewableTimeout heartbeatTimer )
+    synchronized void start( ThrowingAction<Exception> electionAction, ThrowingAction<Exception> heartbeatAction )
     {
-        this.electionTimer = electionTimer;
-        this.heartbeatTimer = heartbeatTimer;
+        this.electionTimer = renewableTimeoutService.create( RaftMachine.Timeouts.ELECTION, getElectionTimeout(), randomTimeoutRange(),
+                renewing( electionAction ) );
+        this.heartbeatTimer = renewableTimeoutService.create( RaftMachine.Timeouts.HEARTBEAT, getHeartbeatInterval(), 0,
+                renewing( heartbeatAction ) );
         lastElectionRenewalMillis = clock.millis();
     }
 
@@ -91,5 +102,26 @@ class ElectionTiming
     long getHeartbeatInterval()
     {
         return heartbeatInterval;
+    }
+
+    private long randomTimeoutRange()
+    {
+        return getElectionTimeout();
+    }
+
+    private RenewableTimeoutService.TimeoutHandler renewing( ThrowingAction<Exception> action )
+    {
+        return timeout ->
+        {
+            try
+            {
+                action.apply();
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failed to process timeout.", e );
+            }
+            timeout.renew();
+        };
     }
 }
