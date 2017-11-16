@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.ConstraintViolationException
+import org.neo4j.graphdb.{ConstraintViolationException, Result}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions._
@@ -33,10 +33,26 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
-class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
+class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with QueryStatisticsTestSupport {
 
   override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
+  }
+
+  test("Node key constraint creation should be reported") {
+    // When
+    val result = innerExecuteDeprecated("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY", Map.empty)
+
+    // Then
+    assertStats(result, nodekeyConstraintsAdded = 1)
+  }
+
+  test("Uniqueness constraint creation should be reported") {
+    // When
+    val result = innerExecuteDeprecated("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE", Map.empty)
+
+    // Then
+    assertStats(result, uniqueConstraintsAdded = 1)
   }
 
   test("should be able to create and remove single property NODE KEY") {

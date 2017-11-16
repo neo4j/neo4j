@@ -42,6 +42,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val uniqueConstraintsRemoved = new Counter
   private val propertyExistenceConstraintsAdded = new Counter
   private val propertyExistenceConstraintsRemoved = new Counter
+  private val nodekeyConstraintsAdded = new Counter
+  private val nodekeyConstraintsRemoved = new Counter
 
   def getStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
@@ -56,7 +58,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     uniqueConstraintsAdded = uniqueConstraintsAdded.count,
     uniqueConstraintsRemoved = uniqueConstraintsRemoved.count,
     existenceConstraintsAdded = propertyExistenceConstraintsAdded.count,
-    existenceConstraintsRemoved = propertyExistenceConstraintsRemoved.count)
+    existenceConstraintsRemoved = propertyExistenceConstraintsRemoved.count,
+    nodekeyConstraintsAdded = nodekeyConstraintsAdded.count,
+    nodekeyConstraintsRemoved = nodekeyConstraintsRemoved.count)
 
   override def getOptStatistics = Some(getStatistics)
 
@@ -107,6 +111,17 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   override def dropIndexRule(descriptor: IndexDescriptor) {
     inner.dropIndexRule(descriptor)
     indexesRemoved.increase()
+  }
+
+  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = {
+    val result = inner.createNodeKeyConstraint(descriptor)
+    if ( result ) nodekeyConstraintsAdded.increase()
+    result
+  }
+
+  override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit = {
+    inner.dropNodeKeyConstraint(descriptor)
+    nodekeyConstraintsRemoved.increase()
   }
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = {
