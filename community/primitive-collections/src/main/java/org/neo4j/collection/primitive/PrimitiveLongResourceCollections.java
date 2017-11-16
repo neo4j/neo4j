@@ -20,18 +20,15 @@
 package org.neo4j.collection.primitive;
 
 import java.util.Arrays;
+import java.util.function.LongPredicate;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceUtils;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 
 public class PrimitiveLongResourceCollections
 {
-    public static PrimitiveLongResourceIterator iterator( Resource resource, final long... items )
-    {
-        return resourceIterator( PrimitiveLongCollections.iterator( items ), resource );
-    }
-
     private static final PrimitiveLongResourceIterator EMPTY = new PrimitiveLongBaseResourceIterator( null )
     {
         @Override
@@ -46,6 +43,11 @@ public class PrimitiveLongResourceCollections
         return EMPTY;
     }
 
+    public static PrimitiveLongResourceIterator iterator( Resource resource, final long... items )
+    {
+        return resourceIterator( PrimitiveLongCollections.iterator( items ), resource );
+    }
+
     public static PrimitiveLongResourceIterator concat( PrimitiveLongResourceIterator... primitiveLongResourceIterators )
     {
         return concat( Arrays.asList( primitiveLongResourceIterators ) );
@@ -56,12 +58,24 @@ public class PrimitiveLongResourceCollections
         return new PrimitiveLongConcatingResourceIterator( primitiveLongResourceIterators );
     }
 
-    public abstract static class PrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+    public static PrimitiveLongResourceIterator filter( PrimitiveLongResourceIterator source, LongPredicate filter )
+    {
+        return new PrimitiveLongFilteringResourceIterator( source )
+        {
+            @Override
+            public boolean test( long item )
+            {
+                return filter.test( item );
+            }
+        };
+    }
+
+    private abstract static class PrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
             implements PrimitiveLongResourceIterator
     {
         private Resource resource;
 
-        PrimitiveLongBaseResourceIterator( Resource resource )
+        private PrimitiveLongBaseResourceIterator( Resource resource )
         {
             this.resource = resource;
         }
@@ -77,13 +91,13 @@ public class PrimitiveLongResourceCollections
         }
     }
 
-    public static class PrimitiveLongConcatingResourceIterator extends PrimitiveLongCollections.PrimitiveLongConcatingIterator
+    private static class PrimitiveLongConcatingResourceIterator extends PrimitiveLongCollections.PrimitiveLongConcatingIterator
             implements PrimitiveLongResourceIterator
     {
         private final Iterable<PrimitiveLongResourceIterator> iterators;
         private volatile boolean closed;
 
-        PrimitiveLongConcatingResourceIterator( Iterable<PrimitiveLongResourceIterator> iterators )
+        private PrimitiveLongConcatingResourceIterator( Iterable<PrimitiveLongResourceIterator> iterators )
         {
             super( iterators.iterator() );
             this.iterators = iterators;
@@ -101,39 +115,37 @@ public class PrimitiveLongResourceCollections
             if ( !closed )
             {
                 closed = true;
-                closeAll();
+                ResourceUtils.closeAll( iterators );
             }
         }
 
-        // Copied from IOUtils
-        private void closeAll()
+    }
+
+    private abstract static class PrimitiveLongFilteringResourceIterator extends PrimitiveLongBaseResourceIterator implements LongPredicate
+    {
+        private final PrimitiveLongIterator source;
+
+        private PrimitiveLongFilteringResourceIterator( PrimitiveLongResourceIterator source )
         {
-            Throwable closeThrowable = null;
-            for ( Resource resource : iterators )
+            super( source );
+            this.source = source;
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            while ( source.hasNext() )
             {
-                if ( resource != null )
+                long testItem = source.next();
+                if ( test( testItem ) )
                 {
-                    try
-                    {
-                        resource.close();
-                    }
-                    catch ( Throwable t )
-                    {
-                        if ( closeThrowable == null )
-                        {
-                            closeThrowable = t;
-                        }
-                        else
-                        {
-                            closeThrowable.addSuppressed( t );
-                        }
-                    }
+                    return next( testItem );
                 }
             }
-            if ( closeThrowable != null )
-            {
-                throw new RuntimeException( "Exception closing multiple resources", closeThrowable );
-            }
+            return false;
         }
+
+        @Override
+        public abstract boolean test( long testItem );
     }
 }
