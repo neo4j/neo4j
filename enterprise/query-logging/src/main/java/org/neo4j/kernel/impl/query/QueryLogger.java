@@ -40,6 +40,7 @@ class QueryLogger implements QueryExecutionMonitor
     private final boolean logDetailedTime;
     private final boolean logAllocatedBytes;
     private final boolean logPageDetails;
+    private final boolean logRuntime;
     private final EnumSet<QueryLogEntryContent> flags;
 
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
@@ -59,6 +60,7 @@ class QueryLogger implements QueryExecutionMonitor
         this.logDetailedTime = flags.contains( QueryLogEntryContent.LOG_DETAILED_TIME );
         this.logAllocatedBytes = flags.contains( QueryLogEntryContent.LOG_ALLOCATED_BYTES );
         this.logPageDetails = flags.contains( QueryLogEntryContent.LOG_PAGE_DETAILS );
+        this.logRuntime = flags.contains( QueryLogEntryContent.LOG_RUNTIME );
         this.flags = flags;
     }
 
@@ -132,6 +134,10 @@ class QueryLogger implements QueryExecutionMonitor
         if ( logQueryParameters )
         {
             QueryLogFormatter.formatMapValue( result.append(" - "), query.queryParameters(), passwordParams );
+        }
+        if ( logRuntime )
+        {
+            result.append( " - runtime=" ).append( query.runtime() );
         }
         QueryLogFormatter.formatMap( result.append(" - "), query.transactionAnnotationData() );
         return result.toString();

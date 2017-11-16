@@ -566,6 +566,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> log_queries_allocation_logging_enabled =
             setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
 
+    @Description( "Logs which runtime that was used to run the query" )
+    public static final Setting<Boolean> log_queries_runtime_logging_enabled =
+            setting( "dbms.logs.query.runtime_logging_enabled", BOOLEAN, FALSE );
+
     @Description( "Log page hits and page faults for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
             setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );

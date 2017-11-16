@@ -28,7 +28,8 @@ enum QueryLogEntryContent
     LOG_PARAMETERS( GraphDatabaseSettings.log_queries_parameter_logging_enabled ),
     LOG_DETAILED_TIME( GraphDatabaseSettings.log_queries_detailed_time_logging_enabled ),
     LOG_ALLOCATED_BYTES( GraphDatabaseSettings.log_queries_allocation_logging_enabled ),
-    LOG_PAGE_DETAILS( GraphDatabaseSettings.log_queries_page_detail_logging_enabled );
+    LOG_PAGE_DETAILS( GraphDatabaseSettings.log_queries_page_detail_logging_enabled ),
+    LOG_RUNTIME( GraphDatabaseSettings.log_queries_runtime_logging_enabled );
     private final Setting<Boolean> setting;
 
     QueryLogEntryContent( Setting<Boolean> setting )
