@@ -876,4 +876,22 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.toList should equal(List(Map("req.eid" -> null, "y.eid" -> null)))
   }
+
+  test("Problem with index seek gh #10387") {
+    graph.createIndex("ROLE", "id")
+    graph.createIndex("REALM", "id")
+
+    createLabeledNode(Map("id" -> "abc"), "ROLE")
+    val realm = createLabeledNode(Map("id" -> "def"), "REALM")
+    val q = """MATCH (role:ROLE)
+              |WHERE role.id = "abc"
+              |WITH role
+              |UNWIND [{realmId: "def", rights: ["read"]}] AS permission
+              |MATCH (realm:REALM)
+              |WHERE realm.id = permission.realmId
+              |RETURN realm""".stripMargin
+
+    val res = executeWith(Configs.Interpreted, q)
+    res.toList should equal(List(Map("realm" -> realm)))
+  }
 }
