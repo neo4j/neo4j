@@ -59,7 +59,9 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
                    uniqueConstraintsAdded: Int = 0,
                    uniqueConstraintsRemoved: Int = 0,
                    existenceConstraintsAdded: Int = 0,
-                   existenceConstraintsRemoved: Int = 0
+                   existenceConstraintsRemoved: Int = 0,
+                   nodekeyConstraintsAdded: Int = 0,
+                   nodekeyConstraintsRemoved: Int = 0
   ) = {
     assertStatsResult(
       nodesCreated,
@@ -74,7 +76,9 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
       uniqueConstraintsAdded,
       uniqueConstraintsRemoved,
       existenceConstraintsAdded,
-      existenceConstraintsRemoved
+      existenceConstraintsRemoved,
+      nodekeyConstraintsAdded,
+      nodekeyConstraintsRemoved
     )(result)
   }
 
@@ -91,7 +95,9 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
                         uniqueConstraintsAdded: Int = 0,
                         uniqueConstraintsRemoved: Int = 0,
                         existenceConstraintsAdded: Int = 0,
-                        existenceConstraintsRemoved: Int = 0
+                        existenceConstraintsRemoved: Int = 0,
+                        nodekeyConstraintsAdded: Int = 0,
+                        nodekeyConstraintsRemoved: Int = 0
                        ): QueryStatisticsAssertions =
     QueryStatistics(
       nodesCreated,
@@ -106,6 +112,8 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
       uniqueConstraintsAdded,
       uniqueConstraintsRemoved,
       existenceConstraintsAdded,
-      existenceConstraintsRemoved
+      existenceConstraintsRemoved,
+      nodekeyConstraintsAdded,
+      nodekeyConstraintsRemoved
     )
 }

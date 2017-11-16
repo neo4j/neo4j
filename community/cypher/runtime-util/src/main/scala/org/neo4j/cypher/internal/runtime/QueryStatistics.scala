@@ -41,14 +41,16 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
                            uniqueConstraintsAdded: Int = 0,
                            uniqueConstraintsRemoved: Int = 0,
                            existenceConstraintsAdded: Int = 0,
-                           existenceConstraintsRemoved: Int = 0
+                           existenceConstraintsRemoved: Int = 0,
+                           nodekeyConstraintsAdded: Int = 0,
+                           nodekeyConstraintsRemoved: Int = 0
                           ) extends org.neo4j.graphdb.QueryStatistics {
 
   @BeanProperty
-  val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded
+  val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded + nodekeyConstraintsAdded
 
   @BeanProperty
-  val constraintsRemoved: Int = uniqueConstraintsRemoved + existenceConstraintsRemoved
+  val constraintsRemoved: Int = uniqueConstraintsRemoved + existenceConstraintsRemoved + nodekeyConstraintsRemoved
 
   def containsUpdates: Boolean =
     nodesCreated > 0 ||
@@ -62,7 +64,6 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
       indexesRemoved > 0 ||
       constraintsAdded > 0 ||
       constraintsRemoved > 0
-
 
   override def toString: String = {
     val builder = new StringBuilder
@@ -80,6 +81,8 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
     includeIfNonZero(builder, "Unique constraints removed: ", uniqueConstraintsRemoved)
     includeIfNonZero(builder, "Property existence constraints added: ", existenceConstraintsAdded)
     includeIfNonZero(builder, "Property existence constraints removed: ", existenceConstraintsRemoved)
+    includeIfNonZero(builder, "Node key constraints added: ", nodekeyConstraintsAdded)
+    includeIfNonZero(builder, "Node key constraints removed: ", nodekeyConstraintsRemoved)
 
     val result = builder.toString()
 
