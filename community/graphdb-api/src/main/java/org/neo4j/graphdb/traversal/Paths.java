@@ -84,15 +84,15 @@ public class Paths
         public String relationshipRepresentation( Path path,
                                                   Node from, Relationship relationship )
         {
-            String prefix = "--";
-            String suffix = "--";
+            String prefix = "-";
+            String suffix = "-";
             if ( from.equals( relationship.getEndNode() ) )
             {
-                prefix = "<--";
+                prefix = "<-";
             }
             else
             {
-                suffix = "-->";
+                suffix = "->";
             }
             return prefix + "[" + relationship.getType().name() + "," +
                     relationship.getId() + "]" + suffix;
@@ -236,14 +236,14 @@ public class Paths
                 {
                     builder.append( "<" );
                 }
-                builder.append( "--[" + (relId ? relationship.getId() : "") );
+                builder.append( "-[" + (relId ? relationship.getId() : "") );
                 String representation = representation( relationship );
                 if ( relId && !representation.equals( "" ) )
                 {
                     builder.append( "," );
                 }
                 builder.append( representation );
-                builder.append( "]--" );
+                builder.append( "]-" );
 
                 if ( direction.equals( Direction.OUTGOING ) )
                 {
