@@ -64,7 +64,7 @@ public class MockStore extends Read implements TestRule
 
     MockStore( Cursors cursors )
     {
-        super( cursors );
+        super( cursors, null );//TODO fake txstateholder?
     }
 
     @Override
@@ -249,7 +249,7 @@ public class MockStore extends Read implements TestRule
             {
 
                 try ( PrimitiveLongObjectMap<Node> nodes = Primitive.longObjectMap();
-                      PrimitiveLongObjectMap<Property> properties = Primitive.longObjectMap(); )
+                      PrimitiveLongObjectMap<Property> properties = Primitive.longObjectMap() )
                 {
                     MockStore.this.nodes = nodes;
                     MockStore.this.properties = properties;

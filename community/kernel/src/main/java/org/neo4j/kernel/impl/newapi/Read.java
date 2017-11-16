@@ -32,6 +32,9 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -52,16 +55,18 @@ import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
 import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-abstract class Read implements
+abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
         org.neo4j.internal.kernel.api.SchemaRead
 {
-    final Cursors cursors;
+    private final Cursors cursors;
+    private final TxStateHolder txStateHolder;
 
-    Read( Cursors cursors )
+    Read( Cursors cursors, TxStateHolder txStateHolder )
     {
         this.cursors = cursors;
+        this.txStateHolder = txStateHolder;
     }
 
     @Override
@@ -427,4 +432,22 @@ abstract class Read implements
     abstract TextValue string( PropertyCursor cursor, long reference, PageCursor page );
 
     abstract ArrayValue array( PropertyCursor cursor, long reference, PageCursor page );
+
+    @Override
+    public TransactionState txState()
+    {
+        return txStateHolder.txState();
+    }
+
+    @Override
+    public ExplicitIndexTransactionState explicitIndexTxState()
+    {
+        return txStateHolder.explicitIndexTxState();
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return txStateHolder.hasTxStateWithChanges();
+    }
 }

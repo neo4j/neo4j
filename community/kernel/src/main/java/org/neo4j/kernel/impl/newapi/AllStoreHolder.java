@@ -20,24 +20,23 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
-import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -46,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -64,18 +62,18 @@ class AllStoreHolder extends Read implements Token
     private final StorageStatement.Properties properties;
     private final StorageStatement.Relationships relationships;
     private final StorageStatement statement;
-    private final StoreReadLayer read;
+    private final StoreReadLayer storeReadLayer;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
     AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
-            Supplier<ExplicitIndexTransactionState> explicitIndexes,
+            TxStateHolder txStateHolder,
             Cursors cursors )
     {
-        super( cursors );
-        this.read = engine.storeReadLayer();
+        super( cursors, txStateHolder );
+        this.storeReadLayer = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
-        this.explicitIndexes = Suppliers.lazySingleton( explicitIndexes );
+        this.explicitIndexes = Suppliers.lazySingleton( txStateHolder::explicitIndexTxState );
 
         this.nodes = statement.nodes();
         this.relationships = statement.relationships();
@@ -126,7 +124,7 @@ class AllStoreHolder extends Read implements Token
     @Override
     public CapableIndexReference index( int label, int... properties )
     {
-        IndexDescriptor indexDescriptor = read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
         if ( indexDescriptor == null )
         {
             return CapableIndexReference.NO_INDEX;
@@ -134,7 +132,7 @@ class AllStoreHolder extends Read implements Token
         boolean unique = indexDescriptor.type() == IndexDescriptor.Type.UNIQUE;
         try
         {
-            IndexCapability indexCapability = read.indexGetCapability( indexDescriptor );
+            IndexCapability indexCapability = storeReadLayer.indexGetCapability( indexDescriptor );
             return new DefaultCapableIndexReference( unique, indexCapability, label, properties );
         }
         catch ( IndexNotFoundKernelException e )
@@ -182,19 +180,19 @@ class AllStoreHolder extends Read implements Token
     @Override
     public int nodeLabel( String name )
     {
-        return read.labelGetForName( name );
+        return storeReadLayer.labelGetForName( name );
     }
 
     @Override
     public int relationshipType( String name )
     {
-        return read.relationshipTypeGetForName( name );
+        return storeReadLayer.relationshipTypeGetForName( name );
     }
 
     @Override
     public int propertyKey( String name )
     {
-        return read.propertyKeyGetForName( name );
+        return storeReadLayer.propertyKeyGetForName( name );
     }
 
     @Override
@@ -293,27 +291,7 @@ class AllStoreHolder extends Read implements Token
 
     public boolean nodeExists( long id )
     {
-        return read.nodeExists( id );
+        return storeReadLayer.nodeExists( id );
     }
 
-    public boolean nodeHasLabel( long node, int nodeLabel ) throws KernelException
-    {
-        try ( org.neo4j.internal.kernel.api.NodeCursor nodes = cursors.allocateNodeCursor() )
-        {
-            singleNode( node, nodes );
-            if ( !nodes.next() )
-            {
-                throw new EntityNotFoundException( EntityType.NODE, node );
-            }
-            LabelSet labels = nodes.labels();
-            for ( int i = 0; i < labels.numberOfLabels(); i++ )
-            {
-                if ( labels.label( i ) == nodeLabel )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
 }

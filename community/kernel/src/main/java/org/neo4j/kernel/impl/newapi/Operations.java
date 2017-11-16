@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -33,7 +32,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
@@ -43,12 +41,16 @@ import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
+import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
@@ -58,17 +60,22 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
     private final StorageStatement statement;
+    private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
+    private final IndexTxStateUpdater updater;
+    private final PropertyCursor propertyCursor;
 
     public Operations(
             StorageEngine engine,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Supplier<ExplicitIndexTransactionState> explicitIndexes,
             Cursors cursors )
     {
-        allStoreHolder = new AllStoreHolder( engine, statement, explicitIndexes, cursors );
+        this.allStoreHolder = new AllStoreHolder( engine, statement, ktx, cursors );
         this.ktx = ktx;
         this.statement = statement;
+        this.nodeCursor = cursors.allocateNodeCursor();
+        this.propertyCursor = cursors.allocatePropertyCursor();
+        this.updater = new IndexTxStateUpdater( engine.storeReadLayer(), allStoreHolder );
     }
 
     // READ
@@ -188,21 +195,21 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
     }
 
     @Override
-    public void nodeProperties( long reference, PropertyCursor cursor )
+    public void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         assertOpen();
         allStoreHolder.nodeProperties( reference, cursor );
     }
 
     @Override
-    public void relationshipProperties( long reference, PropertyCursor cursor )
+    public void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         assertOpen();
         allStoreHolder.relationshipProperties( reference, cursor );
     }
 
     @Override
-    public void graphProperties( PropertyCursor cursor )
+    public void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         assertOpen();
         allStoreHolder.graphProperties( cursor );
@@ -368,6 +375,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
     {
         assertOpen();
 
+        //TODO when singleNode is txState aware we can remove this extra check
         if ( ktx.hasTxStateWithChanges() )
         {
             boolean justAdded = ktx.txState().nodeIsAddedInThisTx( node );
@@ -380,7 +388,54 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
             {
                 // we have a new node, let's add the label
                 ktx.txState().nodeDoAddLabel( nodeLabel, node );
+                updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
                 return true;
+            }
+            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
+            {
+                // already deleted, false or EntityNotFoundException
+                return false;
+            }
+        }
+
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+
+        if ( nodeCursor.labels().contains( nodeLabel ) )
+        {
+            //label already there, nothing to do
+            return false;
+        }
+
+        //node is there and doesn't already have the label, let's add
+        ktx.txState().nodeDoAddLabel( nodeLabel, node );
+        updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
+        return true;
+    }
+
+    @Override
+    public boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException
+    {
+        assertOpen();
+
+        //TODO when singleNode is txState aware we can remove this extra check
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            boolean justAdded = ktx.txState().nodeIsAddedInThisTx( node );
+            if ( justAdded && ktx.txState().nodeStateLabelDiffSets( node ).isAdded( nodeLabel ) )
+            {
+                // we have a new node, let's remove the label
+                ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
+                updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, REMOVED_LABEL );
+                return true;
+            }
+            else if ( justAdded )
+            {
+                //the label is not there
+                return false;
             }
             if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
             {
@@ -389,31 +444,20 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
             }
         }
 
-        //node was neither created nor deleted in this transaction
-        //will throw if node isn't there
-        if ( allStoreHolder.nodeHasLabel( node, nodeLabel ) )
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
         {
-            return false;
+            throw new EntityNotFoundException( EntityType.NODE, node );
         }
-        //TODO indexTxStateUpdater.onLabelChange
 
-        //node is there and doesn't already have the label
-        //let's add it
-        ktx.txState().nodeDoAddLabel( nodeLabel, node );
-        return true;
-    }
-
-    @Override
-    public boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException
-    {
-        assertOpen();
-        //TODO indexTxStateUpdater.onLabelChange
-        if ( !allStoreHolder.nodeHasLabel( node, nodeLabel ) )
+        if ( !nodeCursor.labels().contains( nodeLabel ) )
         {
+            //the label wasn't there, nothing to do
             return false;
         }
 
         ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
+        updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, REMOVED_LABEL );
         return true;
     }
 

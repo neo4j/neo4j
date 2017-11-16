@@ -30,6 +30,8 @@ public interface LabelSet
 
     int label( int offset );
 
+    boolean contains( int labelToken );
+
     LabelSet NONE = new LabelSet()
     {
         @Override
@@ -42,6 +44,12 @@ public interface LabelSet
         public int label( int offset )
         {
             throw new NoSuchElementException();
+        }
+
+        @Override
+        public boolean contains( int labelToken )
+        {
+            return false;
         }
     };
 }
