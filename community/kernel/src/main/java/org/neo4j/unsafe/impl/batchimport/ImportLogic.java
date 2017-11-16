@@ -72,10 +72,8 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
-import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.calculateMaxMemoryUsage;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 
 /**
@@ -88,7 +86,6 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  */
 public class ImportLogic implements Closeable
 {
-    private static final long DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD = 2L << 34;
     private final File storeDir;
     private final FileSystemAbstraction fileSystem;
     private final BatchingNeoStores neoStore;
@@ -119,7 +116,6 @@ public class ImportLogic implements Closeable
     private MemoryUsageStatsProvider memoryUsageStats;
     private InputIterable<InputNode> nodes;
     private InputIterable<InputRelationship> relationships;
-    private InputIterable<InputNode> cachedNodes;
     private long peakMemoryUsage;
     private long availableMemoryForLinking;
 
@@ -162,16 +158,11 @@ public class ImportLogic implements Closeable
         memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper, neoStore );
         nodes = input.nodes();
         relationships = input.relationships();
-        cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
         Estimates inputEstimates = input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() );
         sanityCheckEstimatesWithRecordFormat( inputEstimates );
         dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache );
 
-        doubleRelationshipRecordUnits =
-                // TODO figure out in a good way if this is the high limit format
-                recordFormats.relationship().getMaxId() > 2L << 36 &&
-                inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
-        if ( doubleRelationshipRecordUnits )
+        if ( neoStore.determineDoubleRelationshipRecordUnits( inputEstimates ) )
         {
             System.out.println( "Will use double record units for all relationships" );
         }

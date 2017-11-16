@@ -58,12 +58,14 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
 import static java.lang.String.valueOf;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -78,6 +80,8 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
  */
 public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visitable
 {
+    // Empirical and slightly defensive threshold where relationship records seem to start requiring double record units.
+    private static final long DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD = 1L << 33;
     private static final String TEMP_NEOSTORE_NAME = "temp." + DEFAULT_NAME;
 
     private final FileSystemAbstraction fileSystem;
@@ -101,6 +105,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private LifeSupport life = new LifeSupport();
     private LabelScanStore labelScanStore;
     private PageCacheFlusher flusher;
+    private boolean doubleRelationshipRecordUnits;
 
     private boolean successful;
 
@@ -419,5 +424,19 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public void success()
     {
         successful = true;
+    }
+
+    public boolean determineDoubleRelationshipRecordUnits( Estimates inputEstimates )
+    {
+        doubleRelationshipRecordUnits =
+                // TODO figure out in a good way if this is the high limit format
+                recordFormats.relationship().getMaxId() > 2L << 36 &&
+                inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
+        return doubleRelationshipRecordUnits;
+    }
+
+    public boolean usesDoubleRelationshipRecordUnits()
+    {
+        return doubleRelationshipRecordUnits;
     }
 }

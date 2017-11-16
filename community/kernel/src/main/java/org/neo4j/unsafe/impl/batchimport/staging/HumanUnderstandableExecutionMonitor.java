@@ -24,12 +24,12 @@ import java.util.TimeZone;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.unsafe.impl.batchimport.CountGroupsStage;
+import org.neo4j.unsafe.impl.batchimport.DataStatistics;
 import org.neo4j.unsafe.impl.batchimport.IdMapperPreparationStage;
 import org.neo4j.unsafe.impl.batchimport.NodeDegreeCountStage;
 import org.neo4j.unsafe.impl.batchimport.NodeStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipGroupStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipStage;
-import org.neo4j.unsafe.impl.batchimport.DataStatistics;
 import org.neo4j.unsafe.impl.batchimport.ScanAndCacheGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.SparseNodeFirstRelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -163,7 +163,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private static long relationshipsDiskUsage( Estimates estimates, BatchingNeoStores neoStores )
     {
-        return estimates.numberOfRelationships() * neoStores.getRelationshipStore().getRecordSize();
+        return estimates.numberOfRelationships() * neoStores.getRelationshipStore().getRecordSize() *
+                (neoStores.usesDoubleRelationshipRecordUnits() ? 2 : 1);
     }
 
     @Override
