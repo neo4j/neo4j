@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, GraphStatisticsSnapshot}
+import java.text.SimpleDateFormat
+import java.util.Date
 
 case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
@@ -29,30 +31,47 @@ class PlanFingerprintReference(clock: Clock, minimalTimeToLive: Long, statsDiver
                                private var fingerprint: Option[PlanFingerprint]) {
 
   def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
-    fingerprint.fold({println("Replanning: NO  - No fingerprint"); false}) { f =>
+    fingerprint.fold({PlanFingerprint.log2("NO  - No fingerprint"); false}) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      println(s"Replanning: Creation:${f.creationTimeMillis} TTL:$minimalTimeToLive Current:$currentTimeMillis currentTx:$currentTxId")
+      PlanFingerprint.log2(s"Creation:${f.creationTimeMillis} TTL:$minimalTimeToLive Current:$currentTimeMillis currentTx:$currentTxId")
 
       if(!(f.creationTimeMillis + minimalTimeToLive <= currentTimeMillis)) {
-        println("Replanning: NO  - Shorter than minimal TTL")
+        PlanFingerprint.log2("NO  - Shorter than minimal TTL")
         return false
       }
       if(!(check(currentTxId != f.txId,
         () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }))) {
-        println(s"Replanning: NO  - Same txID. Setting CreationTime to $currentTimeMillis")
+        PlanFingerprint.log2(s"NO  - Same txID. Setting CreationTime to $currentTimeMillis")
         return false
       }
       if(!(check(f.snapshot.diverges(f.snapshot.recompute(statistics), statsDivergenceThreshold),
         () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) }))) {
-        println(s"Replanning: NO  - Statistics don't diverge. Setting CreationTime to $currentTimeMillis. Setting txID to $currentTxId")
+        PlanFingerprint.log2(s"NO  - Statistics don't diverge. Setting CreationTime to $currentTimeMillis. Setting txID to $currentTxId")
         return false
       }
-      println("Replanning: YES")
+      PlanFingerprint.log2("YES")
       true
     }
   }
 
   private def check(test: => Boolean, ifFalse: () => Unit ) = if (test) { true } else { ifFalse() ; false }
+}
+
+object PlanFingerprint {
+  val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss") //Or whatever format fits best your needs.
+
+  def log3(msg: String): Unit = {
+    log2(s"\t$msg")
+  }
+
+  def log2(msg: String): Unit = {
+    log(s"\t$msg")
+  }
+
+  def log(msg: String): Unit = {
+    val date = sdf.format(new Date)
+    println(s"$date\t$msg")
+  }
 }
