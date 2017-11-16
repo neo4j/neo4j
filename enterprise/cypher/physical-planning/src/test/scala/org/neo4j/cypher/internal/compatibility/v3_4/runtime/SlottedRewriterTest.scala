@@ -95,6 +95,48 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     lookup(result.assignedId) should equal(pipelineInformation)
   }
 
+  test("comparing two relationship ids simpler when they are null") {
+    // optional match (a)-[r1]->b-[r2]->(c) where not(r1 = r2)
+    // given
+    val node1 = IdName("a")
+    val node2 = IdName("b")
+    val node3 = IdName("c")
+    val rel1 = IdName("r1")
+    val rel2 = IdName("r2")
+    val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)()
+    val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
+    val selection = Selection(Seq(predicate), argument)(solved)
+    selection.assignIds()
+    val pipelineInformation = PipelineInformation(Map(
+      "a" -> nodeAt(0, "a"),
+      "b" -> nodeAt(1, "b"),
+      "r1" -> LongSlot(2, nullable = true, CTRelationship),
+      "c" -> nodeAt(3, "c"),
+      "r2" -> LongSlot(4, nullable = true, CTRelationship)
+    ), numberOfLongs = 5, numberOfReferences = 0)
+
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      argument.assignedId -> pipelineInformation,
+      selection.assignedId -> pipelineInformation
+    )
+    val tokenContext = mock[TokenContext]
+    val rewriter = new SlottedRewriter(tokenContext)
+
+    // when
+    val result = rewriter(selection, lookup)
+
+    // then
+    val rewrittenPredicate =
+      NullCheck(4,
+        NullCheck(2,
+          Not(
+            PrimitiveEquals(
+              IdFromSlot(2),
+              IdFromSlot(4)))(pos)))
+    result should equal(Selection(Seq(rewrittenPredicate), argument)(solved))
+    lookup(result.assignedId) should equal(pipelineInformation)
+  }
+
   test("return nullable node") {
     // match optional (a) return (a)
     // given
@@ -340,4 +382,31 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     lookup(leafA.assignedId) should equal(lhsPipeline)
     lookup(leafB.assignedId) should equal(rhsPipeline)
   }
+
+  test("selection with null checks against a primitive LongSlot") {
+    // given
+    val allNodes = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val predicate = IsNull(varFor("x"))(pos)
+    val selection = Selection(Seq(predicate), allNodes)(solved)
+    val produceResult = ProduceResult(selection, Seq("x"))
+    produceResult.assignIds()
+
+    val offset = 0
+    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = true, typ = CTNode)), 1, 0)
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      allNodes.assignedId -> pipeline,
+      selection.assignedId -> pipeline,
+      produceResult.assignedId -> pipeline)
+    val tokenContext = mock[TokenContext]
+    val rewriter = new SlottedRewriter(tokenContext)
+
+    // when
+    val result = rewriter(produceResult, lookup)
+
+    // then
+    val newPredicate = IsPrimitiveNull(offset)
+    result should equal(ProduceResult(Selection(Seq(newPredicate), allNodes)(solved), Seq("x")))
+    lookup(result.assignedId) should equal(pipeline)
+  }
+
 }

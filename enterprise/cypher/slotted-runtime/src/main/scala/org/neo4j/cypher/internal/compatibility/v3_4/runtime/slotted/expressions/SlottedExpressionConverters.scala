@@ -63,7 +63,10 @@ object SlottedExpressionConverters extends ExpressionConverter {
       case runtimeAst.NullCheck(offset, inner) =>
         val a = self.toCommandExpression(inner)
         Some(runtimeExpression.NullCheck(offset, a))
-      case e: ast.PathExpression => Some(toCommandProjectedPath(e, self))
+      case e: ast.PathExpression =>
+        Some(toCommandProjectedPath(e, self))
+      case runtimeAst.IsPrimitiveNull(offset) =>
+        Some(runtimeExpression.IsPrimitiveNull(offset))
       case _ =>
         None
     }

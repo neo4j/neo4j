@@ -154,14 +154,61 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
         }
 
-      case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
+      case e@Equals(Variable(k1), Variable(k2)) =>
         val slot1 = pipelineInformation(k1)
         val slot2 = pipelineInformation(k2)
-        if (slot1.typ == slot2.typ && SlotConfiguration.isLongSlot(slot1) && SlotConfiguration.isLongSlot(slot2)) {
-          PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
+        if (SlotConfiguration.isLongSlot(slot1) && SlotConfiguration.isLongSlot(slot2)) {
+          // If a slot is nullable, we rewrite the equality to make null handling explicit and not part of the equality check:
+          // <nullableLhs> eq <rhs> ==>
+          // nullableLhs IS NOT NULL AND nullableLhs eq rhs
+          val equalityCheck = PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
+
+          val eqAndLNullCheck = if (slot1.nullable)
+            NullCheck(slot1.offset, equalityCheck)
+          else
+            equalityCheck
+
+          val eqAndBothNullChecks = if (slot2.nullable)
+            NullCheck(slot2.offset, eqAndLNullCheck)
+          else
+            equalityCheck
+
+          eqAndBothNullChecks
         }
         else
           e
+
+      case e@Not(Equals(Variable(k1), Variable(k2))) =>
+        val slot1 = pipelineInformation(k1)
+        val slot2 = pipelineInformation(k2)
+        if (SlotConfiguration.isLongSlot(slot1) && SlotConfiguration.isLongSlot(slot2)) {
+          // If a slot is nullable, we rewrite the equality to make null handling explicit and not part of the equality check:
+          // <nullableLhs> eq <rhs> ==>
+          // nullableLhs IS NOT NULL AND nullableLhs eq rhs
+          val equalityCheck = Not(PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset)))(e.position)
+
+          val eqAndLNullCheck = if (slot1.nullable)
+            NullCheck(slot1.offset, equalityCheck)
+          else
+            equalityCheck
+
+          val eqAndBothNullChecks = if (slot2.nullable)
+            NullCheck(slot2.offset, eqAndLNullCheck)
+          else
+            equalityCheck
+
+          eqAndBothNullChecks
+        }
+        else
+          e
+
+      case e@IsNull(Variable(key)) =>
+        val slot = pipelineInformation(key)
+        slot match {
+          case LongSlot(offset, true, _) => IsPrimitiveNull(offset)
+          case LongSlot(_, false, _) => False()(e.position)
+          case _ => e
+        }
 
       case GetDegree(Variable(n), typ, direction) =>
         val maybeToken: Option[String] = typ.map(r => r.name)
