@@ -296,4 +296,48 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     lookup(sr1.assignedId) should equal(lhsPipeline)
     lookup(sr2.assignedId) should equal(rhsPipeline)
   }
+
+  test("ValueHashJoin needs to execute expressions with two different pipelines") {
+    // MATCH (a:labelA), (b:labelB) WHERE a.prop = b.prop
+    val leafA = NodeByLabelScan(IdName("a"), LabelName("labelA")(pos), Set.empty)(solved)
+    val leafB = NodeByLabelScan(IdName("b"), LabelName("labelB")(pos), Set.empty)(solved)
+
+    val lhsExp = prop("a", "prop")
+    val rhsExp = prop("b", "prop")
+    val join = ValueHashJoin(leafA, leafB, Equals(lhsExp, rhsExp)(pos))(solved)
+
+    join.assignIds()
+
+    val lhsPipeline = PipelineInformation.empty.
+      newLong("a", nullable = false, CTNode)
+
+    val rhsPipeline = PipelineInformation.empty.
+      newLong("b", nullable = false, CTNode)
+
+    val joinPipeline = PipelineInformation.empty.
+      newLong("a", nullable = false, CTNode).
+      newLong("b", nullable = false, CTNode)
+
+    val tokenId = 666
+    val tokenContext = mock[TokenContext]
+    when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(Some(tokenId))
+
+    // when
+    val rewriter = new SlottedRewriter(tokenContext)
+    val lookup = Map(leafA.assignedId -> lhsPipeline, leafB.assignedId -> rhsPipeline, join.assignedId -> joinPipeline)
+    val resultPlan = rewriter(join, lookup)
+
+    // then
+    val lhsExpAfterRewrite = NodeProperty(0, tokenId, "a.prop")
+    val rhsExpAfterRewrite = NodeProperty(0, tokenId, "b.prop")  // Same offsets, but on different contexts
+    val joinAfterRewrite = ValueHashJoin(leafA, leafB, Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(pos))(solved)
+
+    resultPlan should equal(
+      joinAfterRewrite
+    )
+
+    lookup(resultPlan.assignedId) should equal(joinPipeline)
+    lookup(leafA.assignedId) should equal(lhsPipeline)
+    lookup(leafB.assignedId) should equal(rhsPipeline)
+  }
 }

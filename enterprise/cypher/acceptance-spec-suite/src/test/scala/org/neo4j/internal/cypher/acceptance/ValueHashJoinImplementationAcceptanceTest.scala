@@ -23,7 +23,7 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
 class ValueHashJoinImplementationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  val expectedToSucceed: CypherComparisonSupport.TestConfiguration = Configs.CommunityInterpreted
+  val expectedToSucceed: CypherComparisonSupport.TestConfiguration = Configs.Interpreted
   val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
 
   test("find friends of others") {

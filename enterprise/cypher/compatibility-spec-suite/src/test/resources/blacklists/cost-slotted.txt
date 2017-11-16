@@ -16,8 +16,6 @@ Handling string ranges 2
 Handling string ranges 3
 Handling string ranges 4
 Handling empty range
-Comparing nodes to nodes
-Comparing relationships to relationships
 Fail at runtime when attempting to index with an Int into a Map
 Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection
@@ -30,8 +28,6 @@ IS NOT NULL with literal maps
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query
 `type()` failing on invalid arguments
-Find friends of others
-Should only join when matching
 Adding a single label
 Ignore space before colon
 Adding multiple labels

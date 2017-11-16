@@ -92,6 +92,13 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
         newPlan
 
+      case plan@ValueHashJoin(lhs, rhs, e@Equals(lhsExp, rhsExp)) =>
+        val lhsRewriter = rewriteCreator(pipelineInformation(lhs.assignedId), plan)
+        val rhsRewriter = rewriteCreator(pipelineInformation(rhs.assignedId), plan)
+        val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
+        val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
+        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(plan.solved)
+
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
         val incomingPipeline = pipelineInformation(leftPlan.assignedId)
