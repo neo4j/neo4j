@@ -1034,7 +1034,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
-                settings -> {
+                settings ->
+                {
                     settings.put( SecuritySettings.ldap_server, "ldap://" + NON_ROUTABLE_IP );
                     settings.put( SecuritySettings.ldap_connection_timeout, "1s" );
                 } ) );

@@ -266,6 +266,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
                     message = buildMessageFromThrowables( "password change required", throwables );
                 }
                 break;
+            default:
             }
             return message;
         }
@@ -276,7 +277,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         }
     }
 
-    static private String buildMessageFromThrowables( String baseMessage, List<Throwable> throwables )
+    private static String buildMessageFromThrowables( String baseMessage, List<Throwable> throwables )
     {
         if ( throwables == null )
         {
