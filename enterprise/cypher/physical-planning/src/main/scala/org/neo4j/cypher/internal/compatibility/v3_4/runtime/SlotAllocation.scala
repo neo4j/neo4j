@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v3_4.{expressions => parserAst}
 import scala.collection.mutable
 
 /**
-  * This object knows how to go from a query plan to pipelines with slot information calculated.
+  * This object knows how to configure slots for a logical plan tree.
   *
   * The structure of the code is built this maybe weird way instead of being recursive to avoid the JVM execution stack
   * and instead handle the stacks manually here. Some queries we have seen are deep enough to crash the VM if not
@@ -41,17 +41,23 @@ import scala.collection.mutable
   **/
 object SlotAllocation {
 
-  def allocateSlots(lp: LogicalPlan): Map[LogicalPlanId, PipelineInformation] = {
+  /**
+    * Allocate slot for every operator in the logical plan tree {@code lp}.
+    *
+    * @param lp the logical plan to process.
+    * @return the slot configurations of every operator.
+    */
+  def allocateSlots(lp: LogicalPlan): Map[LogicalPlanId, SlotConfiguration] = {
 
-    val result = new mutable.OpenHashMap[LogicalPlanId, PipelineInformation]()
+    val allocations = new mutable.OpenHashMap[LogicalPlanId, SlotConfiguration]()
 
     val planStack = new mutable.Stack[(Boolean, LogicalPlan)]()
-    val outputStack = new mutable.Stack[PipelineInformation]()
-    val argumentStack = new mutable.Stack[PipelineInformation]()
+    val resultStack = new mutable.Stack[SlotConfiguration]()
+    val argumentStack = new mutable.Stack[SlotConfiguration]()
     var comingFrom = lp
 
     /**
-      * eagerly populate the stack using all the lhs children
+      * Eagerly populate the stack using all the lhs children.
       */
     def populate(plan: LogicalPlan, nullIn: Boolean) = {
       var nullable = nullIn
@@ -75,21 +81,21 @@ object SlotAllocation {
 
       (current.lhs, current.rhs) match {
         case (None, None) =>
-          val argument = if (argumentStack.isEmpty) None else Some(argumentStack.top)
-          val output = allocate(current, nullable, argument)
-          result += (current.assignedId -> output)
-          outputStack.push(output)
+          val argumentSlots = if (argumentStack.isEmpty) None else Some(argumentStack.top)
+          val result = allocate(current, nullable, argumentSlots)
+          allocations += (current.assignedId -> result)
+          resultStack.push(result)
 
         case (Some(_), None) =>
-          val incomingPipeline = outputStack.pop()
-          val output = allocate(current, nullable, incomingPipeline)
-          result += (current.assignedId -> output)
-          outputStack.push(output)
+          val sourceSlots = resultStack.pop()
+          val result = allocate(current, nullable, sourceSlots)
+          allocations += (current.assignedId -> result)
+          resultStack.push(result)
 
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
-          val argumentPipeline = outputStack.top
-          argumentStack.push(argumentPipeline.breakPipelineAndClone())
+          val argumentSlots = resultStack.top
+          argumentStack.push(argumentSlots.copy())
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
@@ -97,65 +103,82 @@ object SlotAllocation {
           populate(right, nullable)
 
         case (Some(_), Some(right)) if comingFrom eq right =>
-          val rhsPipeline = outputStack.pop()
-          val lhsPipeline = outputStack.pop()
-          val output = allocate(current, nullable, lhsPipeline, rhsPipeline)
-          result += (current.assignedId -> output)
+          val rhsSlots = resultStack.pop()
+          val lhsSlots = resultStack.pop()
+          val result = allocate(current, nullable, lhsSlots, rhsSlots)
+          allocations += (current.assignedId -> result)
           if (isAnApplyPlan(current))
             argumentStack.pop()
-          outputStack.push(output)
+          resultStack.push(result)
       }
 
       comingFrom = current
     }
 
-    result.toMap
+    allocations.toMap
   }
 
-  private def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[PipelineInformation]): PipelineInformation =
+
+  /**
+    * Compute the slot configuration of a leaf logical plan operator {@code lp}.
+    *
+    * @param lp the operator to compute slots for.
+    * @param nullable
+    * @param argument the logical plan argument slot configuration.
+    * @return the slot configuration of lp
+    */
+  private def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[SlotConfiguration]): SlotConfiguration =
     lp match {
       case leaf: NodeLogicalLeafPlan =>
-        val pipeline = argument.getOrElse(PipelineInformation.empty)
-        pipeline.newLong(leaf.idName.name, nullable, CTNode)
-        pipeline
+        val result = argument.getOrElse(SlotConfiguration.empty)
+        result.newLong(leaf.idName.name, nullable, CTNode)
+        result
 
       case _:Argument =>
-        argument.getOrElse(PipelineInformation.empty)
+        argument.getOrElse(SlotConfiguration.empty)
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
-  private def allocate(lp: LogicalPlan, nullable: Boolean, incomingPipeline: PipelineInformation): PipelineInformation =
+  /**
+    * Compute the slot configuration of a single source logical plan operator {@code lp}.
+    *
+    * @param lp the operator to compute slots for.
+    * @param nullable
+    * @param source the slot configuration of the source operator.
+    * @return the slot configuration of lp
+    */
+  private def allocate(lp: LogicalPlan, nullable: Boolean, source: SlotConfiguration): SlotConfiguration =
     lp match {
 
       case Distinct(_, groupingExpressions) =>
-        val outgoing = PipelineInformation.empty
-        addGroupingMap(groupingExpressions, incomingPipeline, outgoing)
-        outgoing
+        val result = SlotConfiguration.empty
+        addGroupingMap(groupingExpressions, source, result)
+        result
 
       case Aggregation(_, groupingExpressions, aggregationExpressions) =>
-        val outgoing = PipelineInformation.empty
-        addGroupingMap(groupingExpressions, incomingPipeline, outgoing)
+        val result = SlotConfiguration.empty
+        addGroupingMap(groupingExpressions, source, result)
 
         aggregationExpressions foreach {
           case (key, _) =>
-            outgoing.newReference(key, nullable = true, CTAny)
+            result.newReference(key, nullable = true, CTAny)
         }
-        outgoing
+        result
 
       case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        val newPipeline = incomingPipeline.breakPipelineAndClone()
-        newPipeline.newLong(relName, nullable, CTRelationship)
-        newPipeline.newLong(to, nullable, CTNode)
-        newPipeline
+        val result = source.copy()
+        result.newLong(relName, nullable, CTRelationship)
+        result.newLong(to, nullable, CTNode)
+        result
 
       case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
-        val newPipeline = incomingPipeline.breakPipelineAndClone()
-        newPipeline.newLong(relName, nullable, CTRelationship)
-        newPipeline
+        val result = source.copy()
+        result.newLong(relName, nullable, CTRelationship)
+        result
 
       case Optional(_, _) =>
-        incomingPipeline
+        source
 
       case _: ProduceResult |
            _: Selection |
@@ -164,7 +187,7 @@ object SlotAllocation {
            _: Sort |
            _: Top
       =>
-        incomingPipeline
+        source
 
       case Projection(_, expressions) =>
         expressions foreach {
@@ -172,28 +195,28 @@ object SlotAllocation {
           // it's already there. no need to add a new slot for it
 
           case (key, parserAst.Variable(ident)) if key != ident =>
-            val slot = incomingPipeline.get(ident).getOrElse(
-              throw new SlotAllocationFailed(s"Tried to lookup key $key that should be in pipeline but wasn't"))
-            incomingPipeline.addAliasFor(slot, key)
+            val slot = source.get(ident).getOrElse(
+              throw new SlotAllocationFailed(s"Tried to lookup key $key that should be in slot configuration but wasn't"))
+            source.addAliasFor(slot, key)
 
           case (key, _) =>
-            incomingPipeline.newReference(key, nullable = true, CTAny)
+            source.newReference(key, nullable = true, CTAny)
         }
-        incomingPipeline
+        source
 
       case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
-        val newPipeline = incomingPipeline.breakPipelineAndClone()
-        newPipeline.newLong(rel, nullable = true, CTRelationship)
-        newPipeline.newLong(to, nullable = true, CTNode)
-        newPipeline
+        val result = source.copy()
+        result.newLong(rel, nullable = true, CTRelationship)
+        result.newLong(to, nullable = true, CTNode)
+        result
 
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
-        val newPipeline = incomingPipeline.breakPipelineAndClone()
-        newPipeline.newLong(rel, nullable = true, CTRelationship)
-        newPipeline
+        val result = source.copy()
+        result.newLong(rel, nullable = true, CTRelationship)
+        result
 
       case VarExpand(_,
-                       _,
+                       IdName(from),
                        _,
                        _,
                        _,
@@ -206,133 +229,140 @@ object SlotAllocation {
                        _,
                        _,
                        _) =>
-        val newPipeline = incomingPipeline.breakPipelineAndClone()
+        val result = source.copy()
 
         // We allocate these on the incoming pipeline after cloning it, since we don't need these slots in
         // the produced rows
-        incomingPipeline.newLong(tempNode, nullable = false, CTNode)
-        incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
+        source.newLong(tempNode, nullable = false, CTNode)
+        source.newLong(tempEdge, nullable = false, CTRelationship)
 
-        newPipeline.newLong(to, nullable, CTNode)
-        newPipeline.newReference(edge, nullable, CTList(CTRelationship))
-        newPipeline
+        result.newLong(to, nullable, CTNode)
+        result.newReference(edge, nullable, CTList(CTRelationship))
+        result
 
       case CreateNode(_, IdName(name), _, _) =>
-        incomingPipeline.newLong(name, nullable = false, CTNode)
-        incomingPipeline
+        source.newLong(name, nullable = false, CTNode)
+        source
 
       case _:MergeCreateNode =>
         // The variable name should already have been allocated by the NodeLeafPlan
-        incomingPipeline
+        source
 
       case CreateRelationship(_, IdName(name), _, _, _, _) =>
-        incomingPipeline.newLong(name, nullable = false, CTRelationship)
-        incomingPipeline
+        source.newLong(name, nullable = false, CTRelationship)
+        source
 
       case MergeCreateRelationship(_, IdName(name), _, _, _, _) =>
-        incomingPipeline.newLong(name, nullable = false, CTRelationship)
-        incomingPipeline
+        source.newLong(name, nullable = false, CTRelationship)
+        source
 
       case EmptyResult(_) =>
-        incomingPipeline
+        source
 
       case DropResult(_) =>
-        incomingPipeline
+        source
 
       case UnwindCollection(_, IdName(variable), _) =>
-        val newPipeline = incomingPipeline.breakPipelineAndClone()
-        newPipeline.newReference(variable, nullable = true, CTAny)
-        newPipeline
+        val result = source.copy()
+        result.newReference(variable, nullable = true, CTAny)
+        result
 
       case Eager(_) =>
-        val newPipeline = incomingPipeline.breakPipelineAndClone()
-        newPipeline
+        source.copy()
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
-  private def addGroupingMap(groupingExpressions: Map[String, Expression],
-                             incoming: PipelineInformation,
-                             outgoing: PipelineInformation): Unit = {
-    groupingExpressions foreach {
-      case (key, parserAst.Variable(ident)) =>
-        val slotInfo = incoming(ident)
-        outgoing.newReference(key, slotInfo.nullable, slotInfo.typ)
-      case (key, _) =>
-        outgoing.newReference(key, nullable = true, CTAny)
-    }
-  }
-
-  private def allocate(plan: LogicalPlan,
+  /**
+    * Compute the slot configuration of a branching logical plan operator {@code lp}.
+    *
+    * @param lp the operator to compute slots for.
+    * @param nullable
+    * @param lhs the slot configuration of the left hand side operator.
+    * @param rhs the slot configuration of the right hand side operator.
+    * @return the slot configuration of lp
+    */
+  private def allocate(lp: LogicalPlan,
                        nullable: Boolean,
-                       lhsPipeline: PipelineInformation,
-                       rhsPipeline: PipelineInformation): PipelineInformation =
-    plan match {
+                       lhs: SlotConfiguration,
+                       rhs: SlotConfiguration): SlotConfiguration =
+    lp match {
       case _: Apply =>
-        rhsPipeline
+        rhs
 
       case _: SemiApply |
            _: AntiSemiApply =>
-        lhsPipeline
+        lhs
 
       case _: AntiConditionalApply |
            _: ConditionalApply =>
-        rhsPipeline
+        rhs
 
       case _: CartesianProduct =>
-        val newPipeline = lhsPipeline.breakPipelineAndClone()
+        val result = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
-        rhsPipeline.foreachSlotOrdered {
+        rhs.foreachSlotOrdered {
           case (k, slot) =>
-            newPipeline.add(k, slot)
+            result.add(k, slot)
         }
-        newPipeline
+        result
 
 
       case NodeHashJoin(nodes, _, _) =>
         val nodeKeys = nodes.map(_.name)
-        val newPipeline = lhsPipeline.breakPipelineAndClone()
+        val result = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
-        rhsPipeline.foreachSlotOrdered {
+        rhs.foreachSlotOrdered {
           case (k, slot) if !nodeKeys(k) =>
-            newPipeline.add(k, slot)
+            result.add(k, slot)
             // If the column is one of the join columns there is no need to add it again
 
           case _ =>
         }
-        newPipeline
+        result
 
       case RollUpApply(_, _, collectionName, _, _) =>
-        lhsPipeline.newReference(collectionName.name, nullable, CTList(CTAny))
-        lhsPipeline
+        lhs.newReference(collectionName.name, nullable, CTList(CTAny))
+        lhs
 
       case _: Union  =>
-        //The outgoing pipeline should only contain the variables we join on
-        //if both lhs and rhs has a long slot with the same type the outgoing
-        //pipeline should also use a long slot, otherwise we use a ref slot.
-        val outgoing = PipelineInformation.empty
-        lhsPipeline.foreachSlot {
+        // The result slot configuration should only contain the variables we join on.
+        // If both lhs and rhs has a long slot with the same type the result should
+        // also use a long slot, otherwise we use a ref slot.
+        val result = SlotConfiguration.empty
+        lhs.foreachSlot {
           case (key, lhsSlot: LongSlot) =>
             //find all shared variables and look for other long slots with same type
-            rhsPipeline.get(key).foreach {
+            rhs.get(key).foreach {
             case LongSlot(_, rhsNullable, typ) if typ == lhsSlot.typ =>
-              outgoing.newLong(key, lhsSlot.nullable || rhsNullable, typ)
+              result.newLong(key, lhsSlot.nullable || rhsNullable, typ)
             case rhsSlot =>
               val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
-              outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
+              result.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
             }
           case (key, lhsSlot) =>
             //We know lhs uses a ref slot so just look for shared variables.
-            rhsPipeline.get(key).foreach {
+            rhs.get(key).foreach {
               rhsSlot =>
                 val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
-                outgoing.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
+                result.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
             }
         }
-        outgoing
+        result
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
+    }
+
+  private def addGroupingMap(groupingExpressions: Map[String, Expression],
+                             source: SlotConfiguration,
+                             target: SlotConfiguration): Unit =
+    groupingExpressions foreach {
+      case (key, parserAst.Variable(ident)) =>
+        val slotInfo = source(ident)
+        target.newReference(key, slotInfo.nullable, slotInfo.typ)
+      case (key, _) =>
+        target.newReference(key, nullable = true, CTAny)
     }
 
   private def isAnApplyPlan(current: LogicalPlan): Boolean = current match {

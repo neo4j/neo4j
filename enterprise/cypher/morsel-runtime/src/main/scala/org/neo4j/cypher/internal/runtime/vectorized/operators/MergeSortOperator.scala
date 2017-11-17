@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import java.util.{Comparator, PriorityQueue}
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.ColumnOrder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 
 // This operator takes pre-sorted inputs, and merges them together, producing a stream of Morsels with the sorted data
-class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation) extends Operator {
+class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) extends Operator {
 
   private val comparator: Comparator[MorselWithReadPos] = orderBy
       .map(createComparator)
@@ -55,8 +55,8 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
         sortedInputs = inputs
         iterationState = is
     }
-    val longCount = pipelineInformation.numberOfLongs
-    val refCount = pipelineInformation.numberOfReferences
+    val longCount = slots.numberOfLongs
+    val refCount = slots.numberOfReferences
 
     while(!sortedInputs.isEmpty && writePos < output.validRows) {
       val next: MorselWithReadPos = sortedInputs.poll()
@@ -90,7 +90,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
     case LongSlot(offset, _, _) =>
       new Comparator[MorselWithReadPos] {
         override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos) = {
-          val longs = pipelineInformation.numberOfLongs
+          val longs = slots.numberOfLongs
           val aIdx = longs * m1.pos + offset
           val bIdx = longs * m2.pos + offset
           val aVal = m1.m.longs(aIdx)
@@ -101,7 +101,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], pipelineInformation: Pipeline
     case RefSlot(offset, _, _) =>
       new Comparator[MorselWithReadPos] {
         override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos) = {
-          val refs = pipelineInformation.numberOfReferences
+          val refs = slots.numberOfReferences
           val aIdx = refs * m1.pos + offset
           val bIdx = refs * m2.pos + offset
           val aVal = m1.m.refs(aIdx)

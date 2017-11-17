@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion.asValue
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
@@ -27,16 +27,16 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.scalatest.mock.MockitoSugar
 
-case class FakeSlottedPipe(data: Iterator[Map[String, Any]], pipeline: PipelineInformation)
+case class FakeSlottedPipe(data: Iterator[Map[String, Any]], slots: SlotConfiguration)
   extends Pipe with MockitoSugar {
 
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     data.map { values =>
-      val result = PrimitiveExecutionContext(pipeline)
+      val result = PrimitiveExecutionContext(slots)
 
       values foreach {
         case (key, value) =>
-          pipeline(key) match {
+          slots(key) match {
             case LongSlot(offset, _, _) if value == null =>
               result.setLongAt(offset, -1)
 

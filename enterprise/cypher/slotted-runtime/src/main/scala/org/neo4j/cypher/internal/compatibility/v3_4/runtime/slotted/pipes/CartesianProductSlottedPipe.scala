@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class CartesianProductSlottedPipe(lhs: Pipe, rhs: Pipe,
                                        lhsLongCount: Int, lhsRefCount: Int,
-                                       pipelineInformation: PipelineInformation)
+                                       slots: SlotConfiguration)
                                       (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
@@ -35,7 +35,7 @@ case class CartesianProductSlottedPipe(lhs: Pipe, rhs: Pipe,
       lhsCtx =>
         rhs.createResults(state) map {
           rhsCtx =>
-            val context = PrimitiveExecutionContext(pipelineInformation)
+            val context = PrimitiveExecutionContext(slots)
             lhsCtx.copyTo(context)
             rhsCtx.copyTo(context, lhsLongCount, lhsRefCount)
             context

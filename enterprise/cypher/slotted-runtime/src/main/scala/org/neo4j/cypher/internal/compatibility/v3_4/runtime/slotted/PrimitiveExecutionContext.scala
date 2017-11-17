@@ -19,25 +19,30 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
 
 object PrimitiveExecutionContext {
-  def empty = new PrimitiveExecutionContext(PipelineInformation.empty)
+  def empty = new PrimitiveExecutionContext(SlotConfiguration.empty)
 }
 
-case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
+/**
+  * Execution context which uses a slot configuration to store values in two arrays.
+  *
+  * @param slots the slot configuration to use.
+  */
+case class PrimitiveExecutionContext(slots: SlotConfiguration) extends ExecutionContext {
 
-  override val longs = new Array[Long](pipeline.numberOfLongs)
-  override val refs = new Array[AnyValue](pipeline.numberOfReferences)
+  override val longs = new Array[Long](slots.numberOfLongs)
+  override val refs = new Array[AnyValue](slots.numberOfReferences)
 
   override def toString(): String = {
     val iter = this.iterator
     val s: StringBuilder = StringBuilder.newBuilder
-    s ++= s"\nPrimitiveExecutionContext {\n    $pipeline"
+    s ++= s"\nPrimitiveExecutionContext {\n    $slots"
     while(iter.hasNext) {
       val slotValue = iter.next
       s ++= f"\n    ${slotValue._1}%-40s = ${slotValue._2}"
@@ -48,19 +53,19 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
-      if (pipeline.numberOfLongs > otherPipeline.numberOfLongs ||
-        pipeline.numberOfReferences > otherPipeline.numberOfReferences)
+      if (slots.numberOfLongs > otherPipeline.numberOfLongs ||
+        slots.numberOfReferences > otherPipeline.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
-        System.arraycopy(longs, 0, other.longs, longOffset, pipeline.numberOfLongs)
-        System.arraycopy(refs, 0, other.refs, refOffset, pipeline.numberOfReferences)
+        System.arraycopy(longs, 0, other.longs, longOffset, slots.numberOfLongs)
+        System.arraycopy(refs, 0, other.refs, refOffset, slots.numberOfReferences)
       }
     case _ => fail()
   }
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
-      if (nLongs > pipeline.numberOfLongs || nRefs > pipeline.numberOfReferences)
+      if (nLongs > slots.numberOfLongs || nRefs > slots.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
         System.arraycopy(other.longs, 0, longs, 0, nLongs)
@@ -91,8 +96,8 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   override def iterator: Iterator[(String, AnyValue)] = {
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).
     // Please do not use in production code.
-    val longSlots = pipeline.getLongSlots
-    val refSlots = pipeline.getRefSlots
+    val longSlots = slots.getLongSlots
+    val refSlots = slots.getRefSlots
     val longSlotValues = for { i <- 0 until longs.length }
       yield (longSlots(i).toString, ValueUtils.of(longs(i)))
     val refSlotValues = for { i <- 0 until refs.length }

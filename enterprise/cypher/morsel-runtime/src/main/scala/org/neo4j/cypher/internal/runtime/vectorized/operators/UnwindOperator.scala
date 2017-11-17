@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -29,8 +29,8 @@ import org.neo4j.values.AnyValue
 
 class UnwindOperator(collection: Expression,
                      offset: Int,
-                     fromPipeline: PipelineInformation,
-                     toPipeline: PipelineInformation)
+                     fromSlots: SlotConfiguration,
+                     toSlots: SlotConfiguration)
   extends Operator with ListSupport {
 
   override def operate(source: Message,
@@ -43,10 +43,10 @@ class UnwindOperator(collection: Expression,
     var iterationState: Iteration = null
     var currentRow: MorselExecutionContext = null
 
-    val inputLongCount = fromPipeline.numberOfLongs
-    val inputRefCount = fromPipeline.numberOfReferences
-    val outputLongCount = toPipeline.numberOfLongs
-    val outputRefCount = toPipeline.numberOfReferences
+    val inputLongCount = fromSlots.numberOfLongs
+    val inputRefCount = fromSlots.numberOfReferences
+    val outputLongCount = toSlots.numberOfLongs
+    val outputRefCount = toSlots.numberOfReferences
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     source match {

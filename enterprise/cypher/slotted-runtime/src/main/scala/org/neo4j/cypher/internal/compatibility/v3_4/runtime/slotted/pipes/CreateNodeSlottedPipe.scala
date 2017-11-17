@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import java.util.function.BiConsumer
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -32,11 +32,14 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-abstract class BaseCreateNodeSlottedPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
-                                         labels: Seq[LazyLabel], properties: Option[Expression])
+abstract class BaseCreateNodeSlottedPipe(source: Pipe,
+                                         ident: String,
+                                         slots: SlotConfiguration,
+                                         labels: Seq[LazyLabel],
+                                         properties: Option[Expression])
   extends PipeWithSource(source) with Pipe {
 
-  private val offset = pipelineInformation.getLongOffsetFor(ident)
+  private val offset = slots.getLongOffsetFor(ident)
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
@@ -82,20 +85,26 @@ abstract class BaseCreateNodeSlottedPipe(source: Pipe, ident: String, pipelineIn
   }
 }
 
-case class CreateNodeSlottedPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
-                                 labels: Seq[LazyLabel], properties: Option[Expression])
+case class CreateNodeSlottedPipe(source: Pipe,
+                                 ident: String,
+                                 slots: SlotConfiguration,
+                                 labels: Seq[LazyLabel],
+                                 properties: Option[Expression])
                                 (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
-  extends BaseCreateNodeSlottedPipe(source, ident, pipelineInformation, labels, properties) {
+  extends BaseCreateNodeSlottedPipe(source, ident, slots, labels, properties) {
 
   override protected def handleNull(key: String) {
     // do nothing
   }
 }
 
-case class MergeCreateNodeSlottedPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
-                                      labels: Seq[LazyLabel], properties: Option[Expression])
+case class MergeCreateNodeSlottedPipe(source: Pipe,
+                                      ident: String,
+                                      slots: SlotConfiguration,
+                                      labels: Seq[LazyLabel],
+                                      properties: Option[Expression])
                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
-  extends BaseCreateNodeSlottedPipe(source, ident, pipelineInformation, labels, properties) {
+  extends BaseCreateNodeSlottedPipe(source, ident, slots, labels, properties) {
 
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create

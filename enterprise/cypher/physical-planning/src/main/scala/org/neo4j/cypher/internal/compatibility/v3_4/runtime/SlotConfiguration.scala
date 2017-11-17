@@ -26,17 +26,15 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 import scala.collection.{immutable, mutable}
 
-object PipelineInformation {
-  def empty = new PipelineInformation(mutable.Map.empty, 0, 0)
+object SlotConfiguration {
+  def empty = new SlotConfiguration(mutable.Map.empty, 0, 0)
 
-  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int): PipelineInformation = {
-
+  def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int): SlotConfiguration = {
     val stringToSlot = mutable.Map(slots.toSeq: _*)
-    new PipelineInformation(stringToSlot, numberOfLongs, numberOfReferences)
-
+    new SlotConfiguration(stringToSlot, numberOfLongs, numberOfReferences)
   }
 
-  def toString(startFrom: LogicalPlan, m: Map[LogicalPlan, PipelineInformation]): String = {
+  def toString(startFrom: LogicalPlan, m: Map[LogicalPlan, SlotConfiguration]): String = {
     var lastSeen = 0
 
     def ordinal(): Int = {
@@ -45,20 +43,20 @@ object PipelineInformation {
       result
     }
 
-    class Pipeline(val order: Int, val info: PipelineInformation, var plans: Seq[LogicalPlan], var dependsOn: Seq[Pipeline]) {
+    class Pipeline(val order: Int, val info: SlotConfiguration, var plans: Seq[LogicalPlan], var dependsOn: Seq[Pipeline]) {
       def addDependencyTo(toP: Pipeline): Unit = dependsOn = dependsOn :+ toP
 
       def addPlan(p: LogicalPlan): Unit = plans = plans :+ p
     }
 
-    class PipelineBuilder(var buffer: Map[PipelineInformation, Pipeline] = Map.empty[PipelineInformation, Pipeline] ) {
-      def addPlanAndPipelineInformation(lp: LogicalPlan, pipelineInformation: PipelineInformation): PipelineBuilder = {
+    class PipelineBuilder(var buffer: Map[SlotConfiguration, Pipeline] = Map.empty[SlotConfiguration, Pipeline] ) {
+      def addPlanAndPipelineInformation(lp: LogicalPlan, pipelineInformation: SlotConfiguration): PipelineBuilder = {
         val p = getOrCreatePipeline(pipelineInformation)
         p.addPlan(lp)
         this
       }
 
-      def getOrCreatePipeline(key: PipelineInformation): Pipeline = {
+      def getOrCreatePipeline(key: SlotConfiguration): Pipeline = {
         buffer.getOrElse(key, {
           val pipeline = new Pipeline(ordinal(), key, Seq.empty, Seq.empty)
           buffer = buffer + (key -> pipeline)
@@ -66,7 +64,7 @@ object PipelineInformation {
         })
       }
 
-      def addDependencyBetween(from: PipelineInformation, to: PipelineInformation): PipelineBuilder = {
+      def addDependencyBetween(from: SlotConfiguration, to: SlotConfiguration): PipelineBuilder = {
         val fromP = getOrCreatePipeline(from)
         val toP = getOrCreatePipeline(to)
         if (fromP != toP) {
@@ -139,16 +137,25 @@ object PipelineInformation {
   }
 }
 
-class PipelineInformation(private val slots: mutable.Map[String, Slot],
-                          val initialNumberOfLongs: Int,
-                          val initialNumberOfReferences: Int) {
+/**
+  * A configuration which maps variables to slots. Two types of slot exists: LongSlot and RefSlot. In LongSlots we
+  * store nodes and relationships, represented by their ids, and in RefSlots everything else, represented as AnyValues.
+  *
+  * @param slots the slots of the configuration.
+  * @param initialNumberOfLongs the initial number of long slots.
+  * @param initialNumberOfReferences the initial number of ref slots.
+  */
+class SlotConfiguration(private val slots: mutable.Map[String, Slot],
+                        val initialNumberOfLongs: Int,
+                        val initialNumberOfReferences: Int) {
 
   var numberOfLongs: Int = initialNumberOfLongs
   var numberOfReferences: Int = initialNumberOfReferences
 
   private val aliases: mutable.Set[String] = mutable.Set()
+  private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
 
-  def addAliasFor(slot: Slot, key: String): PipelineInformation = {
+  def addAliasFor(slot: Slot, key: String): SlotConfiguration = {
     checkNotAlreadyTaken(key, slot)
     slots.put(key, slot)
     aliases.add(key)
@@ -159,25 +166,24 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
   def isAlias(key: String): Boolean = {
     aliases.contains(key)
   }
-  private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
 
   def apply(key: String): Slot = slots.apply(key)
 
   def get(key: String): Option[Slot] = slots.get(key)
 
-  def add(key: String, slotInformation: Slot): Unit = slotInformation match {
+  def add(key: String, slot: Slot): Unit = slot match {
     case LongSlot(_, nullable, typ) => newLong(key, nullable, typ)
     case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)
   }
 
-  def breakPipelineAndClone(): PipelineInformation = {
-    val newPipeline = new PipelineInformation(this.slots.clone(), numberOfLongs, numberOfReferences)
+  def copy(): SlotConfiguration = {
+    val newPipeline = new SlotConfiguration(this.slots.clone(), numberOfLongs, numberOfReferences)
     newPipeline.aliases ++= aliases
     newPipeline.slotAliases ++= slotAliases
     newPipeline
   }
 
-  def newLong(key: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
+  def newLong(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
     val slot = LongSlot(numberOfLongs, nullable, typ)
     checkNotAlreadyTaken(key, slot)
     slots.put(key, slot)
@@ -186,7 +192,7 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
     this
   }
 
-  def newReference(key: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
+  def newReference(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
     val slot = RefSlot(numberOfReferences, nullable, typ)
     checkNotAlreadyTaken(key, slot)
     slots.put(key, slot)
@@ -218,10 +224,10 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
   // NOTE: This will give duplicate slots when we have aliases
   def mapSlot[U](f: ((String,Slot)) => U): Iterable[U] = slots.map(f)
 
-  def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
+  def canEqual(other: Any): Boolean = other.isInstanceOf[SlotConfiguration]
 
   override def equals(other: Any): Boolean = other match {
-    case that: PipelineInformation =>
+    case that: SlotConfiguration =>
       (that canEqual this) &&
         slots == that.slots &&
         numberOfLongs == that.numberOfLongs &&
@@ -234,7 +240,7 @@ class PipelineInformation(private val slots: mutable.Map[String, Slot],
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
-  override def toString = s"PipelineInformation(longs=$numberOfLongs, objs=$numberOfReferences, slots=$slots)"
+  override def toString = s"SlotConfiguration(longs=$numberOfLongs, objs=$numberOfReferences, slots=$slots)"
 
   private def checkNotAlreadyTaken(key: String, slot: Slot): Unit =
     if (slots.contains(key))

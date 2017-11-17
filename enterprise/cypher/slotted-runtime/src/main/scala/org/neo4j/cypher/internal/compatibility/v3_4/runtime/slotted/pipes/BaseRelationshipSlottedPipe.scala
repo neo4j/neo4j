@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import java.util.function.BiConsumer
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -32,12 +32,15 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
-abstract class BaseRelationshipSlottedPipe(src: Pipe, RelationshipKey: String, startNode: Int, typ: LazyType, endNode: Int,
-                                           pipelineInformation: PipelineInformation,
-                                           properties: Option[Expression])
-  extends PipeWithSource(src) {
+abstract class BaseRelationshipSlottedPipe(src: Pipe,
+                                           RelationshipKey: String,
+                                           startNode: Int,
+                                           typ: LazyType,
+                                           endNode: Int,
+                                           slots: SlotConfiguration,
+                                           properties: Option[Expression]) extends PipeWithSource(src) {
 
-  private val offset = pipelineInformation.getLongOffsetFor(RelationshipKey)
+  private val offset = slots.getLongOffsetFor(RelationshipKey)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map {
@@ -92,21 +95,29 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe, RelationshipKey: String, s
   protected def handleNull(key: String): Unit
 }
 
-case class CreateRelationshipSlottedPipe(src: Pipe, RelationshipKey: String, startNode: Int, typ: LazyType, endNode: Int,
-                                         pipelineInformation: PipelineInformation,
+case class CreateRelationshipSlottedPipe(src: Pipe,
+                                         RelationshipKey: String,
+                                         startNode: Int,
+                                         typ: LazyType,
+                                         endNode: Int,
+                                         slots: SlotConfiguration,
                                          properties: Option[Expression])
                                         (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
-  extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, pipelineInformation, properties) {
+  extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
   override protected def handleNull(key: String) {
     //do nothing
   }
 }
 
-case class MergeCreateRelationshipSlottedPipe(src: Pipe, RelationshipKey: String, startNode: Int, typ: LazyType, endNode: Int,
-                                              pipelineInformation: PipelineInformation,
+case class MergeCreateRelationshipSlottedPipe(src: Pipe,
+                                              RelationshipKey: String,
+                                              startNode: Int,
+                                              typ: LazyType,
+                                              endNode: Int,
+                                              slots: SlotConfiguration,
                                               properties: Option[Expression])
                                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
-  extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, pipelineInformation, properties) {
+  extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
 
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create

@@ -79,17 +79,17 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val pipelines: Map[LogicalPlanId, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
+    val slotConfigurations: Map[LogicalPlanId, SlotConfiguration] = SlotAllocation.allocateSlots(beforeRewrite)
     val slottedRewriter = new SlottedRewriter(context.planContext)
-    val logicalPlan = slottedRewriter(beforeRewrite, pipelines)
-    (logicalPlan, pipelines)
+    val logicalPlan = slottedRewriter(beforeRewrite, slotConfigurations)
+    (logicalPlan, slotConfigurations)
   }
 
   override def postConditions: Set[Condition] = Set.empty
 
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
-                                     pipelineInformation: Map[LogicalPlanId, PipelineInformation],
+                                     slots: Map[LogicalPlanId, SlotConfiguration],
                                      physicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,

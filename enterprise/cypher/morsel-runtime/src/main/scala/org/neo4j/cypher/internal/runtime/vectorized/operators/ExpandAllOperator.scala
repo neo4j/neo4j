@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
-class ExpandAllOperator(toPipeline: PipelineInformation,
-                        fromPipeline: PipelineInformation,
+class ExpandAllOperator(toSlots: SlotConfiguration,
+                        fromSlots: SlotConfiguration,
                         fromOffset: Int,
                         relOffset: Int,
                         toOffset: Int,
@@ -70,10 +70,10 @@ class ExpandAllOperator(toPipeline: PipelineInformation,
         throw new InternalException("Unknown continuation received")
     }
 
-    val inputLongCount = fromPipeline.numberOfLongs
-    val inputRefCount = fromPipeline.numberOfReferences
-    val outputLongCount = toPipeline.numberOfLongs
-    val outputRefCount = toPipeline.numberOfReferences
+    val inputLongCount = fromSlots.numberOfLongs
+    val inputRefCount = fromSlots.numberOfReferences
+    val outputLongCount = toSlots.numberOfLongs
+    val outputRefCount = toSlots.numberOfReferences
 
     while (readPos < input.validRows && writePos < output.validRows) {
 

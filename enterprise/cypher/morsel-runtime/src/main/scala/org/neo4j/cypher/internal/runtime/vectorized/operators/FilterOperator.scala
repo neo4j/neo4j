@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 /*
 Takes an input morsel and compacts all rows to the beginning of it, only keeping the rows that match a predicate
  */
-class FilterOperator(pipeline: PipelineInformation, predicate: Predicate) extends MiddleOperator {
+class FilterOperator(slots: SlotConfiguration, predicate: Predicate) extends MiddleOperator {
   override def operate(iterationState: Iteration,
                        data: Morsel,
                        context: QueryContext,
@@ -35,8 +35,8 @@ class FilterOperator(pipeline: PipelineInformation, predicate: Predicate) extend
 
     var readingPos = 0
     var writingPos = 0
-    val longCount = pipeline.numberOfLongs
-    val refCount = pipeline.numberOfReferences
+    val longCount = slots.numberOfLongs
+    val refCount = slots.numberOfReferences
     val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = readingPos)
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 

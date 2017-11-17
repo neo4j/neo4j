@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.computeUnionMapping
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -39,13 +39,13 @@ import scala.collection.immutable
 
 class UnionSlottedPipeTest extends CypherFunSuite {
 
-  private def union(lhsInfo: PipelineInformation,
-                    rhsInfo: PipelineInformation,
-                    out: PipelineInformation, lhsData: Traversable[Map[String, Any]],
-                                              rhsData: Traversable[Map[String, Any]]) = {
-    val lhs = FakeSlottedPipe(lhsData.toIterator, lhsInfo)
-    val rhs = FakeSlottedPipe(rhsData.toIterator, rhsInfo)
-    val union = UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsInfo, out), computeUnionMapping(rhsInfo, out) )()
+  private def union(lhsSlots: SlotConfiguration,
+                    rhsSlots: SlotConfiguration,
+                    out: SlotConfiguration, lhsData: Traversable[Map[String, Any]],
+                    rhsData: Traversable[Map[String, Any]]) = {
+    val lhs = FakeSlottedPipe(lhsData.toIterator, lhsSlots)
+    val rhs = FakeSlottedPipe(rhsData.toIterator, rhsSlots)
+    val union = UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsSlots, out), computeUnionMapping(rhsSlots, out) )()
     val context = mock[QueryContext]
     val nodeOps = mock[Operations[Node]]
     when(nodeOps.getById(any())).thenAnswer(new Answer[Node] {
@@ -61,7 +61,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     when(context.relationshipOps).thenReturn(relOps)
     val res = union.createResults(QueryStateHelper.emptyWith(query = context)).toList.map {
       case e: PrimitiveExecutionContext =>
-        e.pipeline.mapSlot {
+        e.slots.mapSlot {
           case (k, s: LongSlot) =>
             val value = if (s.typ == CTNode) nodeValue(e.getLongAt(s.offset))
             else if (s.typ == CTRelationship) edgeValue(e.getLongAt(s.offset))
@@ -76,14 +76,14 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("should handle references") {
     // Given
-    val lhsInfo = PipelineInformation.empty.newReference("x", nullable = false, CTAny)
-    val rhsInfo = PipelineInformation.empty.newReference("x", nullable = false, CTAny)
-    val out = PipelineInformation.empty.newReference("x", nullable = false, CTAny)
+    val lhsSlots = SlotConfiguration.empty.newReference("x", nullable = false, CTAny)
+    val rhsSlots = SlotConfiguration.empty.newReference("x", nullable = false, CTAny)
+    val out = SlotConfiguration.empty.newReference("x", nullable = false, CTAny)
     val lhsData = List(Map("x" -> 42))
     val rhsData = List(Map("x" -> 43))
 
     // When
-    val result = union(lhsInfo, rhsInfo, out, lhsData, rhsData)
+    val result = union(lhsSlots, rhsSlots, out, lhsData, rhsData)
 
     // Then
     result should equal(
@@ -92,14 +92,14 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("should handle mixed longslot and refslot") {
     // Given
-    val lhsInfo = PipelineInformation.empty.newLong("x", nullable = false, CTNode)
-    val rhsInfo = PipelineInformation.empty.newReference("x", nullable = false, CTAny)
-    val out = PipelineInformation.empty.newReference("x", nullable = false, CTAny)
+    val lhsSlots = SlotConfiguration.empty.newLong("x", nullable = false, CTNode)
+    val rhsSlots = SlotConfiguration.empty.newReference("x", nullable = false, CTAny)
+    val out = SlotConfiguration.empty.newReference("x", nullable = false, CTAny)
     val lhsData = List(Map("x" -> 42))
     val rhsData = List(Map("x" -> 43))
 
     // When
-    val result = union(lhsInfo, rhsInfo, out, lhsData, rhsData)
+    val result = union(lhsSlots, rhsSlots, out, lhsData, rhsData)
 
     // Then
     result should equal(
@@ -108,14 +108,14 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("should handle two node longslots") {
     // Given
-    val lhsInfo = PipelineInformation.empty.newLong("x", nullable = false, CTNode)
-    val rhsInfo = PipelineInformation.empty.newLong("x", nullable = false, CTNode)
-    val out = PipelineInformation.empty.newLong("x", nullable = false, CTNode)
+    val lhsSlots = SlotConfiguration.empty.newLong("x", nullable = false, CTNode)
+    val rhsSlots = SlotConfiguration.empty.newLong("x", nullable = false, CTNode)
+    val out = SlotConfiguration.empty.newLong("x", nullable = false, CTNode)
     val lhsData = List(Map("x" -> 42))
     val rhsData = List(Map("x" -> 43))
 
     // When
-    val result = union(lhsInfo, rhsInfo, out, lhsData, rhsData)
+    val result = union(lhsSlots, rhsSlots, out, lhsData, rhsData)
     // Then
     result should equal(
       List(Map("x" -> nodeValue(42)), Map("x" -> nodeValue(43))))
@@ -123,14 +123,14 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("should handle two relationship longslots") {
     // Given
-    val lhsInfo = PipelineInformation.empty.newLong("x", nullable = false, CTRelationship)
-    val rhsInfo = PipelineInformation.empty.newLong("x", nullable = false, CTRelationship)
-    val out = PipelineInformation.empty.newLong("x", nullable = false, CTRelationship)
+    val lhsSlots = SlotConfiguration.empty.newLong("x", nullable = false, CTRelationship)
+    val rhsSlots = SlotConfiguration.empty.newLong("x", nullable = false, CTRelationship)
+    val out = SlotConfiguration.empty.newLong("x", nullable = false, CTRelationship)
     val lhsData = List(Map("x" -> 42))
     val rhsData = List(Map("x" -> 43))
 
     // When
-    val result = union(lhsInfo, rhsInfo, out, lhsData, rhsData)
+    val result = union(lhsSlots, rhsSlots, out, lhsData, rhsData)
 
     // Then
     result should equal(
@@ -139,14 +139,14 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("should handle one long slot and one relationship slot") {
     // Given
-    val lhsInfo = PipelineInformation.empty.newLong("x", nullable = false, CTNode)
-    val rhsInfo = PipelineInformation.empty.newLong("x", nullable = false, CTRelationship)
-    val out = PipelineInformation.empty.newReference("x", nullable = false, CTAny)
+    val lhsSlots = SlotConfiguration.empty.newLong("x", nullable = false, CTNode)
+    val rhsSlots = SlotConfiguration.empty.newLong("x", nullable = false, CTRelationship)
+    val out = SlotConfiguration.empty.newReference("x", nullable = false, CTAny)
     val lhsData = List(Map("x" -> 42))
     val rhsData = List(Map("x" -> 43))
 
     // When
-    val result = union(lhsInfo, rhsInfo, out, lhsData, rhsData)
+    val result = union(lhsSlots, rhsSlots, out, lhsData, rhsData)
 
     // Then
     result should equal(
@@ -155,15 +155,15 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("should handle multiple columns") {
     // Given
-    val lhsInfo = PipelineInformation.empty
+    val lhsSlots = SlotConfiguration.empty
       .newLong("x", nullable = false, CTNode)
       .newLong("y", nullable = false, CTRelationship)
       .newReference("z", nullable = false, CTAny)
-    val rhsInfo = PipelineInformation.empty
+    val rhsSlots = SlotConfiguration.empty
       .newLong("x", nullable = false, CTRelationship)
       .newLong("y", nullable = false, CTRelationship)
       .newLong("z", nullable = false, CTRelationship)
-    val out = PipelineInformation.empty
+    val out = SlotConfiguration.empty
       .newReference("x", nullable = false, CTAny)
       .newLong("y", nullable = false, CTRelationship)
       .newReference("z", nullable = false, CTAny)
@@ -171,7 +171,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     val rhsData: immutable.Seq[Map[String, Int]] = List(Map("x" -> 43, "y" -> 44, "z" -> 45))
 
     // When
-    val result = union(lhsInfo, rhsInfo, out, lhsData, rhsData)
+    val result = union(lhsSlots, rhsSlots, out, lhsData, rhsData)
 
     // Then
     result should equal(
@@ -183,15 +183,15 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("should handle multiple columns in permutated order") {
     // Given
-    val lhsInfo = PipelineInformation.empty
+    val lhsSlots = SlotConfiguration.empty
       .newLong("x", nullable = false, CTNode)
       .newLong("y", nullable = false, CTRelationship)
       .newReference("z", nullable = false, CTAny)
-    val rhsInfo = PipelineInformation.empty
+    val rhsSlots = SlotConfiguration.empty
       .newLong("y", nullable = false, CTRelationship)
       .newLong("z", nullable = false, CTRelationship)
       .newLong("x", nullable = false, CTRelationship)
-    val out = PipelineInformation.empty
+    val out = SlotConfiguration.empty
       .newReference("x", nullable = false, CTAny)
       .newLong("y", nullable = false, CTRelationship)
       .newReference("z", nullable = false, CTAny)
@@ -199,7 +199,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     val rhsData: immutable.Seq[Map[String, Int]] = List(Map("x" -> 43, "y" -> 44, "z" -> 45))
 
     // When
-    val result = union(lhsInfo, rhsInfo, out, lhsData, rhsData)
+    val result = union(lhsSlots, rhsSlots, out, lhsData, rhsData)
 
     // Then
     result should equal(

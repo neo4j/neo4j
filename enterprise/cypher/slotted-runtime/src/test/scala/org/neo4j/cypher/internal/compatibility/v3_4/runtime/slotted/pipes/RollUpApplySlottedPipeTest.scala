@@ -24,7 +24,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.{NodeFromSlot, ReferenceFromSlot}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.FakeEntityTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeTestSupport, QueryState}
@@ -39,12 +39,12 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues
 
 class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport with FakeEntityTestSupport {
-  private val pipeline = PipelineInformation
+  private val slots = SlotConfiguration
     .empty
     .newReference("a", nullable = true, CTNumber)
     .newReference("x", nullable = false, CTList(CTNumber)) // NOTE: This has to be last since that is the order in which the slots are assumed to be allocated
 
-  private val collectionRefSlotOffset = pipeline.getReferenceOffsetFor("x")
+  private val collectionRefSlotOffset = slots.getReferenceOffsetFor("x")
 
   test("when rhs returns nothing, an empty collection should be produced") {
     // given
@@ -52,14 +52,14 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     val rhs = pipeWithResults { (state) => Iterator() }
     val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(0)),
-      nullableIdentifiers = Set("a"), pipeline)()
+      nullableIdentifiers = Set("a"), slots)()
 
     // when
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList
 
     // then
-    val a_offset = pipeline.get("a").get.offset
-    val x_offset = pipeline.get("x").get.offset
+    val a_offset = slots.get("a").get.offset
+    val x_offset = slots.get("x").get.offset
     result.head.getRefAt(a_offset) should equal(Values.longValue(1))
     result.head.getRefAt(x_offset) should equal(VirtualValues.EMPTY_LIST)
   }
@@ -70,14 +70,14 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     val rhs = pipeWithResults { (state) => Iterator() }
     val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(0)),
-      nullableIdentifiers = Set("a"), pipeline)()
+      nullableIdentifiers = Set("a"), slots)()
 
     // when
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList
 
     // then
-    val a_offset = pipeline.get("a").get.offset
-    val x_offset = pipeline.get("x").get.offset
+    val a_offset = slots.get("a").get.offset
+    val x_offset = slots.get("x").get.offset
     result(0).getRefAt(a_offset) should equal(NO_VALUE)
     result(0).getRefAt(x_offset) should equal(NO_VALUE)
     result(1).getRefAt(a_offset) should equal(Values.intValue(1))
@@ -88,17 +88,17 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     // given
     val lhs = createLhs(1)
     val rhs = createRhs(1, 2, 3, 4)
-    val yOffset = rhs.pipeline.getReferenceOffsetFor("y")
+    val yOffset = rhs.slots.getReferenceOffsetFor("y")
     val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(yOffset)),
-      nullableIdentifiers = Set("a"), pipeline)()
+      nullableIdentifiers = Set("a"), slots)()
 
     // when
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList
 
     // then
-    val a_offset = pipeline.get("a").get.offset
-    val x_offset = pipeline.get("x").get.offset
+    val a_offset = slots.get("a").get.offset
+    val x_offset = slots.get("x").get.offset
     result(0).getRefAt(a_offset) should equal(Values.longValue(1))
     result(0).getRefAt(x_offset) should equal(VirtualValues.list(Values.longValue(1), Values.longValue(2), Values.longValue(3), Values.longValue(4)))
   }
@@ -108,10 +108,10 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     // given
     val lhs = createLhs(1)
     val rhs = createRhsWithNumberOfNodes(2)
-    val yOffset = rhs.pipeline.getLongOffsetFor("y")
+    val yOffset = rhs.slots.getLongOffsetFor("y")
     val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> NodeFromSlot(yOffset)),
-      nullableIdentifiers = Set("a"), pipeline)()
+      nullableIdentifiers = Set("a"), slots)()
 
     val queryContext = Mockito.mock(classOf[QueryContext])
     val node0 = new FakeNode {
@@ -130,8 +130,8 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     val result = pipe.createResults(queryState).toList
 
     // then
-    val a_offset = pipeline.get("a").get.offset
-    val x_offset = pipeline.get("x").get.offset
+    val a_offset = slots.get("a").get.offset
+    val x_offset = slots.get("x").get.offset
     result(0).getRefAt(a_offset) should equal(Values.longValue(1))
     result(0).getRefAt(x_offset) should equal(VirtualValues.list(
       ValueUtils.fromNodeProxy(node0),
@@ -151,7 +151,7 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     })
     val pipe = RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset,
       identifierToCollect = ("y" -> ReferenceFromSlot(0)),
-      nullableIdentifiers = Set("a"), pipeline)()
+      nullableIdentifiers = Set("a"), slots)()
 
     // when
     pipe.createResults(QueryStateHelper.empty).toList
@@ -161,21 +161,21 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
 
   private def createRhs(data: Any*) = {
     val rhsData = data.map { case v => Map("y" -> v) }
-    val rhsPipeline = pipeline.breakPipelineAndClone()
+    val rhsPipeline = slots.copy()
       .newReference("y", nullable = false, CTNumber)
     new FakeSlottedPipe(rhsData.iterator, rhsPipeline)
   }
 
   private def createRhsWithNumberOfNodes(numberOfNodes: Int) = {
     val rhsData = for (i <- 0 until numberOfNodes) yield Map("y" -> i)
-    val rhsPipeline = pipeline.breakPipelineAndClone()
+    val rhsPipeline = slots.copy()
       .newLong("y", nullable = false, CTNode)
     new FakeSlottedPipe(rhsData.iterator, rhsPipeline)
   }
 
   private def createLhs(data: Any*) = {
     val lhsData = data.map { case v => Map("a" -> v) }
-    new FakeSlottedPipe(lhsData.iterator, pipeline)
+    new FakeSlottedPipe(lhsData.iterator, slots)
   }
 }
 

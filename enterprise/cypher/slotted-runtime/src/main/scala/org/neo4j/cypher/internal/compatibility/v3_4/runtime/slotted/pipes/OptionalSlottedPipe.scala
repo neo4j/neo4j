@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class OptionalSlottedPipe(source: Pipe, nullableOffsets: Seq[Int],
-                               pipelineInformation: PipelineInformation)
+                               slots: SlotConfiguration)
                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with Pipe {
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
-    val context = PrimitiveExecutionContext(pipelineInformation)
+    val context = PrimitiveExecutionContext(slots)
     state.copyArgumentStateTo(context)
     // TODO: This can probably be done with java.util.Arrays.fill knowing the first offset
     nullableOffsets.foreach(offset => context.setLongAt(offset, -1))

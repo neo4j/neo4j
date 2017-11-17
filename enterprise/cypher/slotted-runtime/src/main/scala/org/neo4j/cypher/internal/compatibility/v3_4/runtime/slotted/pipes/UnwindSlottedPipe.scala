@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
@@ -30,7 +30,10 @@ import org.neo4j.values.AnyValue
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
-case class UnwindSlottedPipe(source: Pipe, collection: Expression, offset: Int, pipeline: PipelineInformation)
+case class UnwindSlottedPipe(source: Pipe,
+                             collection: Expression,
+                             offset: Int,
+                             slots: SlotConfiguration)
                             (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with ListSupport {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     new UnwindIterator(input, state)
@@ -57,7 +60,7 @@ case class UnwindSlottedPipe(source: Pipe, collection: Expression, offset: Int, 
     private def prefetch() {
       nextItem = null
       if (unwindIterator != null && unwindIterator.hasNext) {
-        nextItem = PrimitiveExecutionContext(pipeline)
+        nextItem = PrimitiveExecutionContext(slots)
         currentInputRow.copyTo(nextItem)
         nextItem.setRefAt(offset, unwindIterator.next())
       } else {

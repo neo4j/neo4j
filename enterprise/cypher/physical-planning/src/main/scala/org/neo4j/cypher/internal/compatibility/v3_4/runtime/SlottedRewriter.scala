@@ -31,10 +31,14 @@ import org.neo4j.cypher.internal.v3_4.{functions => frontendFunctions}
 
 import scala.collection.mutable
 
-/*
-This class takes a logical plan and pipeline information, and rewrites it so it uses slotted expressions instead of
-using Variable. It will also rewrite the pipeline information so that the new plans can be found in there.
- */
+/**
+  * This class rewrites logical plans so they use slotted variable access instead of using key-based. It will also
+  * rewrite the slot configurations so that the new plans can be found in there.
+  *
+  * // TODO: Not too sure about that rewrite comment. Revisit here when cleaning up rewriting.
+  *
+  * @param tokenContext the token context used to map between token ids and names.
+  */
 class SlottedRewriter(tokenContext: TokenContext) {
 
   private def rewriteUsingIncoming(oldPlan: LogicalPlan): Boolean = oldPlan match {
@@ -42,8 +46,8 @@ class SlottedRewriter(tokenContext: TokenContext) {
     case _ => false
   }
 
-  def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlanId, PipelineInformation]): LogicalPlan = {
-    val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
+  def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlanId, SlotConfiguration]): LogicalPlan = {
+    val newPipelineInfo = mutable.HashMap[LogicalPlan, SlotConfiguration]()
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
@@ -120,7 +124,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
     resultPlan
   }
 
-  private def rewriteCreator(pipelineInformation: PipelineInformation, thisPlan: LogicalPlan): Rewriter = {
+  private def rewriteCreator(pipelineInformation: SlotConfiguration, thisPlan: LogicalPlan): Rewriter = {
     val innerRewriter = Rewriter.lift {
       case prop@Property(Variable(key), PropertyKeyName(propKey)) =>
 
@@ -146,7 +150,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
         val slot1 = pipelineInformation(k1)
         val slot2 = pipelineInformation(k2)
-        if (slot1.typ == slot2.typ && PipelineInformation.isLongSlot(slot1) && PipelineInformation.isLongSlot(slot2)) {
+        if (slot1.typ == slot2.typ && SlotConfiguration.isLongSlot(slot1) && SlotConfiguration.isLongSlot(slot2)) {
           PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
         }
         else
@@ -209,7 +213,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }
 
-  private def checkIfPropertyExists(pipelineInformation: PipelineInformation, key: String, propKey: String) = {
+  private def checkIfPropertyExists(pipelineInformation: SlotConfiguration, key: String, propKey: String) = {
     val slot = pipelineInformation(key)
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 

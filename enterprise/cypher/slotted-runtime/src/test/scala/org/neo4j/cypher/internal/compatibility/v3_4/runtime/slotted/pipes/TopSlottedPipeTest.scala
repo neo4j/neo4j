@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.TopSlottedPipeTestSupport._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -218,12 +218,12 @@ object TopSlottedPipeTestSupport {
   }
 
   def singleColumnTopWithInput(data: Traversable[Any], orderBy: TestColumnOrder, limit: Int, withTies: Boolean = false) = {
-    val pipeline = PipelineInformation.empty
+    val slots = SlotConfiguration.empty
       .newReference("a", nullable = true, CTAny)
 
-    val slot = pipeline("a")
+    val slot = slots("a")
 
-    val source = FakeSlottedPipe(data.map(v => Map("a" -> v)).toIterator, pipeline)
+    val source = FakeSlottedPipe(data.map(v => Map("a" -> v)).toIterator, slots)
 
     val topOrderBy = orderBy match {
       case AscendingOrder => List(Ascending(slot))
@@ -245,13 +245,13 @@ object TopSlottedPipeTestSupport {
   }
 
   def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder], limit: Int, withTies: Boolean = false) = {
-    val pipeline = PipelineInformation.empty
+    val slotConfiguration = SlotConfiguration.empty
       .newReference("a", nullable = true, CTAny)
       .newReference("b", nullable = true, CTAny)
 
-    val slots = Seq(pipeline("a"), pipeline("b"))
+    val slots = Seq(slotConfiguration("a"), slotConfiguration("b"))
 
-    val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }.toIterator, pipeline)
+    val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }.toIterator, slotConfiguration)
 
     val topOrderBy = orderBy.zip(slots).map {
       case (AscendingOrder, slot) => Ascending(slot)

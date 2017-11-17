@@ -84,10 +84,10 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val pipelines: Map[LogicalPlanId, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
+    val slotConfigurations: Map[LogicalPlanId, SlotConfiguration] = SlotAllocation.allocateSlots(beforeRewrite)
     val slottedRewriter = new SlottedRewriter(context.planContext)
-    val logicalPlan = slottedRewriter(beforeRewrite, pipelines)
-    (logicalPlan, pipelines)
+    val logicalPlan = slottedRewriter(beforeRewrite, slotConfigurations)
+    (logicalPlan, slotConfigurations)
   }
 
   case class SlottedExecutionPlan(fingerprint: PlanFingerprintReference,
@@ -111,7 +111,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
   }
 
-  case class EnterprisePipeBuilderFactory(pipelineInformation: Map[LogicalPlanId, PipelineInformation])
+  case class EnterprisePipeBuilderFactory(slotConfigurations: Map[LogicalPlanId, SlotConfiguration])
     extends PipeBuilderFactory {
     def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
               expressionConverters: ExpressionConverters)
@@ -121,7 +121,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
       val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
 
-      new SlottedPipeBuilder(fallback, expressionConverters, monitors, pipelineInformation, readOnly,
+      new SlottedPipeBuilder(fallback, expressionConverters, monitors, slotConfigurations, readOnly,
         expressionToExpression)
     }
   }

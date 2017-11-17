@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
@@ -31,8 +31,9 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.mutable
 
 case class DistinctSlottedPipe(source: Pipe,
-                               pipelineInformation: PipelineInformation,
-                               groupingExpressions: Map[Int, Expression])(val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                               slots: SlotConfiguration,
+                               groupingExpressions: Map[Int, Expression])
+                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
 
   private val keyOffsets: Array[Int] = groupingExpressions.keys.toArray
@@ -43,7 +44,7 @@ case class DistinctSlottedPipe(source: Pipe,
                                       state: QueryState): Iterator[ExecutionContext] = {
     // For each incoming row, run expression and put it into the correct slot in the context
     val result = input.map(incoming => {
-      val outgoing = PrimitiveExecutionContext(pipelineInformation)
+      val outgoing = PrimitiveExecutionContext(slots)
       groupingExpressions.foreach {
         case (offset, expression) => outgoing.setRefAt(offset, expression(incoming, state))
       }
