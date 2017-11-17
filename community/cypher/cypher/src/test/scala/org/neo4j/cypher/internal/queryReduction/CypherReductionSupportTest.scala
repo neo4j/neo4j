@@ -25,17 +25,17 @@ import org.neo4j.cypher.internal.util.v3_4.ArithmeticException
 
 import scala.util.{Failure, Success, Try}
 
-class CypherReductionSupportTest extends CypherFunSuite {
+class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupport {
 
   test("a simply query that cannot be reduced") {
     val query = "MATCH (n) RETURN n"
-    CypherReductionSupport.reduceQuery(query)(_ => NotReproduced)
+    reduceQuery(query)(_ => NotReproduced)
   }
 
   test("removes unnecessary where") {
     val setup = "CREATE (n {name: \"x\"}) RETURN n"
     val query = "MATCH (n) WHERE true RETURN n.name"
-    val reduced = CypherReductionSupport.reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
+    val reduced = reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Success(result) =>
           val list = result.toList
@@ -51,21 +51,20 @@ class CypherReductionSupportTest extends CypherFunSuite {
 
   test("rolls back after each oracle invocation") {
     val query = "CREATE (n) RETURN n"
-    CypherReductionSupport.reduceQuery(query)(_ => NotReproduced)
-    CypherReductionSupport.evaluate("MATCH (n) RETURN count(n)").toList should be(List(Map("count(n)" -> 0)))
+    reduceQuery(query)(_ => NotReproduced)
+    evaluate("MATCH (n) RETURN count(n)").toList should be(List(Map("count(n)" -> 0)))
   }
 
   test("evaluate rolls back") {
     val query = "CREATE (n) RETURN n"
-    CypherReductionSupport.evaluate(query)
-    CypherReductionSupport.evaluate("MATCH (n) RETURN count(n)").toList should be(List(Map("count(n)" -> 0)))
+    evaluate(query)
+    evaluate("MATCH (n) RETURN count(n)").toList should be(List(Map("count(n)" -> 0)))
   }
 
   test("removes unnecessary stuff from faulty query") {
     val setup = "CREATE (n:Label {name: 0}) RETURN n"
     val query = "MATCH (n:Label)-[:X]->(m:Label),(p) WHERE 100/n.name > 34 AND m.name = n.name WITH n.name AS name RETURN name, $a ORDER BY name SKIP 1 LIMIT 5"
-    println(query)
-    val reduced = CypherReductionSupport.reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
+    val reduced = reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Failure(e:ArithmeticException) =>
           if(e.getMessage == "/ by zero")
@@ -75,7 +74,6 @@ class CypherReductionSupportTest extends CypherFunSuite {
         case _ => NotReproduced
       }
     }
-    println(reduced)
   }
 
   test("removes unnecessary stuff from sensible query") {
@@ -88,8 +86,7 @@ class CypherReductionSupportTest extends CypherFunSuite {
         | UNION
         | MATCH (n:NoLabel) WHERE 1 = 0 RETURN n.name AS name
       """.stripMargin
-    println(query)
-    val reduced = CypherReductionSupport.reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
+    val reduced = reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Success(r) =>
           if (r.hasNext && r.next() == Map("name" -> "satia") && !r.hasNext)
@@ -99,7 +96,6 @@ class CypherReductionSupportTest extends CypherFunSuite {
         case _ => NotReproduced
       }
     }
-    println(reduced)
   }
 
 }

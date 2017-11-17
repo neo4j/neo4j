@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.queryReduction
 
+import org.neo4j.cypher.GraphIcing
 import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.SecurityContext
@@ -53,9 +55,6 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.util.Try
 
-/**
-  * Do not mixin GraphDatabaseTestSupport when using this object.
-  */
 object CypherReductionSupport {
   private val rewriterSequencer = RewriterStepSequencer.newValidating _
   private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
@@ -75,20 +74,48 @@ object CypherReductionSupport {
   private val kernelMonitors = new Monitors
   private val compiler = CypherCompiler(astRewriter, new WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
     CompilerEngineDelegator.CLOCK, CommunityRuntimeContextCreator)
-  private val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
-  private val contextFactory: TransactionalContextFactory = Neo4jTransactionalContextFactory.create(graph, new PropertyContainerLocker())
+
   private val monitor = kernelMonitors.newMonitor(classOf[IDPQueryGraphSolverMonitor])
   private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
   private val singleComponentPlanner = SingleComponentPlanner(monitor)
   private val queryGraphSolver = IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
 
+  private val prettifier = Prettifier(ExpressionStringifier())
+}
+
+/**
+  * Do not mixin GraphDatabaseTestSupport when using this object.
+  */
+trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
+  self: CypherFunSuite  =>
+
+  private var graph: GraphDatabaseCypherService = null
+  private var contextFactory: TransactionalContextFactory = null
+
+  override protected def initTest() {
+    super.initTest()
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    contextFactory = Neo4jTransactionalContextFactory.create(graph, new PropertyContainerLocker())
+  }
+
+  override protected def stopTest() {
+    try {
+      super.stopTest()
+    }
+    finally {
+      if (graph != null) graph.shutdown()
+    }
+  }
+
+
+
   private val rewriting = PreparatoryRewriting andThen
     SemanticAnalysis(warn = true).adds(BaseContains[SemanticState])
   private val createExecPlan = ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
     If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
-      CommunityRuntimeBuilder.create(None, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan]))
+      CommunityRuntimeBuilder.create(None, CypherReductionSupport.config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan]))
 
-  private val prettifier = Prettifier(ExpressionStringifier())
+
 
   def evaluate(query: String): InternalExecutionResult = {
     val parsingBaseState = queryToParsingBaseState(query)
@@ -108,13 +135,13 @@ object CypherReductionSupport {
     }
 
     val smallerStatement = GTRStar(new StatementGTRInput(statement))(oracle)
-    prettifier.asString(smallerStatement)
+    CypherReductionSupport.prettifier.asString(smallerStatement)
   }
 
   private def queryToParsingBaseState(query: String): BaseState = {
     val startState = LogicalPlanState(query, None, PlannerNameFor(IDPPlannerName.name))
-    val parsingContext = createContext(query, metricsFactory, config, null, null)
-    CompilationPhases.parsing(stepSequencer).transform(startState, parsingContext)
+    val parsingContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, null, null)
+    CompilationPhases.parsing(CypherReductionSupport.stepSequencer).transform(startState, parsingContext)
   }
 
   private def produceResult(query: String,
@@ -144,17 +171,17 @@ object CypherReductionSupport {
     val planContext = new TransactionBoundPlanContext(txContextWrapper, devNullLogger)
 
     var baseState = parsingBaseState.withStatement(statement)
-    val planningContext = createContext(query, metricsFactory, config, planContext, queryGraphSolver)
+    val planningContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, planContext, CypherReductionSupport.queryGraphSolver)
 
 
     baseState = rewriting.transform(baseState, planningContext)
 
-    val logicalPlanState = compiler.planPreparedQuery(baseState, planningContext)
+    val logicalPlanState = CypherReductionSupport.compiler.planPreparedQuery(baseState, planningContext)
 
 
     val compilationState = createExecPlan.transform(logicalPlanState, planningContext)
     val executionPlan = compilationState.maybeExecutionPlan.get
-    val queryContext = new TransactionBoundQueryContext(txContextWrapper)(searchMonitor)
+    val queryContext = new TransactionBoundQueryContext(txContextWrapper)(CypherReductionSupport.searchMonitor)
 
     RewindableExecutionResult(executionPlan.run(queryContext, NormalMode, ValueConversion.asValues(baseState.extractedParams())))
   }
