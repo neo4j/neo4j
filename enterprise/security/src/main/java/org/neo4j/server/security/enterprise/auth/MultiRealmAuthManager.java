@@ -101,10 +101,26 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         {
             securityContext = new StandardEnterpriseSecurityContext(
                     this, (ShiroSubject) securityManager.login( null, token ) );
-            if ( logSuccessfulLogin )
+            AuthenticationResult authenticationResult = securityContext.subject().getAuthenticationResult();
+            if ( authenticationResult == AuthenticationResult.SUCCESS )
             {
-                securityLog.info( securityContext, "logged in" );
+                if ( logSuccessfulLogin )
+                {
+                    securityLog.info( securityContext, "logged in" );
+                }
             }
+            else if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+            {
+                securityLog.info( securityContext, "logged in (password change required)" );
+            }
+            else
+            {
+                String errorMessage = ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject())
+                        .getAuthenticationFailureMessage();
+                securityLog.error( "[%s]: failed to log in: %s", escape( token.getPrincipal().toString() ), errorMessage );
+            }
+            // No need to keep full Shiro authentication info around on the subject
+            ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
         }
         catch ( UnsupportedTokenException e )
         {
@@ -128,20 +144,28 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         {
             if ( e.getCause() != null && e.getCause() instanceof AuthProviderTimeoutException )
             {
-                securityLog.error( "[%s]: failed to log in: auth server timeout",
-                        escape( token.getPrincipal().toString() ) );
+                Throwable cause = e.getCause().getCause();
+                securityLog.error( "[%s]: failed to log in: auth server timeout%s",
+                        escape( token.getPrincipal().toString() ),
+                        cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
                 throw new AuthProviderTimeoutException( e.getCause().getMessage(), e.getCause() );
             }
             else if ( e.getCause() != null && e.getCause() instanceof AuthProviderFailedException )
             {
-                securityLog.error( "[%s]: failed to log in: auth server connection refused",
-                        escape( token.getPrincipal().toString() ) );
+                Throwable cause = e.getCause().getCause();
+                securityLog.error( "[%s]: failed to log in: auth server connection refused%s",
+                        escape( token.getPrincipal().toString() ),
+                        cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
                 throw new AuthProviderFailedException( e.getCause().getMessage(), e.getCause() );
             }
             securityContext = new StandardEnterpriseSecurityContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
-            securityLog.error( "[%s]: failed to log in: invalid principal or credentials",
-                    escape( token.getPrincipal().toString() ) );
+            Throwable cause = e.getCause();
+            Throwable causeCause = e.getCause() != null ? e.getCause().getCause() : null;
+            securityLog.error( "[%s]: failed to log in: invalid principal or credentials%s%s",
+                    escape( token.getPrincipal().toString() ),
+                    cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "",
+                    causeCause != null && causeCause.getMessage() != null ? " (" + causeCause.getMessage() + ")" : "" );
         }
 
         return securityContext;

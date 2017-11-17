@@ -40,6 +40,6 @@ public class ShiroSubjectFactory implements SubjectFactory
         ShiroAuthenticationInfo authcInfo = (ShiroAuthenticationInfo) context.getAuthenticationInfo();
 
         return new ShiroSubject( principals, authenticated, host, session, sessionCreationEnabled, securityManager,
-                authcInfo.getAuthenticationResult() );
+                authcInfo.getAuthenticationResult(), authcInfo );
     }
 }
