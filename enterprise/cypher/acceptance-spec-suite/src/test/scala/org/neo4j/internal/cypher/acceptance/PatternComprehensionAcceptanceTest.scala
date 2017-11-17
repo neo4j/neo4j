@@ -359,7 +359,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "RETURN size([(:Start)-->() | 1]) AS size"
 
-    val result = executeWith(expectedToSucceedRestricted, query)
+    val result = executeWith(expectedToSucceedIncludingSlottedRestricted, query)
     result.toList should equal(List(Map("size" -> 3)))
   }
 
