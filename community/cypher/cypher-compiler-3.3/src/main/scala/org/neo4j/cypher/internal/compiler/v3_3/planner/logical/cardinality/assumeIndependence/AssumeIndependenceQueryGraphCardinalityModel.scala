@@ -74,7 +74,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
                                       (implicit semanticTable: SemanticTable): Cardinality = {
     val (selectivity, numberOfZeroZeroRels) = calculateSelectivity(qg, input.labelInfo)
     val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
-    val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
+    val numberOfGraphNodes = stats.nodesAllCardinality()
 
     val c = if (qg.argumentIds.nonEmpty) {
       if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {

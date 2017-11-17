@@ -35,7 +35,7 @@ object TokenSpec {
 
   def mapFrom[T <: SymbolicNameWithId[ID], ID <: NameId](input: Set[T])(implicit semanticTable: SemanticTable): Set[TokenSpec[ID]] =
     if (input.isEmpty)
-      Set(Unspecified())
+      Set(Unspecified)
     else
       input.map {
         case label =>
@@ -52,7 +52,7 @@ case class SpecifiedButUnknown() extends TokenSpec[Nothing] {
   override def map[T](f: Option[Nothing] => T): Option[T] = None
 }
 
-case class Unspecified() extends TokenSpec[Nothing] {
+case object Unspecified extends TokenSpec[Nothing] {
   def id = None
 
   override def map[T](f: Option[Nothing] => T): Option[T] = Some(f(None))

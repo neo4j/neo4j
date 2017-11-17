@@ -100,7 +100,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE id(x) =/IN [...]
     case AsIdSeekable(seekable) =>
-      (seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesWithLabelCardinality(None)) getOrElse Selectivity.ONE
+      (seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
 
     // WHERE <expr> = <expr>
     case _: Equals =>
@@ -121,8 +121,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
-    val labelCardinality = label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(Cardinality.SINGLE)
-    labelCardinality / stats.nodesWithLabelCardinality(None) getOrElse Selectivity.ONE
+    val labelCardinality =
+    if(label.isEmpty){
+      Cardinality.SINGLE
+    } else {
+      label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(Cardinality.SINGLE)
+    }
+    labelCardinality / stats.nodesAllCardinality() getOrElse Selectivity.ONE
   }
 
   private def calculateSelectivityForPropertyEquality(variable: String,

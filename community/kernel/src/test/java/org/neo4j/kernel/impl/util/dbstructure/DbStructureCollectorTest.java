@@ -76,7 +76,7 @@ public class DbStructureCollectorTest
         assertEquals( asList( "City" ), Iterators.asList( Iterators.map( Pair::first, lookup.knownIndices() ) ) );
         assertArrayEquals( new String[]{"income"}, lookup.knownIndices().next().other() );
 
-        assertEquals( 50, lookup.nodesWithLabelCardinality( -1 ) );
+        assertEquals( 50, lookup.nodesAllCardinality() );
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );
         assertEquals( 30, lookup.nodesWithLabelCardinality( 2 ) );
         assertEquals( 500, lookup.cardinalityByLabelsAndRelationshipType( 1, 2, -1 ) );
@@ -126,7 +126,7 @@ public class DbStructureCollectorTest
         assertEquals( asList( "City" ), Iterators.asList( Iterators.map( Pair::first, lookup.knownIndices() ) ) );
         assertArrayEquals( new String[]{"income", "tax"}, lookup.knownIndices().next().other() );
 
-        assertEquals( 50, lookup.nodesWithLabelCardinality( -1 ) );
+        assertEquals( 50, lookup.nodesAllCardinality() );
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );
         assertEquals( 30, lookup.nodesWithLabelCardinality( 2 ) );
         assertEquals( 500, lookup.cardinalityByLabelsAndRelationshipType( 1, 2, -1 ) );
