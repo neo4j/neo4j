@@ -135,6 +135,11 @@ object SlotConfiguration {
     case _: LongSlot => true
     case _ => false
   }
+
+  case class Size(nLongs: Int, nReferences: Int)
+  object Size {
+    val zero = Size(nLongs = 0, nReferences = 0)
+  }
 }
 
 /**
@@ -142,24 +147,25 @@ object SlotConfiguration {
   * store nodes and relationships, represented by their ids, and in RefSlots everything else, represented as AnyValues.
   *
   * @param slots the slots of the configuration.
-  * @param initialNumberOfLongs the initial number of long slots.
-  * @param initialNumberOfReferences the initial number of ref slots.
+  * @param numberOfLongs the number of long slots.
+  * @param numberOfReferences the number of ref slots.
   */
 class SlotConfiguration(private val slots: mutable.Map[String, Slot],
-                        val initialNumberOfLongs: Int,
-                        val initialNumberOfReferences: Int) {
-
-  var numberOfLongs: Int = initialNumberOfLongs
-  var numberOfReferences: Int = initialNumberOfReferences
+                        var numberOfLongs: Int,
+                        var numberOfReferences: Int) {
 
   private val aliases: mutable.Set[String] = mutable.Set()
   private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
 
-  def addAliasFor(slot: Slot, key: String): SlotConfiguration = {
-    checkNotAlreadyTaken(key, slot)
-    slots.put(key, slot)
-    aliases.add(key)
-    slotAliases.addBinding(slot, key)
+  def size() = SlotConfiguration.Size(numberOfLongs, numberOfReferences)
+
+  def addAlias(newKey: String, existingKey: String): SlotConfiguration = {
+    val slot = slots.getOrElse(existingKey,
+      throw new SlotAllocationFailed(s"Tried to alias non-existing slot '$existingKey'  with alias '$newKey'"))
+    checkNotAlreadyTaken(newKey, slot)
+    slots.put(newKey, slot)
+    aliases.add(newKey)
+    slotAliases.addBinding(slot, newKey)
     this
   }
 
@@ -240,7 +246,7 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
-  override def toString = s"SlotConfiguration(longs=$numberOfLongs, objs=$numberOfReferences, slots=$slots)"
+  override def toString = s"SlotConfiguration(longs=$numberOfLongs, refs=$numberOfReferences, slots=$slots)"
 
   private def checkNotAlreadyTaken(key: String, slot: Slot): Unit =
     if (slots.contains(key))

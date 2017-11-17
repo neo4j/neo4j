@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -41,20 +42,32 @@ import scala.collection.mutable
   **/
 object SlotAllocation {
 
+  private def NO_ARGUMENT() = SlotsAndArgument(SlotConfiguration.empty, Size.zero)
+
+  case class SlotsAndArgument(slotConfiguration: SlotConfiguration, argumentSize: Size)
+
+  case class PhysicalPlan(slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
+                          argumentSizes: Map[LogicalPlanId, Size])
+
   /**
     * Allocate slot for every operator in the logical plan tree {@code lp}.
     *
     * @param lp the logical plan to process.
     * @return the slot configurations of every operator.
     */
-  def allocateSlots(lp: LogicalPlan): Map[LogicalPlanId, SlotConfiguration] = {
+  def allocateSlots(lp: LogicalPlan): PhysicalPlan = {
 
     val allocations = new mutable.OpenHashMap[LogicalPlanId, SlotConfiguration]()
+    val arguments = new mutable.OpenHashMap[LogicalPlanId, Size]()
 
     val planStack = new mutable.Stack[(Boolean, LogicalPlan)]()
     val resultStack = new mutable.Stack[SlotConfiguration]()
-    val argumentStack = new mutable.Stack[SlotConfiguration]()
+    val argumentStack = new mutable.Stack[SlotsAndArgument]()
     var comingFrom = lp
+
+    def recordArgument(plan:LogicalPlan, argument: SlotsAndArgument) = {
+      arguments += plan.assignedId -> argument.argumentSize
+    }
 
     /**
       * Eagerly populate the stack using all the lhs children.
@@ -81,21 +94,25 @@ object SlotAllocation {
 
       (current.lhs, current.rhs) match {
         case (None, None) =>
-          val argumentSlots = if (argumentStack.isEmpty) None else Some(argumentStack.top)
-          val result = allocate(current, nullable, argumentSlots)
+          val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
+                         else argumentStack.top
+          recordArgument(current, argument)
+          val result = allocate(current, nullable, argument.slotConfiguration)
           allocations += (current.assignedId -> result)
           resultStack.push(result)
 
         case (Some(_), None) =>
           val sourceSlots = resultStack.pop()
-          val result = allocate(current, nullable, sourceSlots)
+          val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
+                         else argumentStack.top
+          val result = allocate(current, nullable, sourceSlots, recordArgument(_, argument))
           allocations += (current.assignedId -> result)
           resultStack.push(result)
 
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
           val argumentSlots = resultStack.top
-          argumentStack.push(argumentSlots.copy())
+          argumentStack.push(SlotsAndArgument(argumentSlots.copy(), argumentSlots.size()))
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
@@ -115,7 +132,7 @@ object SlotAllocation {
       comingFrom = current
     }
 
-    allocations.toMap
+    PhysicalPlan(allocations.toMap, arguments.toMap)
   }
 
 
@@ -127,15 +144,15 @@ object SlotAllocation {
     * @param argument the logical plan argument slot configuration.
     * @return the slot configuration of lp
     */
-  private def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[SlotConfiguration]): SlotConfiguration =
+  private def allocate(lp: LogicalPlan, nullable: Boolean, argument: SlotConfiguration): SlotConfiguration =
     lp match {
       case leaf: NodeLogicalLeafPlan =>
-        val result = argument.getOrElse(SlotConfiguration.empty)
+        val result = argument
         result.newLong(leaf.idName.name, nullable, CTNode)
         result
 
       case _:Argument =>
-        argument.getOrElse(SlotConfiguration.empty)
+        argument
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
@@ -146,9 +163,13 @@ object SlotAllocation {
     * @param lp the operator to compute slots for.
     * @param nullable
     * @param source the slot configuration of the source operator.
+    * @param recordArgument function which records the argument size for the given operator
     * @return the slot configuration of lp
     */
-  private def allocate(lp: LogicalPlan, nullable: Boolean, source: SlotConfiguration): SlotConfiguration =
+  private def allocate(lp: LogicalPlan,
+                       nullable: Boolean,
+                       source: SlotConfiguration,
+                       recordArgument: LogicalPlan => Unit): SlotConfiguration =
     lp match {
 
       case Distinct(_, groupingExpressions) =>
@@ -178,6 +199,7 @@ object SlotAllocation {
         result
 
       case Optional(_, _) =>
+        recordArgument(lp)
         source
 
       case _: ProduceResult |
@@ -194,10 +216,8 @@ object SlotAllocation {
           case (key, parserAst.Variable(ident)) if key == ident =>
           // it's already there. no need to add a new slot for it
 
-          case (key, parserAst.Variable(ident)) if key != ident =>
-            val slot = source.get(ident).getOrElse(
-              throw new SlotAllocationFailed(s"Tried to lookup key $key that should be in slot configuration but wasn't"))
-            source.addAliasFor(slot, key)
+          case (newKey, parserAst.Variable(ident)) if newKey != ident =>
+            source.addAlias(newKey, ident)
 
           case (key, _) =>
             source.newReference(key, nullable = true, CTAny)
@@ -205,12 +225,16 @@ object SlotAllocation {
         source
 
       case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
+        // Note that OptionExpand only is optional on the expand and not on incoming rows, so
+        // we do not need to record the argument here.
         val result = source.copy()
         result.newLong(rel, nullable = true, CTRelationship)
         result.newLong(to, nullable = true, CTNode)
         result
 
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
+        // Note that OptionExpand only is optional on the expand and not on incoming rows, so
+        // we do not need to record the argument here.
         val result = source.copy()
         result.newLong(rel, nullable = true, CTRelationship)
         result

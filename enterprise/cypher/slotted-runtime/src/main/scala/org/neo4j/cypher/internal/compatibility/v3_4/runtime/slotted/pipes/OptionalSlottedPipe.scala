@@ -25,14 +25,16 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-case class OptionalSlottedPipe(source: Pipe, nullableOffsets: Seq[Int],
-                               slots: SlotConfiguration)
+case class OptionalSlottedPipe(source: Pipe,
+                               nullableOffsets: Seq[Int],
+                               slots: SlotConfiguration,
+                               argumentSize: SlotConfiguration.Size)
                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with Pipe {
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
     val context = PrimitiveExecutionContext(slots)
-    state.copyArgumentStateTo(context)
+    state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
     // TODO: This can probably be done with java.util.Arrays.fill knowing the first offset
     nullableOffsets.foreach(offset => context.setLongAt(offset, -1))
     context

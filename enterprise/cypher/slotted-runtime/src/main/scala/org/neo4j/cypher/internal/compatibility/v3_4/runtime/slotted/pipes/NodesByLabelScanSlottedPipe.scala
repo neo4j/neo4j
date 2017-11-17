@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, Pipe, Que
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
-case class NodesByLabelScanSlottedPipe(ident: String, label: LazyLabel, slots: SlotConfiguration)
+case class NodesByLabelScanSlottedPipe(ident: String,
+                                       label: LazyLabel,
+                                       slots: SlotConfiguration,
+                                       argumentSize: SlotConfiguration.Size)
                                       (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   private val offset = slots.getLongOffsetFor(ident)
@@ -36,7 +39,7 @@ case class NodesByLabelScanSlottedPipe(ident: String, label: LazyLabel, slots: S
       case Some(labelId) =>
         PrimitiveLongHelper.map(state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
           val context = PrimitiveExecutionContext(slots)
-          state.copyArgumentStateTo(context)
+          state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
           context.setLongAt(offset, nodeId)
           context
         })

@@ -34,7 +34,8 @@ case class NodeIndexSeekSlottedPipe(ident: String,
                                     propertyKeys: Seq[PropertyKeyToken],
                                     valueExpr: QueryExpression[Expression],
                                     indexMode: IndexSeekMode = IndexSeek,
-                                    slots: SlotConfiguration)
+                                    slots: SlotConfiguration,
+                                    argumentSize: SlotConfiguration.Size)
                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   private val offset = slots.getLongOffsetFor(ident)
@@ -53,7 +54,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
     resultNodes.map { node =>
       val context = PrimitiveExecutionContext(slots)
-      state.copyArgumentStateTo(context, slots.initialNumberOfLongs, slots.initialNumberOfReferences)
+      state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
       context.setLongAt(offset, node.getId)
       context
     }
