@@ -405,9 +405,10 @@ public class LdapRealmTest
                 NamingException.class );
 
         // Then
-        verify( securityLog ).error( contains(
-                "{LdapRealm}: Failed to authenticate user 'olivia' against 'ldap://myserver.org:12345' using StartTLS: " +
-                        "Simulated failure" ) );
+        // Authentication failures are logged from MultiRealmAuthManager
+        //verify( securityLog ).error( contains(
+        //        "{LdapRealm}: Failed to authenticate user 'olivia' against 'ldap://myserver.org:12345' using StartTLS: " +
+        //                "Simulated failure" ) );
     }
 
     @Test

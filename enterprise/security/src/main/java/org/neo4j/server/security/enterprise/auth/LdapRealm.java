@@ -163,22 +163,16 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
                 }
                 catch ( Exception e )
                 {
-                    securityLog.error( withRealm( "Failed to authenticate user '%s' against %s: %s", token.getPrincipal(),
-                            serverString, e.getMessage() ) );
-
                     if ( isExceptionAnLdapConnectionTimeout( e ) )
                     {
-                        securityLog.error( withRealm( "LDAP connection to %s timed out.", serverString ) );
                         throw new AuthProviderTimeoutException( LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE, e );
                     }
                     else if ( isExceptionAnLdapReadTimeout( e ) )
                     {
-                        securityLog.error( withRealm( "LDAP response from %s timed out.", serverString ) );
                         throw new AuthProviderTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
                     }
                     else if ( isExceptionConnectionRefused( e ) )
                     {
-                        securityLog.error( withRealm( "LDAP connection to %s was refused.", serverString ) );
                         throw new AuthProviderFailedException( LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE, e );
                     }
                     // This exception will be caught and rethrown by Shiro, and then by us, so we do not need to wrap it here
@@ -561,7 +555,6 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
                     }
                     catch ( Exception ex )
                     {
-                        securityLog.warn( "Error in authentication for user " + loginUser, ex );
                         // We have to rethrow the exception, to indicate invalid login
                         throw ex;
                     }
@@ -569,16 +562,9 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
             }
             else
             {
-                securityLog.warn( "No user matching: " + principal );
                 throw new AuthenticationException( "No user matching: " + principal );
             }
             return createAuthenticationInfo( token, principal, credentials, ctx );
-        }
-        catch ( NamingException ne )
-        {
-            securityLog.error( "Error in ldap name resolving", ne );
-            // We have to rethrow the exception, to indicate invalid login
-            throw ne;
         }
         finally
         {

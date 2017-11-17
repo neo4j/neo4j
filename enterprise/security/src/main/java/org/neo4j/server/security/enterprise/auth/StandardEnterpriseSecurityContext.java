@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.authz.AuthorizationInfo;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -199,7 +200,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         }
     }
 
-    private class NeoShiroSubject implements AuthSubject
+    class NeoShiroSubject implements AuthSubject
     {
 
         @Override
@@ -243,5 +244,71 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
             Object principal = shiroSubject.getPrincipal();
             return principal != null && username != null && username.equals( principal );
         }
+
+        public String getAuthenticationFailureMessage()
+        {
+            String message = "";
+            List<Throwable> throwables = shiroSubject.getAuthenticationInfo().getThrowables();
+            switch ( shiroSubject.getAuthenticationResult() )
+            {
+            case FAILURE:
+                {
+                    message = buildMessageFromThrowables( "invalid principal or credentials", throwables );
+                }
+                break;
+            case TOO_MANY_ATTEMPTS:
+                {
+                    message = buildMessageFromThrowables( "too many failed attempts", throwables );
+                }
+                break;
+            case PASSWORD_CHANGE_REQUIRED:
+                {
+                    message = buildMessageFromThrowables( "password change required", throwables );
+                }
+                break;
+            default:
+            }
+            return message;
+        }
+
+        public void clearAuthenticationInfo()
+        {
+            shiroSubject.clearAuthenticationInfo();
+        }
+    }
+
+    private static String buildMessageFromThrowables( String baseMessage, List<Throwable> throwables )
+    {
+        if ( throwables == null )
+        {
+            return baseMessage;
+        }
+
+        StringBuilder sb = new StringBuilder( baseMessage );
+
+        for ( Throwable t : throwables )
+        {
+            if ( t.getMessage() != null )
+            {
+                sb.append( " (" );
+                sb.append( t.getMessage() );
+                sb.append( ")" );
+            }
+            Throwable cause = t.getCause();
+            if ( cause != null && cause.getMessage() != null )
+            {
+                sb.append( " (" );
+                sb.append( cause.getMessage() );
+                sb.append( ")" );
+            }
+            Throwable causeCause = cause != null ? cause.getCause() : null;
+            if ( causeCause != null && causeCause.getMessage() != null )
+            {
+                sb.append( " (" );
+                sb.append( causeCause.getMessage() );
+                sb.append( ")" );
+            }
+        }
+        return sb.toString();
     }
 }
