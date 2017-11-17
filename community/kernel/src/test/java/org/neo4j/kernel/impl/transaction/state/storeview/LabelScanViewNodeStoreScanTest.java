@@ -31,10 +31,9 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexMeta;
 import org.neo4j.kernel.impl.api.index.FailedIndexProxyFactory;
 import org.neo4j.kernel.impl.api.index.FlippableIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -86,7 +85,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )
     {
-        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, null, null, null );
+        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, null, null );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
@@ -104,11 +103,11 @@ public class LabelScanViewNodeStoreScanTest
 
         @Override
         public IndexPopulation createPopulation( IndexPopulator populator, long indexId,
-                IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
+                IndexMeta indexMeta, FlippableIndexProxy flipper,
+                FailedIndexProxyFactory failedIndexProxyFactory,
                 String indexUserDescription )
         {
-            return super.createPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
+            return super.createPopulation( populator, indexId, indexMeta, flipper,
                             failedIndexProxyFactory, indexUserDescription );
         }
     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -60,6 +61,12 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     {
         InMemoryIndex index = indexes.get( indexId );
         return index != null ? index.getState() : InternalIndexState.POPULATING;
+    }
+
+    @Override
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    {
+        return IndexCapability.NO_CAPABILITY;
     }
 
     @Override

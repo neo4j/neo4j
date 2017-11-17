@@ -23,6 +23,29 @@ import org.neo4j.values.storable.Value;
 
 /**
  * Cursor for scanning the property values of nodes in a schema index.
+ * <p>
+ * Usage pattern:
+ * <pre><code>
+ *     int nbrOfProps = cursor.numberOfProperties();
+
+ *     Value[] values = new Value[nbrOfProps];
+ *     while ( cursor.next() )
+ *     {
+ *         if ( cursor.hasValue() )
+ *         {
+ *             for ( int i = 0; i < nbrOfProps; i++ )
+ *             {
+ *                 values[i] = cursor.propertyValue( i );
+ *             }
+ *         }
+ *         else
+ *         {
+ *             values[i] = getPropertyValueFromStore( cursor.nodeReference(), cursor.propertyKey( i ) )
+ *         }
+ *
+ *         doWhatYouWantToDoWith( values );
+ *     }
+ * </code></pre>
  */
 public interface NodeValueIndexCursor extends NodeIndexCursor
 {
@@ -32,6 +55,14 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
     int numberOfProperties();
 
     int propertyKey( int offset );
+
+    /**
+     * Check before trying to access values with {@link #propertyValue(int)}. Result can change with each call to {@link #next()}.
+     *
+     * @return {@code true} if {@link #propertyValue(int)} can be used to get property value on cursor's current location,
+     * else {@code false}.
+     */
+    boolean hasValue();
 
     Value propertyValue( int offset );
 }

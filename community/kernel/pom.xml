@@ -148,11 +148,6 @@ the relevant Commercial Agreement.
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-common</artifactId>
       <version>${project.version}</version>
     </dependency>

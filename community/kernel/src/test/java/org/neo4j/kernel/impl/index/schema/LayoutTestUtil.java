@@ -119,6 +119,20 @@ abstract class LayoutTestUtil<KEY extends SchemaNumberKey, VALUE extends SchemaN
         };
     }
 
+    Value[] extractValuesFromUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        Value[] values = new Value[updates.length];
+        for ( int i = 0; i < updates.length; i++ )
+        {
+            if ( updates[i].values().length > 1 )
+            {
+                throw new UnsupportedOperationException( "This method does not support composite entries" );
+            }
+            values[i] = updates[i].values()[0];
+        }
+        return values;
+    }
+
     IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );

@@ -96,6 +96,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
@@ -617,7 +618,7 @@ public class IndexPopulationJobTest
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
-        job.addPopulator( populator, indexId, descriptor, PROVIDER_DESCRIPTOR,
+        job.addPopulator( populator, indexId, new IndexMeta( descriptor, PROVIDER_DESCRIPTOR, NO_CAPABILITY ),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
     }

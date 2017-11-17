@@ -19,33 +19,17 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
+import org.neo4j.kernel.configuration.Settings;
 
-abstract class IndexCursor
+public class NodeValueIndexCursorNativeTest extends NodeValueIndexCursorTestBase<ReadTestSupport>
 {
-    private IndexProgressor progressor;
-
-    final void initialize( IndexProgressor progressor )
+    @Override
+    public ReadTestSupport newTestSupport()
     {
-        this.progressor = progressor;
-    }
-
-    public final boolean next()
-    {
-        return progressor != null && progressor.next();
-    }
-
-    public final boolean shouldRetry()
-    {
-        return false;
-    }
-
-    void close()
-    {
-        if ( progressor != null )
-        {
-            progressor.close();
-        }
-        progressor = null;
+        ReadTestSupport readTestSupport = new ReadTestSupport();
+        readTestSupport.addSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
+        return readTestSupport;
     }
 }

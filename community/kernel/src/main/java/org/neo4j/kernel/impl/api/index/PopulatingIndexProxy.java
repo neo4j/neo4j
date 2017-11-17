@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -41,16 +42,12 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class PopulatingIndexProxy implements IndexProxy
 {
-    private final IndexDescriptor descriptor;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final IndexMeta indexMeta;
     private final IndexPopulationJob job;
 
-    public PopulatingIndexProxy( IndexDescriptor descriptor,
-                                 SchemaIndexProvider.Descriptor providerDescriptor,
-                                 IndexPopulationJob job )
+    PopulatingIndexProxy( IndexMeta indexMeta, IndexPopulationJob job )
     {
-        this.descriptor = descriptor;
-        this.providerDescriptor = providerDescriptor;
+        this.indexMeta = indexMeta;
         this.job = job;
     }
 
@@ -95,25 +92,31 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return descriptor;
+        return indexMeta.indexDescriptor();
     }
 
     @Override
     public LabelSchemaDescriptor schema()
     {
-        return descriptor.schema();
+        return indexMeta.indexDescriptor().schema();
     }
 
     @Override
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
-        return providerDescriptor;
+        return indexMeta.providerDescriptor();
     }
 
     @Override
     public InternalIndexState getState()
     {
         return InternalIndexState.POPULATING;
+    }
+
+    @Override
+    public IndexCapability getIndexCapability()
+    {
+        return indexMeta.indexCapability();
     }
 
     @Override

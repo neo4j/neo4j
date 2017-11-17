@@ -81,12 +81,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param values the values of the candidate index entry
          * @return true if the entry is accepted, false otherwise
          */
-        boolean acceptNode( long reference, Value[] values );
-
-        /**
-         * Called by progressor so signal that there are no more entries.
-         */
-        void done();
+        boolean acceptNode( long reference, Value... values );
     }
 
     /**
@@ -109,11 +104,6 @@ public interface IndexProgressor extends AutoCloseable
          * @return true if the entry is accepted, false otherwise
          */
         boolean acceptNode( long reference, LabelSet labels );
-
-        /**
-         * Called by progressor so signal that there are no more entries.
-         */
-        void done();
     }
 
     /**
@@ -135,10 +125,19 @@ public interface IndexProgressor extends AutoCloseable
          * @return true if the entry is accepted, false otherwise
          */
         boolean acceptEntity( long reference, float score );
-
-        /**
-         * Called by progressor so signal that there are no more entries.
-         */
-        void done();
     }
+
+    IndexProgressor EMPTY = new IndexProgressor()
+    {
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
 }

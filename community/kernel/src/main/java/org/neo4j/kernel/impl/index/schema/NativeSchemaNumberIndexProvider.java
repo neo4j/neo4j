@@ -25,6 +25,9 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -35,6 +38,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
@@ -47,6 +51,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    static final IndexCapability CAPABILITY = new NativeIndexCapability();
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -164,6 +169,12 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     }
 
     @Override
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    {
+        return CAPABILITY;
+    }
+
+    @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
     {
         // Since this native provider is a new one, there's no need for migration on this level.
@@ -192,6 +203,46 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
                     (layoutIdentifier == NonUniqueNumberLayout.IDENTIFIER &&
                             majorVersion == NonUniqueNumberLayout.MAJOR_VERSION &&
                             minorVersion == NonUniqueNumberLayout.MINOR_VERSION);
+        }
+    }
+
+    private static class NativeIndexCapability implements IndexCapability
+    {
+        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
+        private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
+
+        @Override
+        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        {
+            if ( support( valueGroups ) )
+            {
+                return SUPPORTED_ORDER;
+            }
+            return EMPTY_ORDER;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        {
+            if ( support( valueGroups ) )
+            {
+                return IndexValueCapability.YES;
+            }
+            if ( singleWildcard( valueGroups ) )
+            {
+                return IndexValueCapability.PARTIAL;
+            }
+            return IndexValueCapability.NO;
+        }
+
+        private boolean singleWildcard( ValueGroup[] valueGroups )
+        {
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
+        }
+
+        private boolean support( ValueGroup[] valueGroups )
+        {
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.NUMBER;
         }
     }
 }

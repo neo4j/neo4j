@@ -30,28 +30,4 @@ public interface IndexReference
     int label();
 
     int[] properties();
-
-    /**
-     * IndexReference used for label-property combinations that are not indexed.
-     */
-    IndexReference NO_INDEX = new IndexReference()
-    {
-        @Override
-        public boolean isUnique()
-        {
-            return false;
-        }
-
-        @Override
-        public int label()
-        {
-            return Token.NO_TOKEN;
-        }
-
-        @Override
-        public int[] properties()
-        {
-            return new int[0];
-        }
-    };
 }

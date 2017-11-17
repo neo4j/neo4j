@@ -46,6 +46,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -518,6 +519,12 @@ public class SchemaIndexHaIT
         public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
         {
             return delegate.getInitialState( indexId, descriptor );
+        }
+
+        @Override
+        public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+        {
+            return delegate.getCapability( indexDescriptor );
         }
 
         @Override

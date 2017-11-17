@@ -17,35 +17,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.values.storable.Value;
 
-abstract class IndexCursor
+public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
 {
+    public long reference;
+    public Value[] values;
     private IndexProgressor progressor;
 
-    final void initialize( IndexProgressor progressor )
+    public boolean next()
+    {
+        if ( progressor.next() )
+        {
+            return true;
+        }
+        closeProgressor();
+        return false;
+    }
+
+    @Override
+    public void initialize( IndexProgressor progressor, int[] propertyIds )
     {
         this.progressor = progressor;
     }
 
-    public final boolean next()
+    @Override
+    public boolean acceptNode( long reference, Value... values )
     {
-        return progressor != null && progressor.next();
+        this.reference = reference;
+        this.values = values;
+        return true;
     }
 
-    public final boolean shouldRetry()
-    {
-        return false;
-    }
-
-    void close()
+    private void closeProgressor()
     {
         if ( progressor != null )
         {
             progressor.close();
+            progressor = null;
         }
-        progressor = null;
     }
 }

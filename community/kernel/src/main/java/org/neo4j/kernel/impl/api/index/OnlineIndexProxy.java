@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -42,10 +43,9 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 public class OnlineIndexProxy implements IndexProxy
 {
     private final long indexId;
-    private final IndexDescriptor descriptor;
+    private final IndexMeta indexMeta;
     final IndexAccessor accessor;
     private final IndexStoreView storeView;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexCountsRemover indexCountsRemover;
     private boolean started;
 
@@ -75,15 +75,16 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    public OnlineIndexProxy( long indexId, IndexDescriptor descriptor,
-            IndexAccessor accessor, IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor,
+    OnlineIndexProxy( long indexId,
+            IndexMeta indexMeta,
+            IndexAccessor accessor,
+            IndexStoreView storeView,
             boolean forcedIdempotentMode )
     {
         this.indexId = indexId;
-        this.descriptor = descriptor;
-        this.storeView = storeView;
-        this.providerDescriptor = providerDescriptor;
+        this.indexMeta = indexMeta;
         this.accessor = accessor;
+        this.storeView = storeView;
         this.forcedIdempotentMode = forcedIdempotentMode;
         this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
     }
@@ -117,25 +118,31 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return descriptor;
+        return indexMeta.indexDescriptor();
     }
 
     @Override
     public LabelSchemaDescriptor schema()
     {
-        return descriptor.schema();
+        return indexMeta.indexDescriptor().schema();
     }
 
     @Override
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
-        return providerDescriptor;
+        return indexMeta.providerDescriptor();
     }
 
     @Override
     public InternalIndexState getState()
     {
         return InternalIndexState.ONLINE;
+    }
+
+    @Override
+    public IndexCapability getIndexCapability()
+    {
+        return indexMeta.indexCapability();
     }
 
     @Override
@@ -196,7 +203,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexMeta.indexDescriptor() + "]";
     }
 
     @Override

@@ -17,35 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.internal.kernel.api;
 
-import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.values.storable.ValueGroup;
 
-abstract class IndexCursor
+/**
+ * Enum used for two purposes:
+ * 1. As return value for {@link IndexCapability#orderCapability(ValueGroup...)}.
+ * Only {@link #ASCENDING} and {@link #DESCENDING} is valid for this.
+ * 2. As parameter for {@link Read#nodeIndexScan(IndexReference, NodeValueIndexCursor, IndexOrder)} and
+ * {@link Read#nodeIndexSeek(IndexReference, NodeValueIndexCursor, IndexOrder, IndexQuery...)}. Where {@link #NONE} is used when
+ * no ordering is available or required.
+ */
+public enum IndexOrder
 {
-    private IndexProgressor progressor;
-
-    final void initialize( IndexProgressor progressor )
-    {
-        this.progressor = progressor;
-    }
-
-    public final boolean next()
-    {
-        return progressor != null && progressor.next();
-    }
-
-    public final boolean shouldRetry()
-    {
-        return false;
-    }
-
-    void close()
-    {
-        if ( progressor != null )
-        {
-            progressor.close();
-        }
-        progressor = null;
-    }
+    ASCENDING, DESCENDING, NONE
 }

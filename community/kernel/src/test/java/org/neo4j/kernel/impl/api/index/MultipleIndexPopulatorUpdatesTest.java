@@ -58,6 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorUpdatesTest
@@ -124,8 +125,8 @@ public class MultipleIndexPopulatorUpdatesTest
             long indexId, IndexDescriptor descriptor, IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,
-                mock( SchemaIndexProvider.Descriptor.class ),
+        return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
+                new IndexMeta( descriptor, mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY ),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 
@@ -167,11 +168,11 @@ public class MultipleIndexPopulatorUpdatesTest
                 boolean forceStoreScan )
         {
 
-            return new ListenableNodeScanViewNodeStoreScan( nodeStore, locks, propertyStore, labelUpdateVisitor,
+            return new ListenableNodeScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelUpdateVisitor,
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, processListener );
         }
 
-        public void setProcessListener( Listener<NodeRecord> processListener )
+        void setProcessListener( Listener<NodeRecord> processListener )
         {
             this.processListener = processListener;
         }

@@ -26,6 +26,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -175,6 +176,11 @@ public abstract class IndexQuery
         return acceptsValue( property.propertyValue() );
     }
 
+    /**
+     * @return Target {@link ValueGroup} for query or {@link ValueGroup#UNKNOWN} if not targeting single group.
+     */
+    public abstract ValueGroup valueGroup();
+
     public enum IndexQueryType
     {
         exists,
@@ -210,6 +216,12 @@ public abstract class IndexQuery
         {
             return true;
         }
+
+        @Override
+        public ValueGroup valueGroup()
+        {
+            return ValueGroup.UNKNOWN;
+        }
     }
 
     public static final class ExactPredicate extends IndexQuery
@@ -232,6 +244,12 @@ public abstract class IndexQuery
         public boolean acceptsValue( Value value )
         {
             return exactValue.equals( value );
+        }
+
+        @Override
+        public ValueGroup valueGroup()
+        {
+            return exactValue.valueGroup();
         }
 
         public Value value()
@@ -292,6 +310,12 @@ public abstract class IndexQuery
             return false;
         }
 
+        @Override
+        public ValueGroup valueGroup()
+        {
+            return ValueGroup.NUMBER;
+        }
+
         public Number from()
         {
             return (Number)from.asObject();
@@ -323,7 +347,21 @@ public abstract class IndexQuery
         }
     }
 
-    public static final class StringRangePredicate extends IndexQuery
+    public abstract static class StringPredicate extends IndexQuery
+    {
+        StringPredicate( int propertyKeyId )
+        {
+            super( propertyKeyId );
+        }
+
+        @Override
+        public ValueGroup valueGroup()
+        {
+            return ValueGroup.TEXT;
+        }
+    }
+
+    public static final class StringRangePredicate extends StringPredicate
     {
         private final Value from;
         private final boolean fromInclusive;
@@ -396,7 +434,7 @@ public abstract class IndexQuery
         }
     }
 
-    public static final class StringPrefixPredicate extends IndexQuery
+    public static final class StringPrefixPredicate extends StringPredicate
     {
         private final String prefix;
 
@@ -425,7 +463,7 @@ public abstract class IndexQuery
         }
     }
 
-    public static final class StringContainsPredicate extends IndexQuery
+    public static final class StringContainsPredicate extends StringPredicate
     {
         private final String contains;
 
@@ -453,7 +491,7 @@ public abstract class IndexQuery
         }
     }
 
-    public static final class StringSuffixPredicate extends IndexQuery
+    public static final class StringSuffixPredicate extends StringPredicate
     {
         private final String suffix;
 

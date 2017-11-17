@@ -25,7 +25,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
-import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernel
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -93,11 +95,14 @@ class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    IndexReader indexReader( IndexDescriptor index )
+    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
     {
         try
         {
-            return statement.getIndexReader( index );
+            IndexDescriptor indexDescriptor = index.isUnique() ?
+                                              IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
+                                              IndexDescriptorFactory.forLabel( index.label(), index.properties() );
+            return statement.getIndexReader( indexDescriptor );
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -140,10 +145,23 @@ class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    public IndexReference index( int label, int... properties )
+    public CapableIndexReference index( int label, int... properties )
     {
-        IndexDescriptor desc = read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
-        return desc == null ? IndexReference.NO_INDEX : desc;
+        IndexDescriptor indexDescriptor = read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        if ( indexDescriptor == null )
+        {
+            return CapableIndexReference.NO_INDEX;
+        }
+        boolean unique = indexDescriptor.type() == IndexDescriptor.Type.UNIQUE;
+        try
+        {
+            IndexCapability indexCapability = read.indexGetCapability( indexDescriptor );
+            return new DefaultCapableIndexReference( unique, indexCapability, label, properties );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new IllegalStateException( "Could not find capability for index " + indexDescriptor, e );
+        }
     }
 
     @Override

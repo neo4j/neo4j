@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -30,9 +32,11 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 /**
  * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by two physical
@@ -76,7 +80,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     {
         return new FusionIndexAccessor(
                 nativeProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, dropAction );
+                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, descriptor, dropAction );
     }
 
     @Override
@@ -123,6 +127,27 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         }
         // This means that both states are ONLINE
         return nativeState;
+    }
+
+    @Override
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    {
+        IndexCapability nativeCapability = nativeProvider.getCapability( indexDescriptor );
+        IndexCapability luceneCapability = luceneProvider.getCapability( indexDescriptor );
+        return new UnionIndexCapability( nativeCapability, luceneCapability )
+        {
+            @Override
+            public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+            {
+                // No order capability when combining results from different indexes
+                if ( valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN )
+                {
+                    return new IndexOrder[0];
+                }
+                // Otherwise union of capabilities
+                return super.orderCapability( valueGroups );
+            }
+        };
     }
 
     @Override

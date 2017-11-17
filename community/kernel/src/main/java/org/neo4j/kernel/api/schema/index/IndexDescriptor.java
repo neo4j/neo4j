@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
@@ -37,11 +36,8 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
- *
- * This will be renamed to IndexDescriptor, once the old org.neo4j.kernel.api.schema.IndexDescriptor is completely
- * removed.
  */
-public class IndexDescriptor implements LabelSchemaSupplier, IndexReference
+public class IndexDescriptor implements LabelSchemaSupplier
 {
     public enum Type
     {
@@ -148,26 +144,6 @@ public class IndexDescriptor implements LabelSchemaSupplier, IndexReference
     public String toString()
     {
         return userDescription( SchemaUtil.idTokenNameLookup );
-    }
-
-    // Kernel API IndexReference
-
-    @Override
-    public boolean isUnique()
-    {
-        return type == Type.UNIQUE;
-    }
-
-    @Override
-    public int label()
-    {
-        return schema.getLabelId();
-    }
-
-    @Override
-    public int[] properties()
-    {
-        return schema.getPropertyIds();
     }
 
     /**

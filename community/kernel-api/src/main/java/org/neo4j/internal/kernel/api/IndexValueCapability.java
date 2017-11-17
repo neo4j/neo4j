@@ -20,16 +20,31 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Surface for getting schema information, such as fetching specific indexes or constraints.
+ * Describe the capability of an index to also return the exact property value for a given query.
  */
-public interface SchemaRead
+public enum IndexValueCapability
 {
+    YES( 3 ),     // Can provide values for query
+    PARTIAL( 2 ), // Can provide values for query for part of result set, often depending on what type the value has
+    NO( 1 );      // Can not provide values for query
+
     /**
-     * Acquire a reference to the index mapping the given {@code label} and {@code properties}.
-     *
-     * @param label the index label
-     * @param properties the index properties
-     * @return the IndexReference, or {@link CapableIndexReference#NO_INDEX} if such an index does not exist.
+     * Higher order indicate a higher capability.
      */
-    CapableIndexReference index( int label, int... properties );
+    private int order;
+
+    IndexValueCapability( int order )
+    {
+        this.order = order;
+    }
+
+    /**
+     * Positive result if this capability is higher than other.
+     * Negative result if this capability is lower that other.
+     * Zero if this has same capability as other.
+     */
+    public int compare( IndexValueCapability other )
+    {
+        return Integer.compare( order, other.order );
+    }
 }

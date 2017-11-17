@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -238,6 +239,12 @@ public class StorageLayer implements StoreReadLayer
     public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
+    }
+
+    @Override
+    public IndexCapability indexGetCapability( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexService.getIndexProxy( descriptor.schema() ).getIndexCapability();
     }
 
     @Override

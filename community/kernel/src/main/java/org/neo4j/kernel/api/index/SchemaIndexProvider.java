@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -142,6 +143,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
 
                 @Override
+                public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+                {
+                    return IndexCapability.NO_CAPABILITY;
+                }
+
+                @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
                         PageCache pageCache )
                 {
@@ -207,6 +214,13 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
      * of failure.
      */
     public abstract InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor );
+
+    /**
+     * Return {@link IndexCapability} for this index provider for a given {@link IndexDescriptor}.
+     *
+     * @param indexDescriptor {@link IndexDescriptor} to get IndexCapability for.
+     */
+    public abstract IndexCapability getCapability( IndexDescriptor indexDescriptor );
 
     /**
      * @return a description of this index provider

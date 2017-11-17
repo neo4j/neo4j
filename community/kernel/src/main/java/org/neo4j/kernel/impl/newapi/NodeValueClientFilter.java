@@ -24,23 +24,58 @@ import java.util.Comparator;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
 
 /**
  * This class filters acceptNode() calls from an index progressor, to assert that exact entries returned from the
  * progressor really match the exact property values. See also org.neo4j.kernel.impl.api.LookupFilter.
+ *
+ * It works by acting as a man-in-the-middle between outer {@link NodeValueClient client} and inner {@link IndexProgressor}.
+ * Interaction goes like:
+ *
+ * Initialize:
+ * <pre><code>
+ * client
+ *      -- query( client ) ->      filter = new filter(client)
+ *                                 filter -- query( filter ) ->        progressor
+ *                                 filter <- initialize(progressor) -- progressor
+ * client <- initialize(filter) -- filter
+ * </code></pre>
+ *
+ * Progress:
+ * <pre><code>
+ * client -- next() ->       filter
+ *                           filter -- next() ->          progressor
+ *                                     <- acceptNode() --
+ *                                  -- :false ->
+ *                                     <- acceptNode() --
+ *                                  -- :false ->
+ *                           filter    <- acceptNode() --
+ * client <- acceptNode() -- filter
+ *        -- :true ->        filter -- :true ->           progressor
+ * client <----------------------------------------------
+ * </code></pre>
+ *
+ * Close:
+ * <pre><code>
+ * client -- close() -> filter
+ *                      filter -- close() -> progressor
+ * client <---------------------------------
+ * </code></pre>
  */
-class NodeValueClientFilter implements IndexProgressor.NodeValueClient
+class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
-    private final IndexProgressor.NodeValueClient target;
+    private final NodeValueClient target;
     private final NodeCursor node;
     private final PropertyCursor property;
     private final IndexQuery[] filters;
     private int[] keys;
+    private IndexProgressor progressor;
 
     NodeValueClientFilter(
-            IndexProgressor.NodeValueClient target,
+            NodeValueClient target,
             NodeCursor node, PropertyCursor property, IndexQuery... filters )
     {
         this.target = target;
@@ -53,16 +88,9 @@ class NodeValueClientFilter implements IndexProgressor.NodeValueClient
     @Override
     public void initialize( IndexProgressor progressor, int[] propertyIds )
     {
+        this.progressor = progressor;
         this.keys = propertyIds;
-        target.initialize( progressor, propertyIds );
-    }
-
-    @Override
-    public void done()
-    {
-        node.close();
-        property.close();
-        target.done();
+        target.initialize( this, propertyIds );
     }
 
     @Override
@@ -86,6 +114,20 @@ class NodeValueClientFilter implements IndexProgressor.NodeValueClient
             }
             return filterByCursors( reference, values );
         }
+    }
+
+    @Override
+    public boolean next()
+    {
+        return progressor.next();
+    }
+
+    @Override
+    public void close()
+    {
+        node.close();
+        property.close();
+        progressor.close();
     }
 
     private boolean filterByIndexValues( long reference, Value[] values )
