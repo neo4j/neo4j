@@ -264,13 +264,27 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Node createNode()
     {
-        return new NodeProxy( nodeActions, spi.currentTransaction().dataWrite().nodeCreate() );
+        try
+        {
+            return new NodeProxy( nodeActions, spi.currentTransaction().dataWrite().nodeCreate() );
+        }
+        catch ( KernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override
     public Long createNodeId()
     {
+        try
+        {
             return spi.currentTransaction().dataWrite().nodeCreate();
+        }
+        catch ( KernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override

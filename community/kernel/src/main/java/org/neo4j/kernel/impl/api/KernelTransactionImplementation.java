@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -118,6 +119,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
+    private final AccessCapability accessCapability;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -184,6 +186,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
                 procedures, accessCapability, lockTracer, statementOperations );
+        this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
         this.operations = new Operations( storageEngine, storageStatement, this, cursors );
@@ -679,12 +682,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Read dataRead()
     {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
         return operations;
     }
 
     @Override
-    public Write dataWrite()
+    public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
+        accessCapability.assertCanWrite();
+        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        upgradeToDataWrites();
         return operations;
     }
 

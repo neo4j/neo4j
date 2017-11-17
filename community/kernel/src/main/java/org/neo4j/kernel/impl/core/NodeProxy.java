@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -108,11 +109,18 @@ public class NodeProxy implements Node
     @Override
     public void delete()
     {
-        boolean deleted = actions.kernelTransaction().dataWrite().nodeDelete( getId() );
-        if ( !deleted )
+        try
         {
-            throw new NotFoundException( "Unable to delete Node[" + nodeId +
-                                         "] since it has already been deleted." );
+            boolean deleted = actions.kernelTransaction().dataWrite().nodeDelete( getId() );
+            if ( !deleted )
+            {
+                throw new NotFoundException( "Unable to delete Node[" + nodeId +
+                                             "] since it has already been deleted." );
+            }
+        }
+        catch ( KernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
