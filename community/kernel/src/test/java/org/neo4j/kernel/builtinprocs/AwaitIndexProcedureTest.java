@@ -167,7 +167,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", TIMEOUT, TimeUnit.MILLISECONDS );
+                procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {
@@ -180,7 +180,7 @@ public class AwaitIndexProcedureTest
 
         state.set( ONLINE );
         assertEventually( "Procedure did not return after index was online",
-                done::get, is( true ), TIMEOUT, TimeUnit.SECONDS );
+                done::get, is( true ), TIMEOUT, TIME_UNIT );
     }
 
     @Test
@@ -197,7 +197,8 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", TIMEOUT, TimeUnit.MILLISECONDS );
+                // We wait here, because we expect timeout
+                procedure.awaitIndex( ":Person(name)", 0, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {
