@@ -21,7 +21,7 @@ package org.neo4j.concurrent;
 
 import java.util.Arrays;
 
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
+import org.neo4j.string.HexString;
 
 /**
  * This is a concurrent data structure used to track
@@ -174,7 +174,7 @@ public class DecayingFlags
                 (bit( i + 6 ) << 1) |
                 (bit( i + 7 )) ) ;
         }
-        return printHexBinary( bits );
+        return HexString.encodeHexString( bits );
     }
 
     private int bit( int idx )

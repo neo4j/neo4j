@@ -60,7 +60,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.1</version>
                 <executions>
                     <execution>
                         <goals>

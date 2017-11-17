@@ -57,7 +57,7 @@ public interface UTF8Encoder
                     .getConstructor()
                     .newInstance();
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             return new VanillaUTF8Encoder();
         }

@@ -87,7 +87,7 @@
 
     <scala.version>2.11.11</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
-    <asm.version>5.2</asm.version>
+    <asm.version>6.0</asm.version>
   </properties>
 
   <modules>
@@ -485,7 +485,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.3</version>
+          <version>3.7.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -525,12 +525,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>2.4.3</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.5.5</version>
+          <version>3.1.0</version>
           <configuration>
             <tarLongFileMode>gnu</tarLongFileMode>
           </configuration>
@@ -781,6 +781,17 @@
       </activation>
       <properties>
         <git.commit>${env.GIT_COMMIT}</git.commit>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>java9</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <jdk>9</jdk>
+      </activation>
+      <properties>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
       </properties>
     </profile>
   </profiles>

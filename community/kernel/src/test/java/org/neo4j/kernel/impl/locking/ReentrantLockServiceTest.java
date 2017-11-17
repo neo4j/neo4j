@@ -189,7 +189,7 @@ public class ReentrantLockServiceTest
         for ( long end = System.currentTimeMillis() + unit.toMillis( timeout ); System.currentTimeMillis() < end; )
         {
             StackTraceElement frame = thread.getStackTrace()[0];
-            if ( "park".equals( frame.getMethodName() ) && "sun.misc.Unsafe".equals( frame.getClassName() ) )
+            if ( "park".equals( frame.getMethodName() ) && frame.getClassName().endsWith( "Unsafe" ) )
             {
                 if ( thread.getState().name().endsWith( "WAITING" ) )
                 {

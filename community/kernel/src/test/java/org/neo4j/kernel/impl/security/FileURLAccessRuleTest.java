@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Paths;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -32,6 +33,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 public class FileURLAccessRuleTest
 {
@@ -83,6 +85,7 @@ public class FileURLAccessRuleTest
     @Test
     public void shouldThrowWhenRelativePathIsOutsideImportDirectory() throws Exception
     {
+        assumeFalse( Paths.get( "/" ).relativize( Paths.get( "/../baz.csv" ) ).toString().equals( "baz.csv" ) );
         File importDir = new File( "/tmp/neo4jtest" ).getAbsoluteFile();
         final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, importDir.toString() );
         try

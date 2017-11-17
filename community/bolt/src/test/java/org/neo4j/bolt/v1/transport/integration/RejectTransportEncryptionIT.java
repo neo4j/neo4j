@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,8 +71,9 @@ public class RejectTransportEncryptionIT
                         new IOException( "Failed to connect to the server within 10 seconds" )
                 },
                 new Object[]{
-                        (Factory<TransportConnection>) SecureSocketConnection::new,
-                        new IOException( "Remote host closed connection during handshake" )
+                        (Factory<TransportConnection>) SecureSocketConnection::new, new IOException(
+                        SystemUtils.IS_JAVA_9 ? "Remote host terminated the handshake"
+                                              : "Remote host closed connection during handshake" )
 
                 } );
     }
