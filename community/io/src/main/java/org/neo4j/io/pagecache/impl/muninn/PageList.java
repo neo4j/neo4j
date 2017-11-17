@@ -100,7 +100,7 @@ class PageList
         this.memoryManager = memoryManager;
         this.swappers = swappers;
         this.victimPageAddress = victimPageAddress;
-        long bytes = pageCount * META_DATA_BYTES_PER_PAGE;
+        long bytes = ((long) pageCount) * META_DATA_BYTES_PER_PAGE;
         this.baseAddress = memoryManager.allocateAligned( bytes );
         clearMemory( baseAddress, pageCount );
     }
