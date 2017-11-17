@@ -127,12 +127,48 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     // then
     val rewrittenPredicate =
-      NullCheck(4,
-        NullCheck(2,
+      NullCheck(2,
+        NullCheck(4,
           Not(
             PrimitiveEquals(
               IdFromSlot(2),
               IdFromSlot(4)))(pos)))
+    result should equal(Selection(Seq(rewrittenPredicate), argument)(solved))
+    lookup(result.assignedId) should equal(pipelineInformation)
+  }
+
+  test("comparing different types must check nulls before returning shortcut") {
+    // optional match (a)-[r1]->() where not(r1 = a)
+    // given
+    val node1 = IdName("a")
+    val node2 = IdName("b")
+    val rel = IdName("r")
+    val argument = Argument(Set(node1, node2, rel))(solved)()
+    val predicate = Equals(varFor("r"), varFor("a"))(pos)
+    val selection = Selection(Seq(predicate), argument)(solved)
+    selection.assignIds()
+    val pipelineInformation = PipelineInformation(Map(
+      "a" -> LongSlot(0, nullable = true, CTNode),
+      "b" -> nodeAt(1, "b"),
+      "r" -> LongSlot(2, nullable = true, CTRelationship)
+    ), numberOfLongs = 3, numberOfReferences = 0)
+
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      argument.assignedId -> pipelineInformation,
+      selection.assignedId -> pipelineInformation
+    )
+    val tokenContext = mock[TokenContext]
+    val rewriter = new SlottedRewriter(tokenContext)
+
+    // when
+    val result = rewriter(selection, lookup)
+
+    // then since we are doing a not(t1 = t2), we shortcut to True if neither value is null
+    val rewrittenPredicate =
+      NullCheck(2,
+        NullCheck(0,
+          False()(pos)))
+
     result should equal(Selection(Seq(rewrittenPredicate), argument)(solved))
     lookup(result.assignedId) should equal(pipelineInformation)
   }
