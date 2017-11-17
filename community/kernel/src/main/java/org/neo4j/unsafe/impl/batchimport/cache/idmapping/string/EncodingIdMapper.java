@@ -21,16 +21,15 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
-import java.util.function.IntFunction;
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.HighestId;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
-import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -47,7 +46,6 @@ import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
@@ -846,7 +844,10 @@ public class EncodingIdMapper implements IdMapper
         {
             trackerCache.close();
         }
-        collisionNodeIdCache.close();
+        if ( collisionNodeIdCache != null )
+        {
+            collisionNodeIdCache.close();
+        }
         if ( collisionValues != null )
         {
             collisionValues.close();
@@ -856,7 +857,37 @@ public class EncodingIdMapper implements IdMapper
     @Override
     public long calculateMemoryUsage( long numberOfNodes )
     {
-        int trackerSize = numberOfNodes > TrackerFactories.HIGHEST_ID_FOR_SMALL_TRACKER ? BigIdTracker.ID_SIZE : IntTracker.ID_SIZE;
+        int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
         return numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/);
+    }
+
+    @Override
+    public PrimitiveLongIterator leftOverDuplicateNodesIds()
+    {
+        if ( numberOfCollisions == 0 )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        // Scans duplicate marks in tracker cache. There is no bit left in dataCache to store this bit so we use
+        // the tracker cache as if each index into it was the node id.
+        return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
+        {
+            private long nodeId;
+
+            @Override
+            protected boolean fetchNext()
+            {
+                while ( nodeId <= highestSetIndex )
+                {
+                    long candidate = nodeId++;
+                    if ( trackerCache.isMarkedAsDuplicate( candidate ) )
+                    {
+                        return next( candidate );
+                    }
+                }
+                return false;
+            }
+        };
     }
 }

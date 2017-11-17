@@ -64,6 +64,10 @@ public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
      */
     void set( long index, long value );
 
+    void markAsDuplicate( long index );
+
+    boolean isMarkedAsDuplicate( long index );
+
     @Override
     void close();
 }

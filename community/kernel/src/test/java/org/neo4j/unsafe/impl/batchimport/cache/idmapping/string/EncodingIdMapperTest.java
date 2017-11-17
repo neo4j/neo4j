@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.function.LongFunction;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.test.Race;
@@ -795,12 +794,6 @@ public class EncodingIdMapperTest
 
         @Override
         public long badEntries()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public PrimitiveLongIterator leftOverDuplicateNodesIds()
         {
             throw new UnsupportedOperationException();
         }

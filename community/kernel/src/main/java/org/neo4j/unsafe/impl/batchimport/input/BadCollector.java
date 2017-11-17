@@ -23,16 +23,11 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.concurrent.AsyncEvent;
 import org.neo4j.concurrent.AsyncEvents;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 
 import static java.lang.String.format;
-import static java.util.Arrays.copyOf;
-import static java.util.Arrays.sort;
-
 import static org.neo4j.helpers.Exceptions.withMessage;
 
 public class BadCollector implements Collector
@@ -69,8 +64,6 @@ public class BadCollector implements Collector
     private final PrintStream out;
     private final long tolerance;
     private final int collect;
-    private long[] leftOverDuplicateNodeIds = new long[10];
-    private int leftOverDuplicateNodeIdsCursor;
     private final boolean logBadEntries;
 
     // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
@@ -117,21 +110,6 @@ public class BadCollector implements Collector
     public void collectDuplicateNode( final Object id, long actualId, final String group )
     {
         collect( new NodesProblemReporter( id, group ) );
-
-        // We can do this right in here because as it turns out this is never called by multiple concurrent threads.
-        if ( leftOverDuplicateNodeIdsCursor == leftOverDuplicateNodeIds.length )
-        {
-            leftOverDuplicateNodeIds = copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIds.length * 2 );
-        }
-        leftOverDuplicateNodeIds[leftOverDuplicateNodeIdsCursor++] = actualId;
-    }
-
-    @Override
-    public PrimitiveLongIterator leftOverDuplicateNodesIds()
-    {
-        leftOverDuplicateNodeIds = copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIdsCursor );
-        sort( leftOverDuplicateNodeIds );
-        return PrimitiveLongCollections.iterator( leftOverDuplicateNodeIds );
     }
 
     @Override

@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -86,6 +88,12 @@ public class IdMappers
         public long calculateMemoryUsage( long numberOfNodes )
         {
             return 0;
+        }
+
+        @Override
+        public PrimitiveLongIterator leftOverDuplicateNodesIds()
+        {
+            return PrimitiveLongCollections.emptyIterator();
         }
     }
 
