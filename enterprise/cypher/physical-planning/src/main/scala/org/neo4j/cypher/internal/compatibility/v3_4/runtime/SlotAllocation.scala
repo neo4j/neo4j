@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Si
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, ScopeExpression, Variable}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => parserAst}
 
@@ -55,7 +55,8 @@ object SlotAllocation {
     * @param lp the logical plan to process.
     * @return the slot configurations of every operator.
     */
-  def allocateSlots(lp: LogicalPlan): PhysicalPlan = {
+  def allocateSlots(lp: LogicalPlan,
+                    initialSlotsAndArgument: Option[SlotsAndArgument] = None): PhysicalPlan = {
 
     val allocations = new mutable.OpenHashMap[LogicalPlanId, SlotConfiguration]()
     val arguments = new mutable.OpenHashMap[LogicalPlanId, Size]()
@@ -63,9 +64,10 @@ object SlotAllocation {
     val planStack = new mutable.Stack[(Boolean, LogicalPlan)]()
     val resultStack = new mutable.Stack[SlotConfiguration]()
     val argumentStack = new mutable.Stack[SlotsAndArgument]()
+    initialSlotsAndArgument.foreach(argumentStack.push)
     var comingFrom = lp
 
-    def recordArgument(plan:LogicalPlan, argument: SlotsAndArgument) = {
+    def recordArgument(plan: LogicalPlan, argument: SlotsAndArgument) = {
       arguments += plan.assignedId -> argument.argumentSize
     }
 
@@ -97,17 +99,19 @@ object SlotAllocation {
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
           recordArgument(current, argument)
-          val result = allocate(current, nullable, argument.slotConfiguration.copy())
-          allocations += (current.assignedId -> result)
-          resultStack.push(result)
+          val result = allocateExpressions(current, nullable, argument.slotConfiguration.copy(), allocations, arguments)
+          val result2 = allocate(current, nullable, result)
+          allocations += (current.assignedId -> result2)
+          resultStack.push(result2)
 
         case (Some(_), None) =>
           val sourceSlots = resultStack.pop()
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
-          val result = allocate(current, nullable, sourceSlots, recordArgument(_, argument))
-          allocations += (current.assignedId -> result)
-          resultStack.push(result)
+          val result = allocateExpressions(current, nullable, sourceSlots, allocations, arguments)
+          val result2 = allocate(current, nullable, result, recordArgument(_, argument))
+          allocations += (current.assignedId -> result2)
+          resultStack.push(result2)
 
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
@@ -124,11 +128,16 @@ object SlotAllocation {
           val lhsSlots = resultStack.pop()
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
-          val result = allocate(current, nullable, lhsSlots, rhsSlots, recordArgument(_, argument))
-          allocations += (current.assignedId -> result)
+          // NOTE: This assumes expressions on this logical plan are evaluated in the scope of the LHS
+          //       which is necessary for SelectOr(Anti)SemiApply and LetSelectOr(Anti)SemiApply.
+          //       If we introduce a two sourced logical plan with an expression that needs to
+          //       be evaluated on the scope from the RHS we need to differentiate this code per logical plan.
+          val result = allocateExpressions(current, nullable, lhsSlots, allocations, arguments)
+          val result2 = allocate(current, nullable, result, rhsSlots, recordArgument(_, argument))
+          allocations += (current.assignedId -> result2)
           if (isAnApplyPlan(current))
             argumentStack.pop()
-          resultStack.push(result)
+          resultStack.push(result2)
       }
 
       comingFrom = current
@@ -137,6 +146,43 @@ object SlotAllocation {
     PhysicalPlan(allocations.toMap, arguments.toMap)
   }
 
+  // NOTE: If we find a NestedPlanExpression within the given LogicalPlan, the slotConfigurations and argumentSizes maps will be updated
+  private def allocateExpressions(lp: LogicalPlan, nullable: Boolean, slots: SlotConfiguration,
+                                  slotConfigurations: mutable.Map[LogicalPlanId, SlotConfiguration],
+                                  argumentSizes: mutable.Map[LogicalPlanId, Size]): SlotConfiguration = {
+    val newSlots = lp.treeFold(slots) {
+      case p: LogicalPlan if p.assignedId != lp.assignedId =>
+        slots => (slots, None)
+
+      case e: ScopeExpression =>
+        slots => {
+          e.introducedVariables.foreach {
+            case v@Variable(name) =>
+              slots.newReference(name, true, CTAny)
+          }
+          (slots, Some(s => s))
+        }
+
+      case e: NestedPlanExpression =>
+        slots => {
+          val argumentSlotConfiguration = slots.copy()
+          val slotsAndArgument = SlotsAndArgument(argumentSlotConfiguration, Size(slots.numberOfLongs, slots.numberOfReferences))
+
+          // Allocate slots for nested plan
+          val nestedPhysicalPlan = allocateSlots(e.plan, initialSlotsAndArgument = Some(slotsAndArgument))
+
+          // Update the physical plan
+          slotConfigurations ++= nestedPhysicalPlan.slotConfigurations
+          argumentSizes ++= nestedPhysicalPlan.argumentSizes
+
+          (slots, None)
+        }
+
+      case e: Expression =>
+        slots => (slots, Some(s => s))
+    }
+    newSlots
+  }
 
   /**
     * Compute the slot configuration of a leaf logical plan operator {@code lp}.

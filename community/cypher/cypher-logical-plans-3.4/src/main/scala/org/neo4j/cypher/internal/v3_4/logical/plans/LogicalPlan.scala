@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable._
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
@@ -35,6 +35,7 @@ further up. Thus, the edges of a tree represent data flow from bottom to top, i.
 to data in the database, to the root, which is the final operator producing the query answer. */
 abstract class LogicalPlan
   extends Product
+  with Foldable
   with Strictness
   with RewritableWithMemory {
 

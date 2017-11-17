@@ -1,13 +1,5 @@
-Returning a CASE expression into pattern expression
-Returning a CASE expression into integer
-Returning a CASE expression with label predicates
-Using a CASE expression in a WITH, positive case
-Using a CASE expression in a WITH, negative case
-Using a CASE expression with label predicates in a WITH
-Using a CASE expression in a WHERE, with label predicate
 Shorthand case with filter should work as expected
 Add labels inside FOREACH
-Returning a CASE expression with a pattern expression alternative
 Merge using unique constraint should update existing node
 Merge using unique constraint should create missing node
 Should match on merge using multiple unique indexes if only found single node for both indexes
@@ -41,7 +33,6 @@ Introduce named paths
 Returning an `extract()` expression
 Using an `extract()` expression in a WITH
 Using an `extract()` expression in a WHERE
-Using a pattern expression and a CASE expression in a WHERE
 Returning a pattern expression with bound nodes
 Using a variable-length pattern expression in a WITH
 Pattern expression inside list comprehension

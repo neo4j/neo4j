@@ -185,13 +185,13 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case UnwindCollection(_, IdName(name), expression) =>
         val offset = slots.getReferenceOffsetFor(name)
-        UnwindSlottedPipe(source, expressionConverters.toCommandExpression(expression), offset, slots)(id)
+        UnwindSlottedPipe(source, convertExpressions(expression), offset, slots)(id)
 
       // Aggregation without grouping, such as RETURN count(*)
       case Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
         val aggregation = aggregationExpression.map {
           case (key, expression) =>
-            slots.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+            slots.getReferenceOffsetFor(key) -> convertExpressions(expression)
               .asInstanceOf[AggregationExpression]
         }
         EagerAggregationWithoutGroupingSlottedPipe(source, slots, aggregation)(id)
@@ -199,11 +199,11 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Aggregation(_, groupingExpressions, aggregationExpression) =>
         val grouping = groupingExpressions.map {
           case (key, expression) =>
-            slots.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+            slots.getReferenceOffsetFor(key) -> convertExpressions(expression)
         }
         val aggregation = aggregationExpression.map {
           case (key, expression) =>
-            slots.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+            slots.getReferenceOffsetFor(key) -> convertExpressions(expression)
               .asInstanceOf[AggregationExpression]
         }
         EagerAggregationSlottedPipe(source, slots, grouping, aggregation)(id)
@@ -211,7 +211,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Distinct(_, groupingExpressions) =>
         val grouping = groupingExpressions.map {
           case (key, expression) =>
-            slots.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+            slots.getReferenceOffsetFor(key) -> convertExpressions(expression)
         }
 
         DistinctSlottedPipe(source, slots, grouping)(id)
