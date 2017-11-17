@@ -132,21 +132,34 @@ class SlotConfigurationTest extends CypherFunSuite {
     intercept[InternalException](slots.newReference("x", nullable = false, CTRelationship))
   }
 
-  test("deepClone creates an immutable copy") {
+  test("copy() creates an immutable copy") {
     // given
     val slots = SlotConfiguration(Map(
       "x" -> LongSlot(0, nullable = false, CTNode),
       "y" -> LongSlot(1, nullable = false, CTNode)),
       numberOfLongs = 2, numberOfReferences = 0)
+    slots.addAlias("z", "x")
+
     val clone: SlotConfiguration = slots.copy()
     slots should equal(clone)
 
     // when
     slots.newReference("a", nullable = false, CTNode)
+    slots.addAlias("w", "y")
 
     // then
+    slots("x") should equal(LongSlot(0, nullable = false, CTNode))
+    slots("y") should equal(LongSlot(1, nullable = false, CTNode))
     slots("a") should equal(RefSlot(0, nullable = false, CTNode))
+    slots.isAlias("z") shouldBe true
+    slots.isAlias("w") shouldBe true
+
+    clone("x") should equal(LongSlot(0, nullable = false, CTNode))
+    clone("y") should equal(LongSlot(1, nullable = false, CTNode))
     clone.get("a") shouldBe empty
     clone.numberOfReferences should equal(0)
+    clone.isAlias("z") shouldBe true
+    clone.isAlias("w") shouldBe false
+    clone("z") should equal(clone("x"))
   }
 }

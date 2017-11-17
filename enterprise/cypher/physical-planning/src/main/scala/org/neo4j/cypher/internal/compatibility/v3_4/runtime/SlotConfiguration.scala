@@ -222,38 +222,36 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
 
   def newLong(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
     val slot = LongSlot(numberOfLongs, nullable, typ)
-    val maybeExistingSlot = slots.get(key)
-    if (maybeExistingSlot.isDefined) {
-      val existingSlot = maybeExistingSlot.get
-      if (!existingSlot.isTypeCompatibleWith(slot)) {
-        throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${existingSlot})")
-      }
-      // Reuse the existing (compatible) slot
-      unifyTypeAndNullability(key, existingSlot, slot)
-    }
-    else {
-      slots.put(key, slot)
-      slotAliases.addBinding(slot, key)
-      numberOfLongs = numberOfLongs + 1
+    slots.get(key) match {
+      case Some(existingSlot) =>
+        if (!existingSlot.isTypeCompatibleWith(slot)) {
+          throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${existingSlot})")
+        }
+        // Reuse the existing (compatible) slot
+        unifyTypeAndNullability(key, existingSlot, slot)
+
+      case None =>
+        slots.put(key, slot)
+        slotAliases.addBinding(slot, key)
+        numberOfLongs = numberOfLongs + 1
     }
     this
   }
 
   def newReference(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
     val slot = RefSlot(numberOfReferences, nullable, typ)
-    val maybeExistingSlot = slots.get(key)
-    if (maybeExistingSlot.isDefined) {
-      val existingSlot = maybeExistingSlot.get
-      if (!existingSlot.isTypeCompatibleWith(slot)) {
-        throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${existingSlot})")
-      }
-      // Reuse the existing (compatible) slot
-      unifyTypeAndNullability(key, existingSlot, slot)
-    }
-    else {
-      slots.put(key, slot)
-      slotAliases.addBinding(slot, key)
-      numberOfReferences = numberOfReferences + 1
+    slots.get(key) match {
+      case Some(existingSlot) =>
+        if (!existingSlot.isTypeCompatibleWith(slot)) {
+          throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${existingSlot})")
+        }
+        // Reuse the existing (compatible) slot
+        unifyTypeAndNullability(key, existingSlot, slot)
+
+      case None =>
+        slots.put(key, slot)
+        slotAliases.addBinding(slot, key)
+        numberOfReferences = numberOfReferences + 1
     }
     this
   }
