@@ -85,9 +85,10 @@
     <licensesVersion>7</licensesVersion>
     <license-text.header>AGPL-3-header.txt</license-text.header>
 
-    <scala.version>2.11.11</scala.version>
+    <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>6.0</asm.version>
+    <scala.java9.arg/>
   </properties>
 
   <modules>
@@ -454,6 +455,8 @@
               <arg>-Xmax-classfile-name</arg>
               <arg>100</arg>
               <arg>-Xlint</arg>
+              <arg>-target:jvm-${maven.compiler.target}</arg>
+              <arg>${scala.java9.arg}</arg>
             </args>
             <jvmArgs>
               <jvmArg>-Xms64m</jvmArg>
@@ -792,6 +795,7 @@
       </activation>
       <properties>
         <maven.javadoc.skip>true</maven.javadoc.skip>
+        <scala.java9.arg>-nobootcp</scala.java9.arg>
       </properties>
     </profile>
   </profiles>
