@@ -843,7 +843,7 @@ public class StorePropertyCursorTest
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();
 
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, keyId, Values.of( value ), stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block, keyId, Values.of( value ), stringAllocator, arrayAllocator, true );
 
         PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block );
@@ -860,9 +860,9 @@ public class StorePropertyCursorTest
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();
 
         PropertyBlock block1 = new PropertyBlock();
-        PropertyStore.encodeValue( block1, keyId1, Values.of( value1 ), stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block1, keyId1, Values.of( value1 ), stringAllocator, arrayAllocator, true );
         PropertyBlock block2 = new PropertyBlock();
-        PropertyStore.encodeValue( block2, keyId2, Values.of( value2 ), stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block2, keyId2, Values.of( value2 ), stringAllocator, arrayAllocator, true );
 
         PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block1 );

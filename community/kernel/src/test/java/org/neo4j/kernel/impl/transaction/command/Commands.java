@@ -167,7 +167,7 @@ public class Commands
         PropertyBlock block = new PropertyBlock();
         if ( valueRecordIds.length == 0 )
         {
-            PropertyStore.encodeValue( block, key, Values.of( 123 ), null, null );
+            PropertyStore.encodeValue( block, key, Values.of( 123 ), null, null, true );
         }
         else
         {

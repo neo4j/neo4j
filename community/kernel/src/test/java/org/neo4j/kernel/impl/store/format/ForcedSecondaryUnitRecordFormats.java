@@ -147,4 +147,10 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     {
         return actual.hasSameCapabilities( other, type );
     }
+
+    @Override
+    public String name()
+    {
+        return this.getClass().getName();
+    }
 }

@@ -116,4 +116,10 @@ public interface RecordFormats
      * @return true if both formats have the same set of capabilities of the given {@code type}.
      */
     boolean hasSameCapabilities( RecordFormats other, CapabilityType type );
+
+    /**
+     * Record format name
+     * @return name of record format
+     */
+    String name();
 }

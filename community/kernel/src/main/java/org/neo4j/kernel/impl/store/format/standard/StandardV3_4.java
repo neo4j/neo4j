@@ -99,4 +99,10 @@ public class StandardV3_4 extends BaseRecordFormats
     {
         return StandardFormatFamily.INSTANCE;
     }
+
+    @Override
+    public String name()
+    {
+        return NAME;
+    }
 }

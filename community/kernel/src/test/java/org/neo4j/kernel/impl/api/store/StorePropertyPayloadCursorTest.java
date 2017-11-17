@@ -492,7 +492,7 @@ public class StorePropertyPayloadCursorTest
             Object value = values[i];
 
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, i, Values.of( value ), stringAllocator, arrayAllocator );
+            PropertyStore.encodeValue( block, i, Values.of( value ), stringAllocator, arrayAllocator, true );
             long[] valueBlocks = block.getValueBlocks();
             System.arraycopy( valueBlocks, 0, blocks, cursor, valueBlocks.length );
             cursor += valueBlocks.length;

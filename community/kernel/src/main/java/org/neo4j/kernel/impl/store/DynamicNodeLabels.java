@@ -218,7 +218,8 @@ public class DynamicNodeLabels implements NodeLabels
     {
         long[] storedLongs = LabelIdArray.prependNodeId( nodeId, labels );
         Collection<DynamicRecord> records = new ArrayList<>();
-        DynamicArrayStore.allocateRecords( records, storedLongs, allocator );
+        // since we can't store points in long array we passing false as possibility to store points
+        DynamicArrayStore.allocateRecords( records, storedLongs, allocator, false );
         return records;
     }
 

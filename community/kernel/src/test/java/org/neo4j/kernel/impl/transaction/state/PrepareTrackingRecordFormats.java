@@ -158,6 +158,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         return actual.hasSameCapabilities( other, type );
     }
 
+    @Override
+    public String name()
+    {
+        return getClass().getName();
+    }
+
     public class PrepareTrackingRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
     {
         private final RecordFormat<RECORD> actual;

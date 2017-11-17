@@ -28,7 +28,8 @@ import java.util.Collection;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -89,6 +90,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
+    private final boolean canStorePoints;
 
     public DynamicArrayStore(
             File fileName,
@@ -98,12 +100,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
             PageCache pageCache,
             LogProvider logProvider,
             int dataSizeFromConfiguration,
-            RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion,
+            RecordFormats recordFormats,
             OpenOption... openOptions )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, openOptions );
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
+        canStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
     }
 
     @Override
@@ -171,10 +173,17 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
 
     public static void allocateFromPoints( Collection<DynamicRecord> target, PointValue[] array,
-            DynamicRecordAllocator recordAllocator )
+            DynamicRecordAllocator recordAllocator, boolean canStorePoints )
     {
-        byte[] bytes = GeometryType.encodePointArray( array );
-        allocateRecordsFromBytes( target, bytes, recordAllocator );
+        if ( canStorePoints )
+        {
+            byte[] bytes = GeometryType.encodePointArray( array );
+            allocateRecordsFromBytes( target, bytes, recordAllocator );
+        }
+        else
+        {
+            // TODO throw exception
+        }
     }
 
     private static void allocateFromString( Collection<DynamicRecord> target, String[] array,
@@ -203,11 +212,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public void allocateRecords( Collection<DynamicRecord> target, Object array )
     {
-        allocateRecords( target, array, this );
+        allocateRecords( target, array, this, canStorePoints );
     }
 
     public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator )
+            DynamicRecordAllocator recordAllocator, boolean canStorePoints )
     {
         if ( !array.getClass().isArray() )
         {
@@ -221,7 +230,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
         else if ( type.equals( PointValue.class ) )
         {
-            allocateFromPoints( target, (PointValue[]) array, recordAllocator );
+            allocateFromPoints( target, (PointValue[]) array, recordAllocator, canStorePoints );
         }
         else
         {

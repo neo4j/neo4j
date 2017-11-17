@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
@@ -58,7 +59,7 @@ public class RecordFormatSelector
 {
     private static final RecordFormats DEFAULT_FORMAT = Standard.LATEST_RECORD_FORMATS;
 
-    private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
+    private static final List<RecordFormats> KNOWN_FORMATS = asList(
             StandardV2_3.RECORD_FORMATS,
             StandardV3_0.RECORD_FORMATS,
             StandardV3_2.RECORD_FORMATS,
@@ -307,6 +308,12 @@ public class RecordFormatSelector
             if ( Standard.LATEST_NAME.equals( recordFormat ) )
             {
                 return Standard.LATEST_RECORD_FORMATS;
+            }
+            final Optional<RecordFormats> knownStandardFormat =
+                    KNOWN_FORMATS.stream().filter( recordFormats -> recordFormat.equals( recordFormats.name() ) ).findFirst();
+            if ( knownStandardFormat.isPresent() )
+            {
+                return knownStandardFormat.get();
             }
             RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
             if ( formatFactory != null )

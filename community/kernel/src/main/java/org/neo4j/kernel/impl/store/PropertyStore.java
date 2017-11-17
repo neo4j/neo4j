@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -129,6 +130,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final DynamicArrayStore arrayStore;
+    private final boolean canStorePoints;
 
     public PropertyStore(
             File fileName,
@@ -147,6 +149,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
+        canStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
     }
 
     @Override
@@ -278,18 +281,18 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator allocator )
+            DynamicRecordAllocator allocator, boolean canStorePoints )
     {
-        DynamicArrayStore.allocateRecords( target, array, allocator );
+        DynamicArrayStore.allocateRecords( target, array, allocator, canStorePoints );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Value value )
     {
-        encodeValue( block, keyId, value, stringStore, arrayStore );
+        encodeValue( block, keyId, value, stringStore, arrayStore, canStorePoints );
     }
 
-    public static void encodeValue( PropertyBlock block, int keyId, Value value,
-            DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator )
+    public static void encodeValue( PropertyBlock block, int keyId, Value value, DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator,
+            boolean canStorePoints )
     {
         if ( value instanceof ArrayValue )
         {
@@ -303,7 +306,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = new ArrayList<>();
-            allocateArrayRecords( arrayRecords, asObject, arrayAllocator );
+            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, canStorePoints );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
@@ -313,7 +316,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else
         {
-            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator ) );
+            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, canStorePoints ) );
         }
     }
 
@@ -322,12 +325,14 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         private PropertyBlock block;
         private int keyId;
         private DynamicRecordAllocator stringAllocator;
+        private final boolean canStorePoints;
 
-        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator )
+        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean canStorePoints )
         {
             this.block = block;
             this.keyId = keyId;
             this.stringAllocator = stringAllocator;
+            this.canStorePoints = canStorePoints;
         }
 
         @Override
@@ -439,7 +444,14 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IllegalArgumentException
         {
-            block.setValueBlocks( GeometryType.encodePoint( keyId, crs, coordinate ) );
+            if ( canStorePoints )
+            {
+                block.setValueBlocks( GeometryType.encodePoint( keyId, crs, coordinate ) );
+            }
+            else
+            {
+                // TODO throw exception
+            }
         }
     }
 
@@ -530,5 +542,10 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     public PropertyRecord newRecord()
     {
         return new PropertyRecord( -1 );
+    }
+
+    public boolean canStorePoints()
+    {
+        return canStorePoints;
     }
 }
