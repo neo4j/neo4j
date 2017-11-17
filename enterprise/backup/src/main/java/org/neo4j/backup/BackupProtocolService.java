@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +146,8 @@ class BackupProtocolService
     {
         if ( !directoryIsEmpty( fileSystem, targetDirectory ) )
         {
-            throw new RuntimeException( "Can only perform a full backup into an empty directory but " + targetDirectory + " is not empty" );
+            throw new RuntimeException( "Can only perform a full backup into an empty directory but " + targetDirectory + " is not empty. It contains: " +
+                    Arrays.asList( targetDirectory.list() ) );
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;

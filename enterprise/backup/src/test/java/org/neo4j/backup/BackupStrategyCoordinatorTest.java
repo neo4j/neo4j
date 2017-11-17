@@ -47,7 +47,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.ExceptionMatchers.exceptionContainsSuppressedThrowable;
 
-public class BackupFlowTest
+public class BackupStrategyCoordinatorTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -59,7 +59,7 @@ public class BackupFlowTest
     final BackupStrategyWrapper firstStrategy = mock( BackupStrategyWrapper.class );
     final BackupStrategyWrapper secondStrategy = mock( BackupStrategyWrapper.class );
 
-    BackupFlow subject;
+    BackupStrategyCoordinator subject;
 
     // test method parameter mocks
     final OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
@@ -75,7 +75,7 @@ public class BackupFlowTest
     {
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( requiredArguments.getReportDir() ).thenReturn( reportDir );
-        subject = new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
+        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
                 Arrays.asList( firstStrategy, secondStrategy ) );
     }
 
@@ -248,7 +248,7 @@ public class BackupFlowTest
     public void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
     {
         // given there are no strategies in the solution
-        subject = new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, Collections.emptyList() );
+        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, Collections.emptyList() );
 
         // then we want a predictable exception (instead of NullPointer)
         expectedException.expect( CommandFailed.class );

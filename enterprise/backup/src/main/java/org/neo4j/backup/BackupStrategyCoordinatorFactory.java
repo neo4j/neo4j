@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.com.storecopy.FileMovePropagator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -30,40 +31,39 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.LogProvider;
 
 /*
-Backup flows are iterate through backup strategies and make sure at least one of them is a valid backup. Handles cases when that isn't possible.
-This factory helps in the construction of them
+ * Backup strategy coordinators iterate through backup strategies and make sure at least one of them can perform a valid backup.
+ * Handles cases when that isn't possible.
  */
-class BackupFlowFactory
+class BackupStrategyCoordinatorFactory
 {
     private final LogProvider logProvider;
     private final ConsistencyCheckService consistencyCheckService;
     private final AddressResolutionHelper addressResolutionHelper;
-    private final BackupCopyService backupCopyService;
     private final OutsideWorld outsideWorld;
 
-    BackupFlowFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
+    BackupStrategyCoordinatorFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
     {
         this.logProvider = backupModuleResolveAtRuntime.getLogProvider();
         this.outsideWorld = backupModuleResolveAtRuntime.getOutsideWorld();
-        this.backupCopyService = backupModuleResolveAtRuntime.getBackupCopyService();
 
         this.consistencyCheckService = new ConsistencyCheckService();
         this.addressResolutionHelper = new AddressResolutionHelper();
     }
 
-    BackupFlow backupFlow( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService, BackupDelegator backupDelegator,
+    BackupStrategyCoordinator backupFlow( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService, BackupDelegator backupDelegator,
             PageCache pageCache )
     {
+        BackupCopyService backupCopyService = new BackupCopyService( pageCache, new FileMovePropagator() );
         ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.textual( outsideWorld.errorStream() );
 
         List<BackupStrategyWrapper> strategies = Stream
             .of(
                 new CausalClusteringBackupStrategy( backupDelegator, addressResolutionHelper ),
                 new HaBackupStrategy( backupProtocolService, addressResolutionHelper, onlineBackupContext.getRequiredArguments().getTimeout() ) )
-            .map( strategy -> new BackupStrategyWrapper( strategy, backupCopyService, pageCache, onlineBackupContext.getConfig(),
-                    new BackupRecoveryService() ) )
+            .map( strategy -> new BackupStrategyWrapper( strategy, backupCopyService, pageCache, onlineBackupContext.getConfig(), new BackupRecoveryService(),
+                    logProvider ) )
             .collect( Collectors.toList() );
 
-        return new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
+        return new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
     }
 }

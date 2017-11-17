@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,13 +25,12 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.io.pagecache.PageCache;
 
 public class OnlineBackupCommand implements AdminCommand
 {
     private final OutsideWorld outsideWorld;
     private final OnlineBackupContextLoader onlineBackupContextLoader;
-    private final BackupFlowFactory backupFlowFactory;
+    private final BackupStrategyCoordinatorFactory backupStrategyCoordinatorFactory;
     private final AbstractBackupSupportingClassesFactory backupSupportingClassesFactory;
 
     /**
@@ -40,15 +39,15 @@ public class OnlineBackupCommand implements AdminCommand
      * @param outsideWorld provides a way to interact with the filesystem and output streams
      * @param onlineBackupContextLoader helper class to validate, process and return a grouped result of processing the command line arguments
      * @param backupSupportingClassesFactory necessary for constructing the strategy for backing up over the causal clustering transaction protocol
-     * @param backupFlowFactory class that actually handles the logic of performing a backup
+     * @param backupStrategyCoordinatorFactory handles iteration and error handling of all available backup strategies
      */
     OnlineBackupCommand( OutsideWorld outsideWorld, OnlineBackupContextLoader onlineBackupContextLoader,
-            AbstractBackupSupportingClassesFactory backupSupportingClassesFactory, BackupFlowFactory backupFlowFactory )
+            AbstractBackupSupportingClassesFactory backupSupportingClassesFactory, BackupStrategyCoordinatorFactory backupStrategyCoordinatorFactory )
     {
         this.outsideWorld = outsideWorld;
         this.onlineBackupContextLoader = onlineBackupContextLoader;
         this.backupSupportingClassesFactory = backupSupportingClassesFactory;
-        this.backupFlowFactory = backupFlowFactory;
+        this.backupStrategyCoordinatorFactory = backupStrategyCoordinatorFactory;
     }
 
     @Override
@@ -62,10 +61,11 @@ public class OnlineBackupCommand implements AdminCommand
         checkDestination( onlineBackupContext.getRequiredArguments().getFolder() );
         checkDestination( onlineBackupContext.getRequiredArguments().getReportDir() );
 
-        BackupFlow backupFlow = backupFlowFactory.backupFlow( onlineBackupContext, backupSupportingClasses.getBackupProtocolService(),
-                backupSupportingClasses.getBackupDelegator(), backupSupportingClasses.getPageCache() );
+        BackupStrategyCoordinator backupStrategyCoordinator =
+                backupStrategyCoordinatorFactory.backupFlow( onlineBackupContext, backupSupportingClasses.getBackupProtocolService(),
+                        backupSupportingClasses.getBackupDelegator(), backupSupportingClasses.getPageCache() );
 
-        backupFlow.performBackup( onlineBackupContext );
+        backupStrategyCoordinator.performBackup( onlineBackupContext );
         outsideWorld.stdOutLine( "Backup complete." );
     }
 

@@ -20,9 +20,6 @@
 package org.neo4j.backup;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
@@ -95,7 +92,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
                 BackupSupportingClassesFactoryProvider.findBestProvider()
                         .orElseThrow( noProviderException() )
                         .getFactory( backupModuleResolveAtRuntime ),
-                new BackupFlowFactory( backupModuleResolveAtRuntime )
+                new BackupStrategyCoordinatorFactory( backupModuleResolveAtRuntime )
         );
     }
 

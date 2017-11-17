@@ -22,14 +22,15 @@ package org.neo4j.causalclustering.core.state;
 import java.io.IOException;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 
 public class RaftLogPruner
 {
-    private final RaftMachine raftMachine;
+    private final RaftMachineIface raftMachine;
     private final CommandApplicationProcess applicationProcess;
 
-    public RaftLogPruner( RaftMachine raftMachine, CommandApplicationProcess applicationProcess )
+    public RaftLogPruner( RaftMachineIface raftMachine, CommandApplicationProcess applicationProcess )
     {
 
         this.raftMachine = raftMachine;

@@ -17,23 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery.procedures;
+package org.neo4j.backup;
 
-import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
+import org.junit.Test;
 
-public class CoreRoleProcedure extends RoleProcedure
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+
+import static org.junit.Assert.assertEquals;
+
+public class BackupConfigurationTest
 {
-    private final RaftMachineIface raft;
-
-    public CoreRoleProcedure( RaftMachineIface raft )
+    @Test
+    public void backupProtocolIsOnByDefault() throws Exception
     {
-        super();
-        this.raft = raft;
-    }
+        // given
+        Config config = Config.defaults();
 
-    @Override
-    Role role()
-    {
-        return raft.isLeader() ? Role.LEADER : Role.FOLLOWER;
+        // when
+        Boolean backupsAreEnabled = config.get( OnlineBackupSettings.online_backup_enabled );
+
+        // then
+        assertEquals( Boolean.TRUE, backupsAreEnabled );
     }
 }

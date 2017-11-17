@@ -17,23 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery.procedures;
+package org.neo4j.causalclustering;
 
-import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
+import java.util.function.Supplier;
 
-public class CoreRoleProcedure extends RoleProcedure
+public class LazySingletonSupplier<E> implements Supplier<E>
 {
-    private final RaftMachineIface raft;
+    private final Supplier<E> singletonSupplier;
 
-    public CoreRoleProcedure( RaftMachineIface raft )
+    private E instance;
+
+    public LazySingletonSupplier( Supplier<E> singletonSupplier )
     {
-        super();
-        this.raft = raft;
+        this.singletonSupplier = singletonSupplier;
     }
 
     @Override
-    Role role()
+    public E get()
     {
-        return raft.isLeader() ? Role.LEADER : Role.FOLLOWER;
+        if ( instance == null )
+        {
+            instance = singletonSupplier.get();
+        }
+        return instance;
     }
 }

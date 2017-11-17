@@ -32,7 +32,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
  * performed.
  *
  * All backup methods return the same instance, allowing for chaining calls.
+ *
+ * @deprecated use {@link OnlineBackupCommandBuilder}
  */
+@Deprecated
 public class OnlineBackup
 {
     private final String hostNameOrIp;

@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -69,7 +70,7 @@ public class MembershipWaiter
         this.log = logProvider.getLog( getClass() );
     }
 
-    CompletableFuture<Boolean> waitUntilCaughtUpMember( RaftMachine raft )
+    CompletableFuture<Boolean> waitUntilCaughtUpMember( RaftMachineIface raft )
     {
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 
@@ -86,13 +87,13 @@ public class MembershipWaiter
 
     private class Evaluator implements Runnable
     {
-        private final RaftMachine raft;
+        private final RaftMachineIface raft;
         private final CompletableFuture<Boolean> catchUpFuture;
 
         private long lastLeaderCommit;
         private final Supplier<DatabaseHealth> dbHealthSupplier;
 
-        private Evaluator( RaftMachine raft, CompletableFuture<Boolean> catchUpFuture,
+        private Evaluator( RaftMachineIface raft, CompletableFuture<Boolean> catchUpFuture,
                 Supplier<DatabaseHealth> dbHealthSupplier )
         {
             this.raft = raft;

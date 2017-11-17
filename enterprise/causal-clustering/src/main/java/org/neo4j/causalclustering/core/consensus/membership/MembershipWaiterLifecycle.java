@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -35,11 +36,11 @@ public class MembershipWaiterLifecycle extends LifecycleAdapter
 {
     private final MembershipWaiter membershipWaiter;
     private final Long joinCatchupTimeout;
-    private final RaftMachine raft;
+    private final RaftMachineIface raft;
     private final Log log;
 
     public MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, Long joinCatchupTimeout,
-                                      RaftMachine raft, LogProvider logProvider )
+                                      RaftMachineIface raft, LogProvider logProvider )
     {
         this.membershipWaiter = membershipWaiter;
         this.joinCatchupTimeout = joinCatchupTimeout;

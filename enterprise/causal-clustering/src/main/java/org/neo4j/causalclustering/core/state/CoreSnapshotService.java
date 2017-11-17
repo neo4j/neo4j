@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.state;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMachineIface;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
@@ -31,10 +32,10 @@ public class CoreSnapshotService
     private final CommandApplicationProcess applicationProcess;
     private final CoreState coreState;
     private final RaftLog raftLog;
-    private final RaftMachine raftMachine;
+    private final RaftMachineIface raftMachine;
 
     public CoreSnapshotService( CommandApplicationProcess applicationProcess, CoreState coreState, RaftLog raftLog,
-            RaftMachine raftMachine )
+            RaftMachineIface raftMachine )
     {
         this.applicationProcess = applicationProcess;
         this.coreState = coreState;

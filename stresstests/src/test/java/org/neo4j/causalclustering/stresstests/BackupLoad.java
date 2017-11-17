@@ -27,11 +27,11 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
+import org.neo4j.backup.OnlineBackupCommandBuilder;
 import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;
 import org.neo4j.helper.IsConnectionRestByPeer;
 import org.neo4j.helper.IsStoreClosed;
-import org.neo4j.backup.OnlineBackup;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.helpers.SocketAddress;
 
@@ -67,13 +67,15 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
         SocketAddress address = backupAddress.apply( isCore, id );
         File backupDirectory = new File( baseDirectory, Integer.toString( address.getPort() ) );
 
-        OnlineBackup backup;
         try
         {
-            backup = OnlineBackup.from( address.getHostname(), address.getPort() ).withOutput( NULL_OUTPUT_STREAM )
+            new OnlineBackupCommandBuilder()
+                    .withHost( address.getHostname() )
+                    .withPort( address.getPort() )
+                    .withOutput( NULL_OUTPUT_STREAM )
                     .backup( backupDirectory );
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             if ( isTransientError.test( e ) )
             {
@@ -81,12 +83,7 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
                 LockSupport.parkNanos( 10_000_000 );
                 return;
             }
-            throw e;
-        }
-
-        if ( !backup.isConsistent() )
-        {
-            throw new RuntimeException( "Not consistent backup from " + address );
+            throw new RuntimeException( e );
         }
     }
 }

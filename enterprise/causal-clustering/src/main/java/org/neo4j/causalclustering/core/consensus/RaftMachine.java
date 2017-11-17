@@ -60,7 +60,7 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
  * <p>
  * The algorithm is driven by incoming messages provided to {@link #handle}.
  */
-public class RaftMachine implements LeaderLocator, CoreMetaData
+public class RaftMachine implements RaftMachineIface
 {
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
     private RenewableTimeoutService.RenewableTimeout heartbeatTimer;
@@ -125,6 +125,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
      * this instance cannot become a leader (the timers are disabled) and entries will not be cached
      * in the in-flight map, because the application process is not running and ready to consume them.
      */
+    @Override
     public synchronized void postRecoveryActions()
     {
         if ( !refuseToBecomeLeader )
@@ -139,6 +140,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         inFlightCache.enable();
     }
 
+    @Override
     public synchronized void stopTimers()
     {
         if ( electionTimer != null )
@@ -175,6 +177,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
+    @Override
     public void triggerElection() throws IOException
     {
         if ( !refuseToBecomeLeader )
@@ -183,21 +186,25 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
+    @Override
     public void panic()
     {
         stopTimers();
     }
 
+    @Override
     public synchronized RaftCoreState coreState()
     {
         return new RaftCoreState( membershipManager.getCommitted() );
     }
 
+    @Override
     public synchronized void installCoreState( RaftCoreState coreState ) throws IOException
     {
         membershipManager.install( coreState.committed() );
     }
 
+    @Override
     public synchronized void setTargetMembershipSet( Set<MemberId> targetMembers )
     {
         membershipManager.setTargetMembershipSet( targetMembers );
@@ -254,6 +261,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
      *
      * @return A fresh view of the state.
      */
+    @Override
     public synchronized ExposedRaftState state()
     {
         return state.copy();
@@ -299,6 +307,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         return false;
     }
 
+    @Override
     public synchronized ConsensusOutcome handle( RaftMessages.RaftMessage incomingMessage ) throws IOException
     {
         Outcome outcome = currentRole.handler.handle( incomingMessage, state, log );
@@ -368,16 +377,19 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         return currentRole == LEADER;
     }
 
+    @Override
     public Role currentRole()
     {
         return currentRole;
     }
 
+    @Override
     public MemberId identity()
     {
         return myself;
     }
 
+    @Override
     public RaftLogShippingManager logShippingManager()
     {
         return logShipping;
@@ -397,6 +409,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
+    @Override
     public long term()
     {
         return state.term();
@@ -407,11 +420,13 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         return electionTimeout;
     }
 
+    @Override
     public Set<MemberId> votingMembers()
     {
         return membershipManager.votingMembers();
     }
 
+    @Override
     public Set<MemberId> replicationMembers()
     {
         return membershipManager.replicationMembers();
