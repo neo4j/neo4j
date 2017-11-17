@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -341,7 +342,7 @@ public class KernelTransactionTerminationTest
                     mock( Pool.class ), Clocks.fakeClock(), CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
-                            mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock(Cursors.class) );
+                            mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock(Cursors.class), AutoIndexing.UNSUPPORTED );
 
             this.monitor = monitor;
         }

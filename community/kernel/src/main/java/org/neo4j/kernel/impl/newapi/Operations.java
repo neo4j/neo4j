@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.NotInTransactionException;
@@ -26,6 +27,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -43,6 +45,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -55,11 +58,12 @@ import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.R
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
  */
-public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
+public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, ExplicitIndexWrite
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
     private final StorageStatement statement;
+    private final AutoIndexing autoIndexing;
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
     private final PropertyCursor propertyCursor;
@@ -68,8 +72,9 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
             StorageEngine engine,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors )
+            Cursors cursors, AutoIndexing autoIndexing )
     {
+        this.autoIndexing = autoIndexing;
         this.allStoreHolder = new AllStoreHolder( engine, statement, ktx, cursors );
         this.ktx = ktx;
         this.statement = statement;
@@ -501,5 +506,18 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write
     {
         assertOpen();
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void nodeRemoveFromExplicitIndex( String indexName, long node ) throws KernelException
+    {
+        assertOpen();
+        ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node );
+    }
+
+    @Override
+    public void nodeExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
+    {
+        assertOpen();
     }
 }

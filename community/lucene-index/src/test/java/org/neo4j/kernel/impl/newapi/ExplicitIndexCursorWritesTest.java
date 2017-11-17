@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-import java.util.Map;
+import org.neo4j.internal.kernel.api.ExplicitIndexCursorWritesTestBase;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-
-public interface ExplicitIndexWrite
+public class ExplicitIndexCursorWritesTest extends ExplicitIndexCursorWritesTestBase<WriteTestSupport>
 {
-    void nodeRemoveFromExplicitIndex( String indexName, long node ) throws KernelException;
-    void nodeExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
+    @Override
+    public WriteTestSupport newTestSupport()
+    {
+        return new WriteTestSupport();
+    }
 }
