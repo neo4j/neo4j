@@ -21,36 +21,59 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.Test;
 
+import java.util.stream.IntStream;
+
 import org.neo4j.io.ByteUnit;
 import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class LargePageListTest
+public class LargePageListIT
 {
     private static final long ALIGNMENT = 8;
 
     @Test
     public void veryLargePageListsMustBeFullyAccessible() throws Exception
     {
-        long pageCacheSize = ByteUnit.tebiBytes( 1 );
+        // We need roughly 4 GiBs of memory for the meta-data here, which is why this is an IT and not a Test.
+        // We add one extra page worth of data to the size here, to avoid ending up on a "convenient" boundary.
         int pageSize = (int) ByteUnit.kibiBytes( 8 );
+        long pageCacheSize = ByteUnit.tebiBytes( 1 ) + pageSize;
         int pages = Math.toIntExact( pageCacheSize / pageSize );
 
-        MemoryManager mman = new MemoryManager( ByteUnit.mebiBytes( 1 ), ALIGNMENT );
+        MemoryManager mman = new MemoryManager( ByteUnit.gibiBytes( 4 ), ALIGNMENT );
         SwapperSet swappers = new SwapperSet();
         long victimPage = VictimPageReference.getVictimPage( pageSize );
 
         PageList pageList = new PageList( pages, pageSize, mman, swappers, victimPage );
+
+        // Verify we end up with the correct number of pages.
         assertThat( pageList.getPageCount(), is( pages ) );
-        long ref = pageList.deref( pages - 1 );
+
+        // Spot-check the accessibility in the bulk of the pages.
+        IntStream.range( 0, pages / 32 ).parallel().forEach( id ->
+        {
+            verifyPageMetaDataIsAccessible( pageList, id * 32 );
+        } );
+
+        // Thoroughly check the accessibility around the tail end of the page list.
+        IntStream.range( pages - 2000, pages ).parallel().forEach( id ->
+        {
+            verifyPageMetaDataIsAccessible( pageList, id );
+        } );
+    }
+
+    private void verifyPageMetaDataIsAccessible( PageList pageList, int id )
+    {
+        long ref = pageList.deref( id );
         pageList.incrementUsage( ref );
         pageList.incrementUsage( ref );
         assertFalse( pageList.decrementUsage( ref ) );
         assertTrue( pageList.decrementUsage( ref ) );
-        System.out.println( "mman.sumUsedMemory() = " + mman.sumUsedMemory() );
+        assertEquals( id, pageList.toId( ref ) );
     }
 }
