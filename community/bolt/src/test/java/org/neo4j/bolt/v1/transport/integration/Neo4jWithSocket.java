@@ -81,6 +81,16 @@ public class Neo4jWithSocket extends ExternalResource
         this.configure = configure;
     }
 
+    public FileSystemAbstraction getFileSystem()
+    {
+        return this.graphDatabaseFactory.getFileSystem();
+    }
+
+    public File getWorkingDirectory()
+    {
+        return workingDirectory;
+    }
+
     @Override
     public Statement apply( final Statement statement, final Description description )
     {
