@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -48,7 +48,7 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         return delegate.query( predicates );
     }

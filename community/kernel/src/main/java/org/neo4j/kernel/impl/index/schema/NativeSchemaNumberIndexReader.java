@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -114,7 +114,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     }
 
     @Override
-    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
         query( nodeValueIterator, IndexOrder.NONE, predicates );

@@ -177,7 +177,13 @@ public abstract class IndexQuery
     }
 
     /**
+<<<<<<< 3f13eb0de496426ae9635d04714b0059946501ec
      * @return Target {@link ValueGroup} for query or {@link ValueGroup#UNKNOWN} if not targeting single group.
+=======
+     * todo Is this useful?
+     *
+     * @return Target {@link ValueGroup} for query or {@code null} if not targeting single group.
+>>>>>>> Implement IndexValueCapability for Native schema number index
      */
     public abstract ValueGroup valueGroup();
 

@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -66,7 +66,7 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         try
         {
@@ -84,7 +84,7 @@ public class PartitionedIndexReader implements IndexReader
         return false;
     }
 
-    private PrimitiveLongIterator innerQuery( IndexReader reader, IndexQuery[] predicates )
+    private PrimitiveLongResourceIterator innerQuery( IndexReader reader, IndexQuery[] predicates )
     {
         try
         {
@@ -140,11 +140,11 @@ public class PartitionedIndexReader implements IndexReader
         }
     }
 
-    private PrimitiveLongIterator partitionedOperation(
-            Function<SimpleIndexReader,PrimitiveLongIterator> readerFunction )
+    private PrimitiveLongResourceIterator partitionedOperation(
+            Function<SimpleIndexReader,PrimitiveLongResourceIterator> readerFunction )
     {
-        return PrimitiveLongCollections.concat( indexReaders.parallelStream()
-                .map( readerFunction::apply )
+        return PrimitiveLongResourceCollections.concat( indexReaders.parallelStream()
+                .map( readerFunction )
                 .collect( Collectors.toList() ) );
     }
 }

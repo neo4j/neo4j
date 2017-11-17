@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -46,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.emptyIterator;
 
 public abstract class StatementOperationsTestHelper
 {
@@ -79,7 +79,7 @@ public abstract class StatementOperationsTestHelper
         {
             IndexReader indexReader = mock( IndexReader.class );
             when( indexReader.query( isA( IndexQuery.ExactPredicate.class ) ) )
-                    .thenReturn( PrimitiveLongCollections.emptyIterator() );
+                    .thenReturn( emptyIterator() );
             StorageStatement storageStatement = mock( StorageStatement.class );
             when( storageStatement.getIndexReader( any() ) ).thenReturn( indexReader );
             when( state.getStoreStatement() ).thenReturn( storageStatement );
