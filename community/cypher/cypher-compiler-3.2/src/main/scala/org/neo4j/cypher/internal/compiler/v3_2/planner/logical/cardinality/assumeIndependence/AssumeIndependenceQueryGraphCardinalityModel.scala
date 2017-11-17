@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.assu
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
 import org.neo4j.cypher.internal.ir.v3_2.{QueryGraph, _}
 
@@ -74,7 +74,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
                                       (implicit semanticTable: SemanticTable): Cardinality = {
     val (selectivity, numberOfZeroZeroRels) = calculateSelectivity(qg, input.labelInfo)
     val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
-    val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
+    val numberOfGraphNodes = stats.nodesAllCardinality()
 
     val c = if (qg.argumentIds.nonEmpty) {
       if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {

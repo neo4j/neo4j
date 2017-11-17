@@ -79,6 +79,8 @@ object TransactionBoundGraphStatistics {
       else
         Cardinality(count)
     }
+
+    override def nodesAllCardinality(): Cardinality =  atLeastOne(operations.nodesGetCount())
   }
 }
 
