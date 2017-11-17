@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -80,7 +81,8 @@ public class CompositeLabelScanValueIteratorTest
     public void mustHandleMultipleEmptyIterators() throws Exception
     {
         // given
-        List<PrimitiveLongResourceIterator> iterators = Arrays.asList( emptyIterator(), emptyIterator(), emptyIterator() );
+        List<PrimitiveLongResourceIterator> iterators =
+                asMutableList( emptyIterator(), emptyIterator(), emptyIterator() );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
@@ -112,7 +114,7 @@ public class CompositeLabelScanValueIteratorTest
         long[] firstIter  = {0L,     2L,     Long.MAX_VALUE};
         long[] secondIter = {    1L,     3L                };
         long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
-        List<PrimitiveLongResourceIterator> iterators = Arrays.asList(
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
                 iterator( closeCounter::incrementAndGet, firstIter ),
                 iterator( closeCounter::incrementAndGet, secondIter ) );
 
@@ -138,7 +140,7 @@ public class CompositeLabelScanValueIteratorTest
         long[] secondIter = {    1L,     3L                };
         long[] thirdIter  = {0L,         3L                };
         long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
-        List<PrimitiveLongResourceIterator> iterators = Arrays.asList(
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
                 iterator( closeCounter::incrementAndGet, firstIter ),
                 iterator( closeCounter::incrementAndGet, secondIter ),
                 iterator( closeCounter::incrementAndGet, thirdIter ) );
@@ -166,7 +168,7 @@ public class CompositeLabelScanValueIteratorTest
         long[] thirdIter  = {0L,         3L                };
         long[] fourthIter = {/* Empty */                   };
         long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
-        List<PrimitiveLongResourceIterator> iterators = Arrays.asList(
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
                 iterator( closeCounter::incrementAndGet, firstIter ),
                 iterator( closeCounter::incrementAndGet, secondIter ),
                 iterator( closeCounter::incrementAndGet, thirdIter ),
@@ -195,7 +197,7 @@ public class CompositeLabelScanValueIteratorTest
         long[] secondIter = {0L, 1L,     Long.MAX_VALUE};
         long[] thirdIter  = {0L, 1L, 2L, Long.MAX_VALUE};
         long[] expected   = {0L,         Long.MAX_VALUE};
-        List<PrimitiveLongResourceIterator> iterators = Arrays.asList(
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
                 iterator( closeCounter::incrementAndGet, firstIter ),
                 iterator( closeCounter::incrementAndGet, secondIter ),
                 iterator( closeCounter::incrementAndGet, thirdIter ) );
@@ -223,11 +225,11 @@ public class CompositeLabelScanValueIteratorTest
         long[] thirdIter  = {0L, 1L, 2L, Long.MAX_VALUE};
         long[] fourthIter = {/* Empty */               };
         long[] expected   = {                          };
-        List<PrimitiveLongResourceIterator> iterators = Arrays.asList(
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
                 iterator( closeCounter::incrementAndGet, firstIter ),
                 iterator( closeCounter::incrementAndGet, secondIter ),
                 iterator( closeCounter::incrementAndGet, thirdIter ),
-                iterator( closeCounter::incrementAndGet, fourthIter ));
+                iterator( closeCounter::incrementAndGet, fourthIter ) );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, true );
@@ -240,5 +242,11 @@ public class CompositeLabelScanValueIteratorTest
 
         // then
         assertEquals( "expected close count", 4, closeCounter.get() );
+    }
+
+    @SafeVarargs
+    private final <T> List<T> asMutableList( T... objects )
+    {
+        return new ArrayList<>( Arrays.asList( objects ) );
     }
 }
