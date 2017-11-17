@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.NO_VALUE
 
 case class ValueHashJoinSlottedPipe(leftSide: Expression,
                                     rightSide: Expression,
@@ -39,7 +40,7 @@ case class ValueHashJoinSlottedPipe(leftSide: Expression,
 
   override def computeKey(context: ExecutionContext, keyColumns: Expression, queryState: QueryState): Option[AnyValue] = {
     val value = keyColumns.apply(context, queryState)
-    if (value == org.neo4j.values.storable.Values.NO_VALUE)
+    if (value == NO_VALUE)
       None
     else
       Some(value)
