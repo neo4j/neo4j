@@ -40,6 +40,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
   test("should return zero if there are no nodes with the given labels") {
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(0))
+    when(stats.nodesAllCardinality()).thenReturn(Cardinality.EMPTY)
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
@@ -57,6 +58,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
   test("should not consider label selectivity twice") {
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
+    when(stats.nodesAllCardinality()).thenReturn(Cardinality.SINGLE)
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
@@ -74,6 +76,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
   test("handles variable length paths over 32 in length") {
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
+    when(stats.nodesAllCardinality()).thenReturn(Cardinality.SINGLE)
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(3))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
@@ -94,11 +97,12 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
       override def answer(invocationOnMock: InvocationOnMock): Cardinality = {
         val arg:Option[LabelId] = invocationOnMock.getArgument(0)
         arg match {
-          case None => Cardinality(10)
+          case None => Cardinality(1)
           case Some(_) => Cardinality(1)
         }
       }
     })
+    when(stats.nodesAllCardinality()).thenReturn(Cardinality(10))
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)

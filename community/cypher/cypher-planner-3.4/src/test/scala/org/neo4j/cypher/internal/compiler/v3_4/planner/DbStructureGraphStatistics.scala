@@ -52,4 +52,6 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
     val result = lookup.indexPropertyExistsSelectivity( index.label.id, index.property.id )
     if (result.isNaN) None else Some(Selectivity.of(result).get)
   }
+
+  override def nodesAllCardinality(): Cardinality = Cardinality(lookup.nodesAllCardinality())
 }

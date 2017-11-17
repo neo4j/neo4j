@@ -202,6 +202,28 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 1, misses = 2, flushes = 1, evicted = 1))
   }
 
+  test("should not evict query because of unrelated statistics change") {
+    // given
+    val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
+    counter = new CacheCounter()
+    compiler = createCompiler(queryPlanTTL = 0, clock = clock)
+    compiler.monitors.addMonitorListener(counter)
+    val query: String = "match (n:Person) return n"
+
+    // when
+    runQuery(query)
+
+    // then
+    counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1, evicted = 0))
+
+    // when
+    (0 until 5).foreach { _ => createLabeledNode("Dog") }
+    runQuery(query)
+
+    // then
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 0))
+  }
+
   test("should log on cache remove") {
     // given
     val logProvider = new AssertableLogProvider()

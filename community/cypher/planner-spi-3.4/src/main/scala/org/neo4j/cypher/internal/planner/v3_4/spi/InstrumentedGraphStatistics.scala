@@ -27,6 +27,7 @@ import scala.collection.mutable
 
 sealed trait StatisticsKey
 case class NodesWithLabelCardinality(labelId: Option[LabelId]) extends StatisticsKey
+case object NodesAllCardinality extends StatisticsKey
 case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId], relType: Option[RelTypeId], rhs: Option[LabelId]) extends StatisticsKey
 case class IndexSelectivity(index: IndexDescriptor) extends StatisticsKey
 case class IndexPropertyExistsSelectivity(index: IndexDescriptor) extends StatisticsKey
@@ -42,6 +43,9 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
     statsValues.keys.foreach {
       case NodesWithLabelCardinality(labelId) =>
         instrumented.nodesWithLabelCardinality(labelId)
+      case NodesAllCardinality =>
+        val value = statsValues.getOrElse(NodesAllCardinality, 1.0)
+        snapshot.map.put(NodesAllCardinality, value) // Copy the old value, otherwise every create would lead to a diverged cache if we update this
       case CardinalityByLabelsAndRelationshipType(lhs, relType, rhs) =>
         instrumented.cardinalityByLabelsAndRelationshipType(lhs, relType, rhs)
       case IndexSelectivity(index) =>
@@ -68,7 +72,11 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
 
 case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: MutableGraphStatisticsSnapshot) extends GraphStatistics {
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-    snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), inner.nodesWithLabelCardinality(labelId).amount)
+    if(labelId.isEmpty){
+      snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(None), 1)
+    } else {
+      snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), inner.nodesWithLabelCardinality(labelId).amount)
+    }
 
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     snapshot.map.getOrElseUpdate(
@@ -87,4 +95,6 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
     snapshot.map.getOrElseUpdate(IndexPropertyExistsSelectivity(index), selectivity.fold(0.0)(_.factor))
     selectivity
   }
+
+  override def nodesAllCardinality(): Cardinality = snapshot.map.getOrElseUpdate(NodesAllCardinality, inner.nodesAllCardinality().amount)
 }

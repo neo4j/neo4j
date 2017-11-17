@@ -37,8 +37,10 @@ case object HardcodedGraphStatistics extends GraphStatistics {
     Some(INDEX_PROPERTY_EXISTS_SELECTIVITY * Selectivity.of(index.properties.length).get)
 
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-    labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(NODES_CARDINALITY)
+    labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(Cardinality.SINGLE)
 
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     RELATIONSHIPS_CARDINALITY
+
+  override def nodesAllCardinality(): Cardinality = NODES_CARDINALITY
 }

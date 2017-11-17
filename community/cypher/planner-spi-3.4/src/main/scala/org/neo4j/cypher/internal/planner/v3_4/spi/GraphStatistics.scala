@@ -35,7 +35,17 @@ object GraphStatistics {
 }
 
 trait GraphStatistics {
+
+  /**
+    * Gets the Cardinality for given LabelId
+    *
+    * Attention: This method does NOT return the number of nodes anymore!
+    * @param labelId Either some labelId for which the Cardinality should be retrieved or None
+    * @return returns the Cardinality for the given LabelId or Cardinality(1) for a non-existing label
+    */
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality
+
+  def nodesAllCardinality(): Cardinality
 
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
 
@@ -66,6 +76,8 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
 
   override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
     delegate.indexPropertyExistsSelectivity(index)
+
+  override def nodesAllCardinality(): Cardinality = delegate.nodesAllCardinality()
 }
 
 class StatisticsCompletingGraphStatistics(delegate: GraphStatistics)
