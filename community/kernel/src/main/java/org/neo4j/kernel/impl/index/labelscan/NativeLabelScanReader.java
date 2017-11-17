@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -77,7 +78,7 @@ class NativeLabelScanReader implements LabelScanReader
     }
 
     @Override
-    public PrimitiveLongIterator nodesWithLabel( int labelId )
+    public PrimitiveLongResourceIterator nodesWithLabel( int labelId )
     {
         RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
         try
@@ -94,22 +95,22 @@ class NativeLabelScanReader implements LabelScanReader
     }
 
     @Override
-    public PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds )
+    public PrimitiveLongResourceIterator nodesWithAnyOfLabels( int... labelIds )
     {
-        List<PrimitiveLongIterator> iterators = iteratorsForLabels( labelIds );
+        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( labelIds );
         return new CompositeLabelScanValueIterator( iterators, false );
     }
 
     @Override
-    public PrimitiveLongIterator nodesWithAllLabels( int... labelIds )
+    public PrimitiveLongResourceIterator nodesWithAllLabels( int... labelIds )
     {
-        List<PrimitiveLongIterator> iterators = iteratorsForLabels( labelIds );
+        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( labelIds );
         return new CompositeLabelScanValueIterator( iterators, true );
     }
 
-    private List<PrimitiveLongIterator> iteratorsForLabels( int[] labelIds )
+    private List<PrimitiveLongResourceIterator> iteratorsForLabels( int[] labelIds )
     {
-        List<PrimitiveLongIterator> iterators = new ArrayList<>();
+        List<PrimitiveLongResourceIterator> iterators = new ArrayList<>();
         try
         {
             for ( int labelId : labelIds )

@@ -25,6 +25,7 @@ import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 
@@ -35,7 +36,7 @@ import org.neo4j.index.internal.gbptree.Hit;
  * The provided {@link RawCursor} is managed externally, e.g. {@link NativeLabelScanReader},
  * this because implemented interface lacks close-method.
  */
-class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     /**
      * {@link RawCursor} to lazily read new {@link LabelScanValue} from.
@@ -65,7 +66,7 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
     /**
      * Remove provided cursor from this collection when iterator is exhausted.
      */
-    private final Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenExhausted;
+    private final Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed;
 
     /**
      * Indicate provided cursor has been closed.
@@ -73,10 +74,10 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
     private boolean closed;
 
     LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
-            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenExhausted )
+            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed )
     {
         this.cursor = cursor;
-        this.toRemoveFromWhenExhausted = toRemoveFromWhenExhausted;
+        this.toRemoveFromWhenClosed = toRemoveFromWhenClosed;
     }
 
     /**
@@ -98,7 +99,7 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             {
                 if ( !cursor.next() )
                 {
-                    ensureCursorClosed();
+                    close();
                     return false;
                 }
             }
@@ -111,17 +112,8 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             baseNodeId = hit.key().idRange * LabelScanValue.RANGE_SIZE;
             bits = hit.value().bits;
 
+            //noinspection AssertWithSideEffects
             assert keysInOrder( hit.key() );
-        }
-    }
-
-    private void ensureCursorClosed() throws IOException
-    {
-        if ( !closed )
-        {
-            cursor.close();
-            toRemoveFromWhenExhausted.remove( cursor );
-            closed = true;
         }
     }
 
@@ -142,5 +134,26 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
         int delta = Long.numberOfTrailingZeros( bits );
         bits &= bits - 1;
         return next( baseNodeId + delta );
+    }
+
+    @Override
+    public void close()
+    {
+        if ( !closed )
+        {
+            try
+            {
+                cursor.close();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+            finally
+            {
+                toRemoveFromWhenClosed.remove( cursor );
+                closed = true;
+            }
+        }
     }
 }

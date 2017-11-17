@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
@@ -177,7 +178,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId )
+    public PrimitiveLongResourceIterator nodesGetForLabel( StorageStatement statement, int labelId )
     {
         return statement.getLabelScanReader().nodesWithLabel( labelId );
     }

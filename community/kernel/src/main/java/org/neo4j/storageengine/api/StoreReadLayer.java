@@ -26,6 +26,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.AssertOpen;
@@ -130,7 +131,13 @@ public interface StoreReadLayer
      */
     Iterator<ConstraintDescriptor> constraintsGetAll();
 
-    PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId );
+    /**
+     *
+     * @param statement An already acquired {@link StorageStatement} with access to store.
+     * @param labelId The label id of interest.
+     * @return {@link PrimitiveLongResourceIterator} over node ids associated with given label id.
+     */
+    PrimitiveLongResourceIterator nodesGetForLabel( StorageStatement statement, int labelId );
 
     /**
      * Looks for a stored index by given {@code descriptor}

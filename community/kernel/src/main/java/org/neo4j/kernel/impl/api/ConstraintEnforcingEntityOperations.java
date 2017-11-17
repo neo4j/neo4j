@@ -352,7 +352,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    public PrimitiveLongResourceIterator nodesGetForLabel( KernelStatement state, int labelId )
     {
         return entityReadOperations.nodesGetForLabel( state, labelId );
     }

@@ -670,10 +670,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Value value,
             Statement statement, int labelId )
     {
-        return map2nodes(
-                new PropertyValueFilteringNodeIdIterator(
-                        statement.readOperations().nodesGetForLabel( labelId ),
-                        statement.readOperations(), propertyId, value ), statement );
+        PrimitiveLongResourceIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
+        return map2nodes( new PropertyValueFilteringNodeIdIterator( nodeIds, statement.readOperations(), propertyId, value ),
+                statement, nodeIds );
     }
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
@@ -687,9 +686,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             return emptyResourceIterator();
         }
 
-        final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
+        final PrimitiveLongResourceIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
         return ResourceClosingIterator
-                .newResourceIterator( map( nodeId -> new NodeProxy( nodeActions, nodeId ), nodeIds ), statement );
+                .newResourceIterator( map( nodeId -> new NodeProxy( nodeActions, nodeId ), nodeIds ), statement, nodeIds );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )

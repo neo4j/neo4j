@@ -452,7 +452,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public PrimitiveLongIterator nodesGetForLabel( int labelId )
+        public PrimitiveLongResourceIterator nodesGetForLabel( int labelId )
         {
             return readOperations.nodesGetForLabel( labelId );
         }

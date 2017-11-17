@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
@@ -215,12 +215,12 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( int labelId )
+    public PrimitiveLongResourceIterator nodesGetForLabel( int labelId )
     {
         statement.assertOpen();
         if ( labelId == StatementConstants.NO_SUCH_LABEL )
         {
-            return PrimitiveLongCollections.emptyIterator();
+            return PrimitiveLongResourceCollections.emptyIterator();
         }
         return dataRead().nodesGetForLabel( statement, labelId );
     }

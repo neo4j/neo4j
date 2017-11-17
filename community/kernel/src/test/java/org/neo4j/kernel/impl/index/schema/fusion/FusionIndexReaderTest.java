@@ -38,11 +38,8 @@ import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -94,45 +91,6 @@ public class FusionIndexReaderTest
         // then
         verify( nativeIter, times( 1 ) ).close();
         verify( luceneIter, times( 1 ) ).close();
-    }
-
-    @Test
-    public void closeIteratorMustCloseNativeIfLuceneThrows() throws Exception
-    {
-        // given
-        verifyCloseOtherQueryIteratorWhenOneThrows( nativeReader, luceneReader );
-    }
-
-    @Test
-    public void closeIteratorMustCloseLuceneIfNativeThrows() throws Exception
-    {
-        // given
-        verifyCloseOtherQueryIteratorWhenOneThrows( luceneReader, nativeReader );
-    }
-
-    private void verifyCloseOtherQueryIteratorWhenOneThrows( IndexReader succeedingReader, IndexReader throwingReader )
-            throws IndexNotApplicableKernelException
-    {
-        PrimitiveLongResourceIterator throwingIter = mock( PrimitiveLongResourceIterator.class );
-        PrimitiveLongResourceIterator succeedingIter = mock( PrimitiveLongResourceIterator.class );
-        when( throwingReader.query( any( IndexQuery.class ) ) ).thenReturn( throwingIter );
-        when( succeedingReader.query( any( IndexQuery.class ) ) ).thenReturn( succeedingIter );
-        RuntimeException closeException = new RuntimeException( "You shall not close" );
-        doThrow( closeException ).when( throwingIter ).close();
-
-        // when
-        try
-        {
-            fusionIndexReader.query( IndexQuery.exists( PROP_KEY ) ).close();
-            fail( "Should have failed" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertSame( closeException, e.getCause() );
-        }
-
-        // then
-        verify( succeedingIter, times( 1 ) ).close();
     }
 
     /* countIndexedNodes */

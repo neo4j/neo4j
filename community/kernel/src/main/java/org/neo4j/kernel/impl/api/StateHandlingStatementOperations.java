@@ -535,17 +535,17 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    public PrimitiveLongResourceIterator nodesGetForLabel( KernelStatement state, int labelId )
     {
+        PrimitiveLongResourceIterator committed = storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId );
         if ( state.hasTxStateWithChanges() )
         {
-            PrimitiveLongIterator wLabelChanges =
-                    state.txState().nodesWithLabelChanged( labelId ).augment(
-                            storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId ) );
-            return state.txState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges );
+            PrimitiveLongIterator wLabelChanges = state.txState().nodesWithLabelChanged( labelId ).augment( committed );
+            return PrimitiveLongCollections
+                    .resourceIterator( state.txState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges ), committed );
         }
 
-        return storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId );
+        return committed;
     }
 
     @Override

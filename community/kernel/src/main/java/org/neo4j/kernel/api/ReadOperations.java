@@ -117,7 +117,7 @@ public interface ReadOperations
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
      */
-    PrimitiveLongIterator nodesGetForLabel( int labelId );
+    PrimitiveLongResourceIterator nodesGetForLabel( int labelId );
 
     /**
      * Queries the given index with the given index query.
