@@ -21,12 +21,15 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexHits;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
@@ -86,6 +89,28 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
             ctx.success();
         }
     }
+
+    @Test
+    public void shouldCreateExplicitIndex() throws Exception
+    {
+        // Given
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, Collections.emptyMap() );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertTrue(  graphDb.index().existsForNodes( INDEX_NAME ) );
+            ctx.success();
+        }
+    }
+
 
     private long addNodeToExplicitIndex()
     {

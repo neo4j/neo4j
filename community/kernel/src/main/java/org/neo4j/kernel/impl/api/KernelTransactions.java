@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -92,6 +93,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final Cursors cursors;
     private final AutoIndexing autoIndexing;
+    private final ExplicitIndexStore explicitIndexStore;
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.
@@ -130,7 +132,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore,
             SystemNanoClock clock,
             CpuClock cpuClock, HeapAllocation heapAllocation, AccessCapability accessCapability, Cursors cursors,
-            AutoIndexing autoIndexing )
+            AutoIndexing autoIndexing,
+            ExplicitIndexStore explicitIndexStore)
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -149,11 +152,14 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.heapAllocation = heapAllocation;
         this.accessCapability = accessCapability;
         this.autoIndexing = autoIndexing;
-        this.explicitIndexTxStateSupplier = () -> new CachingExplicitIndexTransactionState(
-                new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
+        this.explicitIndexStore = explicitIndexStore;
+        this.explicitIndexTxStateSupplier = () ->
+                new CachingExplicitIndexTransactionState(
+                        new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
         this.clock = clock;
         blockNewTransactions();
         this.cursors = cursors;
+
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
@@ -340,7 +346,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, explicitIndexTxStateSupplier, localTxPool,
                             clock, cpuClock, heapAllocation, tracers.transactionTracer, tracers.lockTracer,
-                            tracers.pageCursorTracerSupplier, storageEngine, accessCapability, cursors, autoIndexing );
+                            tracers.pageCursorTracerSupplier, storageEngine, accessCapability, cursors, autoIndexing, explicitIndexStore );
             this.transactions.add( tx );
             return tx;
         }

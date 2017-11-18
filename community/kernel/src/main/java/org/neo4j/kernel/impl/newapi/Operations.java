@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -72,10 +73,10 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             StorageEngine engine,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors, AutoIndexing autoIndexing )
+            Cursors cursors, AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore )
     {
         this.autoIndexing = autoIndexing;
-        this.allStoreHolder = new AllStoreHolder( engine, statement, ktx, cursors );
+        this.allStoreHolder = new AllStoreHolder( engine, statement, ktx, cursors, explicitIndexStore );
         this.ktx = ktx;
         this.statement = statement;
         this.nodeCursor = cursors.allocateNodeCursor();
@@ -519,5 +520,6 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public void nodeExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
         assertOpen();
+        allStoreHolder.getOrCreateNodeIndexConfig( indexName, customConfig );
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -63,12 +65,13 @@ class AllStoreHolder extends Read implements Token
     private final StorageStatement.Relationships relationships;
     private final StorageStatement statement;
     private final StoreReadLayer storeReadLayer;
+    private final ExplicitIndexStore explicitIndexStore;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
     AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
             TxStateHolder txStateHolder,
-            Cursors cursors )
+            Cursors cursors, ExplicitIndexStore explicitIndexStore )
     {
         super( cursors, txStateHolder );
         this.storeReadLayer = engine.storeReadLayer();
@@ -79,6 +82,7 @@ class AllStoreHolder extends Read implements Token
         this.relationships = statement.relationships();
         this.groups = statement.groups();
         this.properties = statement.properties();
+        this.explicitIndexStore = explicitIndexStore;
     }
 
     @Override
@@ -294,4 +298,8 @@ class AllStoreHolder extends Read implements Token
         return storeReadLayer.nodeExists( id );
     }
 
+    void getOrCreateNodeIndexConfig( String indexName, Map<String,String> customConfig )
+    {
+        explicitIndexStore.getOrCreateNodeIndexConfig( indexName, customConfig );
+    }
 }
