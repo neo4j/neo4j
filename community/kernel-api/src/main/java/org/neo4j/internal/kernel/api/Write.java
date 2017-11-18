@@ -38,7 +38,7 @@ public interface Write
      * @param node the internal id of the node to delete
      * @return returns true if it deleted a node or false if no node was found for this id
      */
-    boolean nodeDelete( long node );
+    boolean nodeDelete( long node ) throws KernelException;
 
     /**
      * Create a relationship between two nodes.

@@ -334,7 +334,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public boolean nodeDelete( long node )
+    public boolean nodeDelete( long node ) throws KernelException
     {
         assertOpen();
 
@@ -342,6 +342,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         {
             if ( ktx.txState().nodeIsAddedInThisTx( node ) )
             {
+                autoIndexing.nodes().entityRemoved( this, node );
                 ktx.txState().nodeDoDelete( node );
                 return true;
             }
@@ -354,6 +355,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
 
         if ( allStoreHolder.nodeExists( node ) )
         {
+            autoIndexing.nodes().entityRemoved( this, node );
             ktx.txState().nodeDoDelete( node );
             return true;
         }

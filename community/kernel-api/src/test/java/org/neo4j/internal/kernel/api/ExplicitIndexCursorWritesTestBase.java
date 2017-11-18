@@ -39,8 +39,6 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
     private static final String KEY = "bar";
     private static final String VALUE = "this is it";
 
-
-
     @Test
     public void shouldRemoveNodeFromExplicitIndex() throws Exception
     {
@@ -48,6 +46,37 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         long nodeId = addNodeToExplicitIndex();
 
         // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.nodeRemoveFromExplicitIndex( INDEX_NAME, nodeId );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, "this is it" );
+            assertFalse( hits.hasNext() );
+            hits.close();
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldHandleRemoveNodeFromExplicitIndexTwice() throws Exception
+    {
+        // Given
+        long nodeId = addNodeToExplicitIndex();
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.nodeRemoveFromExplicitIndex( INDEX_NAME, nodeId );
+            tx.success();
+        }
+
         try ( Transaction tx = session.beginTransaction() )
         {
             ExplicitIndexWrite indexWrite = tx.indexWrite();
@@ -106,11 +135,10 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         // Then
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            assertTrue(  graphDb.index().existsForNodes( INDEX_NAME ) );
+            assertTrue( graphDb.index().existsForNodes( INDEX_NAME ) );
             ctx.success();
         }
     }
-
 
     private long addNodeToExplicitIndex()
     {

@@ -133,7 +133,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             SystemNanoClock clock,
             CpuClock cpuClock, HeapAllocation heapAllocation, AccessCapability accessCapability, Cursors cursors,
             AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore)
+            ExplicitIndexStore explicitIndexStore )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;

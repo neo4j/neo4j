@@ -192,7 +192,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
-        this.operations = new Operations( storageEngine, storageStatement, this, cursors, autoIndexing, explicitIndexStore);
+        this.operations =
+                new Operations( storageEngine, storageStatement, this, cursors, autoIndexing, explicitIndexStore );
     }
 
     /**
