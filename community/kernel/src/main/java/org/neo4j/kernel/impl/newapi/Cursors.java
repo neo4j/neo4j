@@ -64,13 +64,13 @@ public class Cursors implements org.neo4j.internal.kernel.api.CursorFactory
     }
 
     @Override
-    public NodeExplicitIndexCursor allocateNodeManualIndexCursor()
+    public NodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
     {
         return new NodeExplicitIndexCursor( );
     }
 
     @Override
-    public RelationshipExplicitIndexCursor allocateRelationshipManualIndexCursor()
+    public RelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
     {
         return new RelationshipExplicitIndexCursor( );
     }

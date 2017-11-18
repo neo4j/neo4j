@@ -52,7 +52,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindNodeByLookup() throws Exception
     {
         // given
-        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeManualIndexCursor();
+        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
               PrimitiveLongSet nodes = Primitive.longSet() )
         {
             // when
@@ -73,7 +73,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindNodeByQuery() throws Exception
     {
         // given
-        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeManualIndexCursor();
+        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
               PrimitiveLongSet nodes = Primitive.longSet() )
         {
             // when
@@ -107,7 +107,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindRelationshipByLookup() throws Exception
     {
         // given
-        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipManualIndexCursor();
+        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();
               PrimitiveLongSet edges = Primitive.longSet() )
         {
             // when
@@ -134,8 +134,8 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindRelationshipByQuery() throws Exception
     {
         // given
-        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipManualIndexCursor();
-                PrimitiveLongSet relationships = Primitive.longSet() )
+        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();
+              PrimitiveLongSet relationships = Primitive.longSet() )
         {
             // when
             indexRead.relationshipExplicitIndexQuery( cursor, "rels", "alpha:betting*", -1, -1 );
