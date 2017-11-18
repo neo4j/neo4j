@@ -27,9 +27,9 @@ import java.util.function.Supplier;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.KernelTransaction.Type;
+import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -66,7 +66,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class KernelTransactionTestBase

@@ -21,8 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
-import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.SecurityContext._
+import org.neo4j.internal.kernel.api.Transaction.Type
+import org.neo4j.internal.kernel.api.security.SecurityContext._
 
 class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
 
@@ -31,7 +31,7 @@ class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
 
     Configs.All.scenarios.map(s =>
     s"CYPHER ${s.preparserOptions} $query").foreach(q => {
-      val tx = graph.beginTransaction(KernelTransaction.Type.`explicit`, AUTH_DISABLED)
+      val tx = graph.beginTransaction(Type.`explicit`, AUTH_DISABLED)
       val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty))
       tx.success()
       result.close()

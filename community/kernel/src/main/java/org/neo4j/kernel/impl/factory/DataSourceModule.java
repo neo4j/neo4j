@@ -39,11 +39,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -109,7 +109,7 @@ public class DataSourceModule
 
     public final NeoStoreDataSource neoStoreDataSource;
 
-    public final Supplier<KernelAPI> kernelAPI;
+    public final Supplier<InwardKernel> kernelAPI;
 
     public final Supplier<QueryExecutionEngine> queryExecutor;
 

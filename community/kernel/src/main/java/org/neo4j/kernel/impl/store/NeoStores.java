@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -396,6 +395,11 @@ public class NeoStores implements AutoCloseable
         return (DynamicStringStore) getStore( StoreType.PROPERTY_KEY_TOKEN_NAME );
     }
 
+    /**
+     * The relationship group store.
+     *
+     * @return The relationship group store.
+     */
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return (RelationshipGroupStore) getStore( StoreType.RELATIONSHIP_GROUP );

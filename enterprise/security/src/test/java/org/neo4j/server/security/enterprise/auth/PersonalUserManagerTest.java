@@ -29,8 +29,8 @@ import java.time.Clock;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;

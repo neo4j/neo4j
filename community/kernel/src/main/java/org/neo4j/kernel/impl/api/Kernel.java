@@ -20,8 +20,11 @@
 package org.neo4j.kernel.impl.api;
 
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.Permissions;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -29,18 +32,22 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.newapi.NewKernel;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 
 /**
  * This is the Neo4j Kernel, an implementation of the Kernel API which is an internal component used by Cypher and the
  * Core API (the API under org.neo4j.graphdb).
+ *
+ * WARNING: This class is under transition.
  *
  * <h1>Structure</h1>
  *
@@ -60,7 +67,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeou
  * finally {@link org.neo4j.storageengine.api.StoreReadLayer} will read the current committed state from
  * the stores or caches.
  */
-public class Kernel extends LifecycleAdapter implements KernelAPI
+public class Kernel extends LifecycleAdapter implements InwardKernel
 {
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
@@ -69,8 +76,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final Procedures procedures;
     private final Config config;
 
+    private final NewKernel newKernel;
+
     public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
-            TransactionMonitor transactionMonitor, Procedures procedures, Config config )
+            TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
@@ -78,17 +87,18 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
+        this.newKernel = new NewKernel( engine, transactions, this );
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext )
             throws TransactionFailureException
     {
         return newTransaction( type, securityContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout ) throws
+    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext, long timeout ) throws
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
@@ -101,12 +111,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public void registerTransactionHook( TransactionHook hook )
     {
         hooks.register( hook );
-    }
-
-    @Override
-    public void unregisterTransactionHook( TransactionHook hook )
-    {
-        hooks.unregister( hook );
     }
 
     @Override
@@ -131,5 +135,17 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public void stop() throws Throwable
     {
         transactions.disposeAll();
+    }
+
+    @Override
+    public CursorFactory cursors()
+    {
+        return newKernel.cursors();
+    }
+
+    @Override
+    public Session beginSession( SecurityContext securityContext )
+    {
+        return newKernel.beginSession( securityContext );
     }
 }

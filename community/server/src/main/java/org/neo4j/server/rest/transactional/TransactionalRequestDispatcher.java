@@ -23,7 +23,7 @@ import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;

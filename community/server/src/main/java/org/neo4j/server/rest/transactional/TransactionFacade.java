@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.net.URI;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;

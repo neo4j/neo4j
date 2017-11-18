@@ -50,7 +50,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static java.util.Collections.emptySet;

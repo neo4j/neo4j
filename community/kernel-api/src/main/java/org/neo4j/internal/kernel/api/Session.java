@@ -19,12 +19,27 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+
 /**
  * A Session is used to gain
  */
 public interface Session extends AutoCloseable
 {
-    Transaction beginTransaction();
+    /**
+     * Begin new explicit transaction.
+     *
+     * @return The new transaction
+     */
+    Transaction beginTransaction() throws KernelException;
+
+    /**
+     * Begin new transaction.
+     *
+     * @param type The type of transaction
+     * @return The new transaction
+     */
+    Transaction beginTransaction( Transaction.Type type ) throws KernelException;
 
     Token token();
 

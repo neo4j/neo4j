@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -55,7 +56,8 @@ class ReadTestSupport implements KernelAPIReadTestSupport
     @Override
     public Kernel kernelToTest()
     {
-        return new TempKernel( (GraphDatabaseAPI) db );
+        DependencyResolver resolver = ((GraphDatabaseAPI) this.db).getDependencyResolver();
+        return resolver.resolveDependency( Kernel.class );
     }
 
     @Override

@@ -25,7 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExplicitIndexRead;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
@@ -44,7 +53,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -300,7 +309,7 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
     }
 
-    private class StubKernel implements KernelAPI
+    private class StubKernel implements InwardKernel
     {
         private final List<KernelStatement> statements = new ArrayList<>();
 
@@ -324,12 +333,6 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public void unregisterTransactionHook( TransactionHook hook )
-        {
-            throw new UnsupportedOperationException( "Please implement" );
-        }
-
-        @Override
         public void registerProcedure( CallableProcedure procedure )
         {
             throw new UnsupportedOperationException();
@@ -344,6 +347,18 @@ public class ConstraintIndexCreatorTest
         @Override
         public void registerUserAggregationFunction( CallableUserAggregationFunction function )
                 throws ProcedureException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CursorFactory cursors()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Session beginSession( SecurityContext securityContext )
         {
             throw new UnsupportedOperationException();
         }
@@ -369,6 +384,48 @@ public class ConstraintIndexCreatorTest
             @Override
             public void failure()
             {
+            }
+
+            @Override
+            public Read dataRead()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public Write dataWrite()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public ExplicitIndexRead indexRead()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public ExplicitIndexWrite indexWrite()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public SchemaRead schemaRead()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public SchemaWrite schemaWrite()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public Locks locks()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
             }
 
             @Override

@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
@@ -68,7 +68,8 @@ public interface TransactionalContext
 
     /**
      * Check that current context satisfy current execution guard.
-     * In case if guard criteria is not satisfied {@link org.neo4j.kernel.guard.GuardException} will be thrown.
+     * In case if guard criteria is not satisfied {@link org.neo4j.graphdb.TransactionGuardException} will be
+     * thrown.
      */
     void check();
 

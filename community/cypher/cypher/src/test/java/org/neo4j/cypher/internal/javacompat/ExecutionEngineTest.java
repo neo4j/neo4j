@@ -29,9 +29,8 @@ import java.util.Map;
 import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -58,12 +57,11 @@ public class ExecutionEngineTest
     public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
     {
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
-        KernelAPI kernelAPI = graph.getDependencyResolver().resolveDependency( KernelAPI.class );
         Monitors monitors = graph.getDependencyResolver().resolveDependency( Monitors.class );
 
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         CommunityCompatibilityFactory compatibilityFactory =
-                new CommunityCompatibilityFactory( graph, kernelAPI, monitors, nullLogProvider );
+                new CommunityCompatibilityFactory( graph, monitors, nullLogProvider );
         ExecutionEngine executionEngine = new ExecutionEngine( graph, nullLogProvider, compatibilityFactory );
 
         Result result;

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
 import org.neo4j.cypher.internal.EnterpriseCompatibilityFactory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -54,14 +53,13 @@ public class EnterpriseCypherEngineProvider extends QueryEngineProvider
 
         DependencyResolver resolver = graphAPI.getDependencyResolver();
         LogService logService = resolver.resolveDependency( LogService.class );
-        KernelAPI kernelAPI = resolver.resolveDependency( KernelAPI.class );
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = logService.getInternalLogProvider();
         CommunityCompatibilityFactory inner =
-                new CommunityCompatibilityFactory( queryService, kernelAPI, monitors, logProvider );
+                new CommunityCompatibilityFactory( queryService, monitors, logProvider );
 
         EnterpriseCompatibilityFactory compatibilityFactory =
-                new EnterpriseCompatibilityFactory( inner, queryService, kernelAPI, monitors, logProvider );
+                new EnterpriseCompatibilityFactory( inner, queryService, monitors, logProvider );
         deps.satisfyDependency( compatibilityFactory );
         return new ExecutionEngine( queryService, logProvider, compatibilityFactory );
     }

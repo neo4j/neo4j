@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 

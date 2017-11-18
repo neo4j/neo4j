@@ -23,8 +23,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.KernelTransaction.Type;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.Transaction.Type;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;

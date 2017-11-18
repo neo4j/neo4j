@@ -28,14 +28,13 @@ import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{ParallelDispatch
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.LogProvider
 import org.neo4j.scheduler.JobScheduler
 
 class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDatabaseQueryService,
-                                     kernelAPI: KernelAPI, kernelMonitors: KernelMonitors,
+                                     kernelMonitors: KernelMonitors,
                                      logProvider: LogProvider) extends CompatibilityFactory {
   override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility =
     inner.create(spec, config)
@@ -60,7 +59,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
 
             new ParallelDispatcher(morselSize, numberOfThreads, executorService)
           }
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog(getClass),
+        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, logProvider.getLog(getClass),
                           spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
                           EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher))
     }

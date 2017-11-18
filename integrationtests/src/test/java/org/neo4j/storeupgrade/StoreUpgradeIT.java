@@ -50,7 +50,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -422,7 +422,7 @@ public class StoreUpgradeIT
 
     private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
-        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {

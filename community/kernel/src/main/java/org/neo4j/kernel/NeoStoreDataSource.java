@@ -39,7 +39,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -676,7 +676,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
          * from within an existing transaction. It smells, and we should look over alternatives when time permits.
          */
-        Supplier<KernelAPI> kernelProvider = () -> kernelModule.kernelAPI();
+        Supplier<InwardKernel> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
                 propertyAccessor );
@@ -698,7 +698,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         buildTransactionMonitor( kernelTransactions, clock, config );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
-                config );
+                config, storageEngine );
 
         kernel.registerTransactionHook( transactionEventHandlers );
 
@@ -787,7 +787,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return readOnly;
     }
 
-    public KernelAPI getKernel()
+    public InwardKernel getKernel()
     {
         return kernelModule.kernelAPI();
     }

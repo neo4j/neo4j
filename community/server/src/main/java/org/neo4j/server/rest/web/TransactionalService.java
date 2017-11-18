@@ -38,7 +38,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.logging.Log;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;

@@ -29,6 +29,11 @@ import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.logging.Log;
+import org.neo4j.procedure.ProcedureTransaction;
+import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
 import org.neo4j.tooling.procedure.visitors.examples.FinalContextMisuse;
@@ -42,6 +47,14 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class ContextFieldVisitorTest
 {
+    private static final org.assertj.core.groups.Tuple UNKNOWN_CONTEXT_ERROR_MSG = tuple( Diagnostic.Kind.ERROR,
+            "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
+            "UnknownContextType#unsupportedType, expected one of: <" +
+                    GraphDatabaseService.class.getName() + ">, <" +
+                    Log.class.getName() + ">, <" +
+                    TerminationGuard.class.getName() + ">, <" +
+                    SecurityContext.class.getName() + ">, <" +
+                    ProcedureTransaction.class.getName() + ">" );
 
     @Rule
     public CompilationRule compilationRule = new CompilationRule();
@@ -133,11 +146,7 @@ public class ContextFieldVisitorTest
         Stream<CompilationMessage> result = fields.flatMap( contextFieldVisitor::visit );
 
         assertThat( result ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
-                .containsExactly( tuple( Diagnostic.Kind.ERROR,
-                        "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
-                        "UnknownContextType#unsupportedType, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, " +
-                        "<org.neo4j.logging.Log>, <org.neo4j.procedure.TerminationGuard>, " +
-                        "<org.neo4j.kernel.api.security.SecurityContext>, <org.neo4j.procedure.ProcedureTransaction>" ) );
+                .containsExactly( UNKNOWN_CONTEXT_ERROR_MSG );
     }
 
     @Test
@@ -150,11 +159,7 @@ public class ContextFieldVisitorTest
         Stream<CompilationMessage> result = fields.flatMap( contextFieldVisitor::visit );
 
         assertThat( result ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
-                .containsExactly( tuple( Diagnostic.Kind.ERROR,
-                        "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
-                        "UnknownContextType#unsupportedType, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, " +
-                        "<org.neo4j.logging.Log>, <org.neo4j.procedure.TerminationGuard>, " +
-                        "<org.neo4j.kernel.api.security.SecurityContext>, <org.neo4j.procedure.ProcedureTransaction>" ) );
+                .containsExactly( UNKNOWN_CONTEXT_ERROR_MSG );
     }
 
     private String warning( String fieldType, String fieldName )

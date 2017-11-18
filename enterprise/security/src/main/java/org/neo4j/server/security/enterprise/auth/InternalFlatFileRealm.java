@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.Credential;

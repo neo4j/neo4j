@@ -39,7 +39,7 @@ import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

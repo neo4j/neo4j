@@ -36,10 +36,10 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     public void shouldCreateNode() throws Exception
     {
         long node;
-        Transaction tx = session.beginTransaction();
+        try ( Transaction tx = session.beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.commit();
+            tx.success();
         }
 
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
@@ -52,10 +52,10 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     public void shouldRollbackOnFailure() throws Exception
     {
         long node;
-        Transaction tx = session.beginTransaction();
+        try ( Transaction tx = session.beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.rollback();
+            tx.failure();
         }
 
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
@@ -75,12 +75,12 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node;
         int labelId;
         final String labelName = "Town";
-        Transaction tx = session.beginTransaction();
+        try ( Transaction tx = session.beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
             labelId = session.token().labelGetOrCreateForName( labelName );
             tx.dataWrite().nodeAddLabel( node, labelId );
-            tx.commit();
+            tx.success();
         }
 
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
@@ -104,11 +104,11 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             tx.success();
         }
 
-        Transaction tx = session.beginTransaction();
+        try ( Transaction tx = session.beginTransaction() )
         {
             labelId = session.token().labelGetOrCreateForName( labelName );
             tx.dataWrite().nodeRemoveLabel( nodeId, labelId );
-            tx.commit();
+            tx.success();
         }
 
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )

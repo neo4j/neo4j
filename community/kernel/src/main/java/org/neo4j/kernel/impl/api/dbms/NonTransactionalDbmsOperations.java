@@ -25,8 +25,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.Procedures;
 
 public class NonTransactionalDbmsOperations implements DbmsOperations

@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -32,10 +32,10 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 /**
  * Adds change listener features to a {@link NeoStoreDataSource}.
  * <p/>
- * TODO This being a {@link KernelAPI} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
- * where {@link NeoStoreDataSource} and {@link KernelAPI} are needed before they exist.
+ * TODO This being a {@link InwardKernel} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
+ * where {@link NeoStoreDataSource} and {@link InwardKernel} are needed before they exist.
  */
-public class DataSourceManager implements Lifecycle, Supplier<KernelAPI>
+public class DataSourceManager implements Lifecycle, Supplier<InwardKernel>
 {
     public interface Listener
     {
@@ -128,7 +128,7 @@ public class DataSourceManager implements Lifecycle, Supplier<KernelAPI>
     }
 
     @Override
-    public KernelAPI get()
+    public InwardKernel get()
     {
         return dataSource.getKernel();
     }

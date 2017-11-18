@@ -25,6 +25,11 @@ import org.junit.Test;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.logging.Log;
+import org.neo4j.procedure.ProcedureTransaction;
+import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
 
 import static com.google.common.truth.Truth.assert_;
@@ -98,9 +103,12 @@ public abstract class ExtensionTestBase
         assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
                 .withErrorContaining(
                         "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
-                                "BadContextUnsupportedTypeError#foo, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, " +
-                                "<org.neo4j.logging.Log>, <org.neo4j.procedure.TerminationGuard>, " +
-                                "<org.neo4j.kernel.api.security.SecurityContext>, <org.neo4j.procedure.ProcedureTransaction>" )
+                                "BadContextUnsupportedTypeError#foo, expected one of: <" +
+                                GraphDatabaseService.class.getName() + ">, <" +
+                                Log.class.getName() + ">, <" +
+                                TerminationGuard.class.getName() + ">, <" +
+                                SecurityContext.class.getName() + ">, <" +
+                                ProcedureTransaction.class.getName() + ">" )
                 .in( sproc ).onLine( 33 );
     }
 }

@@ -24,7 +24,7 @@ import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.support.DelegatingSubject;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 
 public class ShiroSubject extends DelegatingSubject
 {

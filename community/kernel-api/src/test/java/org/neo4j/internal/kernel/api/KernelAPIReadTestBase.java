@@ -27,6 +27,8 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /**
  * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
@@ -66,7 +68,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     abstract void createTestGraph( GraphDatabaseService graphDb );
 
     @Before
-    public void setupGraph() throws IOException
+    public void setupGraph() throws IOException, KernelException
     {
         if ( testSupport == null )
         {
@@ -75,9 +77,9 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
             testSupport.setup( folder.getRoot(), this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
-        session = kernel.beginSession( PermissionsFixture.allPermissions() );
+        session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
         cursors = kernel.cursors();
-        tx = session.beginTransaction();
+        tx = session.beginTransaction( Transaction.Type.explicit );
         token = session.token();
         read = tx.dataRead();
         indexRead = tx.indexRead();
@@ -87,7 +89,8 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     @After
     public void closeTransaction() throws Exception
     {
-        tx.commit();
+        tx.success();
+        tx.close();
         session.close();
     }
 

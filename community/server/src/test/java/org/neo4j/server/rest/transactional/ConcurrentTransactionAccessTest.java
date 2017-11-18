@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.web.TransactionUriScheme;

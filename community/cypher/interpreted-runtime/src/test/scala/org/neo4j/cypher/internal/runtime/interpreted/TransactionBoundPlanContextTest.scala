@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
-import org.neo4j.kernel.api.KernelTransaction.Type._
-import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.internal.kernel.api.Transaction.Type._
+import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo

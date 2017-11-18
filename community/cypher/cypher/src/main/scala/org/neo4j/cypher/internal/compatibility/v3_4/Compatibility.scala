@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 
 import java.time.Clock
 
-import org.neo4j.cypher.{CypherExecutionMode, exceptionHandler}
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
@@ -40,12 +38,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
-import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
+import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
+import org.neo4j.cypher.{CypherExecutionMode, exceptionHandler}
 import org.neo4j.graphdb.Result
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -59,7 +58,6 @@ import scala.util.Try
 trait Compatibility[CONTEXT <: CommunityRuntimeContext,
                     T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]] {
   val kernelMonitors: KernelMonitors
-  val kernelAPI: KernelAPI
   val clock: Clock
   val monitors: Monitors
   val config: CypherCompilerConfiguration

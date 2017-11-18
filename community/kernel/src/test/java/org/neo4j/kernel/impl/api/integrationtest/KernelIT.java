@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -67,8 +67,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class KernelIT extends KernelIntegrationTest

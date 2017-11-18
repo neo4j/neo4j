@@ -59,7 +59,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       nonIndexedLabelWarningThreshold = 10000L
     )
     CostCompatibility(config, clock, kernelMonitors,
-                      kernelAPI, log, CypherPlanner.default, CypherRuntime.default,
+                      log, CypherPlanner.default, CypherRuntime.default,
                       CypherUpdateStrategy.default, CommunityRuntimeBuilder, CommunityRuntimeContextCreator)
   }
 

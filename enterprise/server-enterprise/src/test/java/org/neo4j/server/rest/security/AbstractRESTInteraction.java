@@ -40,7 +40,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;

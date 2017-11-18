@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultLabelIdCreator( Supplier<KernelAPI> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+    public DefaultLabelIdCreator( Supplier<InwardKernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
         super( kernelSupplier, idGeneratorFactory );
     }

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class TerminationGuardTest extends KernelTransactionTestBase
 {

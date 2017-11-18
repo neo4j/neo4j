@@ -373,9 +373,9 @@ abstract class Read implements
 
     abstract LabelScanReader labelScanReader();
 
-    abstract ExplicitIndex explicitNodeIndex( String indexName );
+    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws KernelException;
 
-    abstract ExplicitIndex explicitRelationshipIndex( String indexName );
+    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws KernelException;
 
     @Override
     public abstract CapableIndexReference index( int label, int... properties );

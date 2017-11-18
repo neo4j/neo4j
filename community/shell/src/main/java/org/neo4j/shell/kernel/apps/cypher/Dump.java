@@ -35,8 +35,8 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 @Service.Implementation( App.class )
 public class Dump extends Start

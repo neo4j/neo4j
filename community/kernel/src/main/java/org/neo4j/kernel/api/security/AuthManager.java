@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.security;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 

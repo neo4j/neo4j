@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read
@@ -35,7 +36,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
  * inside the transaction are visible in read operations for {@link Statement statements}
  * executed within that transaction context.
  */
-public interface KernelAPI
+public interface InwardKernel extends Kernel
 {
     /**
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
@@ -63,13 +64,6 @@ public interface KernelAPI
      * @param hook {@link TransactionHook} for receiving notifications about transactions to commit.
      */
     void registerTransactionHook( TransactionHook hook );
-
-    /**
-     * Unregisters an already registered {@link TransactionHook} so that it will no longer receive notifications
-     * about transactions.
-     * @param hook {@link TransactionHook} to unregister.
-     */
-    void unregisterTransactionHook( TransactionHook hook );
 
     /**
      * Register a procedure that should be available from this kernel. This is not a transactional method, the procedure is not

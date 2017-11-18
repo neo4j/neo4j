@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 
 /**
  * Access mode that overrides the original access mode with the overriding mode. Allows exactly what the overriding
@@ -58,7 +57,7 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException
+    public boolean allowsProcedureWith( String[] allowed )
     {
         return false;
     }

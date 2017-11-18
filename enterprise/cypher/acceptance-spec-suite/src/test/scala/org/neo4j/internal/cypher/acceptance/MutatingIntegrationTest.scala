@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.graphdb._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
@@ -343,7 +343,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("failure_only_fails_inner_transaction") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = graph.beginTransaction( Type.explicit, AnonymousContext.write() )
     try {
       executeWith(createConf, "match (a) where id(a) = {id} set a.foo = 'bar' return a", params = Map("id"->"0"))
     } catch {

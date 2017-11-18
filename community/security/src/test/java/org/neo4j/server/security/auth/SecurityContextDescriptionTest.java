@@ -23,8 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;

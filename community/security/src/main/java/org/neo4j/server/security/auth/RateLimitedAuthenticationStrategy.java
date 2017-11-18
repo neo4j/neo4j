@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.security.User;
 
 public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy

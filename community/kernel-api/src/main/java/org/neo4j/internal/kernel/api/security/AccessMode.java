@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.security;
+package org.neo4j.internal.kernel.api.security;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /** Controls the capabilities of a KernelTransaction. */
@@ -126,9 +125,8 @@ public interface AccessMode
      * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
      * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
      * encoding permission
-     * @throws InvalidArgumentsException
      */
-    boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException;
+    boolean allowsProcedureWith( String[] allowed );
 
     AuthorizationViolationException onViolation( String msg );
     String name();

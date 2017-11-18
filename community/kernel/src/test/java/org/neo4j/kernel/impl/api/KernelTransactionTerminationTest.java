@@ -59,7 +59,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelTransactionTerminationTest
 {

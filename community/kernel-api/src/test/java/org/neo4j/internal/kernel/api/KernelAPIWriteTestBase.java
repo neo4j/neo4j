@@ -27,6 +27,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /**
  * KernelAPIWriteTestBase is the basis of write tests targeting the Kernel API.
@@ -65,7 +66,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         }
         testSupport.clearGraph();
         Kernel kernel = testSupport.kernelToTest();
-        session = kernel.beginSession( PermissionsFixture.allPermissions() );
+        session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
         cursors = kernel.cursors();
     }
 

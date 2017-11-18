@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.SlaveLabelTokenCreator;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -34,12 +34,12 @@ public class LabelTokenCreatorSwitcher extends AbstractComponentSwitcher<TokenCr
 {
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
-    private final Supplier<KernelAPI> kernelSupplier;
+    private final Supplier<InwardKernel> kernelSupplier;
     private final IdGeneratorFactory idGeneratorFactory;
 
     public LabelTokenCreatorSwitcher( DelegateInvocationHandler<TokenCreator> delegate,
             DelegateInvocationHandler<Master> master, RequestContextFactory requestContextFactory,
-            Supplier<KernelAPI> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+            Supplier<InwardKernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
         super( delegate );
         this.master = master;

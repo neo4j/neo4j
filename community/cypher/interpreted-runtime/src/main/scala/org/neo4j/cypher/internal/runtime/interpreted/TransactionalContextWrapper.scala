@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.planner.v3_4.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer}
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.query.PlannerInfo
-import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.factory.DatabaseInfo

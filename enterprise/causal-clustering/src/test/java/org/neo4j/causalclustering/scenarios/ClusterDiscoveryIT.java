@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KernelTransaction.Type;
+import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -123,7 +123,7 @@ public class ClusterDiscoveryIT
     private List<Map<String,Object>> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException, org
             .neo4j.kernel.api.exceptions.ProcedureException
     {
-        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
         try ( Statement statement = transaction.acquireStatement() )
         {

@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
 {
