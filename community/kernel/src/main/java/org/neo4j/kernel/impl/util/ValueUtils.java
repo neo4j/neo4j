@@ -34,11 +34,11 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
@@ -51,7 +51,6 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.stream.StreamSupport.stream;
 import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
 public final class ValueUtils
@@ -70,11 +69,12 @@ public final class ValueUtils
     @SuppressWarnings( "unchecked" )
     public static AnyValue of( Object object )
     {
-        try
+        Value value = Values.unsafeOf( object, true );
+        if ( value != null )
         {
-            return Values.of( object );
+            return value;
         }
-        catch ( IllegalArgumentException e )
+        else
         {
             if ( object instanceof Node )
             {
@@ -91,6 +91,10 @@ public final class ValueUtils
             else if ( object instanceof Map<?,?> )
             {
                 return asMapValue( (Map<String,Object>) object );
+            }
+            else if ( object instanceof List<?> )
+            {
+                return asListValue( (List<?>) object );
             }
             else if ( object instanceof Iterable<?> )
             {
@@ -166,11 +170,24 @@ public final class ValueUtils
         }
     }
 
+    public static ListValue asListValue( List<?> collection )
+    {
+        ArrayList<AnyValue> values = new ArrayList<>(collection.size());
+        for ( Object o : collection )
+        {
+            values.add( of( o ) );
+        }
+        return VirtualValues.fromList( values );
+    }
+
     public static ListValue asListValue( Iterable<?> collection )
     {
-        AnyValue[] anyValues =
-                Iterables.stream( collection ).map( ValueUtils::of ).toArray( AnyValue[]::new );
-        return list( anyValues );
+        ArrayList<AnyValue> values = new ArrayList<>();
+        for ( Object o : collection )
+        {
+            values.add( of( o ) );
+        }
+        return VirtualValues.fromList( values );
     }
 
     public static AnyValue asNodeOrEdgeValue( PropertyContainer container )
@@ -297,6 +314,7 @@ public final class ValueUtils
     public static final class JavaObjectAnyValue extends AnyValue
     {
         private final Object object;
+
         //The object is null checked before calling constructor
         private JavaObjectAnyValue( Object object )
         {
