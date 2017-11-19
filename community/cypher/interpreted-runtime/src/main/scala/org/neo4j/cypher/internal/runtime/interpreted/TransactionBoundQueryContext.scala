@@ -341,7 +341,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) =>
-      if (writes().nodeRemoveLabel(node, labelId)) count + 1 else count
+      if (transactionalContext.statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
