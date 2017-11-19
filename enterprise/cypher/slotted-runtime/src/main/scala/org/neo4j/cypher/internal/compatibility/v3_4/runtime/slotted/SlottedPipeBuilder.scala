@@ -348,9 +348,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case ValueHashJoin(lhsPlan, _, Equals(lhsAstExp, rhsAstExp)) =>
         val lhsCmdExp = expressionConverters.toCommandExpression(lhsAstExp)
         val rhsCmdExp = expressionConverters.toCommandExpression(rhsAstExp)
-        val lhsSlotInfo = slotConfigurations(lhsPlan.assignedId)
-        val longOffset = lhsSlotInfo.numberOfLongs
-        val refOffset = lhsSlotInfo.numberOfReferences
+        val lhsSlots = slotConfigs(lhsPlan.assignedId)
+        val longOffset = lhsSlots.numberOfLongs
+        val refOffset = lhsSlots.numberOfReferences
         ValueHashJoinSlottedPipe(lhsCmdExp, rhsCmdExp, lhs, rhs, slots, longOffset, refOffset)(id)
 
       case ConditionalApply(_, _, items) =>

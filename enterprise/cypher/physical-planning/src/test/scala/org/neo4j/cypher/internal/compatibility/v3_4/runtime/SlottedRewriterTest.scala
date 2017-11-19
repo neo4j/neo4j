@@ -33,9 +33,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, ProduceResult
 class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
-  private def nodeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTNode)
-  private def edgeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTRelationship)
-
   test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n") {
     val allNodes = AllNodesScan(IdName("x"), Set.empty)(solved)
     val predicate = GreaterThan(prop("x", "prop"), literalInt(42))(pos)
@@ -43,7 +40,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val slots = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
+    val slots = SlotConfiguration.empty.
+      newLong("x", nullable = false, CTNode)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       allNodes.assignedId -> slots,
       selection.assignedId -> slots,
@@ -72,13 +70,12 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val slots = SlotConfiguration(Map(
-      "a" -> nodeAt(0, "a"),
-      "b" -> nodeAt(1, "b"),
-      "r1" -> edgeAt(2, "r1"),
-      "c" -> nodeAt(3, "c"),
-      "r2" -> edgeAt(4, "r2")
-    ), numberOfLongs = 5, numberOfReferences = 0)
+    val slots = SlotConfiguration.empty.
+      newLong("a", nullable = false, CTNode).
+      newLong("b", nullable = false, CTNode).
+      newLong("r1", nullable = false, CTRelationship).
+      newLong("c", nullable = false, CTNode).
+      newLong("r2", nullable = false, CTRelationship)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> slots,
@@ -107,13 +104,12 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val slots = SlotConfiguration(Map(
-      "a" -> nodeAt(0, "a"),
-      "b" -> nodeAt(1, "b"),
-      "r1" -> LongSlot(2, nullable = true, CTRelationship),
-      "c" -> nodeAt(3, "c"),
-      "r2" -> LongSlot(4, nullable = true, CTRelationship)
-    ), numberOfLongs = 5, numberOfReferences = 0)
+    val slots = SlotConfiguration.empty.
+      newLong("a", nullable = false, CTNode).
+      newLong("b", nullable = false, CTNode).
+      newLong("r1", nullable = true, CTNode).
+      newLong("c", nullable = false, CTNode).
+      newLong("r2", nullable = true, CTNode)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> slots,
@@ -147,11 +143,10 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(varFor("r"), varFor("a"))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val slots = SlotConfiguration(Map(
-      "a" -> LongSlot(0, nullable = true, CTNode),
-      "b" -> nodeAt(1, "b"),
-      "r" -> LongSlot(2, nullable = true, CTRelationship)
-    ), numberOfLongs = 3, numberOfReferences = 0)
+    val slots = SlotConfiguration.empty.
+      newLong("a", nullable = true, CTNode).
+      newLong("b", nullable = false, CTNode).
+      newLong("r", nullable = true, CTRelationship)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> slots,
@@ -181,9 +176,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(prop("a", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val slots = SlotConfiguration(Map(
-      "a" -> LongSlot(0, nullable = true, typ = CTNode)
-    ), numberOfLongs = 1, numberOfReferences = 0)
+    val slots = SlotConfiguration.empty.
+      newLong("a", nullable = true, CTNode)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> slots,
@@ -210,7 +204,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val slots = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
+    val slots = SlotConfiguration.empty.
+      newLong("x", nullable = false, CTNode)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       allNodes.assignedId -> slots,
       selection.assignedId -> slots,
@@ -227,7 +222,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   test("reading property key when the token does not exist at compile time") {
-    // match (a)-[r1]->b-[r2]->(c) where not(r1 = r2)
+    // match (a)-[r1]->(b) where r.prop = 42
     // given
     val node1 = IdName("a")
     val node2 = IdName("b")
@@ -236,11 +231,10 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val slots = SlotConfiguration(Map(
-      "a" -> nodeAt(0, "a"),
-      "b" -> nodeAt(1, "b"),
-      "r" -> edgeAt(2, "r")
-    ), numberOfLongs = 3, numberOfReferences = 0)
+    val slots = SlotConfiguration.empty.
+      newLong("a", nullable = false, CTNode).
+      newLong("b", nullable = false, CTNode).
+      newLong("r", nullable = false, CTRelationship)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       argument.assignedId -> slots,
@@ -265,11 +259,9 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(projection, Seq("n.prop"))
     produceResult.assignIds()
     val nodeOffset = 0
-    val propOffset = 0
-    val slots = SlotConfiguration(Map(
-      "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode),
-      "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny)),
-      1, 1)
+    val slots = SlotConfiguration.empty.
+      newLong("n", nullable = false, CTNode).
+      newReference("n.prop", nullable = true, CTAny)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       allNodes.assignedId -> slots,
       projection.assignedId -> slots,
@@ -428,7 +420,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     produceResult.assignIds()
 
     val offset = 0
-    val slots = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = true, typ = CTNode)), 1, 0)
+    val slots = SlotConfiguration.empty.
+      newLong("x", nullable = true, CTNode)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       allNodes.assignedId -> slots,
       selection.assignedId -> slots,
@@ -456,12 +449,9 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     val offsetX = 0
     val offsetZ = 1
-    val slots = SlotConfiguration(
-      slots = Map(
-        "x" -> RefSlot(offsetX, nullable = true, typ = CTAny),
-        "z" -> RefSlot(offsetZ, nullable = true, typ = CTAny)),
-      numberOfLongs = 0,
-      numberOfReferences = 2)
+    val slots = SlotConfiguration.empty.
+      newReference("x", nullable = true, CTAny).
+      newReference("z", nullable = true, CTAny)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
       arg.assignedId -> slots,
       selection.assignedId -> slots,
