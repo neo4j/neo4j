@@ -426,9 +426,8 @@ public final class Values
         {
             return shortArray( copy( value, new short[value.length] ) );
         }
-        throw new IllegalArgumentException(
-                format( "%s[] is not a supported property value type",
-                        value.getClass().getComponentType().getName() ) );
+
+        return null;
     }
 
     private static <T> T copy( Object[] value, T target )
