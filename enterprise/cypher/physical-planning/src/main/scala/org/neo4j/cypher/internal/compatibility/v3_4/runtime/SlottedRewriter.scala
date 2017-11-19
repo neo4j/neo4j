@@ -230,6 +230,11 @@ class SlottedRewriter(tokenContext: TokenContext) {
                                       k1: String,
                                       k2: String,
                                       positiveCheck: Boolean) = {
+    def makeNegativeIfNeeded(e: expressions.Expression) = if (!positiveCheck)
+      Not(e)(e.position)
+    else
+      e
+
     val shortcutWhenDifferentTypes: expressions.Expression = if(positiveCheck) False()(e.position) else True()(e.position)
     val slot1 = slots(k1)
     val slot2 = slots(k2)
@@ -245,10 +250,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
       case (LongSlot(_, false, typ1), LongSlot(_, false, typ2)) if typ1 == typ2 =>
         val eq = PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
-        if(!positiveCheck)
-          Not(eq)(e.position)
-        else
-          eq
+        makeNegativeIfNeeded(eq)
 
       case (LongSlot(_, null1, typ1), LongSlot(_, null2, typ2))
         if (null1 || null2) && (typ1 != typ2) =>
@@ -257,14 +259,10 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case (LongSlot(_, null1, typ1), LongSlot(_, null2, typ2))
         if (null1 || null2) && (typ1 == typ2) =>
         val eq = PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
-        val predicate = if (!positiveCheck)
-          Not(eq)(e.position)
-        else
-          eq
-        makeNullChecksExplicit(slot1, slot2, predicate)
+        makeNullChecksExplicit(slot1, slot2, makeNegativeIfNeeded(eq))
 
       case _ =>
-        e
+        makeNegativeIfNeeded(e)
     }
   }
 

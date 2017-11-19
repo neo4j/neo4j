@@ -43,11 +43,11 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val pipeline = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
+    val slots = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
-      allNodes.assignedId -> pipeline,
-      selection.assignedId -> pipeline,
-      produceResult.assignedId -> pipeline)
+      allNodes.assignedId -> slots,
+      selection.assignedId -> slots,
+      produceResult.assignedId -> slots)
     val tokenContext = mock[TokenContext]
     val tokenId = 666
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(Some(tokenId))
@@ -57,7 +57,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val newPredicate = GreaterThan(NodeProperty(offset, tokenId, "x.prop"), literalInt(42))(pos)
 
     result should equal(ProduceResult(Selection(Seq(newPredicate), allNodes)(solved), Seq("x")))
-    lookup(result.assignedId) should equal(pipeline)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("comparing two relationship ids simpler") {
@@ -72,7 +72,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = SlotConfiguration(Map(
+    val slots = SlotConfiguration(Map(
       "a" -> nodeAt(0, "a"),
       "b" -> nodeAt(1, "b"),
       "r1" -> edgeAt(2, "r1"),
@@ -81,8 +81,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     ), numberOfLongs = 5, numberOfReferences = 0)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
-      argument.assignedId -> pipelineInformation,
-      selection.assignedId -> pipelineInformation
+      argument.assignedId -> slots,
+      selection.assignedId -> slots
     )
     val tokenContext = mock[TokenContext]
     val rewriter = new SlottedRewriter(tokenContext)
@@ -92,7 +92,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     // then
     result should equal(Selection(Seq(Not(PrimitiveEquals(IdFromSlot(2), IdFromSlot(4)))(pos)), argument)(solved))
-    lookup(result.assignedId) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("comparing two relationship ids simpler when they are null") {
@@ -107,7 +107,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = PipelineInformation(Map(
+    val slots = SlotConfiguration(Map(
       "a" -> nodeAt(0, "a"),
       "b" -> nodeAt(1, "b"),
       "r1" -> LongSlot(2, nullable = true, CTRelationship),
@@ -115,9 +115,9 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
       "r2" -> LongSlot(4, nullable = true, CTRelationship)
     ), numberOfLongs = 5, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
-      argument.assignedId -> pipelineInformation,
-      selection.assignedId -> pipelineInformation
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
+      argument.assignedId -> slots,
+      selection.assignedId -> slots
     )
     val tokenContext = mock[TokenContext]
     val rewriter = new SlottedRewriter(tokenContext)
@@ -134,7 +134,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
               IdFromSlot(2),
               IdFromSlot(4)))(pos)))
     result should equal(Selection(Seq(rewrittenPredicate), argument)(solved))
-    lookup(result.assignedId) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("comparing different types must check nulls before returning shortcut") {
@@ -147,15 +147,15 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(varFor("r"), varFor("a"))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = PipelineInformation(Map(
+    val slots = SlotConfiguration(Map(
       "a" -> LongSlot(0, nullable = true, CTNode),
       "b" -> nodeAt(1, "b"),
       "r" -> LongSlot(2, nullable = true, CTRelationship)
     ), numberOfLongs = 3, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
-      argument.assignedId -> pipelineInformation,
-      selection.assignedId -> pipelineInformation
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
+      argument.assignedId -> slots,
+      selection.assignedId -> slots
     )
     val tokenContext = mock[TokenContext]
     val rewriter = new SlottedRewriter(tokenContext)
@@ -170,7 +170,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
           False()(pos)))
 
     result should equal(Selection(Seq(rewrittenPredicate), argument)(solved))
-    lookup(result.assignedId) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("return nullable node") {
@@ -181,13 +181,13 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(prop("a", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = SlotConfiguration(Map(
+    val slots = SlotConfiguration(Map(
       "a" -> LongSlot(0, nullable = true, typ = CTNode)
     ), numberOfLongs = 1, numberOfReferences = 0)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
-      argument.assignedId -> pipelineInformation,
-      selection.assignedId -> pipelineInformation
+      argument.assignedId -> slots,
+      selection.assignedId -> slots
     )
     val tokenContext = mock[TokenContext]
     val tokenId = 666
@@ -200,7 +200,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     // then
     val expectedPredicate = Equals(NullCheck(0, NodeProperty(0, 666, "a.prop")), literalInt(42))(pos)
     result should equal(Selection(Seq(expectedPredicate), argument)(solved))
-    lookup(result.assignedId) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n when token is unknown") {
@@ -210,11 +210,11 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val produceResult = ProduceResult(selection, Seq("x"))
     produceResult.assignIds()
     val offset = 0
-    val pipeline = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
+    val slots = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode)), 1, 0)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
-      allNodes.assignedId -> pipeline,
-      selection.assignedId -> pipeline,
-      produceResult.assignedId -> pipeline)
+      allNodes.assignedId -> slots,
+      selection.assignedId -> slots,
+      produceResult.assignedId -> slots)
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottedRewriter(tokenContext)
@@ -223,7 +223,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val newPredicate = GreaterThan(NodePropertyLate(offset, "prop", "x.prop"), literalInt(42))(pos)
 
     result should equal(ProduceResult(Selection(Seq(newPredicate), allNodes)(solved), Seq("x")))
-    lookup(result.assignedId) should equal(pipeline)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("reading property key when the token does not exist at compile time") {
@@ -236,15 +236,15 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
-    val pipelineInformation = SlotConfiguration(Map(
+    val slots = SlotConfiguration(Map(
       "a" -> nodeAt(0, "a"),
       "b" -> nodeAt(1, "b"),
       "r" -> edgeAt(2, "r")
     ), numberOfLongs = 3, numberOfReferences = 0)
 
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
-      argument.assignedId -> pipelineInformation,
-      selection.assignedId -> pipelineInformation
+      argument.assignedId -> slots,
+      selection.assignedId -> slots
     )
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
@@ -254,7 +254,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val result = rewriter(selection, lookup)
 
     result should equal(Selection(Seq(Equals(RelationshipPropertyLate(2, "prop", "r.prop"), literalInt(42))(pos)), argument)(solved))
-    lookup(result.assignedId) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("projection with map lookup MATCH (n) RETURN n.prop") {
@@ -266,14 +266,14 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     produceResult.assignIds()
     val nodeOffset = 0
     val propOffset = 0
-    val pipeline = SlotConfiguration(Map(
+    val slots = SlotConfiguration(Map(
       "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode),
       "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny)),
       1, 1)
     val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
-      allNodes.assignedId -> pipeline,
-      projection.assignedId -> pipeline,
-      produceResult.assignedId -> pipeline)
+      allNodes.assignedId -> slots,
+      projection.assignedId -> slots,
+      produceResult.assignedId -> slots)
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottedRewriter(tokenContext)
@@ -285,7 +285,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val newProjection = Projection(allNodes, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop", "n.prop")))(solved)
     result should equal(
       ProduceResult(newProjection, Seq("n.prop")))
-    lookup(result.assignedId) should equal(pipeline)
+    lookup(result.assignedId) should equal(slots)
   }
 
   test("rewriting variable should always work, even if Variable is not part of a bigger tree") {
@@ -296,19 +296,19 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
-    val pipeline = SlotConfiguration.empty.
+    val slots = SlotConfiguration.empty.
       newLong("x", nullable = false, CTNode).
       newReference("x.propertyKey", nullable = true, CTAny)
 
     // when
     val rewriter = new SlottedRewriter(tokenContext)
-    val resultPlan = rewriter(projection, Map(leaf.assignedId -> pipeline, projection.assignedId -> pipeline))
+    val resultPlan = rewriter(projection, Map(leaf.assignedId -> slots, projection.assignedId -> slots))
 
     // then
     resultPlan should equal(
       Projection(leaf, Map(
         "x" -> NodeFromSlot(0, "x"),
-        "x.propertyKey" -> NodeProperty(pipeline.getLongOffsetFor("x"), tokenId, "x.propertyKey")
+        "x.propertyKey" -> NodeProperty(slots.getLongOffsetFor("x"), tokenId, "x.propertyKey")
       ))(solved)
     )
   }
@@ -321,16 +321,16 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
-    val pipeline = SlotConfiguration.empty.
+    val slots = SlotConfiguration.empty.
       newLong("x", nullable = true, CTNode).
       newReference("x.propertyKey", nullable = true, CTAny)
 
     // when
     val rewriter = new SlottedRewriter(tokenContext)
-    val resultPlan = rewriter(projection, Map(leaf.assignedId -> pipeline, projection.assignedId -> pipeline))
+    val resultPlan = rewriter(projection, Map(leaf.assignedId -> slots, projection.assignedId -> slots))
 
     // then
-    val nodeOffset = pipeline.getLongOffsetFor("x")
+    val nodeOffset = slots.getLongOffsetFor("x")
     resultPlan should equal(
       Projection(leaf, Map(
         "x" -> NullCheck(0, NodeFromSlot(0, "x")),
@@ -375,7 +375,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     lookup(sr2.assignedId) should equal(rhsPipeline)
   }
 
-  test("ValueHashJoin needs to execute expressions with two different pipelines") {
+  test("ValueHashJoin needs to execute expressions with two different slotss") {
     // MATCH (a:labelA), (b:labelB) WHERE a.prop = b.prop
     val leafA = NodeByLabelScan(IdName("a"), LabelName("labelA")(pos), Set.empty)(solved)
     val leafB = NodeByLabelScan(IdName("b"), LabelName("labelB")(pos), Set.empty)(solved)
@@ -386,13 +386,13 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     join.assignIds()
 
-    val lhsPipeline = PipelineInformation.empty.
+    val lhsPipeline = SlotConfiguration.empty.
       newLong("a", nullable = false, CTNode)
 
-    val rhsPipeline = PipelineInformation.empty.
+    val rhsPipeline = SlotConfiguration.empty.
       newLong("b", nullable = false, CTNode)
 
-    val joinPipeline = PipelineInformation.empty.
+    val joinPipeline = SlotConfiguration.empty.
       newLong("a", nullable = false, CTNode).
       newLong("b", nullable = false, CTNode)
 
@@ -428,11 +428,11 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     produceResult.assignIds()
 
     val offset = 0
-    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = true, typ = CTNode)), 1, 0)
-    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
-      allNodes.assignedId -> pipeline,
-      selection.assignedId -> pipeline,
-      produceResult.assignedId -> pipeline)
+    val slots = SlotConfiguration(Map("x" -> LongSlot(offset, nullable = true, typ = CTNode)), 1, 0)
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
+      allNodes.assignedId -> slots,
+      selection.assignedId -> slots,
+      produceResult.assignedId -> slots)
     val tokenContext = mock[TokenContext]
     val rewriter = new SlottedRewriter(tokenContext)
 
@@ -442,7 +442,41 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     // then
     val newPredicate = IsPrimitiveNull(offset)
     result should equal(ProduceResult(Selection(Seq(newPredicate), allNodes)(solved), Seq("x")))
-    lookup(result.assignedId) should equal(pipeline)
+    lookup(result.assignedId) should equal(slots)
+  }
+
+  test("selection between two references") {
+    // given
+    val arg = Argument(Set(IdName("x"), IdName("z")))(solved)()
+    val predicate1 = Equals(varFor("x"), varFor("z"))(pos)
+    val predicate2 = Not(Equals(varFor("x"), varFor("z"))(pos))(pos)
+    val selection = Selection(Seq(predicate1, predicate2), arg)(solved)
+    val produceResult = ProduceResult(selection, Seq("x", "z"))
+    produceResult.assignIds()
+
+    val offsetX = 0
+    val offsetZ = 1
+    val slots = SlotConfiguration(
+      slots = Map(
+        "x" -> RefSlot(offsetX, nullable = true, typ = CTAny),
+        "z" -> RefSlot(offsetZ, nullable = true, typ = CTAny)),
+      numberOfLongs = 0,
+      numberOfReferences = 2)
+    val lookup: Map[LogicalPlanId, SlotConfiguration] = Map(
+      arg.assignedId -> slots,
+      selection.assignedId -> slots,
+      produceResult.assignedId -> slots)
+    val tokenContext = mock[TokenContext]
+    val rewriter = new SlottedRewriter(tokenContext)
+
+    // when
+    val result = rewriter(produceResult, lookup)
+
+    // then
+    val newPred1 = Equals(ReferenceFromSlot(offsetX), ReferenceFromSlot(offsetZ))(pos)
+    val newPred2 = Not(Equals(ReferenceFromSlot(offsetX), ReferenceFromSlot(offsetZ))(pos))(pos)
+    result should equal(ProduceResult(Selection(Seq(newPred1, newPred2), arg)(solved), Seq("x", "z")))
+    lookup(result.assignedId) should equal(slots)
   }
 
 }
