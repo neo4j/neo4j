@@ -472,6 +472,16 @@ public class EncodingIdMapper implements IdMapper
         return true;
     }
 
+    private void unmarkAsCollision( long dataIndex )
+    {
+        long eId = dataCache.get( dataIndex );
+        boolean isMarked = isCollision( eId );
+        if ( isMarked )
+        {
+            dataCache.set( dataIndex, clearCollision( eId ) );
+        }
+    }
+
     private void buildCollisionInfo( LongFunction<Object> inputIdLookup, long pessimisticNumberOfCollisions,
             Collector collector, ProgressListener progress )
             throws InterruptedException
@@ -587,15 +597,13 @@ public class EncodingIdMapper implements IdMapper
             }
 
             // Potential duplicate
-            // We cast the collision index to an int here. This means that we can't support > int-range
-            // number of collisions. But that's probably alright since the data structures and
-            // actual collisions values for all these collisions wouldn't fit in a heap anyway.
             Object inputId = collisionValues.get( offset );
-            int detectorIndex = detector.add( inputId );
-            if ( detectorIndex != -1 )
+            long nonDuplicateNodeId = detector.add( nodeId, inputId );
+            if ( nonDuplicateNodeId != -1 )
             {   // Duplicate
                 collector.collectDuplicateNode( inputId, nodeId, groups.get( groupId ).name() );
                 trackerCache.markAsDuplicate( nodeId );
+                unmarkAsCollision( nonDuplicateNodeId );
             }
 
             previousEid = eid;
@@ -655,24 +663,27 @@ public class EncodingIdMapper implements IdMapper
 
     private static class SameInputIdDetector
     {
+        private long[] nodeIdArray = new long[10]; // grows on demand
         private Object[] inputIdArray = new Object[10]; // grows on demand
         private int cursor;
 
-        int add( Object inputId )
+        long add( long nodeId, Object inputId )
         {
             for ( int i = 0; i < cursor; i++ )
             {
                 if ( inputIdArray[i].equals( inputId ) )
                 {
-                    return i;
+                    return nodeIdArray[i];
                 }
             }
 
             if ( cursor == inputIdArray.length )
             {
                 inputIdArray = Arrays.copyOf( inputIdArray, cursor * 2 );
+                nodeIdArray = Arrays.copyOf( nodeIdArray, cursor * 2 );
             }
             inputIdArray[cursor] = inputId;
+            nodeIdArray[cursor] = nodeId;
             cursor++;
             return -1;
         }
@@ -706,11 +717,12 @@ public class EncodingIdMapper implements IdMapper
                 // of its kind. Not all values that there are duplicates of are considered collisions,
                 // read more in detectAndMarkCollisions(). So regardless we need to check previous/next
                 // if they are the same value.
-                if ( (mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ )) ||
-                     (mid < highestSetIndex && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
+                boolean leftEq = mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ );
+                boolean rightEq = mid < highestSetIndex && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ );
+                if ( leftEq || rightEq )
                 {   // OK so there are actually multiple equal data values here, we need to go through them all
                     // to be sure we find the correct one.
-                    return findFromEIdRange( mid, midValue, inputId, x, groupId );
+                    return findFromEIdRange( leftEq ? mid - 1 : mid, rightEq ? mid + 1 : mid, midValue, inputId, x, groupId );
                 }
                 // This is the only value here, let's do a simple comparison with correct group id and return
                 return groupOf( dataIndex ) == groupId ? dataIndex : ID_NOT_FOUND;
@@ -754,21 +766,19 @@ public class EncodingIdMapper implements IdMapper
         return ID_NOT_FOUND;
     }
 
-    private long findFromEIdRange( long index, long val, Object inputId, long x, int groupId )
+    private long findFromEIdRange( long fromIndex, long toIndex, long val, Object inputId, long x, int groupId )
     {
         val = clearCollision( val );
         assert val == x;
 
-        while ( index > 0 && unsignedCompare( val, dataValue( index - 1 ), CompareType.EQ ) )
+        while ( fromIndex > 0 && unsignedCompare( val, dataValue( fromIndex - 1 ), CompareType.EQ ) )
         {
-            index--;
+            fromIndex--;
         }
-        long fromIndex = index;
-        while ( index < highestSetIndex && unsignedCompare( val, dataValue( index + 1 ), CompareType.EQ ) )
+        while ( toIndex < highestSetIndex && unsignedCompare( val, dataValue( toIndex + 1 ), CompareType.EQ ) )
         {
-            index++;
+            toIndex++;
         }
-        long toIndex = index;
 
         return findFromEIdRange( fromIndex, toIndex, groupId, inputId );
     }
@@ -784,18 +794,21 @@ public class EncodingIdMapper implements IdMapper
             {
                 long eId = dataCache.get( nodeId );
                 if ( isCollision( eId ) )
-                {   // We found a data value for our group, but there are collisions within this group.
-                    // We need to consult the collision cache and original input id
-                    long collisionIndex = findCollisionIndex( nodeId );
-                    long offset = collisionNodeIdCache.get6ByteLong( collisionIndex, 5 );
-                    Object value = collisionValues.get( offset );
-                    if ( inputId.equals( value ) )
-                    {
-                        // :)
-                        lowestFound = lowestFound == ID_NOT_FOUND ? nodeId : min( lowestFound, nodeId );
-                        // continue checking so that we can find the lowest one. It's not up to us here to
-                        // consider multiple equal ids in this group an error or not. That should have been
-                        // decided in #prepare.
+                {
+                    if ( !trackerCache.isMarkedAsDuplicate( nodeId ) )
+                    {   // We found a data value for our group, but there are collisions within this group.
+                        // We need to consult the collision cache and original input id
+                        long collisionIndex = findCollisionIndex( nodeId );
+                        long offset = collisionNodeIdCache.get6ByteLong( collisionIndex, 5 );
+                        Object value = collisionValues.get( offset );
+                        if ( inputId.equals( value ) )
+                        {
+                            // :)
+                            lowestFound = lowestFound == ID_NOT_FOUND ? nodeId : min( lowestFound, nodeId );
+                            // continue checking so that we can find the lowest one. It's not up to us here to
+                            // consider multiple equal ids in this group an error or not. That should have been
+                            // decided in #prepare.
+                        }
                     }
                 }
                 else
