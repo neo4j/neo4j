@@ -172,7 +172,7 @@ public final class ValueUtils
 
     public static ListValue asListValue( List<?> collection )
     {
-        ArrayList<AnyValue> values = new ArrayList<>(collection.size());
+        ArrayList<AnyValue> values = new ArrayList<>( collection.size() );
         for ( Object o : collection )
         {
             values.add( of( o ) );
