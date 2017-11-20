@@ -306,7 +306,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("failed query should not leave dangling transactions") {
-    failWithError(Configs.AbsolutelyAll, "RETURN 1 / 0", List("/ by zero"))
+    failWithError(Configs.AbsolutelyAll, "RETURN 1 / 0", List("/ by zero", "divide by zero"))
 
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
