@@ -93,6 +93,5 @@ Handles checking properties on nodes in multistep path - using ALL() function on
 Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
 
 //MatchAcceptance.feature
-difficult to plan query number 1
 difficult to plan query number 3
 Variable length path with both sides already bound

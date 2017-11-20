@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.ReferenceFromSlot
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.{RowR, mockPipeFor, testableResult}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.{Longs, Refs, RowR, RowRL, mockPipeFor, testableResult}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -51,7 +51,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
       RowR(NO_VALUE)
     )
 
-    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfoForJoin, 0, 1)()
+    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfoForJoin, 0, 1, SlotConfiguration.Size.zero)()
     // when
     val result = pipe.createResults(queryState)
 
@@ -84,7 +84,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
       RowR(intValue(4), stringValue("h"))
     )
 
-    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfoForJoin, 0, 2)()
+    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfoForJoin, 0, 2, SlotConfiguration.Size.zero)()
     // when
     val result = pipe.createResults(queryState)
 
@@ -108,7 +108,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
 
 
     val right = mock[Pipe]
-    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfo, 0, 1)()
+    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfo, 0, 1, SlotConfiguration.Size.zero)()
 
     // when
     val result = pipe.createResults(queryState)
@@ -128,7 +128,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
     val left = mockPipeFor(slotInfo, RowR(NO_VALUE))
     val right = mockPipeFor(slotInfo, RowR(intValue(42)))
 
-    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfo, 0, 1)()
+    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfo, 0, 1, SlotConfiguration.Size.zero)()
 
     // when
     val result = pipe.createResults(queryState)
@@ -138,4 +138,41 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
     verify(right, times(1)).createResults(any())
     verifyNoMoreInteractions(right)
   }
+
+  test("should support hash join between two identifiers with shared arguments") {
+    // given
+    val queryState = QueryStateHelper.empty
+    val slotInfoForInputs = SlotConfiguration.empty
+      .newLong("arg1", nullable = false, CTNode)
+      .newReference("arg2", nullable = false, CTInteger)
+      .newReference("b", nullable = false, CTInteger)
+
+    val slotInfoForJoin = SlotConfiguration.empty
+      .newLong("arg1", nullable = false, CTNode)
+      .newReference("arg2", nullable = false, CTInteger)
+      .newReference("a", nullable = false, CTInteger)
+      .newReference("b", nullable = false, CTInteger)
+
+    val left = mockPipeFor(slotInfoForInputs,
+      RowRL(Longs(42), Refs(intValue(666), intValue(1))),
+      RowRL(Longs(42), Refs(intValue(666), intValue(2))),
+      RowRL(Longs(42), Refs(intValue(666), NO_VALUE))
+    )
+    val right = mockPipeFor(slotInfoForInputs,
+      RowRL(Longs(42), Refs(intValue(666), intValue(2))),
+      RowRL(Longs(42), Refs(intValue(666), intValue(3))),
+      RowRL(Longs(42), Refs(intValue(666), NO_VALUE))
+    )
+
+    val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(1), ReferenceFromSlot(1), left, right, slotInfoForJoin,
+      longOffset = 1, refsOffset = 2, SlotConfiguration.Size(1, 1))()
+
+    // when
+    val result = pipe.createResults(queryState)
+
+    // then
+    testableResult(result, slotInfoForJoin) should equal(
+      List(Map("arg1" -> 42L, "arg2" -> intValue(666), "a" -> intValue(2), "b" -> intValue(2))))
+  }
+
 }

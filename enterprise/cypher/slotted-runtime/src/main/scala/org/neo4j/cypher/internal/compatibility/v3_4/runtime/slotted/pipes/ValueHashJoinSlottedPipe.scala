@@ -34,7 +34,8 @@ case class ValueHashJoinSlottedPipe(leftSide: Expression,
                                     right: Pipe,
                                     slots: SlotConfiguration,
                                     longOffset: Int,
-                                    refsOffset: Int)
+                                    refsOffset: Int,
+                                    argumentSize: SlotConfiguration.Size)
                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends AbstractHashJoinPipe[AnyValue, Expression](left, right, slots) {
 
@@ -46,5 +47,8 @@ case class ValueHashJoinSlottedPipe(leftSide: Expression,
       Some(value)
   }
 
-  override def copyDataFromRhs(newRow: PrimitiveExecutionContext, rhs: ExecutionContext): Unit = rhs.copyTo(newRow, longOffset, refsOffset)
+  override def copyDataFromRhs(newRow: PrimitiveExecutionContext, rhs: ExecutionContext): Unit =
+    rhs.copyTo(newRow,
+      fromLongOffset = argumentSize.nLongs, fromRefOffset = argumentSize.nReferences,
+      toLongOffset = longOffset, toRefOffset = refsOffset)
 }

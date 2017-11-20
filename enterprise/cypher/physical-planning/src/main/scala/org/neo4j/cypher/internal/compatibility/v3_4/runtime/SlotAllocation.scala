@@ -122,7 +122,9 @@ object SlotAllocation {
         case (Some(_), Some(right)) if comingFrom eq right =>
           val rhsSlots = resultStack.pop()
           val lhsSlots = resultStack.pop()
-          val result = allocate(current, nullable, lhsSlots, rhsSlots)
+          val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
+                         else argumentStack.top
+          val result = allocate(current, nullable, lhsSlots, rhsSlots, recordArgument(_, argument))
           allocations += (current.assignedId -> result)
           if (isAnApplyPlan(current))
             argumentStack.pop()
@@ -309,7 +311,8 @@ object SlotAllocation {
   private def allocate(lp: LogicalPlan,
                        nullable: Boolean,
                        lhs: SlotConfiguration,
-                       rhs: SlotConfiguration): SlotConfiguration =
+                       rhs: SlotConfiguration,
+                       recordArgument: LogicalPlan => Unit): SlotConfiguration =
     lp match {
       case _: Apply =>
         rhs
@@ -323,6 +326,7 @@ object SlotAllocation {
         rhs
 
       case _: CartesianProduct =>
+        recordArgument(lp)
         val result = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
@@ -332,12 +336,10 @@ object SlotAllocation {
         }
         result
 
-
       case NodeHashJoin(nodes, _, _) =>
+        recordArgument(lp)
         val nodeKeys = nodes.map(_.name)
         val result = lhs.copy()
-        // For the implementation of the slotted pipe to use array copy
-        // it is very important that we add the slots in the same order
         rhs.foreachSlotOrdered {
           case (k, slot) if !nodeKeys(k) =>
             result.add(k, slot)
@@ -348,6 +350,7 @@ object SlotAllocation {
         result
 
       case _: ValueHashJoin =>
+        recordArgument(lp)
         val slotConfig: SlotConfiguration = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order

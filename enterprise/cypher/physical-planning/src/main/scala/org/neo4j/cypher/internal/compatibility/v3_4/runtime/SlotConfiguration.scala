@@ -279,6 +279,13 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   // NOTE: This will give duplicate slots when we have aliases
   def mapSlot[U](f: ((String,Slot)) => U): Iterable[U] = slots.map(f)
 
+  def partitionSlots(p: (String, Slot) => Boolean): (Seq[(String, Slot)], Seq[(String, Slot)]) = {
+    slots.toSeq.partition {
+      case (k, slot) =>
+        p(k, slot)
+    }
+  }
+
   def canEqual(other: Any): Boolean = other.isInstanceOf[SlotConfiguration]
 
   override def equals(other: Any): Boolean = other match {

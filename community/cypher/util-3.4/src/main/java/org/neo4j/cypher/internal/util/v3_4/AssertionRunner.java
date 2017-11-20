@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.helpers;
+package org.neo4j.cypher.internal.util.v3_4;
 
 /*
 Why is this here!?
@@ -28,6 +28,13 @@ public class AssertionRunner
 {
     private AssertionRunner()
     {
+    }
+
+    public static boolean isAssertionsEnabled()
+    {
+        boolean assertionsEnabled = false;
+        assert assertionsEnabled = true;
+        return assertionsEnabled;
     }
 
     public static void runUnderAssertion( Thunk thunk )

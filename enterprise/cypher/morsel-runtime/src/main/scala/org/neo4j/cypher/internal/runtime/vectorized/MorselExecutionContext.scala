@@ -29,7 +29,7 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
     currentRow
   }
 
-  override def copyTo(target: ExecutionContext, longOffset: Int, refOffset: Int): Unit = ???
+  override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = ???
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = ???
 
