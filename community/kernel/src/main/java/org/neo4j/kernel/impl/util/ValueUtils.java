@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -76,29 +77,39 @@ public final class ValueUtils
         }
         else
         {
-            if ( object instanceof Node )
+            if ( object instanceof Entity )
             {
-                return fromNodeProxy( (Node) object );
+                if ( object instanceof Node )
+                {
+                    return fromNodeProxy( (Node) object );
+                }
+                else if ( object instanceof Relationship )
+                {
+                    return fromRelationshipProxy( (Relationship) object );
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unknown entity + " + object.getClass().getName() );
+                }
             }
-            else if ( object instanceof Relationship )
+            else if ( object instanceof Iterable<?> )
             {
-                return fromRelationshipProxy( (Relationship) object );
-            }
-            else if ( object instanceof Path )
-            {
-                return asPathValue( (Path) object );
+                if ( object instanceof Path )
+                {
+                    return asPathValue( (Path) object );
+                }
+                else if ( object instanceof List<?> )
+                {
+                    return asListValue( (List<?>) object );
+                }
+                else
+                {
+                    return asListValue( (Iterable<?>) object );
+                }
             }
             else if ( object instanceof Map<?,?> )
             {
                 return asMapValue( (Map<String,Object>) object );
-            }
-            else if ( object instanceof List<?> )
-            {
-                return asListValue( (List<?>) object );
-            }
-            else if ( object instanceof Iterable<?> )
-            {
-                return asListValue( (Iterable<?>) object );
             }
             else if ( object instanceof Iterator<?> )
             {
@@ -110,18 +121,6 @@ public final class ValueUtils
                 }
                 return asListValue( objects );
             }
-            else if ( object instanceof Stream<?> )
-            {
-                return asListValue( ((Stream<Object>) object).collect( Collectors.toList() ) );
-            }
-            else if ( object instanceof Point )
-            {
-                return asPointValue( (Point) object );
-            }
-            else if ( object instanceof Geometry )
-            {
-                return asPointValue( (Geometry) object );
-            }
             else if ( object instanceof Object[] )
             {
                 Object[] array = (Object[]) object;
@@ -131,6 +130,21 @@ public final class ValueUtils
                     anyValues[i] = of( array[i] );
                 }
                 return VirtualValues.list( anyValues );
+            }
+            else if ( object instanceof Stream<?> )
+            {
+                return asListValue( ((Stream<Object>) object).collect( Collectors.toList() ) );
+            }
+            else if ( object instanceof Geometry )
+            {
+                if ( object instanceof Point )
+                {
+                    return asPointValue( (Point) object );
+                }
+                else
+                {
+                    return asPointValue( (Geometry) object );
+                }
             }
             else
             {
