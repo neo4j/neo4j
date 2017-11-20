@@ -53,6 +53,7 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
@@ -406,7 +407,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException
     {
         assertOpen();
-        
+
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
@@ -425,10 +426,42 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public Value nodeSetProperty( long node, int propertyKey, Value value )
+    public Value nodeSetProperty( long node, int propertyKey, Value value ) throws EntityNotFoundException
     {
         assertOpen();
-        throw new UnsupportedOperationException();
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+
+        Value existingValue = Values.NO_VALUE;
+        nodeCursor.properties( propertyCursor );
+        if ( propertyCursor.next() )
+        {
+            existingValue = propertyCursor.propertyValue();
+            //TODO  autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
+        }
+        else
+        {
+            //TODO autoIndexing.nodes().propertyAdded( ops, nodeId, propertyKeyId, value );
+        }
+
+        if ( existingValue == Values.NO_VALUE )
+        {
+            ktx.txState().nodeDoAddProperty( node, propertyKey, value );
+            //TODO updater.onPropertyAdd( state, node, propertyKeyId, value );
+            return Values.NO_VALUE;
+        }
+        else
+        {
+            if ( !value.equals( existingValue ) )
+            {
+                ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
+                //TODO updater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
+            }
+            return existingValue;
+        }
     }
 
     @Override

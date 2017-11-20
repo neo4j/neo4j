@@ -42,7 +42,7 @@ class KernelToken implements Token
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return store.propertyKeyGetOrCreateForName( propertyKeyName );
     }
 
     @Override

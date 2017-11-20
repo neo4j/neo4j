@@ -78,7 +78,7 @@ public interface Write
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeSetProperty( long node, int propertyKey, Value value );
+    Value nodeSetProperty( long node, int propertyKey, Value value ) throws KernelException;
 
     /**
      * Remove a property from a node

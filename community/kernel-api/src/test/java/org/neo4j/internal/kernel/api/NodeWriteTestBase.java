@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -34,6 +35,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
@@ -248,6 +252,92 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             assertThat( graphDb.getNodeById( nodeId ).getLabels(), equalTo( Iterables.empty() ) );
+        }
+    }
+
+    @Test
+    public void shouldAddPropertyToNode() throws Exception
+    {
+        // Given
+        long node;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode().getId();
+            ctx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getNodeById( node ).getProperty( "prop" ), equalTo( "hello" ) );
+        }
+    }
+
+    @Test
+    public void shouldUpdatePropertyToNode() throws Exception
+    {
+        // Given
+        long node;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            Node proxy = graphDb.createNode();
+            proxy.setProperty( propertyKey, 42 );
+            node = proxy.getId();
+            ctx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ),
+                    equalTo( intValue( 42 ) ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getNodeById( node ).getProperty( "prop" ), equalTo( "hello" ) );
+        }
+    }
+
+    @Test
+    public void shouldUpdatePropertyToNodeInTransaction() throws Exception
+    {
+        // Given
+        long node;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode().getId();
+            ctx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getNodeById( node ).getProperty( "prop" ), equalTo( 1337 ) );
         }
     }
 }
