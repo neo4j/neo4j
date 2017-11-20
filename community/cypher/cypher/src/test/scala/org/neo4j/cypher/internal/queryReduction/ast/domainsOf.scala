@@ -172,6 +172,37 @@ object domainsOf {
       case u:Union =>
         ofSingle(u.part, classOf[QueryPart]) ++
         ofSingle(u.query, classOf[SingleQuery])
+
+      case CaseExpression(expression, alternatives, default) =>
+        ofOption(expression, classOf[Expression]) ++
+        ofTupledSeq(alternatives, classOf[Expression], classOf[Expression]) ++
+        ofOption(default, classOf[Expression])
+
+      case ContainerIndex(expr, idx) =>
+        ofSingle(expr, classOf[Expression]) ++
+        ofSingle(idx, classOf[Expression])
+
+      case ReduceExpression(scope, init, list) =>
+        ofSingle(scope, classOf[ReduceScope]) ++
+        ofSingle(init, classOf[Expression]) ++
+        ofSingle(list, classOf[Expression])
+
+      case ReduceScope(accumulator, variable, expression) =>
+        ofSingle(accumulator, classOf[Variable]) ++
+        ofSingle(variable, classOf[Variable]) ++
+        ofSingle(expression, classOf[Expression])
+
+      case Foreach(variable, expression, updates) =>
+        ofSingle(variable, classOf[Variable]) ++
+        ofSingle(expression, classOf[Expression]) ++
+        ofSeq(updates, classOf[Clause])
+
+      case SetClause(items) =>
+        ofSeq(items,classOf[SetItem])
+
+      case SetPropertyItem(property, expression) =>
+        ofSingle(property, classOf[Property]) ++
+        ofSingle(expression, classOf[Expression])
     }
   }
 }

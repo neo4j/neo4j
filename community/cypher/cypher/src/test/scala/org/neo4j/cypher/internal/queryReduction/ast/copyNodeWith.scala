@@ -139,6 +139,27 @@ object copyNodeWith {
 
       case u:Union =>
         u.dup(Seq(nc.ofSingle(u.part), nc.ofSingle(u.query)))
+
+      case CaseExpression(expression, alternatives, default) =>
+        CaseExpression(nc.ofOption(expression), nc.ofTupledSeq(alternatives).toList, nc.ofOption(default))(node.position)
+
+      case ContainerIndex(expr, idx) =>
+        ContainerIndex(nc.ofSingle(expr), nc.ofSingle(idx))(node.position)
+
+      case ReduceExpression(scope, init, list) =>
+        ReduceExpression(nc.ofSingle(scope), nc.ofSingle(init), nc.ofSingle(list))(node.position)
+
+      case ReduceScope(accumulator, variable, expression) =>
+        ReduceScope(nc.ofSingle(accumulator), nc.ofSingle(variable), nc.ofSingle(expression))(node.position)
+
+      case Foreach(variable, expression, updates) =>
+        Foreach(nc.ofSingle(variable), nc.ofSingle(expression), nc.ofSeq(updates))(node.position)
+
+      case SetClause(items) =>
+        SetClause(nc.ofSeq(items))(node.position)
+
+      case SetPropertyItem(property, expression) =>
+        SetPropertyItem(nc.ofSingle(property), nc.ofSingle(expression))(node.position)
     }
 
     newNode.asInstanceOf[A]

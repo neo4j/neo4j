@@ -147,6 +147,26 @@ object getChildren {
       case u:Union =>
         Seq(u.part, u.query)
 
+      case CaseExpression(expression, alternatives, default) =>
+        ofOption(expression) ++ alternatives.flatMap { case (a, b) => Seq(a, b) } ++ ofOption(default)
+
+      case ContainerIndex(expr, idx) =>
+        Seq(expr, idx)
+
+      case ReduceExpression(scope, init, list) =>
+        Seq(scope, init, list)
+
+      case ReduceScope(accumulator, variable, expression) =>
+        Seq(accumulator, variable, expression)
+
+      case Foreach(variable, expression, updates) =>
+        Seq(variable, expression) ++ updates
+
+      case SetClause(items) =>
+        items
+
+      case SetPropertyItem(property, expression) =>
+        Seq(property, expression)
     }
   }
 
