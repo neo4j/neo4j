@@ -651,7 +651,7 @@ public class Neo4jMatchers
     {
         try ( Transaction ignored = beansAPI.beginTx() )
         {
-            beansAPI.schema().awaitIndexOnline( indexDef, 10, SECONDS );
+            beansAPI.schema().awaitIndexOnline( indexDef, 30, SECONDS );
         }
     }
 
@@ -659,7 +659,7 @@ public class Neo4jMatchers
     {
         try ( Transaction ignored = beansAPI.beginTx() )
         {
-            beansAPI.schema().awaitIndexesOnline( 10, SECONDS );
+            beansAPI.schema().awaitIndexesOnline( 30, SECONDS );
         }
     }
 
