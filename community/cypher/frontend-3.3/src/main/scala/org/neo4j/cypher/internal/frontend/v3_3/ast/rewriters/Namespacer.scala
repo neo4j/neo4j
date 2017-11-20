@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, BaseState, C
 import org.neo4j.cypher.internal.frontend.v3_3._
 
 object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
-  type VariableRenamings = Map[Ref[Variable], Variable]
+  type VariableRenamings = Map[Ref[Expression], Expression]
 
   import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 
@@ -80,11 +80,16 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
 
   private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
                                 ambiguousNames: Set[String], protectedVariables: Set[Ref[Variable]]): VariableRenamings =
-    statement.treeFold(Map.empty[Ref[Variable], Variable]) {
+    statement.treeFold(Map.empty[Ref[Expression], Expression]) {
       case i: Variable if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
         val symbolDefinition = variableDefinitions(i.toSymbolUse)
         val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
         val renaming = Ref(i) -> newVariable
+        acc => (acc + renaming, Some(identity))
+      case p@Property(i:Variable, propertyKeyName) if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
+        val symbolDefinition: SymbolUse = variableDefinitions(i.toSymbolUse)
+        val newProperty = Property(i.renameId(s"  ${symbolDefinition.nameWithPosition}"), propertyKeyName)(p.position)
+        val renaming = Ref(p) -> newProperty
         acc => (acc + renaming, Some(identity))
     }
 

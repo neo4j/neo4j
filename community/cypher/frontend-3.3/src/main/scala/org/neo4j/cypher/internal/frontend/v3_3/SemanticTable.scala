@@ -74,7 +74,7 @@ class SemanticTable(
   def addRelationship(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
 
-  def replaceVariables(replacements: (Variable, Variable)*): SemanticTable =
+  def replaceVariables(replacements: (Expression, Expression)*): SemanticTable =
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
 
   def replaceNodes(replacements: (ASTNode, ASTNode)*): SemanticTable =
