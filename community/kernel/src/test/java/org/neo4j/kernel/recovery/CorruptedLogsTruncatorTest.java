@@ -146,9 +146,11 @@ public class CorruptedLogsTruncatorTest
         int bytesToPrune = 7;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestCorrectLogFileIndex, byteOffset );
+        life.shutdown();
 
         logPruner.truncate( prunePosition );
 
+        life.start();
         assertEquals( 6, logFiles.logFiles().length );
         assertEquals( byteOffset, highestCorrectLogFile.length() );
 
