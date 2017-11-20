@@ -52,7 +52,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.success();
         }
 
-        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
             assertEquals( nodeId, graphDb.getNodeById( nodeId ).getId() );
         }
@@ -84,7 +84,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.success();
         }
 
-        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),
@@ -111,11 +111,11 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.success();
         }
 
-        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),
-                    containsInAnyOrder( label( toRetainName ), label( toDeleteName ) )  );
+                    containsInAnyOrder( label( toRetainName ), label( toDeleteName ) ) );
         }
 
         try ( Transaction tx = session.beginTransaction() )
@@ -139,14 +139,54 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),
-                    containsInAnyOrder( label( toRetainName ), label( toAddName ) ));
+                    containsInAnyOrder( label( toRetainName ), label( toAddName ) ) );
+        }
+    }
+
+    @Test
+    public void shouldDiscoverDeletedNodeInTransaction() throws Exception
+    {
+        long nodeId;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertTrue( tx.dataWrite().nodeDelete( nodeId ) );
+            try ( NodeCursor node = cursors.allocateNodeCursor() )
+            {
+                tx.dataRead().singleNode( nodeId, node );
+                assertFalse( node.next() );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldHandleMultipleNodeDeletions() throws Exception
+    {
+        long nodeId;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertTrue( tx.dataWrite().nodeDelete( nodeId ) );
+            assertFalse( tx.dataWrite().nodeDelete( nodeId ) );
+            tx.success();
         }
     }
 
     private void assertLabels( LabelSet labels, int... expected )
     {
         assertEquals( expected.length, labels.numberOfLabels() );
-        Arrays.sort(expected);
+        Arrays.sort( expected );
         int[] labelArray = new int[labels.numberOfLabels()];
         for ( int i = 0; i < labels.numberOfLabels(); i++ )
         {
