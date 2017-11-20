@@ -60,12 +60,8 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
     }
   }
 
-//  private def createExecutionPlan(context: CompiledRuntimeContext, compiled: CompiledPlan) = new ExecutionPlan {
-//    private val fingerprint = context.createFingerprintReference(compiled.fingerprint)
-
   private def notifications(context: CompiledRuntimeContext):Set[InternalNotification] =
     context.notificationLogger.notifications
-
 
   private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
