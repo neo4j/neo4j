@@ -58,7 +58,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
     }
 
     @Test
-    public void shouldSeeNewLabelledNodeInTransaction() throws Exception
+    public void shouldSeeNewLabeledNodeInTransaction() throws Exception
     {
         long nodeId;
         int labelId;

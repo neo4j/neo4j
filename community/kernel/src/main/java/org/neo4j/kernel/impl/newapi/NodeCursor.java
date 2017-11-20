@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -139,18 +140,37 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             reset();
             return false;
         }
+        // Check tx state
+
+        boolean hasChanges = read.hasTxStateWithChanges();
+        TransactionState txs = hasChanges ? read.txState() : null;
         do
         {
-            read.node( this, next++, pageCursor );
+            if ( hasChanges && txs.nodeIsAddedInThisTx( next ) )
+            {
+                setId( next++ );
+                setInUse( true );
+            }
+            else if ( hasChanges && txs.nodeIsDeletedInThisTx( next ) )
+            {
+                next++;
+                setInUse( false );
+            }
+            else
+            {
+                read.node( this, next++, pageCursor );
+            }
             if ( next > highMark )
             {
                 if ( highMark == NO_ID )
                 {
+                    //we are using single
                     next = NO_ID;
                     return inUse();
                 }
                 else
                 {
+                    //Check if there is a new high mark
                     highMark = read.nodeHighMark();
                     if ( next > highMark )
                     {
