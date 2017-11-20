@@ -215,4 +215,6 @@ object LogicalPlanId {
 
 class LogicalPlanId(val underlying: Int) extends AnyVal {
   def ++ : LogicalPlanId = new LogicalPlanId(underlying + 1)
+
+  override def toString: String = s"id:$underlying"
 }
