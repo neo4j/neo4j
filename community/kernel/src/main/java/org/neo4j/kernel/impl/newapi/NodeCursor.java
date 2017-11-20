@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
@@ -87,7 +89,33 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public LabelSet labels()
     {
-        return new Labels( NodeLabelsField.get( this, labelCursor ) );
+        if ( read.hasTxStateWithChanges() )
+        {
+            TransactionState txState = read.txState();
+            if (txState.nodeIsAddedInThisTx( nodeReference() ) )
+            {
+                //Node just added, no reason to go down to store and check
+                return Labels.from( txState.nodeStateLabelDiffSets( nodeReference() ).getAdded() );
+            }
+            else
+            {
+                //Get labels from store and put in intSet, unfortunately we get longs back
+                long[] longs = NodeLabelsField.get( this, labelCursor );
+                PrimitiveIntSet labels = Primitive.intSet();
+                for ( long labelToken : longs )
+                {
+                    labels.add( (int) labelToken );
+                }
+
+                //Augment what was found in store with what we have in tx state
+                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( nodeReference() ) ) );
+            }
+        }
+        else
+        {
+            //Nothing in tx state, just read the data.
+            return new Labels( NodeLabelsField.get( this, labelCursor ) );
+        }
     }
 
     @Override

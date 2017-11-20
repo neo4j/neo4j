@@ -26,6 +26,7 @@ import java.util.Arrays;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -114,7 +115,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),
-                    equalTo( Iterables.iterable( label( toRetainName ), label( toDeleteName ) ) ) );
+                    containsInAnyOrder( label( toRetainName ), label( toDeleteName ) )  );
         }
 
         try ( Transaction tx = session.beginTransaction() )
@@ -134,11 +135,11 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.success();
         }
 
-        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
         {
             assertThat(
                     graphDb.getNodeById( nodeId ).getLabels(),
-                    equalTo( Iterables.iterable( label( toRetainName ), label( toAddName ) ) ) );
+                    containsInAnyOrder( label( toRetainName ), label( toAddName ) ));
         }
     }
 

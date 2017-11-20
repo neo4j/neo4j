@@ -384,30 +384,6 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException
     {
         assertOpen();
-
-        //TODO when singleNode is txState aware we can remove this extra check
-        if ( ktx.hasTxStateWithChanges() )
-        {
-            boolean justAdded = ktx.txState().nodeIsAddedInThisTx( node );
-            if ( justAdded && ktx.txState().nodeStateLabelDiffSets( node ).isAdded( nodeLabel ) )
-            {
-                //the newly added node already have the label
-                return false;
-            }
-            else if ( justAdded )
-            {
-                // we have a new node, let's add the label
-                ktx.txState().nodeDoAddLabel( nodeLabel, node );
-                updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
-                return true;
-            }
-            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
-            {
-                // already deleted, false or EntityNotFoundException
-                return false;
-            }
-        }
-
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
@@ -430,30 +406,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException
     {
         assertOpen();
-
-        //TODO when singleNode is txState aware we can remove this extra check
-        if ( ktx.hasTxStateWithChanges() )
-        {
-            boolean justAdded = ktx.txState().nodeIsAddedInThisTx( node );
-            if ( justAdded && ktx.txState().nodeStateLabelDiffSets( node ).isAdded( nodeLabel ) )
-            {
-                // we have a new node, let's remove the label
-                ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
-                updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, REMOVED_LABEL );
-                return true;
-            }
-            else if ( justAdded )
-            {
-                //the label is not there
-                return false;
-            }
-            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
-            {
-                // already deleted, false or EntityNotFoundException?
-                return false;
-            }
-        }
-
+        
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
