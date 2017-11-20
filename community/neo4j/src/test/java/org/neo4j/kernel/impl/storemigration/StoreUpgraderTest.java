@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package upgrade;
+package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,13 +50,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
@@ -81,6 +75,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -335,6 +330,15 @@ public class StoreUpgraderTest
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
     }
 
+    @Test
+    public void notParticipatingParticipantsAreNotPartOfMigration() throws IOException
+    {
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
+        StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
+        assertThat( storeUpgrader.getParticipants(), hasSize( 3 ) );
+    }
+
     protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, File dbDirectory,
             File databaseDirectory ) throws IOException
     {
@@ -392,6 +396,10 @@ public class StoreUpgraderTest
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
+        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
+        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
+        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
+        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
         upgrader.addParticipant( defaultMigrator );
         upgrader.addParticipant( countsMigrator );
         return upgrader;

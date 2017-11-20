@@ -95,7 +95,10 @@ public class StoreUpgrader
     public void addParticipant( StoreMigrationParticipant participant )
     {
         assert participant != null;
-        this.participants.add( participant );
+        if ( !StoreMigrationParticipant.NOT_PARTICIPATING.equals( participant ) )
+        {
+            this.participants.add( participant );
+        }
     }
 
     public void migrateIfNeeded( File storeDirectory )
@@ -144,6 +147,11 @@ public class StoreUpgrader
         cleanup( participants, migrationDirectory );
 
         progressMonitor.completed();
+    }
+
+    List<StoreMigrationParticipant> getParticipants()
+    {
+        return participants;
     }
 
     private boolean isUpgradeAllowed()

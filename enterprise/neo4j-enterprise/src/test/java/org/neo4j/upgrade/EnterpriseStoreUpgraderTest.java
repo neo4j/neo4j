@@ -20,7 +20,6 @@
 package org.neo4j.upgrade;
 
 import org.junit.runners.Parameterized;
-import upgrade.StoreUpgraderTest;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
+import org.neo4j.kernel.impl.storemigration.StoreUpgraderTest;
 import org.neo4j.test.Unzip;
 
 import static java.util.Collections.singletonList;
