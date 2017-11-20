@@ -416,18 +416,20 @@ public class RecoveryCorruptedTransactionLogIT
 
         LogFile transactionLogFile = logFiles.getLogFile();
         VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
-        ReadableLogChannel reader =
-                transactionLogFile.getReader( LogPosition.start( logFiles.getHighestLogVersion() ) );
-        LogEntry logEntry;
-        do
+        LogPosition startPosition = LogPosition.start( logFiles.getHighestLogVersion() );
+        try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
-            logEntry = entryReader.readLogEntry( reader );
-            if ( logEntry instanceof CheckPoint )
+            LogEntry logEntry;
+            do
             {
-                checkpointPosition = ((CheckPoint) logEntry).getLogPosition();
+                logEntry = entryReader.readLogEntry( reader );
+                if ( logEntry instanceof CheckPoint )
+                {
+                    checkpointPosition = ((CheckPoint) logEntry).getLogPosition();
+                }
             }
+            while ( logEntry != null );
         }
-        while ( logEntry != null );
         if ( checkpointPosition != null )
         {
             try ( StoreChannel storeChannel = fileSystemRule.open( logFiles.getHighestLogFile(), OpenMode.READ_WRITE ) )
@@ -476,8 +478,7 @@ public class RecoveryCorruptedTransactionLogIT
         return (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE );
     }
 
-    private void addCorruptedCommandsToLastLogFile()
-            throws IOException
+    private void addCorruptedCommandsToLastLogFile() throws IOException
     {
         PositiveLogFilesBasedLogVersionRepository versionRepository = new PositiveLogFilesBasedLogVersionRepository( logFiles );
         LogFiles internalLogFiles = LogFilesBuilder.builder( storeDir, fileSystemRule )
@@ -506,12 +507,14 @@ public class RecoveryCorruptedTransactionLogIT
         VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
 
         MultiSet<Class> multiset = new MultiSet<>();
-        ReadableLogChannel fileReader = transactionLogFile.getReader( fileStartPosition );
-        LogEntry logEntry = entryReader.readLogEntry( fileReader );
-        while ( logEntry != null )
+        try ( ReadableLogChannel fileReader = transactionLogFile.getReader( fileStartPosition ) )
         {
-            multiset.add( logEntry.getClass() );
-            logEntry = entryReader.readLogEntry( fileReader );
+            LogEntry logEntry = entryReader.readLogEntry( fileReader );
+            while ( logEntry != null )
+            {
+                multiset.add( logEntry.getClass() );
+                logEntry = entryReader.readLogEntry( fileReader );
+            }
         }
         return multiset;
     }
