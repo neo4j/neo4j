@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => co
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v3_4.expressions.{Equals, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
@@ -344,6 +344,14 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         }
 
         NodeHashJoinSlottedPipe(leftNodes, rightNodes, lhs, rhs, slots, copyLongsFromRHS.result().toArray, copyRefsFromRHS.result().toArray)(id)
+
+      case ValueHashJoin(lhsPlan, _, Equals(lhsAstExp, rhsAstExp)) =>
+        val lhsCmdExp = expressionConverters.toCommandExpression(lhsAstExp)
+        val rhsCmdExp = expressionConverters.toCommandExpression(rhsAstExp)
+        val lhsSlots = slotConfigs(lhsPlan.assignedId)
+        val longOffset = lhsSlots.numberOfLongs
+        val refOffset = lhsSlots.numberOfReferences
+        ValueHashJoinSlottedPipe(lhsCmdExp, rhsCmdExp, lhs, rhs, slots, longOffset, refOffset)(id)
 
       case ConditionalApply(_, _, items) =>
         val (longIds , refIds) = items.partition(idName => slots.get(idName.name) match {

@@ -96,7 +96,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   }
 
   test("should handle null input") {
-    val input = Seq(10, null)
+    val input = Seq[Any](10, null)
     val result = singleColumnTopWithInput(
       input, orderBy = AscendingOrder, limit = 5
     )
@@ -163,7 +163,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   }
 
   test("top 1 should handle null input") {
-    val input = Seq(10, null)
+    val input = Seq[Any](10, null)
     val result = singleColumnTopWithInput(
       input, orderBy = AscendingOrder, limit = 1
     )

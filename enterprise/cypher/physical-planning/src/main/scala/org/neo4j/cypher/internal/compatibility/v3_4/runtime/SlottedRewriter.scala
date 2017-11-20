@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, NestedPlanExpression, Projection, VarExpand, _}
-import org.neo4j.cypher.internal.v3_4.{functions => frontendFunctions}
+import org.neo4j.cypher.internal.v3_4.{expressions, functions => frontendFunctions}
 
 import scala.collection.mutable
 
@@ -92,6 +92,13 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
         newPlan
 
+      case plan@ValueHashJoin(lhs, rhs, e@Equals(lhsExp, rhsExp)) =>
+        val lhsRewriter = rewriteCreator(pipelineInformation(lhs.assignedId), plan)
+        val rhsRewriter = rewriteCreator(pipelineInformation(rhs.assignedId), plan)
+        val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
+        val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
+        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(plan.solved)
+
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
         val incomingPipeline = pipelineInformation(leftPlan.assignedId)
@@ -147,14 +154,19 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
         }
 
-      case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
-        val slot1 = pipelineInformation(k1)
-        val slot2 = pipelineInformation(k2)
-        if (slot1.typ == slot2.typ && SlotConfiguration.isLongSlot(slot1) && SlotConfiguration.isLongSlot(slot2)) {
-          PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
+      case e@Equals(Variable(k1), Variable(k2)) =>
+        primitiveEqualityChecks(pipelineInformation, e, k1, k2, positiveCheck = true)
+
+      case Not(e@Equals(Variable(k1), Variable(k2))) =>
+        primitiveEqualityChecks(pipelineInformation, e, k1, k2, positiveCheck = false)
+
+      case e@IsNull(Variable(key)) =>
+        val slot = pipelineInformation(key)
+        slot match {
+          case LongSlot(offset, true, _) => IsPrimitiveNull(offset)
+          case LongSlot(_, false, _) => False()(e.position)
+          case _ => e
         }
-        else
-          e
 
       case GetDegree(Variable(n), typ, direction) =>
         val maybeToken: Option[String] = typ.map(r => r.name)
@@ -211,6 +223,62 @@ class SlottedRewriter(tokenContext: TokenContext) {
         throw new CantCompileQueryException(s"Pattern expressions not yet supported in the slotted runtime")
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
+  }
+
+  private def primitiveEqualityChecks(slots: SlotConfiguration,
+                                      e: Equals,
+                                      k1: String,
+                                      k2: String,
+                                      positiveCheck: Boolean) = {
+    def makeNegativeIfNeeded(e: expressions.Expression) = if (!positiveCheck)
+      Not(e)(e.position)
+    else
+      e
+
+    val shortcutWhenDifferentTypes: expressions.Expression = if(positiveCheck) False()(e.position) else True()(e.position)
+    val slot1 = slots(k1)
+    val slot2 = slots(k2)
+
+    (slot1, slot2) match {
+      // If we are trying to compare two different types, we'll never return true.
+      // But if we are comparing nullable things, we need to do extra null checks before returning false.
+      // this case only handles the situation where it's safe to straight away rewrite to false, e.g;
+      // MATCH (n)-[r]->()
+      // WHERE n = r
+      case (LongSlot(_, false, typ1), LongSlot(_, false, typ2)) if typ1 != typ2 =>
+        shortcutWhenDifferentTypes
+
+      case (LongSlot(_, false, typ1), LongSlot(_, false, typ2)) if typ1 == typ2 =>
+        val eq = PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
+        makeNegativeIfNeeded(eq)
+
+      case (LongSlot(_, null1, typ1), LongSlot(_, null2, typ2))
+        if (null1 || null2) && (typ1 != typ2) =>
+        makeNullChecksExplicit(slot1, slot2, shortcutWhenDifferentTypes)
+
+      case (LongSlot(_, null1, typ1), LongSlot(_, null2, typ2))
+        if (null1 || null2) && (typ1 == typ2) =>
+        val eq = PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
+        makeNullChecksExplicit(slot1, slot2, makeNegativeIfNeeded(eq))
+
+      case _ =>
+        makeNegativeIfNeeded(e)
+    }
+  }
+
+  private def makeNullChecksExplicit(slot1: Slot, slot2: Slot, predicate: expressions.Expression) = {
+    // If a slot is nullable, we rewrite the equality to make null handling explicit and not part of the equality check:
+    // <nullableLhs> <predicate> <rhs> ==>
+    // NOT(<nullableLhs> IS NULL) AND <nullableLhs> <predicate> <rhs>
+    def nullCheckIfNeeded(slot: Slot, p: expressions.Expression): expressions.Expression =
+      if (slot.nullable)
+        NullCheck(slot.offset, p)
+      else
+        p
+
+    nullCheckIfNeeded(slot1,
+      nullCheckIfNeeded(slot2,
+        predicate))
   }
 
   private def checkIfPropertyExists(pipelineInformation: SlotConfiguration, key: String, propKey: String) = {

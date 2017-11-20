@@ -347,6 +347,16 @@ object SlotAllocation {
         }
         result
 
+      case _: ValueHashJoin =>
+        val slotConfig: SlotConfiguration = lhs.copy()
+        // For the implementation of the slotted pipe to use array copy
+        // it is very important that we add the slots in the same order
+        rhs.foreachSlotOrdered {
+          case (k, slot) =>
+            slotConfig.add(k, slot)
+        }
+        slotConfig
+
       case RollUpApply(_, _, collectionName, _, _) =>
         lhs.newReference(collectionName.name, nullable, CTList(CTAny))
         lhs

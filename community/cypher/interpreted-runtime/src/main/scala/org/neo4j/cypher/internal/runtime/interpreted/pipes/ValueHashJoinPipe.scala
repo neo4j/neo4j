@@ -32,7 +32,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
   extends PipeWithSource(left) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    implicit val x = state
+
     if (input.isEmpty)
       return Iterator.empty
 
