@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexHits;
@@ -128,7 +129,10 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         try ( Transaction tx = session.beginTransaction() )
         {
             ExplicitIndexWrite indexWrite = tx.indexWrite();
-            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, Collections.emptyMap() );
+            HashMap<String,String> config = new HashMap<>();
+            config.put( "type", "exact" );
+            config.put( "provider", "lucene" );
+            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, config );
             tx.success();
         }
 
