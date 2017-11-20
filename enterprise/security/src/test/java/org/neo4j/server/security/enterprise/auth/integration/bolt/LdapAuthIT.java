@@ -1098,14 +1098,14 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
             settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
-            settings.put( SecuritySettings.ldap_server, "ldap://0.6.6.6" );
+            settings.put( SecuritySettings.ldap_server, "ldap://" + REFUSED_IP );
         } );
 
         assertAuthFail( "neo", "abc123" );
 
         assertSecurityLogContains( "ERROR" );
         assertSecurityLogContains( "LDAP connection refused" );
-        assertSecurityLogContains( "0.6.6.6" );
+        assertSecurityLogContains( REFUSED_IP );
     }
 
     @Test
