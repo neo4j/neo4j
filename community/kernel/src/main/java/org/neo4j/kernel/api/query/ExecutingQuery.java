@@ -251,6 +251,11 @@ public class ExecutingQuery
         return startTimestampMillis;
     }
 
+    public long elapsedNanos()
+    {
+        return clock.nanos() - startTimeNanos;
+    }
+
     public Map<String,Object> transactionAnnotationData()
     {
         return transactionAnnotationData;

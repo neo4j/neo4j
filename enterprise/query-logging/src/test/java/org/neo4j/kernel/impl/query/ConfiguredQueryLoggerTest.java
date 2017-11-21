@@ -24,14 +24,15 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.PlannerInfo;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -49,14 +50,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_ALLOCATED_BYTES;
-import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_DETAILED_TIME;
-import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PAGE_DETAILS;
-import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PARAMETERS;
-import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_RUNTIME;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class QueryLoggerTest
+public class ConfiguredQueryLoggerTest
 {
     private static final ClientConnectionInfo SESSION_1 = new ShellConnectionInfo( "{session one}" );
     private static final ClientConnectionInfo SESSION_2 = new ShellConnectionInfo( "{session two}" );
@@ -80,12 +76,11 @@ public class QueryLoggerTest
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
-        QueryLogger queryLogger = queryLogger( logProvider );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider );
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 11, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         String expectedSessionString = sessionConnectionDetails( SESSION_1, "TestUser" );
@@ -100,12 +95,11 @@ public class QueryLoggerTest
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
-        QueryLogger queryLogger = queryLogger( logProvider );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider );
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 9, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         logProvider.assertNoLoggingOccurred();
@@ -113,9 +107,9 @@ public class QueryLoggerTest
         // and when
         ExecutingQuery query2 = query( SESSION_2, "TestUser2", QUERY_2 );
         thresholdInMillis = 5;
-        queryLogger.startQueryExecution( query2 );
+        queryLogger = queryLogger( logProvider ); // Rebuild queryLogger, like the DynamicQueryLogger would.
         clock.forward( 9, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query2 );
+        queryLogger.success( query2 );
 
         // then
         String expectedSessionString = sessionConnectionDetails( SESSION_2, "TestUser2" );
@@ -135,20 +129,17 @@ public class QueryLoggerTest
         clock.forward( 1, TimeUnit.MILLISECONDS );
         ExecutingQuery query3 = query( SESSION_3, "TestUser3", QUERY_3 );
 
-        QueryLogger queryLogger = queryLogger( logProvider );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider );
 
         // when
-        queryLogger.startQueryExecution( query1 );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( query2 );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( query3 );
         clock.forward( 7, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query3 );
+        queryLogger.success( query3 );
         clock.forward( 7, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query2 );
+        queryLogger.success( query2 );
         clock.forward( 7, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query1 );
+        queryLogger.success( query1 );
 
         // then
         String expectedSession1String = sessionConnectionDetails( SESSION_1, "TestUser1" );
@@ -166,13 +157,12 @@ public class QueryLoggerTest
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
 
-        QueryLogger queryLogger = queryLogger( logProvider );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider );
         RuntimeException failure = new RuntimeException();
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.endFailure( query, failure );
+        queryLogger.failure( query, failure );
 
         // then
         logProvider.assertExactly(
@@ -190,12 +180,12 @@ public class QueryLoggerTest
         Map<String,Object> params = new HashMap<>();
         params.put( "ages", Arrays.asList( 41, 42, 43 ) );
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_4, params, emptyMap() );
-        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider,
+                Config.defaults( GraphDatabaseSettings.log_queries_parameter_logging_enabled, "true" ) );
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 11, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         String expectedSessionString = sessionConnectionDetails( SESSION_1, "TestUser" );
@@ -214,13 +204,13 @@ public class QueryLoggerTest
         Map<String,Object> params = new HashMap<>();
         params.put( "ages", Arrays.asList( 41, 42, 43 ) );
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_4, params, emptyMap() );
-        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider,
+                Config.defaults( GraphDatabaseSettings.log_queries_parameter_logging_enabled, "true" ) );
         RuntimeException failure = new RuntimeException();
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.endFailure( query, failure );
+        queryLogger.failure( query, failure );
 
         // then
         logProvider.assertExactly(
@@ -236,18 +226,16 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        QueryLogger queryLogger = queryLogger( logProvider );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider );
 
         // when
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
-        queryLogger.startQueryExecution( query );
         clock.forward( 10, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         ExecutingQuery anotherQuery = query( SESSION_1, "AnotherUser", QUERY_1 );
-        queryLogger.startQueryExecution( anotherQuery );
         clock.forward( 10, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( anotherQuery );
+        queryLogger.success( anotherQuery );
 
         // then
         logProvider.assertExactly(
@@ -263,20 +251,18 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        QueryLogger queryLogger = queryLogger( logProvider );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider );
 
         // when
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1, emptyMap(), map( "User", "UltiMate" ) );
-        queryLogger.startQueryExecution( query );
         clock.forward( 10, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         ExecutingQuery anotherQuery =
                 query( SESSION_1, "AnotherUser", QUERY_1, emptyMap(), map( "Place", "Town" ) );
-        queryLogger.startQueryExecution( anotherQuery );
         clock.forward( 10, TimeUnit.MILLISECONDS );
         Throwable error = new Throwable();
-        queryLogger.endFailure( anotherQuery, error );
+        queryLogger.failure( anotherQuery, error );
 
         // then
         logProvider.assertExactly(
@@ -412,13 +398,13 @@ public class QueryLoggerTest
     private void runAndCheck( String inputQuery, String outputQuery, Map<String,Object> params, String paramsString )
     {
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider,
+                Config.defaults( GraphDatabaseSettings.log_queries_parameter_logging_enabled, "true" ) );
 
         // when
         ExecutingQuery query = query( SESSION_1, "neo", inputQuery, params, emptyMap() );
-        queryLogger.startQueryExecution( query );
         clock.forward( 10, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         logProvider.assertExactly( inLog( getClass() )
@@ -432,14 +418,14 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        QueryLogger queryLogger = queryLogger( logProvider, LOG_DETAILED_TIME );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider,
+                Config.defaults( GraphDatabaseSettings.log_queries_detailed_time_logging_enabled, "true" ) );
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 17, TimeUnit.MILLISECONDS );
         cpuClock.add( 12, TimeUnit.MILLISECONDS );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         logProvider.assertExactly( inLog( getClass() ).info(
@@ -451,14 +437,14 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        QueryLogger queryLogger = queryLogger( logProvider, LOG_ALLOCATED_BYTES );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider,
+                Config.defaults( GraphDatabaseSettings.log_queries_allocation_logging_enabled, "true" ) );
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 17, TimeUnit.MILLISECONDS );
         heapAllocation.add( 4096 );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         logProvider.assertExactly( inLog( getClass() ).info(
@@ -470,15 +456,15 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        QueryLogger queryLogger = queryLogger( logProvider, LOG_PAGE_DETAILS );
+        ConfiguredQueryLogger queryLogger = queryLogger( logProvider,
+                Config.defaults( GraphDatabaseSettings.log_queries_page_detail_logging_enabled, "true" ) );
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 12, TimeUnit.MILLISECONDS );
         pageHits = 17;
         pageFaults = 12;
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         logProvider.assertExactly( inLog( getClass() ).info(
@@ -493,13 +479,15 @@ public class QueryLoggerTest
         Map<String,Object> params = new HashMap<>();
         params.put( "ages", Arrays.asList( 41, 42, 43 ) );
         ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_4, params, emptyMap() );
-        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS, LOG_RUNTIME );
+        Config config = Config.defaults();
+        config.augment( GraphDatabaseSettings.log_queries_parameter_logging_enabled, "true" );
+        config.augment( GraphDatabaseSettings.log_queries_runtime_logging_enabled, "true" );
+        QueryLogger queryLogger = queryLogger( logProvider, config );
 
         // when
-        queryLogger.startQueryExecution( query );
         clock.forward( 11, TimeUnit.MILLISECONDS );
         query.planningCompleted( new PlannerInfo( "magic", "quantum", Collections.emptyList() ) );
-        queryLogger.endSuccess( query );
+        queryLogger.success( query );
 
         // then
         String expectedSessionString = sessionConnectionDetails( SESSION_1, "TestUser" );
@@ -509,11 +497,16 @@ public class QueryLoggerTest
         );
     }
 
-    private QueryLogger queryLogger( LogProvider logProvider, QueryLogEntryContent... flags )
+    private ConfiguredQueryLogger queryLogger( LogProvider logProvider )
     {
-        EnumSet<QueryLogEntryContent> flagSet = EnumSet.noneOf( QueryLogEntryContent.class );
-        Collections.addAll( flagSet, flags );
-        return new QueryLogger( logProvider.getLog( getClass() ), () -> true, () -> thresholdInMillis, flagSet );
+        return queryLogger( logProvider,
+                Config.defaults( GraphDatabaseSettings.log_queries_parameter_logging_enabled, "false" ) );
+    }
+
+    private ConfiguredQueryLogger queryLogger( LogProvider logProvider, Config config )
+    {
+        config.augment( GraphDatabaseSettings.log_queries_threshold, thresholdInMillis + "ms" );
+        return new ConfiguredQueryLogger( logProvider.getLog( getClass() ), config );
     }
 
     private ExecutingQuery query(
