@@ -31,6 +31,7 @@ import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 /**
  * The PageList maintains the off-heap meta-data for the individual memory pages.
@@ -49,6 +50,8 @@ import static java.lang.String.format;
  */
 class PageList
 {
+    private static final boolean forceSlowMemoryClear = flag( PageList.class, "forceSlowMemoryClear", false );
+
     private static final int META_DATA_BYTES_PER_PAGE = 32;
     private static final int OFFSET_LOCK_WORD = 0; // 8 bytes
     private static final int OFFSET_ADDRESS = 8; // 8 bytes
@@ -100,7 +103,7 @@ class PageList
         this.memoryManager = memoryManager;
         this.swappers = swappers;
         this.victimPageAddress = victimPageAddress;
-        long bytes = pageCount * META_DATA_BYTES_PER_PAGE;
+        long bytes = ((long) pageCount) * META_DATA_BYTES_PER_PAGE;
         this.baseAddress = memoryManager.allocateAligned( bytes );
         clearMemory( baseAddress, pageCount );
     }
@@ -124,6 +127,21 @@ class PageList
 
     private void clearMemory( long baseAddress, long pageCount )
     {
+        long memcpyChunkSize = UnsafeUtil.pageSize();
+        long metaDataEntriesPerChunk = memcpyChunkSize / META_DATA_BYTES_PER_PAGE;
+        if ( pageCount < metaDataEntriesPerChunk || forceSlowMemoryClear )
+        {
+            clearMemorySimple( baseAddress, pageCount );
+        }
+        else
+        {
+            clearMemoryFast( baseAddress, pageCount, memcpyChunkSize, metaDataEntriesPerChunk );
+        }
+        UnsafeUtil.fullFence(); // Guarantee the visibility of the cleared memory.
+    }
+
+    private void clearMemorySimple( long baseAddress, long pageCount )
+    {
         long address = baseAddress - 8;
         for ( long i = 0; i < pageCount; i++ )
         {
@@ -132,7 +150,23 @@ class PageList
             UnsafeUtil.putLong( address += 8, PageCursor.UNBOUND_PAGE_ID ); // file page id
             UnsafeUtil.putLong( address += 8, 0 ); // rest
         }
-        UnsafeUtil.fullFence(); // Guarantee the visibility of the cleared memory
+    }
+
+    private void clearMemoryFast( long baseAddress, long pageCount, long memcpyChunkSize, long metaDataEntriesPerChunk )
+    {
+        // Initialise one chunk worth of data.
+        clearMemorySimple( baseAddress, metaDataEntriesPerChunk );
+        // Since all entries contain the same data, we can now copy this chunk over and over.
+        long chunkCopies = pageCount / metaDataEntriesPerChunk - 1;
+        long address = baseAddress + memcpyChunkSize;
+        for ( int i = 0; i < chunkCopies; i++ )
+        {
+            UnsafeUtil.copyMemory( baseAddress, address, memcpyChunkSize );
+            address += memcpyChunkSize;
+        }
+        // Finally fill in the tail.
+        long tailCount = pageCount % metaDataEntriesPerChunk;
+        clearMemorySimple( address, tailCount );
     }
 
     /**
