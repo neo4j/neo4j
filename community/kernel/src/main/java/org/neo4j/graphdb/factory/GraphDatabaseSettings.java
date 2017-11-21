@@ -573,7 +573,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled =
             setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
 
-    @Description( "Log allocated bytes for the executed queries being logged." )
+    @Description( "Log allocated bytes for the executed queries being logged. " +
+            "The logged number is cumulative over the duration of the query, " +
+            "i.e. for memory intense or long-running queries the value may be larger than the current memory allocation." )
     public static final Setting<Boolean> log_queries_allocation_logging_enabled =
             setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
 
