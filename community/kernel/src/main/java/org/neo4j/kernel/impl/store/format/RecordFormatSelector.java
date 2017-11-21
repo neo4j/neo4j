@@ -309,11 +309,12 @@ public class RecordFormatSelector
             {
                 return Standard.LATEST_RECORD_FORMATS;
             }
-            final Optional<RecordFormats> knownStandardFormat =
-                    KNOWN_FORMATS.stream().filter( recordFormats -> recordFormat.equals( recordFormats.name() ) ).findFirst();
-            if ( knownStandardFormat.isPresent() )
+            for ( RecordFormats knownFormat : KNOWN_FORMATS )
             {
-                return knownStandardFormat.get();
+                if ( recordFormat.equals( knownFormat.name() ) )
+                {
+                    return knownFormat;
+                }
             }
             RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
             if ( formatFactory != null )

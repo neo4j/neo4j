@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -45,9 +46,9 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -121,16 +122,12 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  */
 public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader>
 {
-    public abstract static class Configuration extends CommonAbstractStore.Configuration
-    {
-    }
-
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
 
     private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final DynamicArrayStore arrayStore;
-    private final boolean canStorePoints;
+    private final boolean allowStorePoints;
 
     public PropertyStore(
             File fileName,
@@ -149,7 +146,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
-        canStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
+        allowStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
     }
 
     @Override
@@ -281,18 +278,18 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator allocator, boolean canStorePoints )
+            DynamicRecordAllocator allocator, boolean allowStorePoints )
     {
-        DynamicArrayStore.allocateRecords( target, array, allocator, canStorePoints );
+        DynamicArrayStore.allocateRecords( target, array, allocator, allowStorePoints );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Value value )
     {
-        encodeValue( block, keyId, value, stringStore, arrayStore, canStorePoints );
+        encodeValue( block, keyId, value, stringStore, arrayStore, allowStorePoints );
     }
 
     public static void encodeValue( PropertyBlock block, int keyId, Value value, DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator,
-            boolean canStorePoints )
+            boolean allowStorePoints )
     {
         if ( value instanceof ArrayValue )
         {
@@ -306,7 +303,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = new ArrayList<>();
-            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, canStorePoints );
+            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePoints );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
@@ -316,7 +313,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else
         {
-            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, canStorePoints ) );
+            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePoints ) );
         }
     }
 
@@ -325,14 +322,14 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         private PropertyBlock block;
         private int keyId;
         private DynamicRecordAllocator stringAllocator;
-        private final boolean canStorePoints;
+        private final boolean allowStorePoints;
 
-        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean canStorePoints )
+        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePoints )
         {
             this.block = block;
             this.keyId = keyId;
             this.stringAllocator = stringAllocator;
-            this.canStorePoints = canStorePoints;
+            this.allowStorePoints = allowStorePoints;
         }
 
         @Override
@@ -444,13 +441,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IllegalArgumentException
         {
-            if ( canStorePoints )
+            if ( allowStorePoints )
             {
                 block.setValueBlocks( GeometryType.encodePoint( keyId, crs, coordinate ) );
             }
             else
             {
-                // TODO throw exception
+                throw new UnsupportedFormatCapabilityException( Capability.POINT_PROPERTIES );
             }
         }
     }
@@ -544,8 +541,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return new PropertyRecord( -1 );
     }
 
-    public boolean canStorePoints()
+    public boolean allowStorePoints()
     {
-        return canStorePoints;
+        return allowStorePoints;
     }
 }

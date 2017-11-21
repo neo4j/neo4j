@@ -665,4 +665,9 @@ public class NeoStores implements AutoCloseable
     {
         return (RecordStore<RECORD>) getStore( type );
     }
+
+    public RecordFormats getRecordFormats()
+    {
+        return recordFormats;
+    }
 }

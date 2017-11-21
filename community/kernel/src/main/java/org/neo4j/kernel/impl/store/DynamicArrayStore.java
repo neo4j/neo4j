@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -90,7 +91,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
-    private final boolean canStorePoints;
+    private final boolean allowStorePoints;
 
     public DynamicArrayStore(
             File fileName,
@@ -105,7 +106,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
-        canStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
+        allowStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
     }
 
     @Override
@@ -173,16 +174,16 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
 
     public static void allocateFromPoints( Collection<DynamicRecord> target, PointValue[] array,
-            DynamicRecordAllocator recordAllocator, boolean canStorePoints )
+            DynamicRecordAllocator recordAllocator, boolean allowStorePoints )
     {
-        if ( canStorePoints )
+        if ( allowStorePoints )
         {
             byte[] bytes = GeometryType.encodePointArray( array );
             allocateRecordsFromBytes( target, bytes, recordAllocator );
         }
         else
         {
-            // TODO throw exception
+            throw new UnsupportedFormatCapabilityException( Capability.POINT_PROPERTIES );
         }
     }
 
@@ -212,11 +213,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public void allocateRecords( Collection<DynamicRecord> target, Object array )
     {
-        allocateRecords( target, array, this, canStorePoints );
+        allocateRecords( target, array, this, allowStorePoints );
     }
 
     public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator, boolean canStorePoints )
+            DynamicRecordAllocator recordAllocator, boolean allowStorePoints )
     {
         if ( !array.getClass().isArray() )
         {
@@ -230,7 +231,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
         else if ( type.equals( PointValue.class ) )
         {
-            allocateFromPoints( target, (PointValue[]) array, recordAllocator, canStorePoints );
+            allocateFromPoints( target, (PointValue[]) array, recordAllocator, allowStorePoints );
         }
         else
         {
