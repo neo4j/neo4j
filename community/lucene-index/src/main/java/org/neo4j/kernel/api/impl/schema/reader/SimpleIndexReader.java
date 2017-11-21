@@ -33,7 +33,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
@@ -187,18 +186,16 @@ public class SimpleIndexReader implements IndexReader
         BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
-        BooleanQuery query = null;
         try
         {
             TotalHitCountCollector collector = new TotalHitCountCollector();
-            query = nodeIdAndValueQuery.build();
-            getIndexSearcher().search( query, collector );
+            getIndexSearcher().search( nodeIdAndValueQuery.build(), collector );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
             return collector.getTotalHits();
         }
-        catch ( Throwable t )
+        catch ( IOException e )
         {
-            throw new RuntimeException( LuceneErrorDetails.searchError( descriptor.toString(), query ), t );
+            throw new RuntimeException( e );
         }
     }
 
@@ -223,9 +220,9 @@ public class SimpleIndexReader implements IndexReader
             getIndexSearcher().search( query, docValuesCollector );
             return docValuesCollector.getValuesIterator( NODE_ID_KEY );
         }
-        catch ( Throwable t )
+        catch ( IOException e )
         {
-            throw new RuntimeException( LuceneErrorDetails.searchError( descriptor.toString(), query ), t );
+            throw new RuntimeException( e );
         }
     }
 

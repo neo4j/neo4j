@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.collector.FirstHitCollector;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -107,29 +106,18 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
         Term documentTerm = format.rangeTerm( range );
         TermQuery query = new TermQuery( documentTerm );
         FirstHitCollector hitCollector = new FirstHitCollector();
-        try
+        searcher.search( query, hitCollector );
+        if ( hitCollector.hasMatched() )
         {
-            searcher.search( query, hitCollector );
-            if ( hitCollector.hasMatched() )
+            Document document = searcher.doc( hitCollector.getMatchedDoc() );
+            for ( IndexableField field : document.getFields() )
             {
-                Document document = searcher.doc( hitCollector.getMatchedDoc() );
-                for ( IndexableField field : document.getFields() )
+                if ( !format.isRangeOrLabelField( field ) )
                 {
-                    if ( !format.isRangeOrLabelField( field ) )
-                    {
-                        Long label = Long.valueOf( field.name() );
-                        fields.put( label, format.readBitmap( field ) );
-                    }
+                    Long label = Long.valueOf( field.name() );
+                    fields.put( label, format.readBitmap( field ) );
                 }
             }
-        }
-        catch ( IOException e )
-        {
-            throw new IOException( LuceneErrorDetails.searchError( "LabelScanStore", query ), e );
-        }
-        catch ( Throwable t )
-        {
-            throw new RuntimeException( LuceneErrorDetails.searchError( "LabelScanStore", query ), t );
         }
         return fields;
     }

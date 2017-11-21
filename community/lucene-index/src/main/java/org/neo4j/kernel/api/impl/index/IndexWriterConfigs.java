@@ -26,9 +26,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
-import org.apache.lucene.util.InfoStream;
-
-import java.util.function.Supplier;
 
 import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -66,11 +63,6 @@ public final class IndexWriterConfigs
     private IndexWriterConfigs()
     {
         throw new AssertionError( "Not for instantiation!" );
-    }
-
-    public static IndexWriterConfig standard( Supplier<InfoStream> infoStream )
-    {
-        return standard().setInfoStream( infoStream.get() );
     }
 
     public static IndexWriterConfig standard()

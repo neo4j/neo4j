@@ -112,7 +112,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                                             .withOperationalMode( operationalMode )
                                             .withSamplingConfig( samplingConfig )
                                             .withIndexStorage( getIndexStorage( indexId ) )
-                                            .withWriterConfig( () -> IndexWriterConfigs.standard( () -> new ToggleableInfoStream( log ) ) )
                                             .build();
         luceneIndex.open();
         return new LuceneIndexAccessor( luceneIndex, descriptor );

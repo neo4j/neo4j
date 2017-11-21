@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
@@ -89,7 +88,7 @@ public class SimpleUniquenessVerifierTest
     public void partitionSearcherIsClosed() throws IOException
     {
         PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
-        SimpleUniquenessVerifier verifier = getSimpleUniquenessVerifier( partitionSearcher );
+        SimpleUniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher );
 
         verifier.close();
 
@@ -220,7 +219,7 @@ public class SimpleUniquenessVerifierTest
             PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
             when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
 
-            try ( UniquenessVerifier verifier = getSimpleUniquenessVerifier( partitionSearcher ) )
+            try ( UniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher ) )
             {
                 verifier.verify( propertyAccessor, PROPERTY_KEY_IDS );
             }
@@ -284,11 +283,6 @@ public class SimpleUniquenessVerifierTest
         searcherManager.maybeRefreshBlocking();
     }
 
-    private SimpleUniquenessVerifier getSimpleUniquenessVerifier( PartitionSearcher partitionSearcher )
-    {
-        return new SimpleUniquenessVerifier( partitionSearcher, mock( IndexDescriptor.class ) );
-    }
-
     private PropertyAccessor newPropertyAccessor( List<Object> propertyValues )
     {
         return new TestPropertyAccessor( propertyValues.toArray() );
@@ -297,6 +291,6 @@ public class SimpleUniquenessVerifierTest
     private UniquenessVerifier newSimpleUniquenessVerifier() throws IOException
     {
         PartitionSearcher partitionSearcher = new PartitionSearcher( searcherManager );
-        return getSimpleUniquenessVerifier( partitionSearcher );
+        return new SimpleUniquenessVerifier( partitionSearcher );
     }
 }

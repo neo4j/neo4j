@@ -85,13 +85,4 @@ public abstract class AbstractIndexPartition implements Closeable
      */
     public abstract ResourceIterator<File> snapshot() throws IOException;
 
-    /**
-     * TODO Remove this. Hack only available for custom build.
-     *
-     * @return {@link File} pointing to folder for this partition.
-     */
-    public File getFolder()
-    {
-        return partitionFolder;
-    }
 }

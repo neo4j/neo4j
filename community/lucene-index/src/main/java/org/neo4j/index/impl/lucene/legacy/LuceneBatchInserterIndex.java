@@ -48,7 +48,6 @@ import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -368,9 +367,9 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             }
             return wrapIndexHits( primitiveHits );
         }
-        catch ( Throwable e )
+        catch ( IOException e )
         {
-            throw new RuntimeException( LuceneErrorDetails.searchError( identifier.toString(), query ), e );
+            throw new RuntimeException( e );
         }
         finally
         {

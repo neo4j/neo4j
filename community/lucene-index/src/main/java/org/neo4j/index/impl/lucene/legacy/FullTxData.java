@@ -52,7 +52,6 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 
 import static java.util.Collections.emptyList;
@@ -239,9 +238,9 @@ class FullTxData extends TxData
             }
             return result;
         }
-        catch ( Throwable t )
+        catch ( IOException e )
         {
-            throw new RuntimeException( LuceneErrorDetails.searchError( index.identifier.toString(), query ), t );
+            throw new RuntimeException( e );
         }
     }
 

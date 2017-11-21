@@ -41,11 +41,9 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static java.util.stream.Collectors.toList;
 
@@ -63,12 +61,10 @@ import static java.util.stream.Collectors.toList;
 public class PartitionedUniquenessVerifier implements UniquenessVerifier
 {
     private final List<PartitionSearcher> searchers;
-    private final IndexDescriptor descriptor;
 
-    public PartitionedUniquenessVerifier( List<PartitionSearcher> searchers, IndexDescriptor descriptor )
+    public PartitionedUniquenessVerifier( List<PartitionSearcher> searchers )
     {
         this.searchers = searchers;
-        this.descriptor = descriptor;
     }
 
     @Override
@@ -193,10 +189,6 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
                 throw (IndexEntryConflictException) cause;
             }
             throw e;
-        }
-        catch ( Throwable t )
-        {
-            throw new RuntimeException( LuceneErrorDetails.searchError( descriptor.toString(), query ) );
         }
     }
 
