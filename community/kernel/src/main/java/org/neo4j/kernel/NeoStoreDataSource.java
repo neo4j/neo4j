@@ -701,6 +701,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 config, storageEngine );
 
         kernel.registerTransactionHook( transactionEventHandlers );
+        life.add( kernel );
 
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
                 explicitIndexProviderLookup, storageEngine );

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.Permissions;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.InwardKernel;
@@ -87,7 +86,7 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( engine, transactions, this );
+        this.newKernel = new NewKernel( engine, transactions.explicitIndexTxStateSupplier(), this );
     }
 
     @Override
@@ -132,9 +131,15 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
+    public void start() throws Throwable
+    {
+        newKernel.start();
+    }
+
+    @Override
     public void stop() throws Throwable
     {
-        transactions.disposeAll();
+        newKernel.stop();
     }
 
     @Override

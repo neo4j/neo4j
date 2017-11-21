@@ -547,11 +547,12 @@ public class KernelIT extends KernelIntegrationTest
     {
         // Given
         assumeThat(kernel, instanceOf( Kernel.class ));
+        Kernel lifeKernel = (Kernel) kernel;
 
         // Then
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )
+        try ( KernelTransaction tx = this.kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )
         {
-            ((Kernel)kernel).stop();
+            lifeKernel.stop();
             tx.acquireStatement().readOperations().nodeExists( 0L );
             fail("Should have been terminated.");
         }
@@ -559,6 +560,8 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Success
         }
+
+        lifeKernel.start(); // to allow graceful test completion
     }
 
     @Test
