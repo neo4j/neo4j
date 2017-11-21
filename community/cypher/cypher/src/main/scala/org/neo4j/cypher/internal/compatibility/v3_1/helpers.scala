@@ -37,8 +37,8 @@ object helpers {
   def as3_1(config: CypherCompilerConfiguration) =
     CypherCompilerConfiguration3_1(
       config.queryCacheSize,
-      config.statsDivergenceThreshold,
-      config.queryPlanTTL,
+      config.statsDivergenceCalculator.initialThreshold,
+      config.statsDivergenceCalculator.initialMillis,
       config.useErrorsOverWarnings,
       config.idpMaxTableSize,
       config.idpIterationDuration,

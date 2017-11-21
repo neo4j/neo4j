@@ -56,7 +56,7 @@ class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, Compilatio
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
 
     val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
-      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
+      new PlanFingerprintReference(clock, config.statsDivergenceCalculator, _)
     val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)

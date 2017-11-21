@@ -23,6 +23,7 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprint
 import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
@@ -276,8 +277,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   val config = CypherCompilerConfiguration(
     queryCacheSize = 100,
-    statsDivergenceThreshold = 0.5,
-    queryPlanTTL = 1000,
+    statsDivergenceCalculator = PlanFingerprint.divergenceNoDecayCalculator(0.5, 1000L),
     useErrorsOverWarnings = false,
     nonIndexedLabelWarningThreshold = 10000,
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,

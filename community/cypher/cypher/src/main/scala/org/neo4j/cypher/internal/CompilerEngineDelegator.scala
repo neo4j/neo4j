@@ -23,6 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_2.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.frontend.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
@@ -39,8 +40,11 @@ import org.neo4j.logging.{Log, LogProvider}
 object CompilerEngineDelegator {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
+  val DEFAULT_QUERY_PLAN_TARGET: Long = 1000 * 60 * 60 * 7 // 7 hours
   val CLOCK: Clock = Clock.systemUTC()
   val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.5
+  val DEFAULT_STATISTICS_DIVERGENCE_TARGET = 0.1
+  val DEFAULT_DIVERGENCE_ALGORITHM = PlanFingerprint.inverse
   val DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD = 10000
 }
 
@@ -92,8 +96,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
   private val config = CypherCompilerConfiguration(
     queryCacheSize = getQueryCacheSize,
-    statsDivergenceThreshold = getStatisticsDivergenceThreshold,
-    queryPlanTTL = getMinimumTimeBeforeReplanning,
+    statsDivergenceCalculator = getStatisticsDivergenceCalculator,
     useErrorsOverWarnings = useErrorsOverWarnings,
     idpMaxTableSize = idpMaxTableSize,
     idpIterationDuration = idpIterationDuration,
@@ -210,19 +213,28 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     getSetting(graph, setting, DEFAULT_QUERY_CACHE_SIZE)
   }
 
-  private def getStatisticsDivergenceThreshold : Double = {
-    val setting: (Config) => Double = config => config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
-    getSetting(graph, setting, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
+  private def getStatisticsDivergenceCalculator: StatsDivergenceCalculator = {
+    val divergenceThreshold = getSetting(graph,
+      config => config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue(),
+      DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
+    val targetThreshold = getSetting(graph,
+      config => config.get(GraphDatabaseSettings.query_statistics_divergence_target).doubleValue(),
+      DEFAULT_STATISTICS_DIVERGENCE_TARGET)
+    val minReplanTime = getSetting(graph,
+      config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis().longValue(),
+      DEFAULT_QUERY_PLAN_TTL)
+    val targetReplanTime = getSetting(graph,
+      config => config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis().longValue(),
+      DEFAULT_QUERY_PLAN_TARGET)
+    val divergenceAlgorithm = getSetting(graph,
+      config => config.get(GraphDatabaseSettings.cypher_replan_algorithm),
+      DEFAULT_DIVERGENCE_ALGORITHM)
+    PlanFingerprint.divergenceCalculatorFor(divergenceAlgorithm, divergenceThreshold, targetThreshold, minReplanTime, targetReplanTime)
   }
 
   private def getNonIndexedLabelWarningThreshold: Long = {
     val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
     getSetting(graph, setting, DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
-  }
-
-  private def getMinimumTimeBeforeReplanning: Long = {
-    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis().longValue()
-    getSetting(graph, setting, DEFAULT_QUERY_PLAN_TTL)
   }
 
   private def getSetting[A](gds: GraphDatabaseQueryService, configLookup: Config => A, default: A): A = gds match {

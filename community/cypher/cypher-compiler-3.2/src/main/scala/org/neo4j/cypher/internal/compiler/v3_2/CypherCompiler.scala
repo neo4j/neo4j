@@ -146,8 +146,7 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
 }
 
 case class CypherCompilerConfiguration(queryCacheSize: Int,
-                                       statsDivergenceThreshold: Double,
-                                       queryPlanTTL: Long,
+                                       statsDivergenceCalculator: StatsDivergenceCalculator,
                                        useErrorsOverWarnings: Boolean,
                                        idpMaxTableSize: Int,
                                        idpIterationDuration: Long,

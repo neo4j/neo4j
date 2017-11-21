@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprint
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterators.single
 
@@ -37,6 +38,52 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         graph.execute(s"MATCH (n:${if(i % 2 == 0) "Label" else "Babel"}) RETURN n LIMIT ${i % 2}")
         graph.execute("CREATE (:Babel)")
       }, org.neo4j.kernel.api.KernelTransaction.Type.explicit)
+    }
+  }
+
+  test("plot decay - 200 hours") {
+    val threshold = 0.75
+    val minTime = 10 * 1000
+    val inverse = PlanFingerprint.divergenceCalculatorFor("inverse", threshold, 0.1, minTime, 1000 * 60 * 60 * 7)
+    val exponential = PlanFingerprint.divergenceCalculatorFor("exponential", threshold, 0.1, minTime, 1000 * 60 * 60 * 7)
+    println("Seconds\tHours\tDays\tInverse\tExponential")
+    Range(0,200).foreach { hours =>
+      val seconds = hours * 60 * 60
+      val millis = seconds * 1000
+      val days = 1.0 * hours / 24.0
+      println(s"$seconds\t$hours\t$days\t${inverse.decay(millis)}\t${exponential.decay(millis)}")
+    }
+  }
+
+  test("plot decay2 - seconds times 1.2") {
+    val threshold = 0.75
+    val minTime = 10 * 1000
+    val inverse = PlanFingerprint.divergenceCalculatorFor("inverse", threshold, 0.1, minTime, 1000 * 60 * 60 * 7)
+    val exponential = PlanFingerprint.divergenceCalculatorFor("exponential", threshold, 0.1, minTime, 1000 * 60 * 60 * 7)
+    println("Seconds\tHours\tDays\tInverse\tExponential")
+    var seconds = 1.0
+    Range(0,200).foreach { index =>
+      val millis = (seconds * 1000).toLong
+      val hours = 1.0 * seconds / (60 * 60)
+      val days = hours / 24
+      println(s"$seconds\t$hours\t$days\t${inverse.decay(millis)}\t${exponential.decay(millis)}")
+      seconds = 1.2 * seconds
+    }
+  }
+
+  test("plot decay3 - closeup") {
+    val threshold = 0.75
+    val minTime = 10 * 1000
+//    val targetTime = 1000 * 60 * 60 * 7
+    val targetTime = minTime + 1000
+    val inverse = PlanFingerprint.divergenceCalculatorFor("inverse", threshold, 0.1, minTime, targetTime)
+    val exponential = PlanFingerprint.divergenceCalculatorFor("exponential", threshold, 0.1, minTime, targetTime)
+    println("Seconds\tHours\tDays\tInverse\tExponential")
+    Range(0,100).foreach { seconds =>
+      val millis = seconds * 1000
+      val hours = 1.0 * seconds / (60 * 60)
+      val days = hours / 24
+      println(s"$seconds\t$hours\t$days\t${inverse.decay(millis)}\t${exponential.decay(millis)}")
     }
   }
 
