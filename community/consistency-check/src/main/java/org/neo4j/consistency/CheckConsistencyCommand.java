@@ -36,7 +36,6 @@ import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -51,7 +50,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 public class CheckConsistencyCommand implements AdminCommand
 {
@@ -234,7 +233,7 @@ public class CheckConsistencyCommand implements AdminCommand
                       .createPageCache( fileSystem, additionalConfiguration ) )
         {
             RecoveryRequiredChecker requiredChecker =
-                    new RecoveryRequiredChecker( fileSystem, pageCache, new Monitors() );
+                    new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
             if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
             {
                 throw new CommandFailed(
@@ -253,7 +252,7 @@ public class CheckConsistencyCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
             Map<String,String> additionalConfig )
     {
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
+        additionalConfig.put( GraphDatabaseSettings.active_database.name(), databaseName );
 
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled()
                 .withSettings( additionalConfig ).build();

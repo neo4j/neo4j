@@ -26,8 +26,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
@@ -137,7 +137,8 @@ public class ConsistencyCheckTool
     {
         try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
-            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, new Monitors() );
+            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache,
+                    tuningConfiguration, new Monitors() );
             if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
             {
                 throw new ToolFailureException( Strings.joinAsLines(

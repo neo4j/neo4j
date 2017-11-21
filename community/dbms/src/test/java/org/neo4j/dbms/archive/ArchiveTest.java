@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.Files.isDirectory;
@@ -121,9 +122,9 @@ public class ArchiveTest
         Files.write( directory.resolve( "another-file" ), new byte[0] );
 
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        new Dumper().dump( directory, archive, path -> path.getFileName().toString().equals( "another-file" ) );
+        new Dumper().dump( directory, directory, archive, path -> path.getFileName().toString().equals( "another-file" ) );
         Path newDirectory = testDirectory.file( "the-new-directory" ).toPath();
-        new Loader().load( archive, newDirectory );
+        new Loader().load( archive, newDirectory, newDirectory );
 
         Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
         Files.createDirectories( expectedOutput );
@@ -141,9 +142,9 @@ public class ArchiveTest
         Files.write( subdir.resolve( "a-file" ), new byte[0] );
 
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        new Dumper().dump( directory, archive, path -> path.getFileName().toString().equals( "subdir" ) );
+        new Dumper().dump( directory, directory, archive, path -> path.getFileName().toString().equals( "subdir" ) );
         Path newDirectory = testDirectory.file( "the-new-directory" ).toPath();
-        new Loader().load( archive, newDirectory );
+        new Loader().load( archive, newDirectory, newDirectory );
 
         Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
         Files.createDirectories( expectedOutput );
@@ -151,12 +152,38 @@ public class ArchiveTest
         assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDirectory ) );
     }
 
+    @Test
+    public void dumpAndLoadTransactionLogsFromCustomLocations() throws IOException, IncorrectFormat
+    {
+        Path directory = testDirectory.directory( "dbDirectory" ).toPath();
+        Path txLogsDirectory = testDirectory.directory( "txLogsDirectory" ).toPath();
+        Files.write( directory.resolve( "dbfile" ), new byte[0] );
+        Files.write( txLogsDirectory.resolve( TransactionLogFiles.DEFAULT_NAME + ".0" ), new byte[0] );
+
+        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        new Dumper().dump( directory, txLogsDirectory, archive, Predicates.alwaysFalse() );
+        Path newDirectory = testDirectory.file( "the-new-directory" ).toPath();
+        Path newTxLogsDirectory = testDirectory.file( "newTxLogsDirectory" ).toPath();
+        new Loader().load( archive, newDirectory, newTxLogsDirectory );
+
+        Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
+        Files.createDirectories( expectedOutput );
+        Files.write( expectedOutput.resolve( "dbfile" ), new byte[0] );
+
+        Path expectedTxLogs = testDirectory.directory( "expectedTxLogs" ).toPath();
+        Files.createDirectories( expectedTxLogs );
+        Files.write( expectedTxLogs.resolve( TransactionLogFiles.DEFAULT_NAME + ".0" ), new byte[0] );
+
+        assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDirectory ) );
+        assertEquals( describeRecursively( expectedTxLogs ), describeRecursively( newTxLogsDirectory ) );
+    }
+
     private void assertRoundTrips( Path oldDirectory ) throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        new Dumper().dump( oldDirectory, archive, Predicates.alwaysFalse() );
+        new Dumper().dump( oldDirectory, oldDirectory, archive, Predicates.alwaysFalse() );
         Path newDirectory = testDirectory.file( "the-new-directory" ).toPath();
-        new Loader().load( archive, newDirectory );
+        new Loader().load( archive, newDirectory, newDirectory );
 
         assertEquals( describeRecursively( oldDirectory ), describeRecursively( newDirectory ) );
     }

@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
@@ -40,6 +41,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
 public class RecoveryRequiredCheckerTest
 {
@@ -66,7 +68,7 @@ public class RecoveryRequiredCheckerTest
     public void shouldNotWantToRecoverIntactStore() throws Exception
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystem, pageCache );
+        RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache );
 
         assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
     }
@@ -74,11 +76,11 @@ public class RecoveryRequiredCheckerTest
     @Test
     public void shouldWantToRecoverBrokenStore() throws Exception
     {
-        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem ) )
+        try ( FileSystemAbstraction fileSystemAbstraction = createAndCrashWithDefaultConfig() )
         {
 
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-            RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
             assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
         }
@@ -87,11 +89,11 @@ public class RecoveryRequiredCheckerTest
     @Test
     public void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
-        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem ) )
+        try ( FileSystemAbstraction fileSystemAbstraction = createAndCrashWithDefaultConfig() )
         {
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
 
-            RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
             assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
 
@@ -101,16 +103,66 @@ public class RecoveryRequiredCheckerTest
         }
     }
 
-    private RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache )
+    @Test
+    public void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateRelativeLocation() throws Exception
     {
-        return new RecoveryRequiredChecker( fileSystem, pageCache, monitors );
+        File customTransactionLogsLocation = new File( storeDir, "tx-logs" );
+        Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getName() );
+        recoverBrokenStoreWithConfig( config );
     }
 
-    private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem )
-            throws IOException
+    @Test
+    public void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
-        final GraphDatabaseService db =
-                new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store );
+        File customTransactionLogsLocation = testDirectory.directory( "tx-logs" );
+        Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getAbsolutePath() );
+        recoverBrokenStoreWithConfig( config );
+    }
+
+    private void recoverBrokenStoreWithConfig( Config config ) throws IOException
+    {
+        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem, config ) )
+        {
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+
+            RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache, config );
+
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+
+            new TestGraphDatabaseFactory()
+                    .setFileSystem( fileSystemAbstraction )
+                    .newEmbeddedDatabaseBuilder( storeDir )
+                    .setConfig( config.getRaw() )
+                    .newGraphDatabase()
+                    .shutdown();
+
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+        }
+    }
+
+    private FileSystemAbstraction createAndCrashWithDefaultConfig() throws IOException
+    {
+        return createSomeDataAndCrash( storeDir, fileSystem, Config.defaults() );
+    }
+
+    private RecoveryRequiredChecker getRecoveryCheckerWithDefaultConfig( FileSystemAbstraction fileSystem, PageCache pageCache )
+    {
+        return getRecoveryChecker( fileSystem, pageCache, Config.defaults() );
+    }
+
+    private RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
+    {
+        return new RecoveryRequiredChecker( fileSystem, pageCache, config, monitors );
+    }
+
+    private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem,
+            Config config )
+    {
+        final GraphDatabaseService db = new TestGraphDatabaseFactory()
+                        .setFileSystem( fileSystem )
+                        .newImpermanentDatabaseBuilder( store )
+                        .setConfig( config.getRaw() )
+                        .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
         {

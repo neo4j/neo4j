@@ -24,13 +24,16 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
 public class TransactionLogCatchUpFactory
 {
     public TransactionLogCatchUpWriter create( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy ) throws IOException
+            Config config, LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir )
+            throws IOException
     {
-        return new TransactionLogCatchUpWriter( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy );
+        return new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config, logProvider, fromTxId,
+                asPartOfStoreCopy, keepTxLogsInStoreDir );
     }
 }

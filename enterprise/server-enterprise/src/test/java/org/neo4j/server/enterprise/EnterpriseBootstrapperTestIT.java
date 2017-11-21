@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_level;
 import static org.neo4j.helpers.collection.MapUtil.store;

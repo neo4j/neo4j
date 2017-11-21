@@ -36,8 +36,7 @@ public class OnlineBackupRequiredArguments
     private final Path reportDir;
 
     public OnlineBackupRequiredArguments( OptionalHostnamePort address, Path folder, String name, boolean fallbackToFull, boolean doConsistencyCheck,
-            long timeout,
-            Optional<Path> additionalConfig, Path reportDir )
+            long timeout, Optional<Path> additionalConfig, Path reportDir )
     {
         this.address = address;
         this.folder = folder;

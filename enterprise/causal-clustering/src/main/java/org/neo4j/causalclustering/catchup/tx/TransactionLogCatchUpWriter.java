@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -52,14 +53,19 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private long lastTxId = -1;
     private long expectedTxId;
 
-    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy ) throws IOException
+    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Config config,
+            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir ) throws IOException
     {
         this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
         this.asPartOfStoreCopy = asPartOfStoreCopy;
-        this.logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
-                .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 ).build();
+        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
+                .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 );
+        if ( !keepTxLogsInStoreDir )
+        {
+            logFilesBuilder.withConfig( config );
+        }
+        this.logFiles = logFilesBuilder.build();
         this.lifespan.add( logFiles );
         this.writer = new TransactionLogWriter( new LogEntryWriter( logFiles.getLogFile().getWriter() ) );
         this.storeDir = storeDir;

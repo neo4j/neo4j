@@ -186,6 +186,12 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
+    public void copyToDirectory( File file, File toDirectory ) throws IOException
+    {
+        fs.copyToDirectory( file, toDirectory );
+    }
+
+    @Override
     public void copyFile( File from, File to ) throws IOException
     {
         fs.copyFile( from, to );

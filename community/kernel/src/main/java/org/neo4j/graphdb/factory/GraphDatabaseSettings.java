@@ -101,6 +101,19 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> neo4j_home =
             setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT );
 
+    @Description( "Name of the database to load" )
+    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" );
+
+    @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
+            "same data directory." )
+    public static final Setting<File> data_directory = pathSetting( "dbms.directories.data", "data" );
+
+    @Internal
+    public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
+            data_directory, active_database,
+            ( data, current ) -> new File( new File( data, "databases" ), current ),
+            PATH );
+
     @Title( "Read only database" )
     @Description( "Only allow read operations from this Neo4j instance. " +
             "This mode still requires write access to the directory for lock purposes." )
@@ -432,6 +445,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> enable_native_schema_index =
             setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
+
+    @Description( "Location where Neo4j keeps the logical transaction logs." )
+    public static final Setting<File> logical_logs_location =
+            pathSetting( "dbms.directories.tx_log", "", database_path );
 
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +

@@ -27,18 +27,24 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -46,7 +52,9 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
@@ -132,6 +140,51 @@ public class StoreMigratorTest
         assertEquals( txId, actual.transactionId() );
         assertEquals( TransactionIdStore.UNKNOWN_TX_CHECKSUM, actual.checksum() );
         assertEquals( TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP, actual.commitTimestamp() );
+    }
+
+    @Test
+    public void extractTransactionInformationFromLogsInCustomRelativeLocation() throws Exception
+    {
+        File storeDir = directory.graphDbDir();
+        File customLogLocation = new File( storeDir, "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, storeDir );
+    }
+
+    @Test
+    public void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
+    {
+        File storeDir = directory.graphDbDir();
+        File customLogLocation = directory.directory( "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, storeDir );
+    }
+
+    private void extractTransactionalInformationFromLogs( String path, File customLogLocation, File storeDir ) throws IOException
+    {
+        LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
+        File neoStore = new File( storeDir, DEFAULT_NAME );
+
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( logical_logs_location, path ).newGraphDatabase();
+        for ( int i = 0; i < 10; i++ )
+        {
+            try ( Transaction transaction = database.beginTx() )
+            {
+                Node node = database.createNode();
+                transaction.success();
+            }
+        }
+        database.shutdown();
+
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
+                MetaDataRecordFormat.FIELD_NOT_PRESENT );
+        Config config = Config.defaults( logical_logs_location, path );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
+        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, storeDir, 100 );
+
+        File[] logFiles = customLogLocation.listFiles();
+        assertNotNull( logFiles );
+        assertEquals( 0, logPosition.getLogVersion() );
+        assertEquals( logFiles[0].length(), logPosition.getByteOffset() );
     }
 
     @Test

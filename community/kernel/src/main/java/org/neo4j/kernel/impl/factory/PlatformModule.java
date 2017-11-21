@@ -179,10 +179,6 @@ public class PlatformModule
         diagnosticsManager = life.add( dependencies
                 .satisfyDependency( new DiagnosticsManager( logging.getInternalLog( DiagnosticsManager.class ) ) ) );
 
-        // TODO please fix the bad dependencies instead of doing this.
-        // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
-        // (specifically) KernelExtensions, which creates an interesting out-of-order issue with #doAfterRecovery().
-        // Anyways please fix this.
         dependencies.satisfyDependency( dataSourceManager );
 
         availabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );

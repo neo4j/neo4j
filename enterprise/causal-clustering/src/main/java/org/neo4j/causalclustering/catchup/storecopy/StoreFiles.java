@@ -33,6 +33,7 @@ import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 public class StoreFiles
 {
@@ -60,7 +61,7 @@ public class StoreFiles
         this.fileFilter = fileFilter;
     }
 
-    public void delete( File storeDir ) throws IOException
+    public void delete( File storeDir, LogFiles logFiles ) throws IOException
     {
         // 'files' can be null if the directory doesn't exist. This is fine, we just ignore it then.
         File[] files = fs.listFiles( storeDir, fileFilter );
@@ -69,6 +70,15 @@ public class StoreFiles
             for ( File file : files )
             {
                 fs.deleteRecursively( file );
+            }
+        }
+
+        File[] txLogs = fs.listFiles( logFiles.logFilesDirectory() );
+        if ( txLogs != null )
+        {
+            for ( File txLog : txLogs )
+            {
+                fs.deleteFile( txLog );
             }
         }
 
@@ -94,11 +104,13 @@ public class StoreFiles
         }
     }
 
-    public void moveTo( File source, File target ) throws IOException
+    public void moveTo( File source, File target, LogFiles logFiles ) throws IOException
     {
+        fs.mkdirs( logFiles.logFilesDirectory() );
         for ( File candidate : fs.listFiles( source, fileFilter ) )
         {
-            fs.moveToDirectory( candidate, target );
+            File destination = logFiles.isLogFile( candidate) ? logFiles.logFilesDirectory() : target;
+            fs.moveToDirectory( candidate, destination );
         }
 
         Iterable<FileHandle> fileHandles = acceptedPageCachedFiles( source )::iterator;

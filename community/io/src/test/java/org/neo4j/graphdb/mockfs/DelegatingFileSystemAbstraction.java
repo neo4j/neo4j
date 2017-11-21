@@ -66,6 +66,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void copyToDirectory( File file, File toDirectory ) throws IOException
+    {
+        delegate.copyToDirectory( file, toDirectory );
+    }
+
+    @Override
     public boolean mkdir( File fileName )
     {
         return delegate.mkdir( fileName );

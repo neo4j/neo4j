@@ -125,6 +125,7 @@ public class CoreBootstrapper
     {
         ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
+                .withConfig( config )
                 .withLastCommittedTransactionIdSupplier( () -> readOnlyTransactionIdStore.getLastClosedTransactionId() - 1 )
                 .build();
 

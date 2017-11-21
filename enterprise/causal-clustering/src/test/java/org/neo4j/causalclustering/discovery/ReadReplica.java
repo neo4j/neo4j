@@ -97,9 +97,11 @@ public class ReadReplica implements ClusterMember
         config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
         config.put( OnlineBackupSettings.online_backup_server.name(), listenAddress( listenAddress, backupPort ) );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
+        config.put( GraphDatabaseSettings.logical_logs_location.name(), "replica-tx-logs-" + serverId );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
+
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
 

@@ -42,7 +42,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
@@ -179,8 +178,8 @@ public class InProcessBuilderTestIT
         // When
         // create graph db with one node upfront
         Path dir = Files.createTempDirectory( getClass().getSimpleName() + "_shouldRunBuilderOnExistingStorageDir" );
-        File storeDir = Config.defaults( DatabaseManagementSystemSettings.data_directory, dir.toString() )
-                .get( DatabaseManagementSystemSettings.database_path );
+        File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, dir.toString() )
+                .get( GraphDatabaseSettings.database_path );
         try
         {
             GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );

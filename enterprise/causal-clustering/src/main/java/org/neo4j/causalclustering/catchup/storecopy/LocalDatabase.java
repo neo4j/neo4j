@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -67,20 +68,25 @@ public class LocalDatabase implements Lifecycle
     private volatile AvailabilityRequirement currentRequirement;
 
     private volatile TransactionCommitProcess localCommit;
+    private LogFiles logFiles;
 
-    public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
-            Supplier<DatabaseHealth> databaseHealthSupplier, FileSystemWatcherService watcherService,
+    public LocalDatabase( File storeDir,
+            StoreFiles storeFiles,
+            LogFiles logFiles,
+            DataSourceManager dataSourceManager,
+            Supplier<DatabaseHealth> databaseHealthSupplier,
+            FileSystemWatcherService watcherService,
             AvailabilityGuard availabilityGuard,
             LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
+        this.logFiles = logFiles;
         this.dataSourceManager = dataSourceManager;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.availabilityGuard = availabilityGuard;
         this.watcherService = watcherService;
         this.log = logProvider.getLog( getClass() );
-
         raiseAvailabilityGuard( NOT_STOPPED );
     }
 
@@ -182,7 +188,7 @@ public class LocalDatabase implements Lifecycle
 
     public void delete() throws IOException
     {
-        storeFiles.delete( storeDir );
+        storeFiles.delete( storeDir, logFiles );
     }
 
     public boolean isEmpty() throws IOException
@@ -203,8 +209,8 @@ public class LocalDatabase implements Lifecycle
 
     void replaceWith( File sourceDir ) throws IOException
     {
-        storeFiles.delete( storeDir );
-        storeFiles.moveTo( sourceDir, storeDir );
+        storeFiles.delete( storeDir, logFiles );
+        storeFiles.moveTo( sourceDir, storeDir, logFiles );
     }
 
     public NeoStoreDataSource dataSource()

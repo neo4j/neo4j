@@ -20,12 +20,12 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -61,6 +61,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                     protected PlatformModule createPlatform( File storeDir, Config config,
                             Dependencies dependencies, GraphDatabaseFacade facade )
                     {
+                        config.augment( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
                         return new PlatformModule( storeDir, config, databaseInfo, dependencies, facade )
                         {
                             @Override

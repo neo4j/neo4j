@@ -23,30 +23,36 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.util.Validators;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.checkLock;
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
+import static org.neo4j.commandline.Util.isSameOrChildFile;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 public class RestoreDatabaseCommand
 {
     private FileSystemAbstraction fs;
     private final File fromPath;
     private final File databaseDir;
+    private final File transactionLogsDirectory;
     private String databaseName;
     private boolean forceOverwrite;
 
-    public RestoreDatabaseCommand( FileSystemAbstraction fs, File fromPath, Config config,
-                                   String databaseName, boolean forceOverwrite )
+    public RestoreDatabaseCommand( FileSystemAbstraction fs, File fromPath, Config config, String databaseName,
+            boolean forceOverwrite )
     {
         this.fs = fs;
         this.fromPath = fromPath;
         this.databaseName = databaseName;
         this.forceOverwrite = forceOverwrite;
         this.databaseDir = config.get( database_path ).getAbsoluteFile();
+        this.transactionLogsDirectory = config.get( GraphDatabaseSettings.logical_logs_location ).getAbsoluteFile();
     }
 
     public void execute() throws IOException, CommandFailed
@@ -75,6 +81,19 @@ public class RestoreDatabaseCommand
         checkLock( databaseDir.toPath() );
 
         fs.deleteRecursively( databaseDir );
-        fs.copyRecursively( fromPath, databaseDir );
+
+        if ( !isSameOrChildFile( databaseDir, transactionLogsDirectory ) )
+        {
+            fs.deleteRecursively( transactionLogsDirectory );
+        }
+        LogFiles backupLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromPath, fs ).build();
+        File[] files = fromPath.listFiles();
+        if ( files != null )
+        {
+            for ( File file : files )
+            {
+                fs.copyToDirectory( file, backupLogFiles.isLogFile( file ) ? transactionLogsDirectory : databaseDir );
+            }
+        }
     }
 }
