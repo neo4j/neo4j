@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -45,13 +44,11 @@ public class RecoveryRequiredChecker
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final Monitors monitors;
-    private Config config;
 
-    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config, Monitors monitors )
+    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Monitors monitors )
     {
         this.fs = fs;
         this.pageCache = pageCache;
-        this.config = config;
         this.monitors = monitors;
     }
 
@@ -65,9 +62,7 @@ public class RecoveryRequiredChecker
         }
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( dataDir, fs, pageCache )
-                                           .withConfig( config )
-                                           .withLogEntryReader( reader ).build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( dataDir, fs, pageCache ).withLogEntryReader( reader ).build();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, monitors );
         return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }

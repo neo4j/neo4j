@@ -39,10 +39,6 @@ public interface LogFiles extends Lifecycle
 
     File[] logFiles();
 
-    boolean isLogFile( File file );
-
-    File logFilesDirectory();
-
     File getLogFileForVersion( long version );
 
     File getHighestLogFile();

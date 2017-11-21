@@ -51,7 +51,6 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
 {
     public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final FilenameFilter DEFAULT_FILENAME_FILTER = TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
-    private static final File[] EMPTY_FILES_ARRAY = {};
 
     private final TransactionLogFilesContext logFilesContext;
     private final TransactionLogFileInformation logFileInformation;
@@ -61,13 +60,11 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     private final LogFileCreationMonitor monitor;
     private final TransactionLogFilesHelper fileHelper;
     private final TransactionLogFile logFile;
-    private final File logsDirectory;
 
-    TransactionLogFiles( File logsDirectory, String name, TransactionLogFilesContext context )
+    TransactionLogFiles( File directory, String name, TransactionLogFilesContext context )
     {
         this.logFilesContext = context;
-        this.logsDirectory = logsDirectory;
-        this.fileHelper = new TransactionLogFilesHelper( logsDirectory, name );
+        this.fileHelper = new TransactionLogFilesHelper( directory, name );
         this.fileSystem = context.getFileSystem();
         this.monitor = context.getLogFileCreationMonitor();
         this.logHeaderCache = new LogHeaderCache( 1000 );
@@ -108,24 +105,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public File[] logFiles()
     {
-        File[] files = fileSystem.listFiles( fileHelper.getParentDirectory(), fileHelper.getLogFilenameFilter() );
-        if ( files == null )
-        {
-            return EMPTY_FILES_ARRAY;
-        }
-        return files;
-    }
-
-    @Override
-    public boolean isLogFile( File file )
-    {
-        return fileHelper.getLogFilenameFilter().accept( null, file.getName() );
-    }
-
-    @Override
-    public File logFilesDirectory()
-    {
-        return logsDirectory;
+        return fileSystem.listFiles( fileHelper.getParentDirectory(), fileHelper.getLogFilenameFilter() );
     }
 
     @Override

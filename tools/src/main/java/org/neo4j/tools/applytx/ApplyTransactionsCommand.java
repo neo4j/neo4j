@@ -33,7 +33,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -67,9 +66,8 @@ public class ApplyTransactionsCommand extends ArgsCommand
     @Override
     protected void run( Args args, PrintStream out ) throws Exception
     {
-        DependencyResolver dependencyResolver = to.get().getDependencyResolver();
-        TransactionIdStore txIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
-        Config config = dependencyResolver.resolveDependency( Config.class );
+        TransactionIdStore txIdStore = to.get().getDependencyResolver().resolveDependency(
+                TransactionIdStore.class );
         long fromTx = txIdStore.getLastCommittedTransaction().transactionId();
         long toTx;
         if ( args.orphans().isEmpty() )
@@ -91,12 +89,12 @@ public class ApplyTransactionsCommand extends ArgsCommand
             toTx = Long.parseLong( whereTo );
         }
 
-        long lastApplied = applyTransactions( from, to.get(), config, fromTx, toTx, out );
+        long lastApplied = applyTransactions( from, to.get(), fromTx, toTx, out );
         out.println( "Applied transactions up to and including " + lastApplied );
     }
 
-    private long applyTransactions( File fromPath, GraphDatabaseAPI toDb, Config toConfig,
-            long fromTxExclusive, long toTxInclusive, PrintStream out )
+    private long applyTransactions( File fromPath, GraphDatabaseAPI toDb, long fromTxExclusive, long toTxInclusive,
+            PrintStream out )
             throws IOException, TransactionFailureException
     {
         DependencyResolver resolver = toDb.getDependencyResolver();
@@ -109,7 +107,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
             LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath,
-                    Config.defaults(), new Monitors() ) );
+                    new Monitors() ) );
             life.start();
             long lastAppliedTx = fromTxExclusive;
             // Some progress if there are more than a couple of transactions to apply

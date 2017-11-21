@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
@@ -61,7 +62,7 @@ public class CsvImporterTest
         {
             Config config = Config.builder()
                     .withSettings( additionalConfig() )
-                    .withSetting( GraphDatabaseSettings.database_path, dbDir.getAbsolutePath() )
+                    .withSetting( DatabaseManagementSystemSettings.database_path, dbDir.getAbsolutePath() )
                     .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
 
             CsvImporter csvImporter = new CsvImporter(
@@ -79,7 +80,7 @@ public class CsvImporterTest
 
     private Map<String,String> additionalConfig()
     {
-        return stringMap( GraphDatabaseSettings.database_path.name(), getDatabasePath(),
+        return stringMap( DatabaseManagementSystemSettings.database_path.name(), getDatabasePath(),
                 GraphDatabaseSettings.logs_directory.name(), getLogsDirectory() );
     }
 

@@ -90,6 +90,7 @@ public class RebuildReplicatedIdGeneratorsTest
             reopenedStores.makeStoreOk();
             assertEquals( 51L, reopenedStores.getNodeStore().nextId() );
         }
+
     }
 
     private ReplicatedIdGeneratorFactory getIdGenerationFactory( FileSystemAbstraction fileSystemAbstraction )

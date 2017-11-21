@@ -186,15 +186,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void copyToDirectory( File file, File toDirectory ) throws IOException
-    {
-        adversary.injectFailure(
-                SecurityException.class, IllegalArgumentException.class, FileNotFoundException.class,
-                NullPointerException.class, IOException.class );
-        delegate.copyToDirectory( file, toDirectory );
-    }
-
-    @Override
     public boolean isDirectory( File file )
     {
         adversary.injectFailure( SecurityException.class );

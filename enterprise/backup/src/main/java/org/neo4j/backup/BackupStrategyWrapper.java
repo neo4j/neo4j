@@ -20,12 +20,16 @@
 package org.neo4j.backup;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static org.neo4j.backup.BackupProtocolService.startTemporaryDb;
 
 class BackupStrategyWrapper
 {

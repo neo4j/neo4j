@@ -40,8 +40,6 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -69,7 +67,6 @@ public class StoreFilesTest
     private EphemeralFileSystemAbstraction pc;
     private PageCache pageCache;
     private StoreFiles storeFiles;
-    private LogFiles logFiles;
 
     public StoreFilesTest()
     {
@@ -96,7 +93,6 @@ public class StoreFilesTest
         pc = hiddenFileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( pc );
         storeFiles = new StoreFiles( fs, pageCache );
-        logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.directory(), fs ).build();
     }
 
     private void createOnFileSystem( File file ) throws IOException
@@ -132,7 +128,7 @@ public class StoreFilesTest
         assertTrue( fs.fileExists( a ) );
         assertTrue( pc.fileExists( b ) );
 
-        storeFiles.delete( dir, logFiles );
+        storeFiles.delete( dir );
 
         assertFalse( fs.fileExists( a ) );
         assertFalse( pc.fileExists( b ) );
@@ -154,7 +150,7 @@ public class StoreFilesTest
 
         FilenameFilter filter = ( directory, name ) -> !name.equals( "c" ) && !name.equals( "d" );
         storeFiles = new StoreFiles( fs, pageCache, filter );
-        storeFiles.delete( dir, logFiles );
+        storeFiles.delete( dir );
 
         assertFalse( fs.fileExists( a ) );
         assertFalse( pc.fileExists( b ) );
@@ -179,7 +175,7 @@ public class StoreFilesTest
 
         FilenameFilter filter = ( directory, name ) -> !name.startsWith( "ignore" );
         storeFiles = new StoreFiles( fs, pageCache, filter );
-        storeFiles.delete( dir, logFiles );
+        storeFiles.delete( dir );
 
         assertFalse( fs.fileExists( a ) );
         assertFalse( pc.fileExists( b ) );
@@ -193,7 +189,7 @@ public class StoreFilesTest
         File dir = getBaseDir();
         File sub = new File( dir, "sub" );
 
-        storeFiles.delete( sub, logFiles );
+        storeFiles.delete( sub );
     }
 
     @Test
@@ -212,7 +208,7 @@ public class StoreFilesTest
         createOnFileSystem( new File( tgt, ".fs-ignore" ) );
         createOnPageCache( new File( tgt, ".pc-ignore" ) );
 
-        storeFiles.moveTo( src, tgt, logFiles );
+        storeFiles.moveTo( src, tgt );
 
         assertFalse( fs.fileExists( a ) );
         assertFalse( pc.fileExists( b ) );
@@ -237,7 +233,7 @@ public class StoreFilesTest
         createOnFileSystem( new File( tgt, ".fs-ignore" ) );
         createOnPageCache( new File( tgt, ".pc-ignore" ) );
 
-        storeFiles.moveTo( src, tgt, logFiles );
+        storeFiles.moveTo( src, tgt );
 
         assertFalse( fs.fileExists( a ) );
         assertFalse( pc.fileExists( b ) );
@@ -268,7 +264,7 @@ public class StoreFilesTest
 
         FilenameFilter filter = ( directory, name ) -> !name.startsWith( "ignore" );
         storeFiles = new StoreFiles( fs, pageCache, filter );
-        storeFiles.moveTo( src, tgt, logFiles );
+        storeFiles.moveTo( src, tgt );
 
         assertFalse( fs.fileExists( a ) );
         assertFalse( pc.fileExists( b ) );

@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -38,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Dependencies;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
@@ -58,7 +55,6 @@ public class LogFilesBuilder
     private boolean readOnly;
     private PageCache pageCache;
     private File storeDirectory;
-    private File logsDirectory;
     private Config config;
     private Long rotationThreshold;
     private LogEntryReader logEntryReader;
@@ -104,15 +100,13 @@ public class LogFilesBuilder
     /**
      * Build log files that will be able to perform only operations on a lgo files directly.
      * Any operation that will require access to a store or other parts of runtime will fail.
-     * Should be mainly used only for testing purposes or when only file based operations will be performed
-     * @param logsDirectory log files directory
+     * Should be mainly used only for testing purposes.
+     * @param storeDirectory store directory
      * @param fileSystem file system
      */
-    public static LogFilesBuilder logFilesBasedOnlyBuilder( File logsDirectory, FileSystemAbstraction fileSystem )
+    public static LogFilesBuilder logFilesBasedOnlyBuilder( File storeDirectory, FileSystemAbstraction fileSystem )
     {
-        LogFilesBuilder builder = new LogFilesBuilder();
-        builder.logsDirectory = logsDirectory;
-        builder.fileSystem = fileSystem;
+        LogFilesBuilder builder = builder( storeDirectory, fileSystem );
         builder.fileBasedOperationsOnly = true;
         return builder;
     }
@@ -174,38 +168,7 @@ public class LogFilesBuilder
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
-        File logsDirectory = getLogsDirectory();
-        filesContext.getFileSystem().mkdirs( logsDirectory );
-        return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
-    }
-
-    private File getLogsDirectory()
-    {
-        if ( logsDirectory != null )
-        {
-            return logsDirectory;
-        }
-        if ( config != null )
-        {
-            File neo4jHome = config.get( GraphDatabaseSettings.neo4j_home );
-            File databasePath = config.get( database_path );
-            File logicalLogsLocation = config.get( GraphDatabaseSettings.logical_logs_location );
-            if ( storeDirectory.equals( neo4jHome ) && databasePath.equals( logicalLogsLocation ) )
-            {
-                return storeDirectory;
-            }
-            if ( logicalLogsLocation.isAbsolute() )
-            {
-                return logicalLogsLocation;
-            }
-            if ( neo4jHome == null || !storeDirectory.equals( databasePath ) )
-            {
-                Path relativeLogicalLogPath = databasePath.toPath().relativize( logicalLogsLocation.toPath() );
-                return new File( storeDirectory, relativeLogicalLogPath.toString() );
-            }
-            return logicalLogsLocation;
-        }
-        return storeDirectory;
+        return new TransactionLogFiles( storeDirectory, logFileName, filesContext );
     }
 
     TransactionLogFilesContext buildContext() throws IOException

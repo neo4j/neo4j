@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.backup;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,22 +37,14 @@ public class RestoreClusterUtils
     {
     }
 
-    public static File createClassicNeo4jStore( File base, FileSystemAbstraction fileSystem, int nodesToCreate,
-            String recordFormat )
+    public static File createClassicNeo4jStore( File base, FileSystemAbstraction fileSystem, int nodesToCreate, String recordFormat )
     {
-        return createClassicNeo4jStore( base, fileSystem, nodesToCreate, recordFormat, StringUtils.EMPTY );
-    }
-
-    public static File createClassicNeo4jStore( File base, FileSystemAbstraction fileSystem,
-            int nodesToCreate, String recordFormat, String logicalLogsLocation )
-    {
-        File storeDir = new File( base, "existing" );
+        File existingDbDir = new File( base, "existing" );
         GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .newEmbeddedDatabaseBuilder( storeDir )
+                .newEmbeddedDatabaseBuilder( existingDbDir )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormat )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
-                .setConfig( GraphDatabaseSettings.logical_logs_location, logicalLogsLocation )
                 .newGraphDatabase();
 
         for ( int i = 0; i < (nodesToCreate / 2); i++ )
@@ -70,6 +60,6 @@ public class RestoreClusterUtils
 
         db.shutdown();
 
-        return storeDir;
+        return existingDbDir;
     }
 }

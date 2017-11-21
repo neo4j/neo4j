@@ -30,6 +30,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.dbms.config.WrappedBatchImporterConfigurationForNeo4jAdmin;
 import org.neo4j.commandline.dbms.config.WrappedCsvInputConfigurationForNeo4jAdmin;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -42,6 +43,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.tooling.ImportTool.csvConfiguration;
 import static org.neo4j.tooling.ImportTool.extractInputFiles;
@@ -98,7 +100,7 @@ class CsvImporter implements Importer
     public void doImport() throws IOException
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
-        File storeDir = databaseConfig.get( GraphDatabaseSettings.database_path );
+        File storeDir = databaseConfig.get( DatabaseManagementSystemSettings.database_path );
         File logsDir = databaseConfig.get( GraphDatabaseSettings.logs_directory );
         File reportFile = new File( reportFileName );
 

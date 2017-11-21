@@ -32,8 +32,8 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.Dumper;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
@@ -41,8 +41,7 @@ import org.neo4j.kernel.internal.locker.StoreLocker;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.canonicalPath;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 
 public class DumpCommand implements AdminCommand
 {
@@ -67,10 +66,7 @@ public class DumpCommand implements AdminCommand
     {
         String database = arguments.parse( args ).get( "database" );
         Path archive = calculateArchive( database, arguments.getMandatoryPath( "to" ) );
-
-        Config config = buildConfig( database );
-        Path databaseDirectory = canonicalPath( getDatabaseDirectory( config ) );
-        Path transactionLogsDirectory = canonicalPath( getTransactionalLogsDirectory( config ) );
+        Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
 
         try
         {
@@ -83,7 +79,7 @@ public class DumpCommand implements AdminCommand
 
         try ( Closeable ignored = StoreLockChecker.check( databaseDirectory ) )
         {
-            dump( database, databaseDirectory, transactionLogsDirectory, archive );
+            dump( database, databaseDirectory, archive );
         }
         catch ( StoreLockException e )
         {
@@ -101,23 +97,13 @@ public class DumpCommand implements AdminCommand
         }
     }
 
-    private Path getDatabaseDirectory( Config config )
-    {
-        return config.get( database_path ).toPath();
-    }
-
-    private Path getTransactionalLogsDirectory( Config config )
-    {
-        return config.get( logical_logs_location ).toPath();
-    }
-
-    private Config buildConfig( String databaseName )
+    private Path toDatabaseDirectory( String databaseName )
     {
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled()
-                .withSetting( GraphDatabaseSettings.active_database, databaseName )
-                .build();
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .build().get( database_path ).toPath();
     }
 
     private Path calculateArchive( String database, Path to )
@@ -125,12 +111,11 @@ public class DumpCommand implements AdminCommand
         return Files.isDirectory( to ) ? to.resolve( database + ".dump" ) : to;
     }
 
-    private void dump( String database, Path databaseDirectory, Path transactionalLogsDirectory, Path archive )
-            throws CommandFailed
+    private void dump( String database, Path databaseDirectory, Path archive ) throws CommandFailed
     {
         try
         {
-            dumper.dump( databaseDirectory, transactionalLogsDirectory, archive, this::isStoreLock );
+            dumper.dump( databaseDirectory, archive, this::isStoreLock );
         }
         catch ( FileAlreadyExistsException e )
         {

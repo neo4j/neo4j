@@ -51,7 +51,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 
@@ -191,30 +190,6 @@ public class FileUtils
         return target;
     }
 
-    /**
-     * Utility method that copy a file from its current location to the
-     * provided target directory.
-     *
-     * @param file file that needs to be copied.
-     * @param targetDirectory the destination directory
-     * @throws IOException
-     */
-    public static void copyFileToDirectory( File file, File targetDirectory ) throws IOException
-    {
-        if ( !targetDirectory.exists() )
-        {
-            Files.createDirectories( targetDirectory.toPath() );
-        }
-        if ( !targetDirectory.isDirectory() )
-        {
-            throw new IllegalArgumentException(
-                    "Move target must be a directory, not " + targetDirectory );
-        }
-
-        File target = new File( targetDirectory, file.getName() );
-        copyFile( file, target );
-    }
-
     public static void renameFile( File srcFile, File renameToFile, CopyOption... copyOptions ) throws IOException
     {
         Files.move( srcFile.toPath(), renameToFile.toPath(), copyOptions );
@@ -289,7 +264,22 @@ public class FileUtils
     {
         //noinspection ResultOfMethodCallIgnored
         dstFile.getParentFile().mkdirs();
-        Files.copy( srcFile.toPath(), dstFile.toPath(), StandardCopyOption.REPLACE_EXISTING );
+        try ( FileInputStream input = new FileInputStream( srcFile );
+              FileOutputStream output = new FileOutputStream( dstFile ) )
+        {
+            int bufferSize = 1024;
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead;
+            while ( (bytesRead = input.read( buffer )) != -1 )
+            {
+                output.write( buffer, 0, bytesRead );
+            }
+        }
+        catch ( IOException e )
+        {
+            // Because the message from this cause may not mention which file it's about
+            throw new IOException( "Could not copy '" + srcFile + "' to '" + dstFile + "'", e );
+        }
     }
 
     public static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException

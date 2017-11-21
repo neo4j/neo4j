@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -42,14 +41,13 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     private final LifeSupport life = new LifeSupport();
     private final LogicalTransactionStore physicalStore;
 
-    public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, File fromPath, Config config,
-            Monitors monitors ) throws IOException
+    public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, File fromPath, Monitors monitors )
+            throws IOException
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100 );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder
                 .activeFilesBuilder( fromPath, fs, pageCache ).withLogEntryReader( logEntryReader )
-                .withConfig( config )
                 .build();
         physicalStore = new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader,
                 monitors, true );

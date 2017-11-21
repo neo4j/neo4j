@@ -31,7 +31,7 @@ class TransactionLogFilesHelper
     private static final String VERSION_SUFFIX = ".";
     private static final String REGEX_VERSION_SUFFIX = "\\.";
 
-    static final FilenameFilter DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( REGEX_DEFAULT_NAME );
+    public static final FilenameFilter DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( REGEX_DEFAULT_NAME );
 
     private final File logBaseName;
     private final FilenameFilter logFileFilter;

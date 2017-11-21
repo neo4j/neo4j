@@ -19,11 +19,6 @@
  */
 package org.neo4j.dbms.archive;
 
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -34,13 +29,20 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Random;
 
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 public class LoaderTest
@@ -55,7 +57,7 @@ public class LoaderTest
         Path destination = testDirectory.file( "the-destination" ).toPath();
         try
         {
-            new Loader().load( archive, destination, destination );
+            new Loader().load( archive, destination );
             fail( "Expected an exception" );
         }
         catch ( NoSuchFileException e )
@@ -72,7 +74,7 @@ public class LoaderTest
         Path destination = testDirectory.file( "the-destination" ).toPath();
         try
         {
-            new Loader().load( archive, destination, destination );
+            new Loader().load( archive, destination );
             fail( "Expected an exception" );
         }
         catch ( IncorrectFormat e )
@@ -96,7 +98,7 @@ public class LoaderTest
         Path destination = testDirectory.file( "the-destination" ).toPath();
         try
         {
-            new Loader().load( archive, destination, destination );
+            new Loader().load( archive, destination );
             fail( "Expected an exception" );
         }
         catch ( IncorrectFormat e )
@@ -112,29 +114,12 @@ public class LoaderTest
         Path destination = testDirectory.directory( "the-destination" ).toPath();
         try
         {
-            new Loader().load( archive, destination, destination );
+            new Loader().load( archive, destination );
             fail( "Expected an exception" );
         }
         catch ( FileAlreadyExistsException e )
         {
             assertEquals( destination.toString(), e.getMessage() );
-        }
-    }
-
-    @Test
-    public void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists() throws IOException, IncorrectFormat
-    {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        Path destination = testDirectory.file( "the-destination" ).toPath();
-        Path txLogsDestination = testDirectory.directory( "txLogsDestination" ).toPath();
-        try
-        {
-            new Loader().load( archive, destination, txLogsDestination );
-            fail( "Expected an exception" );
-        }
-        catch ( FileAlreadyExistsException e )
-        {
-            assertEquals( txLogsDestination.toString(), e.getMessage() );
         }
     }
 
@@ -146,30 +131,12 @@ public class LoaderTest
         Path destination = testDirectory.directory( "subdir/the-destination" ).toPath();
         try
         {
-            new Loader().load( archive, destination, destination );
+            new Loader().load( archive, destination );
             fail( "Expected an exception" );
         }
         catch ( NoSuchFileException e )
         {
             assertEquals( destination.getParent().toString(), e.getMessage() );
-        }
-    }
-
-    @Test
-    public void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryDoesntExist()
-            throws IOException, IncorrectFormat
-    {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        Path destination = testDirectory.file( "destination" ).toPath();
-        Path txLogsDestination = testDirectory.directory( "subdir/txLogs" ).toPath();
-        try
-        {
-            new Loader().load( archive, destination, txLogsDestination );
-            fail( "Expected an exception" );
-        }
-        catch ( NoSuchFileException e )
-        {
-            assertEquals( txLogsDestination.getParent().toString(), e.getMessage() );
         }
     }
 
@@ -182,7 +149,7 @@ public class LoaderTest
         Files.write( destination.getParent(), new byte[0] );
         try
         {
-            new Loader().load( archive, destination, destination );
+            new Loader().load( archive, destination );
             fail( "Expected an exception" );
         }
         catch ( FileSystemException e )
@@ -202,33 +169,12 @@ public class LoaderTest
         Files.createDirectories( destination.getParent() );
         try ( Closeable ignored = withPermissions( destination.getParent(), emptySet() ) )
         {
-            new Loader().load( archive, destination, destination );
+            new Loader().load( archive, destination );
             fail( "Expected an exception" );
         }
         catch ( AccessDeniedException e )
         {
             assertEquals( destination.getParent().toString(), e.getMessage() );
-        }
-    }
-
-    @Test
-    public void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryIsNotWritable()
-            throws IOException, IncorrectFormat
-    {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        Path destination = testDirectory.file( "destination" ).toPath();
-        Path txLogsDrectory = testDirectory.directory( "subdir/txLogs" ).toPath();
-        Files.createDirectories( txLogsDrectory.getParent() );
-        try ( Closeable ignored = withPermissions( txLogsDrectory.getParent(), emptySet() ) )
-        {
-            new Loader().load( archive, destination, txLogsDrectory );
-            fail( "Expected an exception" );
-        }
-        catch ( AccessDeniedException e )
-        {
-            assertEquals( txLogsDrectory.getParent().toString(), e.getMessage() );
         }
     }
 }

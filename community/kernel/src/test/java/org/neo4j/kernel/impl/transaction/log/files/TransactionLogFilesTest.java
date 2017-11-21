@@ -36,9 +36,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TransactionLogFilesTest
@@ -47,13 +45,13 @@ public class TransactionLogFilesTest
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private File storeDirectory;
+    private File logDirectory;
     private final String filename = "filename";
 
     @Before
     public void setUp() throws Exception
     {
-        storeDirectory = testDirectory.directory();
+        logDirectory = testDirectory.directory();
     }
 
     @Test
@@ -67,7 +65,7 @@ public class TransactionLogFilesTest
         final File versionFileName = files.getLogFileForVersion( version );
 
         // then
-        final File expected = new File( storeDirectory, getVersionedLogFileName( version ) );
+        final File expected = new File( logDirectory, getVersionedLogFileName( version ) );
         assertEquals( expected, versionFileName );
     }
 
@@ -77,10 +75,10 @@ public class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "2" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) );
-        fileSystemRule.create( new File( storeDirectory, filename ) );
+        fileSystemRule.create( new File( logDirectory, getVersionedLogFileName( "1" ) ) );
+        fileSystemRule.create( new File( logDirectory, getVersionedLogFileName( "some", "2" ) ) );
+        fileSystemRule.create( new File( logDirectory, getVersionedLogFileName( "3" ) ) );
+        fileSystemRule.create( new File( logDirectory, filename ) );
 
         // when
         final List<File> seenFiles = new ArrayList<>();
@@ -94,8 +92,8 @@ public class TransactionLogFilesTest
 
         // then
         assertThat( seenFiles, containsInAnyOrder(
-                new File( storeDirectory, getVersionedLogFileName( filename, "1" ) ),
-                new File( storeDirectory, getVersionedLogFileName( filename, "3" ) ) )  );
+                new File( logDirectory, getVersionedLogFileName( filename, "1" ) ),
+                new File( logDirectory, getVersionedLogFileName( filename, "3" ) ) )  );
         assertThat( seenVersions, containsInAnyOrder( 1L, 3L ) );
     }
 
@@ -105,10 +103,10 @@ public class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) );
-        fileSystemRule.create( new File( storeDirectory, filename ) );
+        fileSystemRule.create( new File( logDirectory, getVersionedLogFileName( "1" ) ) );
+        fileSystemRule.create( new File( logDirectory, getVersionedLogFileName( "some", "4" ) ) );
+        fileSystemRule.create( new File( logDirectory, getVersionedLogFileName( "3" ) ) );
+        fileSystemRule.create( new File( logDirectory, filename ) );
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -123,8 +121,8 @@ public class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) );
-        fileSystemRule.create( new File( storeDirectory, filename ) );
+        fileSystemRule.create( new File( logDirectory, getVersionedLogFileName( "some", "4" ) ) );
+        fileSystemRule.create( new File( logDirectory, filename ) );
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -176,19 +174,10 @@ public class TransactionLogFilesTest
         logFiles.getLogVersion( file );
     }
 
-    @Test
-    public void isLogFile() throws IOException
-    {
-        LogFiles logFiles = createLogFiles();
-        assertFalse( logFiles.isLogFile( new File( "aaa.tx.log" ) ) );
-        assertTrue( logFiles.isLogFile( new File( "filename.0" ) ) );
-        assertTrue( logFiles.isLogFile( new File( "filename.17" ) ) );
-    }
-
     private LogFiles createLogFiles() throws IOException
     {
         return LogFilesBuilder
-                .builder( storeDirectory, fileSystemRule )
+                .builder( logDirectory, fileSystemRule )
                 .withLogFileName( filename )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )

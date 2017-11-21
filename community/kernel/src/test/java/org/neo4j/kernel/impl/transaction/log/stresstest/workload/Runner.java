@@ -70,7 +70,7 @@ public class Runner implements Callable<Long>
         {
             TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
-            LogFiles logFiles = life.add( createLogFiles( transactionIdStore, fileSystem ) );
+            LogFiles logFiles = life.add( createPhysicalLogFiles( transactionIdStore, fileSystem ) );
 
             TransactionAppender transactionAppender = life.add(
                     createBatchingTransactionAppender( transactionIdStore, transactionMetadataCache, logFiles ) );
@@ -115,7 +115,7 @@ public class Runner implements Callable<Long>
                 transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, databaseHealth );
     }
 
-    private LogFiles createLogFiles( TransactionIdStore transactionIdStore,
+    private LogFiles createPhysicalLogFiles( TransactionIdStore transactionIdStore,
             FileSystemAbstraction fileSystemAbstraction ) throws IOException
     {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();

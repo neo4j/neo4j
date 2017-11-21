@@ -81,7 +81,7 @@ public class TestStoreAccess
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, Config.defaults(), monitors );
-        return requiredChecker.isRecoveryRequiredAt( storeDir );
+
+        return new RecoveryRequiredChecker( fileSystem, pageCache, monitors ).isRecoveryRequiredAt( storeDir );
     }
 }

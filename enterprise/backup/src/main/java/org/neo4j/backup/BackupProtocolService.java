@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -79,6 +80,7 @@ import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 

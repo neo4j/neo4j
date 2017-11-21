@@ -32,19 +32,17 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.canonicalPath;
 import static org.neo4j.commandline.Util.checkLock;
-import static org.neo4j.commandline.Util.isSameOrChildPath;
 import static org.neo4j.commandline.Util.wrapIOException;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 
 public class LoadCommand implements AdminCommand
 {
@@ -76,35 +74,22 @@ public class LoadCommand implements AdminCommand
         String database = arguments.get( "database" );
         boolean force = arguments.getBoolean( "force" );
 
-        Config config = buildConfig( database );
+        Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
 
-        Path databaseDirectory = canonicalPath( getDatabaseDirectory( config ) );
-        Path transactionLogsDirectory = canonicalPath( getTransactionalLogsDirectory( config ) );
-
-        deleteIfNecessary( databaseDirectory, transactionLogsDirectory, force );
-        load( archive, database, databaseDirectory, transactionLogsDirectory );
+        deleteIfNecessary( databaseDirectory, force );
+        load( archive, database, databaseDirectory );
     }
 
-    private Path getDatabaseDirectory( Config config )
-    {
-        return config.get( database_path ).toPath();
-    }
-
-    private Path getTransactionalLogsDirectory( Config config )
-    {
-        return config.get( logical_logs_location ).toPath();
-    }
-
-    private Config buildConfig( String databaseName )
+    private Path toDatabaseDirectory( String databaseName )
     {
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled()
-                .withSetting( GraphDatabaseSettings.active_database, databaseName )
-                .build();
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .build().get( database_path ).toPath();
     }
 
-    private void deleteIfNecessary( Path databaseDirectory, Path transactionLogsDirectory, boolean force ) throws CommandFailed
+    private void deleteIfNecessary( Path databaseDirectory, boolean force ) throws CommandFailed
     {
         try
         {
@@ -112,10 +97,6 @@ public class LoadCommand implements AdminCommand
             {
                 checkLock( databaseDirectory );
                 FileUtils.deletePathRecursively( databaseDirectory );
-                if ( !isSameOrChildPath( databaseDirectory, transactionLogsDirectory ) )
-                {
-                    FileUtils.deletePathRecursively( transactionLogsDirectory );
-                }
             }
         }
         catch ( IOException e )
@@ -124,11 +105,11 @@ public class LoadCommand implements AdminCommand
         }
     }
 
-    private void load( Path archive, String database, Path databaseDirectory, Path transactionLogsDirectory ) throws CommandFailed
+    private void load( Path archive, String database, Path databaseDirectory ) throws CommandFailed
     {
         try
         {
-            loader.load( archive, databaseDirectory, transactionLogsDirectory );
+            loader.load( archive, databaseDirectory );
         }
         catch ( NoSuchFileException e )
         {

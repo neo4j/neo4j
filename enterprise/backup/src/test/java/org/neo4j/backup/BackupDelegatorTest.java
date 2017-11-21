@@ -73,7 +73,7 @@ public class BackupDelegatorTest
         subject.tryCatchingUp( fromAddress, expectedStoreId, storeDir );
 
         // then
-        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, storeDir, true );
+        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, storeDir );
     }
 
     @Test

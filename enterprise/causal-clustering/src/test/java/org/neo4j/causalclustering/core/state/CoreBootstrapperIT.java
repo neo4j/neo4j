@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.causalclustering.backup.RestoreClusterUtils;
@@ -36,7 +35,6 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -50,13 +48,15 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static java.lang.Integer.parseInt;
-import static java.util.UUID.randomUUID;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+
+import static java.lang.Integer.parseInt;
+import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_id_batch_size;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
@@ -82,32 +82,7 @@ public class CoreBootstrapperIT
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         CoreBootstrapper bootstrapper = new CoreBootstrapper( classicNeo4jStore, pageCache, fileSystem,
                 Config.defaults(), NullLogProvider.getInstance() );
-        bootstrapAndVerify( nodeCount, fileSystem, classicNeo4jStore, pageCache, Config.defaults(), bootstrapper );
-    }
 
-    @Test
-    public void setAllCoreStateOnDatabaseWithCustomLogFilesLocation() throws Exception
-    {
-        // given
-        int nodeCount = 100;
-        FileSystemAbstraction fileSystem = fileSystemRule.get();
-        File baseDirectory = testDirectory.directory();
-        String customTransactionLogsLocation = "transaction-logs";
-        File classicNeo4jStore = RestoreClusterUtils.createClassicNeo4jStore( baseDirectory, fileSystem, nodeCount,
-                Standard.LATEST_NAME, customTransactionLogsLocation );
-
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location,
-                customTransactionLogsLocation );
-        CoreBootstrapper bootstrapper = new CoreBootstrapper( classicNeo4jStore, pageCache, fileSystem,
-                config, NullLogProvider.getInstance() );
-
-        bootstrapAndVerify( nodeCount, fileSystem, classicNeo4jStore, pageCache, config, bootstrapper );
-    }
-
-    private void bootstrapAndVerify( long nodeCount, FileSystemAbstraction fileSystem, File classicNeo4jStore,
-            PageCache pageCache, Config config, CoreBootstrapper bootstrapper ) throws IOException
-    {
         // when
         Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
         CoreSnapshot snapshot = bootstrapper.bootstrap( membership );
@@ -115,7 +90,7 @@ public class CoreBootstrapperIT
         // then
         int recordIdBatchSize = parseInt( record_id_batch_size.getDefaultValue() );
         assertThat( ((IdAllocationState) snapshot.get( CoreStateType.ID_ALLOCATION )).firstUnallocated( IdType.NODE ),
-                allOf( greaterThanOrEqualTo( nodeCount ), lessThanOrEqualTo( nodeCount + recordIdBatchSize ) ) );
+                allOf( greaterThanOrEqualTo( (long) nodeCount ), lessThanOrEqualTo( (long) nodeCount + recordIdBatchSize ) ) );
 
         /* Bootstrapped state is created in RAFT land at index -1 and term -1. */
         assertEquals( 0, snapshot.prevIndex() );
@@ -130,11 +105,10 @@ public class CoreBootstrapperIT
         /* The session state is initially empty. */
         assertEquals( new GlobalSessionTrackerState(), snapshot.get( CoreStateType.SESSION_TRACKER ) );
 
-        ReadOnlyTransactionStore transactionStore = new ReadOnlyTransactionStore( pageCache, fileSystem,
-                classicNeo4jStore, config, new Monitors() );
         LastCommittedIndexFinder lastCommittedIndexFinder = new LastCommittedIndexFinder(
                 new ReadOnlyTransactionIdStore( pageCache, classicNeo4jStore ),
-                transactionStore, NullLogProvider.getInstance() );
+                        new ReadOnlyTransactionStore( pageCache, fileSystem, classicNeo4jStore, new Monitors() ),
+                        NullLogProvider.getInstance() );
 
         long lastCommittedIndex = lastCommittedIndexFinder.getLastCommittedIndex();
         assertEquals( -1, lastCommittedIndex );
