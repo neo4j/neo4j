@@ -29,33 +29,55 @@ import java.util.Optional;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 
-@FunctionalInterface
 public interface FileMoveAction
 {
     void move( File toDir, CopyOption... copyOptions ) throws IOException;
 
+    File file();
+
     static FileMoveAction copyViaPageCache( File file, PageCache pageCache )
     {
-        return ( toDir, copyOptions ) ->
+        return new FileMoveAction()
         {
-            Optional<FileHandle> handle = pageCache.getCachedFileSystem().streamFilesRecursive( file ).findAny();
-            if ( handle.isPresent() )
+
+            @Override
+            public void move( File toDir, CopyOption... copyOptions ) throws IOException
             {
-                handle.get().rename( new File( toDir, file.getName() ), copyOptions );
+                Optional<FileHandle> handle = pageCache.getCachedFileSystem().streamFilesRecursive( file ).findAny();
+                if ( handle.isPresent() )
+                {
+                    handle.get().rename( new File( toDir, file.getName() ), copyOptions );
+                }
+            }
+
+            @Override
+            public File file()
+            {
+                return file;
             }
         };
     }
 
     static FileMoveAction copyViaFileSystem( File file, File basePath )
     {
-        Path base = basePath.toPath();
-        return ( toDir, copyOptions ) ->
+        return new FileMoveAction()
         {
-            Path originalPath = file.toPath();
-            Path relativePath = base.relativize( originalPath );
-            Path resolvedPath = toDir.toPath().resolve( relativePath );
-            Files.createDirectories( resolvedPath.getParent() );
-            Files.copy( originalPath, resolvedPath, copyOptions );
+            @Override
+            public void move( File toDir, CopyOption... copyOptions ) throws IOException
+            {
+                Path base = basePath.toPath();
+                Path originalPath = file.toPath();
+                Path relativePath = base.relativize( originalPath );
+                Path resolvedPath = toDir.toPath().resolve( relativePath );
+                Files.createDirectories( resolvedPath.getParent() );
+                Files.copy( originalPath, resolvedPath, copyOptions );
+            }
+
+            @Override
+            public File file()
+            {
+                return file;
+            }
         };
     }
 

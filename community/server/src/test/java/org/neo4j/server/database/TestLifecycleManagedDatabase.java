@@ -28,7 +28,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -66,7 +66,7 @@ public class TestLifecycleManagedDatabase
         dataDirectory = createTempDir();
 
         dbFactory = createGraphFactory();
-        dbConfig = Config.defaults( DatabaseManagementSystemSettings.data_directory, dataDirectory.getAbsolutePath() );
+        dbConfig = Config.defaults( GraphDatabaseSettings.data_directory, dataDirectory.getAbsolutePath() );
         theDatabase = newDatabase();
     }
 
@@ -142,7 +142,7 @@ public class TestLifecycleManagedDatabase
     {
         theDatabase.start();
         assertThat( theDatabase.getLocation().getAbsolutePath(),
-                is( dbConfig.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath() ) );
+                is( dbConfig.get( GraphDatabaseSettings.database_path ).getAbsolutePath() ) );
     }
 
     private LifecycleManagingDatabase.GraphFactory createGraphFactory()

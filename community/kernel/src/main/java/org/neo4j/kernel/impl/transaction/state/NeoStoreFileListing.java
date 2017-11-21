@@ -34,9 +34,9 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -47,17 +47,22 @@ import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 public class NeoStoreFileListing
 {
     private final File storeDir;
+    private final LogFiles logFiles;
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
     private final ExplicitIndexProviderLookup explicitIndexProviders;
     private final StorageEngine storageEngine;
     private final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
+    private final Function<File, StoreFileMetadata> logFileMapper =
+            file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE, true );
 
-    public NeoStoreFileListing( File storeDir, LabelScanStore labelScanStore, IndexingService indexingService,
+    public NeoStoreFileListing( File storeDir, LogFiles logFiles,
+            LabelScanStore labelScanStore, IndexingService indexingService,
             ExplicitIndexProviderLookup explicitIndexProviders, StorageEngine storageEngine )
     {
         this.storeDir = storeDir;
+        this.logFiles = logFiles;
         this.labelScanStore = labelScanStore;
         this.indexingService = indexingService;
         this.explicitIndexProviders = explicitIndexProviders;
@@ -100,20 +105,20 @@ public class NeoStoreFileListing
 
     private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )
     {
-        final File[] storeFiles = storeDir.listFiles();
-        if ( storeFiles == null )
+        File[] indexFiles = storeDir.listFiles( ( dir, name ) -> name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) );
+        if ( indexFiles != null )
         {
-            return;
-        }
-        for ( File file : storeFiles )
-        {
-            if ( file.getName().equals( IndexConfigStore.INDEX_DB_FILE_NAME ) )
+            for ( File file : indexFiles )
             {
                 files.add( toNotAStoreTypeFile.apply( file ) );
             }
-            else if ( includeLogs && transactionLogFile( file.getName() ) )
+        }
+        if ( includeLogs )
+        {
+            File[] logFiles = this.logFiles.logFiles();
+            for ( File logFile : logFiles )
             {
-                files.add( toNotAStoreTypeFile.apply( file ) );
+                files.add( logFileMapper.apply( logFile ) );
             }
         }
     }
@@ -153,11 +158,6 @@ public class NeoStoreFileListing
     private void gatherNeoStoreFiles( final Collection<StoreFileMetadata> targetFiles )
     {
         targetFiles.addAll( storageEngine.listStorageFiles() );
-    }
-
-    private boolean transactionLogFile( String name )
-    {
-        return name.startsWith( MetaDataStore.DEFAULT_NAME + ".transaction" ) && !name.endsWith( ".active" );
     }
 
     private static final class MultiResource implements Resource

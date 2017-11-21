@@ -401,10 +401,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
         LogFiles logFiles = LogFilesBuilder.builder(storeDir, fs)
-                                                        .withLogEntryReader( logEntryReader )
-                                                        .withLogFileMonitor( physicalLogMonitor )
-                                                        .withConfig( config )
-                                                        .withDependencies( dependencies ).build();
+                                           .withLogEntryReader( logEntryReader )
+                                           .withLogFileMonitor( physicalLogMonitor )
+                                           .withConfig( config )
+                                           .withDependencies( dependencies ).build();
 
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles );
         monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
@@ -450,6 +450,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PropertyAccessor propertyAccessor = dependencies.resolveDependency( PropertyAccessor.class );
 
             final NeoStoreKernelModule kernelModule = buildKernel(
+                    logFiles,
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
@@ -647,16 +648,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         life.add( recovery );
     }
 
-    private NeoStoreKernelModule buildKernel( TransactionAppender appender,
-                                      IndexingService indexingService,
-                                      StoreReadLayer storeLayer,
-                                      DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
-                                      StorageEngine storageEngine,
-                                      IndexConfigStore indexConfigStore,
-                                      TransactionIdStore transactionIdStore,
-                                      AvailabilityGuard availabilityGuard,
-                                      SystemNanoClock clock,
-                                      PropertyAccessor propertyAccessor ) throws KernelException, IOException
+    private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender, IndexingService indexingService,
+            StoreReadLayer storeLayer, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
+            StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
+            AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor ) throws KernelException, IOException
     {
         CpuClock cpuClock = CpuClock.NOT_AVAILABLE;
         if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
@@ -702,8 +697,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         kernel.registerTransactionHook( transactionEventHandlers );
 
-        final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
-                explicitIndexProviderLookup, storageEngine );
+        final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, logFiles, labelScanStore,
+                indexingService, explicitIndexProviderLookup, storageEngine );
 
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }

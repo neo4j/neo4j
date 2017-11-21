@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -97,6 +98,8 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -217,14 +220,16 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         DelayedRenewableTimeoutService catchupTimeoutService = new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
+        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, storeDir, config );
 
         LocalDatabase localDatabase =
-                new LocalDatabase( platformModule.storeDir, storeFiles, platformModule.dataSourceManager, databaseHealthSupplier, watcherService,
-                        platformModule.availabilityGuard, logProvider );
+                new LocalDatabase( platformModule.storeDir, storeFiles, logFiles, platformModule.dataSourceManager,
+                        databaseHealthSupplier,
+                        watcherService, platformModule.availabilityGuard, logProvider );
 
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ), new TxPullClient( catchUpClient, platformModule.monitors ),
-                new TransactionLogCatchUpFactory(), platformModule.monitors );
+                new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
@@ -232,7 +237,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
+        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, pageCache, localDatabase,
+                copiedStoreRecovery, remoteStore, logProvider );
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
         defaultStrategy.inject( topologyService, config, logProvider, myself );
@@ -374,5 +380,18 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         Map<String,String> overrideBackupSettings = new HashMap<>(  );
         overrideBackupSettings.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         return overrideBackupSettings;
+    }
+
+    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem,
+            File storeDir, Config config )
+    {
+        try
+        {
+            return LogFilesBuilder.activeFilesBuilder( storeDir, fileSystem, platformModule.pageCache ).withConfig( config ).build();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

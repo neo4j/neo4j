@@ -25,11 +25,18 @@ public class StoreFileMetadata
 {
     private final File file;
     private final int recordSize;
+    private final boolean isLogFile;
 
     public StoreFileMetadata( File file, int recordSize )
     {
+        this( file, recordSize, false );
+    }
+
+    public StoreFileMetadata( File file, int recordSize, boolean isLogFile )
+    {
         this.file = file;
         this.recordSize = recordSize;
+        this.isLogFile = isLogFile;
     }
 
     public File file()
@@ -40,5 +47,10 @@ public class StoreFileMetadata
     public int recordSize()
     {
         return recordSize;
+    }
+
+    public boolean isLogFile()
+    {
+        return isLogFile;
     }
 }

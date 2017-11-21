@@ -40,8 +40,9 @@ class OnlineBackupCommandConfigLoader
 
     Config loadConfig( Optional<Path> additionalConfig ) throws CommandFailed
     {
-        return withAdditionalConfig( additionalConfig,
-                Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled().build() );
+        Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir )
+                .withConnectorsDisabled().build();
+        return withAdditionalConfig( additionalConfig, config );
     }
 
     private Config withAdditionalConfig( Optional<Path> additionalConfig, Config config ) throws CommandFailed

@@ -55,6 +55,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -158,25 +159,39 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void moveToDirectoryMustRecursivelyMoveAllFilesInGivenDirectory() throws Exception
+    public void copyToDirectoryCopiesFile() throws IOException
     {
         File source = new File( path, "source" );
         File target = new File( path, "target" );
         File file = new File( source, "file" );
-        File sourceAfterMove = new File( target, "source" );
-        File fileAfterMove = new File( sourceAfterMove, "file" );
+        File fileAfterCopy = new File( target, "file" );
         fsa.mkdirs( source );
         fsa.mkdirs( target );
         fsa.create( file ).close();
-        assertTrue( fsa.fileExists( source ) );
         assertTrue( fsa.fileExists( file ) );
-        assertFalse( fsa.fileExists( sourceAfterMove ) );
-        assertFalse( fsa.fileExists( fileAfterMove ) );
-        fsa.moveToDirectory( source, target );
-        assertFalse( fsa.fileExists( source ) );
-        assertFalse( fsa.fileExists( file ) );
-        assertTrue( fsa.fileExists( sourceAfterMove ) );
-        assertTrue( fsa.fileExists( fileAfterMove ) );
+        assertFalse( fsa.fileExists( fileAfterCopy ) );
+        fsa.copyToDirectory( file, target );
+        assertTrue( fsa.fileExists( file ) );
+        assertTrue( fsa.fileExists( fileAfterCopy ) );
+    }
+
+    @Test
+    public void copyToDirectoryReplaceExistingFile() throws Exception
+    {
+        File source = new File( path, "source" );
+        File target = new File( path, "target" );
+        File file = new File( source, "file" );
+        File targetFile = new File( target, "file" );
+        fsa.mkdirs( source );
+        fsa.mkdirs( target );
+        fsa.create( file ).close();
+
+        writeIntegerIntoFile( targetFile );
+
+        fsa.copyToDirectory( file, target );
+        assertTrue( fsa.fileExists( file ) );
+        assertTrue( fsa.fileExists( targetFile ) );
+        assertEquals( 0L, fsa.getFileSize( targetFile ) );
     }
 
     @Test
@@ -811,5 +826,14 @@ public abstract class FileSystemAbstractionTest
     private void ensureDirectoryExists( File directory ) throws IOException
     {
         fsa.mkdirs( directory );
+    }
+
+    private void writeIntegerIntoFile( File targetFile ) throws IOException
+    {
+        StoreChannel storeChannel = fsa.create( targetFile );
+        ByteBuffer byteBuffer = ByteBuffer.allocate( Integer.SIZE ).putInt( 7 );
+        byteBuffer.flip();
+        storeChannel.writeAll( byteBuffer );
+        storeChannel.close();
     }
 }

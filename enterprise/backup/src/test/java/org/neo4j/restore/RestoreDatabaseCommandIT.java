@@ -21,33 +21,42 @@ package org.neo4j.restore;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 
+import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.locker.StoreLocker;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.Matchers.arrayWithSize;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCommandIT
@@ -64,7 +73,7 @@ public class RestoreDatabaseCommandIT
         Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
-        File toPath = config.get( DatabaseManagementSystemSettings.database_path );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
         int fromNodeCount = 10;
         int toNodeCount = 20;
 
@@ -93,7 +102,7 @@ public class RestoreDatabaseCommandIT
         Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
-        File toPath = config.get( DatabaseManagementSystemSettings.database_path );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
 
         createDbAt( fromPath, 0 );
         createDbAt( toPath, 0 );
@@ -121,7 +130,7 @@ public class RestoreDatabaseCommandIT
         Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
-        File toPath = config.get( DatabaseManagementSystemSettings.database_path );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
 
         createDbAt( toPath, 0 );
 
@@ -171,7 +180,7 @@ public class RestoreDatabaseCommandIT
         Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
-        File toPath = config.get( DatabaseManagementSystemSettings.database_path );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
         int fromNodeCount = 10;
         int toNodeCount = 20;
 
@@ -192,6 +201,61 @@ public class RestoreDatabaseCommandIT
         }
 
         copiedDb.shutdown();
+    }
+
+    @Test
+    public void restoreTransactionLogsInCustomDirectoryForTargetDatabaseWhenConfigured()
+            throws IOException, CommandFailed
+    {
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
+        File customTxLogDirectory = directory.directory( "customLogicalLog" );
+        String customTransactionLogDirectory = customTxLogDirectory.getAbsolutePath();
+        config.augmentDefaults( GraphDatabaseSettings.logical_logs_location, customTransactionLogDirectory );
+
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
+        int fromNodeCount = 10;
+        int toNodeCount = 20;
+        createDbAt( fromPath, fromNodeCount );
+
+        GraphDatabaseService db = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( toPath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.logical_logs_location, customTransactionLogDirectory )
+                .newGraphDatabase();
+        createTestData( toNodeCount, db );
+        db.shutdown();
+
+        // when
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, true ).execute();
+
+        LogFiles fromStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromPath, fileSystemRule.get() ).build();
+        LogFiles toStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( toPath, fileSystemRule.get() ).build();
+        LogFiles customLogLocationLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( customTxLogDirectory, fileSystemRule.get() ).build();
+        assertThat( toStoreLogFiles.logFiles(), emptyArray() );
+        assertThat( customLogLocationLogFiles.logFiles(), arrayWithSize( 1 ) );
+        assertEquals( fromStoreLogFiles.getLogFileForVersion( 0 ).length(),
+                customLogLocationLogFiles.getLogFileForVersion( 0 ).length() );
+    }
+
+    @Test
+    public void doNotRemoveRelativeTransactionDirectoryAgain() throws IOException, CommandFailed
+    {
+        FileSystemAbstraction fileSystem = Mockito.spy( fileSystemRule.get() );
+        File fromPath = directory.directory( "from" );
+        File databaseFile = directory.directory();
+        File relativeLogDirectory = directory.directory( "relativeDirectory" );
+
+        Config config = Config.defaults( GraphDatabaseSettings.database_path, databaseFile.getAbsolutePath() );
+        config.augment( GraphDatabaseSettings.logical_logs_location, relativeLogDirectory.getAbsolutePath() );
+
+        createDbAt( fromPath, 10 );
+
+        new RestoreDatabaseCommand( fileSystem, fromPath, config, "testDatabase", true ).execute();
+
+        verify( fileSystem ).deleteRecursively( eq( databaseFile ) );
+        verify( fileSystem, never() ).deleteRecursively( eq( relativeLogDirectory ) );
     }
 
     @Test
@@ -227,18 +291,24 @@ public class RestoreDatabaseCommandIT
 
     private static Config configWith( String databaseName, String dataDirectory )
     {
-        return Config.defaults( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName,
-                DatabaseManagementSystemSettings.data_directory.name(), dataDirectory ) );
+        return Config.defaults( stringMap( GraphDatabaseSettings.active_database.name(), databaseName,
+                GraphDatabaseSettings.data_directory.name(), dataDirectory ) );
     }
 
     private void createDbAt( File fromPath, int nodesToCreate )
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-
-        GraphDatabaseService db = factory.newEmbeddedDatabaseBuilder( fromPath )
-                .setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( fromPath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.logical_logs_location, fromPath.getAbsolutePath() )
                 .newGraphDatabase();
 
+        createTestData( nodesToCreate, db );
+
+        db.shutdown();
+    }
+
+    private void createTestData( int nodesToCreate, GraphDatabaseService db )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < nodesToCreate; i++ )
@@ -247,7 +317,5 @@ public class RestoreDatabaseCommandIT
             }
             tx.success();
         }
-
-        db.shutdown();
     }
 }
