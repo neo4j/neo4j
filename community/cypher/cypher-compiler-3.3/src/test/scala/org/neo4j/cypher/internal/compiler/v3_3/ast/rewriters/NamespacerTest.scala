@@ -41,7 +41,10 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
       ("match (n), (`  x@12`) with n as n match (`  x@34`) return n as n, `  x@34` as x", List(varFor("  x@12"), varFor("  x@34")))
     ,
     "match (n), (x) where [x in n.prop where x = 2] return x as x" ->
-      ("match (n), (`  x@12`) where [`  x@22` in n.prop where `  x@22` = 2] return `  x@12` as x", List(varFor("  x@12"), varFor("  x@22")))
+      ("match (n), (`  x@12`) where [`  x@22` in n.prop where `  x@22` = 2] return `  x@12` as x",
+        List(varFor("  x@12"), varFor("  x@22"), Equals(varFor("  x@22"), SignedDecimalIntegerLiteral("2")(pos))(pos),
+          ListComprehension(ExtractScope(varFor("  x@22"),Some(Equals(varFor("  x@22"),SignedDecimalIntegerLiteral("2")(pos))(pos)),None)(pos),
+            Property(varFor("n"),PropertyKeyName("prop")(pos))(pos))(pos)))
     ,
     "MATCH (a) WITH a.bar as bars WHERE 1 = 2 RETURN *" ->
       ("MATCH (a) WITH a.bar as bars WHERE 1 = 2 RETURN *", List.empty)
