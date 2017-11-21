@@ -220,6 +220,28 @@ public class RecordFormatSelector
     }
 
     /**
+     * Check if store and configured formats are compatible. In case if format is not configured or store does not
+     * exist yet - we consider formats as compatible.
+     * @param config configuration parameters
+     * @param storeDir directory with the store
+     * @param fs the file system
+     * @param pageCache page cache to read store files
+     * @param logProvider log provider
+     * @return true if configured and actual format is compatible, false otherwise.
+     */
+    public static boolean isStoreAndConfigFormatsCompatible( Config config, File storeDir, FileSystemAbstraction fs,
+            PageCache pageCache, LogProvider logProvider )
+    {
+        RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
+
+        RecordFormats currentFormat = selectForStore( storeDir, fs, pageCache, logProvider );
+
+        return (configuredFormat == null) || (currentFormat == null) ||
+                (currentFormat.getFormatFamily().equals( configuredFormat.getFormatFamily() ) &&
+                (currentFormat.generation() == configuredFormat.generation()));
+    }
+
+    /**
      * Select explicitly configured record format (via given {@code config}) or format from the store. If store does
      * not exist or has old format ({@link RecordFormats#generation()}) than this method returns
      * {@link #DEFAULT_FORMAT}.

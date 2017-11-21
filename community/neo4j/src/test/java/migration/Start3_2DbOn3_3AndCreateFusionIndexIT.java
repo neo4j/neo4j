@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.fs.FileUtils;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -91,9 +89,7 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     {
         // given
         File storeDir = unzip( getClass(), ZIP_FILE, directory.absolutePath() );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                //TODO: should not be required later on
-                .setConfig( GraphDatabaseSettings.record_format, StandardV3_2.NAME ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
             verifyIndexes( db, LABEL1 );
