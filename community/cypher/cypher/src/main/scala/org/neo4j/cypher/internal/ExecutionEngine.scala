@@ -23,7 +23,6 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprint
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_2.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
@@ -162,10 +161,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
             new QueryCache(cacheAccessor, lruCache)
           })
 
-          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = {
-            PlanFingerprint.log(s"Is query stale?: $cacheKey")
-            plan.isStale(lastCommittedTxId, tc)
-          }
+          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
           def producePlan() = {
             val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
             parsedQuery.plan(tc, phaseTracer)

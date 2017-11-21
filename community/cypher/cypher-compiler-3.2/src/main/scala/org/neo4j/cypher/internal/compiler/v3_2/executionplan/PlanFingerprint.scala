@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, GraphStatisticsSnapshot}
-import java.text.SimpleDateFormat
-import java.util.Date
 
 case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
@@ -31,28 +29,19 @@ class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculat
                                private var fingerprint: Option[PlanFingerprint]) {
 
   def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
-    fingerprint.fold({PlanFingerprint.log2("NO  - No fingerprint"); false}) { f =>
+    fingerprint.fold(false) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      PlanFingerprint.log2(s"Creation:${f.creationTimeMillis} TTL:${divergence.initialMillis} Current:$currentTimeMillis currentTx:$currentTxId")
-
-      if (divergence.tooSoon(currentTimeMillis, f.lastCheckTimeMillis)) {
-        PlanFingerprint.log2("NO  - Shorter than minimal TTL")
-        return false
-      }
-      if(!(check(currentTxId != f.txId,
-        () => { fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis)) }))) {
-        PlanFingerprint.log2(s"NO  - Same txID. Setting LastCheckTime to $currentTimeMillis")
-        return false
-      }
-      if(!(check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
-        () => { fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId)) }))) {
-        PlanFingerprint.log2(s"NO  - Statistics don't diverge. Setting LastCheckTime to $currentTimeMillis. Setting txID to $currentTxId")
-        return false
-      }
-      PlanFingerprint.log2("YES")
-      true
+      divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
+        check(currentTxId != f.txId,
+          () => {
+            fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis))
+          }) &&
+        check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
+          () => {
+            fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId))
+          })
     }
   }
 
@@ -63,7 +52,7 @@ trait StatsDivergenceCalculator {
   val initialThreshold: Double
   val initialMillis: Long
 
-  def tooSoon(currentTimeMillis: Long, lastCheckTimeMillis: Long) = currentTimeMillis - initialMillis < lastCheckTimeMillis
+  def shouldCheck(currentTimeMillis: Long, lastCheckTimeMillis: Long): Boolean = currentTimeMillis - initialMillis >= lastCheckTimeMillis
 
   def decay(millisSincePreviousReplan: Long): Double
 }
@@ -118,20 +107,4 @@ object PlanFingerprint {
 
   def apply(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot): PlanFingerprint =
     PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot)
-
-  //TODO: Remove logging
-  val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss") //Or whatever format fits best your needs.
-
-  def log3(msg: String): Unit = {
-    log2(s"\t$msg")
-  }
-
-  def log2(msg: String): Unit = {
-    log(s"\t$msg")
-  }
-
-  def log(msg: String): Unit = {
-    val date = sdf.format(new Date)
-    println(s"$date\t$msg")
-  }
 }

@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.spi
 
 import java.lang.Math.{abs, max}
-import java.text.SimpleDateFormat
 import java.util.Date
 
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprint
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 
@@ -61,21 +59,15 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
     snapshot.freeze
   }
 
-  val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss") //Or whatever format fits best your needs.
-
   //A plan has diverged if there is a relative change in any of the
   //statistics that is bigger than the threshold
   def diverges(snapshot: GraphStatisticsSnapshot, minThreshold: Double): Boolean = {
     assert(statsValues.keySet == snapshot.statsValues.keySet)
     //find the maximum relative difference (|e1 - e2| / max(e1, e2))
-    PlanFingerprint.log3(s"Comparing snapshot from ${sdf.format(timestamp)} against ${sdf.format(snapshot.timestamp)}")
     val divergedStats = (statsValues map {
       case (k, e1) =>
         val e2 = snapshot.statsValues(k)
-        PlanFingerprint.log3(s"Comparing values $e1 against $e2")
-        val r = abs(e1 - e2) / max(e1, e2)
-        PlanFingerprint.log3(s"$k has diverged by $r. Min threshold: $minThreshold")
-        r
+        abs(e1 - e2) / max(e1, e2)
     }).max
     divergedStats > minThreshold
   }
