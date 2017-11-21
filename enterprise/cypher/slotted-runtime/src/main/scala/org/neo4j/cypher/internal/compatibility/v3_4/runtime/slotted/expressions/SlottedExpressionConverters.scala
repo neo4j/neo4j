@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedProjectedPath._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => runtimeExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ast => runtimeAst}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commands}
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 
 object SlottedExpressionConverters extends ExpressionConverter {
@@ -70,10 +68,6 @@ object SlottedExpressionConverters extends ExpressionConverter {
       case runtimeAst.IsPrimitiveNull(offset) =>
         Some(runtimeExpression.IsPrimitiveNull(offset))
       case _ =>
-        expression.treeExists {
-          case _: NestedPlanExpression | _: ScopeExpression =>
-            throw new CantCompileQueryException("Slotted runtime does not yet handle NestedPlanExpression or ScopeExpressions")
-        }
         None
     }
 
