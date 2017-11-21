@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Si
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, ScopeExpression, Variable}
+import org.neo4j.cypher.internal.v3_4.expressions.{Equals, Expression, ScopeExpression, Variable}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => parserAst}
 
@@ -99,19 +99,19 @@ object SlotAllocation {
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
           recordArgument(current, argument)
-          val result = allocateExpressions(current, nullable, argument.slotConfiguration.copy(), allocations, arguments)
-          val result2 = allocate(current, nullable, result)
-          allocations += (current.assignedId -> result2)
-          resultStack.push(result2)
+          val slotsIncludingExpressions = allocateExpressions(current, nullable, argument.slotConfiguration.copy(), allocations, arguments)
+          val result = allocate(current, nullable, slotsIncludingExpressions)
+          allocations += (current.assignedId -> result)
+          resultStack.push(result)
 
         case (Some(_), None) =>
           val sourceSlots = resultStack.pop()
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
-          val result = allocateExpressions(current, nullable, sourceSlots, allocations, arguments)
-          val result2 = allocate(current, nullable, result, recordArgument(_, argument))
-          allocations += (current.assignedId -> result2)
-          resultStack.push(result2)
+          val slotsIncludingExpressions = allocateExpressions(current, nullable, sourceSlots, allocations, arguments)
+          val result = allocate(current, nullable, slotsIncludingExpressions, recordArgument(_, argument))
+          allocations += (current.assignedId -> result)
+          resultStack.push(result)
 
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
@@ -128,16 +128,15 @@ object SlotAllocation {
           val lhsSlots = resultStack.pop()
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
-          // NOTE: This assumes expressions on this logical plan are evaluated in the scope of the LHS
-          //       which is necessary for SelectOr(Anti)SemiApply and LetSelectOr(Anti)SemiApply.
-          //       If we introduce a two sourced logical plan with an expression that needs to
-          //       be evaluated on the scope from the RHS we need to differentiate this code per logical plan.
-          val result = allocateExpressions(current, nullable, lhsSlots, allocations, arguments)
-          val result2 = allocate(current, nullable, result, rhsSlots, recordArgument(_, argument))
-          allocations += (current.assignedId -> result2)
+          // NOTE: If we introduce a two sourced logical plan with an expression that needs to be evaluated in a
+          //       particular scope (lhs or rhs) we need to add handling of it to allocateExpressions.
+          val lhsSlotsIncludingExpressions = allocateExpressions(current, nullable, lhsSlots, allocations, arguments, shouldAllocateLhs = true)
+          val rhsSlotsIncludingExpressions = allocateExpressions(current, nullable, rhsSlots, allocations, arguments, shouldAllocateLhs = false)
+          val result = allocate(current, nullable, lhsSlotsIncludingExpressions, rhsSlotsIncludingExpressions, recordArgument(_, argument))
+          allocations += (current.assignedId -> result)
           if (isAnApplyPlan(current))
             argumentStack.pop()
-          resultStack.push(result2)
+          resultStack.push(result)
       }
 
       comingFrom = current
@@ -149,39 +148,77 @@ object SlotAllocation {
   // NOTE: If we find a NestedPlanExpression within the given LogicalPlan, the slotConfigurations and argumentSizes maps will be updated
   private def allocateExpressions(lp: LogicalPlan, nullable: Boolean, slots: SlotConfiguration,
                                   slotConfigurations: mutable.Map[LogicalPlanId, SlotConfiguration],
-                                  argumentSizes: mutable.Map[LogicalPlanId, Size]): SlotConfiguration = {
-    val newSlots = lp.treeFold(slots) {
-      case p: LogicalPlan if p.assignedId != lp.assignedId =>
-        slots => (slots, None)
+                                  argumentSizes: mutable.Map[LogicalPlanId, Size],
+                                  shouldAllocateLhs: Boolean = true): SlotConfiguration = {
+    case class Accumulator(slots: SlotConfiguration, doNotTraverseExpression: Option[Expression])
 
+    val TRAVERSE_INTO_CHILDREN = Some((s: Accumulator) => s)
+    val DO_NOT_TRAVERSE_INTO_CHILDREN = None
+
+    val result = lp.treeFold[Accumulator](Accumulator(slots, doNotTraverseExpression = None)) {
+      //-----------------------------------------------------
+      // Logical plans
+      //-----------------------------------------------------
+      case p: LogicalPlan if p.assignedId != lp.assignedId =>
+        acc: Accumulator => (acc, DO_NOT_TRAVERSE_INTO_CHILDREN) // Do not traverse the logical plan tree! We are only looking at the given lp
+
+      case ValueHashJoin(_, _, Equals(_, rhsExpression)) if shouldAllocateLhs =>
+        acc: Accumulator =>
+          (Accumulator(slots = acc.slots, doNotTraverseExpression = Some(rhsExpression)), TRAVERSE_INTO_CHILDREN) // Only look at lhsExpression
+
+      case ValueHashJoin(_, _, Equals(lhsExpression, _)) if !shouldAllocateLhs =>
+        acc: Accumulator =>
+          (Accumulator(slots = acc.slots, doNotTraverseExpression = Some(lhsExpression)), TRAVERSE_INTO_CHILDREN) // Only look at rhsExpression
+
+      // Only allocate expression on the LHS for these plans
+      case _: AbstractSelectOrSemiApply | _: AbstractLetSelectOrSemiApply if !shouldAllocateLhs =>
+        acc: Accumulator =>
+          (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
+
+      //-----------------------------------------------------
+      // Expressions
+      //-----------------------------------------------------
       case e: ScopeExpression =>
-        slots => {
-          e.introducedVariables.foreach {
-            case v@Variable(name) =>
-              slots.newReference(name, true, CTAny)
+        acc: Accumulator => {
+          if (acc.doNotTraverseExpression == e)
+            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
+          else {
+            e.introducedVariables.foreach {
+              case v@Variable(name) =>
+                slots.newReference(name, true, CTAny)
+            }
+            (acc, TRAVERSE_INTO_CHILDREN)
           }
-          (slots, Some(s => s))
         }
 
       case e: NestedPlanExpression =>
-        slots => {
-          val argumentSlotConfiguration = slots.copy()
-          val slotsAndArgument = SlotsAndArgument(argumentSlotConfiguration, Size(slots.numberOfLongs, slots.numberOfReferences))
+        acc: Accumulator => {
+          if (acc.doNotTraverseExpression == e)
+            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
+          else {
+            val argumentSlotConfiguration = slots.copy()
+            val slotsAndArgument = SlotsAndArgument(argumentSlotConfiguration, Size(slots.numberOfLongs, slots.numberOfReferences))
 
-          // Allocate slots for nested plan
-          val nestedPhysicalPlan = allocateSlots(e.plan, initialSlotsAndArgument = Some(slotsAndArgument))
+            // Allocate slots for nested plan
+            val nestedPhysicalPlan = allocateSlots(e.plan, initialSlotsAndArgument = Some(slotsAndArgument))
 
-          // Update the physical plan
-          slotConfigurations ++= nestedPhysicalPlan.slotConfigurations
-          argumentSizes ++= nestedPhysicalPlan.argumentSizes
+            // Update the physical plan
+            slotConfigurations ++= nestedPhysicalPlan.slotConfigurations
+            argumentSizes ++= nestedPhysicalPlan.argumentSizes
 
-          (slots, None)
+            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN) // We already recursively allocated the nested plan, so do not traverse into its children
+          }
         }
 
       case e: Expression =>
-        slots => (slots, Some(s => s))
+        acc: Accumulator => {
+          if (acc.doNotTraverseExpression == e)
+            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
+          else
+            (acc, TRAVERSE_INTO_CHILDREN)
+        }
     }
-    newSlots
+    result.slots
   }
 
   /**
