@@ -37,8 +37,8 @@ public class StoreCopyProcess
     private final Log log;
     private final RemoteStore remoteStore;
 
-    public StoreCopyProcess( FileSystemAbstraction fs, PageCache pageCache, LocalDatabase localDatabase, CopiedStoreRecovery copiedStoreRecovery,
-            RemoteStore remoteStore, LogProvider logProvider )
+    public StoreCopyProcess( FileSystemAbstraction fs, PageCache pageCache, LocalDatabase localDatabase,
+            CopiedStoreRecovery copiedStoreRecovery, RemoteStore remoteStore, LogProvider logProvider )
     {
         this.fs = fs;
         this.pageCache = pageCache;

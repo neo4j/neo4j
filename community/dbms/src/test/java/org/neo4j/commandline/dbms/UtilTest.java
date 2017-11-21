@@ -19,15 +19,24 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.commandline.Util;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.commandline.Util.isSameOrChildFile;
+import static org.neo4j.commandline.Util.isSameOrChildPath;
 import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class UtilTest
 {
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
+
     @Test
     public void canonicalPath() throws Exception
     {
@@ -38,5 +47,30 @@ public class UtilTest
     public void returnsAVersion() throws Exception
     {
         assertNotNull( "A version should be returned", neo4jVersion() );
+    }
+
+    @Test
+    public void correctlyIdentifySameOrChildFile()
+    {
+        assertTrue( isSameOrChildFile( directory.directory(), directory.directory( "a" ) ) );
+        assertTrue( isSameOrChildFile( directory.directory(), directory.directory() ) );
+        assertTrue( isSameOrChildFile( directory.directory( "/a/./b" ), directory.directory( "a/b" ) ) );
+        assertTrue( isSameOrChildFile( directory.directory( "a/b" ), directory.directory( "/a/./b" ) ) );
+
+        assertFalse( isSameOrChildFile( directory.directory( "a" ), directory.directory( "b" ) ) );
+    }
+
+    @Test
+    public void correctlyIdentifySameOrChildPath()
+    {
+        assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory( "a" ).toPath() ) );
+        assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory().toPath() ) );
+        assertTrue( isSameOrChildPath( directory.directory( "/a/./b" ).toPath(),
+                directory.directory( "a/b" ).toPath() ) );
+        assertTrue( isSameOrChildPath( directory.directory( "a/b" ).toPath(),
+                directory.directory( "/a/./b" ).toPath() ) );
+
+        assertFalse( isSameOrChildPath( directory.directory( "a" ).toPath(),
+                directory.directory( "b" ).toPath() ) );
     }
 }

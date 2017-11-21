@@ -30,7 +30,6 @@ import java.util.HashMap;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.NullOutsideWorld;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -128,7 +127,7 @@ public class DatabaseImporterTest
     {
         HashMap<String,String> additionalConfig = new HashMap<>();
         additionalConfig.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.toString() );
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
+        additionalConfig.put( GraphDatabaseSettings.active_database.name(), databaseName );
         return Config.defaults( additionalConfig );
     }
 

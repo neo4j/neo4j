@@ -63,6 +63,20 @@ public class Util
         }
     }
 
+    public static boolean isSameOrChildFile( File parent, File candidate )
+    {
+        Path canonicalCandidate = canonicalPath( candidate );
+        Path canonicalParentPath = canonicalPath( parent );
+        return canonicalCandidate.startsWith( canonicalParentPath );
+    }
+
+    public static boolean isSameOrChildPath( Path parent, Path candidate )
+    {
+        Path normalizedCandidate = candidate.normalize();
+        Path normalizedParent = parent.normalize();
+        return normalizedCandidate.startsWith( normalizedParent );
+    }
+
     public static void checkLock( Path databaseDirectory ) throws CommandFailed
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();

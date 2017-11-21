@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -79,7 +78,7 @@ public class CommunityServerBuilder
 
     private static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = ( config, dependencies ) ->
     {
-        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
+        File storeDir = config.get( GraphDatabaseSettings.database_path );
         config.augment( stringMap( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true",
                 new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
         return new ImpermanentGraphDatabase( storeDir, config,
@@ -155,7 +154,7 @@ public class CommunityServerBuilder
 
         if ( dataDir != null )
         {
-            properties.put( DatabaseManagementSystemSettings.data_directory.name(), dataDir );
+            properties.put( GraphDatabaseSettings.data_directory.name(), dataDir );
         }
 
         if ( maxThreads != null )
@@ -206,6 +205,8 @@ public class CommunityServerBuilder
                 new File( temporaryFolder, "certificates" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.logs_directory.name(),
                 new File( temporaryFolder, "logs" ).getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.logical_logs_location.name(),
+                new File( temporaryFolder, "transaction-logs" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
         for ( Object key : arbitraryProperties.keySet() )

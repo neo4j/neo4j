@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLogProvider;
@@ -98,8 +99,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
                 .setKernelExtensions( kernelExtensions )
                 .setUserLogProvider( NullLogProvider.getInstance() )
                 .newEmbeddedDatabaseBuilder( tempStore )
-                .setConfig( "dbms.backup.enabled", Settings.FALSE )
-                .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_upgrade,
                         config.get( GraphDatabaseSettings.allow_upgrade ).toString() )

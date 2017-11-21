@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,6 +67,8 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -493,6 +496,34 @@ public class BackupIT
         }
     }
 
+    @Test
+    public void backupDatabaseWithCustomTransactionLogsLocation() throws IOException
+    {
+        int backupPort = PortAuthority.allocatePort();
+        GraphDatabaseService db = startGraphDatabase( serverPath, true, backupPort, "customLogLocation" );
+        try
+        {
+            createInitialDataset( db );
+
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort );
+            String backupStore = backupPath.getPath();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( backupStore ), fileSystemRule.get() ).build();
+
+            backup.full( backupStore );
+            assertThat( logFiles.logFiles(), Matchers.arrayWithSize( 1 ) );
+
+            DbRepresentation representation = addLotsOfData( db );
+            backup.incremental( backupStore );
+            assertThat( logFiles.logFiles(), Matchers.arrayWithSize( 1 ) );
+
+            assertEquals( representation, getDbRepresentation() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
     private void ensureStoresHaveIdFiles( File path ) throws IOException
     {
         for ( StoreFile file : StoreFile.values() )
@@ -638,6 +669,12 @@ public class BackupIT
 
     private GraphDatabaseService startGraphDatabase( File storeDir, boolean withOnlineBackup, Integer backupPort )
     {
+        return startGraphDatabase( storeDir, withOnlineBackup, backupPort, "" );
+    }
+
+    private GraphDatabaseService startGraphDatabase( File storeDir, boolean withOnlineBackup, Integer backupPort,
+            String logLocation )
+    {
         GraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
         {
             @Override
@@ -668,7 +705,8 @@ public class BackupIT
         GraphDatabaseBuilder graphDatabaseBuilder = dbFactory.newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, recordFormatName );
+                .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
+                .setConfig( GraphDatabaseSettings.logical_logs_location, logLocation );
 
         if ( backupPort != null )
         {

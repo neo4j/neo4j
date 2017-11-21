@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 
@@ -45,7 +45,7 @@ public class ConfigFileBuilder
         //initialize config with defaults that doesn't pollute
         //workspace with generated data
         this.config = MapUtil.stringMap(
-                DatabaseManagementSystemSettings.data_directory.name(), directory.getAbsolutePath() + "/data",
+                GraphDatabaseSettings.data_directory.name(), directory.getAbsolutePath() + "/data",
                 ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
     }

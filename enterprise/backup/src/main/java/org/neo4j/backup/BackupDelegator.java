@@ -70,7 +70,7 @@ public class BackupDelegator extends LifecycleAdapter
     {
         try
         {
-            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir );
+            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir, true );
         }
         catch ( IOException e )
         {

@@ -19,6 +19,10 @@
  */
 package org.neo4j.dbms.archive;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -28,15 +32,10 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -54,7 +53,7 @@ public class DumperTest
         Files.write( archive, new byte[0] );
         try
         {
-            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
+            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( FileAlreadyExistsException e )
@@ -70,7 +69,7 @@ public class DumperTest
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         try
         {
-            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
+            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( NoSuchFileException e )
@@ -86,7 +85,7 @@ public class DumperTest
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         try
         {
-            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
+            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( NoSuchFileException e )
@@ -103,7 +102,7 @@ public class DumperTest
         Files.write( archive.getParent(), new byte[0] );
         try
         {
-            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
+            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( FileSystemException e )
@@ -122,7 +121,7 @@ public class DumperTest
         Files.createDirectories( archive.getParent() );
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {
-            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
+            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( AccessDeniedException e )

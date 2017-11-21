@@ -19,6 +19,11 @@
  */
 package org.neo4j.dbms.archive;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -26,11 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.ArchiveOutputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-
+import org.neo4j.commandline.Util;
 import org.neo4j.function.ThrowingAction;
 
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
@@ -45,18 +46,29 @@ import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
 public class Dumper
 {
-    public void dump( Path root, Path archive, Predicate<Path> exclude ) throws IOException
+    public void dump( Path dbPath, Path transactionalLogsPath, Path archive, Predicate<Path> exclude )
+            throws IOException
     {
         checkWritableDirectory( archive.getParent() );
         try ( ArchiveOutputStream stream = openArchiveOut( archive ) )
         {
-            Files.walkFileTree( root,
-                    onlyMatching( not( exclude ),
-                            throwExceptions(
-                                    onDirectory( dir -> dumpDirectory( root, stream, dir ),
-                                            onFile( file -> dumpFile( root, stream, file ),
-                                                    justContinue() ) ) ) ) );
+            visitPath( dbPath, exclude, stream );
+            if ( !Util.isSameOrChildPath( dbPath, transactionalLogsPath ) )
+            {
+                visitPath( transactionalLogsPath, exclude, stream );
+            }
         }
+    }
+
+    private void visitPath( Path transactionalLogsPath, Predicate<Path> exclude, ArchiveOutputStream stream )
+            throws IOException
+    {
+        Files.walkFileTree( transactionalLogsPath,
+                onlyMatching( not( exclude ),
+                        throwExceptions(
+                                onDirectory( dir -> dumpDirectory( transactionalLogsPath, stream, dir ),
+                                        onFile( file -> dumpFile( transactionalLogsPath, stream, file ),
+                                                justContinue() ) ) ) ) );
     }
 
     private static ArchiveOutputStream openArchiveOut( Path archive ) throws IOException

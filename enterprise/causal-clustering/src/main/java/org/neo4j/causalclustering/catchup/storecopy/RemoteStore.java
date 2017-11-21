@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
@@ -53,6 +54,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class RemoteStore
 {
     private final Log log;
+    private final Config config;
     private final Monitors monitors;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -61,8 +63,8 @@ public class RemoteStore
     private final TxPullClient txPullClient;
     private final TransactionLogCatchUpFactory transactionLogFactory;
 
-    public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-            TransactionLogCatchUpFactory transactionLogFactory, Monitors monitors )
+    public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient,
+            TxPullClient txPullClient, TransactionLogCatchUpFactory transactionLogFactory, Config config, Monitors monitors )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -70,6 +72,7 @@ public class RemoteStore
         this.fs = fs;
         this.pageCache = pageCache;
         this.transactionLogFactory = transactionLogFactory;
+        this.config = config;
         this.monitors = monitors;
         this.log = logProvider.getLog( getClass() );
     }
@@ -97,7 +100,8 @@ public class RemoteStore
         log.info( "Last Clean Tx Id: %d", lastCleanTxId );
 
         /* these are the transaction logs */
-        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
+        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, config,
+                new Monitors() );
 
         long lastTxId = BASE_TX_ID;
         try ( Lifespan ignored = new Lifespan( txStore ); TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )
@@ -123,10 +127,11 @@ public class RemoteStore
         }
     }
 
-    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
+    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir,
+            boolean keepTxLogsInStoreDir ) throws StoreCopyFailedException, IOException
     {
         long pullIndex = getPullIndex( storeDir );
-        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
+        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false, keepTxLogsInStoreDir );
     }
 
     public void copy( AdvertisedSocketAddress from, StoreId expectedStoreId, File destDir )
@@ -143,7 +148,8 @@ public class RemoteStore
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
-            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true );
+            CatchupResult catchupResult =
+                    pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true, true );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
@@ -155,10 +161,12 @@ public class RemoteStore
         }
     }
 
-    private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy )
+    private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId,
+            boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir )
             throws IOException, StoreCopyFailedException
     {
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
+                logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 

@@ -34,7 +34,7 @@ import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -250,7 +250,7 @@ public class ImportCommand implements AdminCommand
             Config config =
                     loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
             Validators.CONTAINS_NO_EXISTING_DATABASE
-                    .validate( config.get( DatabaseManagementSystemSettings.database_path ) );
+                    .validate( config.get( GraphDatabaseSettings.database_path ) );
 
             Importer importer = importerFactory.getImporterForMode( mode, Args.parse( args ), config, outsideWorld );
             importer.doImport();
@@ -288,7 +288,7 @@ public class ImportCommand implements AdminCommand
     {
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
-                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .withSetting( GraphDatabaseSettings.active_database, databaseName )
                 .withSettings( additionalConfig )
                 .withConnectorsDisabled().build();
     }
