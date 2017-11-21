@@ -19,121 +19,23 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.BooleanSupplier;
-import java.util.function.LongSupplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.query.QuerySnapshot;
-import org.neo4j.logging.Log;
 
-class QueryLogger implements QueryExecutionMonitor
+public interface QueryLogger
 {
-    private final Log log;
-    private final BooleanSupplier queryLogEnabled;
-    private final LongSupplier thresholdMillis;
-    private final boolean logQueryParameters;
-    private final boolean logDetailedTime;
-    private final boolean logAllocatedBytes;
-    private final boolean logPageDetails;
-    private final EnumSet<QueryLogEntryContent> flags;
-
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-            // call signature
-            "(?:(?i)call)\\s+dbms(?:\\.security)?\\.change(?:User)?Password\\(" +
-            // optional username parameter, in single, double quotes, or parametrized
-            "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|[^,]*)\\s*,)?" +
-            // password parameter, in single, double quotes, or parametrized
-            "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
-
-    QueryLogger( Log log, BooleanSupplier queryLogEnabled, LongSupplier thresholdMillis, EnumSet<QueryLogEntryContent> flags )
+    QueryLogger NO_LOG = new QueryLogger()
     {
-        this.log = log;
-        this.queryLogEnabled = queryLogEnabled;
-        this.thresholdMillis = thresholdMillis;
-        this.logQueryParameters = flags.contains( QueryLogEntryContent.LOG_PARAMETERS );
-        this.logDetailedTime = flags.contains( QueryLogEntryContent.LOG_DETAILED_TIME );
-        this.logAllocatedBytes = flags.contains( QueryLogEntryContent.LOG_ALLOCATED_BYTES );
-        this.logPageDetails = flags.contains( QueryLogEntryContent.LOG_PAGE_DETAILS );
-        this.flags = flags;
-    }
-
-    @Override
-    public void startQueryExecution( ExecutingQuery query )
-    {
-    }
-
-    @Override
-    public void endFailure( ExecutingQuery query, Throwable failure )
-    {
-        if ( queryLogEnabled.getAsBoolean() )
+        @Override
+        public void success( ExecutingQuery query )
         {
-            log.error( logEntry( query.snapshot() ), failure );
-        }
-    }
-
-    @Override
-    public void endSuccess( ExecutingQuery query )
-    {
-        if ( queryLogEnabled.getAsBoolean() )
-        {
-            QuerySnapshot snapshot = query.snapshot();
-            if ( snapshot.elapsedTimeMillis() >= thresholdMillis.getAsLong() )
-            {
-                log.info( logEntry( snapshot ) );
-            }
-        }
-    }
-
-    private String logEntry( QuerySnapshot query )
-    {
-        String sourceString = query.clientConnection().asConnectionDetails();
-        String queryText = query.queryText();
-
-        Set<String> passwordParams = new HashSet<>();
-        Matcher matcher = PASSWORD_PATTERN.matcher( queryText );
-
-        while ( matcher.find() )
-        {
-            String password = matcher.group( 1 ).trim();
-            if ( password.charAt( 0 ) == '$' )
-            {
-                passwordParams.add( password.substring( 1 ) );
-            }
-            else if ( password.charAt( 0 ) == '{' )
-            {
-                passwordParams.add( password.substring( 1, password.length() - 1 ) );
-            }
-            else
-            {
-                queryText = queryText.replace( password, "******" );
-            }
         }
 
-        StringBuilder result = new StringBuilder();
-        result.append( query.elapsedTimeMillis() ).append( " ms: " );
-        if ( logDetailedTime )
+        @Override
+        public void failure( ExecutingQuery query, Throwable throwable )
         {
-            QueryLogFormatter.formatDetailedTime( result, query );
         }
-        if ( logAllocatedBytes )
-        {
-            QueryLogFormatter.formatAllocatedBytes( result, query );
-        }
-        if ( logPageDetails )
-        {
-            QueryLogFormatter.formatPageDetails( result, query );
-        }
-        result.append( sourceString ).append( " - " ).append( queryText );
-        if ( logQueryParameters )
-        {
-            QueryLogFormatter.formatMapValue( result.append(" - "), query.queryParameters(), passwordParams );
-        }
-        QueryLogFormatter.formatMap( result.append(" - "), query.transactionAnnotationData() );
-        return result.toString();
-    }
+    };
+
+    void success( ExecutingQuery query );
+    void failure( ExecutingQuery query, Throwable throwable );
 }

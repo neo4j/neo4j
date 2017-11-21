@@ -580,10 +580,12 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
             "will occur. Accepts a binary suffix `k`, `m` or `g`." )
+    @Dynamic
     public static final Setting<Long> log_queries_rotation_threshold = buildSetting( "dbms.logs.query.rotation.size",
             BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Maximum number of history files for the query log." )
+    @Dynamic
     public static final Setting<Integer> log_queries_max_archives = buildSetting( "dbms.logs.query.rotation.keep_number",
             INTEGER, "7" ).constraint( min( 1 ) ).build();
 

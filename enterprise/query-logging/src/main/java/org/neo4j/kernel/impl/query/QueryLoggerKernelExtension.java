@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.OutputStream;
-import java.time.ZoneId;
-import java.util.EnumSet;
-import java.util.function.BooleanSupplier;
-import java.util.function.LongSupplier;
-
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -37,12 +28,8 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.JobScheduler;
-
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>
@@ -66,62 +53,31 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     }
 
     @Override
-    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context,
-            final Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context, final Dependencies dependencies ) throws Throwable
     {
-        final Config config = dependencies.config();
-        final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
-        final FileSystemAbstraction fileSystem = dependencies.fileSystem();
-        final JobScheduler jobScheduler = dependencies.jobScheduler();
-        final Monitors monitoring = dependencies.monitoring();
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        Config config = dependencies.config();
+        Monitors monitoring = dependencies.monitoring();
+        LogService logService = dependencies.logger();
+        JobScheduler jobScheduler = dependencies.jobScheduler();
 
         return new LifecycleAdapter()
         {
-            Closeable closable;
+            DynamicLoggingQueryExecutionMonitor logger;
 
             @Override
             public void init() throws Throwable
             {
-                LongSupplier thresholdMillis = () -> config.get( GraphDatabaseSettings.log_queries_threshold ).toMillis();
-                BooleanSupplier queryLogEnabled = () -> config.get( GraphDatabaseSettings.log_queries );
-                Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
-                int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
-                ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
-                EnumSet<QueryLogEntryContent> flags = EnumSet.noneOf( QueryLogEntryContent.class );
-                for ( QueryLogEntryContent flag : QueryLogEntryContent.values() )
-                {
-                    if ( flag.enabledIn( config ) )
-                    {
-                        flags.add( flag );
-                    }
-                }
-
-                FormattedLog.Builder logBuilder = FormattedLog.withZoneId( logTimeZoneId );
-                Log log;
-                if ( rotationThreshold == 0 )
-                {
-                    OutputStream logOutputStream = createOrOpenAsOuputStream( fileSystem, queryLogFile, true );
-                    log = logBuilder.toOutputStream( logOutputStream );
-                    closable = logOutputStream;
-                }
-                else
-                {
-                    RotatingFileOutputStreamSupplier
-                            rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, queryLogFile,
-                            rotationThreshold, 0, maxArchives,
-                            jobScheduler.executor( JobScheduler.Groups.queryLogRotation ) );
-                    log = logBuilder.toOutputStream( rotatingSupplier );
-                    closable = rotatingSupplier;
-                }
-
-                QueryLogger logger = new QueryLogger( log, queryLogEnabled, thresholdMillis, flags );
-                monitoring.addMonitorListener( logger );
+                Log debugLog = logService.getInternalLog( DynamicLoggingQueryExecutionMonitor.class );
+                this.logger = new DynamicLoggingQueryExecutionMonitor( config, fileSystem, jobScheduler, debugLog );
+                this.logger.init();
+                monitoring.addMonitorListener( this.logger );
             }
 
             @Override
             public void shutdown() throws Throwable
             {
-                closable.close();
+                logger.close();
             }
         };
     }
