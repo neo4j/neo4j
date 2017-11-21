@@ -255,7 +255,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "shrink over time using the algorithm set here. This will cause the threshold to reach " +
                   "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
                   "previous replanning has reached the value set in unsupported.cypher.target_replan_interval. " +
-                  "Setting the algorthm to 'none' will cause the threshold to not decay over time." )
+                  "Setting the algorithm to 'none' will cause the threshold to not decay over time." )
     public static Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
             options( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
 
