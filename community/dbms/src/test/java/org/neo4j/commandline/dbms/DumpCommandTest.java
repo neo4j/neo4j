@@ -43,7 +43,6 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.Dumper;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -67,9 +66,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
 public class DumpCommandTest
 {
@@ -99,8 +97,7 @@ public class DumpCommandTest
     public void shouldDumpTheDatabaseToTheArchive() throws Exception
     {
         execute( "foo.db" );
-        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ),
-                eq( homeDir.resolve( "data/databases/foo.db" ) ), eq( archive ), any() );
+        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ), eq( archive ), any() );
     }
 
     @Test
@@ -110,25 +107,10 @@ public class DumpCommandTest
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
-        verify( dumper ).dump( eq( databaseDir ), eq( databaseDir ), any(), any() );
-    }
-
-    @Test
-    public void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
-    {
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
-        putStoreInDirectory( databaseDir );
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ),
-                        formatProperty( logical_logs_location, txLogsDir ) ) );
-
-        execute( "foo.db" );
-        verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any() );
+        verify( dumper ).dump( eq( databaseDir ), any(), any() );
     }
 
     @Test
@@ -150,7 +132,7 @@ public class DumpCommandTest
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
-        verify( dumper ).dump( eq( realDatabaseDir ), eq( realDatabaseDir ), any(), any() );
+        verify( dumper ).dump( eq( realDatabaseDir ), any(), any() );
     }
 
     @Test
@@ -159,7 +141,7 @@ public class DumpCommandTest
     {
         File to = testDirectory.directory( "some-dir" );
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
-        verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ), any() );
+        verify( dumper ).dump( any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ), any() );
     }
 
     @Test
@@ -167,8 +149,7 @@ public class DumpCommandTest
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + "foo.db", "--to=foo.dump"} );
-        verify( dumper ).dump( any( Path.class ), any( Path.class ),
-                eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
+        verify( dumper ).dump( any( Path.class ), eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
 
     @Test
@@ -177,7 +158,7 @@ public class DumpCommandTest
     {
         Files.createFile( archive );
         execute( "foo.db" );
-        verify( dumper ).dump( any(), any(), eq( archive ), any() );
+        verify( dumper ).dump( any(), eq( archive ), any() );
     }
 
     @Test
@@ -209,7 +190,7 @@ public class DumpCommandTest
     @Test
     public void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
     {
-        doThrow( IOException.class ).when( dumper ).dump( any(), any(), any(), any() );
+        doThrow( IOException.class ).when( dumper ).dump( any(), any(), any() );
 
         try
         {
@@ -232,7 +213,7 @@ public class DumpCommandTest
         {
             assertThat( Files.exists( databaseDirectory ), equalTo( false ) );
             return null;
-        } ).when( dumper ).dump( any(), any(), any(), any() );
+        } ).when( dumper ).dump( any(), any(), any() );
 
         execute( "foo.db" );
     }
@@ -268,11 +249,11 @@ public class DumpCommandTest
         doAnswer( invocation ->
         {
             //noinspection unchecked
-            Predicate<Path> exclude = invocation.getArgument( 3 );
+            Predicate<Path> exclude = invocation.getArgument( 2 );
             assertThat( exclude.test( Paths.get( StoreLocker.STORE_LOCK_FILENAME ) ), is( true ) );
             assertThat( exclude.test( Paths.get( "some-other-file" ) ), is( false ) );
             return null;
-        } ).when( dumper ).dump(any(), any(), any(), any() );
+        } ).when( dumper ).dump( any(), any(), any() );
 
         execute( "foo.db" );
     }
@@ -284,10 +265,10 @@ public class DumpCommandTest
         Path databaseDir = dataDir.resolve( "databases/graph.db" );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );
-        verify( dumper ).dump( eq( databaseDir ), eq( databaseDir ), any(), any() );
+        verify( dumper ).dump( eq( databaseDir ), any(), any() );
     }
 
     @Test
@@ -307,7 +288,7 @@ public class DumpCommandTest
     @Test
     public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
     {
-        doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any(), any() );
+        doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any() );
         try
         {
             execute( "foo.db" );
@@ -336,7 +317,7 @@ public class DumpCommandTest
     @Test
     public void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
     {
-        doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump(any(), any(), any(), any() );
+        doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump( any(), any(), any() );
         try
         {
             execute( "foo.db" );
@@ -350,10 +331,10 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    public void shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws Exception
     {
-        doThrow( new IOException( "the-message" ) ).when( dumper ).dump(any(), any(), any(), any() );
+        doThrow( new IOException( "the-message" ) ).when( dumper ).dump( any(), any(), any() );
         try
         {
             execute( "foo.db" );
@@ -402,7 +383,7 @@ public class DumpCommandTest
                 .execute( new String[]{"--database=" + database, "--to=" + archive} );
     }
 
-    private static void assertCanLockStore( Path databaseDirectory ) throws IOException
+    private void assertCanLockStore( Path databaseDirectory ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
@@ -411,15 +392,10 @@ public class DumpCommandTest
         }
     }
 
-    private static void putStoreInDirectory( Path storeDir ) throws IOException
+    private void putStoreInDirectory( Path storeDir ) throws IOException
     {
         Files.createDirectories( storeDir );
         Path storeFile = storeDir.resolve( StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) );
         Files.createFile( storeFile );
-    }
-
-    private static String formatProperty( Setting setting, Path path )
-    {
-        return format( "%s=%s", setting.name(), path.toString().replace( '\\', '/' ) );
     }
 }

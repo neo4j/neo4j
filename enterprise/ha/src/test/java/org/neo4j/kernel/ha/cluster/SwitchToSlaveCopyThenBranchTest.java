@@ -29,7 +29,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -232,7 +231,7 @@ public class SwitchToSlaveCopyThenBranchTest
         doAnswer( invocation ->
         {
             MoveAfterCopy moveAfterCopy = invocation.getArgument( 2 );
-            moveAfterCopy.move( Stream.empty(), new File( "" ), Function.identity() );
+            moveAfterCopy.move( Stream.empty(), new File( "" ), new File( "" ) );
             return null;
         } ).when( storeCopyClient ).copyStore(
                 any( StoreCopyClient.StoreCopyRequester.class ),

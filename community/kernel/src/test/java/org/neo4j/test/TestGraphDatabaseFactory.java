@@ -259,7 +259,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
                 GraphDatabaseFacade graphDatabaseFacade )
         {
-            config.augment( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
             if ( impermanent )
             {
                 config.augment( ephemeral, TRUE );

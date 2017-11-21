@@ -174,7 +174,6 @@ public class StoreCopyServer
                 {
                     StoreFileMetadata meta = files.next();
                     File file = meta.file();
-                    boolean isLogFile = meta.isLogFile();
                     int recordSize = meta.recordSize();
 
                     // Read from paged file if mapping exists. Otherwise read through file system.
@@ -188,8 +187,7 @@ public class StoreCopyServer
                             long fileSize = pagedFile.fileSize();
                             try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
                             {
-                                doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
-                                        storeCopyIdentifier, false );
+                                doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
                             }
                         }
                     }
@@ -198,8 +196,7 @@ public class StoreCopyServer
                         try ( ReadableByteChannel fileChannel = fileSystem.open( file, OpenMode.READ ) )
                         {
                             long fileSize = fileSystem.getFileSize( file );
-                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
-                                    storeCopyIdentifier, isLogFile );
+                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
                         }
                     }
                 }
@@ -218,11 +215,11 @@ public class StoreCopyServer
     }
 
     private void doWrite( StoreWriter writer, ByteBuffer temporaryBuffer, File file, int recordSize,
-            ReadableByteChannel fileChannel, long fileSize, String storeCopyIdentifier, boolean isLogFile ) throws IOException
+            ReadableByteChannel fileChannel, long fileSize, String storeCopyIdentifier ) throws IOException
     {
         monitor.startStreamingStoreFile( file, storeCopyIdentifier );
-        String path = isLogFile ? file.getName() : relativePath( storeDirectory, file );
-        writer.write( path, fileChannel, temporaryBuffer, fileSize > 0, recordSize );
+        writer.write( relativePath( storeDirectory, file ), fileChannel,
+                temporaryBuffer, fileSize > 0, recordSize );
         monitor.finishStreamingStoreFile( file, storeCopyIdentifier );
     }
 }

@@ -21,23 +21,20 @@ package org.neo4j.com.storecopy;
 
 import java.io.File;
 import java.nio.file.StandardCopyOption;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-@FunctionalInterface
 public interface MoveAfterCopy
 {
-    void move( Stream<FileMoveAction> moves, File fromDirectory, Function<File, File> destinationFunction ) throws
-            Exception;
+    void move( Stream<FileMoveAction> moves, File fromDirectory, File toDirectory ) throws Exception;
 
     static MoveAfterCopy moveReplaceExisting()
     {
-        return ( moves, fromDirectory, destinationFunction ) ->
+        return ( moves, fromDirectory, toDirectory ) ->
         {
             Iterable<FileMoveAction> itr = moves::iterator;
             for ( FileMoveAction move : itr )
             {
-                move.move( destinationFunction.apply( move.file() ), StandardCopyOption.REPLACE_EXISTING );
+                move.move( toDirectory, StandardCopyOption.REPLACE_EXISTING );
             }
         };
     }

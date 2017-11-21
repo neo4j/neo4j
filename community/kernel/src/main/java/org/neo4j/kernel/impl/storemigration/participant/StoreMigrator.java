@@ -309,7 +309,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                                           : new TransactionId( lastTransactionId, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
     }
 
-    LogPosition extractTransactionLogPosition( File neoStore, File storeDir, long lastTxId ) throws IOException
+    private LogPosition extractTransactionLogPosition( File neoStore, File storeDir, long lastTxId ) throws IOException
     {
         long lastClosedTxLogVersion =
                 MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
@@ -327,9 +327,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
 
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir,fileSystem, pageCache )
-                                           .withConfig( config )
-                                           .build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir,fileSystem, pageCache ).build();
         long logVersion = logFiles.getHighestLogVersion();
         if ( logVersion == -1 )
         {

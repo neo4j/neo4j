@@ -42,7 +42,6 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -64,8 +63,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 
 public class LoadCommandTest
 {
@@ -89,7 +87,7 @@ public class LoadCommandTest
     public void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         execute( "foo.db" );
-        verify( loader ).load( archive, homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/databases/foo.db" ) );
+        verify( loader ).load( archive, homeDir.resolve( "data/databases/foo.db" ) );
     }
 
     @Test
@@ -100,24 +98,10 @@ public class LoadCommandTest
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( databaseDir ), eq( databaseDir ) );
-    }
-
-    @Test
-    public void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
-    {
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ),
-                        formatProperty( logical_logs_location, txLogsDir ) ) );
-
-        execute( "foo.db" );
-        verify( loader ).load( any(), eq( databaseDir ), eq( txLogsDir ) );
+        verify( loader ).load( any(), eq( databaseDir ) );
     }
 
     @Test
@@ -137,10 +121,10 @@ public class LoadCommandTest
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
 
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( realDatabaseDir ), eq( realDatabaseDir ) );
+        verify( loader ).load( any(), eq( realDatabaseDir ) );
     }
 
     @Test
@@ -150,12 +134,12 @@ public class LoadCommandTest
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         new LoadCommand( homeDir, configDir, loader )
                 .execute( ArrayUtil.concat( new String[]{"--database=foo.db", "--from=foo.dump"} ) );
 
-        verify( loader ).load( eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any(), any() );
+        verify( loader ).load( eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
 
     @Test
@@ -169,7 +153,7 @@ public class LoadCommandTest
         {
             assertThat( Files.exists( databaseDirectory ), equalTo( false ) );
             return null;
-        } ).when( loader ).load( any(), any(), any() );
+        } ).when( loader ).load( any(), any() );
 
         execute( "foo.db", "--force" );
     }
@@ -185,7 +169,7 @@ public class LoadCommandTest
         {
             assertThat( Files.exists( databaseDirectory ), equalTo( true ) );
             return null;
-        } ).when( loader ).load( any(), any(), any() );
+        } ).when( loader ).load( any(), any() );
 
         execute( "foo.db" );
     }
@@ -216,7 +200,7 @@ public class LoadCommandTest
         Files.createDirectories( databaseDir );
 
         new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--from=something"} );
-        verify( loader ).load( any(), eq( databaseDir ), eq( databaseDir ) );
+        verify( loader ).load( any(), eq( databaseDir ) );
     }
 
     @Test
@@ -236,7 +220,7 @@ public class LoadCommandTest
     @Test
     public void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat, IncorrectUsage
     {
-        doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any(), any() );
+        doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any() );
         try
         {
             execute( null );
@@ -251,7 +235,7 @@ public class LoadCommandTest
     @Test
     public void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
     {
-        doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any(), any() );
+        doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any() );
         try
         {
             execute( "foo.db" );
@@ -267,7 +251,7 @@ public class LoadCommandTest
     public void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
             throws IOException, IncorrectFormat, IncorrectUsage
     {
-        doThrow( AccessDeniedException.class ).when( loader ).load( any(), any(), any() );
+        doThrow( AccessDeniedException.class ).when( loader ).load( any(), any() );
         try
         {
             execute( null );
@@ -281,10 +265,10 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    public void shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectUsage, IncorrectFormat
     {
-        doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any(), any() );
+        doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any() );
         try
         {
             execute( null );
@@ -299,7 +283,7 @@ public class LoadCommandTest
     @Test
     public void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectUsage, IncorrectFormat
     {
-        doThrow( IncorrectFormat.class ).when( loader ).load( any(), any(), any() );
+        doThrow( IncorrectFormat.class ).when( loader ).load( any(), any() );
         try
         {
             execute( null );
@@ -350,10 +334,5 @@ public class LoadCommandTest
     {
         new LoadCommand( homeDir, configDir, loader )
                 .execute( ArrayUtil.concat( new String[]{"--database=" + database, "--from=" + archive}, otherArgs ) );
-    }
-
-    private static String formatProperty( Setting setting, Path path )
-    {
-        return format( "%s=%s", setting.name(), path.toString().replace( '\\', '/' ) );
     }
 }

@@ -131,8 +131,7 @@ public class StoreMigration
                     kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                     deps, ignore() ) );
 
-            final LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDirectory, fs, pageCache )
-                    .withConfig( config ).build();
+            final LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDirectory, fs, pageCache ).build();
             LogTailScanner tailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );
 
             // Add the kernel store migrator

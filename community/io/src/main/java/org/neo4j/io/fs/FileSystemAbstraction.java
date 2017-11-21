@@ -82,8 +82,6 @@ public interface FileSystemAbstraction extends Closeable
 
     void moveToDirectory( File file, File toDirectory ) throws IOException;
 
-    void copyToDirectory( File file, File toDirectory ) throws IOException;
-
     void copyFile( File from, File to ) throws IOException;
 
     void copyRecursively( File fromDirectory, File toDirectory ) throws IOException;

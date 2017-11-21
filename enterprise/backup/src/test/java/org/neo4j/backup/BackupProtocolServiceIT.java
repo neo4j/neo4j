@@ -1087,7 +1087,7 @@ public class BackupProtocolServiceIT
         LifeSupport life = new LifeSupport();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         LogicalTransactionStore transactionStore =
-                life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, Config.defaults(), monitors ) );
+                life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, monitors ) );
         life.start();
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                       transactionStore.getTransactions( txId ) )

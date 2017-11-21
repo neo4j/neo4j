@@ -126,13 +126,13 @@ public class CoreServerModule
         RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ),
                 new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(),
-                config, platformModule.monitors );
+                platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         life.add( copiedStoreRecovery );
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, platformModule.pageCache, localDatabase,
-                copiedStoreRecovery, remoteStore, logProvider );
+        StoreCopyProcess storeCopyProcess =
+                new StoreCopyProcess( fileSystem, platformModule.pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
 

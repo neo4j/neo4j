@@ -32,17 +32,16 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
@@ -137,8 +136,7 @@ public class ClusterSeedingIT
 
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
-        String databaseName = newMember.getMemberConfig().get( GraphDatabaseSettings.active_database );
-        new RestoreDatabaseCommand( fsa, backupDir, newMember.getMemberConfig(), databaseName, true ).execute();
+        fsa.copyRecursively( backupDir, newMember.storeDir() );
         newMember.start();
 
         // then
@@ -160,8 +158,7 @@ public class ClusterSeedingIT
 
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
-        String databaseName = newMember.getMemberConfig().get( GraphDatabaseSettings.active_database );
-        new RestoreDatabaseCommand( fsa, backupDir, newMember.getMemberConfig(), databaseName, true ).execute();
+        fsa.copyRecursively( backupDir, newMember.storeDir() );
         newMember.start();
 
         // then
