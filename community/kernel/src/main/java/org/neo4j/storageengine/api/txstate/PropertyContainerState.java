@@ -57,6 +57,8 @@ public interface PropertyContainerState
 
     boolean hasPropertyChanges();
 
+    boolean hasPropertyChanges();
+
     StorageProperty getChangedProperty( int propertyKeyId );
 
     StorageProperty getAddedProperty( int propertyKeyId );
@@ -102,6 +104,12 @@ public interface PropertyContainerState
         @Override
         public void accept( Visitor visitor ) throws ConstraintValidationException
         {
+        }
+
+        @Override
+        public boolean hasPropertyChanges()
+        {
+            return false;
         }
 
         @Override

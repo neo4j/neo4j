@@ -330,6 +330,12 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             }
 
             @Override
+            public boolean hasPropertyChanges()
+            {
+                return false;
+            }
+
+            @Override
             public StorageProperty getChangedProperty( int propertyKeyId )
             {
                 return null;
