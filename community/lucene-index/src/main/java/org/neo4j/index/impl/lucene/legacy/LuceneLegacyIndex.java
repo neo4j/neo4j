@@ -51,6 +51,7 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.util.Validators;
@@ -285,9 +286,9 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
                         Arrays.<LegacyIndexHits>asList( hits,
                                 new ConstantScoreIterator( simpleTransactionStateIds, Float.NaN ) ) );
             }
-            catch ( IOException e )
+            catch ( Throwable t )
             {
-                throw new RuntimeException( "Unable to query " + this + " with " + query, e );
+                throw new RuntimeException( LuceneErrorDetails.searchError( identifier.toString(), query ), t );
             }
         }
 

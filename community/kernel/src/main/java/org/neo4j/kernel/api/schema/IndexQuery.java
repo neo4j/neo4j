@@ -34,6 +34,11 @@ import org.neo4j.kernel.impl.api.PropertyValueComparison;
 
 public abstract class IndexQuery implements Predicate<Object>
 {
+    public static FailPredicate fail( int propertyKeyId )
+    {
+        return new FailPredicate( propertyKeyId );
+    }
+
     /**
      * Searches the index for all entries that has the given property.
      *
@@ -172,6 +177,7 @@ public abstract class IndexQuery implements Predicate<Object>
 
     public enum IndexQueryType
     {
+        fail,
         exists,
         exact,
         rangeString,
@@ -179,6 +185,26 @@ public abstract class IndexQuery implements Predicate<Object>
         stringPrefix,
         stringSuffix,
         stringContains
+    }
+
+    public static final class FailPredicate extends IndexQuery
+    {
+        protected FailPredicate( int propertyKeyId )
+        {
+            super( propertyKeyId );
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.fail;
+        }
+
+        @Override
+        public boolean test( Object value )
+        {
+            return false;
+        }
     }
 
     public static final class ExistsPredicate extends IndexQuery

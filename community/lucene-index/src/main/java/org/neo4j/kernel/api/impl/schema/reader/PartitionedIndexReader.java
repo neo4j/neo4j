@@ -31,6 +31,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -51,11 +52,12 @@ public class PartitionedIndexReader implements IndexReader
     public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers,
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator )
+            TaskCoordinator taskCoordinator,
+            LuceneSchemaIndex luceneSchemaIndex )
     {
         this( partitionSearchers.stream()
                 .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, descriptor,
-                        samplingConfig, taskCoordinator ) )
+                        samplingConfig, taskCoordinator, luceneSchemaIndex ) )
                 .collect( Collectors.toList() ) );
     }
 
