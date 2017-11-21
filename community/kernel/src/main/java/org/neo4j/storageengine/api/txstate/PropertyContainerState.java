@@ -57,9 +57,13 @@ public interface PropertyContainerState
 
     boolean hasChanges();
 
+    boolean hasPropertyChanges();
+
     StorageProperty getChangedProperty( int propertyKeyId );
 
     StorageProperty getAddedProperty( int propertyKeyId );
+
+    boolean isPropertyChangedOrRemoved( int propertyKey );
 
     boolean isPropertyRemoved( int propertyKeyId );
 
@@ -109,6 +113,12 @@ public interface PropertyContainerState
         }
 
         @Override
+        public boolean hasPropertyChanges()
+        {
+            return false;
+        }
+
+        @Override
         public StorageProperty getChangedProperty( int propertyKeyId )
         {
             return null;
@@ -118,6 +128,12 @@ public interface PropertyContainerState
         public StorageProperty getAddedProperty( int propertyKeyId )
         {
             return null;
+        }
+
+        @Override
+        public boolean isPropertyChangedOrRemoved( int propertyKey )
+        {
+            return false;
         }
 
         @Override

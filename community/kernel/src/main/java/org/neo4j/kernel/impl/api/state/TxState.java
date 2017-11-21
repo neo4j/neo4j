@@ -32,6 +32,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -150,6 +151,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     // Tracks added and removed relationships, not modified relationships
     private RelationshipDiffSets<Long> relationships;
+
+    private PrimitiveLongObjectMap<PropertyContainerState> propertiesMap = Primitive.longObjectMap();
 
     /**
      * These two sets are needed because create-delete in same transaction is a no-op in {@link DiffSets}
@@ -662,6 +665,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public void registerProperties( long ref, PropertyContainerState state )
+    {
+        propertiesMap.put( ref, state );
+    }
+
+    @Override
     public void labelDoCreateForName( String labelName, int id )
     {
         if ( createdLabelTokens == null )
@@ -704,6 +713,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public RelationshipState getRelationshipState( long id )
     {
         return RELATIONSHIP_STATE.get( this, id );
+    }
+
+    @Override
+    public PropertyContainerState getPropertiesState( long reference )
+    {
+        return propertiesMap.get( reference );
     }
 
     @Override

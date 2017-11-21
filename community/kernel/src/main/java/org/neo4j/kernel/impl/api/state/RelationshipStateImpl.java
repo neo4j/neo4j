@@ -132,6 +132,12 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
             }
 
             @Override
+            public boolean hasPropertyChanges()
+            {
+                return false;
+            }
+
+            @Override
             public StorageProperty getChangedProperty( int propertyKeyId )
             {
                 return null;
@@ -141,6 +147,12 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
             public StorageProperty getAddedProperty( int propertyKeyId )
             {
                 return null;
+            }
+
+            @Override
+            public boolean isPropertyChangedOrRemoved( int propertyKey )
+            {
+                return false;
             }
 
             @Override
