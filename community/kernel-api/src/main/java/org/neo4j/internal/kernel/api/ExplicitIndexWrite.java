@@ -23,8 +23,23 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
+/**
+ * Operations for creating and modifying explicit indexes.
+ */
 public interface ExplicitIndexWrite
 {
+    /**
+     * Removes a given node from an explicit index
+     *
+     * @param indexName The name of the index from which the node is to be removed.
+     * @param node The node id of the node to remove
+     */
     void nodeRemoveFromExplicitIndex( String indexName, long node ) throws KernelException;
+
+    /**
+     * Creates an explicit index in a separate transaction if not yet available.
+     * @param indexName The name of the index to create.
+     * @param customConfig The configuration of the explicit index.
+     */
     void nodeExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
 }
