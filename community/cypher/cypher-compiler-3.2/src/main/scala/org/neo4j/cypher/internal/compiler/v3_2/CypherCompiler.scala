@@ -163,7 +163,7 @@ trait CypherCacheFlushingMonitor[T] {
 trait CypherCacheHitMonitor[T] {
   def cacheHit(key: T) {}
   def cacheMiss(key: T) {}
-  def cacheDiscard(key: T, userKey: String) {}
+  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
 }
 
 trait InfoLogger {

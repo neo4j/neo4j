@@ -172,7 +172,8 @@ public class MetricsKernelExtensionFactoryIT
             addNodes( 1 );
         }
 
-        File metricFile = metricsCsv( outputPath, CypherMetrics.REPLAN_EVENTS );
+        File replanCountMetricFile = metricsCsv( outputPath, CypherMetrics.REPLAN_EVENTS );
+        File replanWaitMetricFile = metricsCsv( outputPath, CypherMetrics.REPLAN_WAIT_TIME );
 
         // THEN see that the replan metric have pickup up at least one replan event
         // since reporting happens in an async fashion then give it some time and check now and then
@@ -180,7 +181,8 @@ public class MetricsKernelExtensionFactoryIT
         long events = 0;
         while ( currentTimeMillis() < endTime && events == 0 )
         {
-            events = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= currentValue );
+            readLongValueAndAssert( replanWaitMetricFile, ( newValue, currentValue ) -> newValue >= currentValue );
+            events = readLongValueAndAssert( replanCountMetricFile, ( newValue, currentValue ) -> newValue >= currentValue );
             if ( events == 0 )
             {
                 Thread.sleep( 300 );

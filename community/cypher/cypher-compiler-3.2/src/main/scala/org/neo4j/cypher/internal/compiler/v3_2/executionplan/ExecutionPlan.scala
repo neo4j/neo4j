@@ -28,7 +28,7 @@ abstract class ExecutionPlan {
   def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
-  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
+  def isStale(lastTxId: () => Long, statistics: GraphStatistics): (Boolean, Int)
   def runtimeUsed: RuntimeName
   def notifications(planContext: PlanContext): Seq[InternalNotification]
   def plannedIndexUsage: Seq[IndexUsage] = Seq.empty

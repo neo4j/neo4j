@@ -56,7 +56,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = false
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = (false, 0)
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

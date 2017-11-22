@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
-  def remove(cache: LFUCache[K, T])(key: K, userKey: String)
+  def remove(cache: LFUCache[K, T])(key: K, userKey: String, secondsSinceReplan: Int)
 }
 
 class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
-  def getOrElseUpdate(key: K, userKey: String, isStale: T => Boolean, produce: => T): (T, Boolean) = {
+  def getOrElseUpdate(key: K, userKey: String, isStale: T => (Boolean, Int), produce: => T): (T, Boolean) = {
     if (cache.size == 0)
       (produce, false)
     else {
@@ -36,9 +36,14 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
           produce
         })
       }.flatMap { value =>
-        if (!planned && isStale(value)) {
-          cacheAccessor.remove(cache)(key, userKey)
-          None
+        if (!planned) {
+          val stale = isStale(value)
+          if (stale._1) {
+            cacheAccessor.remove(cache)(key, userKey, stale._2)
+            None
+          } else {
+            Some((value, planned))
+          }
         }
         else {
           Some((value, planned))
@@ -65,8 +70,8 @@ class MonitoringCacheAccessor[K <: AnyRef, T <: AnyRef](monitor: CypherCacheHitM
     value
   }
 
-  def remove(cache: LFUCache[K, T])(key: K, userKey: String): Unit = {
+  def remove(cache: LFUCache[K, T])(key: K, userKey: String, secondsSinceReplan: Int): Unit = {
     cache.remove(key)
-    monitor.cacheDiscard(key, userKey)
+    monitor.cacheDiscard(key, userKey, secondsSinceReplan)
   }
 }

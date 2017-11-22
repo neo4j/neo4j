@@ -83,7 +83,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: Statement, ignored: String): Unit = {
+    override def cacheDiscard(key: Statement, ignored: String, secondsSinceReplan: Int): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }

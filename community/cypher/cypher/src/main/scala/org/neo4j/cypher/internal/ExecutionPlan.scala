@@ -32,7 +32,7 @@ trait ExecutionPlan {
 
   def isPeriodicCommit: Boolean
 
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
+  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): (Boolean, Int)
 
   def plannerInfo: PlannerInfo
 }

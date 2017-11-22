@@ -28,12 +28,12 @@ case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, 
 class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculator,
                                private var fingerprint: Option[PlanFingerprint]) {
 
-  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
-    fingerprint.fold(false) { f =>
+  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): (Boolean, Int) = {
+    fingerprint.fold((false,0)) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
+      (divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
         check(currentTxId != f.txId,
           () => {
             fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis))
@@ -41,7 +41,8 @@ class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculat
         check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
           () => {
             fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId))
-          })
+          }),
+        ((currentTimeMillis - f.lastCheckTimeMillis)/1000).toInt)
     }
   }
 

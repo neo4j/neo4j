@@ -41,7 +41,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         clock.forward(2, SECONDS)
 
-        val stale = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
+        val (stale, wait) = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
 
         stale shouldBe true
       }
@@ -60,7 +60,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         clock.forward(2, SECONDS)
 
-        val stale = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
+        val (stale, wait) = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
 
         stale shouldBe true
       }
@@ -79,7 +79,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         clock.forward(2, SECONDS)
 
-        val stale = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
+        val (stale, wait) = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
 
         stale shouldBe false
       }
@@ -98,7 +98,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         clock.forward(2, SECONDS)
 
-        val stale = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
+        val (stale, wait) = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
 
         stale shouldBe false
       }
@@ -119,7 +119,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         clock.forward(2, SECONDS)
 
-        val stale = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(17), stats)
+        val (stale, wait) = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(17), stats)
 
         stale shouldBe false
       }
@@ -140,7 +140,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         clock.forward(500, MILLISECONDS)
 
-        val stale = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
+        val (stale, wait) = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).isStale(transactionIdSupplier(42), stats)
 
         stale shouldBe false
       }
@@ -162,10 +162,10 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.isStale(transactionIdSupplier(17), stats) shouldBe false
+        reference.isStale(transactionIdSupplier(17), stats)._1 shouldBe false
 
         clock.forward(500, MILLISECONDS)
-        reference.isStale(transactionIdSupplier(23), stats) shouldBe false
+        reference.isStale(transactionIdSupplier(23), stats)._1 shouldBe false
       }
     }
   }
@@ -183,10 +183,10 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.isStale(transactionIdSupplier(23), stats) shouldBe false
+        reference.isStale(transactionIdSupplier(23), stats)._1 shouldBe false
 
         clock.forward(2, SECONDS)
-        reference.isStale(transactionIdSupplier(23), stats) shouldBe false
+        reference.isStale(transactionIdSupplier(23), stats)._1 shouldBe false
       }
     }
   }
@@ -204,10 +204,10 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.isStale(transactionIdSupplier(23), stats) shouldBe false
+        reference.isStale(transactionIdSupplier(23), stats)._1 shouldBe false
 
         clock.forward(100, SECONDS)
-        reference.isStale(transactionIdSupplier(73), stats) shouldBe (name != PlanFingerprint.none)
+        reference.isStale(transactionIdSupplier(73), stats)._1 shouldBe (name != PlanFingerprint.none)
       }
     }
   }
@@ -225,10 +225,10 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.isStale(transactionIdSupplier(23), stats) shouldBe false
+        reference.isStale(transactionIdSupplier(23), stats)._1 shouldBe false
 
         clock.forward(100, SECONDS)
-        reference.isStale(transactionIdSupplier(73), stats) shouldBe (name != PlanFingerprint.none)
+        reference.isStale(transactionIdSupplier(73), stats)._1 shouldBe (name != PlanFingerprint.none)
       }
     }
   }

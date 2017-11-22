@@ -84,8 +84,8 @@ class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, Compilatio
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-    override def cacheDiscard(key: Statement, userKey: String) {
-      log.info(s"Discarded stale query from the query cache: $userKey")
+    override def cacheDiscard(key: Statement, userKey: String, secondsSinceReplan: Int) {
+      log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $userKey")
     }
   }
 }
