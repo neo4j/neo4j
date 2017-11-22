@@ -43,7 +43,7 @@ public class NewKernel implements Kernel
     private Read read;
     private Cursors cursors;
 
-    private boolean isRunning;
+    private volatile boolean isRunning;
 
     public NewKernel( StorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes, InwardKernel kernel )
     {
