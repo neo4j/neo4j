@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -61,7 +63,7 @@ public interface Write
      * @param nodeLabel the internal id of the label to add
      * @return <tt>true</tt> if a label was added otherwise <tt>false</tt>
      */
-    boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException;
+    boolean nodeAddLabel( long node, int nodeLabel ) throws EntityNotFoundException;
 
     /**
      * Remove a label from a node
@@ -69,7 +71,7 @@ public interface Write
      * @param nodeLabel the internal id of the label to remove
      * @return <tt>true</tt> if node was removed otherwise <tt>false</tt>
      */
-    boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException;
+    boolean nodeRemoveLabel( long node, int nodeLabel ) throws EntityNotFoundException;
 
     /**
      * Set a property on a node
@@ -78,7 +80,8 @@ public interface Write
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeSetProperty( long node, int propertyKey, Value value ) throws KernelException;
+    Value nodeSetProperty( long node, int propertyKey, Value value )
+            throws EntityNotFoundException, AutoIndexingKernelException;
 
     /**
      * Remove a property from a node
@@ -86,7 +89,8 @@ public interface Write
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeRemoveProperty( long node, int propertyKey ) throws KernelException;
+    Value nodeRemoveProperty( long node, int propertyKey ) throws EntityNotFoundException,
+            AutoIndexingKernelException;
 
     /**
      * Set a property on a relationship

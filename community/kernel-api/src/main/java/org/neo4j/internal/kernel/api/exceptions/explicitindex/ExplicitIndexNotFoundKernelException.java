@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.explicitindex;
+package org.neo4j.internal.kernel.api.exceptions.explicitindex;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
-public class AutoIndexingKernelException extends KernelException
+public class ExplicitIndexNotFoundKernelException extends KernelException
 {
-    public AutoIndexingKernelException( KernelException cause )
+    public ExplicitIndexNotFoundKernelException( String message, Object... parameters )
     {
-        super( cause.status(), cause, cause.getMessage() );
+        super( Status.LegacyIndex.LegacyIndexNotFound, message, parameters );
     }
 }

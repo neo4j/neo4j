@@ -21,20 +21,42 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 
 /**
  * Operations for creating and modifying explicit indexes.
  */
 public interface ExplicitIndexWrite
 {
+    void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
+
+    void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException;
+
+    void nodeRemoveFromExplicitIndex( String indexName, long node, String key ) throws
+            ExplicitIndexNotFoundKernelException;
+
     /**
      * Removes a given node from an explicit index
      *
      * @param indexName The name of the index from which the node is to be removed.
      * @param node The node id of the node to remove
      */
-    void nodeRemoveFromExplicitIndex( String indexName, long node ) throws KernelException;
+    void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException;
+
+    void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
+
+    void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+
+    void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+
+    void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
     /**
      * Creates an explicit index in a separate transaction if not yet available.
@@ -42,4 +64,10 @@ public interface ExplicitIndexWrite
      * @param customConfig The configuration of the explicit index.
      */
     void nodeExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
+
+    void nodeExplicitIndexCreate( String indexName, Map<String, String> customConfig );
+
+    void relationshipExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
+
+    void relationshipExplicitIndexCreate( String indexName, Map<String, String> customConfig );
 }

@@ -42,13 +42,16 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -337,7 +340,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public boolean nodeDelete( long node ) throws KernelException
+    public boolean nodeDelete( long node ) throws AutoIndexingKernelException
     {
         assertOpen();
 
@@ -383,7 +386,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException
+    public boolean nodeAddLabel( long node, int nodeLabel ) throws EntityNotFoundException
     {
         assertOpen();
         allStoreHolder.singleNode( node, nodeCursor );
@@ -405,7 +408,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException
+    public boolean nodeRemoveLabel( long node, int nodeLabel ) throws EntityNotFoundException
     {
         assertOpen();
 
@@ -427,7 +430,8 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public Value nodeSetProperty( long node, int propertyKey, Value value ) throws EntityNotFoundException
+    public Value nodeSetProperty( long node, int propertyKey, Value value )
+            throws EntityNotFoundException, AutoIndexingKernelException
     {
         assertOpen();
 
@@ -436,7 +440,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         if ( existingValue == NO_VALUE )
         {
             //no existing value, we just add it
-            //TODO autoIndexing.nodes().propertyAdded( ops, nodeId, propertyKeyId, value );
+            autoIndexing.nodes().propertyAdded( this, node, propertyKey, value );
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
             updater.onPropertyAdd( nodeCursor, propertyCursor, propertyKey, value );
             return NO_VALUE;
@@ -446,7 +450,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             if ( !value.equals( existingValue ) )
             {
                 //the value has changed to a new value
-                //TODO  autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
+                autoIndexing.nodes().propertyChanged( this, node, propertyKey, existingValue, value );
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
                 updater.onPropertyChange( nodeCursor, propertyCursor, propertyKey, existingValue, value );
             }
@@ -455,15 +459,16 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public Value nodeRemoveProperty( long node, int propertyKey ) throws EntityNotFoundException
+    public Value nodeRemoveProperty( long node, int propertyKey )
+            throws EntityNotFoundException, AutoIndexingKernelException
     {
         assertOpen();
         Value existingValue = readProperty( node, propertyKey );
 
         if ( existingValue != NO_VALUE )
         {
-            //no existing value,® we just add it
-            //TODO autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
+            //no existing value, we just add it
+            autoIndexing.nodes().propertyRemoved( this, node, propertyKey);
             ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue);
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
         }
@@ -500,10 +505,41 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public void nodeRemoveFromExplicitIndex( String indexName, long node ) throws KernelException
+    public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+    {
+        assertOpen();
+        ktx.explicitIndexTxState().nodeChanges( indexName ).addNode( node, key, value );
+    }
+
+    @Override
+    public void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException
     {
         assertOpen();
         ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node );
+    }
+
+    @Override
+    public void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        assertOpen();
+        ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node, key, value );
+    }
+
+    @Override
+    public void nodeRemoveFromExplicitIndex( String indexName, long node, String key )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        assertOpen();
+        ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node, key );
+    }
+
+    @Override
+    public void nodeExplicitIndexCreate( String indexName, Map<String,String> customConfig )
+    {
+        assertOpen();
+        ktx.explicitIndexTxState().createIndex( IndexEntityType.Node, indexName, customConfig );
     }
 
     @Override
@@ -511,6 +547,50 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     {
         assertOpen();
         allStoreHolder.getOrCreateNodeIndexConfig( indexName, customConfig );
+    }
+
+    @Override
+    public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+    {
+        assertOpen();
+        ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
+    }
+
+    @Override
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+    {
+        ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
+
+    }
+
+    @Override
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+    {
+        ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship );
+    }
+
+    @Override
+    public void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig )
+    {
+        assertOpen();
+        ktx.explicitIndexTxState().createIndex( IndexEntityType.Relationship, indexName, customConfig );
+    }
+
+    @Override
+    public void relationshipExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
+    {
+        assertOpen();
+        allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
     private Value readProperty(long node, int propertyKey) throws EntityNotFoundException

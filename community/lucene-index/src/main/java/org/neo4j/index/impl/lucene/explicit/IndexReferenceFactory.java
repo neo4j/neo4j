@@ -28,7 +28,7 @@ import org.apache.lucene.store.Directory;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 
 /**
  * Factory that build appropriate (read only or writable) {@link IndexReference} for provided {@link IndexIdentifier}

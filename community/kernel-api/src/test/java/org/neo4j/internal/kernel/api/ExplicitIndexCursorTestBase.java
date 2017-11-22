@@ -163,5 +163,4 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
             assertFoundRelationships( cursor, 0, relationships );
         }
     }
-
 }

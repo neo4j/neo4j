@@ -19,11 +19,14 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexHits;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,6 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings( "Duplicates" )
 public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
@@ -38,6 +42,71 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
     private static final String INDEX_NAME = "foo";
     private static final String KEY = "bar";
     private static final String VALUE = "this is it";
+    @Test
+    public void shouldCreateExplicitNodeIndexEagerly() throws Exception
+    {
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            HashMap<String,String> config = new HashMap<>();
+            config.put( "type", "exact" );
+            config.put( "provider", "lucene" );
+            indexWrite.nodeExplicitIndexCreate( INDEX_NAME, config );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertTrue( graphDb.index().existsForNodes( INDEX_NAME ) );
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldCreateExplicitNodeIndexLazily() throws Exception
+    {
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            HashMap<String,String> config = new HashMap<>();
+            config.put( "type", "exact" );
+            config.put( "provider", "lucene" );
+            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, config );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertTrue( graphDb.index().existsForNodes( INDEX_NAME ) );
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldAddNodeToExplicitIndex() throws Exception
+    {
+        long nodeId;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.nodeAddToExplicitIndex( INDEX_NAME, nodeId, KEY, VALUE );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, "this is it" );
+            assertThat( hits.next().getId(), equalTo( nodeId ) );
+            hits.close();
+            ctx.success();
+        }
+    }
 
     @Test
     public void shouldRemoveNodeFromExplicitIndex() throws Exception
@@ -119,11 +188,10 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldCreateExplicitIndex() throws Exception
-    {
-        // Given
 
+    @Test
+    public void shouldCreateExplicitRelationshipIndexEagerly() throws Exception
+    {
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -131,14 +199,36 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
             HashMap<String,String> config = new HashMap<>();
             config.put( "type", "exact" );
             config.put( "provider", "lucene" );
-            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, config );
+            indexWrite.relationshipExplicitIndexCreate( INDEX_NAME, config );
             tx.success();
         }
 
         // Then
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            assertTrue( graphDb.index().existsForNodes( INDEX_NAME ) );
+            assertTrue( graphDb.index().existsForRelationships( INDEX_NAME ) );
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldCreateExplicitRelationshipIndexLazily() throws Exception
+    {
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            HashMap<String,String> config = new HashMap<>();
+            config.put( "type", "exact" );
+            config.put( "provider", "lucene" );
+            indexWrite.relationshipExplicitIndexCreateLazily( INDEX_NAME, config );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertTrue( graphDb.index().existsForRelationships( INDEX_NAME ) );
             ctx.success();
         }
     }
@@ -174,16 +264,144 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         }
     }
 
-    private long addNodeToExplicitIndex()
+    //TODO unignore when we support relationship creation.
+    @Ignore
+    public void shouldAddRelationshipToExplicitIndex() throws Exception
     {
-        long nodeId;
+        long relId;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            Node node = graphDb.createNode();
-            nodeId = node.getId();
-            graphDb.index().forNodes( INDEX_NAME ).add( node, KEY, VALUE );
+            relId = graphDb.createNode().createRelationshipTo( graphDb.createNode(), RelationshipType.withName( "R" ) )
+                    .getId();
             ctx.success();
         }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.relationshipAddToExplicitIndex( INDEX_NAME, relId, KEY, VALUE );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            IndexHits<Relationship> hits = graphDb.index().forRelationships( INDEX_NAME ).get( KEY, VALUE );
+            assertThat( hits.next().getId(), equalTo( relId ) );
+            hits.close();
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldRemoveRelationshipFromExplicitIndex() throws Exception
+    {
+        // Given
+        long relId = addRelationshipToExplicitIndex();
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.relationshipRemoveFromExplicitIndex( INDEX_NAME, relId );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, "this is it" );
+            assertFalse( hits.hasNext() );
+            hits.close();
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldHandleRemoveRelationshipFromExplicitIndexTwice() throws Exception
+    {
+        // Given
+        long relId = addRelationshipToExplicitIndex();
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.relationshipRemoveFromExplicitIndex( INDEX_NAME, relId );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.relationshipRemoveFromExplicitIndex( INDEX_NAME, relId );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            IndexHits<Relationship> hits = graphDb.index().forRelationships( INDEX_NAME ).get( KEY, "this is it" );
+            assertFalse( hits.hasNext() );
+            hits.close();
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldRemoveNonExistingRelationshipFromExplicitIndex() throws Exception
+    {
+        // Given
+        long relId = addRelationshipToExplicitIndex();
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.relationshipRemoveFromExplicitIndex( INDEX_NAME, relId + 1 );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            IndexHits<Relationship> hits = graphDb.index().forRelationships( INDEX_NAME ).get( KEY, VALUE );
+            assertThat( hits.next().getId(), equalTo( relId ) );
+            assertFalse( hits.hasNext() );
+            hits.close();
+            ctx.success();
+        }
+    }
+
+    private long addNodeToExplicitIndex() throws Exception
+    {
+        long nodeId;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            HashMap<String,String> config = new HashMap<>();
+            config.put( "type", "exact" );
+            config.put( "provider", "lucene" );
+            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, config );
+            indexWrite.nodeAddToExplicitIndex( INDEX_NAME, nodeId, KEY, VALUE );
+            tx.success();
+        }
         return nodeId;
+    }
+
+    private long addRelationshipToExplicitIndex() throws Exception
+    {
+        long relId;
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            Relationship rel =
+                    graphDb.createNode().createRelationshipTo( graphDb.createNode(), RelationshipType.withName( "R" ) );
+            relId = rel
+                    .getId();
+            graphDb.index().forRelationships( INDEX_NAME ).add( rel, KEY, VALUE );
+            ctx.success();
+        }
+        return relId;
     }
 }

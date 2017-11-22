@@ -26,12 +26,11 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -301,5 +300,10 @@ class AllStoreHolder extends Read implements Token
     void getOrCreateNodeIndexConfig( String indexName, Map<String,String> customConfig )
     {
         explicitIndexStore.getOrCreateNodeIndexConfig( indexName, customConfig );
+    }
+
+    void getOrCreateRelationshipIndexConfig( String indexName, Map<String,String> customConfig )
+    {
+        explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 }
