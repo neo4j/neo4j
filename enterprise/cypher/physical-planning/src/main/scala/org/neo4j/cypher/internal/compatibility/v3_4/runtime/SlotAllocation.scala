@@ -97,7 +97,7 @@ object SlotAllocation {
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
           recordArgument(current, argument)
-          val result = allocate(current, nullable, argument.slotConfiguration)
+          val result = allocate(current, nullable, argument.slotConfiguration.copy())
           allocations += (current.assignedId -> result)
           resultStack.push(result)
 
