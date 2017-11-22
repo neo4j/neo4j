@@ -38,17 +38,23 @@ import org.neo4j.values.storable.Value;
  */
 public interface AutoIndexOperations
 {
-    void propertyAdded( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value value ) throws AutoIndexingKernelException;
+    void propertyAdded( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value value )
+            throws AutoIndexingKernelException;
+
     void propertyChanged( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value oldValue, Value newValue )
             throws AutoIndexingKernelException;
-    void propertyRemoved(ExplicitIndexWrite write, long entityId, int propertyKey )
+
+    void propertyRemoved( ExplicitIndexWrite write, long entityId, int propertyKey )
             throws AutoIndexingKernelException;
+
     void entityRemoved( ExplicitIndexWrite write, long entityId ) throws AutoIndexingKernelException;
 
     boolean enabled();
+
     void enabled( boolean enabled );
 
     void startAutoIndexingProperty( String propName );
+
     void stopAutoIndexingProperty( String propName );
 
     Set<String> getAutoIndexedProperties();
@@ -72,7 +78,6 @@ public interface AutoIndexOperations
         {
             throw new UnsupportedOperationException();
         }
-
 
         @Override
         public void propertyRemoved( ExplicitIndexWrite write, long entityId, int propertyKey )

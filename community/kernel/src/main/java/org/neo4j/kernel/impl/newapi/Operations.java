@@ -593,7 +593,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
-    private Value readProperty(long node, int propertyKey) throws EntityNotFoundException
+    private Value readProperty( long node, int propertyKey ) throws EntityNotFoundException
     {
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
@@ -605,9 +605,9 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
 
         //Find out if the property had a value
         Value existingValue = NO_VALUE;
-        while( propertyCursor.next() )
+        while ( propertyCursor.next() )
         {
-            if (propertyCursor.propertyKey() == propertyKey)
+            if ( propertyCursor.propertyKey() == propertyKey )
             {
                 existingValue = propertyCursor.propertyValue();
                 break;

@@ -38,8 +38,7 @@ class Labels implements LabelSet
         this.labels = labels;
     }
 
-
-    static Labels from( Collection<Integer> integers)
+    static Labels from( Collection<Integer> integers )
     {
         int size = integers.size();
         long[] tokens = new long[size];
@@ -51,7 +50,7 @@ class Labels implements LabelSet
         return new Labels( tokens );
     }
 
-    static Labels from(PrimitiveIntSet set)
+    static Labels from( PrimitiveIntSet set )
     {
         long[] labelArray = new long[set.size()];
         int index = 0;

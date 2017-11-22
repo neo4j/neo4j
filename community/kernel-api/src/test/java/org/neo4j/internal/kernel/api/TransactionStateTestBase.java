@@ -268,7 +268,6 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-
     @Test
     public void shouldSeeAddedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
     {
@@ -371,7 +370,6 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
                     graphDb.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
         }
     }
-
 
     @Test
     public void shouldSeeRemovedPropertyInTransaction() throws Exception

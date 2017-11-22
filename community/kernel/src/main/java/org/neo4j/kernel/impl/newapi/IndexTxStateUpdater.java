@@ -175,9 +175,9 @@ class IndexTxStateUpdater
                         {
                             node.properties( propertyCursor );
                             Value value = NO_VALUE;
-                            while (propertyCursor.next())
+                            while ( propertyCursor.next() )
                             {
-                                if (propertyCursor.propertyKey() == indexPropertyId)
+                                if ( propertyCursor.propertyKey() == indexPropertyId )
                                 {
                                     value = propertyCursor.propertyValue();
                                 }
@@ -190,7 +190,6 @@ class IndexTxStateUpdater
                             ValueTuple.of( valuesBefore ), ValueTuple.of( valuesAfter ) );
                 } );
     }
-
 
     private ValueTuple getValueTuple( org.neo4j.internal.kernel.api.NodeCursor node,
             org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, int[] indexPropertyIds )

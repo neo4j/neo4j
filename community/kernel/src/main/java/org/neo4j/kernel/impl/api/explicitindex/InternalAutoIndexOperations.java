@@ -111,7 +111,6 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                         ops.relationshipRemoveFromExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, entityId );
                     }
 
-
                     @Override
                     public void ensureIndexExists( ExplicitIndexWrite ops )
                             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException

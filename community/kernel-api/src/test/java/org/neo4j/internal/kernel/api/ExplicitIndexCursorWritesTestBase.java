@@ -188,7 +188,6 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         }
     }
 
-
     @Test
     public void shouldCreateExplicitRelationshipIndexEagerly() throws Exception
     {

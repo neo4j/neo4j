@@ -199,9 +199,9 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     @Override
     public int propertyKey()
     {
-        if (stateValue != null)
+        if ( stateValue != null )
         {
-            return  stateValue.propertyKeyId();
+            return stateValue.propertyKeyId();
         }
         return PropertyBlock.keyIndexId( currentBlock() );
     }

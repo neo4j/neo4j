@@ -93,7 +93,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            if (txState.nodeIsAddedInThisTx( nodeReference() ) )
+            if ( txState.nodeIsAddedInThisTx( nodeReference() ) )
             {
                 //Node just added, no reason to go down to store and check
                 return Labels.from( txState.nodeStateLabelDiffSets( nodeReference() ).getAdded() );
