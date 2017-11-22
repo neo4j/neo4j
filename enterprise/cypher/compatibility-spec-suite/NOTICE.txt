@@ -55,10 +55,6 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
-GNU Lesser General Public License, Version 3.0
-  dsinfo
-  dsprofile
-
 MIT License
   scallop
 

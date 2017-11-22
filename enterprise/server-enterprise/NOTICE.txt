@@ -99,10 +99,6 @@ Common Development and Distribution License Version 1.1
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
 
-GNU Lesser General Public License, Version 3.0
-  dsinfo
-  dsprofile
-
 MIT License
   scallop
   SLF4J API Module

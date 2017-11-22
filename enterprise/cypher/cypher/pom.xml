@@ -352,6 +352,16 @@
       <groupId>org.bitbucket.inkytonik.kiama</groupId>
       <artifactId>kiama_2.11</artifactId>
       <version>2.1.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.bitbucket.inkytonik.dsinfo</groupId>
+          <artifactId>dsinfo_2.11</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.bitbucket.inkytonik.dsprofile</groupId>
+          <artifactId>dsprofile_2.11</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
   </dependencies>
