@@ -133,7 +133,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         final String labelName = "Town";
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            node = graphDb.createNode( label( labelName ) ).getId();
+            node = graphDb.createNode().getId();
             ctx.success();
         }
 

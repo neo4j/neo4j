@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.HashMap;
 
 import org.neo4j.graphdb.Node;
@@ -57,7 +56,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         // Then
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, "this is it" );
+            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, VALUE );
             assertFalse( hits.hasNext() );
             hits.close();
             ctx.success();
@@ -88,7 +87,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         // Then
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, "this is it" );
+            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, VALUE );
             assertFalse( hits.hasNext() );
             hits.close();
             ctx.success();
@@ -132,6 +131,37 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
             HashMap<String,String> config = new HashMap<>();
             config.put( "type", "exact" );
             config.put( "provider", "lucene" );
+            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, config );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            assertTrue( graphDb.index().existsForNodes( INDEX_NAME ) );
+            ctx.success();
+        }
+    }
+
+    @Test
+    public void shouldCreateExplicitIndexTwice() throws Exception
+    {
+        // Given
+        HashMap<String,String> config = new HashMap<>();
+        config.put( "type", "exact" );
+        config.put( "provider", "lucene" );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
+            indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, config );
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            ExplicitIndexWrite indexWrite = tx.indexWrite();
             indexWrite.nodeExplicitIndexCreateLazily( INDEX_NAME, config );
             tx.success();
         }

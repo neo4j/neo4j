@@ -25,7 +25,6 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -297,26 +296,26 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final void nodeExplicitIndexLookup(
-            NodeExplicitIndexCursor cursor, String index, String key, Value value ) throws KernelException
+            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Value value ) throws KernelException
     {
-        ((org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor).setRead( this );
+        ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).get( key, value.asObject() ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
-            NodeExplicitIndexCursor cursor, String index, Object query ) throws KernelException
+            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, Object query ) throws KernelException
     {
-        ((org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor).setRead( this );
+        ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 query instanceof Value ? ((Value) query).asObject() : query ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
-            NodeExplicitIndexCursor cursor, String index, String key, Object query ) throws KernelException
+            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Object query ) throws KernelException
     {
-        ((org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor).setRead( this );
+        ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 key, query instanceof Value ? ((Value) query).asObject() : query ) );
     }

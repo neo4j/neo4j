@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -44,6 +45,8 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+
+import static org.mockito.Mockito.mock;
 
 public class MockStore extends Read implements TestRule
 {
@@ -64,7 +67,7 @@ public class MockStore extends Read implements TestRule
 
     MockStore( Cursors cursors )
     {
-        super( cursors, null );//TODO fake txstateholder?
+        super( cursors, mock( TxStateHolder.class ) );
     }
 
     @Override

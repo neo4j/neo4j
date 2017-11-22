@@ -159,7 +159,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.clock = clock;
         blockNewTransactions();
         this.cursors = cursors;
-
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
