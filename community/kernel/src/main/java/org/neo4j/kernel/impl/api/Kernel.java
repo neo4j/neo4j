@@ -86,7 +86,7 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( engine, transactions.explicitIndexTxStateSupplier(), this );
+        this.newKernel = new NewKernel( engine, this );
     }
 
     @Override

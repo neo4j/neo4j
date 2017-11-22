@@ -37,18 +37,15 @@ public class NewKernel implements Kernel
 {
     private final StorageEngine engine;
     private final InwardKernel kernel;
-    private final Supplier<ExplicitIndexTransactionState> explicitIndexes;
 
     private StorageStatement statement;
-    private Read read;
     private Cursors cursors;
 
     private volatile boolean isRunning;
 
-    public NewKernel( StorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes, InwardKernel kernel )
+    public NewKernel( StorageEngine engine, InwardKernel kernel )
     {
         this.engine = engine;
-        this.explicitIndexes = explicitIndexes;
         this.kernel = kernel;
         this.isRunning = false;
         this.cursors = new Cursors(  );
