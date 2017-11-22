@@ -331,7 +331,7 @@ object CypherComparisonSupport {
   }
 
   object Versions {
-    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_2, V3_3, V3_4)
+    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_3, V3_4)
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
@@ -343,14 +343,12 @@ object CypherComparisonSupport {
 
     object V3_1 extends Version("3.1")
 
-    object V3_2 extends Version("3.2")
-
     object V3_3 extends Version("3.3")
 
     object V3_4 extends Version("3.4")
 
     object Default extends Version("") {
-      override val acceptedVersionNames = Set("2.3", "3.1", "3.2", "3.3", "3.4").map("CYPHER " + _)
+      override val acceptedVersionNames = Set("2.3", "3.1", "3.3", "3.4").map("CYPHER " + _)
     }
 
   }
@@ -521,7 +519,7 @@ object CypherComparisonSupport {
 
       // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
       // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
-      val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_2) + Versions.Default
+      val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_1) + Versions.Default
       val (reportedRuntimeName, reportedPlannerName, reportedVersionName) =
         if (versionsWithUnreportedProcedureUsage.versions.contains(version))
           (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"))
@@ -567,6 +565,8 @@ object CypherComparisonSupport {
 
   object Configs {
 
+    // TODO include 3.3 in some more Configs
+
     def Compiled: TestConfiguration = TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
     def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
@@ -589,7 +589,9 @@ object CypherComparisonSupport {
 
     def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
 
-    def Cost3_3: TestConfiguration = TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def Cost3_3: TestConfiguration = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+
+    def Cost3_4: TestConfiguration = TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
 
@@ -601,8 +603,7 @@ object CypherComparisonSupport {
 
     def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
 
-    def Version3_2: TestConfiguration = TestConfiguration(Versions.V3_2, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-      TestConfiguration(Versions.V3_2, Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Slotted))
+    def Version3_3: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.all, Runtimes.Default)
 
     def Version3_4: TestConfiguration =
       TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +

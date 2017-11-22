@@ -20,13 +20,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_2}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   // Changed behaviour to comply with opencypher in 3.3
-  val nullInListConfigOld: TestConfiguration = TestConfiguration(V2_3 -> V3_2, Planners.all, Runtimes.all) + Configs.AllRulePlanners
+  val nullInListConfigOld: TestConfiguration = TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes.all) + Configs.AllRulePlanners
 
   // Comparison between lists and non-lists
 
