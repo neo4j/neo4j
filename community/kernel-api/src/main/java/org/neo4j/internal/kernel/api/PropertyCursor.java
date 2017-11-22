@@ -30,29 +30,6 @@ import org.neo4j.values.storable.ValueWriter;
  */
 public interface PropertyCursor extends Cursor
 {
-    /**
-     * Find the first property with a key greater than or equal to the provided key.
-     * <p>
-     * Note that the default implementation of this method (and most likely any sane use of this method - regardless of
-     * implementation) assumes that properties are ordered by the key.
-     *
-     * @param propertyKey
-     *         the property key to search for.
-     * @return {@code true} if a matching property was found, {@code false} if all properties within reach of this
-     * cursor were exhausted without finding a matching property.
-     */
-    default boolean seek( int propertyKey )
-    {
-        while ( next() )
-        {
-            if ( propertyKey < propertyKey() )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     int propertyKey();
 
     ValueGroup propertyType();
