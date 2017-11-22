@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
-import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3}
-import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3,
+  UpdateStrategy => UpdateStrategyV3_3}
+import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
@@ -62,7 +63,8 @@ object helpers {
           case v3_3Phase.PARSING => v3_4Phase.PARSING
           case v3_3Phase.PIPE_BUILDING => v3_4Phase.PIPE_BUILDING
           case v3_3Phase.SEMANTIC_CHECK => v3_4Phase.SEMANTIC_CHECK
-          case _ => throw new InternalException(s"Cannot handle $phase in 3.1")
+          case v3_3Phase.DEPRECATION_WARNINGS => v3_4Phase.DEPRECATION_WARNINGS
+          case _ => throw new InternalException(s"Cannot handle $phase in 3.3")
         }
 
         val wrappedEvent = tracer.beginPhase(wrappedPhase)
@@ -84,6 +86,11 @@ object helpers {
     case ProcedurePlannerNameV3_3 => ProcedurePlannerName
   }
 
+  def as3_4(updateStrategy: UpdateStrategyV3_3): UpdateStrategy = updateStrategy match {
+    case org.neo4j.cypher.internal.compiler.v3_3.eagerUpdateStrategy => eagerUpdateStrategy
+    case org.neo4j.cypher.internal.compiler.v3_3.defaultUpdateStrategy => defaultUpdateStrategy
+  }
+
   def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
     val startPosition = logicalPlan.startPosition.map(as3_4 _)
     val plannerName = as3_4(logicalPlan.plannerName)
@@ -91,15 +98,15 @@ object helpers {
     LogicalPlanState(logicalPlan.queryText,
       startPosition,
       plannerName,
+      None,
+      None,
+      logicalPlan.maybeExtractedParams,
+      None,
+      None,
+      logicalPlan.maybeLogicalPlan.map(LogicalPlanConverter.convertLogicalPlan _),
+      None,
+      Set.empty)
       // TODO map other parameters
-      ???,
-      ???,
-      ???,
-      ???,
-      ???,
-      ???,
-      ???,
-      ???)
   }
 
 }

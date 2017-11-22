@@ -23,10 +23,12 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
 import org.neo4j.cypher.internal.compatibility.v3_4._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{idp => idpV3_3}
@@ -35,11 +37,13 @@ import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Statement => StatementV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3, CompilationPhaseTracer => CompilationPhaseTracerV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracerV3_3, Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
@@ -63,8 +67,9 @@ CONTEXT3_4 <: CommunityRuntimeContextV3_4,
 T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
   val kernelMonitors: KernelMonitors
   val clock: Clock
-  val monitors: MonitorsV3_3
-  val config: v3_3.CypherCompilerConfiguration
+  val monitorsV3_3: MonitorsV3_3
+  val monitorsV3_4: Monitors
+  val configV3_4: CypherCompilerConfiguration
   val logger: InfoLogger
   val runtimeBuilder: RuntimeBuilder[T]
   val contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3]
@@ -85,61 +90,77 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
 
   protected val compiler: v3_3.CypherCompiler[CONTEXT3_3]
 
+  protected val configV3_3 = helpers.as3_3(configV3_4)
 
-  private def queryGraphSolver = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(v3_3.CostBasedPlannerName.default), monitors, config)
+
+  private def queryGraphSolverV3_3 = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(v3_3.CostBasedPlannerName.default), monitorsV3_3, configV3_3)
+  private def queryGraphSolverV3_4 = compatibility.v3_4.Compatibility.createQueryGraphSolver(
+    maybePlannerName.map(helpers.as3_4 _).getOrElse(CostBasedPlannerName.default).asInstanceOf[CostBasedPlannerName],
+    monitorsV3_4,
+    configV3_4)
 
   def createExecPlan: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState] = {
       ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
-        runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_4])
+        runtimeBuilder.create(maybeRuntimeName, configV3_4.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_4])
       )
   }
 
-  private val planCacheFactory = () => new LFUCache[StatementV3_3, ExecutionPlan_v3_4](config.queryCacheSize)
+  private val planCacheFactory = () => new LFUCache[StatementV3_3, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
 
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer3_3: CompilationPhaseTracerV3_3,
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
-    val inputPosition3_3 = helpers.as3_3(preParsedQuery.offset)
-    val notificationLogger = new RecordingNotificationLoggerV3_3(Some(inputPosition3_3))
+    val inputPositionV3_3 = helpers.as3_3(preParsedQuery.offset)
+    val inputPositionV3_4 = preParsedQuery.offset
+    val notificationLoggerV3_3 = new RecordingNotificationLoggerV3_3(Some(inputPositionV3_3))
+    val notificationLoggerV3_4 = new RecordingNotificationLogger(Some(inputPositionV3_4))
+
+    val tracerV3_3 = as3_3(tracer)
 
     val preparedSyntacticQueryForV_3_3: Try[phases.BaseState] =
       Try(compiler.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
-        notificationLogger, preParsedQuery.planner.name,
+        notificationLoggerV3_3, preParsedQuery.planner.name,
         preParsedQuery.debugOptions,
-        Some(helpers.as3_3(preParsedQuery.offset)), tracer3_3))
+        Some(helpers.as3_3(preParsedQuery.offset)), tracerV3_3))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContextWrapper, tracerV3_4: CompilationPhaseTracer):
       (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_3.get
 
         //Context used for db communication during planning
-        val tc = TransactionalContextWrapperV3_3(transactionalContext.tc)
-        val planContext = new ExceptionTranslatingPlanContextV3_3(new TransactionBoundPlanContextV3_3(tc, notificationLogger))
+        val tcV3_3 = TransactionalContextWrapperV3_3(transactionalContext.tc)
+        val tcV3_4 = TransactionalContextWrapper(transactionalContext.tc)
+        val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(new TransactionBoundPlanContextV3_3(tcV3_3, notificationLoggerV3_3))
+        val planContextV3_4 = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4))
 
         // TODO try to port the actual simpleExpressionEvaluator from 3.3
-        def simpleExpressionEvaluator = new logicalV3_3.ExpressionEvaluator {
+        def simpleExpressionEvaluatorV3_3 = new logicalV3_3.ExpressionEvaluator {
           override def evaluateExpression(expr: Expression): Option[Any] = None
         }
 
         //Context used to create logical plans
-        val contextV3_3: CONTEXT3_3 = contextCreatorV3_3.create(tracer3_3, notificationLogger, planContext,
+        val contextV3_3: CONTEXT3_3 = contextCreatorV3_3.create(tracerV3_3, notificationLoggerV3_3, planContextV3_3,
           syntacticQuery.queryText, preParsedQuery.debugOptions,
-          Some(inputPosition3_3), monitors,
-          logicalV3_3.CachedMetricsFactory(logicalV3_3.SimpleMetricsFactory), queryGraphSolver,
-          config, maybeUpdateStrategy.getOrElse(v3_3.defaultUpdateStrategy),
+          Some(inputPositionV3_3), monitorsV3_3,
+          logicalV3_3.CachedMetricsFactory(logicalV3_3.SimpleMetricsFactory), queryGraphSolverV3_3,
+          configV3_3, maybeUpdateStrategy.getOrElse(v3_3.defaultUpdateStrategy),
+          clock, simpleExpressionEvaluatorV3_3)
+        val contextV3_4: CONTEXT3_4 = contextCreatorV3_4.create(tracerV3_4, notificationLoggerV3_4, planContextV3_4,
+          syntacticQuery.queryText, preParsedQuery.debugOptions,
+          Some(inputPositionV3_4), monitorsV3_4,
+          CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolverV3_4,
+          configV3_4, maybeUpdateStrategy.map(helpers.as3_4 _).getOrElse(defaultUpdateStrategy),
           clock, simpleExpressionEvaluator)
-        // TODO should we create a 3.4 context with the same parameters, or map the 3.3 context later
-        val contextV3_4: CONTEXT3_4 = ???
 
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)
         // TODO do we need two separate or one joined cache?
-        val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
-        val statisticsV3_4 = GraphStatisticsWrapper(planContext.statistics)
-        val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContext.txIdProvider, statisticsV3_4)
+        val cache = provideCache(cacheAccessor, cacheMonitor, planContextV3_3, planCacheFactory)
+        val statisticsV3_4 = GraphStatisticsWrapper(planContextV3_3.statistics)
+        val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContextV3_3.txIdProvider, statisticsV3_4)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         def createPlan(): ExecutionPlan_v3_4 = {

@@ -176,7 +176,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
       case Left(CypherVersion.v3_3) =>
         val parsedQuery = compatibilityFactory.
           create(PlannerSpec_v3_3(planner, runtime, updateStrategy), config).
-          produceParsedQuery(preParsedQuery, as3_3(tracer), preParsingNotifications)
+          produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
         Right(parsedQuery)
 
       case Left(CypherVersion.v3_1) =>

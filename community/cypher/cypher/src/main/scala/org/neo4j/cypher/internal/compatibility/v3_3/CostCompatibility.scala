@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_4.MonitoringCacheAccessor
+import org.neo4j.cypher.internal.compatibility.v3_4.{MonitoringCacheAccessor, WrappedMonitors => WrappedMonitorsV3_4}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlanV3_4}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4}
 import org.neo4j.cypher.internal.compiler.v3_3
@@ -32,14 +32,14 @@ import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Statement => StatementV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.Transformer
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
 case class CostCompatibility[CONTEXT3_3 <: v3_3.phases.CompilerContext,
 CONTEXT3_4 <: CommunityRuntimeContextV3_4,
-T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](config: v3_3.CypherCompilerConfiguration,
+T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](configV3_4: CypherCompilerConfiguration,
                                                                   clock: Clock,
                                                                   kernelMonitors: KernelMonitors,
                                                                   log: Log,
@@ -76,16 +76,18 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](config: v3_3.C
 
     val monitors: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
 
-    new CypherCompilerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
+    new CypherCompilerFactory().costBasedCompiler(configV3_3, clock, monitors, rewriterSequencer,
       maybePlannerName, maybeUpdateStrategy, contextCreatorV3_3)
   }
 
   override val logger = new StringInfoLogger(log)
 
-  override val monitors: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
+  override val monitorsV3_3: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
 
-  override val cacheMonitor: AstCacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+  override val monitorsV3_4: Monitors= WrappedMonitorsV3_4(kernelMonitors)
 
-  override val cacheAccessor: MonitoringCacheAccessor[StatementV3_3, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[StatementV3_3, ExecutionPlan_v3_4](cacheMonitor)
-  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
+  override val cacheMonitor: AstCacheMonitor = monitorsV3_3.newMonitor[AstCacheMonitor](monitorTag)
+
+  override val cacheAccessor: MonitoringCacheAccessor[StatementV3_3, ExecutionPlanV3_4] = new MonitoringCacheAccessor[StatementV3_3, ExecutionPlanV3_4](cacheMonitor)
+  monitorsV3_3.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
 }
