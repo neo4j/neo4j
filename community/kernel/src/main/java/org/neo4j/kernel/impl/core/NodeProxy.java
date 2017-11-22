@@ -41,7 +41,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -118,9 +117,14 @@ public class NodeProxy implements Node
                                              "] since it has already been deleted." );
             }
         }
-        catch ( KernelException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( AutoIndexingKernelException e )
+        {
+            throw new IllegalStateException( "Auto indexing encountered a failure while deleting the node: "
+                                             + e.getMessage(), e );
         }
     }
 
@@ -741,9 +745,9 @@ public class NodeProxy implements Node
     {
         int[] ids = new int[types.length];
         int outIndex = 0;
-        for ( int i = 0; i < types.length; i++ )
+        for ( RelationshipType type : types )
         {
-            int id = statement.readOperations().relationshipTypeGetForName( types[i].name() );
+            int id = statement.readOperations().relationshipTypeGetForName( type.name() );
             if ( id != NO_SUCH_RELATIONSHIP_TYPE )
             {
                 ids[outIndex++] = id;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 /**
  * A transaction with the graph database.
@@ -63,7 +63,7 @@ public interface Transaction extends AutoCloseable
     /**
      * @return The Write operations of the graph.
      */
-    Write dataWrite() throws KernelException;
+    Write dataWrite() throws InvalidTransactionTypeKernelException;
 
     /**
      * @return The explicit index read operations of the graph.

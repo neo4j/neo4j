@@ -268,7 +268,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         {
             return new NodeProxy( nodeActions, spi.currentTransaction().dataWrite().nodeCreate() );
         }
-        catch ( KernelException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -281,7 +281,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         {
             return spi.currentTransaction().dataWrite().nodeCreate();
         }
-        catch ( KernelException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }

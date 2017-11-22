@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.values.storable.Value;
 
@@ -40,7 +39,7 @@ public interface Write
      * @param node the internal id of the node to delete
      * @return returns true if it deleted a node or false if no node was found for this id
      */
-    boolean nodeDelete( long node ) throws KernelException;
+    boolean nodeDelete( long node ) throws AutoIndexingKernelException;
 
     /**
      * Create a relationship between two nodes.
