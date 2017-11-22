@@ -29,12 +29,39 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
  */
 public interface ExplicitIndexWrite
 {
+    /**
+     * Adds node to explicit index.
+     *
+     * @param indexName The name of the index
+     * @param node The id of the node to add
+     * @param key The key to associate with the node
+     * @param value The value to associate with the node an key
+     * @throws EntityNotFoundException If there is no node with the given index
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
+     */
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
             throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Removes a node from an explicit index
+     *
+     * @param indexName The name of the index
+     * @param node The id of the node to add
+     * @param key The key to associate with the node
+     * @param value The value to associate with the node and key
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
+     */
     void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
             throws ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Removes a node from an explicit index
+     *
+     * @param indexName The name of the index
+     * @param node The id of the node to add
+     * @param key The key to associate with the node
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
+     */
     void nodeRemoveFromExplicitIndex( String indexName, long node, String key ) throws
             ExplicitIndexNotFoundKernelException;
 
@@ -43,31 +70,85 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index from which the node is to be removed.
      * @param node The node id of the node to remove
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Adds relationship to explicit index.
+     *
+     * @param indexName The name of the index
+     * @param relationship The id of the relationship to add
+     * @param key The key to associate with the node
+     * @param value The value to associate with the relationship and key
+     * @throws EntityNotFoundException If there is no relationship with the given index
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
+     */
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
             throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Adds relationship to explicit index.
+     *
+     * @param indexName The name of the index
+     * @param relationship The id of the relationship to add
+     * @param key The key to associate with the node
+     * @param value The value to associate with the relationship and key
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
+     */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
+    /**
+     * Adds relationship to explicit index.
+     *
+     * @param indexName The name of the index
+     * @param relationship The id of the relationship to add
+     * @param key The key to associate with the node
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
+     */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
+    /**
+     * Adds relationship to explicit index.
+     *
+     * @param indexName The name of the index
+     * @param relationship The id of the relationship to add
+     * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
+     */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
     /**
      * Creates an explicit index in a separate transaction if not yet available.
+     *
      * @param indexName The name of the index to create.
      * @param customConfig The configuration of the explicit index.
      */
-    void nodeExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
+    void nodeExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig );
 
-    void nodeExplicitIndexCreate( String indexName, Map<String, String> customConfig );
+    /**
+     * Creates an explicit index.
+     *
+     * @param indexName The name of the index to create.
+     * @param customConfig The configuration of the explicit index.
+     */
+    void nodeExplicitIndexCreate( String indexName, Map<String,String> customConfig );
 
-    void relationshipExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
+    /**
+     * Creates an explicit index in a separate transaction if not yet available.
+     *
+     * @param indexName The name of the index to create.
+     * @param customConfig The configuration of the explicit index.
+     */
+    void relationshipExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig );
 
-    void relationshipExplicitIndexCreate( String indexName, Map<String, String> customConfig );
+    /**
+     * Creates an explicit index.
+     *
+     * @param indexName The name of the index to create.
+     * @param customConfig The configuration of the explicit index.
+     */
+    void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig );
 }
