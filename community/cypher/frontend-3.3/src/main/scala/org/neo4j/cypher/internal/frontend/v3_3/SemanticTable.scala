@@ -75,9 +75,9 @@ class SemanticTable(
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
 
   def replaceExpressions(rewriter: Rewriter): SemanticTable = {
-    val replacements = types.keys.map { keyExpression =>
+    val replacements = types.keys.toIndexedSeq.map { keyExpression =>
       keyExpression -> keyExpression.endoRewrite(rewriter)
-    }.toSeq
+    }
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
   }
 
