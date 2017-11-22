@@ -949,13 +949,9 @@ public class ClusterManager
          */
         public HighlyAvailableGraphDatabase getMaster()
         {
-            int instance=0;
             for ( HighlyAvailableGraphDatabase graphDatabaseService : getAllMembers() )
             {
-                boolean available = graphDatabaseService.isAvailable( 1000 );
-                boolean master = graphDatabaseService.isMaster();
-                System.out.printf( "Instance %d: available=%b and master=%b [i.e. %s]\n", instance++, available, master, graphDatabaseService.role() );
-                if ( available && master )
+                if ( graphDatabaseService.isAvailable( 0 ) && graphDatabaseService.isMaster() )
                 {
                     return graphDatabaseService;
                 }
