@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, Logi
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Statement => StatementV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -73,7 +73,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
   val maybeUpdateStrategy: Option[v3_3.UpdateStrategy]
   val cacheMonitor: AstCacheMonitor
   val cacheAccessor: MonitoringCacheAccessor[StatementV3_3, ExecutionPlan_v3_4]
-  val monitorTag = "cypher3.4"
+  val monitorTag = "cypher3.3"
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import RewriterStepSequencer._
@@ -249,23 +249,9 @@ object Compatibility {
   }
 }
 
-trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T) {}
-}
-
-trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T) {}
-
-  def cacheMiss(key: T) {}
-
-  def cacheDiscard(key: T, userKey: String) {}
-}
-
 trait InfoLogger {
   def info(message: String)
 }
-
-trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
 
 trait AstCacheMonitor extends CypherCacheMonitor[StatementV3_3, CacheAccessor[StatementV3_3, ExecutionPlan_v3_4]]
 
