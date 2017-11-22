@@ -430,30 +430,14 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public Value nodeSetProperty( long node, int propertyKey, Value value ) throws EntityNotFoundException
     {
         assertOpen();
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
 
-        nodeCursor.properties( propertyCursor );
-
-        //Find out if the property had a value
-        Value existingValue = NO_VALUE;
-        while( propertyCursor.next() )
-        {
-            if (propertyCursor.propertyKey() == propertyKey)
-            {
-                existingValue = propertyCursor.propertyValue();
-                break;
-            }
-        }
+        Value existingValue = readProperty( node, propertyKey );
 
         if ( existingValue == NO_VALUE )
         {
             //no existing value, we just add it
-            ktx.txState().nodeDoAddProperty( node, propertyKey, value );
             //TODO autoIndexing.nodes().propertyAdded( ops, nodeId, propertyKeyId, value );
+            ktx.txState().nodeDoAddProperty( node, propertyKey, value );
             //TODO updater.onPropertyAdd( state, node, propertyKeyId, value );
             return NO_VALUE;
         }
@@ -462,8 +446,8 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             if ( !value.equals( existingValue ) )
             {
                 //the value has changed to a new value
-                ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
                 //TODO  autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
+                ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
                 //TODO updater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
             }
             return existingValue;
@@ -471,10 +455,20 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public Value nodeRemoveProperty( long node, int propertyKey )
+    public Value nodeRemoveProperty( long node, int propertyKey ) throws EntityNotFoundException
     {
         assertOpen();
-        throw new UnsupportedOperationException();
+        Value existingValue = readProperty( node, propertyKey );
+
+        if ( existingValue != NO_VALUE )
+        {
+            //no existing value,® we just add it
+            //TODO autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
+            ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue);
+            //TODO indexTxStateUpdater.onPropertyRemove( state, node, propertyKeyId, existingValue );
+        }
+
+        return existingValue;
     }
 
     @Override
@@ -517,5 +511,28 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     {
         assertOpen();
         allStoreHolder.getOrCreateNodeIndexConfig( indexName, customConfig );
+    }
+
+    private Value readProperty(long node, int propertyKey) throws EntityNotFoundException
+    {
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+
+        nodeCursor.properties( propertyCursor );
+
+        //Find out if the property had a value
+        Value existingValue = NO_VALUE;
+        while( propertyCursor.next() )
+        {
+            if (propertyCursor.propertyKey() == propertyKey)
+            {
+                existingValue = propertyCursor.propertyValue();
+                break;
+            }
+        }
+        return existingValue;
     }
 }

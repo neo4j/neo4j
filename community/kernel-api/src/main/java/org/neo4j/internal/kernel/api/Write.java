@@ -86,7 +86,7 @@ public interface Write
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeRemoveProperty( long node, int propertyKey );
+    Value nodeRemoveProperty( long node, int propertyKey ) throws KernelException;
 
     /**
      * Set a property on a relationship

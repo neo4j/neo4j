@@ -35,6 +35,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
+@SuppressWarnings( "Duplicates" )
 public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Test
@@ -197,8 +198,8 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             nodeId = tx.dataWrite().nodeCreate();
             int prop1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
             int prop2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
-            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop1, stringValue( "hello" ) ), NO_VALUE  );
-            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop2, stringValue( "world" ) ), NO_VALUE  );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop1, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop2, stringValue( "world" ) ), NO_VALUE );
 
             try ( NodeCursor node = cursors.allocateNodeCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
@@ -240,7 +241,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         {
 
             int propToken = session.token().propertyKeyGetOrCreateForName( propKey );
-            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE  );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
 
             try ( NodeCursor node = cursors.allocateNodeCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
@@ -281,7 +282,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         {
             nodeId = tx.dataWrite().nodeCreate();
             propToken1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
-            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken1, stringValue( "hello" ) ), NO_VALUE  );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken1, stringValue( "hello" ) ), NO_VALUE );
             tx.success();
         }
 
@@ -290,7 +291,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         {
 
             propToken2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
-            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken2, stringValue( "world" ) ), NO_VALUE  );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken2, stringValue( "world" ) ), NO_VALUE );
 
             try ( NodeCursor node = cursors.allocateNodeCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
@@ -336,14 +337,15 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         {
             nodeId = tx.dataWrite().nodeCreate();
             propToken = session.token().propertyKeyGetOrCreateForName( propKey );
-            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE  );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
             tx.success();
         }
 
         // When/Then
         try ( Transaction tx = session.beginTransaction() )
         {
-            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ), stringValue( "hello" )  );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ),
+                    stringValue( "hello" ) );
             try ( NodeCursor node = cursors.allocateNodeCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
@@ -357,6 +359,92 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
                 assertFalse( "should only find one property", property.next() );
+                assertFalse( "should only find one node", node.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertThat(
+                    graphDb.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
+        }
+    }
+
+
+    @Test
+    public void shouldSeeRemovedPropertyInTransaction() throws Exception
+    {
+        // Given
+        long nodeId;
+        String propKey = "prop1";
+        int propToken;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertEquals( tx.dataWrite().nodeRemoveProperty( nodeId, propToken ), stringValue( "hello" ) );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( nodeId, node );
+                assertTrue( "should access node", node.next() );
+
+                node.properties( property );
+                assertFalse( "should not find any properties", property.next() );
+                assertFalse( "should only find one node", node.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertFalse(
+                    graphDb.getNodeById( nodeId ).hasProperty( propKey ) );
+        }
+    }
+
+    @Test
+    public void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
+    {
+        // Given
+        long nodeId;
+        String propKey = "prop1";
+        int propToken;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertEquals( tx.dataWrite().nodeRemoveProperty( nodeId, propToken ), stringValue( "hello" ) );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ), NO_VALUE );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( nodeId, node );
+                assertTrue( "should access node", node.next() );
+
+                node.properties( property );
+                assertTrue( property.next() );
+                assertEquals( propToken, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "world" ) );
+
+                assertFalse( "should not find any properties", property.next() );
                 assertFalse( "should only find one node", node.next() );
             }
 
