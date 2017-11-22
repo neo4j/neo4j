@@ -137,6 +137,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
     import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
+    import org.neo4j.cypher.internal.compatibility.v3_3.helpers._
 
     var version = preParsedQuery.version
     val planner = preParsedQuery.planner
@@ -172,8 +173,11 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
           case _ => Right(parserQuery)
         }.getOrElse(Right(parserQuery))
 
-      //TODO: We need to add support for 3.3 via logical plan conversion ASAP
-      case Left(CypherVersion.v3_3) => throw new InternalException("CYPHER 3.3 support is not added yet")
+      case Left(CypherVersion.v3_3) =>
+        val parsedQuery = compatibilityFactory.
+          create(PlannerSpec_v3_3(planner, runtime, updateStrategy), config).
+          produceParsedQuery(preParsedQuery, as3_3(tracer), preParsingNotifications)
+        Right(parsedQuery)
 
       case Left(CypherVersion.v3_1) =>
         val parsedQuery = compatibilityFactory.

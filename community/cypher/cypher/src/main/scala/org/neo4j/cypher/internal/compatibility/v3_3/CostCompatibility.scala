@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.MonitoringCacheAccessor
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4}
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerFactory, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3}
 import org.neo4j.cypher.internal.compiler.v3_4._
@@ -37,7 +38,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
 case class CostCompatibility[CONTEXT3_3 <: v3_3.phases.CompilerContext,
-CONTEXT3_4 <: CommunityRuntimeContext,
+CONTEXT3_4 <: CommunityRuntimeContextV3_4,
 T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](config: v3_3.CypherCompilerConfiguration,
                                                                   clock: Clock,
                                                                   kernelMonitors: KernelMonitors,

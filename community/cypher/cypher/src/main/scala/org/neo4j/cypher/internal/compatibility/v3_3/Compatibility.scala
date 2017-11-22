@@ -35,10 +35,11 @@ import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Statement => StatementV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3, CompilationPhaseTracer => CompilationPhaseTracerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
@@ -58,7 +59,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 trait Compatibility[CONTEXT3_3 <: v3_3.phases.CompilerContext,
-CONTEXT3_4 <: CommunityRuntimeContext,
+CONTEXT3_4 <: CommunityRuntimeContextV3_4,
 T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
   val kernelMonitors: KernelMonitors
   val clock: Clock
@@ -98,12 +99,11 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
 
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer3_3: CompilationPhaseTracerV3_3,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val inputPosition3_3 = helpers.as3_3(preParsedQuery.offset)
     val notificationLogger = new RecordingNotificationLoggerV3_3(Some(inputPosition3_3))
 
-    val tracer3_3 = helpers.as3_3(tracer)
     val preparedSyntacticQueryForV_3_3: Try[phases.BaseState] =
       Try(compiler.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
