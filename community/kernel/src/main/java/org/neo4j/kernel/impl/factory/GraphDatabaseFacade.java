@@ -57,6 +57,8 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -94,6 +96,7 @@ import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
+import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -134,6 +137,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
+    private final Cursors cursors = new Cursors();
 
     /**
      * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
@@ -329,14 +333,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             throw new NotFoundException( format( "Node %d not found", id ),
                     new EntityNotFoundException( EntityType.NODE, id ) );
         }
-        try ( Statement statement = spi.currentStatement() )
+
+        Read read = spi.currentTransaction().dataRead();
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor() )
         {
-            if ( !statement.readOperations().nodeExists( id ) )
+            read.singleNode( id, nodeCursor );
+            if ( !nodeCursor.next() )
             {
                 throw new NotFoundException( format( "Node %d not found", id ),
                         new EntityNotFoundException( EntityType.NODE, id ) );
             }
-
             return new NodeProxy( nodeActions, id );
         }
     }
@@ -459,8 +465,29 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         assertTransactionOpen();
         return () ->
         {
-            Statement statement = spi.currentStatement();
-            return map2nodes( statement.readOperations().nodesGetAll(), statement );
+            NodeCursor cursor = cursors.allocateNodeCursor();
+            spi.currentTransaction().dataRead().allNodesScan( cursor );
+            return new PrefetchingResourceIterator<Node>()
+            {
+                @Override
+                protected Node fetchNextOrNull()
+                {
+                    if ( cursor.next() )
+                    {
+                        return new NodeProxy( nodeActions, cursor.nodeReference() );
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                @Override
+                public void close()
+                {
+                    cursor.close();
+                }
+            };
         };
     }
 
