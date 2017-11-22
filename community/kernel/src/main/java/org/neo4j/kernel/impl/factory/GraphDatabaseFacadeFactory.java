@@ -94,7 +94,7 @@ public class GraphDatabaseFacadeFactory
 
         @Internal
         public static final Setting<String> tracer =
-                setting( "unsupported.dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
+                setting( "unsupported.dbms.tracer", Settings.STRING, "verbose" ); // 'null' default.
 
         @Internal
         public static final Setting<String> editionName =
