@@ -98,6 +98,8 @@ object PlanFingerprint {
       name.toLowerCase match {
         case "none" => StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
         case "exponential" => StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
+        // TODO: Delete the next line to enable decay by default
+        case "default" => StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
         case _ => StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
       }
     }
