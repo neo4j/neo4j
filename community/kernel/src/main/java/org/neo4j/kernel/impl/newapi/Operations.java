@@ -53,10 +53,10 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
@@ -98,7 +98,8 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
-    public void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder order ) throws KernelException
+    public void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder order )
+            throws KernelException
     {
         assertOpen();
         allStoreHolder.nodeIndexScan( index, cursor, order );
@@ -435,29 +436,34 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             throw new EntityNotFoundException( EntityType.NODE, node );
         }
 
-        Value existingValue = Values.NO_VALUE;
         nodeCursor.properties( propertyCursor );
-        if ( propertyCursor.next() )
+
+        //Find out if the property had a value
+        Value existingValue = NO_VALUE;
+        while( propertyCursor.next() )
         {
-            existingValue = propertyCursor.propertyValue();
-            //TODO  autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
-        }
-        else
-        {
-            //TODO autoIndexing.nodes().propertyAdded( ops, nodeId, propertyKeyId, value );
+            if (propertyCursor.propertyKey() == propertyKey)
+            {
+                existingValue = propertyCursor.propertyValue();
+                break;
+            }
         }
 
-        if ( existingValue == Values.NO_VALUE )
+        if ( existingValue == NO_VALUE )
         {
+            //no existing value, we just add it
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
+            //TODO autoIndexing.nodes().propertyAdded( ops, nodeId, propertyKeyId, value );
             //TODO updater.onPropertyAdd( state, node, propertyKeyId, value );
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
         else
         {
             if ( !value.equals( existingValue ) )
             {
+                //the value has changed to a new value
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
+                //TODO  autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
                 //TODO updater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
             }
             return existingValue;

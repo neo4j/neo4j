@@ -32,6 +32,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
@@ -180,6 +182,191 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             assertTrue( tx.dataWrite().nodeDelete( nodeId ) );
             assertFalse( tx.dataWrite().nodeDelete( nodeId ) );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldSeeNewNodePropertyInTransaction() throws Exception
+    {
+        long nodeId;
+        String propKey1 = "prop1";
+        String propKey2 = "prop2";
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            int prop1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
+            int prop2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop1, stringValue( "hello" ) ), NO_VALUE  );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop2, stringValue( "world" ) ), NO_VALUE  );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( nodeId, node );
+                assertTrue( "should access node", node.next() );
+
+                node.properties( property );
+                assertTrue( property.next() );
+                //First property
+                assertEquals( prop1, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "hello" ) );
+                //second property
+                assertTrue( property.next() );
+                assertEquals( prop2, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "world" ) );
+
+                assertFalse( "should only find two properties", property.next() );
+                assertFalse( "should only find one node", node.next() );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldSeeAddedPropertyFromExistingNodeWithoutPropertiesInTransaction() throws Exception
+    {
+        // Given
+        long nodeId;
+        String propKey = "prop1";
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+
+            int propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE  );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( nodeId, node );
+                assertTrue( "should access node", node.next() );
+
+                node.properties( property );
+                assertTrue( property.next() );
+                assertEquals( propToken, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "hello" ) );
+
+                assertFalse( "should only find one properties", property.next() );
+                assertFalse( "should only find one node", node.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertThat(
+                    graphDb.getNodeById( nodeId ).getProperty( propKey ), equalTo( "hello" ) );
+        }
+    }
+
+
+    @Test
+    public void shouldSeeAddedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
+    {
+        // Given
+        long nodeId;
+        String propKey1 = "prop1";
+        String propKey2 = "prop2";
+        int propToken1;
+        int propToken2;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            propToken1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken1, stringValue( "hello" ) ), NO_VALUE  );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+
+            propToken2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken2, stringValue( "world" ) ), NO_VALUE  );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( nodeId, node );
+                assertTrue( "should access node", node.next() );
+
+                node.properties( property );
+
+                //property 2, start with tx state
+                assertTrue( property.next() );
+                assertEquals( propToken2, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "world" ) );
+
+                //property 1, from disk
+                assertTrue( property.next() );
+                assertEquals( propToken1, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "hello" ) );
+
+                assertFalse( "should only find two properties", property.next() );
+                assertFalse( "should only find one node", node.next() );
+            }
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertThat(
+                    graphDb.getNodeById( nodeId ).getProperty( propKey1 ), equalTo( "hello" ) );
+            assertThat(
+                    graphDb.getNodeById( nodeId ).getProperty( propKey2 ), equalTo( "world" ) );
+        }
+    }
+
+    @Test
+    public void shouldSeeUpdatedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
+    {
+        // Given
+        long nodeId;
+        String propKey = "prop1";
+        int propToken;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreate();
+            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE  );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ), stringValue( "hello" )  );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( nodeId, node );
+                assertTrue( "should access node", node.next() );
+
+                node.properties( property );
+
+                assertTrue( property.next() );
+                assertEquals( propToken, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "world" ) );
+
+                assertFalse( "should only find one property", property.next() );
+                assertFalse( "should only find one node", node.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertThat(
+                    graphDb.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
         }
     }
 
