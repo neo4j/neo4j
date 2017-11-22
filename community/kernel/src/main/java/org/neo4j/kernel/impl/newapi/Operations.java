@@ -438,7 +438,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             //no existing value, we just add it
             //TODO autoIndexing.nodes().propertyAdded( ops, nodeId, propertyKeyId, value );
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
-            //TODO updater.onPropertyAdd( state, node, propertyKeyId, value );
+            updater.onPropertyAdd( nodeCursor, propertyCursor, propertyKey, value );
             return NO_VALUE;
         }
         else
@@ -448,7 +448,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
                 //the value has changed to a new value
                 //TODO  autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
-                //TODO updater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
+                updater.onPropertyChange( nodeCursor, propertyCursor, propertyKey, existingValue, value );
             }
             return existingValue;
         }
@@ -465,7 +465,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             //no existing value,® we just add it
             //TODO autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
             ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue);
-            //TODO indexTxStateUpdater.onPropertyRemove( state, node, propertyKeyId, existingValue );
+            updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
         }
 
         return existingValue;
