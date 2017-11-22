@@ -19,51 +19,48 @@
  */
 package org.neo4j.backup;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.Service;
 
-public abstract class BackupSupportingClassesFactoryProvider extends Service
+class BackupSupportingClassesFactoryProvider extends Service
 {
-
     /**
      * Create a new instance of a service implementation identified with the
      * specified key(s).
      *
      * @param key the main key for identifying this service implementation
-     * @param altKeys alternative spellings of the identifier of this service
      */
-    protected BackupSupportingClassesFactoryProvider( String key, String... altKeys )
+    protected BackupSupportingClassesFactoryProvider( String key )
     {
-        super( key, altKeys );
+        super( key );
     }
 
     protected BackupSupportingClassesFactoryProvider()
     {
-        super( "key", new String[0] );
+        super( "default-backup-support-provider" );
     }
 
-    public abstract AbstractBackupSupportingClassesFactory getFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime );
-
-    public static Optional<BackupSupportingClassesFactoryProvider> findBestProvider()
+    public BackupSupportingClassesFactory getFactory( BackupModule backupModule )
     {
-        return StreamSupport.stream( load( BackupSupportingClassesFactoryProvider.class ).spliterator(), false )
-                .sorted( ( l, r ) -> r.getPriority() - l.getPriority() )
-                .findFirst();
+        return new BackupSupportingClassesFactory( backupModule );
+    }
+
+    public static Stream<BackupSupportingClassesFactoryProvider> getProvidersByPriority()
+    {
+        Stream<BackupSupportingClassesFactoryProvider> providers = StreamSupport.stream(
+                load( BackupSupportingClassesFactoryProvider.class ).spliterator(), false );
+        // Inject the default provider into the stream, so it participates in sorting by priority.
+        providers = Stream.concat( providers, Stream.of( new BackupSupportingClassesFactoryProvider() ) );
+        return providers.sorted( ( l, r ) -> r.getPriority() - l.getPriority() );
     }
 
     /**
      * The higher the priority value, the greater the preference
-     * @return
      */
-    protected abstract int getPriority();
-
-    @Override
-    public String toString()
+    protected int getPriority()
     {
-        return super.getClass().getName();
+        return 42;
     }
 }

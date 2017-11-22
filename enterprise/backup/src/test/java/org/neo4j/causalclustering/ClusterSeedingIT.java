@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -56,10 +58,12 @@ public class ClusterSeedingIT
     private Cluster cluster;
     private FileSystemAbstraction fsa;
 
-    @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
     public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( testDir ).around( suppressOutput );
+
     private File baseBackupDir;
 
     @Before

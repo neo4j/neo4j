@@ -21,26 +21,53 @@ package org.neo4j.backup;
 
 import org.junit.Test;
 
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.backup.BackupSupportingClassesFactoryProvider.getProvidersByPriority;
 
 public class OnlineBackupCommandProviderTest
 {
     @Test
     public void communityBackupSupportingFactory()
     {
-        BackupModuleResolveAtRuntime backupModuleResolveAtRuntime = mock( BackupModuleResolveAtRuntime.class );
+        BackupModule backupModule = mock( BackupModule.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        when( backupModuleResolveAtRuntime.getOutsideWorld() ).thenReturn( outsideWorld );
+        when( backupModule.getOutsideWorld() ).thenReturn( outsideWorld );
 
-        BackupSupportingClassesFactoryProvider provider = BackupSupportingClassesFactoryProvider.findBestProvider().get();
-        AbstractBackupSupportingClassesFactory factory = provider.getFactory( backupModuleResolveAtRuntime );
-        assertEquals( NoOpPipelineHandlerAppenderFactory.class, factory
-                .getPipelineHandlerAppenderFactory()
-                .getClass() );
+        BackupSupportingClassesFactoryProvider provider = getProvidersByPriority().findFirst().get();
+        BackupSupportingClassesFactory factory = provider.getFactory( backupModule );
+        assertEquals( NoOpPipelineHandlerAppender.class,
+                factory.createPipelineHandlerAppender( Config.defaults() ).getClass() );
+    }
+
+    /**
+     * This class must be public and static because it must be service loadable.
+     */
+    public static class DummyProvider extends BackupSupportingClassesFactoryProvider
+    {
+        @Override
+        public BackupSupportingClassesFactory getFactory( BackupModule backupModule )
+        {
+            return new BackupSupportingClassesFactory( backupModule )
+            {
+                @Override
+                protected PipelineHandlerAppender createPipelineHandlerAppender( Config config )
+                {
+                    throw new AssertionError( "This provider should never be loaded" );
+                }
+            };
+        }
+
+        @Override
+        protected int getPriority()
+        {
+            return super.getPriority() - 1;
+        }
     }
 }

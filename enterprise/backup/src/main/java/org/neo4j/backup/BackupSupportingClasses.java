@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 import org.neo4j.io.pagecache.PageCache;
 
-public class BackupSupportingClasses
+class BackupSupportingClasses
 {
     // Strategies
     private final BackupDelegator backupDelegator;
@@ -30,7 +30,7 @@ public class BackupSupportingClasses
     // Dependency Helpers
     private final PageCache pageCache;
 
-    public BackupSupportingClasses( BackupDelegator backupDelegator, BackupProtocolService backupProtocolService, PageCache pageCache )
+    BackupSupportingClasses( BackupDelegator backupDelegator, BackupProtocolService backupProtocolService, PageCache pageCache )
     {
         this.backupDelegator = backupDelegator;
         this.backupProtocolService = backupProtocolService;

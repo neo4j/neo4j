@@ -24,9 +24,10 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -53,19 +54,19 @@ public class BackupStrategyWrapperTest
     private OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
 
     private FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
-    private File desiredBackupLocation = mock( File.class, "File<desiredBackupLocation>" );
-    private File availableFreshBackupLocation = mock( File.class, "File<availableFreshBackupLocation>" );
-    private File availableOldBackupLocation = mock( File.class, "File<availableOldBackupLocation>" );
+    private Path desiredBackupLocation = mock( Path.class, "Path<desiredBackupLocation>" );
+    private Path availableFreshBackupLocation = mock( Path.class, "Path<availableFreshBackupLocation>" );
+    private Path availableOldBackupLocation = mock( Path.class, "Path<availableOldBackupLocation>" );
     private OnlineBackupRequiredArguments requiredArguments = mock( OnlineBackupRequiredArguments.class );
     private Config config = mock( Config.class );
     private OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
-    private PotentiallyErroneousState<BackupStageOutcome> SUCCESS = new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
-    private PotentiallyErroneousState<BackupStageOutcome> FAILURE = new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null );
+    private Fallible<BackupStageOutcome> SUCCESS = new Fallible<>( BackupStageOutcome.SUCCESS, null );
+    private Fallible<BackupStageOutcome> FAILURE = new Fallible<>( BackupStageOutcome.FAILURE, null );
     private PageCache pageCache = mock( PageCache.class );
     private BackupRecoveryService backupRecoveryService = mock( BackupRecoveryService.class );
 
     @Before
-    public void setup()
+    public void setup() throws IOException
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( desiredBackupLocation );
@@ -126,7 +127,7 @@ public class BackupStrategyWrapperTest
 
         // and incremental fails
         when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+                new Fallible<>( BackupStageOutcome.FAILURE, null ) );
 
         // when
         subject.doBackup( onlineBackupContext );
@@ -142,7 +143,7 @@ public class BackupStrategyWrapperTest
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
         when( requiredArguments.isFallbackToFull() ).thenReturn( false );
         when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+                new Fallible<>( BackupStageOutcome.FAILURE, null ) );
 
         // when
         subject.doBackup( onlineBackupContext );
@@ -152,7 +153,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void failedBackupsDontMoveExisting() throws CommandFailed
+    public void failedBackupsDontMoveExisting() throws IOException
     {
         // given a backup already exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -162,11 +163,11 @@ public class BackupStrategyWrapperTest
 
         // and an incremental backup fails
         when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+                new Fallible<>( BackupStageOutcome.FAILURE, null ) );
 
         // and full backup fails
         when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+                new Fallible<>( BackupStageOutcome.FAILURE, null ) );
 
         // when backup is performed
         subject.doBackup( onlineBackupContext );
@@ -177,10 +178,10 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void successfulFullBackupsMoveExistingBackup() throws CommandFailed
+    public void successfulFullBackupsMoveExistingBackup() throws IOException
     {
         // given backup exists
-        File desiredBackupLocation = new File( "some-preexisting-backup" );
+        Path desiredBackupLocation = Paths.get( "some-preexisting-backup" );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( desiredBackupLocation );
         when( backupCopyService.backupExists( desiredBackupLocation ) ).thenReturn( true );
 
@@ -188,23 +189,25 @@ public class BackupStrategyWrapperTest
         when( requiredArguments.isFallbackToFull() ).thenReturn( true );
 
         // and a new location for the existing backup is found
-        File newLocationForExistingBackup = new File( "new-backup-location" );
-        when( backupCopyService.findNewBackupLocationForBrokenExisting( desiredBackupLocation ) ).thenReturn( newLocationForExistingBackup );
+        Path newLocationForExistingBackup = Paths.get( "new-backup-location" );
+        when( backupCopyService.findNewBackupLocationForBrokenExisting( desiredBackupLocation ) )
+                .thenReturn( newLocationForExistingBackup );
 
         // and there is a generated location for where to store a new full backup so the original is not destroyed
-        File temporaryFullBackupLocation = new File( "temporary-full-backup" );
-        when( backupCopyService.findAnAvailableLocationForNewFullBackup( desiredBackupLocation ) ).thenReturn( temporaryFullBackupLocation );
+        Path temporaryFullBackupLocation = Paths.get( "temporary-full-backup" );
+        when( backupCopyService.findAnAvailableLocationForNewFullBackup( desiredBackupLocation ) )
+                .thenReturn( temporaryFullBackupLocation );
 
         // and incremental fails
         when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+                new Fallible<>( BackupStageOutcome.FAILURE, null ) );
 
         // and full passes
         when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null ) );
+                new Fallible<>( BackupStageOutcome.SUCCESS, null ) );
 
         // when
-        PotentiallyErroneousState<BackupStrategyOutcome> state = subject.doBackup( onlineBackupContext );
+        Fallible<BackupStrategyOutcome> state = subject.doBackup( onlineBackupContext );
 
         // then original existing backup is moved to err directory
         verify( backupCopyService ).moveBackupLocation( desiredBackupLocation, newLocationForExistingBackup );
@@ -217,10 +220,10 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void failureDuringMoveCausesAbsoluteFailure() throws CommandFailed
+    public void failureDuringMoveCausesAbsoluteFailure() throws IOException
     {
         // given moves fail
-        doThrow( CommandFailed.class ).when( backupCopyService ).moveBackupLocation( any(), any() );
+        doThrow( IOException.class ).when( backupCopyService ).moveBackupLocation( any(), any() );
 
         // and fallback to full
         when( requiredArguments.isFallbackToFull() ).thenReturn( true );
@@ -230,18 +233,18 @@ public class BackupStrategyWrapperTest
 
         // and incremental fails
         when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+                new Fallible<>( BackupStageOutcome.FAILURE, null ) );
 
         // and full passes
         when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn(
-                new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null ) );
+                new Fallible<>( BackupStageOutcome.SUCCESS, null ) );
 
         // when
-        PotentiallyErroneousState<BackupStrategyOutcome> state = subject.doBackup( onlineBackupContext );
+        Fallible<BackupStrategyOutcome> state = subject.doBackup( onlineBackupContext );
 
         // then result was catastrophic and contained reason
         assertEquals( BackupStrategyOutcome.ABSOLUTE_FAILURE, state.getState() );
-        assertEquals( CommandFailed.class, state.getCause().get().getClass() );
+        assertEquals( IOException.class, state.getCause().get().getClass() );
 
         // and full backup was definitely performed
         verify( backupStrategyImplementation ).performFullBackup( any(), any(), any() );
@@ -301,11 +304,12 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void successfulFullBackupsAreRecoveredEvenIfNoBackupExisted() throws CommandFailed
+    public void successfulFullBackupsAreRecoveredEvenIfNoBackupExisted() throws IOException
     {
         // given a backup exists
         when( backupCopyService.backupExists( desiredBackupLocation ) ).thenReturn( false );
-        when( backupCopyService.findAnAvailableLocationForNewFullBackup( desiredBackupLocation ) ).thenReturn( desiredBackupLocation );
+        when( backupCopyService.findAnAvailableLocationForNewFullBackup( desiredBackupLocation ) )
+                .thenReturn( desiredBackupLocation );
 
         // and
         fallbackToFullPasses();
@@ -318,7 +322,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void recoveryIsPerformedBeforeRename() throws CommandFailed
+    public void recoveryIsPerformedBeforeRename() throws IOException
     {
         // given
         fallbackToFullPasses();

@@ -19,13 +19,11 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.util.Optional;
 
 import org.neo4j.helpers.OptionalHostnamePort;
 
-public class OnlineBackupRequiredArguments
+class OnlineBackupRequiredArguments
 {
     private final OptionalHostnamePort address;
     private final Path folder;
@@ -33,11 +31,11 @@ public class OnlineBackupRequiredArguments
     private final boolean fallbackToFull;
     private final boolean doConsistencyCheck;
     private final long timeout;
-    private final Optional<Path> additionalConfig;
     private final Path reportDir;
 
-    public OnlineBackupRequiredArguments( OptionalHostnamePort address, Path folder, String name, boolean fallbackToFull, boolean doConsistencyCheck,
-            long timeout, Optional<Path> additionalConfig, Path reportDir )
+    OnlineBackupRequiredArguments(
+            OptionalHostnamePort address, Path folder, String name, boolean fallbackToFull, boolean doConsistencyCheck,
+            long timeout, Path reportDir )
     {
         this.address = address;
         this.folder = folder;
@@ -45,7 +43,6 @@ public class OnlineBackupRequiredArguments
         this.fallbackToFull = fallbackToFull;
         this.doConsistencyCheck = doConsistencyCheck;
         this.timeout = timeout;
-        this.additionalConfig = additionalConfig;
         this.reportDir = reportDir;
     }
 
@@ -79,18 +76,13 @@ public class OnlineBackupRequiredArguments
         return timeout;
     }
 
-    public Optional<Path> getAdditionalConfig()
-    {
-        return additionalConfig;
-    }
-
     public Path getReportDir()
     {
         return reportDir;
     }
 
-    public File getResolvedLocationFromName()
+    public Path getResolvedLocationFromName()
     {
-        return folder.resolve( name ).toFile();
+        return folder.resolve( name );
     }
 }

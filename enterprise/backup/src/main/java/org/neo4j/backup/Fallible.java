@@ -19,20 +19,32 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
-import org.neo4j.kernel.impl.util.Dependencies;
+import java.util.Optional;
+import javax.annotation.Nullable;
 
-public class CommunityBackupSupportingClassesFactory extends AbstractBackupSupportingClassesFactory
+/**
+ * Contains a reference to a class (designed for enums) and can optionally also contain a throwable if the provided state has an exception attached
+ *
+ * @param <T> generic of an enum (not enforced)
+ */
+class Fallible<T>
 {
-    public CommunityBackupSupportingClassesFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
+    private final T state;
+    private final Throwable cause;
+
+    public Optional<Throwable> getCause()
     {
-        super( backupModuleResolveAtRuntime );
+        return Optional.ofNullable( cause );
     }
 
-    @Override
-    protected PipelineHandlerAppenderFactory getPipelineHandlerAppenderFactory()
+    public T getState()
     {
-        return new NoOpPipelineHandlerAppenderFactory();
+        return state;
+    }
+
+    Fallible( T state, @Nullable Throwable cause )
+    {
+        this.state = state;
+        this.cause = cause;
     }
 }

@@ -24,8 +24,8 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
@@ -93,7 +93,7 @@ public class BackupToolUrisTest
             verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( new File( "/var/backup/graph" ) ),
+                    eq( Paths.get( "/var/backup/graph" ) ),
                     eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
@@ -197,7 +197,7 @@ public class BackupToolUrisTest
             verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( new File( "/var/backup/graph" ) ),
+                    eq( Paths.get( "/var/backup/graph" ) ),
                     eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),

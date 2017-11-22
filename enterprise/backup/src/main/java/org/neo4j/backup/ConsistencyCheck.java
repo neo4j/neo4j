@@ -19,11 +19,11 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -42,7 +42,7 @@ interface ConsistencyCheck
                 }
 
                 @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration,
+                public boolean runFull( Path storeDir, Config tuningConfiguration,
                         ProgressMonitorFactory progressFactory, LogProvider logProvider,
                         FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
                         ConsistencyFlags consistencyFlags )
@@ -62,16 +62,16 @@ interface ConsistencyCheck
                 }
 
                 @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration,
+                public boolean runFull( Path storeDir, Config tuningConfiguration,
                         ProgressMonitorFactory progressFactory, LogProvider logProvider,
                         FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
                         ConsistencyFlags consistencyFlags ) throws ConsistencyCheckFailedException
                 {
                     try
                     {
-                        return new ConsistencyCheckService().runFullConsistencyCheck( storeDir, tuningConfiguration,
-                                progressFactory, logProvider, fileSystem, pageCache, verbose, consistencyFlags )
-                                .isSuccessful();
+                        return new ConsistencyCheckService().runFullConsistencyCheck(
+                                storeDir.toFile(), tuningConfiguration, progressFactory, logProvider, fileSystem,
+                                pageCache, verbose, consistencyFlags ).isSuccessful();
                     }
                     catch ( ConsistencyCheckIncompleteException e )
                     {
@@ -82,10 +82,9 @@ interface ConsistencyCheck
 
     String name();
 
-    boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
-            LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
-            ConsistencyFlags consistencyFlags )
-            throws ConsistencyCheckFailedException;
+    boolean runFull( Path storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+                     LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
+                     ConsistencyFlags consistencyFlags ) throws ConsistencyCheckFailedException;
 
     String toString();
 
@@ -100,35 +99,5 @@ interface ConsistencyCheck
         }
         throw new IllegalArgumentException( "Unknown consistency check name: " + name +
                 ". Supported values: NONE, FULL" );
-    }
-
-    static ConsistencyCheck full( File reportDir, ConsistencyCheckService consistencyCheckService )
-    {
-        return new ConsistencyCheck()
-        {
-            @Override
-            public String name()
-            {
-                return "full";
-            }
-
-            @Override
-            public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
-                    LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
-                    ConsistencyFlags consistencyFlags )
-                    throws ConsistencyCheckFailedException
-            {
-                try
-                {
-                    return consistencyCheckService
-                            .runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
-                                    fileSystem, pageCache, verbose, reportDir, consistencyFlags ).isSuccessful();
-                }
-                catch ( ConsistencyCheckIncompleteException e )
-                {
-                    throw new ConsistencyCheckFailedException( e );
-                }
-            }
-        };
     }
 }

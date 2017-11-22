@@ -94,7 +94,7 @@ public class BackupToolIT
             expected.expectMessage( "Failed to perform backup because existing backup is from a different version." );
 
             // Perform backup
-            backupTool.executeBackup( new HostnamePort( "localhost", backupPort ), backupDir.toFile(),
+            backupTool.executeBackup( new HostnamePort( "localhost", backupPort ), backupDir,
                     ConsistencyCheck.NONE, Config.defaults( GraphDatabaseSettings.record_format, StandardV3_4.NAME ),
                     20L * 60L * 1000L, false );
         }

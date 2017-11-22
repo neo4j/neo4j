@@ -19,8 +19,8 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupResult;
@@ -32,33 +32,30 @@ import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedE
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * Simplifies the process of performing a backup over the transaction protocol by wrapping all the necessary classes
  * and delegating methods to the correct instances.
  */
-public class BackupDelegator extends LifecycleAdapter
+class BackupDelegator extends LifecycleAdapter
 {
     private final RemoteStore remoteStore;
     private final CatchUpClient catchUpClient;
     private final StoreCopyClient storeCopyClient;
-    private final ClearIdService clearIdService;
 
-    BackupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient, ClearIdService clearIdService )
+    BackupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient )
     {
         this.remoteStore = remoteStore;
         this.catchUpClient = catchUpClient;
         this.storeCopyClient = storeCopyClient;
-        this.clearIdService = clearIdService;
     }
 
-    void copy( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, File destDir ) throws StoreCopyFailedException
+    void copy( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, Path destDir ) throws StoreCopyFailedException
     {
         try
         {
-            remoteStore.copy( fromAddress, expectedStoreId, destDir );
+            remoteStore.copy( fromAddress, expectedStoreId, destDir.toFile() );
         }
         catch ( StreamingTransactionsFailedException | StoreCopyFailedException e )
         {
@@ -66,11 +63,11 @@ public class BackupDelegator extends LifecycleAdapter
         }
     }
 
-    CatchupResult tryCatchingUp( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException
+    CatchupResult tryCatchingUp( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, Path storeDir ) throws StoreCopyFailedException
     {
         try
         {
-            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir, true );
+            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true );
         }
         catch ( IOException e )
         {
@@ -93,10 +90,5 @@ public class BackupDelegator extends LifecycleAdapter
     public StoreId fetchStoreId( AdvertisedSocketAddress fromAddress ) throws StoreIdDownloadFailedException
     {
         return storeCopyClient.fetchStoreId( fromAddress );
-    }
-
-    public void clearIdFiles( FileSystemAbstraction fileSystem, File targetDirectory )
-    {
-        clearIdService.clearIdFiles( fileSystem, targetDirectory );
     }
 }

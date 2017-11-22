@@ -22,8 +22,9 @@ package org.neo4j.backup;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -33,7 +34,6 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedExcepti
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -45,7 +45,6 @@ public class BackupDelegatorTest
     private RemoteStore remoteStore;
     private CatchUpClient catchUpClient;
     private StoreCopyClient storeCopyClient;
-    private ClearIdService clearIdService;
 
     BackupDelegator subject;
 
@@ -57,8 +56,7 @@ public class BackupDelegatorTest
         remoteStore = mock( RemoteStore.class );
         catchUpClient = mock( CatchUpClient.class );
         storeCopyClient = mock( StoreCopyClient.class );
-        clearIdService = mock( ClearIdService.class );
-        subject = new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, clearIdService );
+        subject = new BackupDelegator( remoteStore, catchUpClient, storeCopyClient );
     }
 
     @Test
@@ -67,13 +65,13 @@ public class BackupDelegatorTest
         // given
         AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "neo4j.com", 5432 );
         StoreId expectedStoreId = new StoreId( 7, 2, 5, 98 );
-        File storeDir = new File( "A directory to store transactions to" );
+        Path storeDir = Paths.get( "A directory to store transactions to" );
 
         // when
         subject.tryCatchingUp( fromAddress, expectedStoreId, storeDir );
 
         // then
-        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, storeDir, true );
+        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true );
     }
 
     @Test
@@ -118,26 +116,12 @@ public class BackupDelegatorTest
     {
         // given
         StoreId storeId = new StoreId( 92, 5, 7, 32 );
-        File anyFile = mock( File.class );
+        Path anyFile = Paths.get( "anywhere" );
 
         // when
         subject.copy( anyAddress, storeId, anyFile );
 
         // then
-        verify( remoteStore ).copy( anyAddress, storeId, anyFile );
-    }
-
-    @Test
-    public void clearIdFilesDelegatesToClearIdService()
-    {
-        // given
-        FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
-        File file = new File( "any file name" );
-
-        // when
-        subject.clearIdFiles( fileSystemAbstraction, file );
-
-        // then
-        verify( clearIdService ).clearIdFiles( fileSystemAbstraction, file );
+        verify( remoteStore ).copy( anyAddress, storeId, anyFile.toFile() );
     }
 }

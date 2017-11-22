@@ -25,28 +25,27 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.io.pagecache.PageCache;
 
-public class OnlineBackupCommand implements AdminCommand
+class OnlineBackupCommand implements AdminCommand
 {
     private final OutsideWorld outsideWorld;
-    private final OnlineBackupContextLoader onlineBackupContextLoader;
+    private final OnlineBackupContextBuilder contextBuilder;
     private final BackupFlowFactory backupFlowFactory;
-    private final AbstractBackupSupportingClassesFactory backupSupportingClassesFactory;
+    private final BackupSupportingClassesFactory backupSupportingClassesFactory;
 
     /**
-     * The entry point for neo4j admin tool's online backup functionality
+     * The entry point for neo4j admin tool's online backup functionality.
      *
      * @param outsideWorld provides a way to interact with the filesystem and output streams
-     * @param onlineBackupContextLoader helper class to validate, process and return a grouped result of processing the command line arguments
+     * @param contextBuilder helper class to validate, process and return a grouped result of processing the command line arguments
      * @param backupSupportingClassesFactory necessary for constructing the strategy for backing up over the causal clustering transaction protocol
      * @param backupFlowFactory class that actually handles the logic of performing a backup
      */
-    OnlineBackupCommand( OutsideWorld outsideWorld, OnlineBackupContextLoader onlineBackupContextLoader,
-            AbstractBackupSupportingClassesFactory backupSupportingClassesFactory, BackupFlowFactory backupFlowFactory )
+    OnlineBackupCommand( OutsideWorld outsideWorld, OnlineBackupContextBuilder contextBuilder,
+                         BackupSupportingClassesFactory backupSupportingClassesFactory, BackupFlowFactory backupFlowFactory )
     {
         this.outsideWorld = outsideWorld;
-        this.onlineBackupContextLoader = onlineBackupContextLoader;
+        this.contextBuilder = contextBuilder;
         this.backupSupportingClassesFactory = backupSupportingClassesFactory;
         this.backupFlowFactory = backupFlowFactory;
     }
@@ -54,16 +53,19 @@ public class OnlineBackupCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        OnlineBackupContext onlineBackupContext = onlineBackupContextLoader.fromCommandLineArguments( args );
+        OnlineBackupContext onlineBackupContext = contextBuilder.createContext( args );
         BackupSupportingClasses backupSupportingClasses =
-                backupSupportingClassesFactory.createSupportingClassesForBackupStrategies( onlineBackupContext.getConfig() );
+                backupSupportingClassesFactory.createSupportingClasses( onlineBackupContext.getConfig() );
 
         // Make sure destination exists
         checkDestination( onlineBackupContext.getRequiredArguments().getFolder() );
         checkDestination( onlineBackupContext.getRequiredArguments().getReportDir() );
 
-        BackupFlow backupFlow = backupFlowFactory.backupFlow( onlineBackupContext, backupSupportingClasses.getBackupProtocolService(),
-                backupSupportingClasses.getBackupDelegator(), backupSupportingClasses.getPageCache() );
+        BackupFlow backupFlow = backupFlowFactory.backupFlow(
+                onlineBackupContext,
+                backupSupportingClasses.getBackupProtocolService(),
+                backupSupportingClasses.getBackupDelegator(),
+                backupSupportingClasses.getPageCache() );
 
         backupFlow.performBackup( onlineBackupContext );
         outsideWorld.stdOutLine( "Backup complete." );

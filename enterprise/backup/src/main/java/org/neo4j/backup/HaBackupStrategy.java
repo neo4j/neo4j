@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.HostnamePort;
@@ -28,55 +28,59 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
+class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
 {
     private final BackupProtocolService backupProtocolService;
-    private final AddressResolutionHelper addressResolutionHelper;
+    private final AddressResolver addressResolver;
     private final long timeout;
 
-    HaBackupStrategy( BackupProtocolService backupProtocolService, AddressResolutionHelper addressResolutionHelper, long timeout )
+    HaBackupStrategy( BackupProtocolService backupProtocolService, AddressResolver addressResolver, long timeout )
     {
         this.backupProtocolService = backupProtocolService;
-        this.addressResolutionHelper = addressResolutionHelper;
+        this.addressResolver = addressResolver;
         this.timeout = timeout;
     }
 
     @Override
-    public PotentiallyErroneousState<BackupStageOutcome> performIncrementalBackup( File backupDestination, Config config, OptionalHostnamePort fromAddress )
+    public Fallible<BackupStageOutcome> performIncrementalBackup( Path backupDestination, Config config, OptionalHostnamePort fromAddress )
     {
-        HostnamePort resolvedAddress = addressResolutionHelper.resolveCorrectHAAddress( config, fromAddress );
+        HostnamePort resolvedAddress = addressResolver.resolveCorrectHAAddress( config, fromAddress );
         try
         {
-            backupProtocolService.doIncrementalBackup( resolvedAddress.getHost(), resolvedAddress.getPort(), backupDestination, ConsistencyCheck.NONE, timeout,
-                    config );
-            return new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
+            String host = resolvedAddress.getHost();
+            int port = resolvedAddress.getPort();
+            backupProtocolService.doIncrementalBackup(
+                    host, port, backupDestination, ConsistencyCheck.NONE, timeout, config );
+            return new Fallible<>( BackupStageOutcome.SUCCESS, null );
         }
         catch ( MismatchingStoreIdException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
+            return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
         }
         catch ( RuntimeException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, e );
+            return new Fallible<>( BackupStageOutcome.FAILURE, e );
         }
     }
 
     @Override
-    public PotentiallyErroneousState<BackupStageOutcome> performFullBackup( File desiredBackupLocation, Config config,
-            OptionalHostnamePort userProvidedAddress )
+    public Fallible<BackupStageOutcome> performFullBackup( Path desiredBackupLocation, Config config,
+                                                           OptionalHostnamePort userProvidedAddress )
     {
-        HostnamePort fromAddress = addressResolutionHelper.resolveCorrectHAAddress( config, userProvidedAddress );
+        HostnamePort fromAddress = addressResolver.resolveCorrectHAAddress( config, userProvidedAddress );
         ConsistencyCheck consistencyCheck = ConsistencyCheck.NONE;
         boolean forensics = false;
         try
         {
-            backupProtocolService.doFullBackup( fromAddress.getHost(), fromAddress.getPort(), desiredBackupLocation, consistencyCheck, config, timeout,
-                    forensics );
-            return new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
+            String host = fromAddress.getHost();
+            int port = fromAddress.getPort();
+            backupProtocolService.doFullBackup(
+                    host, port, desiredBackupLocation, consistencyCheck, config, timeout, forensics );
+            return new Fallible<>( BackupStageOutcome.SUCCESS, null );
         }
         catch ( ComException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.WRONG_PROTOCOL, e );
+            return new Fallible<>( BackupStageOutcome.WRONG_PROTOCOL, e );
         }
     }
 }

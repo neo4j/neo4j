@@ -19,90 +19,94 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.OutsideWorld;
-
 import static java.lang.String.format;
 
-public class BackupCopyService
+class BackupCopyService
 {
     private static final int MAX_OLD_BACKUPS = 1000;
 
-    private final OutsideWorld outsideWorld;
-
-    public BackupCopyService( OutsideWorld outsideWorld )
-    {
-        this.outsideWorld = outsideWorld;
-    }
-
-    public void moveBackupLocation( File oldLocation, File newLocation ) throws CommandFailed
+    public void moveBackupLocation( Path oldLocation, Path newLocation ) throws IOException
     {
         try
         {
-            outsideWorld.fileSystem().renameFile( oldLocation, newLocation );
+            Files.move( oldLocation, newLocation );
         }
         catch ( IOException e )
         {
-            throw new CommandFailed( "Failed to move old backup out of the way: " + e.getMessage(), e );
+            throw new IOException( "Failed to rename backup directory from " + oldLocation + " to " + newLocation, e );
         }
     }
 
-    boolean backupExists( File destination )
+    boolean backupExists( Path destination )
     {
-        File[] listFiles = outsideWorld.fileSystem().listFiles( destination );
-        return listFiles != null && listFiles.length > 0;
+        try
+        {
+            if ( Files.notExists( destination ) )
+            {
+                Files.createDirectories( destination );
+                return false;
+            }
+            return Files.list( destination ).count() > 0;
+        }
+        catch ( IOException e )
+        {
+            return true; // Let's not use this directory
+        }
     }
 
-    File findNewBackupLocationForBrokenExisting( File existingBackup )
+    Path findNewBackupLocationForBrokenExisting( Path existingBackup ) throws IOException
     {
         return findAnAvailableBackupLocation( existingBackup, "%s.err.%d" );
     }
 
-    File findAnAvailableLocationForNewFullBackup( File desiredBackupLocation )
+    Path findAnAvailableLocationForNewFullBackup( Path desiredBackupLocation ) throws IOException
     {
         return findAnAvailableBackupLocation( desiredBackupLocation, "%s.temp.%d" );
     }
 
-    private File findAnAvailableBackupLocation( File file, String pattern )
+    private Path findAnAvailableBackupLocation( Path file, String pattern ) throws IOException
     {
         if ( backupExists( file ) )
         {
             // find alternative name
             final AtomicLong counter = new AtomicLong( 0 );
-            Consumer<File> countNumberOfFilesProcessedForPotentialErrorMessage = generatedBackupFile -> counter.getAndIncrement();
+            Consumer<Path> countNumberOfFilesProcessedForPotentialErrorMessage =
+                    generatedBackupFile -> counter.getAndIncrement();
 
             return availableAlternativeNames( file, pattern )
                     .peek( countNumberOfFilesProcessedForPotentialErrorMessage )
-                    .filter( f -> !backupExists(f) )
+                    .filter( f -> !backupExists( f ) )
                     .findFirst()
-                    .orElseThrow( () -> new RuntimeException(
-                            String.format( "Unable to find a free backup location for the provided %s. Number of iterations %d", file, counter.get() ) ) );
+                    .orElseThrow( noFreeBackupLocation( file, counter ) );
         }
         return file;
     }
 
-    private static Stream<File> availableAlternativeNames( File originalBackupDirectory, String pattern )
+    private static Supplier<RuntimeException> noFreeBackupLocation( Path file, AtomicLong counter )
+    {
+        return () -> new RuntimeException( String.format(
+                "Unable to find a free backup location for the provided %s. %d possible locations were already taken.",
+                file, counter.get() ) );
+    }
+
+    private static Stream<Path> availableAlternativeNames( Path originalBackupDirectory, String pattern )
     {
         return IntStream.range( 0, MAX_OLD_BACKUPS )
                 .mapToObj( iteration -> alteredBackupDirectoryName( pattern, originalBackupDirectory, iteration ) );
     }
 
-    private static File alteredBackupDirectoryName( String pattern, File directory, int iteration )
+    private static Path alteredBackupDirectoryName( String pattern, Path directory, int iteration )
     {
-        return directory
-                .toPath()
-                .resolveSibling( format( pattern, directory.getName(), iteration ) )
-                .toFile();
+        Path directoryName = directory.getName( directory.getNameCount() - 1 );
+        return directory.resolveSibling( format( pattern, directoryName, iteration ) );
     }
 }

@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -129,7 +131,7 @@ public class BackupTool
     private BackupOutcome runBackupWithLegacyArgs( Args args ) throws ToolFailureException
     {
         String from = args.get( FROM ).trim();
-        String to = args.get( TO ).trim();
+        Path to = Paths.get( args.get( TO ).trim() );
         Config tuningConfiguration = readConfiguration( args );
         boolean forensics = args.getBoolean( FORENSICS, false, true );
         ConsistencyCheck consistencyCheck = parseConsistencyChecker( args );
@@ -140,7 +142,7 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        return executeBackup( hostnamePort, new File( to ), consistencyCheck, tuningConfiguration, timeout, forensics );
+        return executeBackup( hostnamePort, to, consistencyCheck, tuningConfiguration, timeout, forensics );
     }
 
     private static ConsistencyCheck parseConsistencyChecker( Args args )
@@ -159,7 +161,7 @@ public class BackupTool
     {
         String host = args.get( HOST ).trim();
         int port = args.getNumber( PORT, BackupServer.DEFAULT_PORT ).intValue();
-        String to = args.get( TO ).trim();
+        Path to = Paths.get( args.get( TO ).trim() );
         Config tuningConfiguration = readConfiguration( args );
         boolean forensics = args.getBoolean( FORENSICS, false, true );
         ConsistencyCheck consistencyCheck = parseConsistencyChecker( args );
@@ -182,11 +184,11 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        return executeBackup( hostnamePort, new File( to ), consistencyCheck, tuningConfiguration, timeout, forensics );
+        return executeBackup( hostnamePort, to, consistencyCheck, tuningConfiguration, timeout, forensics );
     }
 
-    BackupOutcome executeBackup( HostnamePort hostnamePort, File to, ConsistencyCheck consistencyCheck,
-            Config config, long timeout, boolean forensics ) throws ToolFailureException
+    BackupOutcome executeBackup( HostnamePort hostnamePort, Path to, ConsistencyCheck consistencyCheck,
+                                 Config config, long timeout, boolean forensics ) throws ToolFailureException
     {
         try
         {
@@ -198,7 +200,7 @@ public class BackupTool
             systemOut.println( "Done" );
             return outcome;
         }
-        catch ( UnexpectedStoreVersionException e )
+        catch ( UnexpectedStoreVersionException | IncrementalBackupNotPossibleException e )
         {
             throw new ToolFailureException( e.getMessage(), e );
         }
@@ -209,10 +211,6 @@ public class BackupTool
         catch ( ComException e )
         {
             throw new ToolFailureException( "Couldn't connect to '" + hostnamePort + "'", e );
-        }
-        catch ( IncrementalBackupNotPossibleException e )
-        {
-            throw new ToolFailureException( e.getMessage(), e );
         }
     }
 

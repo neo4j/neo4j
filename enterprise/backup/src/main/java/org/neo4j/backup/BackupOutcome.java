@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup;
 
-public class BackupOutcome
+class BackupOutcome
 {
     private final boolean consistent;
     private final long lastCommittedTx;

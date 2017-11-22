@@ -19,16 +19,17 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface BackupStrategy extends Lifecycle
+interface BackupStrategy extends Lifecycle
 {
-    PotentiallyErroneousState<BackupStageOutcome> performIncrementalBackup( File desiredBackupLocation, Config config,
-            OptionalHostnamePort userProvidedAddress );
+    Fallible<BackupStageOutcome> performIncrementalBackup(
+            Path desiredBackupLocation, Config config, OptionalHostnamePort userProvidedAddress );
 
-    PotentiallyErroneousState<BackupStageOutcome> performFullBackup( File desiredBackupLocation, Config config, OptionalHostnamePort userProvidedAddress );
+    Fallible<BackupStageOutcome> performFullBackup(
+            Path desiredBackupLocation, Config config, OptionalHostnamePort userProvidedAddress );
 }

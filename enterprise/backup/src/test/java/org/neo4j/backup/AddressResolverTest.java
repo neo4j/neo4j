@@ -28,10 +28,10 @@ import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
 
-public class AddressResolutionHelperTest
+public class AddressResolverTest
 {
 
-    AddressResolutionHelper subject;
+    AddressResolver subject;
 
     // Parameters
     Config defaultConfig = Config.defaults();
@@ -39,7 +39,7 @@ public class AddressResolutionHelperTest
     @Before
     public void setup()
     {
-        subject = new AddressResolutionHelper();
+        subject = new AddressResolver();
     }
 
     @Test

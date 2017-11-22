@@ -20,9 +20,9 @@
 package org.neo4j.backup;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
@@ -46,7 +46,7 @@ public class BackupHelper
     {
     }
 
-    public static BackupResult backup( String host, int port, File targetDirectory )
+    public static BackupResult backup( String host, int port, Path targetDirectory )
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         boolean consistent = true;

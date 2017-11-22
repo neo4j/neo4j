@@ -27,7 +27,7 @@ import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
-class AddressResolutionHelper
+class AddressResolver
 {
     HostnamePort resolveCorrectHAAddress( Config config, OptionalHostnamePort userProvidedAddress )
     {

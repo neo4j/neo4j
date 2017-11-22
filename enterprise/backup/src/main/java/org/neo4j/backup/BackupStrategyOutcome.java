@@ -22,7 +22,7 @@ package org.neo4j.backup;
 /**
  * Possible states that can describe the outcome of any single backup strategy (BackupProtocol, TransactionProtocol etc.)
  */
-public enum BackupStrategyOutcome
+enum BackupStrategyOutcome
 {
     SUCCESS,
     INCORRECT_STRATEGY,

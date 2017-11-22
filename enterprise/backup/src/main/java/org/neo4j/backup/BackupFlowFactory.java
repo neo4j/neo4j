@@ -19,51 +19,60 @@
  */
 package org.neo4j.backup;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
-/*
-Backup flows are iterate through backup strategies and make sure at least one of them is a valid backup. Handles cases when that isn't possible.
-This factory helps in the construction of them
+/**
+ * Backup flows are iterate through backup strategies and make sure at least one of them is a valid backup. Handles
+ * cases when that isn't possible.
+ * This factory helps in the construction of them.
  */
 class BackupFlowFactory
 {
     private final LogProvider logProvider;
     private final ConsistencyCheckService consistencyCheckService;
-    private final AddressResolutionHelper addressResolutionHelper;
+    private final AddressResolver addressResolver;
     private final BackupCopyService backupCopyService;
     private final OutsideWorld outsideWorld;
 
-    BackupFlowFactory( BackupModuleResolveAtRuntime backupModuleResolveAtRuntime )
+    BackupFlowFactory( BackupModule backupModule )
     {
-        this.logProvider = backupModuleResolveAtRuntime.getLogProvider();
-        this.outsideWorld = backupModuleResolveAtRuntime.getOutsideWorld();
-        this.backupCopyService = backupModuleResolveAtRuntime.getBackupCopyService();
+        this.logProvider = backupModule.getLogProvider();
+        this.outsideWorld = backupModule.getOutsideWorld();
+        this.backupCopyService = backupModule.getBackupCopyService();
 
         this.consistencyCheckService = new ConsistencyCheckService();
-        this.addressResolutionHelper = new AddressResolutionHelper();
+        this.addressResolver = new AddressResolver();
     }
 
-    BackupFlow backupFlow( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService, BackupDelegator backupDelegator,
-            PageCache pageCache )
+    BackupFlow backupFlow( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService,
+                           BackupDelegator backupDelegator, PageCache pageCache )
     {
         ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.textual( outsideWorld.errorStream() );
+        BackupRecoveryService recoveryService = new BackupRecoveryService();
+        long timeout = onlineBackupContext.getRequiredArguments().getTimeout();
+        Config config = onlineBackupContext.getConfig();
 
-        List<BackupStrategyWrapper> strategies = Stream
-            .of(
-                new CausalClusteringBackupStrategy( backupDelegator, addressResolutionHelper ),
-                new HaBackupStrategy( backupProtocolService, addressResolutionHelper, onlineBackupContext.getRequiredArguments().getTimeout() ) )
-            .map( strategy -> new BackupStrategyWrapper( strategy, backupCopyService, pageCache, onlineBackupContext.getConfig(),
-                    new BackupRecoveryService() ) )
-            .collect( Collectors.toList() );
+        BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver );
+        BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, timeout );
+
+        List<BackupStrategyWrapper> strategies = Arrays.asList(
+                wrap( ccStrategy, pageCache, config, recoveryService ),
+                wrap( haStrategy, pageCache, config, recoveryService ) );
 
         return new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
+    }
+
+    private BackupStrategyWrapper wrap( BackupStrategy strategy, PageCache pageCache, Config config,
+                                        BackupRecoveryService recoveryService )
+    {
+        return new BackupStrategyWrapper( strategy, backupCopyService, pageCache, config, recoveryService ) ;
     }
 }

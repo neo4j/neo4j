@@ -65,15 +65,16 @@ public class OnlineBackupCommandTest
 
     private Path backupDirectory = Paths.get( "backupDirectory/" );
     private Path reportDirectory = Paths.get( "reportDirectory/" );
-    private AbstractBackupSupportingClassesFactory backupSupportingClassesFactory = mock( AbstractBackupSupportingClassesFactory.class );
+    private BackupSupportingClassesFactory
+            backupSupportingClassesFactory = mock( BackupSupportingClassesFactory.class );
 
     private OnlineBackupCommand subject;
 
     @Before
     public void setup() throws Exception
     {
-        OnlineBackupContextLoader onlineBackupContextLoader = mock( OnlineBackupContextLoader.class );
-        when( onlineBackupContextLoader.fromCommandLineArguments( any() ) ).thenReturn( onlineBackupContext );
+        OnlineBackupContextBuilder contextBuilder = mock( OnlineBackupContextBuilder.class );
+        when( contextBuilder.createContext( any() ) ).thenReturn( onlineBackupContext );
 
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );
 
@@ -85,7 +86,7 @@ public class OnlineBackupCommandTest
         when( requiredArguments.getName() ).thenReturn( "backup name" );
         when( backupFlowFactory.backupFlow( any(), any(), any(), any() ) ).thenReturn( backupFlow );
 
-        subject = new OnlineBackupCommand( outsideWorld, onlineBackupContextLoader, backupSupportingClassesFactory, backupFlowFactory );
+        subject = new OnlineBackupCommand( outsideWorld, contextBuilder, backupSupportingClassesFactory, backupFlowFactory );
     }
 
     @Test
@@ -129,7 +130,7 @@ public class OnlineBackupCommandTest
             assertEquals(
                     format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +
                             "                          [--from=<address>] [--fallback-to-full[=<true|false>]]%n" +
-                            "                          [--timeout=<timeout>]%n" +
+                            "                          [--timeout=<timeout>] [--pagecache=<8m>]%n" +
                             "                          [--check-consistency[=<true|false>]]%n" +
                             "                          [--cc-report-dir=<directory>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
@@ -169,6 +170,8 @@ public class OnlineBackupCommandTest
                             "  --timeout=<timeout>                      Timeout in the form <time>[ms|s|m|h],%n" +
                             "                                           where the default unit is seconds.%n" +
                             "                                           [default:20m]%n" +
+                            "  --pagecache=<8m>                         The size of the page cache to use for%n" +
+                            "                                           the backup process. [default:8m]%n" +
                             "  --check-consistency=<true|false>         If a consistency check should be%n" +
                             "                                           made. [default:true]%n" +
                             "  --cc-report-dir=<directory>              Directory where consistency report%n" +

@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -30,22 +30,22 @@ import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupStrategy
+class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupStrategy
 {
     private final BackupDelegator backupDelegator;
-    private final AddressResolutionHelper addressResolutionHelper;
+    private final AddressResolver addressResolver;
 
-    CausalClusteringBackupStrategy( BackupDelegator backupDelegator, AddressResolutionHelper addressResolutionHelper )
+    CausalClusteringBackupStrategy( BackupDelegator backupDelegator, AddressResolver addressResolver )
     {
         this.backupDelegator = backupDelegator;
-        this.addressResolutionHelper = addressResolutionHelper;
+        this.addressResolver = addressResolver;
     }
 
     @Override
-    public PotentiallyErroneousState<BackupStageOutcome> performFullBackup( File desiredBackupLocation, Config config,
-            OptionalHostnamePort userProvidedAddress )
+    public Fallible<BackupStageOutcome> performFullBackup( Path desiredBackupLocation, Config config,
+                                                           OptionalHostnamePort userProvidedAddress )
     {
-        AdvertisedSocketAddress fromAddress = addressResolutionHelper.resolveCorrectCCAddress( config, userProvidedAddress );
+        AdvertisedSocketAddress fromAddress = addressResolver.resolveCorrectCCAddress( config, userProvidedAddress );
         StoreId storeId;
         try
         {
@@ -53,25 +53,25 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
         }
         catch ( StoreIdDownloadFailedException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.WRONG_PROTOCOL, e );
+            return new Fallible<>( BackupStageOutcome.WRONG_PROTOCOL, e );
         }
 
         try
         {
             backupDelegator.copy( fromAddress,storeId, desiredBackupLocation );
-            return new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
+            return new Fallible<>( BackupStageOutcome.SUCCESS, null );
         }
         catch ( StoreCopyFailedException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, e );
+            return new Fallible<>( BackupStageOutcome.FAILURE, e );
         }
     }
 
     @Override
-    public PotentiallyErroneousState<BackupStageOutcome> performIncrementalBackup( File desiredBackupLocation, Config config,
-            OptionalHostnamePort userProvidedAddress )
+    public Fallible<BackupStageOutcome> performIncrementalBackup( Path desiredBackupLocation, Config config,
+                                                                  OptionalHostnamePort userProvidedAddress )
     {
-        AdvertisedSocketAddress fromAddress = addressResolutionHelper.resolveCorrectCCAddress( config, userProvidedAddress );
+        AdvertisedSocketAddress fromAddress = addressResolver.resolveCorrectCCAddress( config, userProvidedAddress );
         StoreId storeId;
         try
         {
@@ -79,7 +79,7 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
         }
         catch ( StoreIdDownloadFailedException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.WRONG_PROTOCOL, e );
+            return new Fallible<>( BackupStageOutcome.WRONG_PROTOCOL, e );
         }
         return catchup( fromAddress, storeId, desiredBackupLocation );
     }
@@ -98,7 +98,7 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
         super.stop();
     }
 
-    private PotentiallyErroneousState<BackupStageOutcome> catchup( AdvertisedSocketAddress fromAddress, StoreId storeId, File backupTarget )
+    private Fallible<BackupStageOutcome> catchup( AdvertisedSocketAddress fromAddress, StoreId storeId, Path backupTarget )
     {
         CatchupResult catchupResult;
         try
@@ -107,13 +107,13 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
         }
         catch ( StoreCopyFailedException e )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, e );
+            return new Fallible<>( BackupStageOutcome.FAILURE, e );
         }
         if ( catchupResult == CatchupResult.SUCCESS_END_OF_STREAM )
         {
-            return new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
+            return new Fallible<>( BackupStageOutcome.SUCCESS, null );
         }
-        return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE,
+        return new Fallible<>( BackupStageOutcome.FAILURE,
                 new StoreCopyFailedException( "End state of catchup was not a successful end of stream" ) );
     }
 }

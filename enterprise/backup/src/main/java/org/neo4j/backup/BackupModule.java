@@ -24,11 +24,10 @@ import java.time.Clock;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-public class BackupModuleResolveAtRuntime
+class BackupModule
 {
     private final OutsideWorld outsideWorld;
     private final LogProvider logProvider;
@@ -45,7 +44,7 @@ public class BackupModuleResolveAtRuntime
      * @param logProvider made available to subsequent dependency resolution classes
      * @param monitors will become shared across all resolved dependencies
      */
-    public BackupModuleResolveAtRuntime( OutsideWorld outsideWorld, LogProvider logProvider, Monitors monitors )
+    BackupModule( OutsideWorld outsideWorld, LogProvider logProvider, Monitors monitors )
     {
         this.outsideWorld = outsideWorld;
         this.logProvider = logProvider;
@@ -53,7 +52,7 @@ public class BackupModuleResolveAtRuntime
         this.clock = Clock.systemDefaultZone();
         this.transactionLogCatchUpFactory = new TransactionLogCatchUpFactory();
         this.fileSystemAbstraction = outsideWorld.fileSystem();
-        this.backupCopyService = new BackupCopyService( outsideWorld );
+        this.backupCopyService = new BackupCopyService();
     }
 
     public LogProvider getLogProvider()

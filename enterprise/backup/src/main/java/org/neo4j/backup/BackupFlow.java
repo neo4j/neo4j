@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -72,10 +73,10 @@ class BackupFlow
     {
         // Convenience
         OnlineBackupRequiredArguments requiredArgs = onlineBackupContext.getRequiredArguments();
-        File destination = onlineBackupContext.getResolvedLocationFromName();
+        Path destination = onlineBackupContext.getResolvedLocationFromName();
         ConsistencyFlags consistencyFlags = onlineBackupContext.getConsistencyFlags();
 
-        PotentiallyErroneousState<BackupStrategyOutcome> throwableWithState = null;
+        Fallible<BackupStrategyOutcome> throwableWithState = null;
         List<Throwable> causesOfFailure = new ArrayList<>();
         for ( BackupStrategyWrapper backupStrategy : strategies )
         {
@@ -102,7 +103,7 @@ class BackupFlow
         }
     }
 
-    private static Supplier<CommandFailed> commandFailedWithCause( PotentiallyErroneousState<BackupStrategyOutcome> cause )
+    private static Supplier<CommandFailed> commandFailedWithCause( Fallible<BackupStrategyOutcome> cause )
     {
         if ( cause.getCause().isPresent() )
         {
@@ -111,14 +112,24 @@ class BackupFlow
         return () -> new CommandFailed( "Execution of backup failed" );
     }
 
-    private void performConsistencyCheck( Config config, OnlineBackupRequiredArguments requiredArgs, ConsistencyFlags consistencyFlags, File destination )
-            throws CommandFailed
+    private void performConsistencyCheck(
+            Config config, OnlineBackupRequiredArguments requiredArgs, ConsistencyFlags consistencyFlags,
+            Path destination ) throws CommandFailed
     {
         try
         {
-            ConsistencyCheckService.Result ccResult =
-                    consistencyCheckService.runFullConsistencyCheck( destination, config, progressMonitorFactory, logProvider, outsideWorld.fileSystem(), false,
-                            requiredArgs.getReportDir().toFile(), consistencyFlags );
+            File storeDir = destination.toFile();
+            boolean verbose = false;
+            File reportDir = requiredArgs.getReportDir().toFile();
+            ConsistencyCheckService.Result ccResult = consistencyCheckService.runFullConsistencyCheck(
+                    storeDir,
+                    config,
+                    progressMonitorFactory,
+                    logProvider,
+                    outsideWorld.fileSystem(),
+                    verbose,
+                    reportDir,
+                    consistencyFlags );
 
             if ( !ccResult.isSuccessful() )
             {

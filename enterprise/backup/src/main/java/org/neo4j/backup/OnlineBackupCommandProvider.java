@@ -20,9 +20,6 @@
 package org.neo4j.backup;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
@@ -36,6 +33,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.backup.BackupSupportingClassesFactoryProvider.getProvidersByPriority;
 
 public class OnlineBackupCommandProvider extends AdminCommand.Provider
 {
@@ -48,7 +46,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     @Nonnull
     public Arguments allArguments()
     {
-        return BackupCommandArgumentHandler.arguments();
+        return OnlineBackupContextBuilder.arguments();
     }
 
     @Override
@@ -86,21 +84,22 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
         LogProvider logProvider = NullLogProvider.getInstance();
         Monitors monitors = new Monitors();
 
-        OnlineBackupContextLoader onlineBackupContextLoader =
-                new OnlineBackupContextLoader( new BackupCommandArgumentHandler(), new OnlineBackupCommandConfigLoader( homeDir, configDir ) );
-        BackupModuleResolveAtRuntime backupModuleResolveAtRuntime = new BackupModuleResolveAtRuntime( outsideWorld, logProvider, monitors );
+        OnlineBackupContextBuilder contextBuilder = new OnlineBackupContextBuilder( homeDir, configDir );
+        BackupModule backupModule = new BackupModule( outsideWorld, logProvider, monitors );
 
-        return new OnlineBackupCommand( outsideWorld,
-                onlineBackupContextLoader,
-                BackupSupportingClassesFactoryProvider.findBestProvider()
-                        .orElseThrow( noProviderException() )
-                        .getFactory( backupModuleResolveAtRuntime ),
-                new BackupFlowFactory( backupModuleResolveAtRuntime )
-        );
+        BackupSupportingClassesFactoryProvider classesFactoryProvider =
+                getProvidersByPriority().findFirst().orElseThrow( noProviderException() );
+        BackupSupportingClassesFactory supportingClassesFactory =
+                classesFactoryProvider.getFactory( backupModule );
+        BackupFlowFactory backupFlowFactory = new BackupFlowFactory( backupModule );
+
+        return new OnlineBackupCommand(
+                outsideWorld, contextBuilder, supportingClassesFactory, backupFlowFactory );
     }
 
     private static Supplier<IllegalStateException> noProviderException()
     {
-        return () -> new IllegalStateException( "Unable to find a suitable backup supporting classes provider in the classpath" );
+        return () -> new IllegalStateException(
+                "Unable to find a suitable backup supporting classes provider in the classpath" );
     }
 }

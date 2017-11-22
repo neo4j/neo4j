@@ -21,47 +21,47 @@ package org.neo4j.backup;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.backup.BackupSupportingClassesFactoryProvider.getProvidersByPriority;
 
 public class BackupSupportingClassesFactoryProviderTest
 {
-
     @Test
-    public void canLoadCommunitySupportingClassesFactory()
+    public void canLoadDefaultSupportingClassesFactory()
     {
-        assertEquals( 1, findInstancesOf( CommunityBackupSupportingClassesFactoryProvider.class, allAvailableSupportingClassesFactories() ).size() );
+        assertEquals( 1, findInstancesOf( BackupSupportingClassesFactoryProvider.class,
+                allAvailableSupportingClassesFactories() ).size() );
         assertEquals( 2, allAvailableSupportingClassesFactories().size() );
     }
 
     @Test
-    public void testCommunityModuleIsPrioritisedOverSslModule()
+    public void testDefaultModuleIsPrioritisedOverDummyModule()
     {
-        assertEquals( CommunityBackupSupportingClassesFactoryProvider.class, BackupSupportingClassesFactoryProvider.findBestProvider().get().getClass() );
+        assertEquals( BackupSupportingClassesFactoryProvider.class,
+                getProvidersByPriority().findFirst().get().getClass() );
     }
 
     public static Collection<BackupSupportingClassesFactoryProvider> allAvailableSupportingClassesFactories()
     {
-        Collection<BackupSupportingClassesFactoryProvider> discovered = new ArrayList<>();
-        BackupSupportingClassesFactoryProvider.load( BackupSupportingClassesFactoryProvider.class ).forEach( discovered::add );
-        return discovered;
+        return getProvidersByPriority().collect( toList() );
     }
 
-    public static <DESIRED extends BackupSupportingClassesFactoryProvider> Collection<DESIRED> findInstancesOf( Class<DESIRED> desiredClass,
-            Collection<? extends BackupSupportingClassesFactoryProvider> collection )
+    public static <DESIRED extends BackupSupportingClassesFactoryProvider> Collection<DESIRED> findInstancesOf(
+            Class<DESIRED> desiredClass, Collection<? extends BackupSupportingClassesFactoryProvider> collection )
     {
         return collection
                 .stream()
                 .filter( isOfClass( desiredClass ) )
                 .map( i -> (DESIRED) i )
-                .collect( Collectors.toList() );
+                .collect( toList() );
     }
 
-    private static Predicate<BackupSupportingClassesFactoryProvider> isOfClass( Class<? extends BackupSupportingClassesFactoryProvider> desiredClass )
+    private static Predicate<BackupSupportingClassesFactoryProvider> isOfClass(
+            Class<? extends BackupSupportingClassesFactoryProvider> desiredClass )
     {
         return factory -> desiredClass.equals( factory.getClass() );
     }

@@ -22,7 +22,7 @@ package org.neo4j.backup;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.HostnamePort;
@@ -49,24 +49,25 @@ public class BackupProtocolServiceStrategyTest
     Config config = mock( Config.class );
     OnlineBackupRequiredArguments requiredArgs = mock( OnlineBackupRequiredArguments.class );
     OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
-    AddressResolutionHelper addressResolutionHelper = mock( AddressResolutionHelper.class );
+    AddressResolver addressResolver = mock( AddressResolver.class );
     HostnamePort hostnamePort = new HostnamePort( "hostname:1234" );
-    File backupDirectory = mock( File.class );
+    Path backupDirectory = mock( Path.class );
     OptionalHostnamePort userSpecifiedHostname = new OptionalHostnamePort( (String) null, null, null );
 
     @Before
     public void setup()
     {
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArgs );
-        when( addressResolutionHelper.resolveCorrectHAAddress( any(), any() ) ).thenReturn( hostnamePort );
-        subject = new HaBackupStrategy( backupProtocolService, addressResolutionHelper, 0 );
+        when( addressResolver.resolveCorrectHAAddress( any(), any() ) ).thenReturn( hostnamePort );
+        subject = new HaBackupStrategy( backupProtocolService, addressResolver, 0 );
     }
 
     @Test
     public void incrementalBackupsAreDoneAgainstResolvedAddress()
     {
         // when
-        PotentiallyErroneousState<BackupStageOutcome> state = subject.performIncrementalBackup( backupDirectory, config, userSpecifiedHostname );
+        Fallible<BackupStageOutcome> state = subject.performIncrementalBackup(
+                backupDirectory, config, userSpecifiedHostname );
 
         // then
         verify( backupProtocolService ).doIncrementalBackup( eq( hostnamePort.getHost() ),
@@ -84,7 +85,7 @@ public class BackupProtocolServiceStrategyTest
             .thenThrow( expectedException );
 
         // when
-        PotentiallyErroneousState state = subject.performIncrementalBackup( backupDirectory, config, userSpecifiedHostname );
+        Fallible state = subject.performIncrementalBackup( backupDirectory, config, userSpecifiedHostname );
 
         // then
         assertEquals( BackupStageOutcome.FAILURE, state.getState() );
@@ -95,7 +96,7 @@ public class BackupProtocolServiceStrategyTest
     public void fullBackupUsesResolvedAddress()
     {
         // when
-        PotentiallyErroneousState state = subject.performFullBackup( backupDirectory, config, userSpecifiedHostname );
+        Fallible state = subject.performFullBackup( backupDirectory, config, userSpecifiedHostname );
 
         // then
         verify( backupProtocolService ).doFullBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), any(), anyLong(), anyBoolean() );
@@ -110,7 +111,7 @@ public class BackupProtocolServiceStrategyTest
                 .thenThrow( ComException.class );
 
         // when
-        PotentiallyErroneousState state = subject.performFullBackup( backupDirectory, config, userSpecifiedHostname );
+        Fallible state = subject.performFullBackup( backupDirectory, config, userSpecifiedHostname );
 
         // then
         assertEquals( BackupStageOutcome.WRONG_PROTOCOL, state.getState() );

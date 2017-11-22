@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup;
 
-public enum BackupStageOutcome
+enum BackupStageOutcome
 {
     SUCCESS,
     WRONG_PROTOCOL,

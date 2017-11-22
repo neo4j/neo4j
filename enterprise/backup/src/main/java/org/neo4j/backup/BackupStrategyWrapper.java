@@ -19,9 +19,9 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
-import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -53,26 +53,27 @@ class BackupStrategyWrapper
      * @param onlineBackupContext the command line arguments, configuration, flags
      * @return the ultimate outcome of trying to do a backup with the given strategy
      */
-    PotentiallyErroneousState<BackupStrategyOutcome> doBackup( OnlineBackupContext onlineBackupContext )
+    Fallible<BackupStrategyOutcome> doBackup( OnlineBackupContext onlineBackupContext )
     {
         LifeSupport lifeSupport = new LifeSupport();
         lifeSupport.add( backupStrategy );
         lifeSupport.start();
-        PotentiallyErroneousState<BackupStrategyOutcome> state = performBackupWithoutLifecycle( onlineBackupContext );
+        Fallible<BackupStrategyOutcome> state = performBackupWithoutLifecycle( onlineBackupContext );
         lifeSupport.shutdown();
         return state;
     }
 
-    private PotentiallyErroneousState<BackupStrategyOutcome> performBackupWithoutLifecycle( OnlineBackupContext onlineBackupContext )
+    private Fallible<BackupStrategyOutcome> performBackupWithoutLifecycle(
+            OnlineBackupContext onlineBackupContext )
     {
-        File backupLocation = onlineBackupContext.getResolvedLocationFromName();
-        final File userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
-        final OptionalHostnamePort userSpecifiedAddress = onlineBackupContext.getRequiredArguments().getAddress();
-        final Config config = onlineBackupContext.getConfig();
+        Path backupLocation = onlineBackupContext.getResolvedLocationFromName();
+        Path userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
+        OptionalHostnamePort userSpecifiedAddress = onlineBackupContext.getRequiredArguments().getAddress();
+        Config config = onlineBackupContext.getConfig();
 
         if ( backupCopyService.backupExists( backupLocation ) )
         {
-            PotentiallyErroneousState<BackupStageOutcome> state =
+            Fallible<BackupStageOutcome> state =
                     backupStrategy.performIncrementalBackup( userSpecifiedBackupLocation, config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
             boolean incrementalWasSuccessful = BackupStageOutcome.SUCCESS.equals( state.getState() );
@@ -89,59 +90,70 @@ class BackupStrategyWrapper
         return describeOutcome( fullBackupWithTemporaryFolderResolutions( onlineBackupContext ) );
     }
 
-    private PotentiallyErroneousState<BackupStageOutcome> fullBackupWithTemporaryFolderResolutions( OnlineBackupContext onlineBackupContext )
+    private Fallible<BackupStageOutcome> fullBackupWithTemporaryFolderResolutions(
+            OnlineBackupContext onlineBackupContext )
     {
-        final File userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
-        File temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
-        PotentiallyErroneousState<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, onlineBackupContext.getConfig(),
-                onlineBackupContext.getRequiredArguments().getAddress() );
+        Path userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
+        Path temporaryFullBackupLocation;
+        try
+        {
+            temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
+        }
+        catch ( IOException e )
+        {
+            return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
+        }
 
-        boolean aBackupAlreadyExisted =
-                userSpecifiedBackupLocation.equals( temporaryFullBackupLocation ); // NOTE temporaryFullBackupLocation can be equal to desired
+        Config config = onlineBackupContext.getConfig();
+        OptionalHostnamePort address = onlineBackupContext.getRequiredArguments().getAddress();
+        Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, config, address );
+
+        // NOTE temporaryFullBackupLocation can be equal to desired
+        boolean aBackupAlreadyExisted = userSpecifiedBackupLocation.equals( temporaryFullBackupLocation );
 
         if ( BackupStageOutcome.SUCCESS.equals( state.getState() ) )
         {
-            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, config );
+            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, this.config );
             if ( !aBackupAlreadyExisted )
             {
                 try
                 {
                     renameTemporaryBackupToExpected( temporaryFullBackupLocation, userSpecifiedBackupLocation );
                 }
-                catch ( CommandFailed commandFailed )
+                catch ( IOException e )
                 {
-                    return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, commandFailed );
+                    return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
                 }
             }
         }
         return state;
     }
 
-    private void renameTemporaryBackupToExpected( File temporaryFullBackupLocation, File userSpecifiedBackupLocation ) throws CommandFailed
+    private void renameTemporaryBackupToExpected( Path temporaryFullBackupLocation, Path userSpecifiedBackupLocation ) throws IOException
     {
-        File newBackupLocationForPreExistingBackup = backupCopyService.findNewBackupLocationForBrokenExisting( userSpecifiedBackupLocation );
+        Path newBackupLocationForPreExistingBackup = backupCopyService.findNewBackupLocationForBrokenExisting( userSpecifiedBackupLocation );
         backupCopyService.moveBackupLocation( userSpecifiedBackupLocation, newBackupLocationForPreExistingBackup );
         backupCopyService.moveBackupLocation( temporaryFullBackupLocation, userSpecifiedBackupLocation );
     }
 
-    private PotentiallyErroneousState<BackupStrategyOutcome> describeOutcome( PotentiallyErroneousState<BackupStageOutcome> strategyStageOutcome )
+    private Fallible<BackupStrategyOutcome> describeOutcome( Fallible<BackupStageOutcome> strategyStageOutcome )
     {
         BackupStageOutcome stageOutcome = strategyStageOutcome.getState();
         if ( stageOutcome == BackupStageOutcome.SUCCESS )
         {
-            return new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null );
+            return new Fallible<>( BackupStrategyOutcome.SUCCESS, null );
         }
         if ( stageOutcome == BackupStageOutcome.WRONG_PROTOCOL )
         {
-            return new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, strategyStageOutcome.getCause().orElse( null ) );
+            return new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, strategyStageOutcome.getCause().orElse( null ) );
         }
         if ( stageOutcome == BackupStageOutcome.FAILURE )
         {
-            return new PotentiallyErroneousState<>( BackupStrategyOutcome.CORRECT_STRATEGY_FAILED, strategyStageOutcome.getCause().orElse( null ) );
+            return new Fallible<>( BackupStrategyOutcome.CORRECT_STRATEGY_FAILED, strategyStageOutcome.getCause().orElse( null ) );
         }
         if ( stageOutcome == BackupStageOutcome.UNRECOVERABLE_FAILURE )
         {
-            return new PotentiallyErroneousState<>( BackupStrategyOutcome.ABSOLUTE_FAILURE, strategyStageOutcome.getCause().orElse( null ) );
+            return new Fallible<>( BackupStrategyOutcome.ABSOLUTE_FAILURE, strategyStageOutcome.getCause().orElse( null ) );
         }
         throw new RuntimeException( "Not all enums covered: " + stageOutcome );
     }

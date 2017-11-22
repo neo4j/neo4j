@@ -77,6 +77,7 @@ public class BackupFlowTest
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystem );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
+        when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( reportDir );
         when( requiredArguments.getReportDir() ).thenReturn( reportDir );
         subject = new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
                 Arrays.asList( firstStrategy, secondStrategy ) );
@@ -86,8 +87,8 @@ public class BackupFlowTest
     public void backupIsValidIfAnySingleStrategyPasses_secondFails() throws CommandFailed
     {
         // given
-        when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null ) );
-        when( secondStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.SUCCESS, null ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
 
         // when
         subject.performBackup( onlineBackupContext );
@@ -99,8 +100,8 @@ public class BackupFlowTest
     public void backupIsValidIfAnySingleStrategyPasses_firstFails() throws CommandFailed
     {
         // given
-        when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
-        when( secondStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null ) );
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.SUCCESS, null ) );
 
         // when
         subject.performBackup( onlineBackupContext );
@@ -110,8 +111,8 @@ public class BackupFlowTest
     public void backupIsInvalidIfTheCorrectMethodFailed_firstFails() throws CommandFailed
     {
         // given
-        when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.CORRECT_STRATEGY_FAILED, null ) );
-        when( secondStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.CORRECT_STRATEGY_FAILED, null ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
 
         // then
         expectedException.expect( CommandFailed.class );
@@ -125,8 +126,8 @@ public class BackupFlowTest
     public void backupIsInvalidIfTheCorrectMethodFailed_secondFails() throws CommandFailed
     {
         // given
-        when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
-        when( secondStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.CORRECT_STRATEGY_FAILED, null ) );
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.CORRECT_STRATEGY_FAILED, null ) );
 
         // then
         expectedException.expect( CommandFailed.class );
@@ -140,8 +141,8 @@ public class BackupFlowTest
     public void backupFailsIfAllStrategiesAreIncorrect() throws CommandFailed
     {
         // given
-        when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
-        when( secondStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
 
         // then
         expectedException.expect( CommandFailed.class );
@@ -194,9 +195,9 @@ public class BackupFlowTest
 
         // and strategies fail with given causes
         when( firstStrategy.doBackup( any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, firstCause ) );
+                .thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, firstCause ) );
         when( secondStrategy.doBackup( any() ) )
-                .thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.INCORRECT_STRATEGY, secondCause ) );
+                .thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, secondCause ) );
 
         // then the command failed exception contains the specified causes
         expectedException.expect( exceptionContainsSuppressedThrowable( firstCause ) );
@@ -266,7 +267,7 @@ public class BackupFlowTest
      */
     private void anyStrategyPasses()
     {
-        when( firstStrategy.doBackup( any() ) ).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null ) );
-        when( secondStrategy.doBackup( any() )).thenReturn( new PotentiallyErroneousState<>( BackupStrategyOutcome.SUCCESS, null ) );
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.SUCCESS, null ) );
+        when( secondStrategy.doBackup( any() )).thenReturn( new Fallible<>( BackupStrategyOutcome.SUCCESS, null ) );
     }
 }
