@@ -31,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.PrepareIdSequence;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
@@ -64,7 +65,8 @@ public class RelationshipStage extends Stage
     public RelationshipStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputRelationship> relationships, IdMapper idMapper,
             Collector badCollector, InputCache inputCache,
-            BatchingNeoStores neoStore, CountingStoreUpdateMonitor storeUpdateMonitor )
+            BatchingNeoStores neoStore, CountingStoreUpdateMonitor storeUpdateMonitor,
+            StatsProvider memoryUsage )
                     throws IOException
     {
         super( NAME, null, config, ORDER_SEND_DOWNSTREAM );
@@ -80,7 +82,8 @@ public class RelationshipStage extends Stage
         add( typer = new RelationshipTypeCheckerStep( control(), config, neoStore.getRelationshipTypeRepository(), storeUpdateMonitor ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new RelationshipRecordPreparationStep( control(), config,
-                neoStore.getRelationshipTypeRepository(), badCollector, relationshipStore, neoStore.usesDoubleRelationshipRecordUnits() ) );
+                neoStore.getRelationshipTypeRepository(), badCollector, relationshipStore,
+                neoStore.usesDoubleRelationshipRecordUnits(), memoryUsage ) );
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, relationshipStore, propertyStore,
                 writeMonitor, storeUpdateMonitor, PrepareIdSequence.of( neoStore.usesDoubleRelationshipRecordUnits() ) ) );

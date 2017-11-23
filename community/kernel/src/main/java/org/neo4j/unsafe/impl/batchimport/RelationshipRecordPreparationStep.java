@@ -28,6 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
 import static org.neo4j.kernel.impl.store.id.validation.IdValidator.hasReservedIdInRange;
@@ -47,9 +48,10 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
 
     public RelationshipRecordPreparationStep( StageControl control, Configuration config,
             BatchingRelationshipTypeTokenRepository relationshipTypeRepository, Collector badCollector,
-            IdSequence idSequence, boolean doubleRecordUnits )
+            IdSequence idSequence, boolean doubleRecordUnits,
+            StatsProvider... statsProviders )
     {
-        super( control, "RECORDS", config, 0 );
+        super( control, "RECORDS", config, 0, statsProviders );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.badCollector = badCollector;
         this.idSequence = idSequence;
