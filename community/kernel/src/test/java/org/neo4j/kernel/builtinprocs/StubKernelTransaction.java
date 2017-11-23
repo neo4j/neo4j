@@ -27,13 +27,14 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -82,6 +83,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public ExplicitIndexWrite indexWrite()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Token token()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

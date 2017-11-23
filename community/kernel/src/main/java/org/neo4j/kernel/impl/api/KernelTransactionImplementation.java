@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -122,6 +123,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StoreReadLayer storeLayer;
     private final Clock clock;
     private final AccessCapability accessCapability;
+    private final Token token;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -170,7 +172,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore )
+            ExplicitIndexStore explicitIndexStore, Token token )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -194,6 +196,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         this.operations =
                 new Operations( storageEngine, storageStatement, this, cursors, autoIndexing, explicitIndexStore );
+        this.token = token;
     }
 
     /**
@@ -700,6 +703,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public Token token()
+    {
+        return token;
+    }
+
+    @Override
     public ExplicitIndexRead indexRead()
     {
         return operations;
@@ -710,6 +719,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
        return operations;
     }
+
 
     @Override
     public SchemaRead schemaRead()

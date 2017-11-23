@@ -24,11 +24,11 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
-class KernelToken implements Token
+public class KernelToken implements Token
 {
     private final StoreReadLayer store;
 
-    KernelToken( StorageEngine engine )
+    public KernelToken( StorageEngine engine )
     {
         store = engine.storeReadLayer();
     }
