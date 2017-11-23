@@ -19,8 +19,8 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -48,7 +48,7 @@ public interface IndexReader extends Resource
      * @param predicates the predicates to query for.
      * @return the matching entity IDs.
      */
-    PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
+    PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
 
     /**
      * Queries the index for the given {@link IndexQuery} predicates.
@@ -101,9 +101,9 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public PrimitiveLongIterator query( IndexQuery[] predicates )
+        public PrimitiveLongResourceIterator query( IndexQuery[] predicates )
         {
-            return PrimitiveLongCollections.emptyIterator();
+            return PrimitiveLongResourceCollections.emptyIterator();
         }
 
         @Override

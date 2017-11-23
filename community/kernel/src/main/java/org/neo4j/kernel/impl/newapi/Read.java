@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -132,7 +132,7 @@ abstract class Read implements
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
     }
 
-    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongIterator iterator )
+    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongResourceIterator iterator )
     {
         client.initialize( new NodeLabelIndexProgressor( iterator, client ), false );
     }

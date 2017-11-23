@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -40,6 +41,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -54,13 +56,14 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -68,7 +71,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -633,7 +635,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             {
                 // Ha! We found an index - let's use it to find matching nodes
                 IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                return map2nodes( readOps.indexQuery( descriptor, query ), statement );
+                PrimitiveLongResourceIterator indexResult = readOps.indexQuery( descriptor, query );
+                return map2nodes( indexResult, statement, indexResult );
             }
         }
         catch ( KernelException e )
@@ -667,10 +670,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Value value,
             Statement statement, int labelId )
     {
-        return map2nodes(
-                new PropertyValueFilteringNodeIdIterator(
-                        statement.readOperations().nodesGetForLabel( labelId ),
-                        statement.readOperations(), propertyId, value ), statement );
+        PrimitiveLongResourceIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
+        return map2nodes( new PropertyValueFilteringNodeIdIterator( nodeIds, statement.readOperations(), propertyId, value ),
+                statement, nodeIds );
     }
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
@@ -684,15 +686,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             return emptyResourceIterator();
         }
 
-        final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
+        final PrimitiveLongResourceIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
         return ResourceClosingIterator
-                .newResourceIterator( statement, map( nodeId -> new NodeProxy( nodeActions, nodeId ), nodeIds ) );
+                .newResourceIterator( map( nodeId -> new NodeProxy( nodeActions, nodeId ), nodeIds ), statement, nodeIds );
     }
 
-    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
+    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
     {
         return ResourceClosingIterator
-                .newResourceIterator( statement, map( id -> new NodeProxy( nodeActions, id ), input ) );
+                .newResourceIterator( map( id -> new NodeProxy( nodeActions, id ), input ), resources );
     }
 
     @Override

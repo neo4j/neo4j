@@ -27,15 +27,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
@@ -488,7 +489,7 @@ public class StateHandlingStatementOperationsTest
         StoreStatement storeStatement = mock( StoreStatement.class );
         IndexReader indexReader = mock( IndexReader.class );
 
-        when( indexReader.query( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+        when( indexReader.query( any() ) ).thenReturn( PrimitiveLongResourceCollections.emptyIterator() );
         when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
 
@@ -612,7 +613,7 @@ public class StateHandlingStatementOperationsTest
         IndexReader indexReader = mock( IndexReader.class );
         when( indexReader.hasFullNumberPrecision( any() ) ).thenReturn( true );
         when( indexReader.query( any() ) )
-                .thenAnswer( invocation -> PrimitiveLongCollections.iterator( nodeId ) );
+                .thenAnswer( invocation -> PrimitiveLongResourceCollections.iterator( null, nodeId ) );
         when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );
         when( storeStatement.getIndexReader( any() ) ).thenReturn( indexReader );
 

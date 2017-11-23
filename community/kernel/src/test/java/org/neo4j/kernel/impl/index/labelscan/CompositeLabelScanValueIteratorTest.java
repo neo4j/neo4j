@@ -21,20 +21,24 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.emptyIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.iterator;
 
 public class CompositeLabelScanValueIteratorTest
 {
@@ -42,7 +46,7 @@ public class CompositeLabelScanValueIteratorTest
     public void mustHandleEmptyListOfIterators() throws Exception
     {
         // given
-        List<PrimitiveLongIterator> iterators = emptyList();
+        List<PrimitiveLongResourceIterator> iterators = emptyList();
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
@@ -64,7 +68,7 @@ public class CompositeLabelScanValueIteratorTest
     public void mustHandleEmptyIterator() throws Exception
     {
         // given
-        List<PrimitiveLongIterator> iterators = singletonList( emptyIterator() );
+        List<PrimitiveLongResourceIterator> iterators = singletonList( emptyIterator() );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
@@ -77,7 +81,8 @@ public class CompositeLabelScanValueIteratorTest
     public void mustHandleMultipleEmptyIterators() throws Exception
     {
         // given
-        List<PrimitiveLongIterator> iterators = Arrays.asList( emptyIterator(), emptyIterator(), emptyIterator() );
+        List<PrimitiveLongResourceIterator> iterators =
+                asMutableList( emptyIterator(), emptyIterator(), emptyIterator() );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
@@ -92,7 +97,7 @@ public class CompositeLabelScanValueIteratorTest
     {
         // given
         long[] expected = {0L, 1L, Long.MAX_VALUE};
-        List<PrimitiveLongIterator> iterators = Arrays.asList( iterator( expected ) );
+        List<PrimitiveLongResourceIterator> iterators = Collections.singletonList( iterator( null, expected ) );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
@@ -105,60 +110,81 @@ public class CompositeLabelScanValueIteratorTest
     public void mustReportAllFromNonOverlappingMultipleIterators() throws Exception
     {
         // given
+        AtomicInteger closeCounter = new AtomicInteger();
         long[] firstIter  = {0L,     2L,     Long.MAX_VALUE};
         long[] secondIter = {    1L,     3L                };
         long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
-        List<PrimitiveLongIterator> iterators = Arrays.asList(
-                iterator( firstIter ),
-                iterator( secondIter ) );
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
+                iterator( closeCounter::incrementAndGet, firstIter ),
+                iterator( closeCounter::incrementAndGet, secondIter ) );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+
+        // when
+        iterator.close();
+
+        // then
+        assertEquals( "expected close count", 2, closeCounter.get() );
     }
 
     @Test
     public void mustReportUniqueValuesFromOverlappingIterators() throws Exception
     {
         // given
+        AtomicInteger closeCounter = new AtomicInteger();
         long[] firstIter  = {0L,     2L,     Long.MAX_VALUE};
         long[] secondIter = {    1L,     3L                };
-        long[] thridIter  = {0L,         3L                };
+        long[] thirdIter  = {0L,         3L                };
         long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
-        List<PrimitiveLongIterator> iterators = Arrays.asList(
-                iterator( firstIter ),
-                iterator( secondIter ),
-                iterator( thridIter ) );
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
+                iterator( closeCounter::incrementAndGet, firstIter ),
+                iterator( closeCounter::incrementAndGet, secondIter ),
+                iterator( closeCounter::incrementAndGet, thirdIter ) );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+
+        // when
+        iterator.close();
+
+        // then
+        assertEquals( "expected close count", 3, closeCounter.get() );
     }
 
     @Test
     public void mustReportUniqueValuesFromOverlappingIteratorsWithOneEmpty() throws Exception
     {
         // given
+        AtomicInteger closeCounter = new AtomicInteger();
         long[] firstIter  = {0L,     2L,     Long.MAX_VALUE};
         long[] secondIter = {    1L,     3L                };
-        long[] thridIter  = {0L,         3L                };
+        long[] thirdIter  = {0L,         3L                };
         long[] fourthIter = {/* Empty */                   };
         long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
-        List<PrimitiveLongIterator> iterators = Arrays.asList(
-                iterator( firstIter ),
-                iterator( secondIter ),
-                iterator( thridIter ),
-                iterator( fourthIter ) );
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
+                iterator( closeCounter::incrementAndGet, firstIter ),
+                iterator( closeCounter::incrementAndGet, secondIter ),
+                iterator( closeCounter::incrementAndGet, thirdIter ),
+                iterator( closeCounter::incrementAndGet, fourthIter ) );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+
+        // when
+        iterator.close();
+
+        // then
+        assertEquals( "expected close count", 4, closeCounter.get() );
     }
 
     /* ALL = TRUE */
@@ -166,41 +192,61 @@ public class CompositeLabelScanValueIteratorTest
     public void mustOnlyReportValuesReportedByAll() throws Exception
     {
         // given
+        AtomicInteger closeCounter = new AtomicInteger();
         long[] firstIter  = {0L,         Long.MAX_VALUE};
         long[] secondIter = {0L, 1L,     Long.MAX_VALUE};
-        long[] thridIter  = {0L, 1L, 2L, Long.MAX_VALUE};
+        long[] thirdIter  = {0L, 1L, 2L, Long.MAX_VALUE};
         long[] expected   = {0L,         Long.MAX_VALUE};
-        List<PrimitiveLongIterator> iterators = Arrays.asList(
-                iterator( firstIter ),
-                iterator( secondIter ),
-                iterator( thridIter ) );
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
+                iterator( closeCounter::incrementAndGet, firstIter ),
+                iterator( closeCounter::incrementAndGet, secondIter ),
+                iterator( closeCounter::incrementAndGet, thirdIter ) );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, true );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+
+        // when
+        iterator.close();
+
+        // then
+        assertEquals( "expected close count", 3, closeCounter.get() );
     }
 
     @Test
     public void mustOnlyReportValuesReportedByAllWithOneEmpty() throws Exception
     {
         // given
+        AtomicInteger closeCounter = new AtomicInteger();
         long[] firstIter  = {0L,         Long.MAX_VALUE};
         long[] secondIter = {0L, 1L,     Long.MAX_VALUE};
-        long[] thridIter  = {0L, 1L, 2L, Long.MAX_VALUE};
+        long[] thirdIter  = {0L, 1L, 2L, Long.MAX_VALUE};
         long[] fourthIter = {/* Empty */               };
         long[] expected   = {                          };
-        List<PrimitiveLongIterator> iterators = Arrays.asList(
-                iterator( firstIter ),
-                iterator( secondIter ),
-                iterator( thridIter ),
-                iterator( fourthIter ));
+        List<PrimitiveLongResourceIterator> iterators = asMutableList(
+                iterator( closeCounter::incrementAndGet, firstIter ),
+                iterator( closeCounter::incrementAndGet, secondIter ),
+                iterator( closeCounter::incrementAndGet, thirdIter ),
+                iterator( closeCounter::incrementAndGet, fourthIter ) );
 
         // when
         CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, true );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+
+        // when
+        iterator.close();
+
+        // then
+        assertEquals( "expected close count", 4, closeCounter.get() );
+    }
+
+    @SafeVarargs
+    private final <T> List<T> asMutableList( T... objects )
+    {
+        return new ArrayList<>( Arrays.asList( objects ) );
     }
 }

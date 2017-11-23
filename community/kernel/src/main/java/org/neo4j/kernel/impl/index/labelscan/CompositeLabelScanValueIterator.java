@@ -25,6 +25,8 @@ import java.util.PriorityQueue;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.graphdb.ResourceUtils;
 
 /**
  * {@link PrimitiveLongIterator} acting as a combining of multiple {@link PrimitiveLongIterator}
@@ -32,10 +34,11 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
  * <p>
  * Source iterators must be sorted in ascending order.
  */
-class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator
+class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     private final PriorityQueue<IdAndSource> sortedIterators = new PriorityQueue<>();
     private final int atLeastNumberOfLabels;
+    private final List<PrimitiveLongResourceIterator> toClose;
     private long last = -1;
 
     /**
@@ -44,8 +47,9 @@ class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator
      * @param iterators {@link PrimitiveLongIterator iterators} to merge.
      * @param trueForAll if {@code true} using {@code AND} merging, otherwise {@code OR} merging.
      */
-    CompositeLabelScanValueIterator( List<PrimitiveLongIterator> iterators, boolean trueForAll )
+    CompositeLabelScanValueIterator( List<PrimitiveLongResourceIterator> iterators, boolean trueForAll )
     {
+        this.toClose = iterators;
         this.atLeastNumberOfLabels = trueForAll ? iterators.size() : 1;
         for ( PrimitiveLongIterator iterator : iterators )
         {
@@ -88,6 +92,14 @@ class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator
         last = next;
         next( last );
         return true;
+    }
+
+    @Override
+    public void close()
+    {
+        ResourceUtils.closeAll( toClose );
+        sortedIterators.clear();
+        toClose.clear();
     }
 
     private class IdAndSource implements Comparable<IdAndSource>

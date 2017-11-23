@@ -28,13 +28,16 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -49,8 +52,6 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
@@ -351,13 +352,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    public PrimitiveLongResourceIterator nodesGetForLabel( KernelStatement state, int labelId )
     {
         return entityReadOperations.nodesGetForLabel( state, labelId );
     }
 
     @Override
-    public PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index,
+    public PrimitiveLongResourceIterator indexQuery( KernelStatement statement, IndexDescriptor index,
             IndexQuery[] predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {

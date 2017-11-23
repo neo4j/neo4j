@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_4.codegen
 
 import java.util
 
-import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator}
+import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongResourceIterator}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.QueryExecutionEvent
@@ -88,13 +88,13 @@ object Methods {
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Value]("nodeGetProperty", typeRef[Long], typeRef[Int])
-  val indexQuery = method[ReadOperations, PrimitiveLongIterator]("indexQuery", typeRef[IndexDescriptor], typeRef[Array[IndexQuery]])
+  val indexQuery = method[ReadOperations, PrimitiveLongResourceIterator]("indexQuery", typeRef[IndexDescriptor], typeRef[Array[IndexQuery]])
   val indexQueryExact = method[IndexQuery, IndexQuery.ExactPredicate]("exact", typeRef[Int], typeRef[Object])
   val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Array[IndexQuery.ExactPredicate]])
   val countsForNode = method[ReadOperations, Long]("countsForNode", typeRef[Int])
   val countsForRel = method[ReadOperations, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
   val relationshipGetProperty = method[ReadOperations, Value]("relationshipGetProperty", typeRef[Long], typeRef[Int])
-  val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
+  val nodesGetForLabel = method[ReadOperations, PrimitiveLongResourceIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
   val fetchNextRelationship = method[RelationshipIterator, Long]("next")

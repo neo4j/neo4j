@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Resource;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 class NodeLabelIndexProgressor implements IndexProgressor
 {
-    private final PrimitiveLongIterator iterator;
+    private final PrimitiveLongResourceIterator iterator;
     private final NodeLabelClient client;
 
-    NodeLabelIndexProgressor( PrimitiveLongIterator iterator, NodeLabelClient client )
+    NodeLabelIndexProgressor( PrimitiveLongResourceIterator iterator, NodeLabelClient client )
     {
         this.iterator = iterator;
         this.client = client;
@@ -50,9 +49,6 @@ class NodeLabelIndexProgressor implements IndexProgressor
     @Override
     public void close()
     {
-        if ( iterator instanceof Resource )
-        {
-            ((Resource) iterator).close();
-        }
+        iterator.close();
     }
 }
