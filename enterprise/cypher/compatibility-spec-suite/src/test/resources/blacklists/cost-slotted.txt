@@ -55,7 +55,6 @@ Matching and optionally matching with unbound nodes and equality predicate in re
 Fail when using property access on primitive type
 Counting an empty graph
 Variable length pattern checking labels on endnodes
-Named path with undirected fixed variable length pattern
 Variable length patterns and nulls
 Failing on merging relationship with null property
 Failing on merging node with null property

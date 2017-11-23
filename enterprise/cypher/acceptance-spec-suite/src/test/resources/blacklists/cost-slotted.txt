@@ -75,10 +75,6 @@ Find a combination of a shortest path and a pattern expression
 //SkipLimitAcceptance.feature
 Using a optional match after aggregation and before an aggregation
 
-//VarLengthAcceptance.feature
-Handles checking properties on nodes in multistep path - using ALL() function on path node properties
-Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
-
 //MatchAcceptance.feature
 difficult to plan query number 3
 Variable length path with both sides already bound
