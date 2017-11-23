@@ -12,7 +12,6 @@ object LogicalPlanConverter {
     case plansV3_3.Aggregation(left, groupingExpressions, aggregationExpression) =>
       plansV3_4.Aggregation(convertLogicalPlan(left),
         groupingExpressions.mapValues(ASTConverter.convertExpression _),
-        aggregationExpression.mapValues(ASTConverter.convertExpression _))(???)
-      // TODO do we really want to convert also PlannerQueries?            ^^^
+        aggregationExpression.mapValues(ASTConverter.convertExpression _))(null)
   }
 }
