@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
@@ -196,6 +197,12 @@ class AllStoreHolder extends Read implements Token
     public int propertyKey( String name )
     {
         return storeReadLayer.propertyKeyGetForName( name );
+    }
+
+    @Override
+    public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
+    {
+        return storeReadLayer.propertyKeyGetName( propertyKeyId );
     }
 
     @Override

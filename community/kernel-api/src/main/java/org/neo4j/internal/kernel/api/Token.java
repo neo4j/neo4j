@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 
 /**
  * Token creation and lookup.
@@ -74,4 +75,14 @@ public interface Token
      * @return the property key id, or NO_TOKEN
      */
     int propertyKey( String name );
+
+
+    /**
+     * Returns the name of a property given its property key id
+     *
+     * @param propertyKeyId The id of the property
+     * @return The name of the key
+     * @throws PropertyKeyIdNotFoundKernelException if no key is associated with the id
+     */
+    String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 }
