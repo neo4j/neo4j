@@ -23,17 +23,22 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, GraphStatisticsSnapshot}
 
+case class CacheCheckResult(isStale: Boolean, secondsSinceReplan: Int)
+
+object CacheCheckResult {
+  val empty = CacheCheckResult(isStale = false,0)
+}
 case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
 class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculator,
                                private var fingerprint: Option[PlanFingerprint]) {
 
-  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): (Boolean, Int) = {
-    fingerprint.fold((false,0)) { f =>
+  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = {
+    fingerprint.fold(CacheCheckResult.empty) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      (divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
+      CacheCheckResult(divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
         check(currentTxId != f.txId,
           () => {
             fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis))

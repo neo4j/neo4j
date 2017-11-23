@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{CacheCheckResult, ExecutionPlan, InternalExecutionResult, ProcedureCallMode}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{Counter, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
@@ -116,7 +116,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   override def notifications(planContext: PlanContext) = Seq.empty
   override def isPeriodicCommit: Boolean = false
   override def runtimeUsed = ProcedureRuntimeName
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = (false,0)
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = CacheCheckResult.empty
   override def plannerUsed = ProcedurePlannerName
 }
 

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType, SCHEMA_WRITE}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext, UpdateCountingQueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
@@ -56,7 +56,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = (false, 0)
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = CacheCheckResult.empty
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

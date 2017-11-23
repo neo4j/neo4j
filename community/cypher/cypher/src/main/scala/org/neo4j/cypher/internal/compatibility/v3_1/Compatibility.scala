@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan => ExecutionPlan_v3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.CacheCheckResult
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
 import org.neo4j.cypher.internal.spi.v3_2.{TransactionalContextWrapper => TransactionalContextWrapperV3_2}
@@ -114,7 +115,7 @@ trait Compatibility {
     def isPeriodicCommit = inner.isPeriodicCommit
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_2) =
-      (inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations)), 0)
+      CacheCheckResult(inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations)), 0)
 
     override def plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
   }

@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.CacheCheckResult
+
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
   def remove(cache: LFUCache[K, T])(key: K, userKey: String, secondsSinceReplan: Int)
 }
 
 class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
-  def getOrElseUpdate(key: K, userKey: String, isStale: T => (Boolean, Int), produce: => T): (T, Boolean) = {
+  def getOrElseUpdate(key: K, userKey: String, isStale: T => CacheCheckResult, produce: => T): (T, Boolean) = {
     if (cache.size == 0)
       (produce, false)
     else {
@@ -37,9 +39,9 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
         })
       }.flatMap { value =>
         if (!planned) {
-          val (stale, age) = isStale(value)
-          if (stale) {
-            cacheAccessor.remove(cache)(key, userKey, age)
+          val cacheCheck = isStale(value)
+          if (cacheCheck.isStale) {
+            cacheAccessor.remove(cache)(key, userKey, cacheCheck.secondsSinceReplan)
             None
           } else {
             Some((value, planned))
