@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 object PrimitiveExecutionContext {
   def empty = new PrimitiveExecutionContext(SlotConfiguration.empty)
@@ -100,7 +100,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     val longSlots = slots.getLongSlots
     val refSlots = slots.getRefSlots
     val longSlotValues = for { i <- 0 until longs.length }
-      yield (longSlots(i).toString, ValueUtils.of(longs(i)))
+      yield (longSlots(i).toString, Values.longValue(longs(i)))
     val refSlotValues = for { i <- 0 until refs.length }
       yield (refSlots(i).toString, refs(i))
     (longSlotValues ++ refSlotValues).iterator
