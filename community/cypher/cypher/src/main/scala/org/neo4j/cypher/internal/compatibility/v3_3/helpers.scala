@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
-import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3,
-  UpdateStrategy => UpdateStrategyV3_3}
+import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
 import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
@@ -33,7 +32,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, ProcedurePlannerName}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId => LogicalPlanIdV3_3}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId => LogicalPlanIdV3_4}
+  import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
@@ -79,6 +80,8 @@ object helpers {
   def as3_3(pos: InputPosition): InputPositionV3_3 = InputPositionV3_3(pos.offset, pos.line, pos.column)
 
   def as3_4(pos: InputPositionV3_3): InputPosition = InputPosition(pos.offset, pos.line, pos.column)
+
+  def as3_4(planId: LogicalPlanIdV3_3) : LogicalPlanIdV3_4 = new LogicalPlanIdV3_4(planId.underlying)
 
   def as3_4(plannerName: PlannerNameV3_3) : PlannerName = plannerName match {
     case IDPPlannerNameV3_3 => IDPPlannerName
