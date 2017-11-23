@@ -94,4 +94,9 @@ public interface Transaction extends AutoCloseable
      * @return The lock operations of the graph.
      */
     Locks locks();
+
+    /**
+     * @return The cursor factory
+     */
+    CursorFactory cursors();
 }

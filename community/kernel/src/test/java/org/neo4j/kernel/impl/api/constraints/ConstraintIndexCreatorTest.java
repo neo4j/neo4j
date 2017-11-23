@@ -436,6 +436,12 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
+            public CursorFactory cursors()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
             public long closeTransaction() throws TransactionFailureException
             {
                 return ROLLBACK;

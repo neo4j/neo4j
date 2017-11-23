@@ -58,7 +58,6 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -96,7 +95,6 @@ import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -137,7 +135,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
-    private final Cursors cursors = new Cursors();
 
     /**
      * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
@@ -334,10 +331,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                     new EntityNotFoundException( EntityType.NODE, id ) );
         }
 
-        Read read = spi.currentTransaction().dataRead();
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor() )
+        KernelTransaction ktx = spi.currentTransaction();
+        try ( NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor() )
         {
-            read.singleNode( id, nodeCursor );
+            ktx.dataRead().singleNode( id, nodeCursor );
             if ( !nodeCursor.next() )
             {
                 throw new NotFoundException( format( "Node %d not found", id ),
@@ -465,8 +462,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         assertTransactionOpen();
         return () ->
         {
-            NodeCursor cursor = cursors.allocateNodeCursor();
-            spi.currentTransaction().dataRead().allNodesScan( cursor );
+            KernelTransaction ktx = spi.currentTransaction();
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
+            ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<Node>()
             {
                 @Override

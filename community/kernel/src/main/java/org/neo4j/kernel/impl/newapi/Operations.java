@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -41,6 +42,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -50,8 +52,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -73,6 +75,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
     private final PropertyCursor propertyCursor;
+    private final Cursors cursors;
 
     public Operations(
             StorageEngine engine,
@@ -87,6 +90,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
         this.updater = new IndexTxStateUpdater( engine.storeReadLayer(), allStoreHolder );
+        this.cursors = cursors;
     }
 
     // READ
@@ -614,5 +618,15 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             }
         }
         return existingValue;
+    }
+
+    public CursorFactory cursors()
+    {
+        return cursors;
+    }
+
+    public Token token()
+    {
+        return allStoreHolder;
     }
 }

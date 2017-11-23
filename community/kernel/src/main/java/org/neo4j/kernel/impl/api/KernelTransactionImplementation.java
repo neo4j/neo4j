@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Read;
@@ -123,7 +124,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StoreReadLayer storeLayer;
     private final Clock clock;
     private final AccessCapability accessCapability;
-    private final Token token;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -172,7 +172,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore, Token token )
+            ExplicitIndexStore explicitIndexStore)
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -196,7 +196,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         this.operations =
                 new Operations( storageEngine, storageStatement, this, cursors, autoIndexing, explicitIndexStore );
-        this.token = token;
     }
 
     /**
@@ -705,7 +704,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Token token()
     {
-        return token;
+        return operations.token();
     }
 
     @Override
@@ -737,6 +736,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public StatementLocks locks()
     {
        return statementLocks;
+    }
+
+    @Override
+    public CursorFactory cursors()
+    {
+        return operations.cursors();
     }
 
     public LockTracer lockTracer()
