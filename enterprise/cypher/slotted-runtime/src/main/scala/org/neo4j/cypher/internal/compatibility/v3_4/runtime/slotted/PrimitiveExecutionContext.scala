@@ -118,6 +118,15 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     this
   }
 
+  // This method is used instead of newWith1 from a ScopeExpression where the key in the new scope is overriding an existing key
+  // and it has to have the same name due to syntactic constraints. In this case we actually make a copy in order to not corrupt the existing slot.
+  override def newScopeWith1(key1: String, value1: AnyValue): ExecutionContext = {
+    val scopeContext = PrimitiveExecutionContext(slots)
+    copyTo(scopeContext)
+    scopeContext.asInstanceOf[PrimitiveExecutionContext].setValue(key1, value1)
+    scopeContext
+  }
+
   override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
 
   override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()

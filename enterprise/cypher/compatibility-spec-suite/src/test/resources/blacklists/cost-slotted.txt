@@ -107,17 +107,6 @@ Creating nodes from an unwound parameter list
 Unwind does not remove variables from scope
 Fail when asterisk operator is missing
 Fail on negative bound
-Handling a variable length relationship and a standard relationship in chain, zero length 1
-Handling a variable length relationship and a standard relationship in chain, zero length 2
-Handling a variable length relationship and a standard relationship in chain, single length 1
-Handling a variable length relationship and a standard relationship in chain, single length 2
-Handling a variable length relationship and a standard relationship in chain, longer 1
-Handling a variable length relationship and a standard relationship in chain, longer 2
-Handling a variable length relationship and a standard relationship in chain, longer 3
-Handling mixed relationship patterns and directions 1
-Handling mixed relationship patterns and directions 2
-Handling mixed relationship patterns 1
-Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 A simple pattern with one bound endpoint
 Fail at compile time when attempting to index with a non-integer into a list
