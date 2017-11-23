@@ -355,7 +355,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     // then
 
-    val pr1BafterRewrite = Projection(pr1A, Map("xx" -> ReferenceFromSlot(0)))(solved)
+    val pr1BafterRewrite = Projection(pr1A, Map("xx" -> ReferenceFromSlot(0, "xx")))(solved)
     val applyAfterRewrite = Apply(pr1BafterRewrite, pr2)(solved)
 
     resultPlan should equal(
@@ -463,8 +463,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val result = rewriter(produceResult, lookup)
 
     // then
-    val newPred1 = Equals(ReferenceFromSlot(offsetX), ReferenceFromSlot(offsetZ))(pos)
-    val newPred2 = Not(Equals(ReferenceFromSlot(offsetX), ReferenceFromSlot(offsetZ))(pos))(pos)
+    val newPred1 = Equals(ReferenceFromSlot(offsetX, "x"), ReferenceFromSlot(offsetZ, "z"))(pos)
+    val newPred2 = Not(Equals(ReferenceFromSlot(offsetX, "x"), ReferenceFromSlot(offsetZ, "z"))(pos))(pos)
     result should equal(ProduceResult(Selection(Seq(newPred1, newPred2), arg)(solved), Seq("x", "z")))
     lookup(result.assignedId) should equal(slots)
   }
