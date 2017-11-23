@@ -655,7 +655,8 @@ object CypherComparisonSupport {
       * I.e. there will be no check to see if they unexpectedly succeed on tests where they were not explicitly requested.
       */
     def Experimental: TestConfiguration =
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
+      //TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
+      TestConfiguration.empty
 
     def Empty: TestConfiguration = TestConfiguration.empty
 
