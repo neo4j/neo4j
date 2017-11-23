@@ -26,8 +26,8 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
-import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -353,6 +354,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             }
         }
 
+        ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
         if ( allStoreHolder.nodeExists( node ) )
         {
             autoIndexing.nodes().entityRemoved( this, node );

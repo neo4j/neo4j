@@ -724,9 +724,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Locks locks()
+    public StatementLocks locks()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+       return statementLocks;
+    }
+
+    public LockTracer lockTracer()
+    {
+        return currentStatement.lockTracer();
     }
 
     private void afterCommit( long txId )
