@@ -65,7 +65,7 @@ public class RelationshipProxyWrappingEdgeValue extends EdgeValue
 
         if ( id() < 0 )
         {
-            writer.writeArbitraryJavaObject( relationship );
+            writer.writeVirtualEdgeHack( relationship );
         }
 
         writer.writeEdge( id(), startNode().id(), endNode().id(), type(), p );

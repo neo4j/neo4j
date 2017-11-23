@@ -148,7 +148,8 @@ public final class ValueUtils
             }
             else
             {
-                return new JavaObjectAnyValue( object );
+                throw new IllegalArgumentException(
+                        String.format( "Cannot convert %s to AnyValue", object.getClass().getName() ) );
             }
         }
     }
@@ -323,50 +324,5 @@ public final class ValueUtils
     public static EdgeValue fromRelationshipProxy( Relationship relationship )
     {
         return new RelationshipProxyWrappingEdgeValue( relationship );
-    }
-
-    public static final class JavaObjectAnyValue extends AnyValue
-    {
-        private final Object object;
-
-        //The object is null checked before calling constructor
-        private JavaObjectAnyValue( Object object )
-        {
-            assert object != null;
-            this.object = object;
-        }
-
-        public Object asObject()
-        {
-            return object;
-        }
-
-        @Override
-        protected boolean eq( Object other )
-        {
-            return other != null && other.equals( object );
-        }
-
-        @Override
-        public Boolean ternaryEquals( AnyValue other )
-        {
-            if ( other == null || other == NO_VALUE )
-            {
-                return null;
-            }
-            return other.equals( object );
-        }
-
-        @Override
-        protected int computeHash()
-        {
-            return object.hashCode();
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.writeArbitraryJavaObject( object );
-        }
     }
 }

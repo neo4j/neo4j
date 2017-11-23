@@ -67,7 +67,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
 
         if ( id() < 0 )
         {
-            writer.writeArbitraryJavaObject( node );
+            writer.writeVirtualNodeHack( node );
         }
 
         writer.writeNode( node.getId(), l, p );

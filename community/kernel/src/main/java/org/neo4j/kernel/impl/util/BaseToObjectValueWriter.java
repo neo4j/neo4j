@@ -103,6 +103,12 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
+    public void writeVirtualNodeHack( Object node )
+    {
+        writeValue( node );
+    }
+
+    @Override
     public void writeEdgeReference( long edgeId ) throws RuntimeException
     {
         writeValue( newRelationshipProxyById( edgeId ) );
@@ -116,6 +122,12 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         {
             writeValue( newRelationshipProxyById( edgeId ) );
         }
+    }
+
+    @Override
+    public void writeVirtualEdgeHack( Object relationship )
+    {
+        writeValue( relationship );
     }
 
     @Override
@@ -402,12 +414,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         writeValue( value );
-    }
-
-    @Override
-    public void writeArbitraryJavaObject( Object object )
-    {
-        writeValue( object );
     }
 
     private interface Writer
