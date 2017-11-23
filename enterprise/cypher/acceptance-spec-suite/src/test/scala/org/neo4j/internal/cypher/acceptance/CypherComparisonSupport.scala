@@ -99,11 +99,14 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
   protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: Seq[String], params: (String, Any)*):
   Unit = {
-    val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFrom.scenarios intersect Configs.Experimental.scenarios
+    // Never consider Morsel even if test requests it
+    val expectedSpecificFailureFromEffective = expectedSpecificFailureFrom - Configs.Morsel
+
+    val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFromEffective.scenarios intersect Configs.Experimental.scenarios
     val scenariosToExecute = Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios
     for (thisScenario <- scenariosToExecute) {
       thisScenario.prepare()
-      val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.containsScenario(thisScenario)
+      val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
       tryResult match {
@@ -141,15 +144,19 @@ trait CypherComparisonSupport extends CypherTestSupport {
                             resultAssertionInTx: Option[(InternalExecutionResult) => Unit] = None,
                             executeBefore: () => Unit = () => {},
                             params: Map[String, Any] = Map.empty): InternalExecutionResult = {
-    val compareResults = expectSucceed - expectedDifferentResults
+    // Never consider Morsel even if test requests it
+    val expectSucceedEffective = expectSucceed - Configs.Morsel
+    val expectedDifferentResultsEffective = expectedDifferentResults - Configs.Morsel
+
+    val compareResults = expectSucceedEffective - expectedDifferentResultsEffective
     val baseScenario =
-      if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults)
+      if (expectSucceedEffective.scenarios.nonEmpty) extractBaseScenario(expectSucceedEffective, compareResults)
       else TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
 
-    val explicitlyRequestedExperimentalScenarios = expectSucceed.scenarios intersect Configs.Experimental.scenarios
+    val explicitlyRequestedExperimentalScenarios = expectSucceedEffective.scenarios intersect Configs.Experimental.scenarios
     val positiveResults = ((Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios) - baseScenario).flatMap {
       thisScenario =>
-        executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params, resultAssertionInTx)
+        executeScenario(thisScenario, query, expectSucceedEffective.containsScenario(thisScenario), executeBefore, params, resultAssertionInTx)
     }
 
     baseScenario.prepare()
@@ -159,7 +166,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     positiveResults.foreach {
       case (scenario, result) =>
-        planComparisonStrategy.compare(expectSucceed, scenario, result)
+        planComparisonStrategy.compare(expectSucceedEffective, scenario, result)
 
         if (compareResults.containsScenario(scenario)) {
           assertResultsSame(result, baseResult, query, s"${scenario.name} returned different results than ${baseScenario.name}")
