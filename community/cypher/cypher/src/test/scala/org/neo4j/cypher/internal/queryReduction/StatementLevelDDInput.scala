@@ -30,7 +30,7 @@ class StatementLevelDDInput(statement: Statement,
                             originalLength: Int
                            ) extends DDInput[Statement](originalLength) {
 
-  override def getCurrentCode = {
+  override def getCurrentCode: Statement = {
     val (maybeStatement, _, _) = removeChildrenInSubTree(statement, 0, 0)
     maybeStatement.get
   }
@@ -61,7 +61,7 @@ class StatementLevelDDInput(statement: Statement,
 
       val nodeConverter = new NodeConverter {
         override def ofOption[B <: ASTNode](o: Option[B]): Option[B] = {
-          o.map(newChild).flatten
+          o.flatMap(newChild)
         }
 
         override def ofSingle[B <: ASTNode](b: B): B = {

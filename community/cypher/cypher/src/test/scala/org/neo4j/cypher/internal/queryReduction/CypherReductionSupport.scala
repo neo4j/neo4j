@@ -44,8 +44,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContex
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
-import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.SecurityContext
+import org.neo4j.internal.kernel.api.Transaction
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContextFactory}
@@ -72,7 +72,7 @@ object CypherReductionSupport {
     legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 0)
   private val kernelMonitors = new Monitors
-  private val compiler = CypherCompiler(astRewriter, new WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
+  private val compiler = CypherCompiler(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
     CompilerEngineDelegator.CLOCK, CommunityRuntimeContextCreator)
 
   private val monitor = kernelMonitors.newMonitor(classOf[IDPQueryGraphSolverMonitor])
@@ -80,7 +80,7 @@ object CypherReductionSupport {
   private val singleComponentPlanner = SingleComponentPlanner(monitor)
   private val queryGraphSolver = IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
 
-  private val prettifier = Prettifier(ExpressionStringifier())
+  val prettifier = Prettifier(ExpressionStringifier())
 }
 
 /**
@@ -89,8 +89,8 @@ object CypherReductionSupport {
 trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
 
-  private var graph: GraphDatabaseCypherService = null
-  private var contextFactory: TransactionalContextFactory = null
+  private var graph: GraphDatabaseCypherService = _
+  private var contextFactory: TransactionalContextFactory = _
 
   override protected def initTest() {
     super.initTest()
@@ -148,8 +148,8 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                             statement: Statement,
                             parsingBaseState: BaseState,
                             executeBefore: Option[String]): InternalExecutionResult = {
-    val explicitTx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED)
-    val implicitTx = graph.beginTransaction(KernelTransaction.Type.`implicit`, SecurityContext.AUTH_DISABLED)
+    val explicitTx = graph.beginTransaction(Transaction.Type.explicit, SecurityContext.AUTH_DISABLED)
+    val implicitTx = graph.beginTransaction(Transaction.Type.`implicit`, SecurityContext.AUTH_DISABLED)
     try {
       executeBefore match {
         case None =>
@@ -192,6 +192,6 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                             queryGraphSolver: IDPQueryGraphSolver) = {
     // TODO enterpriseContext
     CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
-      None, new WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, evaluator = null)
+      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, evaluator = null)
   }
 }

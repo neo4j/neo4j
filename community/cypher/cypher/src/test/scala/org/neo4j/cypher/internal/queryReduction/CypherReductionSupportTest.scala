@@ -29,7 +29,7 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
 
   test("a simply query that cannot be reduced") {
     val query = "MATCH (n) RETURN n"
-    reduceQuery(query)(_ => NotReproduced)
+    reduceQuery(query)(_ => NotReproduced) should equal("MATCH (n)\nRETURN n AS n")
   }
 
   test("removes unnecessary where") {
@@ -74,28 +74,6 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
         case _ => NotReproduced
       }
     }
+    reduced should equal("MATCH (n)\n  WHERE 100 / n.name > 34\nRETURN ")
   }
-
-  test("removes unnecessary stuff from sensible query") {
-    val setup = "CREATE (n:Label {name: 'satia'})-[:WORKS_WITH]->(m:Label {name: 'andres'})"
-    val query =
-      """ MATCH (n:Label), (m)
-        | WHERE m <> n AND m.name = 'andres' AND n.name = 'satia'
-        | WITH n.name AS name LIMIT 2
-        | RETURN name ORDER BY name DESC SKIP 0 LIMIT 1
-        | UNION
-        | MATCH (n:NoLabel) WHERE 1 = 0 RETURN n.name AS name
-      """.stripMargin
-    val reduced = reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
-      tryResults match {
-        case Success(r) =>
-          if (r.hasNext && r.next() == Map("name" -> "satia") && !r.hasNext)
-            Reproduced
-          else
-            NotReproduced
-        case _ => NotReproduced
-      }
-    }
-  }
-
 }

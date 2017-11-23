@@ -79,7 +79,7 @@ object DDmin {
         // Subset is smaller
         return ddmin2(input, 2, test)
       } else {
-        input.unset
+        input.unset()
       }
     }
 
@@ -93,7 +93,7 @@ object DDmin {
         // Complement is smaller
         return ddmin2(input, Math.max(n - 1, 2), test)
       } else {
-        input.unset
+        input.unset()
       }
     }
 
@@ -111,9 +111,9 @@ abstract class DDInput[I](originalLength : Int) {
   val allTokens : Array[Int] = (0 until originalLength).toArray
   // Initially all tokens are active
   var activeTokens : Array[Int] = allTokens
-  var chunks : mutable.Buffer[Array[Int]] = null
+  var chunks : mutable.Buffer[Array[Int]] = _
 
-  def setGranularity(n : Int) = {
+  def setGranularity(n : Int): Unit = {
     // The maximum size a chunk can have
     val maxChunkSize = Math.ceil(length.toDouble / n).toInt
     // Number of chunks with the maximum length
@@ -134,13 +134,13 @@ abstract class DDInput[I](originalLength : Int) {
     }
   }
 
-  def getComplementChunks(num: Int) = {
+  private def getComplementChunks(num: Int) = {
     val complement : Array[Int] = new Array(length - chunks(num).length)
     var index = 0
-    for (i <- 0 until chunks.length) {
+    for (i <- chunks.indices) {
       // Skip the num-th entry
       if(i != num) {
-        for (j <- 0 until chunks(i).length) {
+        for (j <- chunks(i).indices) {
           complement(index) = chunks(i)(j)
           index = index + 1
         }
@@ -149,23 +149,22 @@ abstract class DDInput[I](originalLength : Int) {
     complement
   }
 
-  def setSubset(num: Int) = {
+  def setSubset(num: Int): Unit = {
     activeTokens = chunks(num)
   }
 
-  def setComplement(num: Int) = {
+  def setComplement(num: Int): Unit = {
     activeTokens = getComplementChunks(num)
   }
 
-  def unset = {
+  def unset(): Unit = {
     activeTokens = chunks.flatten.toArray
   }
 
-  def length : Int = activeTokens.length
+  def length: Int = activeTokens.length
 
   @throws(classOf[IllegalSyntaxException])
   def getCurrentCode : I
-
 }
 
 class IllegalSyntaxException(message: String = "") extends Exception(message)

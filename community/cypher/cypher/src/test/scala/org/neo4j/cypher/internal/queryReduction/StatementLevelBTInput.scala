@@ -35,9 +35,9 @@ class StatementLevelBTInput(statement: Statement,
   private def replacementCandidates(node: ASTNode, currentLevel: Int): Seq[BTDomain[Candidate]] = {
     // Previous level (to capture the parent information)
     if (currentLevel == level - 1) {
-      domainsOf(node)(makeDomain _)
+      domainsOf(node)(makeDomain)
     } else {
-      getChildren(node).map(replacementCandidates(_, currentLevel + 1)).flatten
+      getChildren(node).flatMap(replacementCandidates(_, currentLevel + 1))
     }
   }
 
@@ -52,7 +52,7 @@ class StatementLevelBTInput(statement: Statement,
     new BTDomain(assignments.toArray)
   }
 
-  override def convertToInput(objects: Seq[Candidate]) = {
+  override def convertToInput(objects: Seq[Candidate]): Statement = {
     val (newStatement, _) = convertToInput(objects, statement, 0, 0)
     newStatement
   }
@@ -99,7 +99,7 @@ class StatementLevelBTInput(statement: Statement,
     }
   }
 
-  override def getNewAssignments(currentAssignment: BTAssignment[Candidate]) = {
+  override def getNewAssignments(currentAssignment: BTAssignment[Candidate]): Seq[BTAssignment[Candidate]] = {
     val previousGain = currentAssignment.gain
     val currentNode = currentAssignment.obj.node
     val typ = currentAssignment.obj.expectedType

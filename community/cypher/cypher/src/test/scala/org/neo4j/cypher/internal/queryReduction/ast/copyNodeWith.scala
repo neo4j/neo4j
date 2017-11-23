@@ -80,7 +80,7 @@ object copyNodeWith {
       case Parameter(_, _) => node
 
       case Property(map, propertyKey) =>
-        Property(nc.ofSingle(map), nc.ofSingle((propertyKey)))(node.position)
+        Property(nc.ofSingle(map), nc.ofSingle(propertyKey))(node.position)
 
       case Create(pattern) =>
         Create(nc.ofSingle(pattern))(node.position)

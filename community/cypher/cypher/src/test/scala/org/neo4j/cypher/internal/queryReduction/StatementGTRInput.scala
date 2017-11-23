@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.queryReduction.ast.ASTNodeHelper._
 
 class StatementGTRInput(initialStatement: Statement) extends GTRInput[Statement](initialStatement) {
-  override def depth = getDepth(currentTree)
-  override def size = getSize(currentTree)
+  override def depth: Int = getDepth(currentTree)
+  override def size: Int = getSize(currentTree)
   override def getDDInput(level: Int) = StatementLevelDDInput(currentTree, level)
   override def getBTInput(level: Int) = StatementLevelBTInput(currentTree, level)
 }

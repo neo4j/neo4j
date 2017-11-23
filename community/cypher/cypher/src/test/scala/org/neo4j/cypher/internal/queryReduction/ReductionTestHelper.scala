@@ -41,7 +41,7 @@ trait ReductionTestHelper extends CypherFunSuite {
         res
       }
 
-      def assertExhausted = {
+      def assertExhausted: Unit = {
         if (i != expectedInvocationsAndResults.length) {
           fail(s"Oracle not invoked often enough. Next expected call: ${expectedInvocationsAndResults(i)._1.toSeq}")
         }

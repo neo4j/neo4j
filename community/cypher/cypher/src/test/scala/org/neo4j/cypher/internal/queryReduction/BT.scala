@@ -52,9 +52,9 @@ object BT {
       improvementFound = false
 
       // Try to maximize the variables one by one
-      for (i <- 0 until input.domains.length) {
+      for (i <- input.domains.indices) {
 
-        var currentAssignment: Int = conf(i);
+        var currentAssignment: Int = conf(i)
         // Check each assignment that is right of the current assignment (by starting with the last one)
         var j = input.domains(i).length - 1
         while(j > currentAssignment) {
@@ -73,7 +73,7 @@ object BT {
 
               // See if new assignments became available
               val newAssignments = input.getNewAssignments(input.domains(i).assignments(j))
-              if (!newAssignments.isEmpty) {
+              if (newAssignments.nonEmpty) {
                 // Insert the new assignments after the last entry
                 input.domains(i).assignments = input.domains(i).assignments ++ newAssignments
 
@@ -103,7 +103,7 @@ abstract class BTInput[I, O] {
 
   val domains: Array[BTDomain[O]]
 
-  def length = domains.length
+  def length: Int = domains.length
 
   def toObjects(config: BTConfiguration): Seq[O] = {
     domains.zipWithIndex.map{
@@ -122,7 +122,7 @@ abstract class BTInput[I, O] {
 }
 
 class BTDomain[O](var assignments: Array[BTAssignment[O]]) {
-  def length = assignments.length
+  def length: Int = assignments.length
 }
 
 case class BTAssignment[O](obj: O, gain: Int)

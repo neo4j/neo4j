@@ -59,14 +59,14 @@ object GTRStar {
 
     cache.clear()
 
-    var nbNodesBefore = 0;
-    var nbNodesAfter = input.size;
+    var nbNodesBefore = 0
+    var nbNodesAfter = input.size
 
     do {
-      nbNodesBefore = nbNodesAfter;
-      GTR(input)(runWithCache);
-      nbNodesAfter = input.size;
-    } while(nbNodesAfter < nbNodesBefore);
+      nbNodesBefore = nbNodesAfter
+      GTR(input)(runWithCache)
+      nbNodesAfter = input.size
+    } while(nbNodesAfter < nbNodesBefore)
 
     input.currentTree
   }
@@ -74,10 +74,9 @@ object GTRStar {
 
 
 abstract class GTRInput[I](initialTree: I) {
-  var currentTree = initialTree
+  var currentTree: I = initialTree
 
-
-  def updateTree(tree: I) = {
+  def updateTree(tree: I): Unit = {
     currentTree = tree
   }
 
