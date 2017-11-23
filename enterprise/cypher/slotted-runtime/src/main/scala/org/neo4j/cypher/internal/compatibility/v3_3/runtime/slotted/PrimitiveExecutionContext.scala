@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 object PrimitiveExecutionContext {
   def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0, 0))
@@ -80,7 +80,7 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   override def iterator =
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).
     // Please do not use in production code.
-    (longs.map(i => ("LongSlot", ValueUtils.of(i))) ++ refs.map(i => ("RefSlot", i))).iterator
+    (longs.map(i => ("LongSlot", Values.longValue(i))) ++ refs.map(i => ("RefSlot", i))).iterator
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 
