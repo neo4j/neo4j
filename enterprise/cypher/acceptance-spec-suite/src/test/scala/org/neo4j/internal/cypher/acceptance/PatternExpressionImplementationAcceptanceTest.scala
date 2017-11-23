@@ -250,7 +250,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWith(Configs.CommunityInterpreted, "match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
+    val result = executeWith(Configs.Interpreted, "match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
 
     result.toList.head("p").asInstanceOf[Seq[_]] should equal(List(start, start))
   }
@@ -260,7 +260,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWith(Configs.CommunityInterpreted, "match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c")
+    val result = executeWith(Configs.Interpreted, "match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c")
       .toList.head("p").asInstanceOf[Seq[_]]
 
     result should equal(List(start, start))
@@ -271,7 +271,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWith(Configs.CommunityInterpreted, "match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n")
+    val result = executeWith(Configs.Interpreted, "match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n")
       .toList
 
     result should equal(List(

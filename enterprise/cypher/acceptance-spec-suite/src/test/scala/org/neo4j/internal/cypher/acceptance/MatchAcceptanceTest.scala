@@ -263,7 +263,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("length on filter") {
     val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
-    executeWith(Configs.CommunityInterpreted, q)
+    executeWith(Configs.Interpreted, q)
       .toList should equal(List(Map("cn" -> 0)))
   }
 
