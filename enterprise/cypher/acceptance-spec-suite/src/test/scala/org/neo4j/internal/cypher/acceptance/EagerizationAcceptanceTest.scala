@@ -1637,7 +1637,7 @@ class EagerizationAcceptanceTest
 
     val query = "UNWIND range(0, 9) AS i MATCH (x) MATCH (m {v: i % 2}) CREATE ({v: (i + 1) % 2}) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
     result.columnAs[Long]("count(*)").next shouldBe 10

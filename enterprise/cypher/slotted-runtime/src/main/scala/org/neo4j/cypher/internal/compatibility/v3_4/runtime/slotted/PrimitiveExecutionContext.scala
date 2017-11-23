@@ -51,17 +51,18 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     s.result
   }
 
-  override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
-    case other@PrimitiveExecutionContext(otherPipeline) =>
-      if (slots.numberOfLongs > otherPipeline.numberOfLongs ||
-        slots.numberOfReferences > otherPipeline.numberOfReferences)
-        throw new InternalException("Tried to copy more data into less.")
-      else {
-        System.arraycopy(longs, 0, other.longs, longOffset, slots.numberOfLongs)
-        System.arraycopy(refs, 0, other.refs, refOffset, slots.numberOfReferences)
-      }
-    case _ => fail()
-  }
+  override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit =
+    target match {
+      case other@PrimitiveExecutionContext(otherPipeline) =>
+        if (slots.numberOfLongs > otherPipeline.numberOfLongs ||
+          slots.numberOfReferences > otherPipeline.numberOfReferences)
+          throw new InternalException("Tried to copy more data into less.")
+        else {
+          System.arraycopy(longs, fromLongOffset, other.longs, toLongOffset, slots.numberOfLongs - fromLongOffset)
+          System.arraycopy(refs, fromRefOffset, other.refs, toRefOffset, slots.numberOfReferences - fromRefOffset)
+        }
+      case _ => fail()
+    }
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>

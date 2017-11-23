@@ -36,8 +36,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.AssertionRunner.Thunk
 import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.{AssertionRunner, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions.{Equals, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -323,35 +324,50 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           nullables.map(_.name), slots)(id = id)
 
       case _: CartesianProduct =>
+        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
         val lhsPlan = plan.lhs.get
         val lhsSlots = slotConfigs(lhsPlan.assignedId)
-        CartesianProductSlottedPipe(lhs, rhs, lhsSlots.numberOfLongs, lhsSlots.numberOfReferences, slots)(id)
+
+        // Verify the assumption that the only shared slots we have are arguments which are identical on both lhs and rhs.
+        // This assumption enables us to use array copy within CartesianProductSlottedPipe.
+        ifAssertionsEnabled(verifyOnlyArgumentsAreSharedSlots(plan, physicalPlan))
+
+        CartesianProductSlottedPipe(lhs, rhs, lhsSlots.numberOfLongs, lhsSlots.numberOfReferences, slots, argumentSize)(id)
 
       case joinPlan: NodeHashJoin =>
+        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
         val leftNodes: Array[Int] = joinPlan.nodes.map(k => slots.getLongOffsetFor(k.name)).toArray
         val rhsSlots = slotConfigs(joinPlan.right.assignedId)
         val rightNodes: Array[Int] = joinPlan.nodes.map(k => rhsSlots.getLongOffsetFor(k.name)).toArray
         val copyLongsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
         val copyRefsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
 
+        // Verify the assumption that the argument slots are the same on both sides
+        ifAssertionsEnabled(verifyArgumentsAreTheSameOnBothSides(plan, physicalPlan))
+
         // When executing the HashJoin, the LHS will be copied to the first slots in the produced row, and any additional RHS columns that are not
         // part of the join comparison
-        rhsSlots.foreachSlot {
-          case (key, LongSlot(offset, _, _)) =>
+        rhsSlots.foreachSlotOrdered {
+          case (key, LongSlot(offset, _, _)) if offset >= argumentSize.nLongs =>
             copyLongsFromRHS += ((offset, slots.getLongOffsetFor(key)))
-          case (key, RefSlot(offset, _, _)) =>
+          case (key, RefSlot(offset, _, _)) if offset >= argumentSize.nReferences =>
             copyRefsFromRHS += ((offset, slots.getReferenceOffsetFor(key)))
         }
-
         NodeHashJoinSlottedPipe(leftNodes, rightNodes, lhs, rhs, slots, copyLongsFromRHS.result().toArray, copyRefsFromRHS.result().toArray)(id)
 
       case ValueHashJoin(lhsPlan, _, Equals(lhsAstExp, rhsAstExp)) =>
-        val lhsCmdExp = expressionConverters.toCommandExpression(lhsAstExp)
-        val rhsCmdExp = expressionConverters.toCommandExpression(rhsAstExp)
+        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+        val lhsCmdExp = convertExpressions(lhsAstExp)
+        val rhsCmdExp = convertExpressions(rhsAstExp)
         val lhsSlots = slotConfigs(lhsPlan.assignedId)
         val longOffset = lhsSlots.numberOfLongs
         val refOffset = lhsSlots.numberOfReferences
-        ValueHashJoinSlottedPipe(lhsCmdExp, rhsCmdExp, lhs, rhs, slots, longOffset, refOffset)(id)
+
+        // Verify the assumption that the only shared slots we have are arguments which are identical on both lhs and rhs.
+        // This assumption enables us to use array copy within CartesianProductSlottedPipe.
+        ifAssertionsEnabled(verifyOnlyArgumentsAreSharedSlots(plan, physicalPlan))
+
+        ValueHashJoinSlottedPipe(lhsCmdExp, rhsCmdExp, lhs, rhs, slots, longOffset, refOffset, argumentSize)(id)
 
       case ConditionalApply(_, _, items) =>
         val (longIds , refIds) = items.partition(idName => slots.get(idName.name) match {
@@ -381,6 +397,76 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           SlottedPipeBuilder.computeUnionMapping(rhsSlots, slots))(id = id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+    }
+  }
+
+  private def ifAssertionsEnabled(f: => Unit): Unit = {
+    AssertionRunner.runUnderAssertion(new Thunk {
+      override def apply() = f
+    })
+  }
+
+  // Verifies the assumption that all shared slots are arguments with slot offsets within the first argument size number of slots
+  // and the number of shared slots are identical to the argument size.
+  private def verifyOnlyArgumentsAreSharedSlots(plan: LogicalPlan, physicalPlan: PhysicalPlan) = {
+    val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+    val lhsPlan = plan.lhs.get
+    val rhsPlan = plan.rhs.get
+    val lhsSlots = physicalPlan.slotConfigurations(lhsPlan.assignedId)
+    val rhsSlots = physicalPlan.slotConfigurations(rhsPlan.assignedId)
+    val (sharedSlots, rhsUniqueSlots) = rhsSlots.partitionSlots {
+      case (k, slot) =>
+        lhsSlots.get(k).isDefined
+    }
+    val (sharedLongSlots, sharedRefSlots) = sharedSlots.partition(_._2.isLongSlot)
+
+    val longSlotsOk = sharedLongSlots.forall {
+      case (key, slot) => slot.offset < argumentSize.nLongs
+    } && sharedLongSlots.size == argumentSize.nLongs
+
+    val refSlotsOk = sharedRefSlots.forall {
+      case (key, slot) => slot.offset < argumentSize.nReferences
+    } && sharedRefSlots.size == argumentSize.nReferences
+
+    if (!longSlotsOk || !refSlotsOk) {
+      val longSlotsMessage = if (longSlotsOk) "" else s"#long arguments=${argumentSize.nLongs} shared long slots: $sharedLongSlots "
+      val refSlotsMessage = if (refSlotsOk) "" else s"#ref arguments=${argumentSize.nReferences} shared ref slots: $sharedRefSlots "
+      throw new InternalException(s"Unexpected slot configuration. Shared slots not only within argument size: ${longSlotsMessage}${refSlotsMessage}")
+    }
+  }
+
+  private def verifyArgumentsAreTheSameOnBothSides(plan: LogicalPlan, physicalPlan: PhysicalPlan) = {
+    val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+    val lhsPlan = plan.lhs.get
+    val rhsPlan = plan.rhs.get
+    val lhsSlots = physicalPlan.slotConfigurations(lhsPlan.assignedId)
+    val rhsSlots = physicalPlan.slotConfigurations(rhsPlan.assignedId)
+    val (lhsLongSlots, lhsRefSlots) = lhsSlots.partitionSlots((_, slot) => slot.isLongSlot)
+    val (rhsLongSlots, rhsRefSlots) = rhsSlots.partitionSlots((_, slot) => slot.isLongSlot)
+
+    val lhsArgLongSlots = lhsLongSlots.filter { case (_, slot) => slot.offset < argumentSize.nLongs }
+    val lhsArgRefSlots = lhsRefSlots.filter { case (_, slot) => slot.offset < argumentSize.nReferences }
+    val rhsArgLongSlots = rhsLongSlots.filter { case (_, slot) => slot.offset < argumentSize.nLongs }
+    val rhsArgRefSlots = rhsRefSlots.filter { case (_, slot) => slot.offset < argumentSize.nReferences }
+
+    val sizesAreTheSame = lhsArgLongSlots.size == rhsArgLongSlots.size && lhsArgLongSlots.size == argumentSize.nLongs &&
+      lhsArgRefSlots.size == rhsArgRefSlots.size && lhsArgRefSlots.size == argumentSize.nReferences
+    val longSlotsOk = sizesAreTheSame && lhsArgLongSlots.forall {
+      case (k, slot) => {
+        val (k2, slot2) = rhsArgLongSlots(slot.offset)
+        k == k2 && slot.isTypeCompatibleWith(slot2)
+      }
+    }
+    val refSlotsOk = sizesAreTheSame && lhsArgRefSlots.forall {
+      case (k, slot) => {
+        val (k2, slot2) = rhsArgRefSlots(slot.offset)
+        k == k2 && slot.isTypeCompatibleWith(slot2)
+      }
+    }
+    if (!longSlotsOk || !refSlotsOk) {
+      val longSlotsMessage = if (longSlotsOk) "" else s"#long arguments=${argumentSize.nLongs} lhs: $lhsLongSlots rhs: $rhsArgLongSlots "
+      val refSlotsMessage = if (refSlotsOk) "" else s"#ref arguments=${argumentSize.nReferences} lhs: $lhsRefSlots rhs: $rhsArgRefSlots "
+      throw new InternalException(s"Unexpected slot configuration. Arguments differ between lhs and rhs: ${longSlotsMessage}${refSlotsMessage}")
     }
   }
 }
@@ -470,5 +556,4 @@ object SlottedPipeBuilder {
         case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
       }
   }
-
 }

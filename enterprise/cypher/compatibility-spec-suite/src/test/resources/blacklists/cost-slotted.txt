@@ -131,7 +131,6 @@ Handling mixed relationship patterns 1
 Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 A simple pattern with one bound endpoint
-Connected components succeeding WITH
 Fail at compile time when attempting to index with a non-integer into a list
 `properties()` failing on an integer literal
 `properties()` failing on a string literal

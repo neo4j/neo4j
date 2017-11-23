@@ -563,8 +563,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     )())
   }
 
-  //TODO add this test when cartesian product works
-  ignore("cartesian product") {
+  test("cartesian product") {
     // given
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val rhs = NodeByLabelScan(IdName("y"), LabelName("label2")(pos), Set.empty)(solved)
@@ -583,7 +582,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     pipe should equal(CartesianProductSlottedPipe(
       NodesByLabelScanSlottedPipe("x", LazyLabel("label1"), lhsSlots, Size.zero)(),
       NodesByLabelScanSlottedPipe("y", LazyLabel("label2"), rhsSlots, Size.zero)(),
-      lhsLongCount = 1, lhsRefCount = 0, xProdSlots)()
+      lhsLongCount = 1, lhsRefCount = 0, xProdSlots, argumentSize = Size.zero)()
     )
   }
 
