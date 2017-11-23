@@ -40,14 +40,17 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
 
   override def description = "creates runnable byte code"
 
-  override def postConditions = Set.empty// Can't yet guarantee that we can build an execution plan
+  override def postConditions = Set.empty // Can't yet guarantee that we can build an execution plan
 
   override def process(from: CompilationState, context: CompiledRuntimeContext): CompilationState = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
-      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)
-      val executionPlan: ExecutionPlan = createExecutionPlan(context, compiled)
+      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable(), from.plannerName)
+      val executionPlan: ExecutionPlan =
+        new CompiledExecutionPlan(compiled,
+                                  context.createFingerprintReference(compiled.fingerprint),
+                                  notifications(context))
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       from.copy(maybeExecutionPlan = Some(executionPlan))
     } catch {
@@ -57,40 +60,8 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
     }
   }
 
-  private def createExecutionPlan(context: CompiledRuntimeContext, compiled: CompiledPlan) = new ExecutionPlan {
-    private val fingerprint = context.createFingerprintReference(compiled.fingerprint)
-
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
-
-    override def run(queryContext: QueryContext,
-                     executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
-      val taskCloser = new TaskCloser
-      taskCloser.addTask(queryContext.transactionalContext.close)
-      try {
-        if (executionMode == ExplainMode) {
-          //close all statements
-          taskCloser.close(success = true)
-          ExplainExecutionResult(compiled.columns.toList,
-            compiled.planDescription, READ_ONLY, context.notificationLogger.notifications)
-        } else
-          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
-      } catch {
-        case (t: Throwable) =>
-          taskCloser.close(success = false)
-          throw t
-      }
-    }
-
-    override def plannerUsed: PlannerName = compiled.plannerUsed
-
-    override def isPeriodicCommit: Boolean = compiled.periodicCommit.isDefined
-
-    override def runtimeUsed = CompiledRuntimeName
-
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
-
-    override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
-  }
+  private def notifications(context: CompiledRuntimeContext):Set[InternalNotification] =
+    context.notificationLogger.notifications
 
   private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
@@ -113,5 +84,43 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
       (new Provider[InternalPlanDescription] {
         override def get(): InternalPlanDescription = description
       }, None)
+  }
+
+  /**
+    * Execution plan for compiled runtime. Beware: will be cached.
+    */
+  class CompiledExecutionPlan(val compiled: CompiledPlan,
+                              val fingerprint: PlanFingerprintReference,
+                              val notifications: Set[InternalNotification]) extends ExecutionPlan {
+
+    override def run(queryContext: QueryContext,
+                     executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
+      val taskCloser = new TaskCloser
+      taskCloser.addTask(queryContext.transactionalContext.close)
+      try {
+        if (executionMode == ExplainMode) {
+          //close all statements
+          taskCloser.close(success = true)
+          ExplainExecutionResult(compiled.columns.toList, compiled.planDescription, READ_ONLY, notifications)
+        } else
+          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
+      } catch {
+        case (t: Throwable) =>
+          taskCloser.close(success = false)
+          throw t
+      }
+    }
+
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
+
+    override def runtimeUsed = CompiledRuntimeName
+
+    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
+
+    override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
+
+    override def isPeriodicCommit: Boolean = compiled.periodicCommit.isDefined
+
+    override def plannerUsed: PlannerName = compiled.plannerUsed
   }
 }
