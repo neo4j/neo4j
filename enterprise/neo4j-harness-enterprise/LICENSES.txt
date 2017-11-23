@@ -24,7 +24,9 @@ Apache Software License, Version 2.0
   Commons Lang
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
+  FindBugs-jsr305
   Graphite Integration for Metrics
+  Guava: Google Core Libraries for Java
   hazelcast-all
   Jackson
   JAX-RS provider for JSON content type
@@ -1093,6 +1095,7 @@ version.
 
 ------------------------------------------------------------------------------
 MIT License
+  scallop
   SLF4J API Module
   SLF4J NOP Binding
 ------------------------------------------------------------------------------
@@ -1122,6 +1125,7 @@ THE SOFTWARE.
 
 ------------------------------------------------------------------------------
 Mozilla Public License, Version 2.0
+  kiama
   Mozilla Rhino
 ------------------------------------------------------------------------------
 
