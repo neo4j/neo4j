@@ -37,9 +37,9 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
         })
       }.flatMap { value =>
         if (!planned) {
-          val stale = isStale(value)
-          if (stale._1) {
-            cacheAccessor.remove(cache)(key, userKey, stale._2)
+          val (stale, age) = isStale(value)
+          if (stale) {
+            cacheAccessor.remove(cache)(key, userKey, age)
             None
           } else {
             Some((value, planned))

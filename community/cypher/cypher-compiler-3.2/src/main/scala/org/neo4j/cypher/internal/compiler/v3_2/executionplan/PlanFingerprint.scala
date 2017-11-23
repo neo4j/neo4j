@@ -73,7 +73,7 @@ case class StatsDivergenceExponentialDecayCalculator(initialThreshold: Double, t
 
   def decay(millisSincePreviousReplan: Long): Double = {
     val exponent = -1.0 * decayFactor * (millisSincePreviousReplan - initialMillis)
-    initialThreshold * Math.pow(Math.E, exponent)
+    initialThreshold * Math.exp(exponent)
   }
 }
 

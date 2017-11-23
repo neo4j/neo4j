@@ -39,7 +39,7 @@ class MutableGraphStatisticsSnapshot(val map: mutable.Map[StatisticsKey, Double]
   def freeze: GraphStatisticsSnapshot = GraphStatisticsSnapshot(map.toMap)
 }
 
-case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map.empty, timestamp: Date = new Date) {
+case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map.empty) {
   def recompute(statistics: GraphStatistics): GraphStatisticsSnapshot = {
     val snapshot = new MutableGraphStatisticsSnapshot()
     val instrumented = InstrumentedGraphStatistics(statistics, snapshot)
