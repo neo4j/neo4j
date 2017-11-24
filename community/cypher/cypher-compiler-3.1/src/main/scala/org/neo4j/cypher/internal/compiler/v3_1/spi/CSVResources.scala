@@ -29,7 +29,6 @@ import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compiler.v3_1.TaskCloser
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.frontend.v3_1.LoadExternalResourceException
-
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
@@ -38,7 +37,7 @@ import scala.util.control.Breaks._
 object CSVResources {
   val NEO_USER_AGENT_PREFIX = "NeoLoadCSV_"
   val DEFAULT_FIELD_TERMINATOR: Char = ','
-  val DEFAULT_BUFFER_SIZE: Int =  2 * 1024 * 1024
+  val DEFAULT_BUFFER_SIZE: Int = 2 * 1024 * 1024
   val DEFAULT_QUOTE_CHAR: Char = '"'
 
   private def config(legacyCsvQuoteEscaping: Boolean) = new Configuration {
@@ -60,12 +59,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
 
-    val reader = if (url.getProtocol == "file") {
-      Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI).toFile)
-    } else {
-      val inputStream = openStream(url)
-      Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
-    }
+    val reader: CharReadable = getReader(url)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping), true)
     val extractor = new Extractors(delimiter).string()
@@ -84,7 +78,8 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
             val success = seeker.tryExtract(mark, extractor)
             buffer += (if (success) extractor.value() else null)
             if (mark.isEndOfLine) break()
-        }}
+          }
+        }
 
         if (buffer.isEmpty) {
           null
@@ -106,23 +101,32 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
     }
   }
 
+  private def getReader(url: URL) = try {
+    val reader = if (url.getProtocol == "file") {
+      Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI).toFile)
+    } else {
+      val inputStream = openStream(url)
+      Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
+    }
+    reader
+  } catch {
+    case e: IOException =>
+      throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
+  }
+
+
   private def openStream(url: URL, connectionTimeout: Int = 2000, readTimeout: Int = 10 * 60 * 1000): InputStream = {
-    try {
-      if (url.getProtocol.startsWith("http"))
-        TheCookieManager.ensureEnabled()
-      val con = url.openConnection()
-      con.setRequestProperty("User-Agent", s"${CSVResources.NEO_USER_AGENT_PREFIX}${HttpURLConnection.userAgent}")
-      con.setConnectTimeout(connectionTimeout)
-      con.setReadTimeout(readTimeout)
-      val stream = con.getInputStream
-      con.getContentEncoding match {
-        case "gzip" => new GZIPInputStream(stream)
-        case "deflate" => new InflaterInputStream(stream)
-        case _ => stream
-      }
-    } catch {
-      case e: IOException =>
-        throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
+    if (url.getProtocol.startsWith("http"))
+      TheCookieManager.ensureEnabled()
+    val con = url.openConnection()
+    con.setRequestProperty("User-Agent", s"${CSVResources.NEO_USER_AGENT_PREFIX}${HttpURLConnection.userAgent}")
+    con.setConnectTimeout(connectionTimeout)
+    con.setReadTimeout(readTimeout)
+    val stream = con.getInputStream
+    con.getContentEncoding match {
+      case "gzip" => new GZIPInputStream(stream)
+      case "deflate" => new InflaterInputStream(stream)
+      case _ => stream
     }
   }
 }
