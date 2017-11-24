@@ -550,7 +550,7 @@ public class NodeProxy implements Node
             int propertyKey = transaction.token().propertyKey( key );
             if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
-                throw new NotFoundException( format( "No such property, '%s'.", key ) );
+               return false;
             }
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
