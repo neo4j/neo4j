@@ -76,7 +76,6 @@ public interface Token
      */
     int propertyKey( String name );
 
-
     /**
      * Returns the name of a property given its property key id
      *

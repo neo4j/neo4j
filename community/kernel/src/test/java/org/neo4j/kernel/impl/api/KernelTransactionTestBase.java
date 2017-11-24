@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.Cursors;
-import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -153,7 +152,7 @@ public class KernelTransactionTestBase
                 explicitIndexStateSupplier, txPool, clock, CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
                 TransactionTracer.NULL, LockTracer.NONE,
                 PageCursorTracerSupplier.NULL, storageEngine, new CanWrite(), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
-                ExplicitIndexStore.class), new KernelToken( storageEngine ) );
+                ExplicitIndexStore.class) );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

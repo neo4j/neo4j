@@ -51,11 +51,9 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
 
@@ -78,18 +76,19 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     private final Cursors cursors;
 
     public Operations(
-            StorageEngine engine,
+            AllStoreHolder allStoreHolder,
+            IndexTxStateUpdater updater,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors, AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore )
+            Cursors cursors, AutoIndexing autoIndexing  )
     {
         this.autoIndexing = autoIndexing;
-        this.allStoreHolder = new AllStoreHolder( engine, statement, ktx, cursors, explicitIndexStore );
+        this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
         this.statement = statement;
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
-        this.updater = new IndexTxStateUpdater( engine.storeReadLayer(), allStoreHolder );
+        this.updater = updater;
         this.cursors = cursors;
     }
 
@@ -392,6 +391,9 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     @Override
     public boolean nodeAddLabel( long node, int nodeLabel ) throws EntityNotFoundException
     {
+        acquireSharedLabelLock( nodeLabel );
+        acquireExclusiveNodeLock( node );
+
         assertOpen();
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
@@ -414,6 +416,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     @Override
     public boolean nodeRemoveLabel( long node, int nodeLabel ) throws EntityNotFoundException
     {
+        acquireExclusiveNodeLock( node );
         assertOpen();
 
         allStoreHolder.singleNode( node, nodeCursor );
@@ -437,6 +440,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public Value nodeSetProperty( long node, int propertyKey, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException
     {
+        acquireExclusiveNodeLock( node );
         assertOpen();
 
         Value existingValue = readProperty( node, propertyKey );
@@ -466,6 +470,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public Value nodeRemoveProperty( long node, int propertyKey )
             throws EntityNotFoundException, AutoIndexingKernelException
     {
+        acquireExclusiveNodeLock( node );
         assertOpen();
         Value existingValue = readProperty( node, propertyKey );
 
@@ -628,5 +633,18 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public Token token()
     {
         return allStoreHolder;
+    }
+
+    private void acquireExclusiveNodeLock( long node )
+    {
+        if ( !ktx.hasTxStateWithChanges() || !ktx.txState().nodeIsAddedInThisTx( node ) )
+        {
+            ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
+        }
+    }
+
+    private void acquireSharedLabelLock( int labelId )
+    {
+        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
     }
 }

@@ -37,7 +37,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 /**
  * Utility class that performs necessary updates for the transaction state.
  */
-class IndexTxStateUpdater
+public class IndexTxStateUpdater
 {
     private final StoreReadLayer storeReadLayer;
     private final Read read;
@@ -45,7 +45,7 @@ class IndexTxStateUpdater
 
     // We can use the StoreReadLayer directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read )
+    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read )
     {
         this.storeReadLayer = storeReadLayer;
         this.read = read;

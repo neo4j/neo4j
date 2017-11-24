@@ -161,7 +161,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.clock = clock;
         blockNewTransactions();
         this.cursors = cursors;
-        this.token = new KernelToken(storageEngine);
+        this.token = new KernelToken( storageEngine );
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
@@ -348,7 +348,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, explicitIndexTxStateSupplier, localTxPool,
                             clock, cpuClock, heapAllocation, tracers.transactionTracer, tracers.lockTracer,
-                            tracers.pageCursorTracerSupplier, storageEngine, accessCapability, cursors, autoIndexing, explicitIndexStore, token );
+                            tracers.pageCursorTracerSupplier, storageEngine, accessCapability, cursors, autoIndexing, explicitIndexStore );
             this.transactions.add( tx );
             return tx;
         }

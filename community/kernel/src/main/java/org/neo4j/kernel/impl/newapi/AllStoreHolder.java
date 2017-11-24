@@ -57,7 +57,7 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-class AllStoreHolder extends Read implements Token
+public class AllStoreHolder extends Read implements Token
 {
     private final StorageStatement.Nodes nodes;
     private final StorageStatement.Groups groups;
@@ -68,7 +68,7 @@ class AllStoreHolder extends Read implements Token
     private final ExplicitIndexStore explicitIndexStore;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
-    AllStoreHolder( StorageEngine engine,
+    public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
             TxStateHolder txStateHolder,
             Cursors cursors, ExplicitIndexStore explicitIndexStore )

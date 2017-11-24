@@ -68,7 +68,9 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -165,14 +167,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
+    public KernelTransactionImplementation( StatementOperationParts statementOperations,
+            SchemaWriteGuard schemaWriteGuard,
             TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore)
+            ExplicitIndexStore explicitIndexStore )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -194,8 +197,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
+        AllStoreHolder allStoreHolder =
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
         this.operations =
-                new Operations( storageEngine, storageStatement, this, cursors, autoIndexing, explicitIndexStore );
+                new Operations(
+                        allStoreHolder,
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
+                        storageStatement, this, cursors, autoIndexing );
     }
 
     /**
@@ -718,7 +726,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
        return operations;
     }
-
 
     @Override
     public SchemaRead schemaRead()

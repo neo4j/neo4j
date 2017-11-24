@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.Cursors;
-import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -101,7 +100,7 @@ public class KernelTransactionFactory
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite(), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
-                ExplicitIndexStore.class), new KernelToken( storageEngine ) );
+                ExplicitIndexStore.class) );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
