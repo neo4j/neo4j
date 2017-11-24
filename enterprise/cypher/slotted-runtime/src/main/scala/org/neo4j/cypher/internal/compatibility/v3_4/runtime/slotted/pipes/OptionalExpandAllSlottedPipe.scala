@@ -47,7 +47,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
       (inputRow: ExecutionContext) =>
         val fromNode = inputRow.getLongAt(fromOffset)
 
-        if (NullChecker.nodeIsNull(fromNode)) {
+        if (NullChecker.entityIsNull(fromNode)) {
           Iterator(withNulls(inputRow))
         } else {
           val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))

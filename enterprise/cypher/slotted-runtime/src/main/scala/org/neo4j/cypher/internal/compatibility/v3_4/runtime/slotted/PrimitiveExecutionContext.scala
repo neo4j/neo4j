@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
@@ -131,14 +131,14 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
 
       case Some(LongSlot(offset, true, CTNode)) =>
         val nodeId = getLongAt(offset)
-        if (nodeIsNull(nodeId))
+        if (entityIsNull(nodeId))
           Some(Values.NO_VALUE)
         else
           Some(VirtualValues.node(nodeId))
 
       case Some(LongSlot(offset, true, CTRelationship)) =>
         val relId = getLongAt(offset)
-        if (nodeIsNull(relId))
+        if (entityIsNull(relId))
           Some(Values.NO_VALUE)
         else
           Some(VirtualValues.edge(relId))

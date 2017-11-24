@@ -20,5 +20,5 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers
 
 object NullChecker {
-  def nodeIsNull(nodeId: Long): Boolean = nodeId == -1
+  def entityIsNull(nodeId: Long): Boolean = nodeId == -1
 }

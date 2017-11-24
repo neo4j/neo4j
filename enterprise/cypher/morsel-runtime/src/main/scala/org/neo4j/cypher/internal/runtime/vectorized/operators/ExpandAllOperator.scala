@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.vectorized._
@@ -78,7 +78,7 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
     while (readPos < input.validRows && writePos < output.validRows) {
 
       val fromNode = input.longs(readPos * inputLongCount + fromOffset)
-      if (nodeIsNull(fromNode))
+      if (entityIsNull(fromNode))
       readPos += 1
       else {
         if (relationships == null) {
