@@ -58,11 +58,11 @@ object CSVResources {
 class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
-    val inputStream = openStream(url)
 
     val reader = if (url.getProtocol == "file") {
       Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI).toFile)
     } else {
+      val inputStream = openStream(url)
       Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
     }
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
