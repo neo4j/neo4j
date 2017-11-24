@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.hamcrest.Matchers
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.{ExecutionEngine, StringCacheMonitor}
@@ -130,7 +131,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
     // then
     logProvider.assertAtLeastOnce(
-      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache after 0 seconds: $query" )
+      AssertableLogProvider.inLog(classOf[ExecutionEngine]).info(Matchers.containsString("Discarded stale query from the query cache"))
     )
   }
 }
