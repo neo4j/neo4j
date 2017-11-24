@@ -426,7 +426,12 @@ public class NodeProxy implements Node
         int[] propertyIds = new int[itemsToReturn];
         for ( int i = 0; i < itemsToReturn; i++ )
         {
-            propertyIds[i] = token.propertyKey( keys[i] );
+            String key = keys[i];
+            if ( key == null )
+            {
+                throw new NullPointerException( String.format( "Key %d was null", i + 1 ) );
+            }
+            propertyIds[i] = token.propertyKey( key );
         }
         try ( NodeCursor nodes = cursors.allocateNodeCursor();
               PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
