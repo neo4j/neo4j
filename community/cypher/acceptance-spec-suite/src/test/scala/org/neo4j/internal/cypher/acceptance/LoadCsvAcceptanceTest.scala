@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.io.{File, PrintWriter}
+import java.io.{File, FileWriter, PrintWriter}
 import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
 
 import org.neo4j.cypher._
@@ -91,6 +91,25 @@ class LoadCsvAcceptanceTest
       val result = updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
       assertStats(result, nodesCreated = 3, propertiesWritten = 3)
     }
+  }
+
+  test("make sure to release all possible locks/references on input files") {
+    val file = new File("to-be-removed.csv")
+    val writer = new FileWriter(file)
+    writer.write("foo")
+    writer.close()
+
+    val filePathForQuery =
+      if(System.getProperty("os.name").toLowerCase.startsWith("Windows".toLowerCase)){
+        file.getAbsolutePath.replace('\\','/').replaceAll(".:/","///");  // matches something like "C:\"
+      } else {
+        "//" + file.getAbsolutePath
+      }
+
+    val result = updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM 'file:$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
+
+    assert(file.delete())
   }
 
   test("import three numbers") {
