@@ -22,13 +22,11 @@ package org.neo4j.causalclustering.core.state;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
-import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -38,19 +36,19 @@ public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.C
     private final LocalDatabase localDatabase;
     private final Log log;
     private final RaftMachine raftMachine;
-    private final CoreStateDownloader downloader;
+    private final CoreStateDownloaderService downloadService;
     private final CommandApplicationProcess applicationProcess;
 
     private ClusterId boundClusterId;
 
     public RaftMessageHandler( LocalDatabase localDatabase, LogProvider logProvider,
-            RaftMachine raftMachine, CoreStateDownloader downloader,
+            RaftMachine raftMachine, CoreStateDownloaderService downloadService,
             CommandApplicationProcess applicationProcess )
     {
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
         this.raftMachine = raftMachine;
-        this.downloader = downloader;
+        this.downloadService = downloadService;
         this.applicationProcess = applicationProcess;
     }
 
@@ -69,7 +67,7 @@ public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.C
                 ConsensusOutcome outcome = raftMachine.handle( clusterIdAwareMessage.message() );
                 if ( outcome.needsFreshSnapshot() )
                 {
-                    downloadSnapshot( clusterIdAwareMessage.message().from() );
+                    downloadService.scheduleDownload( raftMachine );
                 }
                 else
                 {
@@ -103,22 +101,5 @@ public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.C
     private void notifyCommitted( long commitIndex )
     {
         applicationProcess.notifyCommitted( commitIndex );
-    }
-
-    /**
-     * Attempts to download a fresh snapshot from another core instance.
-     *
-     * @param source The source address to attempt a download of a snapshot from.
-     */
-    private void downloadSnapshot( MemberId source ) throws Throwable
-    {
-        try
-        {
-            downloader.downloadSnapshot( source );
-        }
-        catch ( StoreCopyFailedException e )
-        {
-            log.error( "Failed to download snapshot", e );
-        }
     }
 }

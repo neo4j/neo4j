@@ -59,7 +59,6 @@ public class CoreStateDownloaderTest
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private CoreSnapshotService snaptshotService = mock( CoreSnapshotService.class );
-    private CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
     private TopologyService topologyService = mock( TopologyService.class );
 
     private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
@@ -73,7 +72,7 @@ public class CoreStateDownloaderTest
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider,
-                    storeCopyProcess, coreStateMachines, snaptshotService, applicationProcess, topologyService );
+                    storeCopyProcess, coreStateMachines, snaptshotService, topologyService );
 
     @Before
     public void commonMocking() throws IOException
