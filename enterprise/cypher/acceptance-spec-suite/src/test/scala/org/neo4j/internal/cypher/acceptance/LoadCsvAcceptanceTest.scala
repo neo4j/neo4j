@@ -136,7 +136,7 @@ class LoadCsvAcceptanceTest
         "//" + file.getAbsolutePath
       }
 
-    val result = updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM 'file:$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = executeWith(expectedToSucceed, s"LOAD CSV FROM 'file:$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
 
     assert(file.delete())
