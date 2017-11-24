@@ -27,9 +27,11 @@ import scala.util.{Failure, Success, Try}
 
 class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupport {
 
+  private val NL = System.lineSeparator()
+
   test("a simply query that cannot be reduced") {
     val query = "MATCH (n) RETURN n"
-    reduceQuery(query)(_ => NotReproduced) should equal("MATCH (n)\nRETURN n AS n")
+    reduceQuery(query)(_ => NotReproduced) should equal(s"MATCH (n)${NL}RETURN n AS n")
   }
 
   test("removes unnecessary where") {
@@ -46,7 +48,7 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
         case Failure(_) => NotReproduced
       }
     }
-    reduced should equal("MATCH (n)\nRETURN n.name AS `n.name`")
+    reduced should equal(s"MATCH (n)${NL}RETURN n.name AS `n.name`")
   }
 
   test("rolls back after each oracle invocation") {
@@ -74,6 +76,6 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
         case _ => NotReproduced
       }
     }
-    reduced should equal("MATCH (n)\n  WHERE 100 / n.name > 34\nRETURN ")
+    reduced should equal(s"MATCH (n)${NL}  WHERE 100 / n.name > 34${NL}RETURN ")
   }
 }
