@@ -70,6 +70,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -329,11 +330,11 @@ public class QueryLoggerIT
     public void queryLogRotation() throws Exception
     {
         final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
+        databaseBuilder.setConfig( log_queries, Settings.TRUE )
                 .setConfig( logs_directory, logsDirectory.getPath() )
                 .setConfig( log_queries_max_archives, "100" )
-                .setConfig( log_queries_rotation_threshold, "1" )
-                .newGraphDatabase();
+                .setConfig( log_queries_rotation_threshold, "1" );
+        GraphDatabaseService database = databaseBuilder.newGraphDatabase();
 
         // Logging is done asynchronously, and it turns out it's really hard to make it all work the same on Linux
         // and on Windows, so just write many times to make sure we rotate several times.
@@ -342,6 +343,8 @@ public class QueryLoggerIT
         {
             database.execute( QUERY );
         }
+
+        database.shutdown();
 
         File[] queryLogs = fileSystem.get().listFiles( logsDirectory, ( dir, name ) -> name.startsWith( "query.log" ) );
         assertThat( "Expect to have more then one query log file.", queryLogs.length, greaterThanOrEqualTo( 2 ) );
@@ -352,6 +355,7 @@ public class QueryLoggerIT
                                            .collect( Collectors.toList() );
         assertThat( "Expected log file to have at least one log entry", loggedQueries, hasSize( 100 ) );
 
+        database = databaseBuilder.newGraphDatabase();
         // Now modify max_archives and rotation_threshold at runtime, and observe that we end up with fewer larger files
         database.execute( "CALL dbms.setConfigValue('" + log_queries_max_archives.name() + "','1')" );
         database.execute( "CALL dbms.setConfigValue('" + log_queries_rotation_threshold.name() + "','20m')" );
@@ -369,7 +373,7 @@ public class QueryLoggerIT
                               .map( this::readAllLinesSilent )
                               .flatMap( Collection::stream )
                               .collect( Collectors.toList() );
-        assertThat( "Expected log file to have at least one log entry", loggedQueries.size(), lessThan( 200 ) );
+        assertThat( "Expected log file to have at least one log entry", loggedQueries.size(), lessThanOrEqualTo( 202 ) );
     }
 
     @Test
