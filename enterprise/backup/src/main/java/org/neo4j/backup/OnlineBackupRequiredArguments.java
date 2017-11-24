@@ -19,6 +19,7 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -86,5 +87,10 @@ public class OnlineBackupRequiredArguments
     public Path getReportDir()
     {
         return reportDir;
+    }
+
+    public File getResolvedLocationFromName()
+    {
+        return folder.resolve( name ).toFile();
     }
 }

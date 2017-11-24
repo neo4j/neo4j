@@ -54,6 +54,6 @@ public class OnlineBackupContext
 
     public File getResolvedLocationFromName()
     {
-        return requiredArguments.getFolder().resolve( requiredArguments.getName() ).toFile();
+        return requiredArguments.getResolvedLocationFromName();
     }
 }

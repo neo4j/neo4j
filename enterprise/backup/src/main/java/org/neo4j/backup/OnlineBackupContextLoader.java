@@ -32,7 +32,7 @@ public class OnlineBackupContextLoader
     private final BackupCommandArgumentHandler backupCommandArgumentHandler;
     private final OnlineBackupCommandConfigLoader onlineBackupCommandConfigLoader;
 
-    public OnlineBackupContextLoader( BackupCommandArgumentHandler backupCommandArgumentHandler,
+    OnlineBackupContextLoader( BackupCommandArgumentHandler backupCommandArgumentHandler,
             OnlineBackupCommandConfigLoader onlineBackupCommandConfigLoader )
     {
         this.backupCommandArgumentHandler = backupCommandArgumentHandler;
@@ -49,7 +49,8 @@ public class OnlineBackupContextLoader
         try
         {
             OnlineBackupRequiredArguments requiredArguments = backupCommandArgumentHandler.establishRequiredArguments( commandlineArgs );
-            Config config = onlineBackupCommandConfigLoader.loadConfig( requiredArguments.getAdditionalConfig() );
+            Config config = onlineBackupCommandConfigLoader.loadConfig( requiredArguments.getAdditionalConfig(),
+                    requiredArguments.getResolvedLocationFromName() );
             ConsistencyFlags consistencyFlags = backupCommandArgumentHandler.readFlagsFromArgumentsOrDefaultToConfig( config );
 
             return new OnlineBackupContext( requiredArguments, config, consistencyFlags );
