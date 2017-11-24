@@ -47,7 +47,7 @@ class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculat
           () => {
             fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId))
           }),
-        ((currentTimeMillis - f.lastCheckTimeMillis)/1000).toInt)
+        ((currentTimeMillis - f.creationTimeMillis)/1000).toInt)
     }
   }
 
