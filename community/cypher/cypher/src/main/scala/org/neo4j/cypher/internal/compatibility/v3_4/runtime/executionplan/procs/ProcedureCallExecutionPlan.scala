@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Execut
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext, ProcedurePlannerName}
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.runtime._
@@ -142,7 +143,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   override def runtimeUsed = ProcedureRuntimeName
 
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = CacheCheckResult.empty
 
   override def plannerUsed = ProcedurePlannerName
 }

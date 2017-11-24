@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{ExperimentalFeatureNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Condition, InternalNotificationLogger, Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
@@ -115,7 +115,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
     override def isPeriodicCommit: Boolean = false
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = false
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = CacheCheckResult.empty
 
     override def runtimeUsed: RuntimeName = MorselRuntimeName
 

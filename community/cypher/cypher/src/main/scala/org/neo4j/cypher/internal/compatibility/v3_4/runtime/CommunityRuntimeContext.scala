@@ -45,7 +45,7 @@ class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosit
                           config, queryGraphSolver, updateStrategy, debugOptions, clock) {
 
   val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
-    new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
+    new PlanFingerprintReference(clock, config.statsDivergenceCalculator, _)
 }
 
 object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeContext] {

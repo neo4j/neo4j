@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Monitors, Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CacheCheckResult, CompilationPhaseTracer, Monitors, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -126,8 +126,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                      params: MapValue): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint
-      .isStale(lastTxId, statistics)
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = fingerprint.isStale(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
 

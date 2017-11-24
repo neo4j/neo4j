@@ -62,8 +62,7 @@ object CypherReductionSupport {
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private val config = CypherCompilerConfiguration(
     queryCacheSize = 0,
-    statsDivergenceThreshold = 0,
-    queryPlanTTL = 0,
+    statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0, 0),
     useErrorsOverWarnings = false,
     idpMaxTableSize = 128,
     idpIterationDuration = 1000,
