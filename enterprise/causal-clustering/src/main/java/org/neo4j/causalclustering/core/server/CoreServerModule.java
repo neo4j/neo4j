@@ -40,7 +40,7 @@ import org.neo4j.causalclustering.core.IdentityModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.RaftMessagesPreHandler;
+import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipWaiter;
@@ -188,14 +188,14 @@ public class CoreServerModule
         BatchingMessageHandler batchingMessageHandler = new BatchingMessageHandler( messageHandler, queueSize, maxBatch,
                 logProvider );
 
-        RaftMessagesPreHandler raftMessagesPreHandler = new RaftMessagesPreHandler( batchingMessageHandler, consensusModule.getElectionTiming(),
+        LeaderAvailabilityHandler leaderAvailabilityHandler = new LeaderAvailabilityHandler( batchingMessageHandler, consensusModule.getLeaderAvailabilityTimers(),
                 consensusModule.raftMachine()::term, logProvider );
 
         CoreLife coreLife = new CoreLife( consensusModule.raftMachine(), localDatabase,
                 clusteringModule.clusterBinder(), commandApplicationProcess,
-                coreStateMachinesModule.coreStateMachines, messageHandler, raftMessagesPreHandler, snapshotService );
+                coreStateMachinesModule.coreStateMachines, messageHandler, leaderAvailabilityHandler, snapshotService );
 
-        loggingRaftInbound.registerHandler( raftMessagesPreHandler );
+        loggingRaftInbound.registerHandler( leaderAvailabilityHandler );
 
         long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
 
