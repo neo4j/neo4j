@@ -883,7 +883,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     createLabeledNode(Map("id" -> "abc"), "ROLE")
     val realm = createLabeledNode(Map("id" -> "def"), "REALM")
-    val q = """MATCH (role:ROLE)
+    val q =
+      """MATCH (role:ROLE)
               |WHERE role.id = "abc"
               |WITH role
               |UNWIND [{realmId: "def", rights: ["read"]}] AS permission
@@ -893,5 +894,29 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val res = executeWith(Configs.Interpreted, q)
     res.toList should equal(List(Map("realm" -> realm)))
+    }
+
+  test("ambiguous variable name inside property gh #10444") {
+    val query =
+      """
+        |MATCH (folder:folder)<-[rel:in_folder]-(video:Video)
+        |WHERE id(folder) = {folderId}
+        |WITH {videokey:video, rel:rel} as video ORDER BY video.rel.position, video.videokey.created
+        |WITH collect(video) AS videos
+        |WITH videos, CASE WHEN {position} = 'end' THEN size(videos) - 1 ELSE {position} END as position,
+        |    range(0, size(videos)-1) as iterator,
+        |    reduce(x=[-1,0], v IN videos | CASE WHEN id(v.videokey) = {videoId} THEN [x[1],x[1]+1] ELSE [x[0], x[1]+1] END)[0] as movingVideoPosition
+        |
+        |    FOREACH (index IN iterator | FOREACH (rel IN [videos[index].rel] | SET rel.position =
+        |      CASE WHEN id(videos[index].videokey) = {videoId} THEN position
+        |    ELSE index + 1 END
+        |    ))
+      """.stripMargin
+
+
+    val configuration = Configs.CommunityInterpreted - Configs.Version2_3
+    val result = executeWith(configuration, query, params = Map("position" -> "2", "folderId" -> 0, "videoId" -> 0))
+
+    result.toList should equal(List.empty)
   }
 }
