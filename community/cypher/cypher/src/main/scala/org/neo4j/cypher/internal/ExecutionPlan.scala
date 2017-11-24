@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CacheCheckResult
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.graphdb.{Result, Transaction}
 import org.neo4j.kernel.api.Statement
@@ -33,7 +34,7 @@ trait ExecutionPlan {
 
   def isPeriodicCommit: Boolean
 
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
+  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult
 
   // This is to force eager calculation
   val plannerInfo: PlannerInfo

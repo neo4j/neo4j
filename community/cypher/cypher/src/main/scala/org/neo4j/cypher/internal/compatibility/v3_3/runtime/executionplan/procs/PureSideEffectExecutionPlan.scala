@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CacheCheckResult
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
 import org.neo4j.values.virtual.MapValue
 
@@ -69,7 +70,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = false
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = CacheCheckResult.empty
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

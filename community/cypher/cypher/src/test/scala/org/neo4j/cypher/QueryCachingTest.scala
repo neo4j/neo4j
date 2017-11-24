@@ -102,7 +102,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheMiss: $key"
     }
 
-    override def cacheDiscard(key: String, ignored: String): Unit = {
+    override def cacheDiscard(key: String, ignored: String, secondsSinceReplan: Int): Unit = {
       log += s"cacheDiscard: $key"
     }
   }

@@ -37,8 +37,8 @@ object helpers {
   def as3_2(config: CypherCompilerConfiguration) =
     CypherCompilerConfiguration3_2(
       config.queryCacheSize,
-      config.statsDivergenceThreshold,
-      config.queryPlanTTL,
+      config.statsDivergenceCalculator.initialThreshold,  //TODO: When 3.2.9 is released, change these two lines
+      config.statsDivergenceCalculator.initialMillis,
       config.useErrorsOverWarnings,
       config.idpMaxTableSize,
       config.idpIterationDuration,

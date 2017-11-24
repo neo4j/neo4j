@@ -120,7 +120,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
       }
     }
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = CompiledRuntimeName
 

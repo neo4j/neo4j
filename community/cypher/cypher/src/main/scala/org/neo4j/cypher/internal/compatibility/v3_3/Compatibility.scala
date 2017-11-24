@@ -143,8 +143,8 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
   }
 
   protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-    override def cacheDiscard(key: Statement, userKey: String) {
-      log.info(s"Discarded stale query from the query cache: $userKey")
+    override def cacheDiscard(key: Statement, userKey: String, secondsSinceReplan: Int) {
+      log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $userKey")
     }
   }
 
@@ -190,7 +190,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper) =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
 
     override val plannerInfo: PlannerInfo = {
@@ -230,7 +230,7 @@ trait CypherCacheFlushingMonitor[T] {
 trait CypherCacheHitMonitor[T] {
   def cacheHit(key: T) {}
   def cacheMiss(key: T) {}
-  def cacheDiscard(key: T, userKey: String) {}
+  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
 }
 
 trait InfoLogger {

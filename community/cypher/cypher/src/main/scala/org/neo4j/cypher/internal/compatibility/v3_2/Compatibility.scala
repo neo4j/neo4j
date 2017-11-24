@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CacheCheckResult
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2.{ExceptionTranslatingPlanContext, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper => TransactionalContextWrapperV3_2}
@@ -155,8 +156,9 @@ class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2,
 
   def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_3): Boolean =
-    inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_3) =
+    //TODO: When 3.2.9 is released, remove CacheCheckResult call, because inner should return the correct type already
+    CacheCheckResult(inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations)), 0)
 
   override val plannerInfo: PlannerInfo = {
     import scala.collection.JavaConverters._

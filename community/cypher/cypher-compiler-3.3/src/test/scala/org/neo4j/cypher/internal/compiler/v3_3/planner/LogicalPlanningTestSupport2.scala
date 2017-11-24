@@ -63,8 +63,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val realConfig = new RealLogicalPlanningConfiguration
   val cypherCompilerConfig = CypherCompilerConfiguration(
     queryCacheSize = 100,
-    statsDivergenceThreshold = 0.5,
-    queryPlanTTL = 1000,
+    statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
