@@ -24,12 +24,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import org.neo4j.graphalgo.GraphAlgoFactory;
+import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
@@ -108,6 +113,24 @@ public class TestProcedure
         Node node = db.createNode( Label.label( label ) );
         node.createRelationshipTo( node, RelationshipType.withName( relType ) );
         return Stream.of( new NodeResult( node ) );
+    }
+
+    @Procedure( name = "org.neo4j.graphAlgosDjikstra" )
+    @Description( "org.neo4j.graphAlgosDjikstra" )
+    public Stream<NodeResult> graphAlgosDjikstra(
+            @Name( "startNode" ) Node start,
+            @Name( "endNode" ) Node end,
+            @Name( "relType" ) String relType,
+            @Name( "weightProperty" ) String weightProperty ) throws Exception
+    {
+        PathFinder<WeightedPath> pathFinder =
+                GraphAlgoFactory.dijkstra(
+                        PathExpanders.forTypeAndDirection(
+                                RelationshipType.withName( relType ), Direction.BOTH ),
+                        weightProperty );
+
+        WeightedPath path = pathFinder.findSinglePath( start, end );
+        return StreamSupport.stream( path.nodes().spliterator(), false ).map( NodeResult::new  );
     }
 
     public static class NodeResult
