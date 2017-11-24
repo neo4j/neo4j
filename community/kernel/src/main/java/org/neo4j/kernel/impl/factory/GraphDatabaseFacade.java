@@ -265,7 +265,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Node createNode()
     {
-        try
+        try ( Statement ignore = spi.currentStatement() )
         {
             return new NodeProxy( nodeActions, spi.currentTransaction().dataWrite().nodeCreate() );
         }
@@ -278,7 +278,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Long createNodeId()
     {
-        try
+        try ( Statement ignore = spi.currentStatement() )
         {
             return spi.currentTransaction().dataWrite().nodeCreate();
         }
@@ -332,7 +332,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         }
 
         KernelTransaction ktx = spi.currentTransaction();
-        try ( NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor() )
+        try ( NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor();
+              Statement ignore = spi.currentStatement())
         {
             ktx.dataRead().singleNode( id, nodeCursor );
             if ( !nodeCursor.next() )
@@ -462,6 +463,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         assertTransactionOpen();
         return () ->
         {
+            Statement statement = spi.currentStatement();
             KernelTransaction ktx = spi.currentTransaction();
             NodeCursor cursor = ktx.cursors().allocateNodeCursor();
             ktx.dataRead().allNodesScan( cursor );
@@ -484,6 +486,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                 public void close()
                 {
                     cursor.close();
+                    statement.close();
                 }
             };
         };

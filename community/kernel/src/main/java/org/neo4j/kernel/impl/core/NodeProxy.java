@@ -108,7 +108,7 @@ public class NodeProxy implements Node
     @Override
     public void delete()
     {
-        try
+        try ( Statement ignore = actions.statement() )
         {
             boolean deleted = actions.kernelTransaction().dataWrite().nodeDelete( getId() );
             if ( !deleted )
@@ -348,7 +348,8 @@ public class NodeProxy implements Node
         KernelTransaction transaction = actions.kernelTransaction();
         CursorFactory cursors = transaction.cursors();
         try ( NodeCursor nodes = cursors.allocateNodeCursor();
-              PropertyCursor properties = cursors.allocatePropertyCursor()
+              PropertyCursor properties = cursors.allocatePropertyCursor();
+              Statement ignore = actions.statement()
         )
         {
             int propertyKey = transaction.token().propertyKey( key );
@@ -381,7 +382,8 @@ public class NodeProxy implements Node
         CursorFactory cursors = transaction.cursors();
         List<String> keys = new ArrayList<>();
         try ( NodeCursor nodes = cursors.allocateNodeCursor();
-              PropertyCursor properties = cursors.allocatePropertyCursor()
+              PropertyCursor properties = cursors.allocatePropertyCursor();
+              Statement ignore = actions.statement()
         )
         {
             transaction.dataRead().singleNode( nodeId, nodes );
@@ -427,7 +429,8 @@ public class NodeProxy implements Node
             propertyIds[i] = token.propertyKey( keys[i] );
         }
         try ( NodeCursor nodes = cursors.allocateNodeCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
+              Statement ignore = actions.statement() )
         {
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
@@ -466,7 +469,8 @@ public class NodeProxy implements Node
         Map<String,Object> properties = new HashMap<>();
 
         try ( NodeCursor nodes = cursors.allocateNodeCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
+              Statement ignore = actions.statement() )
         {
             Token token = transaction.token();
             transaction.dataRead().singleNode( nodeId, nodes );
@@ -498,7 +502,8 @@ public class NodeProxy implements Node
         KernelTransaction transaction = actions.kernelTransaction();
         CursorFactory cursors = transaction.cursors();
         try ( NodeCursor nodes = cursors.allocateNodeCursor();
-              PropertyCursor properties = cursors.allocatePropertyCursor()
+              PropertyCursor properties = cursors.allocatePropertyCursor();
+              Statement ignore = actions.statement()
         )
         {
             int propertyKey = transaction.token().propertyKey( key );
@@ -538,7 +543,8 @@ public class NodeProxy implements Node
         KernelTransaction transaction = actions.kernelTransaction();
         CursorFactory cursors = transaction.cursors();
         try ( NodeCursor nodes = cursors.allocateNodeCursor();
-              PropertyCursor properties = cursors.allocatePropertyCursor()
+              PropertyCursor properties = cursors.allocatePropertyCursor();
+              Statement ignore = actions.statement()
         )
         {
             int propertyKey = transaction.token().propertyKey( key );
