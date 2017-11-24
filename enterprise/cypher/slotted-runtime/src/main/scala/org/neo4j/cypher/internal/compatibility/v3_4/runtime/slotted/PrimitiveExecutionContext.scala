@@ -102,7 +102,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     value
   }
 
-  override def -=(key: String): Nothing = fail()
+  override def -=(key: String): Nothing = fail() // We do not expect this to be used
 
   override def iterator: Iterator[(String, AnyValue)] = {
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).
@@ -152,6 +152,8 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
   }
 
   override def +=(kv: (String, AnyValue)): this.type = {
+    // NOTE: Here we assume the slot has been allocated as a RefSlot
+    // If we aim for always using LongSlots internally we sho
     val offset = slots.getReferenceOffsetFor(kv._1)
     setRefAt(offset, kv._2)
     this
