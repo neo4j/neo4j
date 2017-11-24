@@ -25,6 +25,13 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       clauses.map(dispatch).mkString(NL)
   }
 
+  private def dispatch(clause: Clause) = clause match {
+    case e: Return => asString(e)
+    case m: Match => asString(m)
+    case w: With => asString(w)
+    case c: Create => asString(c)
+  }
+
   private def NL = System.lineSeparator()
 
   def asString(element: PatternElement): String = element match {
@@ -42,11 +49,6 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     val p = m.pattern.patternParts.map(p => asString(p)).mkString(", ")
     val w = m.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
     s"${o}MATCH $p$w"
-  }
-
-  private def dispatch(clause: Clause) = clause match {
-    case e: Return => asString(e)
-    case m: Match => asString(m)
   }
 
   private def asString(o: Skip): String = "SKIP " + mkStringOf(o.expression)
@@ -71,5 +73,20 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     val l = r.limit.map(NL + "  " + asString(_)).getOrElse("")
     val s = r.skip.map(NL + "  " + asString(_)).getOrElse("")
     s"RETURN$d $i$o$s$l"
+  }
+
+  private def asString(w: With): String = {
+    val d = if (w.distinct) " DISTINCT" else ""
+    val i = w.returnItems.items.map(asString).mkString(", ")
+    val o = w.orderBy.map(NL + "  " + asString(_)).getOrElse("")
+    val l = w.limit.map(NL + "  " + asString(_)).getOrElse("")
+    val s = w.skip.map(NL + "  " + asString(_)).getOrElse("")
+    val wh = w.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
+    s"WITH$d $i$o$s$l$wh"
+  }
+
+  private def asString(c: Create): String = {
+    val p = c.pattern.patternParts.map(p => asString(p)).mkString(", ")
+    s"CREATE $p"
   }
 }
