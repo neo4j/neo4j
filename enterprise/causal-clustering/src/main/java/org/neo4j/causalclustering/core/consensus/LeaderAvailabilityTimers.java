@@ -27,7 +27,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class ElectionTiming
+class LeaderAvailabilityTimers
 {
     private final long electionTimeout;
     private final long heartbeatInterval;
@@ -40,7 +40,7 @@ class ElectionTiming
     private RenewableTimeoutService.RenewableTimeout heartbeatTimer;
     private RenewableTimeoutService.RenewableTimeout electionTimer;
 
-    ElectionTiming( Duration electionTimeout, Duration heartbeatInterval, Clock clock, RenewableTimeoutService renewableTimeoutService,
+    LeaderAvailabilityTimers( Duration electionTimeout, Duration heartbeatInterval, Clock clock, RenewableTimeoutService renewableTimeoutService,
             LogProvider logProvider )
     {
         this.electionTimeout = electionTimeout.toMillis();

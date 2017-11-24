@@ -72,7 +72,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     private final RaftState state;
     private final MemberId myself;
 
-    private final ElectionTiming electionTiming;
+    private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private RaftMembershipManager membershipManager;
     private final boolean refuseToBecomeLeader;
 
@@ -85,12 +85,12 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     private RaftLogShippingManager logShipping;
 
     public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage,
-            RaftLog entryLog, ElectionTiming electionTiming, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
+            RaftLog entryLog, LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
             InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting,Monitors monitors )
     {
         this.myself = myself;
-        this.electionTiming = electionTiming;
+        this.leaderAvailabilityTimers = leaderAvailabilityTimers;
 
         this.outbound = outbound;
         this.logShipping = logShipping;
@@ -115,7 +115,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         if ( !refuseToBecomeLeader )
         {
-            electionTiming.start( this::electionTimeout, () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) );
+            leaderAvailabilityTimers.start( this::electionTimeout, () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) );
         }
 
         inFlightCache.enable();
@@ -123,12 +123,12 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     public synchronized void stopTimers()
     {
-        electionTiming.stop();
+        leaderAvailabilityTimers.stop();
     }
 
     private synchronized void electionTimeout() throws IOException
     {
-        if ( electionTiming.isElectionTimedOut() )
+        if ( leaderAvailabilityTimers.isElectionTimedOut() )
         {
             triggerElection();
         }
@@ -298,7 +298,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         if ( outcome.electionTimeoutRenewed() )
         {
-            electionTiming.renewElection();
+            leaderAvailabilityTimers.renewElection();
         }
     }
 

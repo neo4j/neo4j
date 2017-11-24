@@ -27,19 +27,19 @@ import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftMessagesPreHandler implements Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage>
+public class LeaderAvailabilityHandler implements Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage>
 {
     private final Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler;
-    private final ElectionTiming electionTiming;
+    private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private final LongSupplier term;
     private final Log log;
     private volatile ClusterId boundClusterId;
 
-    public RaftMessagesPreHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler, ElectionTiming electionTiming,
+    public LeaderAvailabilityHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler, LeaderAvailabilityTimers leaderAvailabilityTimers,
             LongSupplier term, LogProvider logProvider )
     {
         this.delegateHandler = delegateHandler;
-        this.electionTiming = electionTiming;
+        this.leaderAvailabilityTimers = leaderAvailabilityTimers;
         this.term = term;
         this.log = logProvider.getLog( getClass() );
     }
@@ -78,7 +78,7 @@ public class RaftMessagesPreHandler implements Inbound.MessageHandler<RaftMessag
     {
         if ( shouldRenewElectionTimeout( message.message() ) )
         {
-            electionTiming.renewElection();
+            leaderAvailabilityTimers.renewElection();
         }
     }
 

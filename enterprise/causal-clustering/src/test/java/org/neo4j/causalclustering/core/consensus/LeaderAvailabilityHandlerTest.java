@@ -31,15 +31,15 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.logging.NullLogProvider;
 
-public class RaftMessagesPreHandlerTest
+public class LeaderAvailabilityHandlerTest
 {
     @SuppressWarnings( "unchecked" )
     private Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegate = Mockito.mock( Inbound.MessageHandler.class );
-    private ElectionTiming electionTiming = Mockito.mock( ElectionTiming.class );
+    private LeaderAvailabilityTimers leaderAvailabilityTimers = Mockito.mock( LeaderAvailabilityTimers.class );
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
     private LongSupplier term = () -> 3;
 
-    private RaftMessagesPreHandler handler = new RaftMessagesPreHandler( delegate, electionTiming, term, NullLogProvider.getInstance() );
+    private LeaderAvailabilityHandler handler = new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term, NullLogProvider.getInstance() );
 
     private MemberId leader = new MemberId( UUID.randomUUID() );
     private RaftMessages.ClusterIdAwareMessage heartbeat =
@@ -113,7 +113,7 @@ public class RaftMessagesPreHandlerTest
         handler.handle( heartbeat );
 
         // then
-        Mockito.verify( electionTiming ).renewElection();
+        Mockito.verify( leaderAvailabilityTimers ).renewElection();
     }
 
     @Test
@@ -126,7 +126,7 @@ public class RaftMessagesPreHandlerTest
         handler.handle( appendEntries );
 
         // then
-        Mockito.verify( electionTiming ).renewElection();
+        Mockito.verify( leaderAvailabilityTimers ).renewElection();
     }
 
     @Test
@@ -139,7 +139,7 @@ public class RaftMessagesPreHandlerTest
         handler.handle( voteResponse );
 
         // then
-        Mockito.verify( electionTiming, Mockito.never() ).renewElection();
+        Mockito.verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
     }
 
     @Test
@@ -155,7 +155,7 @@ public class RaftMessagesPreHandlerTest
         handler.handle( heartbeat );
 
         // then
-        Mockito.verify( electionTiming, Mockito.never() ).renewElection();
+        Mockito.verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
     }
 
     @Test
@@ -172,6 +172,6 @@ public class RaftMessagesPreHandlerTest
         handler.handle( appendEntries );
 
         // then
-        Mockito.verify( electionTiming, Mockito.never() ).renewElection();
+        Mockito.verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
     }
 }

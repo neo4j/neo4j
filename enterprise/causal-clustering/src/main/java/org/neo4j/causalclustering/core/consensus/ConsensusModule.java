@@ -77,7 +77,7 @@ public class ConsensusModule
     private final RaftMembershipManager raftMembershipManager;
     private final InFlightCache inFlightCache;
 
-    private final ElectionTiming electionTiming;
+    private final LeaderAvailabilityTimers leaderAvailabilityTimers;
 
     public ConsensusModule( MemberId myself, final PlatformModule platformModule,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, File clusterStateDirectory,
@@ -118,7 +118,7 @@ public class ConsensusModule
 
         raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
 
-        electionTiming = createElectionTiming( config, raftTimeoutService, logProvider );
+        leaderAvailabilityTimers = createElectionTiming( config, raftTimeoutService, logProvider );
 
         Integer expectedClusterSize = config.get( CausalClusteringSettings.expected_core_cluster_size );
 
@@ -127,7 +127,7 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                expectedClusterSize, electionTiming.getElectionTimeout(), systemClock(), config.get( join_catch_up_timeout ).toMillis(),
+                expectedClusterSize, leaderAvailabilityTimers.getElectionTimeout(), systemClock(), config.get( join_catch_up_timeout ).toMillis(),
                 raftMembershipStorage );
 
         life.add( raftMembershipManager );
@@ -136,12 +136,12 @@ public class ConsensusModule
 
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(), myself,
-                        raftMembershipManager, electionTiming.getElectionTimeout(), config.get( catchup_batch_size ),
+                        raftMembershipManager, leaderAvailabilityTimers.getElectionTimeout(), config.get( catchup_batch_size ),
                         config.get( log_shipping_max_lag ), inFlightCache );
 
         boolean supportsPreVoting = config.get( CausalClusteringSettings.enable_pre_voting );
 
-        raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTiming,
+        raftMachine = new RaftMachine( myself, termState, voteState, raftLog, leaderAvailabilityTimers,
                 outbound, logProvider, raftMembershipManager, logShipping, inFlightCache,
                 RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config, logProvider.getLog( getClass() ) ),
                supportsPreVoting, platformModule.monitors );
@@ -151,10 +151,10 @@ public class ConsensusModule
         life.add( logShipping );
     }
 
-    private ElectionTiming createElectionTiming( Config config, RenewableTimeoutService renewableTimeoutService, LogProvider logProvider )
+    private LeaderAvailabilityTimers createElectionTiming( Config config, RenewableTimeoutService renewableTimeoutService, LogProvider logProvider )
     {
         Duration electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout );
-        return new ElectionTiming( electionTimeout, electionTimeout.dividedBy( 3 ), systemClock(), renewableTimeoutService, logProvider );
+        return new LeaderAvailabilityTimers( electionTimeout, electionTimeout.dividedBy( 3 ), systemClock(), renewableTimeoutService, logProvider );
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
@@ -213,8 +213,8 @@ public class ConsensusModule
         return inFlightCache;
     }
 
-    public ElectionTiming getElectionTiming()
+    public LeaderAvailabilityTimers getLeaderAvailabilityTimers()
     {
-        return electionTiming;
+        return leaderAvailabilityTimers;
     }
 }
