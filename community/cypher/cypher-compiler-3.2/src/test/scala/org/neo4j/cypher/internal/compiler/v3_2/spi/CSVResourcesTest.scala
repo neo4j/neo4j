@@ -26,6 +26,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.TaskCloser
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.frontend.v3_2.LoadExternalResourceException
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.io.fs.FileUtils
 import org.scalatest.fixture
@@ -201,6 +202,11 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
       path = FileUtils.fixSeparatorsInPath(path)
     }
     e.getMessage should include(path)
+  }
+
+  test("should handle local missing file") {
+    intercept[LoadExternalResourceException](resources.getCsvIterator(new URL("file:///this/file/url/probably/doesnt/exist"), None, legacyCsvQuoteEscaping = false).toList)
+    intercept[LoadExternalResourceException](resources.getCsvIterator(new URL("http://127.0.0.1/url/probably/doesnt/exist"), None, legacyCsvQuoteEscaping = false).toList)
   }
 
   test("should parse multiline fields") {
