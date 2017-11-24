@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
@@ -26,6 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
 import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 
 object PrimitiveExecutionContext {
   def empty = new PrimitiveExecutionContext(SlotConfiguration.empty)
@@ -39,6 +41,7 @@ object PrimitiveExecutionContext {
 case class PrimitiveExecutionContext(slots: SlotConfiguration) extends ExecutionContext {
 
   override val longs = new Array[Long](slots.numberOfLongs)
+  //java.util.Arrays.fill(longs, -2L) // Uncomment this to check for uninitialized long slots
   override val refs = new Array[AnyValue](slots.numberOfReferences)
 
   override def toString(): String = {
@@ -77,24 +80,29 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     case _ => fail()
   }
 
-  override def setLongAt(offset: Int, value: Long): Unit = longs(offset) = value
+  override def setLongAt(offset: Int, value: Long): Unit =
+    longs(offset) = value
 
-  override def getLongAt(offset: Int): Long = longs(offset)
+  override def getLongAt(offset: Int): Long =
+    longs(offset)
+    // Uncomment and replace with this to check for uninitialized long slots
+    //  {
+    //    val value = longs(offset)
+    //    if (value == -2L)
+    //      throw new InternalException(s"Long value not initialised at offset $offset in $this")
+    //    value
+    //  }
 
   override def setRefAt(offset: Int, value: AnyValue): Unit = refs(offset) = value
 
   override def getRefAt(offset: Int): AnyValue = {
     val value = refs(offset)
     if (value == null)
-      throw new InternalException("Value not initialised")
+      throw new InternalException(s"Reference value not initialised at offset $offset in $this")
     value
   }
 
-  override def +=(kv: (String, AnyValue)): Nothing = fail()
-
   override def -=(key: String): Nothing = fail()
-
-  override def get(key: String): Nothing = fail()
 
   override def iterator: Iterator[(String, AnyValue)] = {
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).
@@ -110,11 +118,75 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 
-  // This method is called from ScopeExpressions. We should already have allocated a slot for the given
-  // key, so we just set the value in the existing slot instead of creating a new context like in
-  // the MapExecutionContext.
+  //-----------------------------------------------------------------------------------------------------------
+  // Compatibility implementations of the old ExecutionContext API used by Community interpreted runtime pipes
+  //-----------------------------------------------------------------------------------------------------------
+  override def get(key: String): Option[AnyValue] = {
+    slots.get(key) match {
+      case Some(LongSlot(offset, false, CTNode)) =>
+        Some(VirtualValues.node(getLongAt(offset)))
+
+      case Some(LongSlot(offset, false, CTRelationship)) =>
+        Some(VirtualValues.edge(getLongAt(offset)))
+
+      case Some(LongSlot(offset, true, CTNode)) =>
+        val nodeId = getLongAt(offset)
+        if (nodeIsNull(nodeId))
+          Some(Values.NO_VALUE)
+        else
+          Some(VirtualValues.node(nodeId))
+
+      case Some(LongSlot(offset, true, CTRelationship)) =>
+        val relId = getLongAt(offset)
+        if (nodeIsNull(relId))
+          Some(Values.NO_VALUE)
+        else
+          Some(VirtualValues.edge(relId))
+
+      case Some(RefSlot(offset, _, _)) =>
+        Some(getRefAt(offset))
+
+      case _ =>
+        None
+    }
+  }
+
+  override def +=(kv: (String, AnyValue)): this.type = {
+    val offset = slots.getReferenceOffsetFor(kv._1)
+    setRefAt(offset, kv._2)
+    this
+  }
+
+  override def getOrElse[B1 >: AnyValue](key: String, default: => B1): B1 = get(key) match {
+    case Some(v) => v
+    case None => default
+  }
+
+  // The newWith methods are called from Community pipes. We should already have allocated slots for the given keys,
+  // so we just set the values in the existing slots instead of creating a new context like in the MapExecutionContext.
+  override def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
+    newEntries.foreach {
+      case (k, v) =>
+        setValue(k, v)
+    }
+    this
+  }
+
   override def newWith1(key1: String, value1: AnyValue): ExecutionContext = {
     setValue(key1, value1)
+    this
+  }
+
+  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
+    setValue(key1, value1)
+    setValue(key2, value2)
+    this
+  }
+
+  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = {
+    setValue(key1, value1)
+    setValue(key2, value2)
+    setValue(key3, value3)
     this
   }
 
@@ -126,16 +198,6 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     scopeContext.asInstanceOf[PrimitiveExecutionContext].setValue(key1, value1)
     scopeContext
   }
-
-  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
-
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()
-
-  override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
-
-  override def createClone(): ExecutionContext = fail()
-
-  override def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
 
   private def setValue(key1: String, value1: AnyValue): Unit = {
     (slots.get(key1), value1) match {
@@ -167,5 +229,41 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
       case _ =>
         throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}")
     }
+  }
+
+  def isRefInitialized(offset: Int): Boolean = {
+    refs(offset) != null
+  }
+
+  def getRefAtWithoutCheckingInitialized(offset: Int): AnyValue =
+    refs(offset)
+
+  override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
+    case primitiveOther: PrimitiveExecutionContext =>
+      primitiveOther.slots.foreachSlot {
+        case (key, otherSlot) =>
+          val thisSlot = slots.get(key).getOrElse(
+            throw new InternalException(s"Tried to merge slot $otherSlot from $other but it is missing from $this." +
+              "Looks like something needs to be fixed in slot allocation.")
+          )
+          assert(thisSlot.isTypeCompatibleWith(otherSlot))
+          otherSlot match {
+            case LongSlot(offset, _, _) =>
+              setLongAt(thisSlot.offset, other.getLongAt(offset))
+            case RefSlot(offset, _, _) if primitiveOther.isRefInitialized(offset) =>
+              setRefAt(thisSlot.offset, primitiveOther.getRefAtWithoutCheckingInitialized(offset))
+            case _ =>
+          }
+      }
+      this
+
+    case _ =>
+      throw new InternalException("Well well, isn't this a delicate situation?")
+  }
+
+  override def createClone(): ExecutionContext = {
+    val clone = PrimitiveExecutionContext(slots)
+    copyTo(clone)
+    clone
   }
 }
