@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, ASTNode, Expression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
 
 import scala.collection.mutable
@@ -74,8 +74,12 @@ class SemanticTable(
   def addRelationship(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
 
-  def replaceVariables(replacements: (Variable, Variable)*): SemanticTable =
+  def replaceExpressions(rewriter: Rewriter): SemanticTable = {
+    val replacements = types.keys.toIndexedSeq.map { keyExpression =>
+      keyExpression -> keyExpression.endoRewrite(rewriter)
+    }
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
+  }
 
   def replaceNodes(replacements: (ASTNode, ASTNode)*): SemanticTable =
     copy(recordedScopes = recordedScopes.replaceKeys(replacements: _*))
