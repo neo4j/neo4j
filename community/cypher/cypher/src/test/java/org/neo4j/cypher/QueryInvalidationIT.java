@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.cypher.internal.compiler.v3_2.CypherCacheHitMonitor;
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Query;
@@ -40,7 +41,9 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class QueryInvalidationIT
@@ -82,6 +85,7 @@ public class QueryInvalidationIT
 
         // THEN
         assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
+        assertThat( "Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo( 1L ) );
     }
 
     @Test
@@ -123,6 +127,7 @@ public class QueryInvalidationIT
 
         // THEN
         assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
+        assertThat( "Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo( replanInterval / 1000 ) );
     }
 
     private void createIndex()
@@ -187,6 +192,7 @@ public class QueryInvalidationIT
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
         private final AtomicInteger discards = new AtomicInteger();
+        private final AtomicLong waitTime = new AtomicLong();
 
         @Override
         public void cacheHit( Query key )
@@ -201,15 +207,17 @@ public class QueryInvalidationIT
         }
 
         @Override
-        public void cacheDiscard( Query key, String ignored )
+        public void cacheDiscard( Query key, String ignored, int secondsSinceReplan )
         {
             discards.incrementAndGet();
+            waitTime.addAndGet( secondsSinceReplan );
         }
 
         @Override
         public String toString()
         {
-            return "TestMonitor{hits=" + hits + ", misses=" + misses + ", discards=" + discards + "}";
+            return "TestMonitor{hits=" + hits + ", misses=" + misses + ", discards=" + discards + ", waitTime=" +
+                   waitTime + "}";
         }
 
         public void reset()
@@ -217,6 +225,7 @@ public class QueryInvalidationIT
             hits.set( 0 );
             misses.set( 0 );
             discards.set( 0 );
+            waitTime.set( 0 );
         }
     }
 }

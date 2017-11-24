@@ -109,7 +109,7 @@ object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationS
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult =
       executionPlanFunc(queryContext, planType, params)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
     override def runtimeUsed = InterpretedRuntimeName
 

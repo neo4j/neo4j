@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprint
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -63,8 +64,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val realConfig = new RealLogicalPlanningConfiguration
   val cypherCompilerConfig = CypherCompilerConfiguration(
     queryCacheSize = 100,
-    statsDivergenceThreshold = 0.5,
-    queryPlanTTL = 1000,
+    statsDivergenceCalculator = PlanFingerprint.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,

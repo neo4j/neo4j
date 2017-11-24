@@ -25,6 +25,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprint
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
@@ -100,8 +101,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     new CypherCompilerFactory().costBasedCompiler(
       CypherCompilerConfiguration(
         queryCacheSize = 128,
-        statsDivergenceThreshold = 0.5,
-        queryPlanTTL = 1000L,
+        statsDivergenceCalculator = PlanFingerprint.divergenceNoDecayCalculator(0.5, 1000L),
         useErrorsOverWarnings = false,
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,

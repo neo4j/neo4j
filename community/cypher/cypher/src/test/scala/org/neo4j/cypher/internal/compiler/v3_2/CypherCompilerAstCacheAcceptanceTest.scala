@@ -23,7 +23,7 @@ import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
@@ -44,8 +44,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     new CypherCompilerFactory().costBasedCompiler(
       CypherCompilerConfiguration(
         queryCacheSize,
-        statsDivergenceThreshold,
-        queryPlanTTL,
+        PlanFingerprint.divergenceNoDecayCalculator(statsDivergenceThreshold, queryPlanTTL),
         useErrorsOverWarnings = false,
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
@@ -84,7 +83,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: Statement, ignored: String): Unit = {
+    override def cacheDiscard(key: Statement, ignored: String, secondsSinceReplan: Int): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -217,7 +216,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // then
     logProvider.assertExactly(
-      inLog(logName).info( s"Discarded stale query from the query cache: $query" )
+      inLog(logName).info( s"Discarded stale query from the query cache after 0 seconds: $query" )
     )
   }
 

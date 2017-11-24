@@ -24,6 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{namePatternPredicatePatternElements, _}
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprint
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
@@ -164,8 +165,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val config = CypherCompilerConfiguration(
     queryCacheSize = 100,
-    statsDivergenceThreshold = 0.5,
-    queryPlanTTL = 1000,
+    statsDivergenceCalculator = PlanFingerprint.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,

@@ -146,8 +146,7 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
 }
 
 case class CypherCompilerConfiguration(queryCacheSize: Int,
-                                       statsDivergenceThreshold: Double,
-                                       queryPlanTTL: Long,
+                                       statsDivergenceCalculator: StatsDivergenceCalculator,
                                        useErrorsOverWarnings: Boolean,
                                        idpMaxTableSize: Int,
                                        idpIterationDuration: Long,
@@ -164,7 +163,7 @@ trait CypherCacheFlushingMonitor[T] {
 trait CypherCacheHitMonitor[T] {
   def cacheHit(key: T) {}
   def cacheMiss(key: T) {}
-  def cacheDiscard(key: T, userKey: String) {}
+  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
 }
 
 trait InfoLogger {
