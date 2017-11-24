@@ -128,7 +128,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
             }
         }
 
-        if ( block < getNumberOfBlocks() )
+        while ( block < getNumberOfBlocks() )
         {
             if ( block == -1 )
             {
