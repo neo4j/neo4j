@@ -208,6 +208,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "replanning has reached unsupported.cypher.target_replan_interval. " +
                   "Setting this value to higher than the cypher.statistics_divergence_threshold will cause the " +
                   "threshold to not decay over time." )
+    @Internal
     public static Setting<Double> query_statistics_divergence_target = setting(
             "unsupported.cypher.statistics_divergence_target", DOUBLE, "0.10", min( 0.0 ), max(
                     1.0 ) );
@@ -247,6 +248,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
                   "previous replanning has reached the value set here. Setting this value to less than the " +
                   "value of cypher.min_replan_interval will cause the threshold to not decay over time." )
+    @Internal
     public static Setting<Duration> cypher_replan_interval_target =
             setting( "unsupported.cypher.target_replan_interval", DURATION, "7h" );
 
@@ -256,6 +258,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
                   "previous replanning has reached the value set in unsupported.cypher.target_replan_interval. " +
                   "Setting the algorithm to 'none' will cause the threshold to not decay over time." )
+    @Internal
     public static Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
             options( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
 

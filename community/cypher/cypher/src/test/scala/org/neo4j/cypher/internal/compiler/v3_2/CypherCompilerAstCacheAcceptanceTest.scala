@@ -216,7 +216,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // then
     logProvider.assertExactly(
-      inLog(logName).info( s"Discarded stale query from the query cache: $query" )
+      inLog(logName).info( s"Discarded stale query from the query cache after 0 seconds: $query" )
     )
   }
 
