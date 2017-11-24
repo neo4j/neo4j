@@ -113,7 +113,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
     case e: IOException =>
       throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
   }
-  
+
   private def openStream(url: URL, connectionTimeout: Int = 2000, readTimeout: Int = 10 * 60 * 1000): InputStream = {
     if (url.getProtocol.startsWith("http"))
       TheCookieManager.ensureEnabled()
