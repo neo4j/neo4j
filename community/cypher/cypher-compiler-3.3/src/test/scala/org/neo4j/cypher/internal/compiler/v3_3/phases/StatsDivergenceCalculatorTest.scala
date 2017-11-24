@@ -39,8 +39,7 @@ class StatsDivergenceCalculatorTest extends CypherFunSuite {
     assertNoDecay(StatsDivergenceCalculator.none, defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
   }
 
-  //TODO: Unignore this test once decay is on by default
-  ignore("Default values should make sense") {
+  test("Default values should make sense") {
     assertDecaysMakeSense(Settings.DEFAULT, defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
   }
 
