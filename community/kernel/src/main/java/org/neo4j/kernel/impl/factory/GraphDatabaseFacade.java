@@ -463,30 +463,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         assertTransactionOpen();
         return () ->
         {
-            KernelTransaction ktx = spi.currentTransaction();
-            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
-            ktx.dataRead().allNodesScan( cursor );
-            return new PrefetchingResourceIterator<Node>()
-            {
-                @Override
-                protected Node fetchNextOrNull()
-                {
-                    if ( cursor.next() )
-                    {
-                        return new NodeProxy( nodeActions, cursor.nodeReference() );
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                }
-            };
+            Statement statement = spi.currentStatement();
+            return map2nodes( statement.readOperations().nodesGetAll(), statement );
         };
     }
 
