@@ -464,7 +464,32 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return () ->
         {
             Statement statement = spi.currentStatement();
-            return map2nodes( statement.readOperations().nodesGetAll(), statement );
+            KernelTransaction ktx = spi.currentTransaction();
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
+            ktx.dataRead().allNodesScan( cursor );
+            return new PrefetchingResourceIterator<Node>()
+            {
+                @Override
+                protected Node fetchNextOrNull()
+                {
+                    if ( cursor.next() )
+                    {
+                        return new NodeProxy( nodeActions, cursor.nodeReference() );
+                    }
+                    else
+                    {
+                        close();
+                        return null;
+                    }
+                }
+
+                @Override
+                public void close()
+                {
+                    statement.close();
+                    cursor.close();
+                }
+            };
         };
     }
 
