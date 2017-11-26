@@ -163,6 +163,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN ) )
         {
+            neoStores.verifyStoreOk();
             NodeStore nodeStore = neoStores.getNodeStore();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             try ( Lifespan life = new Lifespan() )

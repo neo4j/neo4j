@@ -295,7 +295,7 @@ public class IndexConfigStore extends LifecycleAdapter
         try
         {
             channel = fileSystem.open( file, "rw" );
-            channel.write( ByteBuffer.wrap( MAGICK ) );
+            channel.writeAll( ByteBuffer.wrap( MAGICK ) );
             IoPrimitiveUtils.writeInt( channel, buffer( 4 ), VERSION );
             writeMap( channel, nodeConfig );
             writeMap( channel, relConfig );

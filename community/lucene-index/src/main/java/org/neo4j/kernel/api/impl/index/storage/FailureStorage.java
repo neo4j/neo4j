@@ -70,7 +70,7 @@ public class FailureStorage
         File failureFile = failureFile();
         try ( StoreChannel channel = fs.create( failureFile ) )
         {
-            channel.write( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
+            channel.writeAll( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
             channel.force( true );
         }
     }
@@ -120,7 +120,7 @@ public class FailureStorage
             channel.position( lengthOf( existingData ) );
 
             byte[] data = UTF8.encode( failure );
-            channel.write( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
+            channel.writeAll( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
 
             channel.force( true );
             channel.close();

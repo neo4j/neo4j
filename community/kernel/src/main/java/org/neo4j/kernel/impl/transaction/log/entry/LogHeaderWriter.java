@@ -66,7 +66,7 @@ public class LogHeaderWriter
     {
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         writeLogHeader( buffer, logVersion, previousLastCommittedTxId );
-        channel.write( buffer );
+        channel.writeAll( buffer );
     }
 
     public static long encodeLogVersion( long logVersion )
