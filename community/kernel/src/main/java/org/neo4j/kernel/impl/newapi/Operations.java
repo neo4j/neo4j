@@ -72,7 +72,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     private final AutoIndexing autoIndexing;
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
-    private final PropertyCursor propertyCursor;
+    private PropertyCursor propertyCursor;
     private final Cursors cursors;
 
     public Operations(
@@ -86,10 +86,14 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
         this.statement = statement;
-        this.nodeCursor = cursors.allocateNodeCursor();
-        this.propertyCursor = cursors.allocatePropertyCursor();
         this.updater = updater;
         this.cursors = cursors;
+    }
+
+    public void initialize()
+    {
+        this.nodeCursor = cursors.allocateNodeCursor();
+        this.propertyCursor = cursors.allocatePropertyCursor();
     }
 
     // READ
@@ -628,6 +632,20 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public CursorFactory cursors()
     {
         return cursors;
+    }
+
+    public void release()
+    {
+        if ( nodeCursor != null )
+        {
+            nodeCursor.close();
+            nodeCursor = null;
+        }
+        if ( propertyCursor != null )
+        {
+            propertyCursor.close();
+            propertyCursor = null;
+        }
     }
 
     public Token token()

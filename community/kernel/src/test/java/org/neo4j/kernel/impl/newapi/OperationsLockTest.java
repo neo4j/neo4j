@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -83,6 +84,13 @@ public class OperationsLockTest
         allStoreHolder = mock( AllStoreHolder.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
                 mock( StorageStatement.class ), transaction, cursors, autoindexing );
+        operations.initialize();
+    }
+
+    @After
+    public void tearDown()
+    {
+        operations.release();
     }
 
     @Test

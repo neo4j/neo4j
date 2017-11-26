@@ -235,6 +235,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
         this.statistics.init( Thread.currentThread().getId(), pageCursorTracer );
         this.currentStatement.initialize( statementLocks, pageCursorTracer );
+        this.operations.initialize();
         return this;
     }
 
@@ -813,6 +814,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             userTransactionId = 0;
             statistics.reset();
             pool.release( this );
+            operations.release();
         }
         finally
         {
