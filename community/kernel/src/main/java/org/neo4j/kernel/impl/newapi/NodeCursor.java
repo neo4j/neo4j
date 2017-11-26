@@ -246,6 +246,12 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
                     }
                 }
             }
+            else if ( next < 0 )
+            {
+                //no more longs out there...
+                next = NO_ID;
+                return inUse();
+            }
         }
         while ( !inUse() );
         return true;
